@@ -27,28 +27,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
+#include "../common/ConfigurationException.h"
 #include "../common/RuntimeException.h"
 #include "WriterFile.h"
 
 namespace OpenLogReplicator {
     WriterFile::WriterFile(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
                            const char* newOutput, const char* newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend) :
-        Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
-        prefixPos(0),
-        suffixPos(0),
-        mode(WRITER_FILE_MODE_STDOUT),
-        fill(0),
-        output(newOutput),
-        timestampFormat(newTimestampFormat),
-        outputFileNum(0),
-        outputSize(0),
-        maxFileSize(newMaxFileSize),
-        outputDes(-1),
-        newLine(newNewLine),
-        append(newAppend),
-        lastSequence(ZERO_SEQ),
-        newLineMsg(nullptr),
-        warningDisplayed(false) {
+            Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
+            prefixPos(0),
+            suffixPos(0),
+            mode(WRITER_FILE_MODE_STDOUT),
+            fill(0),
+            output(newOutput),
+            timestampFormat(newTimestampFormat),
+            fileNameNum(0),
+            fileSize(0),
+            maxFileSize(newMaxFileSize),
+            outputDes(-1),
+            newLine(newNewLine),
+            append(newAppend),
+            lastSequence(ZERO_SEQ),
+            newLineMsg(nullptr),
+            warningDisplayed(false) {
     }
 
     WriterFile::~WriterFile() {
@@ -71,11 +72,11 @@ namespace OpenLogReplicator {
 
         auto outputIt = this->output.find_last_of('/');
         if (outputIt != std::string::npos) {
-            outputPath =  this->output.substr(0, outputIt);
-            outputFileMask = this->output.substr(outputIt + 1);
+            pathName =  this->output.substr(0, outputIt);
+            fileNameMask = this->output.substr(outputIt + 1);
         } else {
-            outputPath = ".";
-            outputFileMask = this->output;
+            pathName = ".";
+            fileNameMask = this->output;
         }
 
         if ((prefixPos = this->output.find("%i")) != std::string::npos) {
@@ -125,20 +126,21 @@ namespace OpenLogReplicator {
             suffixPos = prefixPos + 2;
         } else {
             if ((prefixPos = this->output.find('%')) != std::string::npos)
-                throw RuntimeException("invalid value for 'output': " + this->output);
+                throw ConfigurationException(30005, "invalid value for 'output': " + this->output);
             if (append == 0)
-                throw RuntimeException("output file is with no rotation: " + this->output + " - 'append' must be set to 1");
+                throw ConfigurationException(30006, "output file is with no rotation: " + this->output + " - 'append' must be set to 1");
             mode = WRITER_FILE_MODE_NO_ROTATE;
         }
 
         if ((mode == WRITER_FILE_MODE_TIMESTAMP || mode == WRITER_FILE_MODE_NUM) && maxFileSize == 0)
-            throw RuntimeException("output file is with no max file size: " + this->output + " - 'max-file-size' must be defined for output with rotation");
+            throw ConfigurationException(30007, "output file is with no max file size: " + this->output +
+                                         " - 'max-file-size' must be defined for output with rotation");
 
         // Search for last used number
         if (mode == WRITER_FILE_MODE_NUM) {
             DIR* dir;
-            if ((dir = opendir(outputPath.c_str())) == nullptr)
-                throw RuntimeException("can't access directory: " + outputPath + " to create output files defined with: " + this->output);
+            if ((dir = opendir(pathName.c_str())) == nullptr)
+                throw RuntimeException(10012, "directory: " + pathName + " - can't read");
 
             struct dirent* ent;
             while ((ent = readdir(dir)) != nullptr) {
@@ -146,27 +148,28 @@ namespace OpenLogReplicator {
                     continue;
 
                 struct stat fileStat;
-                std::string fileNameFound(ent->d_name);
+                std::string fileName(ent->d_name);
 
-                std::string fullName(outputPath + "/" + ent->d_name);
-                if (stat(fullName.c_str(), &fileStat)) {
-                    WARNING("reading information for file: " << fullName << " - " << strerror(errno))
+                std::string fileNameFull(pathName + "/" + ent->d_name);
+                if (stat(fileNameFull.c_str(), &fileStat) != 0) {
+                    ctx->error(10003, "file: " + fileNameFull + " - stat returned: " + strerror(errno));
                     continue;
                 }
 
                 if (S_ISDIR(fileStat.st_mode))
                     continue;
 
-                std::string prefix(outputFileMask.substr(0, prefixPos));
-                if (fileNameFound.length() < prefix.length() || fileNameFound.substr(0, prefix.length()) != prefix)
+                std::string prefix(fileNameMask.substr(0, prefixPos));
+                if (fileName.length() < prefix.length() || fileName.substr(0, prefix.length()) != prefix)
                     continue;
 
-                std::string suffix(outputFileMask.substr(suffixPos));
-                if (fileNameFound.length() < suffix.length() || fileNameFound.substr(fileNameFound.length() - suffix.length()) != suffix)
+                std::string suffix(fileNameMask.substr(suffixPos));
+                if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length()) != suffix)
                     continue;
 
-                TRACE(TRACE2_WRITER, "WRITER: found previous output file: " << outputPath << "/" << fileNameFound)
-                std::string fileNameFoundNum(fileNameFound.substr(prefix.length(), fileNameFound.length() - suffix.length() - prefix.length()));
+                if (ctx->trace & TRACE_WRITER)
+                    ctx->logTrace(TRACE_WRITER, "found previous output file: " + pathName + "/" + fileName);
+                std::string fileNameFoundNum(fileName.substr(prefix.length(), fileName.length() - suffix.length() - prefix.length()));
                 typeScn fileNum;
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
@@ -175,15 +178,15 @@ namespace OpenLogReplicator {
                     continue;
                 }
                 if (append > 0) {
-                    if (outputFileNum < fileNum)
-                        outputFileNum = fileNum;
+                    if (fileNameNum < fileNum)
+                        fileNameNum = fileNum;
                 } else {
-                    if (outputFileNum <= fileNum)
-                        outputFileNum = fileNum + 1;
+                    if (fileNameNum <= fileNum)
+                        fileNameNum = fileNum + 1;
                 }
             }
             closedir(dir);
-            INFO("next number for " << this->output << " is: " << std::dec << outputFileNum)
+            ctx->info(0, "next number for " + this->output + " is: " + std::to_string(fileNameNum));
         }
     }
 
@@ -198,53 +201,54 @@ namespace OpenLogReplicator {
         if (mode == WRITER_FILE_MODE_STDOUT) {
             return;
         } else if (mode == WRITER_FILE_MODE_NO_ROTATE) {
-            outputFile = outputPath + "/" + outputFileMask;
+            fullFileName = pathName + "/" + fileNameMask;
         } else if (mode == WRITER_FILE_MODE_NUM) {
-            if (outputSize + length > maxFileSize) {
+            if (fileSize + length > maxFileSize) {
                 closeFile();
-                ++outputFileNum;
-                outputSize = 0;
+                ++fileNameNum;
+                fileSize = 0;
             }
-            if (length > maxFileSize) {
-                WARNING("message size (" << std::dec << length << ") will exceed 'max-file' size (" << maxFileSize << ")")
-            }
+            if (length > maxFileSize)
+                ctx->warning(60029, "message size (" + std::to_string(length) + ") will exceed 'max-file' size (" +
+                             std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1) {
-                std::string outputFileNumStr(std::to_string(outputFileNum));
+                std::string outputFileNumStr(std::to_string(fileNameNum));
                 uint64_t zeros = 0;
                 if (fill > outputFileNumStr.length())
                     zeros = fill - outputFileNumStr.length();
-                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::string(zeros, '0') + outputFileNumStr +
-                        outputFileMask.substr(suffixPos);
+                fullFileName = pathName + "/" + fileNameMask.substr(0, prefixPos) + std::string(zeros, '0') + outputFileNumStr +
+                               fileNameMask.substr(suffixPos);
             }
         } else if (mode == WRITER_FILE_MODE_TIMESTAMP) {
             bool shouldSwitch = false;
-            if (outputSize + length > maxFileSize)
+            if (fileSize + length > maxFileSize)
                 shouldSwitch = true;
 
-            if (length > maxFileSize) {
-                WARNING("message size (" << std::dec << length << ") will exceed 'max-file' size (" << maxFileSize << ")")
-            }
+            if (length > maxFileSize)
+                ctx->warning(60029, "message size (" + std::to_string(length) + ") will exceed 'max-file' size (" +
+                             std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1 || shouldSwitch) {
                 time_t now = time(nullptr);
                 tm nowTm = *localtime(&now);
                 char str[50];
                 strftime(str, sizeof(str), timestampFormat.c_str(), &nowTm);
-                std::string newOutputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + str + outputFileMask.substr(suffixPos);
-                if (outputFile == newOutputFile) {
+                std::string newOutputFile = pathName + "/" + fileNameMask.substr(0, prefixPos) + str + fileNameMask.substr(suffixPos);
+                if (fullFileName == newOutputFile) {
                     if (!warningDisplayed) {
-                        WARNING("rotation size is set too low (" << std::dec << maxFileSize << "), increase it, should rotate but too early (" << outputFile << ")")
+                        ctx->warning(60030, "rotation size is set too low (" + std::to_string(maxFileSize) +
+                                     "), increase it, should rotate but too early (" + fullFileName + ")");
                         warningDisplayed = true;
                     }
                     shouldSwitch = false;
                 } else
-                    outputFile = newOutputFile;
+                    fullFileName = newOutputFile;
             }
 
             if (shouldSwitch) {
                 closeFile();
-                outputSize = 0;
+                fileSize = 0;
             }
         } else if (mode == WRITER_FILE_MODE_SEQUENCE) {
             if (sequence != lastSequence) {
@@ -253,31 +257,30 @@ namespace OpenLogReplicator {
 
             lastSequence = sequence;
             if (outputDes == -1)
-                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::to_string(sequence) +
-                        outputFileMask.substr(suffixPos);
+                fullFileName = pathName + "/" + fileNameMask.substr(0, prefixPos) + std::to_string(sequence) +
+                               fileNameMask.substr(suffixPos);
         }
 
         // File is closed, open it
         if (outputDes == -1) {
             struct stat fileStat;
-            int statRet = stat(outputFile.c_str(), &fileStat);
-            TRACE(TRACE2_WRITER, "WRITER: stat for " << outputFile << " returns " << std::dec << statRet << ", errno = " << errno)
+            if (stat(fullFileName.c_str(), &fileStat) != 0) {
+                // File already exists, append?
+                if (append == 0)
+                    throw RuntimeException(10003, "file: " + fullFileName + " - stat returned: " + strerror(errno));
 
-            // File already exists, append?
-            if (append == 0 && statRet == 0)
-                throw RuntimeException("output file already exists but append mode is not used: " + outputFile);
+                fileSize = fileStat.st_size;
+            } else
+                fileSize = 0;
 
-            INFO("opening output file: " << outputFile)
-            outputDes = open(outputFile.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+            ctx->info(0, "opening output file: " + fullFileName);
+            outputDes = open(fullFileName.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+
             if (outputDes == -1)
-                throw RuntimeException("opening in write mode file: " + outputFile + " - " + strerror(errno));
-            if (lseek(outputDes, 0, SEEK_END) == -1)
-                throw RuntimeException("seeking to end of file: " + outputFile + " - " + strerror(errno));
+                throw RuntimeException(10006, "file: " + fullFileName + " - open for write returned: " + strerror(errno));
 
-            if (statRet == 0)
-                outputSize = fileStat.st_size;
-            else
-                outputSize = 0;
+            if (lseek(outputDes, 0, SEEK_END) == -1)
+                throw RuntimeException(10011, "file: " + fullFileName + " - seek returned: " + strerror(errno));
         }
     }
 
@@ -289,14 +292,17 @@ namespace OpenLogReplicator {
 
         int64_t bytesWritten = write(outputDes, (const char*)msg->data, msg->length);
         if (static_cast<uint64_t>(bytesWritten) != msg->length)
-            throw RuntimeException("writing file: " + outputFile + " - " + strerror(errno));
-        outputSize += bytesWritten;
+            throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
+                                   std::to_string(msg->length) + ", code returned: " + strerror(errno));
+
+        fileSize += bytesWritten;
 
         if (newLine > 0) {
             bytesWritten = write(outputDes, newLineMsg, newLine);
             if (static_cast<uint64_t>(bytesWritten) != newLine)
-                throw RuntimeException("writing file: " + outputFile + " - " + strerror(errno));
-            outputSize += bytesWritten;
+                throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
+                                       std::to_string(msg->length) + ", code returned: " + strerror(errno));
+            fileSize += bytesWritten;
         }
 
         confirmMessage(msg);
@@ -306,7 +312,7 @@ namespace OpenLogReplicator {
         if (outputDes == STDOUT_FILENO)
             return "stdout";
         else
-            return "file:" + outputPath + "/" + outputFileMask;
+            return "file:" + pathName + "/" + fileNameMask;
     }
 
     void WriterFile::pollQueue() {

@@ -22,13 +22,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <utility>
 
 namespace OpenLogReplicator {
-    RuntimeException::RuntimeException(const std::string newMsg) :
+    RuntimeException::RuntimeException(int newCode, const std::string newMsg) :
             exception(),
+            code(newCode),
             msg(std::move(newMsg)) {
     }
 
-    RuntimeException::RuntimeException(const char* newMsg) :
+    RuntimeException::RuntimeException(int newCode, const char* newMsg) :
             exception(),
+            code(newCode),
             msg(newMsg) {
     }
 

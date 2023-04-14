@@ -98,8 +98,8 @@ namespace OpenLogReplicator {
             stopCheckpoints(0),
             stopTransactions(0),
             transactionSizeMax(0),
-            trace(3),
-            trace2(0),
+            logLevel(3),
+            trace(0),
             flags(0),
             disableChecks(0),
             hardShutdown(false),
@@ -368,178 +368,192 @@ namespace OpenLogReplicator {
 
     const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsArray())
-            throw DataException("parsing " + fileName + ", field " + field + " is not an array");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an array");
         return ret;
     }
 
     uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsUint64())
-            throw DataException("parsing " + fileName + ", field " + field + " is not an unsigned 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFF)
-            throw DataException("parsing " + fileName + ", field " + field + " is too big (" + std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
+                                std::to_string(val) + ")");
         return val;
     }
 
     int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsInt64())
-            throw DataException("parsing " + fileName + ", field " + field + " is not a signed 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
-            throw DataException("parsing " + fileName + ", field " + field + " is too big (" + std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
+                                std::to_string(val) + ")");
         return (int16_t)val;
     }
 
     uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsUint64())
-            throw DataException("parsing " + fileName + ", field " + field + " is not an unsigned 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF)
-            throw DataException("parsing " + fileName + ", field " + field + " is too big (" + std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
+                                std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
     }
 
     int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsInt64())
-            throw DataException("parsing " + fileName + ", field " + field + " is not a signed 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
-            throw DataException("parsing " + fileName + ", field " + field + " is too big (" + std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
+                                std::to_string(val) + ")");
         return static_cast<int32_t>(val);
     }
 
     uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsUint64())
-            throw DataException("parsing " + fileName + ", field " + field + " is not an unsigned 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         return ret.GetUint64();
     }
 
     int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsInt64())
-            throw DataException("parsing " + fileName + ", field " + field + " is not a signed 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         return ret.GetInt64();
     }
 
     const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsObject())
-            throw DataException("parsing " + fileName + ", field " + field + " is not an object");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an object");
         return ret;
     }
 
     const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
-            throw DataException("parsing " + fileName + ", field " + field + " not found");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
         if (!ret.IsString())
-            throw DataException("parsing " + fileName + ", field " + field + " is not a string");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a string");
         if (ret.GetStringLength() > maxLength)
-            throw DataException("parsing " + fileName + ", field " + field + " is too long (" + std::to_string(ret.GetStringLength()) + ", max: " +
-                    std::to_string(maxLength) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too long (" +
+                    std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return ret.GetString();
     }
 
     const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsArray())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an array");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not an array");
         return ret;
     }
 
     uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFF)
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
-                    ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is too big (" + std::to_string(val) + ")");
         return val;
     }
 
     int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
-                    ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is too big (" + std::to_string(val) + ")");
         return (int16_t)val;
     }
 
     uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF)
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
-                    ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is too big (" + std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
     }
 
     int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
-                    ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is too big (" + std::to_string(val) + ")");
         return static_cast<int32_t>(val);
     }
 
     uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not an unsigned 64-bit number");
         return ret.GetUint64();
     }
 
     int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not a signed 64-bit number");
         return ret.GetInt64();
     }
 
     const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsObject())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an object");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not an object");
         return ret;
     }
 
     const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsString())
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a string");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is not a string");
         if (ret.GetStringLength() > maxLength)
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too long (" +
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                "] is too long (" +
                     std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return ret.GetString();
     }
@@ -557,7 +571,8 @@ namespace OpenLogReplicator {
         for (uint64_t i = 0; i < memoryChunksMin; ++i) {
             memoryChunks[i] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
             if (memoryChunks[i] == nullptr)
-                throw RuntimeException("couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) + " bytes memory (for: memory chunks#2)");
+                throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
+                                       " bytes memory for: memory chunks#2");
             ++memoryChunksAllocated;
             ++memoryChunksFree;
         }
@@ -590,15 +605,17 @@ namespace OpenLogReplicator {
                     condOutOfMemory.wait(lck);
                 }
                 if (memoryChunksAllocated == memoryChunksMax && memoryChunksReusable == 0) {
-                    throw RuntimeException("out of memory, HINT: try to restart with higher value of 'memory-max-mb' parameter or if big transaction "
-                            "- add to 'skip-xid' list; transaction would be skipped");
+                    hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
+                         "transaction would be skipped");
+                    throw RuntimeException(10017, "out of memory");
                 }
             }
 
             if (memoryChunksFree == 0) {
                 memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
                 if (memoryChunks[0] == nullptr) {
-                    throw RuntimeException("couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) + " bytes memory for: " + module);
+                    throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
+                                           " bytes memory for: " + module);
                 }
                 ++memoryChunksFree;
                 ++memoryChunksAllocated;
@@ -618,7 +635,7 @@ namespace OpenLogReplicator {
         std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (memoryChunksFree == memoryChunksAllocated)
-            throw RuntimeException(std::string("trying to free unknown memory block for: ") + module);
+            throw RuntimeException(50001, "trying to free unknown memory block for: " + std::string(module));
 
         // Keep memoryChunksMin reserved
         if (memoryChunksFree >= memoryChunksMin) {
@@ -635,8 +652,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::stopHard() {
-        Ctx* ctx = this;
-        TRACE(TRACE2_THREADS, "THREADS: stop hard")
+        logTrace(TRACE_THREADS, "stop hard");
 
         {
             std::unique_lock<std::mutex> lck(mtx);
@@ -655,8 +671,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::stopSoft() {
-        Ctx* ctx = this;
-        TRACE(TRACE2_THREADS, "THREADS: stop soft")
+        logTrace(TRACE_THREADS, "stop soft");
 
         std::unique_lock<std::mutex> lck(mtx);
         if (softShutdown)
@@ -667,8 +682,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::mainFinish() {
-        Ctx* ctx = this;
-        TRACE(TRACE2_THREADS, "THREADS: main finish start")
+        logTrace(TRACE_THREADS, "main finish start");
 
         while (wakeThreads()) {
             usleep(1000);
@@ -684,12 +698,11 @@ namespace OpenLogReplicator {
             finishThread(thread);
         }
 
-        TRACE(TRACE2_THREADS, "THREADS: main finish end")
+        logTrace(TRACE_THREADS, "main finish end");
     }
 
     void Ctx::mainLoop() {
-        Ctx* ctx = this;
-        TRACE(TRACE2_THREADS, "THREADS: main loop start")
+        logTrace(TRACE_THREADS, "main loop start");
 
         {
             std::unique_lock<std::mutex> lck(mtx);
@@ -697,31 +710,30 @@ namespace OpenLogReplicator {
                 condMainLoop.wait(lck);
         }
 
-        TRACE(TRACE2_THREADS, "THREADS: main loop end")
+        logTrace(TRACE_THREADS, "main loop end");
     }
 
     void Ctx::printStacktrace() {
         void* array[128];
         int size;
-        ERROR("stacktrace for thread: 0x" << std::hex << pthread_self());
+        error(10014, "stacktrace for thread: " + std::to_string(reinterpret_cast<uint64_t>(pthread_self())));
         {
             std::unique_lock<std::mutex> lck(mtx);
             size = backtrace(array, 128);
         }
         backtrace_symbols_fd(array, size, STDERR_FILENO);
-        ERROR("stacktrace completed");
+        error(10014, "stacktrace for thread: completed");
     }
 
     void Ctx::signalHandler(int s) {
         if (!hardShutdown) {
-            ERROR("caught signal " << s << ", exiting")
+            error(10015, "caught signal: " + s);
             stopHard();
         }
     }
 
     bool Ctx::wakeThreads() {
-        Ctx* ctx = this;
-        TRACE(TRACE2_THREADS, "THREADS: wake threads")
+        logTrace(TRACE_THREADS, "wake threads");
 
         bool wakingUp = false;
         {
@@ -742,15 +754,15 @@ namespace OpenLogReplicator {
                 }
             }
         }
+
         return wakingUp;
     }
 
     void Ctx::spawnThread(Thread* thread) {
-        Ctx* ctx = this;
-        TRACE(TRACE2_THREADS, "THREADS: spawn: " << thread->alias)
+        logTrace(TRACE_THREADS, "spawn: " + thread->alias);
 
         if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(thread)))
-            throw RuntimeException("spawning thread - " + thread->alias);
+            throw RuntimeException(10013, "spawning thread: " + thread->alias);
         {
             std::unique_lock<std::mutex> lck(mtx);
             threads.insert(thread);
@@ -758,8 +770,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::finishThread(Thread* thread) {
-        Ctx* ctx = this;
-        TRACE(TRACE2_THREADS, "THREADS: finish: " << thread->alias)
+        logTrace(TRACE_THREADS, "finish: " + thread->alias);
 
         std::unique_lock<std::mutex> lck(mtx);
         if (threads.find(thread) == threads.end())
@@ -800,7 +811,7 @@ namespace OpenLogReplicator {
                 return false;
 
             if (num == 1024)
-                throw DataException("'" + std::string(name) + "' is too long");
+                throw DataException(20004, "identifier '" + std::string(name) + "' is too long");
             ++num;
         }
 
@@ -827,19 +838,188 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::error(int code, const std::string& message) {
+    void Ctx::welcome(const std::string& message) {
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
-            std::ostringstream __s;
-            time_t __now = time(nullptr);
-            tm __nowTm = *localtime(&__now);
-            char __str[50];
-            strftime(__str, sizeof(__str), "%F %T", &__nowTm);
-            __s << __str << " [ERROR] code: " << std::dec << code << ": " << message << std::endl;
-            std::cerr << __s.str();
+            std::ostringstream s;
+            time_t now = time(nullptr);
+            tm nowTm = *localtime(&now);
+            char str[50];
+            strftime(str, sizeof(str), "%F %T", &nowTm);
+            s << str << " INFO  " << message << std::endl;
+            std::cerr << s.str();
         } else {
-            std::ostringstream __s;
-            __s << "[ERROR] code: " << std::dec << code << ": " << message << std::endl;
-            std::cerr << __s.str();
+            std::ostringstream s;
+            s << " INFO  " << message << std::endl;
+            std::cerr << s.str();
+        }
+    }
+
+    void Ctx::hint(const std::string& message) {
+        if (logLevel < LOG_LEVEL_ERROR)
+            return;
+
+        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+            std::ostringstream s;
+            time_t now = time(nullptr);
+            tm nowTm = *localtime(&now);
+            char str[50];
+            strftime(str, sizeof(str), "%F %T", &nowTm);
+            s << str << " HINT  " << message << std::endl;
+            std::cerr << s.str();
+        } else {
+            std::ostringstream s;
+            s << "HINT  " << message << std::endl;
+            std::cerr << s.str();
+        }
+    }
+
+    void Ctx::error(int code, const std::string& message) {
+        if (logLevel < LOG_LEVEL_ERROR)
+            return;
+
+        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+            std::ostringstream s;
+            time_t now = time(nullptr);
+            tm nowTm = *localtime(&now);
+            char str[50];
+            strftime(str, sizeof(str), "%F %T", &nowTm);
+            s << str << " ERROR " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        } else {
+            std::ostringstream s;
+            s << "ERROR " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        }
+    }
+
+    void Ctx::warning(int code, const std::string& message) {
+        if (logLevel < LOG_LEVEL_WARNING)
+            return;
+
+        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+            std::ostringstream s;
+            time_t now = time(nullptr);
+            tm nowTm = *localtime(&now);
+            char str[50];
+            strftime(str, sizeof(str), "%F %T", &nowTm);
+            s << str << " WARN  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        } else {
+            std::ostringstream s;
+            s << "WARN  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        }
+    }
+
+    void Ctx::info(int code, const std::string& message) {
+        if (logLevel < LOG_LEVEL_INFO)
+            return;
+
+        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+            std::ostringstream s;
+            time_t now = time(nullptr);
+            tm nowTm = *localtime(&now);
+            char str[50];
+            strftime(str, sizeof(str), "%F %T", &nowTm);
+            s << str << " INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        } else {
+            std::ostringstream s;
+            s << "INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        }
+    }
+
+    void Ctx::debug(int code, const std::string& message) {
+        if (logLevel < LOG_LEVEL_DEBUG)
+            return;
+
+        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+            std::ostringstream s;
+            time_t now = time(nullptr);
+            tm nowTm = *localtime(&now);
+            char str[50];
+            strftime(str, sizeof(str), "%F %T", &nowTm);
+            s << str << " DEBUG " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        } else {
+            std::ostringstream s;
+            s << "DEBUG " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            std::cerr << s.str();
+        }
+    }
+
+    void Ctx::logTrace(int mask, const std::string& message) {
+        const char* code = "XXXXX";
+        if ((trace & mask) == 0)
+            return;
+
+        switch (mask) {
+            case TRACE_DML:
+                code = "DML  ";
+                break;
+            case TRACE_DUMP:
+                code = "DUMP ";
+                break;
+            case TRACE_LOB:
+                code = "LOB  ";
+                break;
+            case TRACE_LWN:
+                code = "LWN  ";
+                break;
+            case TRACE_THREADS:
+                code = "THRD ";
+                break;
+            case TRACE_SQL:
+                code = "SQL  ";
+                break;
+            case TRACE_FILE:
+                code = "FILE ";
+                break;
+            case TRACE_DISK:
+                code = "DISK ";
+                break;
+            case TRACE_PERFORMANCE:
+                code = "PERFM";
+                break;
+            case TRACE_TRANSACTION:
+                code = "TRANX";
+                break;
+            case TRACE_REDO:
+                code = "REDO ";
+                break;
+            case TRACE_ARCHIVE_LIST:
+                code = "ARCHL";
+                break;
+            case TRACE_SCHEMA_LIST:
+                code = "SCHEM";
+                break;
+            case TRACE_WRITER:
+                code = "WRITR";
+                break;
+            case TRACE_CHECKPOINT:
+                code = "CHKPT";
+                break;
+            case TRACE_SYSTEM:
+                code = "SYSTM";
+                break;
+            case TRACE_LOB_DATA:
+                code = "LOBDT";
+                break;
+        }
+
+        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+            std::ostringstream s;
+            time_t now = time(nullptr);
+            tm nowTm = *localtime(&now);
+            char str[50];
+            strftime(str, sizeof(str), "%F %T", &nowTm);
+            s << str << " TRACE " << code << " " << message << std::endl;
+            std::cerr << s.str();
+        } else {
+            std::ostringstream s;
+            s << "TRACE " << code << " " << message << std::endl;
+            std::cerr << s.str();
         }
     }
 }

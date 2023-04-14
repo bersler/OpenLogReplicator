@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <algorithm>
 #include <csignal>
 #include <regex>
-#include <sys/stat.h>
 #include <sys/utsname.h>
 #include <thread>
 #include <unistd.h>
@@ -81,11 +80,12 @@ namespace OpenLogReplicator {
         int ret = 1;
         struct utsname name;
         if (uname(&name)) exit(-1);
-        ALL("OpenLogReplicator v" << std::dec << OpenLogReplicator_VERSION_MAJOR << "." << OpenLogReplicator_VERSION_MINOR <<  "." <<
-                OpenLogReplicator_VERSION_PATCH <<
-                " (C) 2018-2023 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << ", arch: " << name.machine <<
-                ", system: " << name.sysname << ", release: " << name.release << ", build: " << OpenLogReplicator_CMAKE_BUILD_TYPE << ", modules:"
-                HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ)
+
+        mainCtx->welcome("OpenLogReplicator v" + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
+                         std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
+                         " (C) 2018-2023 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information, arch: " + name.machine +
+                         ", system: " + name.sysname + ", release: " + name.release + ", build: " + OpenLogReplicator_CMAKE_BUILD_TYPE + ", modules:"
+                         HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {
@@ -93,10 +93,10 @@ namespace OpenLogReplicator {
             std::string regexString("check if matches!");
             bool regexWorks = regex_search(regexString, regexTest);
             if (!regexWorks)
-                throw ConfigurationException(1101, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
+                throw RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
             if (getuid() == 0)
-                throw ConfigurationException(1102, "program is run as root, you should never do that");
+                throw RuntimeException(10020, "program is run as root, you should never do that");
 
             if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
                 // Print banner and exit
@@ -105,11 +105,13 @@ namespace OpenLogReplicator {
                 // Custom config path
                 fileName = argv[2];
             } else if (argc > 1)
-                throw ConfigurationException(1103, "invalid arguments, run: " + std::string(argv[0]) +
+                throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
                         " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
         } catch (ConfigurationException& ex) {
-            if (mainCtx->trace >= TRACE_ERROR)
-                mainCtx->error(ex.code, ex.msg);
+            mainCtx->error(ex.code, ex.msg);
+            return 1;
+        } catch (RuntimeException& ex) {
+            mainCtx->error(ex.code, ex.msg);
             return 1;
         }
 
@@ -117,11 +119,17 @@ namespace OpenLogReplicator {
         try {
             ret = openLogReplicator.run();
         } catch (ConfigurationException& ex) {
-            if (mainCtx->trace >= TRACE_ERROR)
-                mainCtx->error(ex.code, ex.msg);
+            mainCtx->error(ex.code, ex.msg);
+            mainCtx->stopHard();
+        } catch (DataException& ex) {
+            mainCtx->error(ex.code, ex.msg);
+            mainCtx->stopHard();
+        } catch (RuntimeException& ex) {
+            mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
         } catch (std::bad_alloc& ex) {
-            ERROR("memory allocation failed: " << ex.what())
+            mainCtx->error(10018, "memory allocation failed: " + std::string(ex.what()));
+            mainCtx->stopHard();
         }
 
         return ret;

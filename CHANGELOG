@@ -5,7 +5,7 @@ nightly build
 - fix: minor issue related to sending character data in hex format for debug purposes
 - cleanup in parameter names: renamed "max-size" "max-file-size" and "format" to "timestamp-format" for better understanding
 - doc: Commands Reference Manual
-- doc: Error Messages
+- doc: Log Messages Guide
 - doc: Installation Guide
 - doc: Release Notes
 - doc: Troubleshooting Guide
@@ -13,6 +13,9 @@ nightly build
 - fix: treat character decoding issues as warnings
 - fix: removed obsolete example file
 - fix: removed obsolete files
+- changed "trace" parameter to "log-level"
+- changed "trace2" parameter to "trace"
+- fix: unification of log messages
 
 1.1.0
 - debug: trace formatting changes

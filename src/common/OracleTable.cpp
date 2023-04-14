@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "DataException.h"
+#include "RuntimeException.h"
 #include "OracleColumn.h"
 #include "OracleLob.h"
 #include "OracleTable.h"
@@ -88,9 +88,9 @@ namespace OpenLogReplicator {
 
     void OracleTable::addColumn(OracleColumn* column) {
         if (column->segCol != static_cast<typeCol>(columns.size() + 1))
-            throw DataException("trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) + ", dataobj: " +
-                    std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) + ", segcol#: " +
-                    std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
+            throw RuntimeException(50002, "trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) +
+                                   ", dataobj: " + std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) +
+                                   ", segcol#: " + std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
 
         if (column->guard)
             guardSegNo = column->segCol - static_cast<typeCol>(1);

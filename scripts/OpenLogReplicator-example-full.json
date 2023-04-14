@@ -3,8 +3,8 @@
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "dump-path": "/opt/dump",
+  "log-level": 0,
   "trace": 0,
-  "trace2": 0,
   "source": [
     {
       "alias": "S1",

@@ -83,8 +83,7 @@ namespace OpenLogReplicator {
         virtual ~Parser();
 
         uint64_t parse();
-
-        friend std::ostream& operator<<(std::ostream& os, const Parser& parser);
+        std::string toString();
     };
 }
 

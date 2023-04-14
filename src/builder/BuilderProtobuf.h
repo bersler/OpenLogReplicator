@@ -43,14 +43,14 @@ namespace OpenLogReplicator {
         void appendHeader(bool first, bool showXid);
         void appendSchema(OracleTable* table, typeObj obj);
 
-        void appendAfter(LobCtx* lobCtx, OracleTable* table) {
+        void appendAfter(LobCtx* lobCtx, OracleTable* table, uint64_t offset) {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
                         if (lengths[column][VALUE_AFTER] > 0) {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                            processValue(lobCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], true,
+                            processValue(lobCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], offset, true,
                                          compressedAfter);
                         } else {
                             payloadPB->add_after();
@@ -73,8 +73,8 @@ namespace OpenLogReplicator {
                             if (lengths[column][VALUE_AFTER] > 0) {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                                processValue(lobCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], true,
-                                             compressedAfter);
+                                processValue(lobCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], offset,
+                                             true, compressedAfter);
                             } else {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
@@ -86,15 +86,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        void appendBefore(LobCtx* lobCtx, OracleTable* table) {
+        void appendBefore(LobCtx* lobCtx, OracleTable* table, uint64_t offset) {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
                         if (lengths[column][VALUE_BEFORE] > 0) {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            processValue(lobCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], false,
-                                         compressedBefore);
+                            processValue(lobCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], offset,
+                                         false, compressedBefore);
                         } else {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
@@ -116,8 +116,8 @@ namespace OpenLogReplicator {
                             if (lengths[column][VALUE_BEFORE] > 0) {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                                processValue(lobCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], false,
-                                             compressedBefore);
+                                processValue(lobCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], offset,
+                                             false, compressedBefore);
                             } else {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
@@ -131,14 +131,17 @@ namespace OpenLogReplicator {
 
         void createResponse() {
             if (redoResponsePB != nullptr)
-                throw RuntimeException("PB commit processing failed, message already exists, internal error");
+                throw RuntimeException(50016, "PB commit processing failed, message already exists");
             redoResponsePB = new pb::RedoResponse;
         }
 
         void numToString(uint64_t value, char* buf, uint64_t length);
-        void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
-        void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
-        void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
+                           uint64_t offset) override;
+        void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
+                           uint64_t offset) override;
+        void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
+                           uint64_t offset) override;
         void processDdl(OracleTable* table, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength)
                 override;
         void processBeginMessage() override;

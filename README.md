@@ -22,7 +22,7 @@ The currently available chapters are:
 4. [Installation Guide](documentation/installation/installation.adoc)
 5. [Release Notes](documentation/release-notes/release-notes.adoc)
 6. [Troubleshooting Guide](documentation/troubleshooting/troubleshooting.adoc)
-7. [Error Message Guide](documentation/error-messages/error-messages.adoc)
+7. [Log Message Guide](documentation/log-messages/log-messages.adoc)
 
 Additionally:
 1. [Tutorials](https://www.bersler.com/openlogreplicator/tutorials/)

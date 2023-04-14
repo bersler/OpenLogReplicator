@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../common/Ctx.h"
+#include "../common/ConfigurationException.h"
 #include "../common/NetworkException.h"
 #include "../common/RuntimeException.h"
 #include "StreamNetwork.h"
@@ -56,12 +57,12 @@ namespace OpenLogReplicator {
 
     void StreamNetwork::initialize() {
         //colon
-        auto uriIt = this->uri.find(':');
+        auto uriIt = uri.find(':');
         if (uriIt == std::string::npos)
-            throw NetworkException("uri is missing ':'");
+            throw ConfigurationException(30008, "uri is missing ':' in parameter: " + uri);
 
-        host = this->uri.substr(0, uriIt);
-        port = this->uri.substr(uriIt + 1, this->uri.length() - 1);
+        host = uri.substr(0, uriIt);
+        port = uri.substr(uriIt + 1, uri.length() - 1);
     }
 
     std::string StreamNetwork::getName() const {
@@ -75,16 +76,17 @@ namespace OpenLogReplicator {
         addressC.sin_port = htons(atoi(port.c_str()));
 
         if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-            throw NetworkException(std::string("socket creation failed - ") + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         struct hostent* server = gethostbyname(host.c_str());
         if (server == nullptr)
-            throw NetworkException("resolving host name: " + host + " - " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         memcpy(reinterpret_cast<void*>(&addressC.sin_addr.s_addr),
                reinterpret_cast<const void*>(server->h_addr), server->h_length);
         if (connect(socketFD, reinterpret_cast<struct sockaddr*>(&addressC), sizeof(addressC)) < 0)
-            throw NetworkException("connecting to uri: " + uri + " - " + strerror(errno));
+            throw NetworkException(10062, "connection to " + uri + " failed, errno: " + std::to_string(errno) + ", message: " +
+                                   strerror(errno));
     }
 
     void StreamNetwork::initializeServer() {
@@ -95,26 +97,26 @@ namespace OpenLogReplicator {
         hints.ai_flags = AI_PASSIVE;
 
         if (getaddrinfo(host.c_str(), port.c_str(), &hints, &res) != 0)
-            throw NetworkException(std::string("getting information about host/port - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         serverFD = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         if (serverFD == 0)
-            throw NetworkException(std::string("socket creation failed - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         int flags = fcntl(serverFD, F_GETFL);
         if (flags < 0)
-            throw NetworkException(std::string("getting socket flags - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
         if (fcntl(serverFD, F_SETFL, flags | O_NONBLOCK) < 0)
-            throw NetworkException(std::string("setting socket flags - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         int64_t opt = 1;
         if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-            throw NetworkException(std::string("socket reusing failed - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         if (bind(serverFD, res->ai_addr, res->ai_addrlen) < 0)
-            throw NetworkException("binding uri: " + uri + " - " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
         if (listen(serverFD, 1) < 0)
-            throw NetworkException(std::string("starting listener - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         if (res != nullptr) {
             freeaddrinfo(res);
@@ -127,7 +129,7 @@ namespace OpenLogReplicator {
         uint64_t sent = 0;
 
         if (socketFD == -1)
-            throw NetworkException("network send error - no connection");
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         fd_set wset;
         fd_set w;
@@ -151,7 +153,8 @@ namespace OpenLogReplicator {
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       throw NetworkException(std::string("network send - ") + strerror(errno));
+                       throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                              strerror(errno));
                    }
                 }
                 sent += r;
@@ -173,7 +176,8 @@ namespace OpenLogReplicator {
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       throw NetworkException(std::string("network send - ") + strerror(errno));
+                       throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                              strerror(errno));
                    }
                 }
                 sent += r;
@@ -194,7 +198,8 @@ namespace OpenLogReplicator {
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       throw NetworkException(std::string("network send - ") + strerror(errno));
+                       throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                              strerror(errno));
                    }
                 }
                 sent += r;
@@ -217,7 +222,8 @@ namespace OpenLogReplicator {
                else {
                    close(socketFD);
                    socketFD = -1;
-                   throw NetworkException(std::string("network send - ") + strerror(errno));
+                   throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                          strerror(errno));
                }
             }
             sent += r;
@@ -239,18 +245,18 @@ namespace OpenLogReplicator {
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException("host disconnected");
+                throw NetworkException(10056, "host disconnected");
             } else {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException(std::string("network receive - ") + strerror(errno));
+                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
             }
         }
 
         if (*(reinterpret_cast<uint32_t*>(msg)) < 0xFFFFFFFF) {
             // 32-bit message length
             if (length < *(reinterpret_cast<uint32_t*>(msg)))
-                throw NetworkException("read buffer too small");
+                throw NetworkException(10055, "message from client is incomplete");
 
             length = *(reinterpret_cast<uint32_t*>(msg));
             recvd = 0;
@@ -269,16 +275,17 @@ namespace OpenLogReplicator {
                 else if (bytes == 0) {
                     close(socketFD);
                     socketFD = -1;
-                    throw NetworkException("host disconnected");
+                    throw NetworkException(10056, "host disconnected");
                 } else {
                     close(socketFD);
                     socketFD = -1;
-                    throw NetworkException(std::string("network receive - ") + strerror(errno));
+                    throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                           strerror(errno));
                 }
             }
 
             if (length < *(reinterpret_cast<uint64_t*>(msg)))
-                throw NetworkException("read buffer too small");
+                throw NetworkException(10055, "message from client is incomplete");
 
             length = *(reinterpret_cast<uint64_t*>(msg));
             recvd = 0;
@@ -295,11 +302,11 @@ namespace OpenLogReplicator {
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException("host disconnected");
+                throw NetworkException(10056, "host disconnected");
             } else {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException(std::string("network receive - ") + strerror(errno));
+                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
             }
         }
 
@@ -322,7 +329,7 @@ namespace OpenLogReplicator {
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException("host disconnected");
+                throw NetworkException(10056, "host disconnected");
             } else {
                 if (recvd == 0)
                     return 0;
@@ -337,7 +344,7 @@ namespace OpenLogReplicator {
         if (*(reinterpret_cast<uint32_t*>(msg)) < 0xFFFFFFFF) {
             // 32-bit message length
             if (length < *(reinterpret_cast<uint32_t*>(msg)))
-                throw NetworkException("read buffer too small");
+                throw NetworkException(10055, "message from client is incomplete");
 \
             length = *(reinterpret_cast<uint32_t*>(msg));
             recvd = 0;
@@ -357,7 +364,7 @@ namespace OpenLogReplicator {
                 else if (bytes == 0) {
                     close(socketFD);
                     socketFD = -1;
-                    throw NetworkException("host disconnected");
+                    throw NetworkException(10056, "host disconnected");
                 } else {
                     if (recvd == 0)
                         return 0;
@@ -370,7 +377,7 @@ namespace OpenLogReplicator {
             }
 
             if (length < *(reinterpret_cast<uint64_t*>(msg)))
-                throw NetworkException("read buffer too small");
+                throw NetworkException(10055, "message from client is incomplete");
 
             length = *(reinterpret_cast<uint64_t*>(msg));
             recvd = 0;
@@ -385,7 +392,7 @@ namespace OpenLogReplicator {
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException("host disconnected");
+                throw NetworkException(10056, "host disconnected");
             } else {
                 if (errno == EWOULDBLOCK || errno == EAGAIN)
                     usleep(ctx->pollIntervalUs);
@@ -407,14 +414,14 @@ namespace OpenLogReplicator {
             if (errno == EWOULDBLOCK)
                 return false;
 
-            throw NetworkException(std::string("socket accept failed - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
         }
 
         int flags = fcntl(socketFD, F_GETFL);
         if (flags < 0)
-            throw NetworkException(std::string("getting socket flags - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
         if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0)
-            throw NetworkException(std::string("setting socket flags - ") + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         if (socketFD != -1)
             return true;

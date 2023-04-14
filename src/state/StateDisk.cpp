@@ -24,13 +24,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "../common/DataException.h"
+#include "../common/Ctx.h"
 #include "../common/RuntimeException.h"
 #include "StateDisk.h"
 
 namespace OpenLogReplicator {
-    StateDisk::StateDisk(const char* newPath) :
-        State(),
+    StateDisk::StateDisk(Ctx* newCtx, const char* newPath) :
+        State(newCtx),
         path(newPath) {
     }
 
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
     void StateDisk::list(std::set<std::string>& namesList) {
         DIR* dir;
         if ((dir = opendir(path.c_str())) == nullptr)
-            throw DataException("can't access directory: " + path);
+            throw RuntimeException(10012, "directory: " + path + " - can't read");
 
         struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
@@ -51,8 +51,10 @@ namespace OpenLogReplicator {
             std::string fileName(ent->d_name);
 
             std::string fullName(path + "/" + ent->d_name);
-            if (stat(fullName.c_str(), &fileStat))
+            if (stat(fullName.c_str(), &fileStat)) {
+                ctx->error(10003, "file: " + fileName + " - stat returned: " + strerror(errno));
                 continue;
+            }
 
             if (S_ISDIR(fileStat.st_mode))
                 continue;
@@ -70,17 +72,18 @@ namespace OpenLogReplicator {
     bool StateDisk::read(const std::string& name, uint64_t maxSize, std::string& in) {
         std::string fileName(path + "/" + name + ".json");
         struct stat fileStat;
-        int ret = stat(fileName.c_str(), &fileStat);
-        if (ret != 0)
+        if (stat(fileName.c_str(), &fileStat) != 0) {
+            ctx->error(10003, "file: " + fileName + " - stat returned: " + strerror(errno));
             return false;
+        }
         if (static_cast<uint64_t>(fileStat.st_size) > maxSize || fileStat.st_size == 0)
-            throw DataException("checkpoint file: " + fileName + " wrong size: " + std::to_string(fileStat.st_size));
+            throw RuntimeException(10004, "file: " + fileName + " - wrong size: " + std::to_string(fileStat.st_size));
 
         std::ifstream inputStream;
         inputStream.open(fileName.c_str(), std::ios::in);
 
         if (!inputStream.is_open())
-            throw DataException("read error for: " + fileName);
+            throw RuntimeException(10001, "file: " + fileName + " - open returned: " + strerror(errno));
 
         in.assign((std::istreambuf_iterator<char>(inputStream)), std::istreambuf_iterator<char>());
         inputStream.close();
@@ -90,17 +93,22 @@ namespace OpenLogReplicator {
     void StateDisk::write(const std::string& name, const std::ostringstream& out) {
         std::string fileName(path + "/" + name + ".json");
         std::ofstream outputStream;
-        outputStream.open(fileName.c_str(), std::ios::out | std::ios::trunc);
 
+        outputStream.open(fileName.c_str(), std::ios::out | std::ios::trunc);
         if (!outputStream.is_open())
-            throw DataException("writing checkpoint decoder to " + fileName);
+            throw RuntimeException(10006, "file: " + fileName + " - open for write returned: " + strerror(errno));
+
         outputStream << out.str();
+        if (outputStream.bad() || outputStream.fail())
+            throw RuntimeException(10007, "file: " + fileName + " - 0 bytes written instead of " +
+                                   std::to_string(out.str().length()) + ", code returned: " + strerror(errno));
+
         outputStream.close();
     }
 
     void StateDisk::drop(const std::string& name) {
         std::string fileName(path + "/" + name + ".json");
         if (unlink(fileName.c_str()) != 0)
-            throw DataException("can't remove file: " + fileName + " - " + strerror(errno));
+            throw RuntimeException(10010, "file: " + fileName + " - unlink returned: " + strerror(errno));
     }
 }

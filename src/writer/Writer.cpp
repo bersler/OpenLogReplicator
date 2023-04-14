@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
-#include "../common/ConfigurationException.h"
 #include "../common/Ctx.h"
+#include "../common/DataException.h"
 #include "../common/NetworkException.h"
 #include "../common/RuntimeException.h"
 #include "../metadata/Metadata.h"
@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
     void Writer::confirmMessage(BuilderMsg* msg) {
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
-                WARNING("trying to confirm empty message")
+                ctx->warning(70007, "trying to confirm empty message");
                 return;
             }
             msg = queue[0];
@@ -150,35 +150,40 @@ namespace OpenLogReplicator {
     }
 
     void Writer::run() {
-        TRACE(TRACE2_THREADS, "THREADS: writer (" << std::hex << std::this_thread::get_id() << ") start")
+        if (ctx->trace & TRACE_THREADS) {
+            std::ostringstream ss;
+            ss << std::this_thread::get_id();
+            ctx->logTrace(TRACE_THREADS, "writer (" + ss.str() + ") start");
+        }
 
-        INFO("writer is starting with " << getName())
+        ctx->info(0, "writer is starting with " + getName());
 
         try {
             // External loop for client disconnection
             while (!ctx->hardShutdown) {
                 try {
                     mainLoop();
+
+                // client got disconnected
                 } catch (NetworkException& ex) {
-                    WARNING(ex.msg)
+                    ctx->warning(ex.code, ex.msg);
                     streaming = false;
-                    // Client got disconnected
                 }
 
                 if (ctx->softShutdown && ctx->replicatorFinished)
                     break;
             }
-        } catch (ConfigurationException& ex) {
-            ERROR(ex.msg)
-            ctx->stopHard();
-        } catch (RuntimeException& ex) {
-            ERROR(ex.msg)
+        } catch (DataException& ex) {
+            ctx->error(ex.code, ex.msg);
             ctx->stopHard();
         }
 
-        INFO("writer is stopping: " << getName() << ", max queue size: " << std::dec << maxQueueSize)
-
-        TRACE(TRACE2_THREADS, "THREADS: writer (" << std::hex << std::this_thread::get_id() << ") stop")
+        ctx->info(0, "writer is stopping: " + getName() + ", max queue size: " + std::to_string(maxQueueSize));
+        if (ctx->trace & TRACE_THREADS) {
+            std::ostringstream ss;
+            ss << std::this_thread::get_id();
+            ctx->logTrace(TRACE_THREADS, "writer (" + ss.str() + ") stop");
+        }
     }
 
     void Writer::mainLoop() {
@@ -232,7 +237,9 @@ namespace OpenLogReplicator {
                 // Queue is full
                 pollQueue();
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
-                    DEBUG("output queue is full (" << std::dec << currentQueueSize << " schemaElements), sleeping " << std::dec << ctx->pollIntervalUs << "us")
+                    if (ctx->trace & TRACE_WRITER)
+                        ctx->logTrace(TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
+                                      " schemaElements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     usleep(ctx->pollIntervalUs);
                     pollQueue();
                 }
@@ -255,8 +262,8 @@ namespace OpenLogReplicator {
                 } else {
                     msg->data = new uint8_t[msg->length];
                     if (msg->data == nullptr)
-                        throw RuntimeException("couldn't allocate " + std::to_string(msg->length) +
-                                " bytes memory (for: temporary buffer for JSON message)");
+                        throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->length) +
+                                               " bytes memory for: temporary buffer for JSON message");
                     msg->flags |= OUTPUT_BUFFER_ALLOCATED;
 
                     uint64_t copied = 0;
@@ -308,11 +315,12 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
-        if (checkpointScn == ZERO_SCN) {
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer confirmed scn: " << confirmedScn)
-        } else {
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer confirmed scn: " << confirmedScn << "checkpoint scn: " << std::dec << checkpointScn)
-
+        if (ctx->trace & TRACE_CHECKPOINT) {
+            if (checkpointScn == ZERO_SCN)
+                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn));
+            else
+                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + "checkpoint scn: " +
+                              std::to_string(checkpointScn));
         }
         std::string name(database + "-chkpt");
         std::ostringstream ss;
@@ -340,12 +348,12 @@ namespace OpenLogReplicator {
         }
 
         if (checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError())
-            throw RuntimeException("parsing of: " + name + " at offset: " + std::to_string(document.GetErrorOffset()) + ", message: " +
-                    GetParseError_En(document.GetParseError()));
+            throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
+                                " - parse error: " + GetParseError_En(document.GetParseError()));
 
         const char* databaseJson = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
         if (database != databaseJson)
-            throw RuntimeException("parsing of: " + name + " - invalid database name: " + databaseJson);
+            throw DataException(20001, "file: " + name + " - invalid database name: " + databaseJson);
 
         metadata->setResetlogs(Ctx::getJsonFieldU32(name, document, "resetlogs"));
         metadata->setActivation(Ctx::getJsonFieldU32(name, document, "activation"));
@@ -355,7 +363,7 @@ namespace OpenLogReplicator {
         metadata->startSequence = ZERO_SEQ;
         metadata->startTime.clear();
         metadata->startTimeRel = 0;
-        INFO("checkpoint - reading scn: " << std::dec << metadata->startScn)
+        ctx->info(0, "checkpoint - reading scn: " + std::to_string(metadata->startScn));
 
         metadata->setStatusReplicate();
     }

@@ -26,10 +26,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class DataException: public std::exception {
     public:
+        int code;
         std::string msg;
 
-        explicit DataException(const std::string newMsg);
-        explicit DataException(const char* newMsg);
+        explicit DataException(int newCode, const std::string newMsg);
+        explicit DataException(int newCode, const char* newMsg);
         ~DataException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const DataException& exception);

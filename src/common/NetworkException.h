@@ -30,10 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class NetworkException: public std::exception {
     public:
+        int code;
         std::string msg;
 
-        explicit NetworkException(const std::string newMsg);
-        explicit NetworkException(const char* newMsg);
+        explicit NetworkException(int newCode, const std::string newMsg);
+        explicit NetworkException(int newCode, const char* newMsg);
         ~NetworkException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const NetworkException& exception);

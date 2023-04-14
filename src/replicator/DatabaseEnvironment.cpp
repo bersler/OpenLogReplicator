@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
 
         if (envhp == nullptr)
-            throw RuntimeException("error initializing oracle environment (OCI)");
+            throw RuntimeException(10050, "can't initialize oracle environment (OCI)");
     }
 
     void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) {
@@ -53,22 +53,19 @@ namespace OpenLogReplicator {
                 break;
 
             case OCI_SUCCESS_WITH_INFO:
-                WARNING("OCI_SUCCESS_WITH_INFO")
                 OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
-                if (errcode != 100) {
-                    WARNING("OCI: " << errbuf1)
-                }
+                if (errcode != 100)
+                    ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)));
                 OCIErrorGet(errhp, 2, nullptr, &errcode, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
-                if (errcode != 100) {
-                    WARNING("OCI: " << errbuf1)
-                }
+                if (errcode != 100)
+                    ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)));
                 break;
 
             case OCI_NEED_DATA:
-                throw RuntimeException("OCI ERROR: OCI_NEED_DATA");
+                throw RuntimeException(10051, "OCI ERROR: OCI_NEED_DATA");
 
             case OCI_NO_DATA:
-                throw RuntimeException("OCI ERROR: OCI_NODATA");
+                throw RuntimeException(10051, "OCI ERROR: OCI_NODATA");
 
             case OCI_ERROR:
                 OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
@@ -85,21 +82,20 @@ namespace OpenLogReplicator {
                     errbuf2[len - 1] = 0;
 
                 if (errcode != 100)
-                    throw RuntimeException("OCI ERROR: [" + std::string((char*)errbuf1) + "]\n[" + std::string((char*)errbuf2) + "]");
-                else
-                    throw RuntimeException("OCI ERROR: [" + std::string((char*)errbuf1) + "]");
+                    ctx->error(10051, "OCI: " + std::string(reinterpret_cast<char*>(errbuf2)) + "]");
+                throw RuntimeException(10051, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)) + "]");
 
             case OCI_INVALID_HANDLE:
-                throw RuntimeException("OCI ERROR: OCI_INVALID_HANDLE");
+                throw RuntimeException(10051, "OCI: OCI_INVALID_HANDLE");
 
             case OCI_STILL_EXECUTING:
-                throw RuntimeException("OCI ERROR: OCI_STILL_EXECUTING");
+                throw RuntimeException(10051, "OCI: OCI_STILL_EXECUTING");
 
             case OCI_CONTINUE:
-                throw RuntimeException("OCI ERROR: OCI_CONTINUE");
+                throw RuntimeException(10051, "OCI: OCI_CONTINUE");
 
             case OCI_ROWCBK_DONE:
-                throw RuntimeException("OCI ERROR: OCI_CONTINUE");
+                throw RuntimeException(10051, "OCI: OCI_CONTINUE");
         }
     }
 }

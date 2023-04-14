@@ -42,12 +42,8 @@ namespace OpenLogReplicator {
         if (FLAG(REDO_FLAGS_SCHEMALESS))
             return;
 
-        ERROR("HINT: if you don't have earlier schema, try with schema-less mode ('flags': 2)")
-        if (metadata->schema->scn != ZERO_SCN) {
-            ERROR("HINT: you can also set start SCN for writer: 'start-scn': " << std::dec << metadata->schema->scn)
-        }
-
-        throw RuntimeException("schema file missing");
+        ctx->hint("if you don't have earlier schema, try with schema-less mode ('flags': 2)");
+        throw RuntimeException(10052, "schema file missing");
     }
 
     const char* ReplicatorBatch::getModeName() const {
@@ -55,7 +51,7 @@ namespace OpenLogReplicator {
     }
 
     bool ReplicatorBatch::continueWithOnline() {
-        INFO("finished batch processing, exiting")
+        ctx->info(0, "finished batch processing, exiting");
         ctx->stopSoft();
         return false;
     }

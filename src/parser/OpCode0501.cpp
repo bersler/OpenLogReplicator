@@ -32,10 +32,9 @@ namespace OpenLogReplicator {
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050102))
             return;
         // Field: 2
-        if (fieldLength < 8) {
-            WARNING("too short field 5.1: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 8)
+            throw RedoLogException(50061, "too short field 5.1.2: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->obj = ctx->read32(redoLogRecord->data + fieldPos + 0);
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 4);
@@ -190,10 +189,8 @@ namespace OpenLogReplicator {
             suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
         } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
-            if (nulls == nullptr) {
-                WARNING("nulls field is missing" << " offset: " << redoLogRecord->dataOffset)
-                return;
-            }
+            if (nulls == nullptr)
+                throw RedoLogException(50063, "nulls field is missing on offset: " + std::to_string(redoLogRecord->dataOffset));
 
             if (redoLogRecord->cc > 0) {
                 redoLogRecord->rowData = fieldNum + 1;
@@ -213,9 +210,9 @@ namespace OpenLogReplicator {
                                 return;
                             RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010D);
                         }
-                        if (fieldLength > 0 && (*nulls & bits) != 0) {
-                            WARNING("length: " << std::dec << fieldLength << " for NULL column offset: " << redoLogRecord->dataOffset)
-                        }
+                        if (fieldLength > 0 && (*nulls & bits) != 0)
+                            throw RedoLogException(50061, "too short field for nulls: " + std::to_string(fieldLength) + " offset: " +
+                                                   std::to_string(redoLogRecord->dataOffset));
 
                         if (ctx->dumpRedoLog >= 1)
                             dumpCols(ctx, redoLogRecord, redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
@@ -256,10 +253,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0501::opc0D17(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 20) {
-            WARNING("too short field Undo for Lev1 Bitmap Block: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 20)
+            throw RedoLogException(50061, "too short field OPC 0D17: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         if (ctx->dumpRedoLog >= 1) {
             redoLogRecord->bdba = ctx->read32(redoLogRecord->data + fieldPos + 0);
@@ -280,7 +276,8 @@ namespace OpenLogReplicator {
         // Field: 4
 
         if (fieldLength < 8) {
-            WARNING("too short field Redo on Lev1 Bitmap Block: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+            ctx->warning(70001, "too short field lev1 bitmap block: " + std::to_string(fieldLength) + " offset: " +
+                         std::to_string(redoLogRecord->dataOffset));
             return;
         }
 
@@ -368,10 +365,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0501::ktudb(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 20) {
-            WARNING("too short field ktudb: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 20)
+            throw RedoLogException(50061, "too short field ktudb: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 8)),
                                      ctx->read16(redoLogRecord->data + fieldPos + 10),
@@ -391,15 +387,15 @@ namespace OpenLogReplicator {
                     " seq: 0x" << std::setfill('0') << std::setw(4) << seq <<
                     " rec: 0x" << std::setfill('0') << std::setw(2) << static_cast<uint64_t>(rec) << std::endl;
             ctx->dumpStream << "           " <<
-                    " xid:  " << redoLogRecord->xid << "  " << std::endl;
+                    " xid:  " << redoLogRecord->xid.toString() << "  " << std::endl;
         }
     }
 
     void OpCode0501::kteoputrn(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 4) {
-            WARNING("too short field kteoputrn: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 4)
+            throw RedoLogException(50061, "too short field kteoputrn: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
+
         if (ctx->dumpRedoLog >= 2) {
             typeObj newDataObj = ctx->read32(redoLogRecord->data + fieldPos + 0);
             ctx->dumpStream << "kteoputrn - undo operation for flush for truncate " << std::endl;
@@ -408,10 +404,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0501::kdilk(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 20) {
-            WARNING("too short field kdilk: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 20)
+            throw RedoLogException(50061, "too short field kdilk: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         if (ctx->dumpRedoLog >= 1) {
             uint8_t code = redoLogRecord->data[fieldPos + 0];
@@ -450,8 +445,8 @@ namespace OpenLogReplicator {
                 uint32_t keySizes = ctx->read32(redoLogRecord->data + fieldPos + 20);
 
                 if (fieldLength < keySizes * 2 + 24) {
-                    WARNING("too short field kdilk key sizes(" << std::dec << keySizes << "): " << std::dec << fieldLength << " offset: " <<
-                            redoLogRecord->dataOffset)
+                    ctx->warning(70001, "too short field kdilk key sizes(" + std::to_string(keySizes) + "): " +
+                                 std::to_string(fieldLength) + " offset: " + std::to_string(redoLogRecord->dataOffset));
                     return;
                 }
                 ctx->dumpStream << "number of keys: " << std::dec << keySizes << " " << std::endl;
@@ -466,10 +461,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0501::rowDeps(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 8) {
-            WARNING("too short row dependencies: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 8)
+            ctx->warning(70001, "too short field row dependencies: " + std::to_string(fieldLength) + " offset: " +
+                         std::to_string(redoLogRecord->dataOffset));
 
         if (ctx->dumpRedoLog >= 1) {
             typeScn dscn = ctx->readScn(redoLogRecord->data + fieldPos + 0);
@@ -487,10 +481,9 @@ namespace OpenLogReplicator {
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050117))
             return;
 
-        if (fieldLength < 20) {
-            WARNING("too short supplemental log: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 20)
+            throw RedoLogException(50061, "too short field supplemental log: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         ++suppLogFieldCnt;
         suppLogSize += (fieldLength + 3) & 0xFFFC;

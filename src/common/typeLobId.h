@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iostream>
 #include <string>
 
-#include "DataException.h"
 #include "types.h"
 
 #ifndef TYPE_LOBID_H_
@@ -79,7 +78,7 @@ namespace OpenLogReplicator {
                    reinterpret_cast<const void*>(newData), TYPE_LOBID_LENGTH);
         }
 
-        std::string lower() {
+        std::string lower() const {
             std::ostringstream ss;
             ss << std::setfill('0') << std::hex <<
                std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<

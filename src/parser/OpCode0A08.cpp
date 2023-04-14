@@ -49,7 +49,8 @@ namespace OpenLogReplicator {
             // Field: 2
 
             if (fieldLength < 4) {
-                WARNING("too short field split kdxlne: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+                ctx->warning(70001, "too short field kdxlne: " + std::to_string(fieldLength) + " offset: " +
+                             std::to_string(redoLogRecord->dataOffset));
                 return;
             }
 
@@ -84,7 +85,8 @@ namespace OpenLogReplicator {
 
     void OpCode0A08::kdxln(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (fieldLength < 16) {
-            WARNING("too short field KDXLN: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+            ctx->warning(70001, "too short field kdxln: " + std::to_string(fieldLength) + " offset: " +
+                         std::to_string(redoLogRecord->dataOffset));
             return;
         }
 

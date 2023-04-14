@@ -30,10 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class RedoLogException: public std::exception {
     public:
+        int code;
         std::string msg;
 
-        explicit RedoLogException(std::string newMsg);
-        explicit RedoLogException(const char* newMsg);
+        explicit RedoLogException(int newCode, std::string newMsg);
+        explicit RedoLogException(int newCode, const char* newMsg);
         ~RedoLogException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const RedoLogException& exception);

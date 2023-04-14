@@ -45,10 +45,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0504::ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 20) {
-            WARNING("too short field ktucm: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 20)
+            throw RedoLogException(50061, "too short field ktucm: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->xid = typeXid(redoLogRecord->usn,
                                      ctx->read16(redoLogRecord->data + fieldPos + 0),
@@ -69,10 +68,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0504::ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 16) {
-            WARNING("too short field ktucf: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 16)
+            throw RedoLogException(50061, "too short field ktucf: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 0);
 

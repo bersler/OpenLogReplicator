@@ -51,10 +51,8 @@ namespace OpenLogReplicator {
     uint64_t ReaderFilesystem::redoOpen() {
         struct stat fileStat;
 
-        int fileRet = stat(fileName.c_str(), &fileStat);
-        TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno))
-        if (fileRet != 0) {
-            WARNING("reading information for file: " << fileName << " - " << strerror(errno))
+        if (stat(fileName.c_str(), &fileStat) != 0) {
+            ctx->error(10003, "file: " + fileName + " - stat returned: " + strerror(errno));
             return REDO_ERROR;
         }
 
@@ -67,18 +65,15 @@ namespace OpenLogReplicator {
 #endif
 
         fileDes = open(fileName.c_str(), flags);
-        TRACE(TRACE2_FILE, "FILE: open for " << fileName << " returns " << std::dec << fileDes << ", errno = " << errno)
-
         if (fileDes == -1) {
-            ERROR("opening file returned: " << std::dec << fileName << " - " << strerror(errno))
+            ctx->error(10001, "file: " + fileName + " - open returned: " + strerror(errno));
             return REDO_ERROR;
         }
 
 #if __APPLE__
         if (!FLAG(REDO_FLAGS_DIRECT_DISABLE)) {
-            if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0) {
-                ERROR("set no cache for: " << std::dec << fileName << " - " << strerror(errno))
-            }
+            if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0)
+                ctx->error(10008, "file: " + fileName + " - set no cache returned: " + strerror(errno));
         }
 #endif
 
@@ -87,7 +82,7 @@ namespace OpenLogReplicator {
 
     int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
-        if ((ctx->trace2 & TRACE2_PERFORMANCE) != 0)
+        if (ctx->trace & TRACE_PERFORMANCE)
             startTime = Timer::getTime();
         int64_t bytes = 0;
         uint64_t tries = ctx->archReadTries;
@@ -96,7 +91,9 @@ namespace OpenLogReplicator {
             if (ctx->hardShutdown)
                 break;
             bytes = pread(fileDes, buf, size, static_cast<int64_t>(offset));
-            TRACE(TRACE2_FILE, "FILE: read " << fileName << ", " << std::dec << offset << ", " << std::dec << size << " returns " << std::dec << bytes)
+            if (ctx->trace & TRACE_FILE)
+                ctx->logTrace(TRACE_FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
+                              " returns " + std::to_string(bytes));
 
             if (bytes > 0)
                 break;
@@ -105,20 +102,23 @@ namespace OpenLogReplicator {
             if (bytes == -1 && errno != ENOTCONN)
                 break;
 
-            ERROR("reading file: " << fileName << " - " << strerror(errno) << " - sleeping " << std::dec << ctx->archReadSleepUs << " us")
+            ctx->error(10005, "file: " + fileName + " - " + std::to_string(bytes) + " bytes read instead of " + std::to_string(size));
+
             if (ctx->hardShutdown)
                 break;
+
+            ctx->info(0, "sleeping " + std::to_string(ctx->archReadSleepUs) + " us before retrying read");
             usleep(ctx->archReadSleepUs);
             --tries;
         }
 
         // Maybe direct IO does not work
         if (bytes < 0 && !FLAG(REDO_FLAGS_DIRECT_DISABLE)) {
-            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " << std::dec <<
-                    REDO_FLAGS_DIRECT_DISABLE)
+            ctx->hint("if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " +
+                      std::to_string(REDO_FLAGS_DIRECT_DISABLE));
         }
 
-        if ((ctx->trace2 & TRACE2_PERFORMANCE) != 0) {
+        if (ctx->trace & TRACE_PERFORMANCE) {
             if (bytes > 0)
                 sumRead += bytes;
             sumTime += Timer::getTime() - startTime;

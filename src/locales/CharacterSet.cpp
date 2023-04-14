@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSet.h"
 #include "../common/Ctx.h"
 #include "../common/types.h"
-#include "../common/DataException.h"
 
 namespace OpenLogReplicator {
     CharacterSet::CharacterSet(const char* newName) :
@@ -30,49 +29,41 @@ namespace OpenLogReplicator {
     CharacterSet::~CharacterSet() = default;
 
     uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1) const {
-        WARNING("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 << " in character set " << name << " xid: " <<
-                xid)
+        ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ") using character set " + name + ", xid: " +
+                     xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2) const {
-        WARNING("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 << " in character set " << name << " xid: " << xid)
+        ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2) +
+                     ") using character set " + name + ", xid: " + xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3) const {
-        WARNING("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 << " in character set " << name << " xid: " << xid)
+        ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2)  + ", " +
+                     std::to_string(byte3) + ") using character set " + name + ", xid: " + xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4) const {
-        WARNING("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte4 << " in character set " << name << " xid: " << xid)
+        ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2)  + ", " +
+                            std::to_string(byte3) + ", " + std::to_string(byte4) + ") using character set " + name + ", xid: " + xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5) const {
-        WARNING("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte4 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte5 << " in character set " << name << " xid: " << xid);
+        ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2)  + ", " +
+                     std::to_string(byte3) + ", " + std::to_string(byte4) + ", " + std::to_string(byte5) + ") using character set " + name + ", xid: " +
+                     xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5,
                                    uint64_t byte6) const {
-        WARNING("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte4 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte5 <<
-                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte6 << " in character set " << name << " xid: " << xid)
+        ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2)  + ", " +
+                     std::to_string(byte3) + ", " + std::to_string(byte4) + ", " + std::to_string(byte5) + std::to_string(byte6) + ") using character set " +
+                     name + ", xid: " + xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 }

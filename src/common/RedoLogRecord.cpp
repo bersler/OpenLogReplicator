@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
         ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
                 " scn: " << std::dec << redo.scn <<
                 " subScn: " << std::dec << redo.subScn <<
-                " xid: " << redo.xid <<
+                " xid: " << redo.xid.toString() <<
                 " op: " << std::setfill('0') << std::setw(4) << std::hex << redo.opCode <<
                 " cls: " << std::dec << redo.cls <<
                 " rbl: " << std::dec << redo.rbl <<

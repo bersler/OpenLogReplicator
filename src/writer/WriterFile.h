@@ -36,12 +36,12 @@ namespace OpenLogReplicator {
         uint64_t mode;
         uint64_t fill;
         std::string output;
-        std::string outputPath;
-        std::string outputFile;
-        std::string outputFileMask;
+        std::string pathName;
+        std::string fullFileName;
+        std::string fileNameMask;
         std::string timestampFormat;
-        uint64_t outputFileNum;
-        uint64_t outputSize;
+        uint64_t fileNameNum;
+        uint64_t fileSize;
         uint64_t maxFileSize;
         int outputDes;
         uint64_t newLine;

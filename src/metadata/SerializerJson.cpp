@@ -18,8 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../common/Ctx.h"
-#include "../common/OracleIncarnation.h"
 #include "../common/DataException.h"
+#include "../common/OracleIncarnation.h"
 #include "../common/SysCCol.h"
 #include "../common/SysCDef.h"
 #include "../common/SysCol.h"
@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
             ss << R"(,"min-tran":{)" <<
                     R"("seq":)" << std::dec << metadata->minSequence <<
                     R"(,"offset":)" << std::dec << metadata->minOffset <<
-                    R"(,"xid:":")" << metadata->minXid << R"("})";
+                    R"(,"xid:":")" << metadata->minXid.toString() << R"("})";
         }
         ss << R"(,"big-endian":)" << std::dec << (metadata->ctx->isBigEndian() ? 1 : 0) <<
                 R"(,"context":")";
@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
                     R"(","con":)" << std::dec << sysCCol->con <<
                     R"(,"int-col":)" << std::dec << sysCCol->intCol <<
                     R"(,"obj":)" << std::dec << sysCCol->obj <<
-                    R"(,"spare1":)" << std::dec << sysCCol->spare1 << "}";
+                    R"(,"spare1":)" << std::dec << sysCCol->spare1.toString() << "}";
         }
 
         // SYS.CDEF$
@@ -205,7 +205,7 @@ namespace OpenLogReplicator {
                     R"(,"charset-form":)" << std::dec << sysCol->charsetForm <<
                     R"(,"charset-id":)" << std::dec << sysCol->charsetId <<
                     R"(,"null":)" << std::dec << sysCol->null_ <<
-                    R"(,"property":)" << sysCol->property << "}";
+                    R"(,"property":)" << sysCol->property.toString() << "}";
         }
 
         // SYS.DEFERRED_STG$
@@ -221,7 +221,7 @@ namespace OpenLogReplicator {
 
             ss SERIALIZER_ENDL << R"({"row-id":")" << sysDeferredStg->rowId <<
                     R"(","obj":)" << std::dec << sysDeferredStg->obj <<
-                    R"(,"flags-stg":)" << std::dec << sysDeferredStg->flagsStg << "}";
+                    R"(,"flags-stg":)" << std::dec << sysDeferredStg->flagsStg.toString() << "}";
         }
 
         // SYS.ECOL$
@@ -311,7 +311,7 @@ namespace OpenLogReplicator {
                     R"(,"name":")";
             Ctx::writeEscapeValue(ss, sysObj->name);
             ss << R"(","type":)" << std::dec << sysObj->type <<
-                    R"(,"flags":)" << std::dec << sysObj->flags <<
+                    R"(,"flags":)" << std::dec << sysObj->flags.toString() <<
                     R"(,"single":)" << std::dec << static_cast<uint64_t>(sysObj->single) << "}";
         }
 
@@ -331,8 +331,8 @@ namespace OpenLogReplicator {
                     R"(,"data-obj":)" << std::dec << sysTab->dataObj <<
                     R"(,"ts":)" << std::dec << sysTab->ts <<
                     R"(,"clu-cols":)" << std::dec << sysTab->cluCols <<
-                    R"(,"flags":)" << std::dec << sysTab->flags <<
-                    R"(,"property":)" << std::dec << sysTab->property << "}";
+                    R"(,"flags":)" << std::dec << sysTab->flags.toString() <<
+                    R"(,"property":)" << std::dec << sysTab->property.toString() << "}";
         }
 
         // SYS.TABCOMPART$
@@ -419,7 +419,7 @@ namespace OpenLogReplicator {
                     R"(","user":)" << std::dec << sysUser->user <<
                     R"(,"name":")";
             Ctx::writeEscapeValue(ss, sysUser->name);
-            ss << R"(","spare1":)" << std::dec << sysUser->spare1 <<
+            ss << R"(","spare1":)" << std::dec << sysUser->spare1.toString() <<
                     R"(,"single":)" << std::dec << static_cast<uint64_t>(sysUser->single) << "}";
         }
 
@@ -431,8 +431,8 @@ namespace OpenLogReplicator {
         try {
             rapidjson::Document document;
             if (ss.length() == 0 || document.Parse(ss.c_str()).HasParseError())
-                throw DataException("parsing " + name + " at offset: " + std::to_string(document.GetErrorOffset()) + ", message: " +
-                        GetParseError_En(document.GetParseError()));
+                throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
+                                    " - parse error: " + GetParseError_En(document.GetParseError()));
 
             {
                 std::unique_lock<std::mutex> lck(metadata->mtx);
@@ -450,8 +450,8 @@ namespace OpenLogReplicator {
                     }
 
                     if ((metadata->offset & 511) != 0)
-                        throw DataException("invalid offset for: " + name + " - " + std::to_string(metadata->offset) +
-                                " is not a multiplication of 512 - skipping file");
+                        throw DataException(20006, "file: " + name + " - invalid offset: " + std::to_string(metadata->offset) +
+                                            " is not a multiplication of 512");
 
                     metadata->minSequence = ZERO_SEQ;
                     metadata->minOffset = 0;
@@ -552,15 +552,17 @@ namespace OpenLogReplicator {
                     }
 
                     for (SchemaElement *element: metadata->schemaElements) {
-                        if (metadata->ctx->trace >= TRACE_DEBUG)
+                        if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
                             msgs.push_back(
                                     "- creating table schema for owner: " + element->owner + " table: " + element->table +
                                     " options: " + std::to_string(element->options));
 
                         if ((metadata->ctx->flags & REDO_FLAGS_ADAPTIVE_SCHEMA) == 0) {
-                            if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 && metadata->users.find(element->owner) == metadata->users.end())
-                                throw DataException("owner '" + std::string(element->owner) + "' is missing in schema file: " + name +
-                                                    " - recreate schema file (delete old file and force creation of new)");
+                            if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 && metadata->users.find(element->owner) == metadata->users.end()) {
+                                metadata->ctx->hint("recreate schema file (delete old file and force creation of new)");
+                                throw DataException(20007, "file: " + name + " - database schema name '" + std::string(element->owner) +
+                                                    "' is missing in schema file");
+                            }
                         }
 
                         metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr,
@@ -576,7 +578,7 @@ namespace OpenLogReplicator {
                 }
             }
         } catch (DataException& ex) {
-            ERROR(ex.msg)
+            metadata->ctx->error(ex.code, ex.msg);
             return false;
         }
         return true;
@@ -590,7 +592,7 @@ namespace OpenLogReplicator {
             typeObj obj = Ctx::getJsonFieldU32(name, sysCColJson[i], "obj");
             const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(name, sysCColJson[i], "spare1");
             if (spare1Json.Size() != 2)
-                throw DataException("bad JSON in " + name + ", spare1 should be an array with 2 elements");
+                throw DataException(20005, "file: " + name + " - spare1 should be an array with 2 elements");
             uint64_t spare11 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 0);
             uint64_t spare12 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 1);
 
@@ -626,7 +628,7 @@ namespace OpenLogReplicator {
             int64_t null_ = Ctx::getJsonFieldI64(name, sysColJson[i], "null");
             const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(name, sysColJson[i], "property");
             if (propertyJson.Size() != 2)
-                throw DataException("bad JSON in " + name + ", property should be an array with 2 elements");
+                throw DataException(20005, "file: " + name + " - property should be an array with 2 elements");
             uint64_t property1 = Ctx::getJsonFieldU64(name, propertyJson, "property", 0);
             uint64_t property2 = Ctx::getJsonFieldU64(name, propertyJson, "property", 1);
 
@@ -642,7 +644,7 @@ namespace OpenLogReplicator {
 
             const rapidjson::Value& flagsStgJson = Ctx::getJsonFieldA(name, sysDeferredStgJson[i], "flags-stg");
             if (flagsStgJson.Size() != 2)
-                throw DataException("bad JSON in " + name + ", flags-stg should be an array with 2 elements");
+                throw DataException(20005, "file: " + name + " - flags-stg should be an array with 2 elements");
             uint64_t flagsStg1 = Ctx::getJsonFieldU64(name, flagsStgJson, "flags-stg", 0);
             uint64_t flagsStg2 = Ctx::getJsonFieldU64(name, flagsStgJson, "flags-stg", 1);
 
@@ -706,7 +708,7 @@ namespace OpenLogReplicator {
 
             const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysObjJson[i], "flags");
             if (flagsJson.Size() != 2)
-                throw DataException("bad Json in " + name + ", flags should be an array with 2 elements");
+                throw DataException(20005, "file: " + name + " - flags should be an array with 2 elements");
             uint64_t flags1 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 0);
             uint64_t flags2 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 1);
             uint64_t single = Ctx::getJsonFieldU64(name, sysObjJson[i], "single");
@@ -728,13 +730,13 @@ namespace OpenLogReplicator {
 
             const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysTabJson[i], "flags");
             if (flagsJson.Size() != 2)
-                throw DataException("bad JSON in " + name + ", flags should be an array with 2 elements");
+                throw DataException(20005, "file: " + name + " - flags should be an array with 2 elements");
             uint64_t flags1 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 0);
             uint64_t flags2 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 1);
 
             const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(name, sysTabJson[i], "property");
             if (propertyJson.Size() != 2)
-                throw DataException("bad Json in " + name + ", property should be an array with 2 elements");
+                throw DataException(20005, "file: " + name + " - property should be an array with 2 elements");
             uint64_t property1 = Ctx::getJsonFieldU64(name, propertyJson, "property", 0);
             uint64_t property2 = Ctx::getJsonFieldU64(name, propertyJson, "property", 1);
 
@@ -794,7 +796,7 @@ namespace OpenLogReplicator {
 
             const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(name, sysUserJson[i], "spare1");
             if (spare1Json.Size() != 2)
-                throw DataException("bad JSON in " + name + ", spare1 should be an array with 2 elements");
+                throw DataException(20005, "file: " + name + " - spare1 should be an array with 2 elements");
             uint64_t spare11 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 0);
             uint64_t spare12 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 1);
             uint64_t single = Ctx::getJsonFieldU64(name, sysUserJson[i], "single");

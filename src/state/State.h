@@ -27,9 +27,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define STATE_TYPE_DISK 0
 
 namespace OpenLogReplicator {
+    class Ctx;
+
     class State {
+    protected:
+        Ctx* ctx;
+
     public:
-        State();
+        State(Ctx* newCtx);
         virtual ~State();
 
         virtual void list(std::set<std::string>& namesList) = 0;

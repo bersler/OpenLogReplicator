@@ -17,9 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/Ctx.h"
-#include "../common/RuntimeException.h"
-#include "../common/RedoLogRecord.h"
 #include "../common/types.h"
 
 #ifndef OP_CODE_H_
@@ -108,6 +105,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define KDLI_FLG3_VLL           0x80
 
 namespace OpenLogReplicator {
+    class Ctx;
+    class RedoLogRecord;
+
     class OpCode {
     protected:
         static void ktbRedo(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);

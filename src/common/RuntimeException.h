@@ -30,10 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class RuntimeException: public std::exception {
     public:
+        int code;
         std::string msg;
 
-        explicit RuntimeException(const std::string newMsg);
-        explicit RuntimeException(const char* newMsg);
+        explicit RuntimeException(int newCode, const std::string newMsg);
+        explicit RuntimeException(int newCode, const char* newMsg);
         virtual ~RuntimeException();
 
         friend std::ostream& operator<<(std::ostream& os, const RuntimeException& exception);

@@ -58,14 +58,17 @@ namespace OpenLogReplicator {
                 if (stream->isConnected()) {
                     pollQueue();
                 }
+
+            // client got disconnected
             } catch (NetworkException& ex) {
-                // Client got disconnected
+                ctx->warning(ex.code, ex.msg);
                 streaming = false;
             }
         }
 
         if (metadata->firstDataScn != ZERO_SCN) {
-            DEBUG("client requested scn: " << std::dec << metadata->firstDataScn)
+            if (ctx->trace & TRACE_WRITER)
+                ctx->logTrace(TRACE_WRITER, "client requested scn: " + std::to_string(metadata->firstDataScn));
         }
     }
 
@@ -131,7 +134,7 @@ namespace OpenLogReplicator {
         response.Clear();
         if (request.database_name() == database) {
             response.set_code(pb::ResponseCode::STREAMING);
-            INFO("streaming to client")
+            ctx->info(0, "streaming to client");
             streaming = true;
         } else {
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
@@ -168,7 +171,7 @@ namespace OpenLogReplicator {
                             break;
 
                         default:
-                            WARNING("unknown request code: " << request.code())
+                            ctx->warning(60032, "unknown request code: " + request.code());
                             response.Clear();
                             response.set_code(pb::ResponseCode::INVALID_COMMAND);
                             response.SerializeToString(&msgS);
@@ -197,7 +200,7 @@ namespace OpenLogReplicator {
                             break;
 
                         default:
-                            WARNING("unknown request code: " << request.code())
+                            ctx->warning(60032, "unknown request code: " + request.code());
                             response.Clear();
                             response.set_code(pb::ResponseCode::INVALID_COMMAND);
                             response.SerializeToString(&msgS);
@@ -209,14 +212,14 @@ namespace OpenLogReplicator {
                 std::ostringstream ss;
                 ss << "request decoder[" << std::dec << length << "]: ";
                 for (uint64_t i = 0; i < static_cast<uint64_t>(length); ++i)
-                    ss << std::hex  << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(msgR[i]) << " ";
-                WARNING(ss.str())
+                    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(msgR[i]) << " ";
+                ctx->warning(60033, ss.str());
             }
 
         } else if (length == 0) {
-            // No request
+            // no request
         } else if (errno != EAGAIN)
-            throw RuntimeException("socket error: (ret: "+ std::to_string(length) + " errno: " + std::to_string(errno) + ")");
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
     }
 
     void WriterStream::sendMessage(BuilderMsg* msg) {

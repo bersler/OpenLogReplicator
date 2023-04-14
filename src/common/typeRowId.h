@@ -21,6 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <cstring>
 
 #include "Ctx.h"
+#include "DataException.h"
 #include "types.h"
 
 #ifndef TYPE_ROWID_H_
@@ -42,9 +43,9 @@ namespace OpenLogReplicator {
         }
 
         explicit typeRowId(const char* rowid) {
-            if (strlen(rowid) != 18) {
-                ERROR("RowID: incorrect format: " << rowid)
-            }
+            if (strlen(rowid) != 18)
+                throw DataException(20008, "row ID incorrect length: " + std::string(rowid));
+
             dataObj = (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
                       (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
                       (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |

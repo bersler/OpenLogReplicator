@@ -45,134 +45,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OLR_LOCALES_TIMESTAMP                   0
 #define OLR_LOCALES_MOCK                        1
 
-#define ALL(__x)                                {                                                                       \
-                                                    if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                         \
-                                                        std::ostringstream __s;                                         \
-                                                        time_t __now = time(nullptr);                                   \
-                                                        tm __nowTm = *localtime(&__now);                                \
-                                                        char __str[50];                                                 \
-                                                        strftime(__str, sizeof(__str), "%F %T", &__nowTm);              \
-                                                        __s << __str << " [INFO] " << __x << std::endl;                 \
-                                                        std::cerr << __s.str();                                         \
-                                                    } else {                                                            \
-                                                        std::ostringstream __s;                                         \
-                                                        __s << "[INFO] " << __x << std::endl;                           \
-                                                        std::cerr << __s.str();                                         \
-                                                    }                                                                   \
-                                                }
+#define LOG_LEVEL_SILENT                        0
+#define LOG_LEVEL_ERROR                         1
+#define LOG_LEVEL_WARNING                       2
+#define LOG_LEVEL_INFO                          3
+#define LOG_LEVEL_DEBUG                         4
 
-#define ERROR(__x)                              {                                                                       \
-                                                    if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                         \
-                                                        std::ostringstream __s;                                         \
-                                                        time_t __now = time(nullptr);                                   \
-                                                        tm __nowTm = *localtime(&__now);                                \
-                                                        char __str[50];                                                 \
-                                                        strftime(__str, sizeof(__str), "%F %T", &__nowTm);              \
-                                                        __s << __str << " [ERROR] " << __x << std::endl;                \
-                                                        std::cerr << __s.str();                                         \
-                                                    } else {                                                            \
-                                                        std::ostringstream __s;                                         \
-                                                        __s << "[ERROR] " << __x << std::endl;                          \
-                                                        std::cerr << __s.str();                                         \
-                                                    }                                                                   \
-                                                }
-
-#define WARNING(__x)                            {                                                                       \
-                                                    if (ctx->trace >= TRACE_WARNING) {                                  \
-                                                        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::ostringstream __s;                                     \
-                                                            time_t __now = time(nullptr);                               \
-                                                            tm __nowTm = *localtime(&__now);                            \
-                                                            char __str[50];                                             \
-                                                            strftime(__str, sizeof(__str), "%F %T", &__nowTm);          \
-                                                            __s << __str << " [WARNING] " << __x << std::endl;          \
-                                                            std::cerr << __s.str();                                     \
-                                                        } else {                                                        \
-                                                            std::ostringstream __s;                                     \
-                                                            __s << "[WARNING] " << __x << std::endl;                    \
-                                                            std::cerr << __s.str();                                     \
-                                                        }                                                               \
-                                                    }                                                                   \
-                                                }
-
-#define INFO(__x)                               {                                                                       \
-                                                    if (ctx->trace >= TRACE_INFO) {                                     \
-                                                        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::ostringstream __s;                                     \
-                                                            time_t __now = time(nullptr);                               \
-                                                            tm __nowTm = *localtime(&__now);                            \
-                                                            char __str[50];                                             \
-                                                            strftime(__str, sizeof(__str), "%F %T", &__nowTm);          \
-                                                            __s << __str << " [INFO] " << __x << std::endl;             \
-                                                            std::cerr << __s.str();                                     \
-                                                        } else {                                                        \
-                                                            std::ostringstream __s;                                     \
-                                                            __s << "[INFO] " << __x << std::endl;                       \
-                                                            std::cerr << __s.str();                                     \
-                                                        }                                                               \
-                                                    }                                                                   \
-                                                }
-
-#define DEBUG(__x)                              {                                                                       \
-                                                    if (ctx->trace >= TRACE_DEBUG) {                                    \
-                                                        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::ostringstream __s;                                     \
-                                                            time_t __now = time(nullptr);                               \
-                                                            tm __nowTm = *localtime(&__now);                            \
-                                                            char __str[50];                                             \
-                                                            strftime(__str, sizeof(__str), "%F %T", &__nowTm);          \
-                                                            __s << __str << " [DEBUG] " << __x << std::endl;            \
-                                                            std::cerr << __s.str();                                     \
-                                                        } else {                                                        \
-                                                            std::ostringstream __s;                                     \
-                                                            __s << "[DEBUG] " << __x << std::endl;                      \
-                                                            std::cerr << __s.str();                                     \
-                                                        }                                                               \
-                                                    }                                                                   \
-                                                }
-
-#define TRACE(__t,__x)                          {                                                                       \
-                                                    if ((ctx->trace2 & (__t)) != 0) {                                   \
-                                                        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::ostringstream __s;                                     \
-                                                            time_t __now = time(nullptr);                               \
-                                                            tm __nowTm = *localtime(&__now);                            \
-                                                            char __str[50];                                             \
-                                                            strftime(__str, sizeof(__str), "%F %T", &__nowTm);          \
-                                                            __s << __str << " [TRACE] " << __x << std::endl;            \
-                                                            std::cerr << __s.str();                                     \
-                                                        } else {                                                        \
-                                                            std::ostringstream __s;                                     \
-                                                            __s << "[TRACE] " << __x << std::endl;                      \
-                                                            std::cerr << __s.str();                                     \
-                                                        }                                                               \
-                                                    }                                                                   \
-                                                }
-
-#define TRACE_SILENT                            0
-#define TRACE_ERROR                             1
-#define TRACE_WARNING                           2
-#define TRACE_INFO                              3
-#define TRACE_DEBUG                             4
-#define TRACE_MOCK                              0x80000000
-
-#define TRACE2_DML                              0x00000001
-#define TRACE2_DUMP                             0x00000002
-#define TRACE2_LOB                              0x00000004
-#define TRACE2_LWN                              0x00000008
-#define TRACE2_THREADS                          0x00000010
-#define TRACE2_SQL                              0x00000020
-#define TRACE2_FILE                             0x00000040
-#define TRACE2_DISK                             0x00000080
-#define TRACE2_PERFORMANCE                      0x00000100
-#define TRACE2_TRANSACTION                      0x00000200
-#define TRACE2_REDO                             0x00000400
-#define TRACE2_ARCHIVE_LIST                     0x00000800
-#define TRACE2_SCHEMA_LIST                      0x00001000
-#define TRACE2_WRITER                           0x00002000
-#define TRACE2_CHECKPOINT                       0x00004000
-#define TRACE2_SYSTEM                           0x00008000
-#define TRACE2_LOB_DATA                         0x00010000
+#define TRACE_DML                               0x00000001
+#define TRACE_DUMP                              0x00000002
+#define TRACE_LOB                               0x00000004
+#define TRACE_LWN                               0x00000008
+#define TRACE_THREADS                           0x00000010
+#define TRACE_SQL                               0x00000020
+#define TRACE_FILE                              0x00000040
+#define TRACE_DISK                              0x00000080
+#define TRACE_PERFORMANCE                       0x00000100
+#define TRACE_TRANSACTION                       0x00000200
+#define TRACE_REDO                              0x00000400
+#define TRACE_ARCHIVE_LIST                      0x00000800
+#define TRACE_SCHEMA_LIST                       0x00001000
+#define TRACE_WRITER                            0x00002000
+#define TRACE_CHECKPOINT                        0x00004000
+#define TRACE_SYSTEM                            0x00008000
+#define TRACE_LOB_DATA                          0x00010000
 
 #define REDO_FLAGS_ARCH_ONLY                    0x00000001
 #define REDO_FLAGS_SCHEMALESS                   0x00000002
@@ -269,8 +164,8 @@ namespace OpenLogReplicator {
         uint64_t stopCheckpoints;
         uint64_t stopTransactions;
         uint64_t transactionSizeMax;
+        std::atomic<uint64_t> logLevel;
         std::atomic<uint64_t> trace;
-        std::atomic<uint64_t> trace2;
         std::atomic<uint64_t> flags;
         std::atomic<uint64_t> disableChecks;
         std::atomic<bool> hardShutdown;
@@ -362,7 +257,13 @@ namespace OpenLogReplicator {
         void allocateBuffer();
         void signalDump();
 
+        void welcome(const std::string& message);
+        void hint(const std::string& message);
         void error(int code, const std::string& message);
+        void warning(int code, const std::string& message);
+        void info(int code, const std::string& message);
+        void debug(int code, const std::string& message);
+        void logTrace(int mask, const std::string& message);
     };
 }
 

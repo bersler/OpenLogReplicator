@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../builder/Builder.h"
-#include "../common/ConfigurationException.h"
+#include "../common/RuntimeException.h"
 #include "WriterKafka.h"
 
 namespace OpenLogReplicator {
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         if (rk != nullptr)
             rd_kafka_destroy(rk);
 
-        INFO("Kafka producer exit code: " << std::dec << err)
+        ctx->info(0, "Kafka producer exit code: " + std::to_string(err));
     }
 
     void WriterKafka::initialize() {
@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
 
         conf = rd_kafka_conf_new();
         if (conf == nullptr)
-            throw ConfigurationException(1201,"Kafka failed to create configuration, message: " + std::string(errstr));
+            throw RuntimeException(10058, "Kafka failed to create configuration, message: " + std::string(errstr));
 
         std::string maxMessageMbStr(std::to_string(builder->getMaxMessageMb() * 1024 * 1024));
         std::string maxMessagesStr(std::to_string(maxMessages));
@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
             rd_kafka_conf_set(conf, "group.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             rd_kafka_conf_set(conf, "message.max.bytes", maxMessageMbStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             rd_kafka_conf_set(conf, "queue.buffering.max.messages", maxMessagesStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
-            throw ConfigurationException(1202, "Kafka message: " + std::string(errstr));
+            throw RuntimeException(10059, "Kafka message: " + std::string(errstr));
         }
 
         rd_kafka_conf_set_opaque(conf, this);
@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
 
         rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
         if (rk == nullptr)
-            throw ConfigurationException(1203, "Kafka failed to create producer, message: " + std::string(errstr));
+            throw RuntimeException(10060, "Kafka failed to create producer, message: " + std::string(errstr));
         conf = nullptr;
 
         rkt = rd_kafka_topic_new(rk, topic.c_str(), nullptr);
@@ -82,9 +82,8 @@ namespace OpenLogReplicator {
     void WriterKafka::dr_msg_cb(rd_kafka_t* rkCb __attribute__((unused)), const rd_kafka_message_t* rkmessage, void* opaque __attribute__((unused))) {
         auto msg = reinterpret_cast<BuilderMsg*>(rkmessage->_private);
         auto writer = reinterpret_cast<Writer*>(opaque);
-        Ctx* ctx = writer->ctx;
         if (rkmessage->err) {
-            WARNING("Kafka: " << msg->id << " delivery failed: " << rd_kafka_err2str(rkmessage->err))
+            writer->ctx->warning(70008, "Kafka: " + std::to_string(msg->id) + " delivery failed: " + rd_kafka_err2str(rkmessage->err));
         } else {
             writer->confirmMessage(msg);
         }
@@ -92,24 +91,24 @@ namespace OpenLogReplicator {
 
     void WriterKafka::error_cb(rd_kafka_t* rkCb, int err, const char* reason, void* opaque) {
         auto writer = reinterpret_cast<Writer*>(opaque);
-        Ctx* ctx = writer->ctx;
 
-        WARNING("Kafka: " << rd_kafka_err2name((rd_kafka_resp_err_t)err) << ", reason: " << reason)
+        writer->ctx->warning(70009, "Kafka: " + std::string(rd_kafka_err2name((rd_kafka_resp_err_t)err)) + ", reason: " + reason);
 
         if (err != RD_KAFKA_RESP_ERR__FATAL)
             return;
 
         char errstrCb[512];
         rd_kafka_resp_err_t orig_err = rd_kafka_fatal_error(rkCb, errstrCb, sizeof(errstrCb));
-        ERROR("Kafka: fatal error: " << rd_kafka_err2name(orig_err) << ", reason: " << errstrCb)
+        writer->ctx->error(10057, "Kafka: fatal error: " + std::string(rd_kafka_err2name(orig_err)) + ", reason: " + errstrCb);
 
-        ctx->stopHard();
+        writer->ctx->stopHard();
     }
 
     void WriterKafka::logger_cb(const rd_kafka_t* rkCb, int level, const char* fac, const char* buf) {
         WriterKafka* writer = (WriterKafka*) rd_kafka_opaque(rkCb);
-        Ctx* ctx = writer->ctx;
-        TRACE(TRACE2_WRITER, "WRITER: " << std::dec << level << ", rk: " << (rkCb ? rd_kafka_name(rkCb) : nullptr) << ", fac: " << fac << ", err: " << buf)
+        if (writer->ctx->trace & TRACE_WRITER)
+            writer->ctx->logTrace(TRACE_WRITER, std::to_string(level) + ", rk: " + (rkCb ? rd_kafka_name(rkCb) : nullptr) +
+                                  ", fac: " + fac + ", err: " + buf);
     }
 
     void WriterKafka::sendMessage(BuilderMsg* msg) {
@@ -120,16 +119,14 @@ namespace OpenLogReplicator {
             // rd_kafka_resp_err_t err = (rd_kafka_resp_err_t)rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, 0, msg->decoder, msg->length, nullptr, 0, msg);
 
             if (err) {
-                WARNING("Failed to produce to topic " << topic.c_str() << ", message: " << rd_kafka_err2str(err))
+                ctx->warning(60031, "failed to produce to topic " + topic + ", message: " + rd_kafka_err2str(err));
 
                 if (err == RD_KAFKA_RESP_ERR__QUEUE_FULL) {
-                    WARNING("Queue, full, sleeping " << (ctx->pollIntervalUs / 1000) << "ms, then retrying")
+                    ctx->warning(60031, "queue, full, sleeping " + std::to_string(ctx->pollIntervalUs / 1000) + " ms, then retrying");
                     rd_kafka_poll(rk, static_cast<int>((ctx->pollIntervalUs / 1000)));
                     continue;
-                } else {
-                    WARNING("OTHER ERROR?")
+                } else
                     break;
-                }
             } else
                 break;
         }

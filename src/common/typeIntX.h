@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iostream>
 #include <string>
 
-#include "DataException.h"
-
 #ifndef TYPE_INTX_T_H_
 #define TYPE_INTX_T_H_
 
@@ -153,15 +151,16 @@ namespace OpenLogReplicator {
             return true;
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const typeIntX& other) {
-            os << "[";
+        std::string toString(void) const {
+            std::ostringstream ss;
+            ss << "[";
             for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i) {
                 if (i > 0)
-                    os << ",";
-                os << std::dec << other.data[i];
+                    ss << ",";
+                ss << std::dec << data[i];
             }
-            os << "]";
-            return os;
+            ss << "]";
+            return ss.str();
         }
     };
 }

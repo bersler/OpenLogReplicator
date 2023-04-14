@@ -136,7 +136,8 @@ namespace OpenLogReplicator {
     void OpCode0513::dumpMsgSessionSerial(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (ctx->dumpRedoLog >= 1) {
             if (fieldLength < 4) {
-                WARNING("too short session number: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+                ctx->warning(70001,"too short field session serial: " + std::to_string(fieldLength) + " offset: " +
+                             std::to_string(redoLogRecord->dataOffset));
                 return;
             }
 
@@ -146,7 +147,8 @@ namespace OpenLogReplicator {
                 sessionNumber = ctx->read16(redoLogRecord->data + fieldPos + 0);
             else {
                 if (fieldLength < 8) {
-                    WARNING("too short session number: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+                    ctx->warning(70001,"too short field session number: " + std::to_string(fieldLength) + " offset: " +
+                                 std::to_string(redoLogRecord->dataOffset));
                     return;
                 }
                 sessionNumber = ctx->read32(redoLogRecord->data + fieldPos + 4);

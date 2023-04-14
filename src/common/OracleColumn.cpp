@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/DataException.h"
 #include "../common/SysCol.h"
 #include "OracleColumn.h"
 
@@ -43,8 +42,6 @@ namespace OpenLogReplicator {
             unused(newUnused),
             added(newAdded),
             guard(newGuard) {
-        if (segCol > 1000)
-            throw DataException("invalid segCol value (" + std::to_string(segCol) + "), metadata error");
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleColumn& column) {

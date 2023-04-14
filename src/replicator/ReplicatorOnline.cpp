@@ -553,7 +553,8 @@ namespace OpenLogReplicator {
         archReader = readerCreate(0);
         {
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INFORMATION)
+            if (ctx->trace & TRACE_SQL)
+                ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_INFORMATION);
             stmt.createStatement(SQL_GET_DATABASE_INFORMATION);
             uint64_t logMode; stmt.defineUInt64(1, logMode);
             uint64_t supplementalLogMin; stmt.defineUInt64(2, supplementalLogMin);
@@ -566,17 +567,17 @@ namespace OpenLogReplicator {
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
-                    ERROR("HINT: run: SHUTDOWN IMMEDIATE;")
-                    ERROR("HINT: run: STARTUP MOUNT;")
-                    ERROR("HINT: run: ALTER DATABASE ARCHIVELOG;")
-                    ERROR("HINT: run: ALTER DATABASE OPEN;")
-                    throw RuntimeException("database not in ARCHIVELOG mode");
+                    ctx->hint("run: SHUTDOWN IMMEDIATE;");
+                    ctx->hint("run: STARTUP MOUNT;");
+                    ctx->hint("run: ALTER DATABASE ARCHIVELOG;");
+                    ctx->hint("run: ALTER DATABASE OPEN;");
+                    throw RuntimeException(10021, "database not in ARCHIVELOG mode");
                 }
 
                 if (supplementalLogMin == 0) {
-                    ERROR("HINT: run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;")
-                    ERROR("HINT: run: ALTER SYSTEM ARCHIVE LOG CURRENT;")
-                    throw RuntimeException("SUPPLEMENTAL_LOG_DATA_MIN missing");
+                    ctx->hint("run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;");
+                    ctx->hint("run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
+                    throw RuntimeException(10022, "SUPPLEMENTAL_LOG_DATA_MIN missing");
                 }
 
                 if (bigEndian)
@@ -591,7 +592,8 @@ namespace OpenLogReplicator {
                 if (memcmp(banner, "Oracle Database 11g", 19) != 0) {
                     ctx->version12 = true;
                     DatabaseStatement stmt2(conn);
-                    TRACE(TRACE2_SQL, "SQL: " << SQL_GET_CON_INFO)
+                    if (ctx->trace & TRACE_SQL)
+                        ctx->logTrace(TRACE_SQL, SQL_GET_CON_INFO);
                     stmt2.createStatement(SQL_GET_CON_INFO);
                     typeConId conId; stmt2.defineInt16(1, conId);
                     char conNameChar[81]; stmt2.defineString(2, conNameChar, sizeof(conNameChar));
@@ -602,10 +604,11 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                INFO("version: " << std::dec << banner << ", context: " << metadata->context << ", resetlogs: " << std::dec << metadata->resetlogs <<
-                        ", activation: " << metadata->activation << ", con_id: " << metadata->conId << ", con_name: " << metadata->conName)
+                ctx->info(0, "version: " + std::string(banner) + ", context: " + metadata->context + ", resetlogs: " +
+                          std::to_string(metadata->resetlogs) + ", activation: " + std::to_string(metadata->activation) + ", con_id: " +
+                          std::to_string(metadata->conId) + ", con_name: " + metadata->conName);
             } else {
-                throw RuntimeException("trying to read SYS.V_$DATABASE");
+                throw RuntimeException(10023, "no data in SYS.V_$DATABASE");
             }
         }
 
@@ -631,13 +634,13 @@ namespace OpenLogReplicator {
         if (metadata->dbRecoveryFileDest.length() > 0 && metadata->dbRecoveryFileDest.back() == '/') {
             while (metadata->dbRecoveryFileDest.length() > 0 && metadata->dbRecoveryFileDest.back() == '/')
                 metadata->dbRecoveryFileDest.pop_back();
-            WARNING("stripping trailing '/' from db_recovery_file_dest parameter; new value: " << metadata->dbRecoveryFileDest)
+            ctx->warning(60026, "stripping trailing '/' from db_recovery_file_dest parameter; new value: " + metadata->dbRecoveryFileDest);
         }
         metadata->logArchiveDest = getParameterValue("log_archive_dest");
         if (metadata->logArchiveDest.length() > 0 && metadata->logArchiveDest.back() == '/') {
             while (metadata->logArchiveDest.length() > 0 && metadata->logArchiveDest.back() == '/')
                 metadata->logArchiveDest.pop_back();
-            WARNING("stripping trailing '/' from log_archive_dest parameter; new value: " << metadata->logArchiveDest)
+            ctx->warning(60026, "stripping trailing '/' from log_archive_dest parameter; new value: " + metadata->logArchiveDest);
         }
         metadata->dbBlockChecksum = getParameterValue("db_block_checksum");
         std::transform(metadata->dbBlockChecksum.begin(), metadata->dbBlockChecksum.end(), metadata->dbBlockChecksum.begin(), ::toupper);
@@ -646,8 +649,8 @@ namespace OpenLogReplicator {
         metadata->nlsCharacterSet = getPropertyValue("NLS_CHARACTERSET");
         metadata->nlsNcharCharacterSet = getPropertyValue("NLS_NCHAR_CHARACTERSET");
 
-        INFO("loading character mapping for " << metadata->nlsCharacterSet)
-        INFO("loading character mapping for " << metadata->nlsNcharCharacterSet)
+        ctx->info(0, "loading character mapping for " + metadata->nlsCharacterSet);
+        ctx->info(0, "loading character mapping for " + metadata->nlsNcharCharacterSet);
         metadata->setNlsCharset(metadata->nlsCharacterSet, metadata->nlsNcharCharacterSet);
         metadata->onlineData = true;
     }
@@ -657,10 +660,12 @@ namespace OpenLogReplicator {
         if (metadata->startTime.length() > 0) {
             DatabaseStatement stmt(conn);
             if (standby)
-                throw RuntimeException("can't position by time for standby database");
+                throw RuntimeException(10024, "can't position by time for standby database");
 
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME)
-            TRACE(TRACE2_SQL, "PARAM1: " << metadata->startTime)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SCN_FROM_TIME);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + metadata->startTime);
+            }
             stmt.createStatement(SQL_GET_SCN_FROM_TIME);
 
             std::ostringstream ss;
@@ -668,33 +673,36 @@ namespace OpenLogReplicator {
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
-                throw RuntimeException("can't find scn for: " + metadata->startTime);
+                throw RuntimeException(10025, "can't find scn for: " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
         } else if (metadata->startTimeRel > 0) {
             DatabaseStatement stmt(conn);
             if (standby)
-                throw RuntimeException("can't position by relative time for standby database");
+                throw RuntimeException(10026, "can't position by relative time for standby database");
 
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME_RELATIVE)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << metadata->startTimeRel)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SCN_FROM_TIME_RELATIVE);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(metadata->startTimeRel));
+            }
             stmt.createStatement(SQL_GET_SCN_FROM_TIME_RELATIVE);
             stmt.bindUInt64(1, metadata->startTimeRel);
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
-                throw RuntimeException("can't find scn for " + metadata->startTime);
+                throw RuntimeException(10025, "can't find scn for " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
         // NOW
         } else if (metadata->firstDataScn == ZERO_SCN || metadata->firstDataScn == 0) {
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_SCN)
+            if (ctx->trace & TRACE_SQL)
+                ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_SCN);
             stmt.createStatement(SQL_GET_DATABASE_SCN);
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
-                throw RuntimeException("can't find database current scn");
+                throw RuntimeException(10029, "can't find database current scn");
             metadata->firstDataScn = firstDataScn;
         }
 
@@ -706,19 +714,23 @@ namespace OpenLogReplicator {
         } else {
             DatabaseStatement stmt(conn);
             if (standby) {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN_STANDBY)
-                TRACE(TRACE2_SQL, "PARAM1: " << std::dec << metadata->firstDataScn)
-                TRACE(TRACE2_SQL, "PARAM2: " << std::dec << metadata->firstDataScn)
-                TRACE(TRACE2_SQL, "PARAM3: " << std::dec << metadata->resetlogs)
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(metadata->firstDataScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(metadata->firstDataScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(metadata->resetlogs));
+                }
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
                 stmt.bindUInt64(1, metadata->firstDataScn);
                 stmt.bindUInt64(2, metadata->firstDataScn);
                 stmt.bindUInt32(3, metadata->resetlogs);
             } else {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN)
-                TRACE(TRACE2_SQL, "PARAM1: " << std::dec << metadata->firstDataScn)
-                TRACE(TRACE2_SQL, "PARAM2: " << std::dec << metadata->firstDataScn)
-                TRACE(TRACE2_SQL, "PARAM3: " << std::dec << metadata->resetlogs)
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_SEQUENCE_FROM_SCN);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(metadata->firstDataScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(metadata->firstDataScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(metadata->resetlogs));
+                }
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN);
                 stmt.bindUInt64(1, metadata->firstDataScn);
                 stmt.bindUInt64(2, metadata->firstDataScn);
@@ -727,19 +739,19 @@ namespace OpenLogReplicator {
             typeSeq sequence; stmt.defineUInt32(1, sequence);
 
             if (!stmt.executeQuery())
-                throw RuntimeException("getting database sequence for scn: " + std::to_string(metadata->firstDataScn));
+                throw RuntimeException(10030, "getting database sequence for scn: " + std::to_string(metadata->firstDataScn));
 
             metadata->setSeqOffset(sequence, 0);
-            INFO("starting sequence not found - starting with new batch with seq: " << std::dec << metadata->sequence)
+            ctx->info(0, "starting sequence not found - starting with new batch with seq: " + std::to_string(metadata->sequence));
         }
 
         if (metadata->firstDataScn == ZERO_SCN)
-            throw RuntimeException("getting database scn");
+            throw RuntimeException(10031, "getting database scn");
     }
 
     bool ReplicatorOnline::checkConnection() {
         if (!conn->connected) {
-            INFO("connecting to Oracle instance of " << database << " to " << conn->connectString)
+            ctx->info(0, "connecting to Oracle instance of " + database + " to " + conn->connectString);
         }
 
         while (!ctx->softShutdown) {
@@ -747,13 +759,15 @@ namespace OpenLogReplicator {
                 try {
                     conn->connect();
                 } catch (RuntimeException& ex) {
+                    ctx->error(ex.code, ex.msg);
                 }
             }
 
             if (conn->connected) {
                 try {
                     DatabaseStatement stmt(conn);
-                    TRACE(TRACE2_SQL, "SQL: " << SQL_CHECK_CONNECTION)
+                    if (ctx->trace & TRACE_SQL)
+                        ctx->logTrace(TRACE_SQL, SQL_CHECK_CONNECTION);
                     stmt.createStatement(SQL_CHECK_CONNECTION);
                     uint64_t dummy; stmt.defineUInt64(1, dummy);
 
@@ -761,14 +775,15 @@ namespace OpenLogReplicator {
                 } catch (RuntimeException& ex) {
                     conn->disconnect();
                     usleep(ctx->redoReadSleepUs);
-                    INFO("re-connecting to Oracle instance of " << database << " to " << conn->connectString)
+                    ctx->info(0, "reconnecting to Oracle instance of " + database + " to " + conn->connectString);
                     continue;
                 }
 
                 return true;
             }
 
-            DEBUG("cannot connect to database, retry in 5 sec.")
+            if (ctx->trace & TRACE_REDO)
+                ctx->logTrace(TRACE_REDO, "cannot connect to database, retry in 5 sec.");
             sleep(5);
         }
 
@@ -783,8 +798,10 @@ namespace OpenLogReplicator {
     std::string ReplicatorOnline::getParameterValue(const char* parameter) const {
         char value[VPARAMETER_LENGTH + 1];
         DatabaseStatement stmt(conn);
-        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARAMETER)
-        TRACE(TRACE2_SQL, "PARAM1: " << parameter)
+        if (ctx->trace & TRACE_SQL) {
+            ctx->logTrace(TRACE_SQL, SQL_GET_PARAMETER);
+            ctx->logTrace(TRACE_SQL, "PARAM1: " + std::string(parameter));
+        }
         stmt.createStatement(SQL_GET_PARAMETER);
         stmt.bindString(1, parameter);
         stmt.defineString(1, value, sizeof(value));
@@ -793,14 +810,16 @@ namespace OpenLogReplicator {
             return value;
 
         // No value found
-        throw RuntimeException(std::string("can't get parameter value for ") + parameter);
+        throw RuntimeException(10032, "can't get parameter value for " + std::string(parameter));
     }
 
     std::string ReplicatorOnline::getPropertyValue(const char* property) const {
         char value[VPROPERTY_LENGTH + 1];
         DatabaseStatement stmt(conn);
-        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PROPERTY)
-        TRACE(TRACE2_SQL, "PARAM1: " << property)
+        if (ctx->trace & TRACE_SQL) {
+            ctx->logTrace(TRACE_SQL, SQL_GET_PROPERTY);
+            ctx->logTrace(TRACE_SQL, "PARAM1: " + std::string(property));
+        }
         stmt.createStatement(SQL_GET_PROPERTY);
         stmt.bindString(1, property);
         stmt.defineString(1, value, sizeof(value));
@@ -809,26 +828,27 @@ namespace OpenLogReplicator {
             return value;
 
         // No value found
-        throw RuntimeException(std::string("can't get proprty value for ") + property);
+        throw RuntimeException(10033, "can't get property value for " + std::string(property));
     }
 
     void ReplicatorOnline::checkTableForGrants(const char* tableName) {
         try {
             std::string query("SELECT 1 FROM " + std::string(tableName) + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << query)
+            if (ctx->trace & TRACE_SQL)
+                ctx->logTrace(TRACE_SQL, query);
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
 
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
             if (metadata->conId > 0) {
-                ERROR("HINT: run: ALTER SESSION SET CONTAINER = " << metadata->conName << ";")
-                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << conn->user << ";")
+                ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
+                ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
             } else {
-                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << conn->user << ";")
+                ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
             }
-            throw RuntimeException("grants missing");
+            throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
         }
     }
 
@@ -836,19 +856,20 @@ namespace OpenLogReplicator {
         try {
             std::string query("SELECT 1 FROM " + std::string(tableName) + " AS OF SCN " + std::to_string(scn) + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << query)
+            if (ctx->trace & TRACE_SQL)
+                ctx->logTrace(TRACE_SQL, query);
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
 
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
             if (metadata->conId > 0) {
-                ERROR("HINT: run: ALTER SESSION SET CONTAINER = " << metadata->conName << ";")
-                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << conn->user << ";")
+                ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
+                ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
             } else {
-                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << conn->user << ";")
+                ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
             }
-            throw RuntimeException("grants missing");
+            throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
         }
     }
 
@@ -858,7 +879,7 @@ namespace OpenLogReplicator {
         if (!checkConnection())
             return;
 
-        INFO("verifying schema for SCN: " << std::dec << currentScn)
+        ctx->info(0, "verifying schema for SCN: " + std::to_string(currentScn));
 
         Schema otherSchema(ctx, metadata->locales);
         try {
@@ -868,12 +889,13 @@ namespace OpenLogReplicator {
             std::string errMsg;
             bool result = metadata->schema->compare(&otherSchema, errMsg);
             if (result) {
-                WARNING("Schema incorrect: " << errMsg)
+                ctx->warning(70000, "schema incorrect: " + errMsg);
             }
         } catch (RuntimeException& e) {
-            WARNING("aborting compare")
+            ctx->error(e.code, e.msg);
         } catch (std::bad_alloc& ex) {
-            ERROR("memory allocation failed: " << ex.what())
+            ctx->error(10018, "memory allocation failed: " + std::string(ex.what()));
+            ctx->stopHard();
         }
     }
 
@@ -881,7 +903,7 @@ namespace OpenLogReplicator {
         if (!checkConnection())
             return;
 
-        INFO("reading dictionaries for scn: " << std::dec << metadata->firstDataScn)
+        ctx->info(0, "reading dictionaries for scn: " + std::to_string(metadata->firstDataScn));
 
         std::list<std::string> msgs;
         {
@@ -899,19 +921,22 @@ namespace OpenLogReplicator {
         }
 
         for (const auto& msg: msgs) {
-            INFO("- found: " << msg);
+            ctx->info(0, "- found: " + msg);
         }
     }
 
     void ReplicatorOnline::readSystemDictionariesMetadata(Schema* schema, typeScn targetScn) {
-        DEBUG("- reading metadata")
+        if (ctx->trace & TRACE_REDO)
+            ctx->logTrace(TRACE_REDO, "reading metadata");
 
         try {
             DatabaseStatement stmtTs(conn);
 
             // Reading SYS.TS$
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TS)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TS);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+            }
             stmtTs.createStatement(SQL_GET_SYS_TS);
             stmtTs.bindUInt64(1, targetScn);
             char tsRowid[19]; stmtTs.defineString(1, tsRowid, sizeof(tsRowid));
@@ -925,28 +950,33 @@ namespace OpenLogReplicator {
                 retTs = stmtTs.next();
             }
         } catch (RuntimeException& ex) {
-            ERROR(ex.msg)
-            throw RuntimeException("Error reading metadata from flashback, try some later scn for start");
+            ctx->error(ex.code, ex.msg);
+            throw RuntimeException(10035, "can't read metadata from flashback, try some later scn for start");
         }
     }
 
     void ReplicatorOnline::readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj) {
-        DEBUG("read dictionaries for user: " << std::dec << user << ", object: " << obj)
+        if (ctx->trace & TRACE_REDO)
+            ctx->logTrace(TRACE_REDO, "read dictionaries for user: " + std::to_string(user) + ", object: " + std::to_string(obj));
 
         // Reading SYS.CCOL$
         DatabaseStatement stmtCCol(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_CCOL_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CCOL_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtCCol.createStatement(SQL_GET_SYS_CCOL_OBJ);
             stmtCCol.bindUInt64(1, targetScn);
             stmtCCol.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_CCOL_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CCOL_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtCCol.createStatement(SQL_GET_SYS_CCOL_USER);
             stmtCCol.bindUInt64(1, targetScn);
             stmtCCol.bindUInt64(2, targetScn);
@@ -971,17 +1001,21 @@ namespace OpenLogReplicator {
         // Reading SYS.CDEF$
         DatabaseStatement stmtCDef(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_CDEF_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CDEF_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtCDef.createStatement(SQL_GET_SYS_CDEF_OBJ);
             stmtCDef.bindUInt64(1, targetScn);
             stmtCDef.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_CDEF_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CDEF_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtCDef.createStatement(SQL_GET_SYS_CDEF_USER);
             stmtCDef.bindUInt64(1, targetScn);
             stmtCDef.bindUInt64(2, targetScn);
@@ -1002,17 +1036,21 @@ namespace OpenLogReplicator {
         // Reading SYS.COL$
         DatabaseStatement stmtCol(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_COL_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_COL_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtCol.createStatement(SQL_GET_SYS_COL_OBJ);
             stmtCol.bindUInt64(1, targetScn);
             stmtCol.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_COL_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_COL_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtCol.createStatement(SQL_GET_SYS_COL_USER);
             stmtCol.bindUInt64(1, targetScn);
             stmtCol.bindUInt64(2, targetScn);
@@ -1050,17 +1088,21 @@ namespace OpenLogReplicator {
         // Reading SYS.DEFERRED_STG$
         DatabaseStatement stmtDeferredStg(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_DEFERRED_STG_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_DEFERRED_STG_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtDeferredStg.createStatement(SQL_GET_SYS_DEFERRED_STG_OBJ);
             stmtDeferredStg.bindUInt64(1, targetScn);
             stmtDeferredStg.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_DEFERRED_STG_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_DEFERRED_STG_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtDeferredStg.createStatement(SQL_GET_SYS_DEFERRED_STG_USER);
             stmtDeferredStg.bindUInt64(1, targetScn);
             stmtDeferredStg.bindUInt64(2, targetScn);
@@ -1084,17 +1126,21 @@ namespace OpenLogReplicator {
         DatabaseStatement stmtECol(conn);
         if (ctx->version12) {
             if (obj != 0) {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_ECOL_OBJ)
-                TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-                TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_SYS_ECOL_OBJ);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+                }
                 stmtECol.createStatement(SQL_GET_SYS_ECOL_OBJ);
                 stmtECol.bindUInt64(1, targetScn);
                 stmtECol.bindUInt32(2, obj);
             } else {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_ECOL_USER)
-                TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-                TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-                TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_SYS_ECOL_USER);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+                }
                 stmtECol.createStatement(SQL_GET_SYS_ECOL_USER);
                 stmtECol.bindUInt64(1, targetScn);
                 stmtECol.bindUInt64(2, targetScn);
@@ -1102,17 +1148,21 @@ namespace OpenLogReplicator {
             }
         } else {
             if (obj != 0) {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_ECOL11_OBJ)
-                TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-                TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_SYS_ECOL11_OBJ);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+                }
                 stmtECol.createStatement(SQL_GET_SYS_ECOL11_OBJ);
                 stmtECol.bindUInt64(1, targetScn);
                 stmtECol.bindUInt32(2, obj);
             } else {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_ECOL11_USER)
-                TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-                TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-                TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_SYS_ECOL11_USER);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                    ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+                }
                 stmtECol.createStatement(SQL_GET_SYS_ECOL11_USER);
                 stmtECol.bindUInt64(1, targetScn);
                 stmtECol.bindUInt64(2, targetScn);
@@ -1136,17 +1186,21 @@ namespace OpenLogReplicator {
         // Reading SYS.LOB$
         DatabaseStatement stmtLob(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtLob.createStatement(SQL_GET_SYS_LOB_OBJ);
             stmtLob.bindUInt64(1, targetScn);
             stmtLob.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtLob.createStatement(SQL_GET_SYS_LOB_USER);
             stmtLob.bindUInt64(1, targetScn);
             stmtLob.bindUInt64(2, targetScn);
@@ -1169,20 +1223,24 @@ namespace OpenLogReplicator {
         // Reading SYS.LOBCOMPPART$
         DatabaseStatement stmtLobCompPart(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_COMP_PART_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_COMP_PART_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(obj));
+            }
             stmtLobCompPart.createStatement(SQL_GET_SYS_LOB_COMP_PART_OBJ);
             stmtLobCompPart.bindUInt64(1, targetScn);
             stmtLobCompPart.bindUInt64(2, targetScn);
             stmtLobCompPart.bindUInt32(3, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_COMP_PART_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_COMP_PART_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM4: " + std::to_string(user));
+            }
             stmtLobCompPart.createStatement(SQL_GET_SYS_LOB_COMP_PART_USER);
             stmtLobCompPart.bindUInt64(1, targetScn);
             stmtLobCompPart.bindUInt64(2, targetScn);
@@ -1203,14 +1261,16 @@ namespace OpenLogReplicator {
         // Reading SYS.LOBFRAG$
         DatabaseStatement stmtLobFrag(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_FRAG_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << obj)
-            TRACE(TRACE2_SQL, "PARAM5: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM6: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM7: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_FRAG_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM4: " + std::to_string(obj));
+                ctx->logTrace(TRACE_SQL, "PARAM5: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM6: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM7: " + std::to_string(obj));
+            }
             stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_OBJ);
             stmtLobFrag.bindUInt64(1, targetScn);
             stmtLobFrag.bindUInt64(2, targetScn);
@@ -1220,16 +1280,18 @@ namespace OpenLogReplicator {
             stmtLobFrag.bindUInt64(6, targetScn);
             stmtLobFrag.bindUInt32(7, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_FRAG_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM5: " << std::dec << user)
-            TRACE(TRACE2_SQL, "PARAM6: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM7: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM8: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM9: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_FRAG_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM4: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM5: " + std::to_string(user));
+                ctx->logTrace(TRACE_SQL, "PARAM6: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM7: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM8: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM9: " + std::to_string(user));
+            }
             stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_USER);
             stmtLobFrag.bindUInt64(1, targetScn);
             stmtLobFrag.bindUInt64(2, targetScn);
@@ -1256,17 +1318,21 @@ namespace OpenLogReplicator {
         // Reading SYS.TAB$
         DatabaseStatement stmtTab(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TAB_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TAB_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtTab.createStatement(SQL_GET_SYS_TAB_OBJ);
             stmtTab.bindUInt64(1, targetScn);
             stmtTab.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TAB_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TAB_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtTab.createStatement(SQL_GET_SYS_TAB_USER);
             stmtTab.bindUInt64(1, targetScn);
             stmtTab.bindUInt64(2, targetScn);
@@ -1295,17 +1361,21 @@ namespace OpenLogReplicator {
         // Reading SYS.TABCOMPART$
         DatabaseStatement stmtTabComPart(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABCOMPART_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABCOMPART_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtTabComPart.createStatement(SQL_GET_SYS_TABCOMPART_OBJ);
             stmtTabComPart.bindUInt64(1, targetScn);
             stmtTabComPart.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABCOMPART_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABCOMPART_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtTabComPart.createStatement(SQL_GET_SYS_TABCOMPART_USER);
             stmtTabComPart.bindUInt64(1, targetScn);
             stmtTabComPart.bindUInt64(2, targetScn);
@@ -1327,17 +1397,21 @@ namespace OpenLogReplicator {
         // Reading SYS.TABPART$
         DatabaseStatement stmtTabPart(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABPART_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABPART_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtTabPart.createStatement(SQL_GET_SYS_TABPART_OBJ);
             stmtTabPart.bindUInt64(1, targetScn);
             stmtTabPart.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABPART_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABPART_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtTabPart.createStatement(SQL_GET_SYS_TABPART_USER);
             stmtTabPart.bindUInt64(1, targetScn);
             stmtTabPart.bindUInt64(2, targetScn);
@@ -1359,17 +1433,21 @@ namespace OpenLogReplicator {
         // Reading SYS.TABSUBPART$
         DatabaseStatement stmtTabSubPart(conn);
         if (obj != 0) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABSUBPART_OBJ)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+                if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABSUBPART_OBJ);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
+            }
             stmtTabSubPart.createStatement(SQL_GET_SYS_TABSUBPART_OBJ);
             stmtTabSubPart.bindUInt64(1, targetScn);
             stmtTabSubPart.bindUInt32(2, obj);
         } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABSUBPART_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABSUBPART_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
+            }
             stmtTabSubPart.createStatement(SQL_GET_SYS_TABSUBPART_USER);
             stmtTabSubPart.bindUInt64(1, targetScn);
             stmtTabSubPart.bindUInt64(2, targetScn);
@@ -1393,15 +1471,19 @@ namespace OpenLogReplicator {
         std::string ownerRegexp("^" + owner + "$");
         std::string tableRegexp("^" + table + "$");
         bool single = ((options & OPTIONS_SYSTEM_TABLE) != 0);
-        DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << std::dec << static_cast<uint64_t>(options))
+        if (ctx->trace & TRACE_REDO)
+            ctx->logTrace(TRACE_REDO, "read dictionaries for owner: " + owner + ", table: " + table + ", options: " +
+                          std::to_string(static_cast<uint64_t>(options)));
 
         try {
             DatabaseStatement stmtUser(conn);
 
             // Reading SYS.USER$
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_USER)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            TRACE(TRACE2_SQL, "PARAM2: " << ownerRegexp)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_SYS_USER);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                ctx->logTrace(TRACE_SQL, "PARAM2: " + ownerRegexp);
+            }
             stmtUser.createStatement(SQL_GET_SYS_USER);
             stmtUser.bindUInt64(1, targetScn);
             stmtUser.bindString(2, ownerRegexp);
@@ -1424,17 +1506,21 @@ namespace OpenLogReplicator {
                 DatabaseStatement stmtObj(conn);
                 // Reading SYS.OBJ$
                 if ((options & OPTIONS_SYSTEM_TABLE) == 0) {
-                    TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_OBJ_USER)
-                    TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-                    TRACE(TRACE2_SQL, "PARAM2: " << std::dec << userUser)
+                    if (ctx->trace & TRACE_SQL) {
+                        ctx->logTrace(TRACE_SQL, SQL_GET_SYS_OBJ_USER);
+                        ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                        ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(userUser));
+                    }
                     stmtObj.createStatement(SQL_GET_SYS_OBJ_USER);
                     stmtObj.bindUInt64(1, targetScn);
                     stmtObj.bindUInt32(2, userUser);
                 } else {
-                    TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_OBJ_NAME)
-                    TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-                    TRACE(TRACE2_SQL, "PARAM2: " << std::dec << userUser)
-                    TRACE(TRACE2_SQL, "PARAM3: " << table)
+                    if (ctx->trace & TRACE_SQL) {
+                        ctx->logTrace(TRACE_SQL, SQL_GET_SYS_OBJ_NAME);
+                        ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                        ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(userUser));
+                        ctx->logTrace(TRACE_SQL, "PARAM3: " + table);
+                    }
                     stmtObj.createStatement(SQL_GET_SYS_OBJ_NAME);
                     stmtObj.bindUInt64(1, targetScn);
                     stmtObj.bindUInt32(2, userUser);
@@ -1470,15 +1556,20 @@ namespace OpenLogReplicator {
                 userSpare12 = 0;
                 retUser = stmtUser.next();
             }
+        } catch (DataException& ex) {
+            ctx->error(ex.code, ex.msg);
+            throw RuntimeException(10035, "can't read schema from flashback, try some later scn for start");
         } catch (RuntimeException& ex) {
-            ERROR(ex.msg)
-            throw RuntimeException("Error reading schema from flashback, try some later scn for start");
+            ctx->error(ex.code, ex.msg);
+            throw RuntimeException(10035, "can't read schema from flashback, try some later scn for start");
         }
     }
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keys,
                                                 const std::string& keysStr, typeOptions options, std::list<std::string> &msgs) {
-        DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << static_cast<uint64_t>(options))
+        if (ctx->trace & TRACE_REDO)
+            ctx->logTrace(TRACE_REDO, "creating table schema for owner: " + owner + " table: " + table + " options: " +
+                          std::to_string(static_cast<uint64_t>(options)));
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);
 
@@ -1503,7 +1594,8 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_ROLE)
+            if (ctx->trace & TRACE_SQL)
+                ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_ROLE);
             stmt.createStatement(SQL_GET_DATABASE_ROLE);
             char databaseRole[129]; stmt.defineString(1, databaseRole, sizeof(databaseRole));
 
@@ -1512,22 +1604,23 @@ namespace OpenLogReplicator {
                 if (roleStr == "PRIMARY") {
                     if (standby) {
                         standby = false;
-                        INFO("changed database role to: " << roleStr)
+                        ctx->info(0, "changed database role to: " + roleStr);
                     }
                 } else if (roleStr == "PHYSICAL STANDBY") {
                     if (!standby) {
                         standby = true;
-                        INFO("changed database role to: " << roleStr)
+                        ctx->info(0, "changed database role to: " + roleStr);
                     }
                 } else {
-                    throw RuntimeException("unknown database role: " + roleStr);
+                    throw RuntimeException(10038, "unknown database role: " + roleStr);
                 }
             }
         }
 
         {
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INCARNATION)
+            if (ctx->trace & TRACE_SQL)
+                ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_INCARNATION);
             stmt.createStatement(SQL_GET_DATABASE_INCARNATION);
             uint32_t incarnation; stmt.defineUInt32(1, incarnation);
             typeScn resetlogsScn; stmt.defineUInt64(2, resetlogsScn);
@@ -1558,8 +1651,10 @@ namespace OpenLogReplicator {
         // Reload online redo log ctx
         {
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_LOGFILE_LIST)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << standby)
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_LOGFILE_LIST);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(standby));
+            }
             stmt.createStatement(SQL_GET_LOGFILE_LIST);
             if (standby)
                 stmt.bindString(1, "STANDBY");
@@ -1589,9 +1684,9 @@ namespace OpenLogReplicator {
 
             if (readers.empty()) {
                 if (standby)
-                    throw RuntimeException("failed to find standby redo log files");
+                    throw RuntimeException(10036, "failed to find standby redo log files");
                  else
-                    throw RuntimeException("failed to find online redo log files");
+                    throw RuntimeException(10037, "failed to find online redo log files");
             }
         }
         checkOnlineRedoLogs();
@@ -1601,12 +1696,14 @@ namespace OpenLogReplicator {
         if (!(reinterpret_cast<ReplicatorOnline*>(replicator))->checkConnection())
             return;
 
-        Ctx* ctx = replicator->ctx;
         {
             DatabaseStatement stmt((dynamic_cast<ReplicatorOnline*>(replicator))->conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_ARCHIVE_LOG_LIST)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << (reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence)
-            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << replicator->metadata->resetlogs)
+            if (replicator->ctx->trace & TRACE_SQL) {
+                replicator->ctx->logTrace(TRACE_SQL, SQL_GET_ARCHIVE_LOG_LIST);
+                replicator->ctx->logTrace(TRACE_SQL, "PARAM1: " +
+                                          std::to_string((reinterpret_cast<ReplicatorOnline *>(replicator))->metadata->sequence));
+                replicator->ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(replicator->metadata->resetlogs));
+            }
 
             stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
             stmt.bindUInt32(1, (reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence);

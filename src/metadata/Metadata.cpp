@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../common/Ctx.h"
-#include "../common/DataException.h"
+#include "../common/ConfigurationException.h"
 #include "../common/OracleIncarnation.h"
 #include "../common/RuntimeException.h"
 #include "../common/SysCCol.h"
@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
         }
 
         if (defaultCharacterMapId == 0)
-            throw DataException("unsupported NLS_CHARACTERSET value");
+            throw RuntimeException(10042, "unsupported NLS_CHARACTERSET value: " + nlsCharset);
 
         for (auto characterMapIt: locales->characterMap) {
             if (strcmp(nlsNcharCharset.c_str(), characterMapIt.second->name) == 0) {
@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
         }
 
         if (defaultCharacterNcharMapId == 0)
-            throw DataException("unsupported NLS_NCHAR_CHARACTERSET value");
+            throw RuntimeException(10046, "unsupported NLS_NCHAR_CHARACTERSET value: " + nlsNcharCharset);
     }
 
     void Metadata::purgeRedoLogs() {
@@ -172,16 +172,16 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::initializeDisk(const char* path) {
-        state = new StateDisk(path);
-        stateDisk = new StateDisk("scripts");
+        state = new StateDisk(ctx, path);
+        stateDisk = new StateDisk(ctx, "scripts");
         serializer = new SerializerJson();
     }
 
     bool Metadata::stateRead(const std::string& name, uint64_t maxSize, std::string& in) {
         try {
             return state->read(name, maxSize, in);
-        } catch (DataException& ex) {
-            WARNING(ex.msg);
+        } catch (RuntimeException& ex) {
+            ctx->error(ex.code, ex.msg);
         }
         return false;
     }
@@ -189,8 +189,8 @@ namespace OpenLogReplicator {
     bool Metadata::stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in) {
         try {
             return stateDisk->read(name, maxSize, in);
-        } catch (DataException& ex) {
-            WARNING(ex.msg);
+        } catch (RuntimeException& ex) {
+            ctx->error(ex.code, ex.msg);
         }
         return false;
     }
@@ -199,8 +199,8 @@ namespace OpenLogReplicator {
         try {
             state->write(name, out);
             return true;
-        } catch (DataException& ex) {
-            WARNING(ex.msg);
+        } catch (RuntimeException& ex) {
+            ctx->error(ex.code, ex.msg);
         }
         return false;
     }
@@ -209,17 +209,19 @@ namespace OpenLogReplicator {
         try {
             state->drop(name);
             return true;
-        } catch (DataException& ex) {
-            WARNING(ex.msg);
+        } catch (RuntimeException& ex) {
+            ctx->error(ex.code, ex.msg);
         }
         return false;
     }
 
     SchemaElement* Metadata::addElement(const char* owner, const char* table, typeOptions options) {
         if (!Ctx::checkNameCase(owner))
-            throw DataException("owner '" + std::string(owner) + "' contains lower case characters, value must be upper case");
+            throw ConfigurationException(30003, "owner '" + std::string(owner) +
+                                         "' contains lower case characters, value must be upper case");
         if (!Ctx::checkNameCase(table))
-            throw DataException("table '" + std::string(table) + "' contains lower case characters, value must be upper case");
+            throw ConfigurationException(30004, "table '" + std::string(table) +
+                                         "' contains lower case characters, value must be upper case");
         auto element = new SchemaElement(owner, table, options);
         schemaElements.push_back(element);
         return element;
@@ -300,15 +302,18 @@ namespace OpenLogReplicator {
 
         std::string checkpointName = database + "-chkpt-" + std::to_string(lastCheckpointScn);
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << std::dec << lastCheckpointScn << " time: " << lastCheckpointTime.getVal() << " seq: " <<
-                lastSequence << " offset: " << lastCheckpointOffset)
-        if (!stateWrite(checkpointName, ss)) {
-            WARNING("error writing checkpoint to " << checkpointName)
-        }
+        if (ctx->trace & TRACE_CHECKPOINT)
+            ctx->logTrace(TRACE_CHECKPOINT, "write scn: " + std::to_string(lastCheckpointScn) + " time: " +
+                          std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
+                          std::to_string(lastCheckpointOffset));
+
+        if (!stateWrite(checkpointName, ss))
+            ctx->warning(60018, "file: " + checkpointName + " - could not write checkpoint");
     }
 
     void Metadata::readCheckpoints() {
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: searching for previous checkpoint information")
+        if (ctx->trace & TRACE_CHECKPOINT)
+            ctx->logTrace(TRACE_CHECKPOINT, "searching for previous checkpoint information");
 
         std::set<std::string> namesList;
         state->list(namesList);
@@ -327,7 +332,8 @@ namespace OpenLogReplicator {
                 continue;
             }
 
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << name << " scn: " << std::dec << scn)
+            if (ctx->trace & TRACE_CHECKPOINT)
+                ctx->logTrace(TRACE_CHECKPOINT, "found: " + name + " scn: " + std::to_string(scn));
             checkpointScnList.insert(scn);
             checkpointSchemaMap[scn] = true;
         }
@@ -337,7 +343,8 @@ namespace OpenLogReplicator {
         else
             firstDataScn = 0;
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: scn: " << std::dec << firstDataScn)
+        if (ctx->trace & TRACE_CHECKPOINT)
+            ctx->logTrace(TRACE_CHECKPOINT, "scn: " + std::to_string(firstDataScn));
         if (firstDataScn != ZERO_SCN && firstDataScn != 0) {
             std::set<typeScn>::iterator it = checkpointScnList.end();
 
@@ -351,7 +358,7 @@ namespace OpenLogReplicator {
 
     void Metadata::readCheckpoint(typeScn scn) {
         std::list<std::string> msgs;
-        INFO("reading metadata for " << database << " for scn: " << scn);
+        ctx->info(0, "reading metadata for " + database + " for scn: " + std::to_string(scn));
         std::string ss;
 
         std::string name1(database + "-chkpt-" + std::to_string(scn));
@@ -361,39 +368,39 @@ namespace OpenLogReplicator {
         }
         if (!serializer->deserialize(this, ss, name1, msgs, true, true)) {
             for (const auto& msg : msgs) {
-                ERROR(msg);
+                ctx->info(0, msg);
             }
             return;
         }
 
         for (const auto& msg : msgs) {
-            INFO("- found: " << msg);
+            ctx->info(0, "- found: " + msg);
         }
         msgs.clear();
 
         // Schema missing
         if (schema->scn == ZERO_SCN) {
             if (schema->refScn == ZERO_SCN) {
-                ERROR("load checkpoint from " << name1 << ": SCN missing")
+                ctx->warning(60019, "file: " + name1 + " - load checkpoint failed, reference SCN missing");
                 return;
             }
 
             ss.clear();
             std::string name2(database + "-chkpt-" + std::to_string(schema->refScn));
-            INFO("reading schema for " << database << " for scn: " << schema->refScn);
+            ctx->info(0, "reading schema for " + database + " for scn: " + std::to_string(schema->refScn));
 
             if (!stateRead(name2, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss))
                 return;
 
             if (!serializer->deserialize(this, ss, name2, msgs, false, true)) {
                 for (const auto& msg: msgs) {
-                    ERROR(msg);
+                    ctx->info(0, msg);
                 }
                 return;
             }
 
             for (const auto& msg: msgs) {
-                INFO("- found: " << msg);
+                ctx->info(0, "- found: " + msg);
             }
         }
 
@@ -455,26 +462,26 @@ namespace OpenLogReplicator {
         std::list<std::string> msgs;
         std::string name("base-" + ctx->versionStr);
 
-        INFO("reading adaptive schema from: " << name + ".json");
+        ctx->info(0, "reading adaptive schema from: " + name + ".json");
         std::string nlsCharset = "AL32UTF8";
         std::string nlsNcharCharset = "AL16UTF16";
         setNlsCharset(nlsCharset, nlsNcharCharset);
 
         if (!stateDiskRead(name, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss)) {
-            ERROR("can't read file " << name)
+            ctx->warning(60020, "file: " + name + " - load adaptive schema failed");
             return;
         }
 
         if (!serializer->deserialize(this, ss, name, msgs, false, true)) {
             for (const auto& msg: msgs) {
-                ERROR(msg);
+                ctx->info(0, msg);
             }
             return;
         }
 
         firstSchemaScn = 0;
         for (const auto& msg: msgs) {
-            INFO("- found: " << msg);
+            ctx->info(0, "- found: " + msg);
         }
     }
 }

@@ -503,7 +503,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
-                                    typeXid xid  __attribute__((unused))) {
+                                    typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage();
 
@@ -533,7 +533,7 @@ namespace OpenLogReplicator {
         builderAppend(R"({"op":"c",)", sizeof(R"({"op":"c",)") - 1);
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendAfter(lobCtx, table);
+        appendAfter(lobCtx, table, offset);
         builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
@@ -544,7 +544,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
-                                    typeXid xid  __attribute__((unused))) {
+                                    typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage();
 
@@ -574,8 +574,8 @@ namespace OpenLogReplicator {
         builderAppend(R"({"op":"u",)", sizeof(R"({"op":"u",)") - 1);
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(lobCtx, table);
-        appendAfter(lobCtx, table);
+        appendBefore(lobCtx, table, offset);
+        appendAfter(lobCtx, table, offset);
         builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
@@ -586,7 +586,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
-                                    typeXid xid __attribute__((unused))) {
+                                    typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage();
 
@@ -616,7 +616,7 @@ namespace OpenLogReplicator {
         builderAppend(R"({"op":"d",)", sizeof(R"({"op":"d",)") - 1);
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(lobCtx, table);
+        appendBefore(lobCtx, table, offset);
         builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {

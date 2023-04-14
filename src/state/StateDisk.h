@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         std::string path;
 
     public:
-        explicit StateDisk(const char* newPath);
+        explicit StateDisk(Ctx* newCtx, const char* newPath);
         ~StateDisk() override;
 
         void list(std::set<std::string>& namesList) override;

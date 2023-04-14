@@ -52,10 +52,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0502::kteop(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 36) {
-            WARNING("too short field kteop: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 36)
+            throw RedoLogException(50061, "too short field kteop: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         if (ctx->dumpRedoLog >= 1) {
             uint32_t highwater = ctx->read32(redoLogRecord->data + fieldPos + 16);
@@ -82,10 +81,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0502::ktudh(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 32) {
-            WARNING("too short field ktudh: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 32)
+            throw RedoLogException(50061, "too short field ktudh: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->xid = typeXid(redoLogRecord->usn,
                                      ctx->read16(redoLogRecord->data + fieldPos + 0),
@@ -114,17 +112,17 @@ namespace OpenLogReplicator {
             else*/
             ctx->dumpStream << "           " <<
                             " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
-                            " pxid:  " << pXid;
+                            " pxid:  " << pXid.toString();
             if (ctx->version < REDO_VERSION_12_1) // || redoLogRecord->conId == 0)
                 ctx->dumpStream << std::endl;
         }
     }
 
     void OpCode0502::pdb(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
-        if (fieldLength < 4) {
-            WARNING("too short field pdb: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
-            return;
-        }
+        if (fieldLength < 4)
+            throw RedoLogException(50061, "too short field pdb: " + std::to_string(fieldLength) + " offset: " +
+                                   std::to_string(redoLogRecord->dataOffset));
+
         redoLogRecord->pdbId = ctx->read56(redoLogRecord->data + fieldPos + 0);
 
         ctx->dumpStream << "       " <<
