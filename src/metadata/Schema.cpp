@@ -774,7 +774,7 @@ namespace OpenLogReplicator {
         dictSysTsAdd(sysTs);
     }
 
-    bool Schema::dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool showError) {
+    bool Schema::dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single) {
         typeRowId rowId(rowIdStr);
 
         auto sysUserMapRowIdIt = sysUserMapRowId.find(rowId);

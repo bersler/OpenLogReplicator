@@ -1496,7 +1496,7 @@ namespace OpenLogReplicator {
             int64_t retUser = stmtUser.executeQuery();
             while (retUser) {
                 if (!schema->dictSysUserAdd(userRowid, userUser, userName, userSpare11, userSpare12,
-                        (options & OPTIONS_SYSTEM_TABLE) != 0, true)) {
+                        (options & OPTIONS_SYSTEM_TABLE) != 0)) {
                     userSpare11 = 0;
                     userSpare12 = 0;
                     retUser = stmtUser.next();

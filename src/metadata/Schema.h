@@ -197,7 +197,7 @@ namespace OpenLogReplicator {
         void dictSysTabPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
         void dictSysTabSubPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj pObj);
         void dictSysTsAdd(const char* rowIdStr, typeTs ts, const char* name, uint32_t blockSize);
-        bool dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool showError);
+        bool dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single);
 
         void dictSysCColAdd(SysCCol* sysCCol);
         void dictSysCDefAdd(SysCDef* sysCDef);

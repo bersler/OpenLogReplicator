@@ -621,7 +621,7 @@ namespace OpenLogReplicator {
         typeField fieldNum;
         uint16_t fieldLength;
         uint16_t colLength;
-        uint16_t colNum;
+        uint16_t colNum = 0;
         uint16_t colShift;
         uint8_t* nulls;
         uint8_t bits;
@@ -841,7 +841,6 @@ namespace OpenLogReplicator {
                     colNums = nullptr;
                 }
                 if (colShift >= MAX_NO_COLUMNS) {
-                    uint16_t shift = ctx->read16(colNums);
                     throw RedoLogException(50059, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
                                            std::to_string(redoLogRecord2p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
                                            ", before: " + std::to_string(redoLogRecord2p->suppLogBefore) + ", xid: " + lastXid.toString() + ", offset: " +
