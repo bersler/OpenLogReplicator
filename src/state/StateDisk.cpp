@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
 
             std::string fullName(path + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat)) {
-                ctx->error(10003, "file: " + fileName + " - stat returned: " + strerror(errno));
+                ctx->warning(60034, "file: " + fileName + " - stat returned: " + strerror(errno));
                 continue;
             }
 
@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
         std::string fileName(path + "/" + name + ".json");
         struct stat fileStat;
         if (stat(fileName.c_str(), &fileStat) != 0) {
-            ctx->error(10003, "file: " + fileName + " - stat returned: " + strerror(errno));
+            ctx->warning(60034, "file: " + fileName + " - stat returned: " + strerror(errno));
             return false;
         }
         if (static_cast<uint64_t>(fileStat.st_size) > maxSize || fileStat.st_size == 0)

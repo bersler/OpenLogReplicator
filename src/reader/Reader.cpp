@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
             typeSum chSumCalculated = calcChSum(buffer, blockSize);
             if (chSum != chSumCalculated) {
                 if (showHint) {
-                    ctx->warning(60025, "file: " + fileName + ", block: " + std::to_string(blockNumber) +
+                    ctx->warning(60025, "file: " + fileName + " block: " + std::to_string(blockNumber) +
                                  " - invalid header checksum, expected: " + std::to_string(chSum) + ", calculated: " +
                                  std::to_string(chSumCalculated));
                     if (!hintDisplayed) {
@@ -436,7 +436,7 @@ namespace OpenLogReplicator {
                 ret = REDO_FINISHED;
                 nextScn = nextScnHeader;
             } else {
-                ctx->warning(60023, "file: " + fileName + ", position: " + std::to_string(bufferScan) + " - unexpected end of file");
+                ctx->warning(60023, "file: " + fileName + " position: " + std::to_string(bufferScan) + " - unexpected end of file");
                 ret = REDO_STOPPED;
             }
             return false;
@@ -488,7 +488,7 @@ namespace OpenLogReplicator {
                 ret = REDO_FINISHED;
                 nextScn = nextScnHeader;
             } else {
-                ctx->warning(60023, "file: " + fileName + ", position: " + std::to_string(bufferScan) + " - unexpected end of file");
+                ctx->warning(60023, "file: " + fileName + " position: " + std::to_string(bufferScan) + " - unexpected end of file");
                 ret = REDO_STOPPED;
             }
             return false;
@@ -668,7 +668,7 @@ namespace OpenLogReplicator {
                             ret = REDO_FINISHED;
                             nextScn = nextScnHeader;
                         } else {
-                            ctx->warning(60023, "file: " + fileName + ", position: " + std::to_string(bufferScan) +
+                            ctx->warning(60023, "file: " + fileName + " position: " + std::to_string(bufferScan) +
                                          " - unexpected end of file");
                             ret = REDO_STOPPED;
                         }
@@ -699,7 +699,7 @@ namespace OpenLogReplicator {
                             ret = REDO_FINISHED;
                             nextScn = nextScnHeader;
                         } else {
-                            ctx->warning(60023, "file: " + fileName + ", position: " + std::to_string(bufferScan) +
+                            ctx->warning(60023, "file: " + fileName + " position: " + std::to_string(bufferScan) +
                                          " - unexpected end of file");
                             ret = REDO_STOPPED;
                         }

@@ -152,7 +152,7 @@ namespace OpenLogReplicator {
 
                 std::string fileNameFull(pathName + "/" + ent->d_name);
                 if (stat(fileNameFull.c_str(), &fileStat) != 0) {
-                    ctx->error(10003, "file: " + fileNameFull + " - stat returned: " + strerror(errno));
+                    ctx->warning(60034, "file: " + fileNameFull + " - stat returned: " + strerror(errno));
                     continue;
                 }
 

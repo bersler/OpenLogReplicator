@@ -680,7 +680,7 @@ namespace OpenLogReplicator {
         typeXid xid(redoLogRecord1->usn, redoLogRecord1->slt,  0);
         Transaction* transaction = transactionBuffer->findTransaction(xid, redoLogRecord1->conId, true, false, true);
         if (transaction == nullptr) {
-            typeXidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
+            typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
             if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
                 ctx->warning(60010, "no match found for transaction rollback, skipping, SLT: " +
@@ -880,7 +880,7 @@ namespace OpenLogReplicator {
         typeXid xid(redoLogRecord2->usn, redoLogRecord2->slt, 0);
         Transaction* transaction = transactionBuffer->findTransaction(xid, redoLogRecord2->conId, true, false, true);
         if (transaction == nullptr) {
-            typeXidMap xidMap = (redoLogRecord2->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord2->conId) << 32);
+            typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord2->conId) << 32);
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
             if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
                 ctx->warning(60010, "no match found for transaction rollback, skipping, SLT: " +

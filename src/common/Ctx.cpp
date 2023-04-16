@@ -839,17 +839,18 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::welcome(const std::string& message) {
+        int code = 0;
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
             time_t now = time(nullptr);
             tm nowTm = *localtime(&now);
             char str[50];
             strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " INFO  " << message << std::endl;
+            s << str << " INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
             std::cerr << s.str();
         } else {
             std::ostringstream s;
-            s << " INFO  " << message << std::endl;
+            s << " INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
             std::cerr << s.str();
         }
     }

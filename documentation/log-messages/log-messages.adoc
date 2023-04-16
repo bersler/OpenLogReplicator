@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-04-14
+:revdate: 2022-04-16
 :imagesdir: ./images
 :toc: preamble
 
@@ -50,7 +50,7 @@ TIP: You can list file handles using operating system `lsof` command. Refer to o
 
 ==== code 10003: "file: <file name> - stat returned: <message>"
 
-Error occurred during reading file metadata. Check if the file is not corrupted. Verify operating system log messages.
+Reading file metadata failed. Check if the file is not corrupted. Verify operating system log messages.
 
 ==== code 10004: "file: <file name> - wrong size: <file size>"
 
@@ -166,11 +166,11 @@ Program started with `offline` reader type but no starting sequence is available
 
 ==== code 10029: "can't find database current scn"
 
-Error executing query to read current SCN from database. Verify if the database is available.
+Executing query to read current SCN from database failed. Verify if the database is available.
 
 ==== code 10030: "getting database sequence for scn: <scn"
 
-Error executing query to read database sequence for provided SCN. Verify if the database is available (TODO: ref.).
+Executing query to read database sequence for provided SCN failed. Verify if the database is available (TODO: ref.).
 
 ==== code 10031: "getting database scn"
 
@@ -322,11 +322,11 @@ Server cannot bind to ZeroMQ socket. Verify if the ZeroMQ server is available an
 
 ==== code 10065: "ZeroMQ context creation failed"
 
-Error appeared during creation of ZeroMQ context. Verify if the ZeroMQ library is installed and available.
+Creation of ZeroMQ context failed. Verify if the ZeroMQ library is installed and available.
 
 ==== code 10066: "ZeroMQ initializing socket failed, message: <message>"
 
-Error appeared during initialization of ZeroMQ socket. Verify if the ZeroMQ library is installed and available.
+Initialization of ZeroMQ socket failed. Verify if the ZeroMQ library is installed and available.
 
 === Data Exceptions (2xxxx)
 
@@ -334,7 +334,7 @@ Errors related to syntax and content of configuration file and checkpoint files.
 
 ==== code 20001: "file: <file name> - <message>"
 
-Error appeared during parsing configuration file. Check if the file is not corrupted. Please verify content of JSON file using online JSON validator.
+Parsing configuration file failed. Check if the file is not corrupted. Please verify content of JSON file using online JSON validator.
 
 If the checkpoint file belongs to another database, verify if the database name is correct.
 
@@ -346,7 +346,7 @@ Transaction ID (XID) number is in incorrect format provided in the configuration
 
 ==== code 20003: "file: <file name> - parse error, field <field> <message>"
 
-Error appeared during parsing of a JSON file. File contains invalid data. Verify if file content is a valid JSON.
+Parsing of a JSON file failed. File contains invalid data. Verify if file content is a valid JSON.
 
 ==== code 20004: "identifier '<name>' is too long"
 
@@ -588,7 +588,7 @@ This warning is most probably related to using schemaless mode with IOT tables. 
 
 ==== code 60002: "unknown value (column: <column>): <number> - <data>)"
 
-Warning related to LOB columns might be related to extensive using of dbms_lob package. In this case, please try to use direct DML operations for LOB columns instead. If the problem persists, please report this issue.
+Might be related to extensive using of dbms_lob package. In this case, please try to use direct DML operations for LOB columns instead. If the problem persists, please report this issue.
 
 ==== code 60003: "incorrect LOB for xid: <xid>> data: <data>"
 
@@ -670,15 +670,15 @@ See comment for warning 60002.
 
 Missing information about tablespace in the database schema. Verify if the tablespace is correct. If the problem persists, please report this issue.
 
-==== code 60023: "file: <file>, position: <number> - unexpected end of file"
+==== code 60023: "file: <file name> position: <number> - unexpected end of file"
 
 Unexpected end of redo log file. Verify if the file is correct. If the problem persists, please report this issue.
 
-==== code 60024: "file: <file> - invalid header sequence (<number>, expected: <number>)"
+==== code 60024: "file: <file name> - invalid header sequence (<number>, expected: <number>)"
 
 Invalid information about redo log sequence in the header. Verify if the file is correct. If the problem persists, please report this issue.
 
-==== code 60025: "file: <file>, block: <number> - invalid header checksum, expected: <number>, calculated: <number>"
+==== code 60025: "file: <file name> block: <number> - invalid header checksum, expected: <number>, calculated: <number>"
 
 Invalid checksum in the redo log header. Verify if the file is correct. If the problem persists, please report this issue.
 
@@ -690,7 +690,7 @@ Stripped trailing '/' from the parameter value from the path parameter.
 
 Missing archive log file. Verify if the file is correct. If the problem persists, please report this issue.
 
-==== code 60028: "can't get sequence from file: <file>, log_archive_format: <string> at position <number> format position <number>, <problem>"
+==== code 60028: "can't get sequence from file: <file name> log_archive_format: <string> at position <number> format position <number>, <problem>"
 
 Invalid archive log file name. Verify if the file is correct. If the problem persists, please report this issue.
 
@@ -698,7 +698,7 @@ Invalid archive log file name. Verify if the file is correct. If the problem per
 
 Defined maximum size for the file is too small to write a single message. Increase the size.
 
-==== code 60030: "rotation size is set too low (<number>), increase it, should rotate but too early (<file>)"
+==== code 60030: "rotation size is set too low (<number>), increase it, should rotate but too early (<file name>)"
 
 The parameter for rotation size is too small. Increase the number.
 
@@ -713,6 +713,10 @@ Invalid request code received by the network client.
 ==== code 60033: "request decoder[<number>]: <data>"
 
 Invalid request data received by the network client.
+
+==== code 60034: "file: <file name> - stat returned: <message>"
+
+Reading file metadata failed. Check if the file is not corrupted. Verify operating system log messages.
 
 === Internal warnings(7xxxx)
 

@@ -306,7 +306,7 @@ namespace OpenLogReplicator {
         while (i < replicator->metadata->logArchiveFormat.length() && j < file.length()) {
             if (replicator->metadata->logArchiveFormat[i] == '%') {
                 if (i + 1 >= replicator->metadata->logArchiveFormat.length()) {
-                    replicator->ctx->warning(60028, "can't get sequence from file: " + file + ", log_archive_format: " +
+                    replicator->ctx->warning(60028, "can't get sequence from file: " + file + " log_archive_format: " +
                                              replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
                                              std::to_string(i) + ", found end after %");
                     return 0;
@@ -337,7 +337,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (digits == 0) {
-                    replicator->ctx->warning(60028, "can't get sequence from file: " + file + ", log_archive_format: " +
+                    replicator->ctx->warning(60028, "can't get sequence from file: " + file + " log_archive_format: " +
                                              replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
                                              std::to_string(i) + ", found no number/hash");
                     return 0;
@@ -346,7 +346,7 @@ namespace OpenLogReplicator {
                 ++i;
                 ++j;
             } else {
-                replicator->ctx->warning(60028, "can't get sequence from file: " + file + ", log_archive_format: " +
+                replicator->ctx->warning(60028, "can't get sequence from file: " + file + " log_archive_format: " +
                                          replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
                                          std::to_string(i) + ", found different values");
                 return 0;
@@ -356,7 +356,7 @@ namespace OpenLogReplicator {
         if (i == replicator->metadata->logArchiveFormat.length() && j == file.length())
             return sequence;
 
-        replicator->ctx->warning(60028, "error getting sequence from file: " + file + ", log_archive_format: " +
+        replicator->ctx->warning(60028, "error getting sequence from file: " + file + " log_archive_format: " +
                                  replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
                                  std::to_string(i) + ", found no sequence");
         return 0;
@@ -440,7 +440,7 @@ namespace OpenLogReplicator {
             struct stat fileStat;
             std::string mappedSubPath(mappedPath + "/" + ent->d_name);
             if (stat(mappedSubPath.c_str(), &fileStat)) {
-                replicator->ctx->error(10003, "file: " + mappedSubPath + " - stat returned: " + strerror(errno));
+                replicator->ctx->warning(60034, "file: " + mappedSubPath + " - stat returned: " + strerror(errno));
                 continue;
             }
 
@@ -509,7 +509,7 @@ namespace OpenLogReplicator {
 
             struct stat fileStat;
             if (stat(mappedPath.c_str(), &fileStat)) {
-                replicator->ctx->error(10003, "file: " + mappedPath + " - stat returned: " + strerror(errno));
+                replicator->ctx->warning(60034, "file: " + mappedPath + " - stat returned: " + strerror(errno));
                 continue;
             }
 
