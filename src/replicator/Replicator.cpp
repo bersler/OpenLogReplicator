@@ -518,7 +518,7 @@ namespace OpenLogReplicator {
                 if (replicator->ctx->trace & TRACE_ARCHIVE_LIST)
                     replicator->ctx->logTrace(TRACE_ARCHIVE_LIST, "checking path: " + mappedPath);
 
-                // Getting file name from path
+                // Getting file name from the path
                 const char* fileName = mappedPath.c_str();
                 uint64_t j = mappedPath.length();
                 while (j > 0) {

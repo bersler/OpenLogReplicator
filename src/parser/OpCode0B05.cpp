@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
             // Field: 4
             redoLogRecord->rowData = fieldNum;
             if (ctx->dumpRedoLog >= 1)
-                dumpColsVector(ctx, redoLogRecord, redoLogRecord->data + fieldPos, ctx->read16(colNums));
+                dumpColVector(ctx, redoLogRecord, redoLogRecord->data + fieldPos, ctx->read16(colNums));
         } else {
             redoLogRecord->rowData = fieldNum + 1;
             uint8_t bits = 1;

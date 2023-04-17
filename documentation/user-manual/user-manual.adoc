@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-03-30
+:revdate: 2022-04-18
 :imagesdir: ./images
 :toc: preamble
 
@@ -12,48 +12,191 @@ a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
 
 This document describes common usage scenarios of OpenLogReplicator.
 
-== Introduction
+== Quick start
 
-=== Output
+*TODO:* write
 
-Transactions read from database redo log files can be written in 2 formats:
+=== Running in docker container
 
-- JSON
-- Protocol buffer
+*TODO:* write
 
-Until the first release is made the format is still subject of changes.
+== Architecture
 
-Transaction stream can be sent to:
+OpenLogReplicator is written in C++.
+It uses Oracle client libraries to connect to the database.
 
-- Kafka
-- Flat file
-- Network stream
+Transactions are directly decoded from redo log files.
+If possible – online redo logs, but if it is behind –- also archived redo logs.
+It is crucial that the process has physical access to files and the files are not deleted before they are processed.
 
-== Getting started
+The architecture of the program is multithreading.
+The following threads are used:
 
-OpenLogReplicator is essentially a program that reads redo log files created by Oracle database and translates it to JSON messages. To understand the principals it is crucial to know how Oracle database works.
+1. Main thread -- used for program startup and shutdown
+
+2. N Reader threads -- used to read redo log files from disk -- there is one thread per redo log file.
+Most of the time just one thread is active, the other is sleeping and not utilizing the CPU.
+Only during short time when the log switch is performed and the new redo log file is created, there may be more than one active thread.
+The reader thread uses buffering to read data from disk.
+The size of the buffer is configurable.
+
+3. Checkpoint thread -- used to write checkpoint file to disk.
+This is done every 10 seconds.
+The checkpoint file contains information about the last processed redo log file and the last processed block in this file.
+This information is used to restart the program from the last processed position.
+Writing the checkpoint file together with the schema is not blocking the main parser thread.
+
+4. Parser thread -- used to parse redo log files.
+Parsing is done serially using just one thread.
+In case of DDL changes, the schema is updated and the checkpoint file is written to disk.
+The parser thread is also responsible for sending transactions to output buffer in a format which is configured for output (JSON or Protobuf).
+
+5. Writer thread -- responsible for sending the transactions from the output buffer to the output.
+There might be more threads used to control proper communication with the output depending on the type of the connector and threads used by the external libraries.
+
+NOTE: The only CPU-intensive thread is the parser thread.
+Other threads perform operations which are not CPU intensive, however, might be I/O intensive.
+
+Most possible bottlenecks are:
+
+1. Disk read speed -- the reader thread reads all data sequentially using buffering.
+If the stream of redo log files is greater than the speed of sequential read from disk -- delay might appear.
+
+2. Transaction parsing -- redo log parsing is done using single thread.
+If the volume of generated redo log files is higher than the speed of parsing -- delay might appear.
+
+3. Output performance -- the writer thread sends the transactions to output (sink) using the provided connector.
+If the target is accepting transactions slower than they are created -- delay might appear.
 
 === Database redo logs
 
-All changes in the database (results of DML commands like INSERT, UPDATE, DELETE) are written to database redo log. If the database redo logs contains commit record – it means that the transaction is committed to the database. Before receiving the commit record – the transaction can be still rolled back – so all changes would be undone like the transaction never happened.
+All changes in the database -- results of DML commands like INSERT, UPDATE, DELETE -- are written to database redo logs.
+The redo log files contain information about what has been changed.
+It would not contain information about metadata for every transaction -- like number of columns in the table, names, types.
+Such information should be cached in memory and updated when DDL operations are performed.
 
-=== Program architecture
+To operate properly during startup, OpenLogReplicator needs to collect information about schema during the initial run.
+It would read database system tables to collect all data about schema.
+This information is stored in a file and used during the following runs.
 
-OpenLogReplicator consistently reads Oracle redo log files. If possible – it would read online redo logs, but if it is behind – it can also read archived redo logs. It is crucial that it has a physical access to those files. When it is run from a remote host – access through sshfs is enough.
+IMPORTANT: OpenLogReplicator does not perform the task of initial data load.
+It never connects to the source data and runs SELECT queries.
+It only reads redo log files and sends information about changes to the output.
+For a complete replication solution, you need to use another tool like ETL or restore a database from backup.
 
-=== Transaction caching
+CAUTION: After start, all redo log files must be available in their entirely.
+Not a single redo log files block may be missing.
+If a file or even one block is missing, replication needs to be re-initiated.
+Schema information should be collected from the beginning, and replication re-initiated.
 
-All transactions which are open are cached in memory. They are cache so long, how long they are open. If they are big – the program would need more memory. OpenLogReplicator never writes any additional files to disk beside checkpoint and schema file.
+=== Transaction processing
 
-If you shut down OpenLogReplicator and later start again – it would need to go back to the oldest unprocessed transaction location and start reading database redo logs from this position.
+Database redo log files contain both committed and rolled-back transactions.
+DML operations are written to redo log files as they are executed.
+All operations are flushed when the COMMIT record appears.
+This is a guarantee point for the database client that all changes have been accepted by the database and are durable and visible to other clients (ACID properties).
 
-=== Schema changes
+NOTE: DMLs from different transactions are interleaved in the redo log files.
 
-The current release of OpenLogReplicator supports schema changes. The initial schema of the table(s) is read during startup of the program. Later changes to the schema are tracked.
+NOTE: The redo log files contain also information about transactions that eventually were rolled back.
+Or are partially rolled back.
 
-== Supported Features
+The task of OpenLogReplicator is to sort DML commands and send them to output in proper order:
 
-OpenLogReplicator basically works a redo log file parser. All information it operates on comes from database redo logs (online or archived). This is a list of information it can read from redo log, parse and sent as JSON message:
+1. All rolled back transactions are ignored
+
+2. All partially rolled back DML commands are ignored
+
+3. All committed transactions are sent to output as soon as the commit record appears
+
+4. Transactions are sorted by commit time
+
+5. Transactions are sent to output without any interleaving
+
+A transaction that is sent to output may be in one message or may be divided into multiple messages -- one message for the beginning of the transaction, one for commit and one for each DML command.
+
+The number of details in the message is configurable.
+
+*TODO:* image with interleaved transactions
+
+=== Transaction caching & restart
+
+All transactions which are active (started) are cached in memory.
+They are cached so long, how long the transaction is open.
+After the transaction is committed and data processed, memory is released.
+If the transaction is big –- the program would need more memory.
+OpenLogReplicator never writes any additional files to disk beside of checkpoint and schema file.
+
+CAUTION: When OpenLogReplicator is restarted –- it would need to go back to the start of the oldest unprocessed transaction location and start reading database redo logs from this position.
+This may mean going back a long time and process again the same redo log files which have already been processed before the restart appeared.
+Transactions which were sent to output would not be sent again.
+This operation may be time and resource consuming.
+It is recommended to restart OpenLogReplicator only when it is necessary.
+
+TIP: Configure database redo log retention strategy to leave enough redo log files to be able to restart OpenLogReplicator.
+
+*TODO:* image describing restart
+
+=== Topology
+
+There are 2 possible scenarios of running OpenLogReplicator: on the database host and on another host.
+
+==== Running on the database host
+
+This is the easiest and most efficient solution.
+But it is not recommended for production systems, as the database performance might be affected when CPU or memory is saturated.
+
+CAUTION: OpenLogReplicator may be using extensive memory and CPU.
+Please make sure that there are enough resources for the database to work properly.
+OpenLogReplicator should use only part of the memory, so that there is memory available for the database.
+
+*TODO* image
+
+==== Running on another host
+
+This is the recommended solution.
+For this scenario, you must make sure that the redo log files are possible to read.
+This may be achieved by:
+
+* mounting read only remote filesystem, (for example, using SSHFS),
+
+* reading from SRDF copy,
+
+* reading from standby database,
+
+* reading just archived redo logs copied by batch file;
+
+.Remote access to redo log files
+image:architecture-sshfs.png[Remote access to redo log files,,,]
+
+OpenLogReplicator by default would read online redo logs and process transactions as soon as they are committed, and this information is written to redo log.
+But it can also read just archived redo logs – in this scenario transactions would be processed when log switch is performed and redo log is archived.
+
+== Output
+
+=== Transaction format
+
+==== JSON format
+
+*TODO:* write
+
+==== Protocol buffer format
+
+*TODO:* write
+
+=== Target
+
+==== Kafka target
+
+==== File target
+
+==== Network target
+
+== Database
+
+=== Supported Features
+
+The following operations are supported:
 
 - INSERT operation (including multiple row INSERT, but not direct path – INSERT /*+append*/);
 - UPDATE operation;
@@ -61,7 +204,7 @@ OpenLogReplicator basically works a redo log file parser. All information it ope
 
 === Table parameters
 
-Tables with following parameters are supported:
+Tables with the following parameters are supported:
 
 - null/not null columns;
 - invisible columns;
@@ -72,7 +215,8 @@ Tables with following parameters are supported:
 - partitioned tables;
 - tables with rowdependencies.
 
-Transactions that are rolled back are not processed. Transactions are processed as soon as they are committed (not earlier).
+Transactions that are rolled back are not processed.
+Transactions are processed as soon as they are committed (not earlier).
 
 === Column types
 
@@ -98,39 +242,72 @@ Changes in the schema are supported.
 
 OpenLogReplicator supports many character sets which can be used in the source Oracle database.
 
-All character fields are read from the source database in respect to the source character set. The output message always uses Unicode as character encoding and UTF-8 format. OpenLogReplicator does not perform any left-to-right Unicode character replacements.
+All character fields are read from the source database in respect to the source character set.
+The output message always uses Unicode as character encoding and UTF-8 format.
+OpenLogReplicator does not perform any left-to-right Unicode character replacements.
 
-For test purposes the character set conversion can be disabled. Please check the configuration parameters for details (TODO: link).
+For test purposes, the character set conversion can be disabled.
+Please check the configuration parameters for details (TODO: link).
 
 Full list of supported character sets is: *AL16UTF16*, *AL32UTF8*, AR8ADOS710, AR8ADOS710T, AR8ADOS720, AR8ADOS720T, AR8APTEC715, AR8APTEC715T, AR8ARABICMACS, AR8ASMO708PLUS, AR8ASMO8X, AR8HPARABIC8T, AR8ISO8859P6, AR8MSWIN1256, AR8MUSSAD768, AR8MUSSAD768T, AR8NAFITHA711, AR8NAFITHA711T, AR8NAFITHA721, AR8NAFITHA721T, AR8SAKHR706, AR8SAKHR707, AR8SAKHR707T, AZ8ISO8859P9E, BG8MSWIN, BG8PC437S, BLT8CP921, BLT8ISO8859P13, BLT8MSWIN1257, BLT8PC775, BN8BSCII, CDN8PC863, CEL8ISO8859P14, CL8ISO8859P5, CL8ISOIR111, CL8KOI8R, CL8KOI8U, CL8MACCYRILLICS, CL8MSWIN1251, D7DEC, D7SIEMENS9780X, DK7SIEMENS9780X, E7DEC, E7SIEMENS9780X, EE8ISO8859P2, EE8MACCES, EE8MACCROATIANS, EE8MSWIN1250, EE8PC852, EEC8EUROASCI, EEC8EUROPA3, EL8DEC, EL8ISO8859P7, EL8MACGREEKS, EL8MSWIN1253, EL8PC437S, EL8PC737, EL8PC851, EL8PC869, ET8MSWIN923, HU8ABMOD, HU8CWI2, I7DEC, I7SIEMENS9780X, IN8ISCII, IS8MACICELANDICS, IS8PC861, IW8ISO8859P8, IW8MACHEBREWS, IW8MSWIN1255, IW8PC1507, JA16EUC, JA16EUCTILDE, JA16EUCYEN, JA16SJIS, JA16SJISTILDE, JA16SJISYEN, JA16VMS, KO16KSC5601, KO16KSCCS, KO16MSWIN949, LA8ISO6937, LA8PASSPORT, LT8MSWIN921, LT8PC772, LT8PC774, LV8PC1117, LV8PC8LR, LV8RST104090, N7SIEMENS9780X, N8PC865, NDK7DEC, NE8ISO8859P10, NEE8ISO8859P4, RU8BESTA, RU8PC855, RU8PC866, S7DEC, S7SIEMENS9780X, SE8ISO8859P3, SF7ASCII, SF7DEC, TH8MACTHAIS, TH8TISASCII, TIMESTEN8, TR8DEC, TR8MACTURKISHS, TR8MSWIN1254, TR8PC857, US7ASCII, US8PC437, *UTF8*, VN8MSWIN1258, VN8VN3, WE8DEC, WE8DG, WE8HP, WE8ISO8859P1, WE8ISO8859P15, WE8ISO8859P9, WE8MACROMAN8S, WE8MSWIN1252, WE8NCR4970, WE8NEXTSTEP, WE8PC850, WE8PC858, WE8PC860, WE8ROMAN8, ZHS16CGB231280, ZHS16GBK, ZHS32GB18030, ZHT16BIG5, ZHT16CCDC, ZHT16HKSCS, ZHT16HKSCS31, ZHT16MSWIN950, ZHT32EUC, ZHT32TRIS.
 
 The target character set is always Unicode and UTF-8 format.
 
-== Runtime architecture
 
-=== Modes of operation
+== Replication
 
-To make redo log parsing possible -- OpenLogReplicator must be able to physically access redo log files. It is up to the user to make that possible. You can run OpenLogReplicator on the same host as the database or on another host.
+=== Selection
 
-==== OpenLogReplicator running on database host
+=== Setup
 
-This is the easiest solution. But it is not recommended for production systems. For this scenario you can run OpenLogReplicator on the same host as the database. In this scenario you can use any mode of operation.
 
-Please mind that OpenLogReplicator may be using extensively memory and CPU. Please make sure that there are enough resources for the database to work properly.
 
-==== OpenLogReplicator running on another host
+== Startup
 
-This is the recommended solution. For this scenario you must make sure that the redo log files are possible to read. This may be achieved by:
+=== Position by scn
 
-* mounting read only remote filesystem (for example using SSHFS),
+=== By time
 
-* reading from SRDF copy,
+=== By sequence
 
-* reading from standby database,
 
-* reading just archived redo logs copied by batch file;
 
-.Remote access to redo log files
-image:architecture-sshfs.png[Remote access to redo log files,,,]
+== Checkpointing
 
-OpenLogReplicator by default would read online redo logs and process transactions as soon as they are committed and this information is written to redo log. But it can also read just archived redo logs – in this scenario transactions would be processed when log switch is performed and redo log is archived.
+=== Checkpoint messages
+
+
+
+== Output
+
+=== Data format
+
+=== DDL and schema changes
+
+=== JSON messages
+
+=== Protobuf messages
+
+
+
+== Running
+
+=== Docker
+
+
+
+== Advanced Features
+
+=== Schema changes
+
+The current release of OpenLogReplicator supports schema changes.
+The initial schema of the table(s) is read during startup of the program.
+Later changes to the schema are tracked.
+
+=== Offline Reader
+
+=== DataGuard
+
+=== High Availability
+
+=== Memory and performance

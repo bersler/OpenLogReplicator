@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
                 return;
         }
 
-        // Field: 4/5 - supplog?
+        // Field: 4/5 - suplog?
         kdli(ctx, redoLogRecord, fieldPos, fieldLength);
     }
 }

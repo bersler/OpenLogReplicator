@@ -1,7 +1,7 @@
 = Introduction to OpenLogReplicator
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-03-26
+:revdate: 2022-04-18
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -12,42 +12,53 @@
 a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-This document describes what is OpenLogReplicator and how it works. There is no assumption about the reader's knowledge of the subject.
+This document describes what is OpenLogReplicator and how it works.
+There is no assumption about the reader's knowledge of the subject.
 
 == Big picture
 
-Imagine if you have a big box of Lego blocks, and you want to keep track of all the changes you make to it. You add some new pieces, or take some away, or rearrange them in different ways. It would be hard to remember all of those changes without writing them down somewhere.
+Imagine if you have a big box of Lego blocks, and you want to keep track of all the changes you make to it.
+You add some new pieces, or take some away, or rearrange them in different ways.
+It would be hard to remember all of those changes without writing them down somewhere.
 
 Imagine that your project consists of millions of pieces and changes are done by hundreds of users simultaneously.
 
 == Change Data Capture
 
-The same thing can happen in a computer database - users are adding, modifying, and removing data all the time. It's important to keep track of those changes so that you can make sure everything is accurate and up-to-date.
+The same thing can happen in a computer database -- users are adding, modifying, and removing data all the time.
+It's important to keep track of those changes so that you can make sure everything is accurate and up-to-date.
 
-This is the place where *CDC (Change Data Capture)* comes to action. It's a tool that helps you keep track of all those changes automatically, so you don't have to do it manually.
+This is the place where *CDC (Change Data Capture)* comes to action.
+It's a tool that helps you keep track of all those changes automatically, so you don't have to do it manually.
 
-In the IT stack this allows to ensure that data is accurate and consistent across different parts of the system.
+In the IT stack, this allows ensuring that data is accurate and consistent across different parts of the system.
 
 == CDC Elements
 
-A CDC application typically consists of several elements that work together. The most important elements are:
+A CDC application typically consists of several elements that work together.
+The most important elements are:
 
 1. Change capture component: All changes in the source system are captured and stored in a format that can be easily processed by the application.
 
-2. Data storage & transformation component: The data can be transformed in many ways, including filtering, mapping, and converting data types or formats. For performance, security and reliability, the data is stored in a persistent data store. It is accessible for future processing.
+2. Data storage & transformation component: The data can be transformed in many ways, including filtering, mapping, and converting data types or formats.
+For performance, security and reliability, the data is stored in a persistent data store.
+It is accessible for future processing.
 
 3. Change delivery component: The data is delivered to the downstream systems or applications that need it.
 
 4. Monitoring and management component: The whole process is monitored and managed by a CDC application.
 
-These elements work together to capture and process changes made to data in a database, and make it available to downstream systems or applications. By using a CDC application, organizations can ensure that their data is accurate and up-to-date, and that it is available to the systems and applications that need it in a timely and efficient manner.
+These elements work together to capture and process changes made to data in a database, and make it available to downstream systems or applications.
+By using a CDC application, organizations can ensure that their data is accurate and up-to-date, and that it is available to the systems and applications that need it in a timely and efficient manner.
 
 .CDC Architecture
 image:cdc-architecture.png[CDC Architecture,,,]
 
 == Oracle Database
 
-An Oracle database is a type of computer database made by a company called Oracle. It's used to store large amounts of data, provides the data for  simultaneous change and keeps all consistent. It could contain customer information or financial records, and is often used by businesses and organizations.
+An Oracle database is a type of computer database made by a company called Oracle.
+It's used to store large amounts of data, provides the data for  simultaneous change and keeps all consistent.
+It could contain customer information or financial records, and is often used by businesses and organizations.
 
 According to {url-db-engines}[DB Engines] this is the most popular database in the world (as of March 2023).
 
@@ -56,11 +67,19 @@ image:db-engines.png[DB Engines rank,,,link={url-db-engines}]
 
 == OpenLogReplicator
 
-*OpenLogReplicator* is a GPL-licensed project created by {author} hosted on {url-github}[GitHub]. It is the only available *Open Source* *change capture* component available for *Oracle database* which uses binary reading of redo log files.
+*OpenLogReplicator* is a GPL-licensed project created by {author} hosted on {url-github}[GitHub].
+It is the only available *Open Source* *change capture* component available for an *Oracle database* which uses binary reading of redo log files.
 
-Unlike other solutions OpenLogReplicator is not dependent on any specific configuration of the source database. There is almost zero impact on the source system, it is even possible to work with no physical connection to the source database. LogMiner utility is not used. The main target of the output is Kafka, but it can be easily extended to other systems.
+Unlike other solutions, OpenLogReplicator is not dependent on any specific configuration of the source database.
+There are almost zero impacts on the source system, it is even possible to work with no physical connection to the source database.
+LogMiner utility is not used.
+The main target of the output is Kafka, but it can be easily extended to other systems.
 
 .Program architecture
 image:architecture.png[CDC Architecture,,,]
 
-TIP: OpenLogReplicator is not a full CDC solution. This just a part of the whole process. It is a change capture component. It is not responsible for data storage, transformation or delivery. The target of the captured transactions is always a message system, never a database.
+TIP: OpenLogReplicator is not a full CDC solution.
+This is just a part of the whole process.
+It is a change capture component.
+It is not responsible for data storage, transformation or delivery.
+The target of the captured transactions is always a message system, never a database.

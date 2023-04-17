@@ -58,7 +58,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_OBJ_TYPE_XML_SCHEMA              55
 #define SYS_OBJ_TYPE_JAVA_DATA               56
 #define SYS_OBJ_TYPE_RULE                    59
-#define SYS_OBJ_TYPE_EVALUATION_CONTXT       62
+#define SYS_OBJ_TYPE_EVALUATION_CONTEXT      62
 #define SYS_OBJ_TYPE_ASSEMBLY                87
 #define SYS_OBJ_TYPE_CREDENTIAL              90
 #define SYS_OBJ_TYPE_CUBE_DIMENSION          92

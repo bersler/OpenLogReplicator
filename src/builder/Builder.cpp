@@ -1087,7 +1087,7 @@ namespace OpenLogReplicator {
 
                         if (table != nullptr && columnFormat < COLUMN_FORMAT_FULL_UPD) {
                             if (table->columns[column]->numPk == 0) {
-                                // Remove unchanged column values - only for tables with defined primary key
+                                // Remove unchanged column values - only for tables with a defined primary key
                                 if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
                                         values[column][VALUE_AFTER] != nullptr) {
                                     if (lengths[column][VALUE_BEFORE] == 0 ||

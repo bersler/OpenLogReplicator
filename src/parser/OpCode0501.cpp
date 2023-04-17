@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
 
                 redoLogRecord->rowData = fieldPos;
                 if (ctx->dumpRedoLog >= 1) {
-                    dumpColsVector(ctx, redoLogRecord, redoLogRecord->data + fieldPos, ctx->read16(colNums));
+                    dumpColVector(ctx, redoLogRecord, redoLogRecord->data + fieldPos, ctx->read16(colNums));
                 }
             } else {
                 redoLogRecord->rowData = fieldNum + 1;
@@ -313,7 +313,7 @@ namespace OpenLogReplicator {
         // Field: 2
         ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);
 
-        // Incomplete ctx, don't analyze further
+        // Incomplete ctx: don't analyze further
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0)
             return;
 

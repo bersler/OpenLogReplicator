@@ -29,7 +29,7 @@ nightly build
 1.0.1 - released on 2023.02.20
 - fix: incorrect checkpoint file when non-ascii characters are used in schema files
 - fix: incorrect message printed on error
-- fix: allow to use stop-* parameters without using schemales mode
+- fix: allow to use stop-* parameters without using schemaless mode
 - enhancement: added consistency checks for experimental LOB support
 - fix: standardization of output messages
 - fix: race condition might result in transaction data loss
@@ -147,7 +147,7 @@ nightly build
 
 0.9.35-beta
 - fixed bug: throwing exception in constructor [#28]
-- fixed bug: throwing exception in callback functions for Kakfa module
+- fixed bug: throwing exception in callback functions for Kafka module
 - fixed bug: error "split undo is broken" when undo for op code 11.22 split
 - fixed bug: reading from standby redo log files failed during switch
 - optimized Oracle connection handling
@@ -191,7 +191,7 @@ nightly build
 0.9.29-beta
 - fixed bug: "disable-checks" parameter value check
 - fixed bug: schemaless mode failing with compressed tables
-- fixed bug: incorrect strting offset in checkpoint file
+- fixed bug: incorrect string offset in checkpoint file
 - fixed bug: reading from inactive online redo log could print warnings/errors
 - fixed bug: merging split undo blocks could sometimes fail
 - fixed bug: schemaless processing failed with DML commands
@@ -364,7 +364,7 @@ nightly build
 - by default row id is not included in the output
 - online mode: fixed startup by seq
 - updated protobuf output module to be in sync with json code
-- rewritten column handling to avoid performance issues due to memory allocation/deallocation
+- rewritten column handling to avoid performance issues due to memory allocation/de-allocation
 - decreased contention on locks, internal buffer is flushed less often
 - inlining code to create output stream in json format
 - inlining some code for red log parsing

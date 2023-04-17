@@ -308,7 +308,7 @@ namespace OpenLogReplicator {
                           std::to_string(lastCheckpointOffset));
 
         if (!stateWrite(checkpointName, ss))
-            ctx->warning(60018, "file: " + checkpointName + " - could not write checkpoint");
+            ctx->warning(60018, "file: " + checkpointName + " - couldn't write checkpoint");
     }
 
     void Metadata::readCheckpoints() {

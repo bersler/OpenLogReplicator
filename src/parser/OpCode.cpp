@@ -306,7 +306,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        // Block cleanout record
+        // Block clean record
         if ((ktbOp & KTBOP_BLOCKCLEANOUT) != 0) {
             if (ctx->dumpRedoLog >= 1) {
                 typeScn scn = ctx->readScn(redoLogRecord->data + fieldPos + 48);
@@ -340,7 +340,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (fieldLength < 56 + entries * static_cast<uint64_t>(8))
-                    throw RedoLogException(50061, "too short field KTB Reod F2: " + std::to_string(fieldLength) + " offset: " +
+                    throw RedoLogException(50061, "too short field KTB Read F2: " + std::to_string(fieldLength) + " offset: " +
                                            std::to_string(redoLogRecord->dataOffset));
 
                 for (uint64_t j = 0; j < entries; ++j) {
@@ -1956,7 +1956,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpColsVector(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colnum) {
+    void OpCode::dumpColVector(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colnum) {
         uint64_t pos = 0;
 
         ctx->dumpStream << "Vector content: " << std::endl;
@@ -2100,8 +2100,8 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::processFbFlags(uint8_t fb, char* fbStr) {
-        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; // Last column continues in Next piece
-        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; // First column continues from Previous piece
+        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; // The last column continues in a Next piece
+        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; // The first column continues from a Previous piece
         if ((fb & FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; // Last ctx piece
         if ((fb & FB_F) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; // First ctx piece
         if ((fb & FB_D) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; // Deleted row

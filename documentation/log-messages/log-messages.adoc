@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-04-16
+:revdate: 2022-04-18
 :imagesdir: ./images
 :toc: preamble
 
@@ -16,19 +16,28 @@ This document describes messages of OpenLogReplicator which are written to the l
 
 The following message levels are used:
 
-1. *Errors* -- Some functionality is not available, user should review the message and take appropriate action. In some cases the program may abort. Messages can be suppressed by setting the `trace` parameter to `0`.
+1. *Errors* -- Some functionality is not available, user should review the message and take appropriate action.
+In some cases, the program may abort.
+Messages can be suppressed by setting the `trace` parameter to `0`.
 
-2. *Warnings* -- Something is not correct, but may be intentional or not critical. Messages can be suppressed by setting the `trace` parameter to `1`.
+2. *Warnings* -- Something is not correct, but may be intentional or not critical.
+Messages can be suppressed by setting the `trace` parameter to `1`.
 
-3. *Information* -- Program status. Messages can be suppressed by setting the `trace` parameter to `2`.
+3. *Information* -- Program status.
+Messages can be suppressed by setting the `trace` parameter to `2`.
 
-4. *Debug* -- Debugging information. Messages can be suppressed by setting the `trace` parameter to `3`.
+4. *Debug* -- Debugging information.
+Messages can be suppressed by setting the `trace` parameter to `3`.
 
-5. *Trace* -- Detailed information about program internals. Messages are controlled by the `trace2` parameter. Parameter `trace` is not relevant for tracing.
+5. *Trace* -- Detailed information about program internals.
+Messages are controlled by the `trace2` parameter.
+Parameter `trace` is not relevant for tracing.
 
 IMPORTANT: By default, all error, warning and info messages are printed -- `trace` parameter is set to value `3`.
 
-TIP: The documentation does not discuss _Trace_ messages in detail. Those messages not intended to be used by users. Format can change without notice.
+TIP: The documentation doesn't discuss _Trace_ messages in detail.
+Those messages aren't intended to be used by users.
+Format can change without notice.
 
 == Error Messages
 
@@ -40,53 +49,79 @@ Errors related to program execution.
 
 ==== code 10001: "file: <file name> - open returned: <message>"
 
-Provided file is missing or cannot be opened for reading. Check if the file exists and has correct permissions. Verify filesystem integrity and operating system log messages.
+The provided file is missing or can't be opened for reading.
+Check if the file exists and has the correct permissions.
+Verify filesystem integrity and operating system log messages.
 
 ==== code 10002: "file: <file name> - lock returned: <message>"
 
-Attempt to create an exclusive lock on the file has failed. Check if another process is running (perhaps another instance of OpenLogReplicator).
+Attempt to create an exclusive lock on the file has failed.
+Check if another process is running (perhaps another instance of OpenLogReplicator).
 
-TIP: You can list file handles using operating system `lsof` command. Refer to operating system documentation about locking files.
+TIP: You can list file handles using operating system `lsof` command.
+Refer to operating system documentation about locking files.
 
 ==== code 10003: "file: <file name> - stat returned: <message>"
 
-Reading file metadata failed. Check if the file is not corrupted. Verify operating system log messages.
+Reading file metadata failed.
+Check if the file is not corrupted.
+Verify operating system log messages.
 
 ==== code 10004: "file: <file name> - wrong size: <file size>"
 
-File size is too large or is empty. Check if the file is not corrupted.
+File size is too large or is empty.
+Check if the file is not corrupted.
 
 ==== code 10005: "file: <file name> - <number> bytes read instead of <number>"
 
-Read operation processed fewer bytes than expected. Check if the file system is not corrupted and disk containing file is available.
+Read operation processed fewer bytes than expected.
+Check if the file system is not corrupted and disk-containing file is available.
 
 ==== code 10006: "file: <file name> - open for write returned: <error>"
 
-File could not be opened for write. If the file did not exist it would be created. Verify if the file exists and has correct permissions. Verify folder write permissions if file is to be created.
+The file couldn't be opened for write.
+If the file didn't exist, it would be created.
+Verify if the file exists and has the correct permissions.
+Verify folder write permissions if a file is to be created.
 
 ==== code 10007: "file: <file name> - <number> bytes written instead of <number>, code returned: <message>"
 
-Write operation processed fewer bytes than expected. Check if the file system is not corrupted and disk containing file is available. Verify disk space availability.
+Write operation processed fewer bytes than expected.
+Check if the file system is not corrupted and disk-containing file is available.
+Verify disk space availability.
 
 ==== code 10046: "file: <file name> - set no cache returned: <message>"
 
-Apple/iOS only. Setting of the redo log file to no cache mode failed. Verify if the file exists and has correct permissions. Verify if the file is not corrupted. Check operating system log messages.
+Apple/iOS only.
+Setting of the redo log file to no cache mode failed.
+Verify if the file exists and has the correct permissions.
+Verify if the file is not corrupted.
+Check operating system log messages.
 
 ==== code 10009: "file: <file name> - failed to open after <number> tries"
 
-File could not be opened after several attempts. Verify if the file exists and has correct permissions. Verify folder read permissions if file is to be read.
+The file couldn't be opened after several attempts.
+Verify if the file exists and has the correct permissions.
+Verify folder read permissions if file is to be read.
 
 ==== code 10010: "file: <file name> - unlink returned: <error>"
 
-File remove failed. Verify if the file exists and has correct permissions. Verify if the file is not corrupted and contains correct JSON content. Verify operating system log messages and filesystem integrity.
+File remove failed.
+Verify if the file exists and has the correct permissions.
+Verify if the file is not corrupted and contains correct JSON content.
+Verify operating system log messages and filesystem integrity.
 
 ==== code 10011: "file: <file name> - seek returned: <error>"
 
-File seek failed. Verify if the file exists and has correct permissions. Verify operating system log messages and filesystem integrity.
+File seek failed.
+Verify if the file exists and has the correct permissions.
+Verify operating system log messages and filesystem integrity.
 
 ==== code 10012: "directory: <directory name> - can't read"
 
-Reading contents of directory failed. Verify if the directory exists and has correct permissions. Verify operating system log messages and filesystem integrity.
+Reading the contents of the directory failed.
+Verify if the directory exists and has the correct permissions.
+Verify operating system log messages and filesystem integrity.
 
 ==== code 10013: "spawning thread: <thread name>"
 
@@ -96,7 +131,8 @@ TIP: Verify if there is a limit set in the OS related to the number of threads.
 
 ==== code 10014: "stacktrace for thread: <thread id>"
 
-Stacktrace for thread is printed. This message is printed when the program is terminated by a signal.
+Stacktrace for thread is printed.
+This message is printed when the program is terminated by a signal.
 
 TIP: Stacktrace can be forced by sending SIGUSR1 signal to the program.
 
@@ -106,227 +142,299 @@ This message is printed when the program is terminated by a signal.
 
 ==== code 10016: "couldn't allocate <number> bytes memory for: <module>"
 
-Memory allocation failed. Verify if the provided `memory-min-mb` and `memory-max-mb` parameters are correct and match amount of memory available in the operating system.
+Memory allocation failed.
+Verify if the provided `memory-min-mb` and `memory-max-mb` parameters are correct and match amount of memory available in the operating system.
 
 ==== code 10017: "out of memory"
 
-Configured amount of memory does not allow to process provided stream of redo log files. Refer to suggestions for details about reducing memory usage (TODO: ref).
+Configured amount of memory doesn't allow processing provided stream of redo log files.
+Refer to suggestions for details about reducing memory usage (TODO: ref).
 
 TIP: Increase `memory-max-mb` parameter to allow more memory to be used.
 
 ==== code 10018: "memory allocation failed: <message>"
 
-Memory allocation from heap failed. Verify if host contains enough memory to run the program. If the problem persists, please report this issue.
+Memory allocation from heap failed.
+Verify if the host contains enough memory to run the program.
+If the problem persists, please report this issue.
 
-IMPORTANT: Some memory structures are allocated ad-hoc and not from the pool defined with `memory-min-mb` and `memory-max-mb` parameters. For example for storing schema (copy of content of database `SYS.*` tables). This message is printed when such allocation fails.
+IMPORTANT: Some memory structures are allocated adhoc and not from the pool defined with `memory-min-mb` and `memory-max-mb` parameters.
+For example for storing schema (copy of content of database `SYS.*` tables).
+This message is printed when such allocation fails.
 
 ==== code 10019: "binaries are build with no regex implementation, check if you have gcc version >= 4.9"
 
-The code is compiled using old GCC compiler which technically has regex support, but it is not complete. Use GCC version 4.9 or newer.
+The code is compiled using the old GCC compiler which technically has regex support, but it is not complete.
+Use GCC version 4.9 or newer.
 
-Program starts at startup if regex support actually works.
+The program starts at startup if regex support actually works.
 
 ==== code 10020: "program is run as root, you should never do that"
 
-Program is run as root. It is not recommended to run the program as root. Please run the program as a normal user.
+The program is run as root.
+It is not recommended to run the program as root.
+Please run the program as a normal user.
 
-NOTE: Although technically it should be possible to run program as root user, this should never be done even for testing environment. The program is designed to run as a normal user. Running a root user may cause security issues. Even for development or test environments keep the program running as a normal user.
+NOTE: Although technically it should be possible to run a program as root user, this should never be done even for testing environment.
+The program is designed to run as a normal user.
+Running a root user may cause security issues.
+Even for development or test environments, keep the program running as a normal user.
 
 ==== code 10021: "database not in ARCHIVELOG mode"
 
-The source database must be running in ARCHIVELOG mode. Verify if the database is running in ARCHIVELOG mode. Refer to database documentation for more information (TODO: ref.).
+The source database must be running in ARCHIVELOG mode.
+Verify if the database is running in ARCHIVELOG mode.
+Refer to database documentation for more information (TODO: ref.).
 
 ==== code 10022: "SUPPLEMENTAL_LOG_DATA_MIN missing
 
-The database is missing minimal supplemental log information. Verify that the database is configured correctly. Refer to database documentation for more information (TODO: ref.).
+The database is missing minimal supplemental log information.
+Verify that the database is configured correctly.
+Refer to database documentation for more information (TODO: ref.).
 
 ==== code 10023: "no data in SYS.V_$DATABASE"
 
-Reading `SYS.V_$DATABASE` returned no data. Verify that the database user has grants to read `SYS.V_$DATABASE` system table. Refer to database documentation for more information.
+Reading `SYS.V_$DATABASE` returned no data.
+Verify that the database user has grants to read `SYS.V_$DATABASE` system table.
+Refer to database documentation for more information.
 
 ==== code 10024: "can't position by time for standby database"
 
-The database is a standby database. The database must be a primary database when starting position is defined by time. Start replication when the database is primary and later switch to standby database (TODO: ref.).
+The database is a standby database.
+The database must be a primary database when time defines starting position.
+Start replication when the database is primary and later switch to standby database (TODO: ref.).
 
 ==== code 10025: "can't find scn for: <timestamp>"
 
-Database function `TIMESTAMP_TO_SCN` failed to convert provided timestamp to SCN. Verify if the timestamp is correct (TODO: ref.).
+The database function `TIMESTAMP_TO_SCN` failed to convert provided timestamp to SCN.
+Verify if the timestamp is correct (TODO: ref.).
 
 ==== code 10026: "can't position by relative time for standby database"
 
-The database is a standby database. The database must be a primary database when starting position is defined by relative time. Start replication when the database is primary and later switch to standby database (TODO: ref.).
+The database is a standby database.
+The database must be a primary database when relative time defines starting position.
+Start replication when the database is primary and later switch to standby database (TODO: ref.).
 
 ==== code 10027: "can't read any member of group <number>"
 
-For given group of online redo logs no file is available to read. Verify if path mapping is correctly configured and files are available for reading from the location where OpenLogReplicator is running. Verify file and path permissions/ownership.
+For a given group of online redo logs, no file is available to read.
+Verify if path mapping is correctly configured and files are available for reading from the location where OpenLogReplicator is running.
+Verify file and path permissions/ownership.
 
 ==== code 10028: "starting sequence is unknown"
 
-Program started with `offline` reader type but no starting sequence is available. Verify parameters for replication start.
+Program started with `offline` reader type but no starting sequence is available.
+Verify parameters for replication start.
 
 ==== code 10029: "can't find database current scn"
 
-Executing query to read current SCN from database failed. Verify if the database is available.
+Executing a query to read current SCN from a database failed.
+Verify if the database is available.
 
 ==== code 10030: "getting database sequence for scn: <scn"
 
-Executing query to read database sequence for provided SCN failed. Verify if the database is available (TODO: ref.).
+Executing query to read database sequence for provided SCN failed.
+Verify if the database is available (TODO: ref.).
 
 ==== code 10031: "getting database scn"
 
-The operation of determining the starting SCN failed. Verify if the database is available. Please report this issue if the problem persists.
+The operation of determining the starting SCN failed.
+Verify if the database is available.
+Please report this issue if the problem persists.
 
 ==== code 10032: "can't get parameter value for <parameter>"
 
-Reading of database parameter failed. Verify if the parameter exists and has correct value.
+Reading of database parameter failed.
+Verify if the parameter exists and has the correct value.
 
 ==== code 10033: "can't get property value for <property>"
 
-Reading of database property failed. Verify if the property exists and has correct value.
+Reading of database property failed.
+Verify if the property exists and has the correct value.
 
 ==== code 10034: "grants missing for table <table>"
 
-Verify if the database user has grants to read provided table. Refer to database documentation for more information.
+Verify if the database user has grants to read the provided table.
+Refer to database documentation for more information.
 
 TIP: Verify if the grant script was executed successfully.
 
 ==== code 10035: "can't read <table> from flashback, try some later scn for start"
 
-During startup when `online` reader is chosen the full schema must be read from the database. To achieve full consistency all database queries use flashback to read the contents of system tables for the provided SCN number. The flashback query failed. Verify if the database is available.
+During startup when `online` reader is chosen the full schema must be read from the database.
+To achieve full consistency, all database queries use flashback to read the contents of system tables for the provided SCN number.
+The flashback query failed.
+Verify if the database is available.
 
-TIP: Run initial replication of replication during less active period
+TIP: Run initial replication of replication during a less active period
 
 TIP: Run initial replication on a copy of the database which is not modified
 
-TIP: Provide starting SCN number less away in time. The SCN number must be within the retention period of the database.
+TIP: Provide starting SCN number less away in time.
+The SCN number must be within the retention period of the database.
 
 ==== code 10036: "failed to find standby redo log files"
 
-The database is running as standby but the list of standby redo log files could not be read from the database. Verify if the database is available.
+The database is running as standby, but the list of standby redo log files couldn't be read from the database.
+Verify if the database is available.
 
 ==== code 10037: "failed to find online redo log files"
 
-List of online redo log files could not be read from the database. Verify if the database is available.
+The list of online redo log files couldn't be read from the database.
+Verify if the database is available.
 
 ==== code 10038: "unknown database role: <role>"
 
-Data read from system dictionaries is invalid. Please report this issue.
+Data read from system dictionaries is invalid.
+Please report this issue.
 
 ==== code 10039: "updating of online redo logs failed for <path>"
 
-Updating list of online redo log files failed. Verify if the files exist and have correct permissions.
+Updating the list of online redo log files failed.
+Verify if the files exist and have the correct permissions.
 
 ==== code 10040: "schema file missing"
 
-Program started with `offline` reader type but no schema file is available. Verify if the schema file exists and has correct permissions.
+Program started with `offline` reader type but no schema file is available.
+Verify if the schema file exists and has the correct permissions.
 
 ==== code 10041: "table <table> - couldn't find all column set (<keys>)"
 
-One of the columns defined as primary key is not present in the table definition. Verify if the table definition is correct.
+One of the columns defined as a primary key is not present in the table definition.
+Verify if the table definition is correct.
 
 ==== code 10042: "unsupported NLS_CHARACTERSET value: <value>"
 
-Character set defined in the database is invalid. Please report this issue.
+Character set defined in the database is invalid.
+Please report this issue.
 
 ==== code 10043: "after mapping path length (<length>) is too long for: <path>"
 
-Provided configuration for mapping path is too long. Verify if the path is correct. Verify `path-mapping` configuration parameter.
+Provided configuration for a mapping path is too long.
+Verify if the path is correct.
+Verify `path-mapping` configuration parameter.
 
-TIP: If still the problem persists and just you expect to have so extraordinary long path which would exceed limit of length, please report this issue.
+TIP: If still the problem persists and just you expect to have a so extraordinary long path which would exceed the limit of length, please report this issue.
 
 ==== code 10044: "missing location of archived redo logs for offline mode"
 
-When starting with offline mode it is expected that the checkpoint file contains the location of archived redo logs. Verify if the checkpoint file contains the location of archived redo logs.
+When starting with offline mode, it is expected that the checkpoint file contains the location of archived redo logs.
+Verify if the checkpoint file contains the location of archived redo logs.
 
 ==== code 10045: "resetlogs (<resetlogs>) not found in incarnation list"
 
-The given resetlogs value is not found in the list of available incarnations. Verify if the resetlogs value is correct. Verify the content of checkpoint file.
+The given resetlogs value is not found in the list of available incarnations.
+Verify if the resetlogs value is correct.
+Verify the content of the checkpoint file.
 
 ==== code 10046: "unsupported NLS_NCHAR_CHARACTERSET value: <value>"
 
-National character set defined in the database is invalid. Please report this issue.
+National character set defined in the database is invalid.
+Please report this issue.
 
 ==== code 10047: "archive log processing returned: <message>, code: <number>"
 
-Processing of archived redo log file failed. Verify if the file exists and has correct permissions. Verify if the file is not corrupted.
+Processing of archived redo log file failed.
+Verify if the file exists and has the correct permissions.
+Verify if the file is not corrupted.
 
 ==== code 10048: "read archived redo log, code: <number>"
 
-An unknown error appeared during processing of archived redo log file. Please report this issue.
+An unknown error appeared during processing of archived redo log file.
+Please report this issue.
 
 ==== code 10049: "read online redo log, code: <number>"
 
-An unknown error appeared during processing of online redo log file. Please report this issue.
+An unknown error appeared during processing of online redo log file.
+Please report this issue.
 
 ==== code 10050: "can't initialize oracle environment (OCI)"
 
-Initialization of Oracle environment failed. Check if the Oracle client is installed and configured correctly.
+Initialization of Oracle environment failed.
+Check if the Oracle client is installed and configured correctly.
 
 ==== code 10051: "OCI: <message>"
 
-Database connection error. Check with DBA if the database is available.
+Database connection error.
+Check with DBA if the database is available.
 
 ==== code 10052: schema file missing
 
 Schema is missing for batch mode.
 
-TIP: If you don't have earlier schema but wish to continue having no information about column names and types, try with schema-less mode (`'flags': 2`). Refer to the documentation for more information about schemaless mode (TODO: ref).
+TIP: If you don't have earlier schema but wish to continue having no information about column names and types, try with schemaless mode (`'flags': 2`).
+Refer to the documentation for more information about schemaless mode (TODO: ref).
 
 ==== code 10053: "network receive error"
 
-Network operation of receiving data from client failed. Verify if the network is available and if the network is not overloaded.
+Network operation of receiving data from a client failed.
+Verify if the network is available and if the network is not overloaded.
 
 ==== code 10054: "network send error"
 
-Network operation of sending data to client failed. Verify if the network is available and if the network is not overloaded.
+Network operation of sending data to a client failed.
+Verify if the network is available and if the network is not overloaded.
 
 ==== code 10055: "message from client is incomplete"
 
-Message received from client is incomplete. Verify if the network is available and if the network is not overloaded.
+The message received from a client is incomplete.
+Verify if the network is available and if the network is not overloaded.
 
 ==== code 10056: "host disconnected"
 
-Network connection was closed by the client. Verify if the network is available and if the network is not overloaded.
+The client has closed network connection.
+Verify if the network is available and if the network is not overloaded.
 
 ==== code 10057: "Kafka: fatal error: <message>, reason: <message>"
 
-Kafka library returned a fatal error. Verify if the Kafka server is available and if the network is not overloaded.
+Kafka library returned a fatal error.
+Verify if the Kafka server is available and if the network is not overloaded.
 
 ==== code 10058: "Kafka failed to create configuration, message: <message>"
 
-Kafka configuration cannot be created. Check if the configuration file contains valid content.
+Kafka configuration can't be created.
+Check if the configuration file contains valid content.
 
 ==== code 10059: "Kafka message: <message>"
 
-Kafka library returned error during initialization. Verify provided Kafka parameters.
+Kafka library returned error during initialization.
+Verify provided Kafka parameters.
 
 ==== code 10060: "Kafka failed to create producer, message: <message>"
 
-Kafka producer creation failed. Please verify provided Kafka parameters.
+Kafka producer creation failed.
+Please verify the provided Kafka parameters.
 
 ==== code 10061: "network error, errno: <number>, message: <message>"
 
-Network error appeared during sending or receiving data. Verify if the network is available and if the network is not overloaded.
+Network error appeared during sending or receiving data.
+Verify if the network is available and if the network is not overloaded.
 
 ==== code 10062: "connection to <uri> failed, errno: <number>, message: <message>"
 
-Network connection failed. Verify if the network is available and if the network is not overloaded.
+Network connection failed.
+Verify if the network is available and if the network is not overloaded.
 
 ==== code 10063: "ZeroMQ connect to <uri> failed, message: <message>"
 
-Client cannot connect to ZeroMQ server. Verify if the ZeroMQ server is available and if the network is not overloaded.
+Client can't connect to ZeroMQ server.
+Verify if the ZeroMQ server is available and if the network is not overloaded.
 
 ==== code 10064: "ZeroMQ bind to <uri> failed, message: <message>"
 
-Server cannot bind to ZeroMQ socket. Verify if the ZeroMQ server is available and if the network is not overloaded. Verify if another process is not running on the same port.
+Server can't bind to ZeroMQ socket.
+Verify if the ZeroMQ server is available and if the network is not overloaded.
+Verify if another process is not running on the same port.
 
 ==== code 10065: "ZeroMQ context creation failed"
 
-Creation of ZeroMQ context failed. Verify if the ZeroMQ library is installed and available.
+Creation of ZeroMQ context failed.
+Verify if the ZeroMQ library is installed and available.
 
 ==== code 10066: "ZeroMQ initializing socket failed, message: <message>"
 
-Initialization of ZeroMQ socket failed. Verify if the ZeroMQ library is installed and available.
+Initialization of ZeroMQ socket failed.
+Verify if the ZeroMQ library is installed and available.
 
 === Data Exceptions (2xxxx)
 
@@ -334,39 +442,57 @@ Errors related to syntax and content of configuration file and checkpoint files.
 
 ==== code 20001: "file: <file name> - <message>"
 
-Parsing configuration file failed. Check if the file is not corrupted. Please verify content of JSON file using online JSON validator.
+Parsing configuration file failed.
+Check if the file is not corrupted.
+Please verify the content of JSON file using online JSON validator.
 
 If the checkpoint file belongs to another database, verify if the database name is correct.
 
-Having incorrect checkpoint file makes impossible to start replication. If it is not possible to fir the checkpoint file, remove it and start replication from the beginning.
+Having an incorrect checkpoint file makes it impossible to start replication.
+If it is not possible to fix the checkpoint file, remove it and start replication from the beginning.
 
 ==== code 20002: "bad XID value: <text>"
 
-Transaction ID (XID) number is in incorrect format provided in the configuration file. This value has wrong format and cannot be parsed. Check if the file is not corrupted. Refer to the documentation for more information about XID format (TODO: ref to config).
+Transaction ID (XID) number is in incorrect format provided in the configuration file.
+This value has a wrong format and can't be parsed.
+Check if the file is not corrupted.
+Refer to the documentation for more information about XID format (TODO: ref to config).
 
 ==== code 20003: "file: <file name> - parse error, field <field> <message>"
 
-Parsing of a JSON file failed. File contains invalid data. Verify if file content is a valid JSON.
+Parsing of a JSON file failed.
+The file contains invalid data.
+Verify if file content is a valid JSON.
 
 ==== code 20004: "identifier '<name>' is too long"
 
-Identifier used for metadata for table or owner name is too long. Verify if the name is correct. Verify if the name is not too long.
+Identifier used for metadata for table or owner name is too long.
+Verify if the name is correct.
+Verify if the name is not too long.
 
 ==== code 20005: "file: <file name> - <field name> should be an array with 2 elements"
 
-Checkpoint file contains invalid data. Verify if file content is a valid JSON.
+Checkpoint file contains invalid data.
+Verify if file content is a valid JSON.
 
 ==== code 20006: "file: <file name> - invalid offset: <number> is not a multiplication of 512"
 
-The file is not a valid archived redo log file. Verify if the file exists and has correct permissions. Verify if the file is not corrupted and contains correct JSON content.
+The file is not a valid archived redo log file.
+Verify if the file exists and has the correct permissions.
+Verify if the file is not corrupted and contains correct JSON content.
 
 ==== code 20007: "file: <file name> - database schema name '<owner>' is missing in schema file"
 
-After starting of replication and collecting schema file a new owner has been added to the configuration file OpenLogReplicator.json. For this user there is no schema collected. If the new tables of the new user are supposed to be replicated - recreate schema files. Delte old schema files and force creation of new schema files.
+After starting of replication and collecting schema file, a new owner has been added to the configuration file OpenLogReplicator.json.
+For this user, there is no schema collected.
+If the new tables of the new user are supposed to be replicated -- recreate schema files.
+Delete old schema files and force creation of new schema files.
 
 ==== code 20008: "row ID incorrect length: <number>"
 
-Row ID is in incorrect format. The length of the row ID is not correct. Verify if the row ID is correct.
+Row ID is in incorrect format.
+The length of the row ID is not correct.
+Verify if the row ID is correct.
 
 === Configuration Errors (3xxxx)
 
@@ -374,83 +500,116 @@ Parameters defined to start OpenLogReplicator have incorrect values.
 
 ==== code 30001: "bad JSON, invalid '<field name>' value: <observed value>, expected <expected value>"
 
-Value of the field is not correct. Check if the file contains valid content.
+The value of the field is not correct.
+Check if the file contains valid content.
 
 ==== code 30002: "invalid arguments, run: <binary name> [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is <file name>"
 
-Invalid arguments were passed to the program. Check if the program was started correctly.
+Invalid arguments were passed to the program.
+Check if the program was started correctly.
 
 ==== code 30003: "owner '<name>' contains lower case characters, value must be upper case"
 
-Table owner contains lower case characters. Table owner must be in upper case. Please report this issue.
+Table owner contains lower case characters.
+Table owner must be in the upper case.
+Please report this issue.
 
 ==== code 30004: "table '<name>' contains lower case characters, value must be upper case"
 
-Table name contains lower case characters. Table owner must be in upper case. Please report this issue.
+Table name contains lower case characters.
+Table owner must be in the upper case.
+Please report this issue.
 
 ==== code 30005: "invalid value for 'output': <value>"
 
-Syntax error in 'output` parameter. Verify if the parameter is correct. Probably there is a single `%` character but not followed by proper format.
+Syntax error in `output` parameter.
+Verify if the parameter is correct.
+Probably there is a single `%` character but not followed by proper format.
 
 ==== code 30006: "output file is with no rotation: <value> - 'append' must be set to 1"
 
-File name is defined as a static file name without rotation. For such cases the `append` parameter must be set to 1.
+File name is defined as a static file name without rotation.
+For such cases the `append` parameter must be set to 1.
 
 ==== code 30007: "output file is with no max file size: <output> - 'max-file-size' must be defined for output with rotation"
 
-File is defined with rotation but no maximum file size is set. Define `max-file-size` parameter.
+File is defined with rotation but no maximum file size is set.
+Define `max-file-size` parameter.
 
 ==== code 30008: "uri is missing ':' in parameter: <parameter>"
 
-URI is missing ':' character. Verify if the URI is correct.
+URI is missing a `':'` character.
+Verify if the URI is correct.
 
 === Redo Log Errors (4xxxx)
 
-Some data in redo log files are not correct. ???
+Some data in redo log files aren't correct.
+The data doesn't need the model requirements of OpenLogReplicator or is corrupted.
 
 ==== code 40001: "file: <file name> block: <number> - invalid block size: <number>, header[1]: <number>"
 
-Block size in the header of the file does not match expected value. Verify if the file is not corrupted. If the problem persists, please report this issue.
+Block size in the header of the file doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40002: "file: <file name> - invalid header block number: <number>, expected: <number>"
 
-Block number does not match expected value. Verify if the file is not corrupted. If the problem persists, please report this issue.
+Block number doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40003: "file: <file name> - invalid header[0]: <number>"
 
-Invalid header read from the file. Verify if the file is not corrupted. If the problem persists, please report this issue.
+Invalid header read from the file.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40004: "file: <file name> - invalid header[28-31]: <number>, <number>, <number>, <number>"
 
-Invalid header read from the file. Verify if the file is not corrupted. If the problem persists, please report this issue.
+Invalid header read from the file.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40005: "file: <file name> - invalid block size: <number>, header[1]: <number>"
 
-Block size in the header of the file does not match expected value. Verify if the file is not corrupted. If the problem persists, please report this issue.
+Block size in the header of the file doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40006: "file: <file name> - invalid database version: <number>"
 
-Database version in the header of the file does not match expected value. Verify if the file is not corrupted. If the problem persists, please report this issue.
+The database version in the header of the file doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40007: "file: <file name> - invalid database version: <number>, expected: <number>"
 
-Database version in the header of the block does not match expected value. Verify if the file is not corrupted. If the problem persists, please report this issue.
+The database version in the header of the block doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40008: "file: <file name> - invalid first scn value: <number>, expected: <number>"
 
-First scn value reported in the header of the block does not match expected value. Verify if the file is not corrupted. If the problem persists, please report this issue.
+The first scn value reported in the header of the block doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40009: "file: <file name> - invalid next scn value: <number>, expected: <number>"
 
-Next scn value reported in the header of the block does not match expected value. Verify if the file is not corrupted. If the problem persists, please report this issue.
+The next scn value reported in the header of the block doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 ==== code 40010, "file: <file name> - zero to read, start: <number>, end: <number>, scan: <number>"
 
-Double read error. Verify if the file is not corrupted. If the problem persists, please report this issue.
+Double read error.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
 
 === Internal Errors (5xxxx)
 
-Provided below is list of internal errors which should never appear. If you encounter any of these errors, please report this issue.
+Provided below is a list of internal errors which should never appear.
+If you encounter any of these errors, please report this issue.
 
 ==== code 50001: "trying to free unknown memory block for: <module>"
 
@@ -486,7 +645,7 @@ Provided below is list of internal errors which should never appear. If you enco
 
 ==== code 50017: "PB <operation> processing failed, error serializing to string
 
-==== code 50018: "PB <operation> processing failed, message missing
+==== code 50018: "PB <operation> processing failed, a message is missing
 
 ==== code 50019: "ddl: column type mismatch for <owner>.<table>: column <column> type found <type> offset: <number>"
 
@@ -584,11 +743,15 @@ Provided below is list of internal errors which should never appear. If you enco
 
 ==== code 60001: "incomplete row for table (obj: <number>), probably IOT, xid: <xid>, offset: <number>"
 
-This warning is most probably related to using schemaless mode with IOT tables. In this case, please try to use schema mode instead. If the problem persists, please report this issue.
+This warning is most probably related to using schemaless mode with IOT tables.
+In this case, please try to use schema mode instead.
+If the problem persists, please report this issue.
 
 ==== code 60002: "unknown value (column: <column>): <number> - <data>)"
 
-Might be related to extensive using of dbms_lob package. In this case, please try to use direct DML operations for LOB columns instead. If the problem persists, please report this issue.
+Might be related to extensive using of dbms_lob package.
+In this case, please try to use direct DML operations for LOB columns instead.
+If the problem persists, please report this issue.
 
 ==== code 60003: "incorrect LOB for xid: <xid>> data: <data>"
 
@@ -612,7 +775,8 @@ See comment for warning 60002.
 
 ==== code 60008: "can't decode character: (x, y, z) using character set <name>, xid: <xid>"
 
-The character field contained a character code which is invalid and can't be decoded. If the field is not character, and the data is expecteed to be correct, please report this issue.
+The character field contained a character code which is invalid and can't be decoded.
+If the field is not character, and the data is expected to be correct, please report this issue.
 
 ==== code 60009: "duplicate orphaned lob: <lob>, page: <number>"
 
@@ -620,19 +784,23 @@ See comment for warning 60002.
 
 ==== code 60010: "no match found for transaction rollback, skipping, SLT: <number>, USN: <number>"
 
-This warnings could appear during replication startup. It means that the beginning of the transaction appeared probably before replication startup.
+This warning could appear during replication startup.
+It means that the beginning of the transaction appeared probably before replication startup.
 
 ==== code 60011: "skipping transaction with no begin: <details>"
 
-Received commit for a transaction which started before replication startup. Transaction is discarded.
+Received commit for a transaction which started before replication startup.
+The transaction is discarded.
 
 ==== code 60012: "aborting log dump"
 
-The log dump is aborted, because there was a problem with creating a file for the dump.
+The log dump is aborted because there was a problem with creating a file for the dump.
 
 ==== code 60013: "forced to continue working in spite of error"
 
-In spite of redo log data error, the redo log is processed. A message has been printed with the error which appeared during parsing. Investigate the error anyway and verify if the data is correct.
+In spite of redo log data error, the redo log is processed.
+A message has been printed with the error which appeared during parsing.
+Investigate the error anyway and verify if the data is correct.
 
 ==== code 60014: "verify redo log file for OP:10.8, len: <number>, data = [<number>, <number>, <number>, <number>]"
 
@@ -648,19 +816,26 @@ See comment for warning 60002.
 
 ==== code 60017: "minimal supplemental log missing or redo log inconsistency for transaction <xid>"
 
-Verify if supplemental logging is enabled for the database. If it is, and even after log switch the warning appears, please report this issue.
+Verify if supplemental logging is enabled for the database.
+If it is, and even after log switch the warning appears, please report this issue.
 
-==== code 60018: "file: <file name> - could not write checkpoint"
+==== code 60018: "file: <file name> - couldn't write checkpoint"
 
-Checkpoint file could not be created because of errors. Verify the reason and try to fix it.
+Checkpoint file couldn't be created because of errors.
+Verify the reason and try to fix it.
 
 ==== code 60019: "file: <file name> - load checkpoint failed, reference SCN missing"
 
-Schema missing in checkpoint file. Verify if the file is correct. If the problem persists, please report this issue.
+Schema missing in checkpoint file.
+Verify if the file is correct.
+If the problem persists, please report this issue.
 
 ==== code 60020: "file: <file name> - load adaptive schema failed"
 
-Adaptive schema load failed. The program will continue without any schema. Verify if the file is correct. If the problem persists, please report this issue.
+Adaptive schema load failed.
+The program will continue without any schema.
+Verify if the file is correct.
+If the problem persists, please report this issue.
 
 ==== code 60021: "missing LOB index for LOB (OBJ#: <number>, DATAOBJ#: <number>, COL#: <number>)"
 
@@ -668,19 +843,27 @@ See comment for warning 60002.
 
 ==== code 60022: "missing TS#: <number>, BLOCKSIZE: <number>"
 
-Missing information about tablespace in the database schema. Verify if the tablespace is correct. If the problem persists, please report this issue.
+Missing information about tablespace in the database schema.
+Verify if the tablespace is correct.
+If the problem persists, please report this issue.
 
 ==== code 60023: "file: <file name> position: <number> - unexpected end of file"
 
-Unexpected end of redo log file. Verify if the file is correct. If the problem persists, please report this issue.
+Unexpected end of redo log file.
+Verify if the file is correct.
+If the problem persists, please report this issue.
 
 ==== code 60024: "file: <file name> - invalid header sequence (<number>, expected: <number>)"
 
-Invalid information about redo log sequence in the header. Verify if the file is correct. If the problem persists, please report this issue.
+Invalid information about a redo log sequence in the header.
+Verify if the file is correct.
+If the problem persists, please report this issue.
 
 ==== code 60025: "file: <file name> block: <number> - invalid header checksum, expected: <number>, calculated: <number>"
 
-Invalid checksum in the redo log header. Verify if the file is correct. If the problem persists, please report this issue.
+Invalid checksum in the redo log header.
+Verify if the file is correct.
+If the problem persists, please report this issue.
 
 ==== code 60026: "stripping trailing '/' from <name> parameter; new value: <value>"
 
@@ -688,23 +871,31 @@ Stripped trailing '/' from the parameter value from the path parameter.
 
 ==== code 60027: "couldn't find archive log for seq: <number>, found: <number>, sleeping <number> us"
 
-Missing archive log file. Verify if the file is correct. If the problem persists, please report this issue.
+Missing archive log file.
+Verify if the file is correct.
+If the problem persists, please report this issue.
 
 ==== code 60028: "can't get sequence from file: <file name> log_archive_format: <string> at position <number> format position <number>, <problem>"
 
-Invalid archive log file name. Verify if the file is correct. If the problem persists, please report this issue.
+Invalid archive log file name.
+Verify if the file is correct.
+If the problem persists, please report this issue.
 
 ==== code 60029: "message size (<number>) will exceed 'max-file' size (<number>)"
 
-Defined maximum size for the file is too small to write a single message. Increase the size.
+The defined maximum size for the file is too small to write a single message.
+Increase the size.
 
 ==== code 60030: "rotation size is set too low (<number>), increase it, should rotate but too early (<file name>)"
 
-The parameter for rotation size is too small. Increase the number.
+The parameter for rotation size is too small.
+Increase the number.
 
 ==== code 60031: "queue, full, sleeping <number> >ms, then retrying"
 
-The queue for redo log data is full. The program will sleep for a while and then retry. Investigate the reasing why the receiver is not able to process the data fast enough.
+The queue for redo log data is full.
+The program will sleep for a while and then retry.
+Investigate the reason why the receiver is not able to process the data fast enough.
 
 ==== code 60032: "unknown request code: <message>"
 
@@ -716,11 +907,14 @@ Invalid request data received by the network client.
 
 ==== code 60034: "file: <file name> - stat returned: <message>"
 
-Reading file metadata failed. Check if the file is not corrupted. Verify operating system log messages.
+Reading file metadata failed.
+Check if the file is not corrupted.
+Verify operating system log messages.
 
 === Internal warnings(7xxxx)
 
-Provided below is list of internal warnings which should never appear. If you encounter any of these warnings, please report this issue.
+Provided below is a list of internal warnings which should never appear.
+If you encounter any of these warnings, please report this issue.
 
 ==== code 70001: "too short field <code>: <number> offset: <number"
 
@@ -750,8 +944,6 @@ Provided below is list of internal warnings which should never appear. If you en
 
 == Trace Messages
 
-=== Trace (9xxxxx)
+=== Trace (9xxxx)
 
 All trace messages are printed with code 99999.
-
-====

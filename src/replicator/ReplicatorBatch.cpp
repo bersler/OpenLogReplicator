@@ -42,7 +42,10 @@ namespace OpenLogReplicator {
         if (FLAG(REDO_FLAGS_SCHEMALESS))
             return;
 
-        ctx->hint("if you don't have earlier schema, try with schema-less mode ('flags': 2)");
+        ctx->hint("if you don't have earlier schema, try with schemaless mode ('flags': 2)");
+        if (metadata->schema->scn != ZERO_SCN)
+            ctx->hint("you can also set start SCN for writer: 'start-scn': " + std::to_string(metadata->schema->scn));
+
         throw RuntimeException(10052, "schema file missing");
     }
 

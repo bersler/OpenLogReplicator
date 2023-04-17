@@ -351,7 +351,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (redoResponsePB == nullptr)
-                throw RuntimeException(50018, "PB insert processing failed, message missing");
+                throw RuntimeException(50018, "PB insert processing failed, a message is missing");
         } else {
             if (table != nullptr)
                 builderBegin(table->obj);
@@ -392,7 +392,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (redoResponsePB == nullptr)
-                throw RuntimeException(50018, "PB update processing failed, message missing");
+                throw RuntimeException(50018, "PB update processing failed, a message is missing");
         } else {
             if (table != nullptr)
                 builderBegin(table->obj);
@@ -434,7 +434,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (redoResponsePB == nullptr)
-                throw RuntimeException(50018, "PB delete processing failed, message missing");
+                throw RuntimeException(50018, "PB delete processing failed, a message is missing");
         } else {
 
             if (table != nullptr)
@@ -477,7 +477,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (redoResponsePB == nullptr)
-                throw RuntimeException(50018, "PB commit processing failed, message missing");
+                throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
             createResponse();
             appendHeader(true, true);
@@ -517,7 +517,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (redoResponsePB == nullptr)
-                throw RuntimeException(50018, "PB commit processing failed, message missing");
+                throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
             builderBegin(0);
 

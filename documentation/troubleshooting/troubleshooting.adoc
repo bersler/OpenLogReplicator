@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-03-26
+:revdate: 2022-04-18
 :imagesdir: ./images
 :toc: preamble
 
@@ -22,7 +22,8 @@ If running OpenLogReplicator gives you a result like:
 ./OpenLogReplicator: error while loading shared libraries: libclntshcore.so.19.1: cannot open shared object file: No such file or directory
 ----
 
-This means that the libraries are not correctly linked. Please check which libraries are missing, example:
+This means that the libraries are not correctly linked.
+Please check which libraries are missing, example:
 
 [source,shell]
 ----
@@ -43,4 +44,6 @@ libdl.so.2 => /lib64/libdl.so.2 (0x00007f45c17d2000)
 /lib64/ld-linux-x86-64.so.2 (0x00007f45c576f000)
 ----
 
-In the above example all libraries marked with “not found” are missing. Please check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located. If necessary – create appropriate symlinks.
+In the above example, all libraries marked with “not found” are missing.
+Please check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located.
+If necessary – create appropriate symlinks.

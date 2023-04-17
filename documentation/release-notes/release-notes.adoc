@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-03-30
+:revdate: 2022-04-18
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -26,7 +26,7 @@ The following changes are available in version 1.0.1:
 
 - fix: incorrect checkpoint file when non-ascii characters are used in schema files
 - fix: incorrect message printed on error
-- fix: allow to use stop-* parameters without using schemales mode
+- fix: allow using stop-* parameters without using schemaless mode
 - enhancement: added consistency checks for experimental LOB support
 - fix: standardization of output messages
 - fix: race condition might result in transaction data loss
@@ -57,4 +57,4 @@ The following changes are available in nightly builds:
 - fix: minor parameter validation bug
 - fix: minor issue related to sending character data in hex format for debug purposes
 - cleanup in parameter names: renamed "max-size" "max-file-size" and "format" to "timestamp-format" for better understanding
-- doc: Commands Reference Manual
+- doc: Command Reference Manual
