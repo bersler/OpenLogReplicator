@@ -104,7 +104,7 @@ Possible values are:
 _CAUTION:_ The result doesn't have to fully match the results of `logdump`.There can be some inconsistency.
 Not all redo OP codes are parsed and analyzed, and there is no guarantee that the results should be exactly the same.
 
-|`trace`
+|`log-level`
 |_number_, min: 0, max: 4, default: 2
 |Messages verbose level.
 
@@ -122,7 +122,7 @@ Possible values are:
 
 * `4` -- _Debug_ -- print all messages.
 
-|`trace2`
+|`trace`
 |_number_, min: 0, max: 131071, default: 0
 |Print debug information.
 

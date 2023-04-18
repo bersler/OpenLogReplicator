@@ -30,8 +30,8 @@ Messages can be suppressed by setting the `trace` parameter to `2`.
 Messages can be suppressed by setting the `trace` parameter to `3`.
 
 5. *Trace* -- Detailed information about program internals.
-Messages are controlled by the `trace2` parameter.
-Parameter `trace` is not relevant for tracing.
+Messages are controlled by the `trace` parameter.
+Parameter `log-level` is not relevant for tracing.
 
 IMPORTANT: By default, all error, warning and info messages are printed -- `trace` parameter is set to value `3`.
 
