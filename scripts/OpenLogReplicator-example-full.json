@@ -1,9 +1,9 @@
 {
-  "version": "1.0.0",
+  "version": "1.2.0",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "dump-path": "/opt/dump",
-  "log-level": 0,
+  "log-level": 3,
   "trace": 0,
   "source": [
     {
