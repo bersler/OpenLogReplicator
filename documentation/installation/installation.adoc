@@ -36,7 +36,7 @@ The following limitations apply to the source database:
 
 * Supported editions: XE, SE, SE2, PE, EE.
 
-* Supported database character set: 138 different, refer to xref:../user-manual/user-manual.adoc#_supported_character_sets[user manual] for details.
+* Supported database character set: 138 different, refer to xref:../user-manual/user-manual.adoc#supported-character-sets[user manual] for details.
 
 * Supported platforms: Linux64, Solaris x64, Solaris Sparc.
 
