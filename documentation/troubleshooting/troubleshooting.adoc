@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.1.0
-:revdate: 2022-04-18
+:revnumber: 1.2.0
+:revdate: 2022-04-20
 :imagesdir: ./images
 :toc: preamble
 
@@ -47,3 +47,22 @@ libdl.so.2 => /lib64/libdl.so.2 (0x00007f45c17d2000)
 In the above example, all libraries marked with “not found” are missing.
 Please check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located.
 If necessary – create appropriate symlinks.
+
+== Performance issues
+
+=== CPU Saturation
+
+Most possible bottlenecks are:
+
+1. Disk read speed -- the reader thread reads all data sequentially using buffering.
+If the stream of redo log files is greater than the speed of sequential read from disk -- delay might appear.
+
+2. Transaction parsing -- redo log parsing is done using single thread.
+If the volume of generated redo log files is higher than the speed of parsing -- delay might appear.
+
+3. Output performance -- the writer thread sends the transactions to output (sink) using the provided connector.
+If the target is accepting transactions slower than they are created -- delay might appear.
+
+== Database availability
+
+In case of errors related with database availability, please check the following:

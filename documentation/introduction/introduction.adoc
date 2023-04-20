@@ -1,7 +1,7 @@
 = Introduction to OpenLogReplicator
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.1.0
-:revdate: 2022-04-18
+:revnumber: 1.2.0
+:revdate: 2022-04-20
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend

@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.1.0
-:revdate: 2022-04-18
+:revnumber: 1.2.0
+:revdate: 2022-04-20
 :imagesdir: ./images
 :toc: preamble
 
@@ -148,7 +148,7 @@ Verify if the provided `memory-min-mb` and `memory-max-mb` parameters are correc
 ==== code 10017: "out of memory"
 
 Configured amount of memory doesn't allow processing provided stream of redo log files.
-Refer to suggestions for details about reducing memory usage (TODO: ref).
+Refer to suggestions for details about reducing xref:../user-manual/user-manual.adoc#memory-allocation[memory allocation].
 
 TIP: Increase `memory-max-mb` parameter to allow more memory to be used.
 
@@ -183,14 +183,12 @@ Even for development or test environments, keep the program running as a normal 
 ==== code 10021: "database not in ARCHIVELOG mode"
 
 The source database must be running in ARCHIVELOG mode.
-Verify if the database is running in ARCHIVELOG mode.
-Refer to database documentation for more information (TODO: ref.).
+Verify if the database is running in xref:../installation/installation.adoc#database-configuration[ARCHIVELOG mode].
 
 ==== code 10022: "SUPPLEMENTAL_LOG_DATA_MIN missing
 
 The database is missing minimal supplemental log information.
-Verify that the database is configured correctly.
-Refer to database documentation for more information (TODO: ref.).
+Verify that the database is xref:../installation/installation.adoc#database-configuration[configured correctly].
 
 ==== code 10023: "no data in SYS.V_$DATABASE"
 
@@ -202,18 +200,19 @@ Refer to database documentation for more information.
 
 The database is a standby database.
 The database must be a primary database when time defines starting position.
-Start replication when the database is primary and later switch to standby database (TODO: ref.).
+Start replication when the database is primary and later switch to xref:../user-manual/user-manual.adoc#dataguard[the standby database].
 
 ==== code 10025: "can't find scn for: <timestamp>"
 
 The database function `TIMESTAMP_TO_SCN` failed to convert provided timestamp to SCN.
-Verify if the timestamp is correct (TODO: ref.).
+Replication is defined to start from a specific timestamp, but the provided timestamp value is not accepted by the database.
+Verify if the timestamp is correct.
 
 ==== code 10026: "can't position by relative time for standby database"
 
 The database is a standby database.
 The database must be a primary database when relative time defines starting position.
-Start replication when the database is primary and later switch to standby database (TODO: ref.).
+Start replication when the database is primary and later switch to xref:../user-manual/user-manual.adoc#dataguard[the standby database].
 
 ==== code 10027: "can't read any member of group <number>"
 
@@ -229,17 +228,17 @@ Verify parameters for replication start.
 ==== code 10029: "can't find database current scn"
 
 Executing a query to read current SCN from a database failed.
-Verify if the database is available.
+Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 
 ==== code 10030: "getting database sequence for scn: <scn"
 
-Executing query to read database sequence for provided SCN failed.
-Verify if the database is available (TODO: ref.).
+Executing a query to read the current database sequence value for provided SCN failed.
+Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 
 ==== code 10031: "getting database scn"
 
 The operation of determining the starting SCN failed.
-Verify if the database is available.
+Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 Please report this issue if the problem persists.
 
 ==== code 10032: "can't get parameter value for <parameter>"
@@ -264,7 +263,7 @@ TIP: Verify if the grant script was executed successfully.
 During startup when `online` reader is chosen the full schema must be read from the database.
 To achieve full consistency, all database queries use flashback to read the contents of system tables for the provided SCN number.
 The flashback query failed.
-Verify if the database is available.
+Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 
 TIP: Run initial replication of replication during a less active period
 
@@ -276,12 +275,12 @@ The SCN number must be within the retention period of the database.
 ==== code 10036: "failed to find standby redo log files"
 
 The database is running as standby, but the list of standby redo log files couldn't be read from the database.
-Verify if the database is available.
+Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 
 ==== code 10037: "failed to find online redo log files"
 
 The list of online redo log files couldn't be read from the database.
-Verify if the database is available.
+Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 
 ==== code 10038: "unknown database role: <role>"
 
@@ -356,14 +355,15 @@ Check if the Oracle client is installed and configured correctly.
 ==== code 10051: "OCI: <message>"
 
 Database connection error.
-Check with DBA if the database is available.
+Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 
 ==== code 10052: schema file missing
 
 Schema is missing for batch mode.
 
 TIP: If you don't have earlier schema but wish to continue having no information about column names and types, try with schemaless mode (`'flags': 2`).
-Refer to the documentation for more information about schemaless mode (TODO: ref).
+Refer to the documentation for more information about
+xref:../user-manual/user-manual.adoc#schemaless-mode[schemaless mode].
 
 ==== code 10053: "network receive error"
 
@@ -456,7 +456,7 @@ If it is not possible to fix the checkpoint file, remove it and start replicatio
 Transaction ID (XID) number is in incorrect format provided in the configuration file.
 This value has a wrong format and can't be parsed.
 Check if the file is not corrupted.
-Refer to the documentation for more information about XID format (TODO: ref to config).
+Refer to the documentation for more information about xref:../reference-manual/reference-manual.adoc#skip-xid[XID format].
 
 ==== code 20003: "file: <file name> - parse error, field <field> <message>"
 

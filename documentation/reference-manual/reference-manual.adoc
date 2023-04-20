@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.1.0
-:revdate: 2022-04-18
+:revnumber: 1.2.0
+:revdate: 2022-04-20
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -226,12 +226,12 @@ Transactions would not be read until the redo log group is switched.
 * `0x0002` -- _Schemaless_ mode.
 The program can operate without schema.
 
-_NOTE:_ Please refer to details in (TODO) about this mode.
+_NOTE:_ Please refer to details in xref:../user-manual/user-manual.adoc#schemaless-mode[the User Manual] for details.
 
 * `0x0004` -– Adaptive schema mode.
 This mode is only valid when schemaless mode has been chosen.
 
-_NOTE:_ Please refer to details in (TODO) about this mode.
+_NOTE:_ Please refer to details in xref:../user-manual/user-manual.adoc#adaptive-schema-mode_[the User Manual] for details.
 
 * `0x0008` -- Don’t use direct read (`O_DIRECT`) for reading redo log files.
 
@@ -432,7 +432,7 @@ _NOTE:_ This field is valid only for `batch` type.
 
 Example config file: `OpenLogReplicator.json.example-batch`.
 
-|`server`
+|`server` [[server]]
 |_text_, max length: 4096
 |Connect string for connecting to the database instance.
 Format should be in form like: `//<host>:<port>/<service>`.
@@ -620,7 +620,7 @@ _CAUTION:_ Protocol buffer support is in experimental state.
 It is not fully tested and might not work properly.
 Don't use it for production without testing.
 
-|`char`
+|`char` [[char]]
 |_number_, min: 0, max: 3, default: 0
 |Format for _(n)char_, _(n)varchar(2)_ and _clob_ column types.
 
@@ -787,7 +787,7 @@ A table that matches at least one of the rules is tracked, thus the rules can ov
 Example:
 `“table”: {{“table”: “owner1.table1”}, {“table”: “owner2.table2”, “key”: “col1, col2, col3”}, {“table”:”sys.%”}}.`
 
-|`skip-xid`
+|`skip-xid` [[skip-xid]]
 |_list_ of _text_ elements, max length: 32
 |List of transaction IDs which should be skipped.
 The format if XID should be one of: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, `UUUU.SSSS.QQQQQQQQ`, `0xUUUU.SSS.QQQQQQQQ`, `0xUUUU.SSSS.QQQQQQQQ`.

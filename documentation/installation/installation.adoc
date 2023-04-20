@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.1.0
-:revdate: 2022-04-18
+:revnumber: 1.2.0
+:revdate: 2022-04-20
 :imagesdir: ./images
 :toc: preamble
 
@@ -24,11 +24,12 @@ The files can be read through network-mounted filesystem (like SSHFS) when runni
 OpenLogReplicator is developed and tested only on a Linux operating system.
 The preferred Linux distribution is Debian.
 Official docker images use this distribution.
-Other distributions are not tested.
+Other distributions aren't tested.
 
 === Database Version Requirements
 
 OpenLogReplicator has no impact and is not affected when other replication engines are being used, including tools using Streams, XStream or LogMiner.
+Or multiple instances of OpenLogReplicator -- as long as they don't share the same path with checkpoints and configuration file.
 
 The following limitations apply to the source database:
 
@@ -52,9 +53,12 @@ The following limitations apply to the source database:
 
 * Database must be in single instance mode (non RAC).
 
-=== Database Configuration Requirements
+=== Database Requirements
 
-==== Minimal Supplemental Logging
+==== Database Configuration
+
+There are just 2 strict requirements for the database configuration.
+In fact, they're common for absolutely any replication engine.
 
 The database must be working in *ARCHIVELOG* mode and having enabled *MINIMAL SUPPLEMENTAL LOGGING*.
 
@@ -109,7 +113,7 @@ ALTER SYSTEM SET DB_RECOVERY_FILE_DEST = '/opt/oracle/fra';
 
 The default requirements of having enabled MINIMAL SUPPLEMENTAL LOGGING are enough for OpenLogReplicator to work.
 In such case, the output contains only modified columns.
-However, typically this is not enough, and it is required that the output contains also values of columns which have not been modified: primary key, unique key or all columns.
+However, typically this is not enough, and it is required that the output contains also values of columns which haven't been modified: primary key, unique key or all columns.
 
 ==== Adding Primary Key to Supplemental Logging
 
@@ -136,7 +140,7 @@ SELECT SUPPLEMENTAL_LOG_DATA_PK FROM V$DATABASE;
 TIP: Adding supplemental logging for primary key columns for all tables in the database has a typically low impact on the performance and redo log size.
 Using OpenLogReplicator Performance tracing option can help to determine the impact.
 This is a unique feature of OpenLogReplicator, which is not available in any other replication engine.
-Setting `'trace': 256` in the configuration file will enable tracing.
+Setting `"trace": 256` in the configuration file will enable tracing.
 After finishing redo log file parsing, information is printed with statistics related to the redo log file.
 Statistics include a summary of additional space occupied by supplemental log group.
 The value is in bytes.
@@ -159,7 +163,7 @@ In such case, it is also needed to define the custom key in the configuration fi
 {"owner": "<SCHEMA>", "table": "<TABLE>", "key": "<COLUMNS>"}
 ----
 
-CAUTION: OpenLogReplicator rigorously tests the correctness of the custom key columns. If the defined columns are not present in the table, the replication will stop.
+CAUTION: OpenLogReplicator rigorously tests the correctness of the custom key columns. If the defined columns aren't present in the table, the replication will stop.
 This setting overrides the defined primary key.
 
 ==== Adding All Columns to Supplemental Logging
