@@ -64,14 +64,14 @@ The file should contain a single object with the following parameters:
 |The list should contain just one target element.
 
 |`version`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |The value must be equal to `"1.1.0"`.
 
 _TIP_: This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade.
 During upgrade, always check the documentation for parameter changes and verify that the JSON configuration file is correct.
 
 |`dump-path`
-|_text_, max length: 256, default: `"."`
+|_string_, max length: 256, default: `"."`
 |The location where the `logdump` files are created.
 The path can be relative to the current directory.
 
@@ -91,7 +91,7 @@ _NOTE:_ This parameter is only valid when `dump-redo-log` parameter is set to no
 
 |`dump-redo-log`
 |_number_, min: 0, max: 2, default: 0
-|Create output similar to `logdump` command which can be compared as text to verify if certain parameters have been correctly decoded.
+|Create output similar to `logdump` command which can be compared as string to verify if certain parameters have been correctly decoded.
 
 Possible values are:
 
@@ -142,7 +142,7 @@ _CAUTION:_ The codes can change without prior notice.
 |Notes
 
 |`alias`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |The name of the source -– referenced later in a target element.
 
 _TIP:_ This is just a logical name used in the config file.
@@ -153,7 +153,7 @@ It doesn't have to match the actual database _SID_.
 |Configuration of output data.
 
 |`name`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |This name is used for identifying database connection.
 This name is mentioned in the output and in the checkpoint files.
 
@@ -167,7 +167,7 @@ It doesn't have to match the actual database _SID_.
 |Configuration of redo log reader.
 
 |`arch`
-|_text_, max length: 256, default is `online` for _online_ type; `path` for _offline_ type; `list` for _batch_ type
+|_string_, max length: 256, default is `online` for _online_ type; `path` for _offline_ type; `list` for _batch_ type
 |Way of getting an archive redo log file list.
 
 Possible values are:
@@ -349,7 +349,7 @@ Number in microseconds.
 |Notes
 
 |`type`
-|_text_, max length: 256, default
+|_string_, max length: 256, default
 |Possible values are:
 
 * `online` -– Primary mode to read online and archived redo logs and connect to a database for reading metadata.
@@ -387,7 +387,7 @@ _NOTE:_ This field is valid only for `online` type.
 _IMPORTANT:_ This might increase performance a bit, but it is not recommended to use this option.
 
 |`log-archive-format`
-|_text_, max length: 4000
+|_string_, max length: 4000
 |Format of expected archived redo log files.
 This parameter defines how to parse the redo log file name to read the sequence number.
 
@@ -395,15 +395,15 @@ When FRA is configured the format of files is expected to be `o1_mf_%t_%s_%h_.ar
 When FRA is not used the value use for this parameter is read from database configuration parameter `log_archive_format`.
 
 |`password`
-|_text_, max length: 128
+|_string_, max length: 128
 |Password for connecting to database instance.
 
 _NOTE:_ This field is valid only for `online` type.
 
-_CAUTION:_ The password is stored in clear text in the configuration file.
+_CAUTION:_ The password is stored in unencrypted string in the configuration file.
 
 |`path-mapping`
-|_list_ of pairs of _text_, max length: 2048
+|_list_ of pairs of _string_, max length: 2048
 |List of pairs of files `[before1, after1, before2, after2, …]`.
 Every path (of online and archived redo log) is compared with the list.
 If a prefix of the path matches with `beforeX` it is replaced with `afterX`.
@@ -414,7 +414,7 @@ _TIP:_ The parameter is useful when OpenLogReplicator operates on a different ho
 For example, the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but file is mounted using sshfs under a different path so having `“path-mapping”: [“/db/fra”, “/opt/fast-recovery-area”],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
 
 |`redo-copy-path`
-|_text_, max length: 2048
+|_string_, max length: 2048
 |Debugging parameter which allows to copy all contents of processed redo log files to defined folder.
 
 _TIP:_ This parameter is useful for diagnosing disk-read related problems.
@@ -423,7 +423,7 @@ The file name is in format: `path/<database>_<seq>.arc`.
 Having a copy of read redo log file allows easier post-mortem analysis, since the file contains exactly the same data as those which were processed.
 
 |`redo-log`
-|_list_ of _text_, max length: 2048
+|_list_ of _string_, max length: 2048
 |List of redo logs files which should be processed in batch mode.
 Elements could be files but also folders.
 In the second case, all files in this folder would be processed.
@@ -433,7 +433,7 @@ _NOTE:_ This field is valid only for `batch` type.
 Example config file: `OpenLogReplicator.json.example-batch`.
 
 |`server` [[server]]
-|_text_, max length: 4096
+|_string_, max length: 4096
 |Connect string for connecting to the database instance.
 Format should be in form like: `//<host>:<port>/<service>`.
 
@@ -468,7 +468,7 @@ _NOTE:_ This field is valid only for `online` type.
 _CAUTION:_ It is invalid to use this parameter when `start-scn` is specified.
 
 |`start-time`
-|_text_, max length: 256
+|_string_, max length: 256
 |Determine a starting SCN value by absolute time.
 The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function.
 For example, if the value is set to `2018-01-01 00:00:00`, the program will start from the SCN which was active at the beginning of 2018.
@@ -482,7 +482,7 @@ _CAUTION:_ It is invalid to use this parameter when `start-scn` or `start-time-r
 |Configuration of state settings to store checkpoint information.
 
 |`user`
-|_text_, max length: 128
+|_string_, max length: 128
 |Database user for connecting to database instance.
 
 _NOTE:_ This field is valid only for `online` type.
@@ -540,7 +540,7 @@ _CAUTION:_ The number of checkpoint files may be actually larger than this param
 Checkpoint file might be deleted only if it is not referred in some consecutive checkpoint files (which don't contain schema data).
 
 |`path`
-|_text_, max length: 2048, default: `"checkpoint"`
+|_string_, max length: 2048, default: `"checkpoint"`
 |The path to store checkpoint files.
 
 _NOTE:_ This field is valid only for `disk` type.
@@ -556,7 +556,7 @@ The value determines the consecutive number of checkpoint files which may not co
 _TIP:_ The value of `0` means that the schema is always included in the checkpoint file.
 
 |`type`
-|_text_, max length: 256, default: `"disk"`
+|_string_, max length: 256, default: `"disk"`
 |Only `disk` is supported.
 
 |===
@@ -586,11 +586,11 @@ Stop program after specified number of LWN checkpoints.
 Stop program after specified number of transactions.
 
 |`owner`
-|_text_, max length: 128
+|_string_, max length: 128
 |Owner of the debug table.
 
 |`table`
-|_text_, max length: 128
+|_string_, max length: 128
 |This is technical parameter primary used only for running test cases and defines table name.
 If any DML transactions occur for this table (like insert, update or delete), the program would stop.
 The transaction doesn't necessary need to be committed.
@@ -607,7 +607,7 @@ The transaction doesn't necessary need to be committed.
 |Notes
 
 |`type`
-|_text_, max length: 256, required
+|_string_, max length: 256, required
 |Possible values are:
 
 * `json` -- Transactions in JSON OpenLogReplicator format.
@@ -723,24 +723,26 @@ The flag `0x0002` alone has no effect.
 Example output:
 `{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2"},"after":{"A":100,"B":999,"C":10.22,"D":"xx2       ","E":"yyy","F":1564662896000}}]}`
 
-|`scn`
+|`scn` [[scn]]
 |_number_, min: 0, max: 3, default: 0
 |By default, SCN is present only in a first message (when message = `0`) in scn field.
 
 Number is a sum of:
 
-* `0x0001` -– Print SCN values in hexadecimal format (in _“C”_ format – like `0xFF`) in scns field.
+* `0x0001` -– Print SCN values in hexadecimal format (in _“C”_ format – like `0xFF`) in `scns` field.
+Otherwise, the SCN value is stored as a decimal number in `scn` field.
 
 * `0x0002` -- Put SCN field in every message (when a message is set to `0`).
+If this parameter is not used, the `scn`/`scns` field is present just in checkpoint records and begin of transaction records.
 
-|`timestamp`
+|`timestamp` [[timestamp]]
 |_number_, min: 0, max: 3, default: 0
 |Format of timestamp values.
 By default `tm` field is used and timestamp in Unix Epoch format (example: `"tm": 1679100920000`).
 
 Number is a sum of:
 
-* `0x0001` -- Use _tms_ field name instead and assign text value of timestamp in _ISO-8601_ format (`"tsm":"YYYY-MM-DDTHH:MI:SSS"`).
+* `0x0001` -- Use _tms_ field name instead and assign string value of timestamp in _ISO-8601_ format (`"tms":"YYYY-MM-DDTHH:MI:SSS"`).
 
 * `0x0002` -- Put timestamp field in every message (when _message_ field doesn't contain the bit set to `0x0001`).
 
@@ -755,7 +757,7 @@ Possible values are:
 
 * `1` -- Output to _stderr_ information about decoding mismatch.
 
-|`xid`
+|`xid` [[xid]]
 |_number_, min: 0, max: 2, default: 0
 |Format of the Transaction ID (XID).
 
@@ -788,7 +790,7 @@ Example:
 `“table”: {{“table”: “owner1.table1”}, {“table”: “owner2.table2”, “key”: “col1, col2, col3”}, {“table”:”sys.%”}}.`
 
 |`skip-xid` [[skip-xid]]
-|_list_ of _text_ elements, max length: 32
+|_list_ of _string_ elements, max length: 32
 |List of transaction IDs which should be skipped.
 The format if XID should be one of: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, `UUUU.SSSS.QQQQQQQQ`, `0xUUUU.SSS.QQQQQQQQ`, `0xUUUU.SSSS.QQQQQQQQ`.
 
@@ -796,7 +798,7 @@ Example:
 `"skip-xid": ["0x0002.012.00004162"]`
 
 |`dump-xid`
-|_list_ of _text_ elements, max length: 32
+|_list_ of _string_ elements, max length: 32
 |Debug option to dump to _stderr_ internals about certain XID.
 The format is the same as for _skip-xid_.
 
@@ -812,18 +814,18 @@ The format is the same as for _skip-xid_.
 |Notes
 
 |`owner`
-|_text_, max length: 128, mandatory
+|_string_, max length: 128, mandatory
 |Regex pattern for matching owner name.
 The pattern is case-sensitive.
 
 |`table`
-|_text_, max length: 128, mandatory
+|_string_, max length: 128, mandatory
 |Regex pattern for matching table name.
 The pattern is case-sensitive.
 
 |`key`
-|_text_, max length: 4096
-|A text field with a list of columns which should be used as a primary key.
+|_string_, max length: 4096
+|A string field with a list of columns which should be used as a primary key.
 The columns are separated by comma.
 The column names are case-sensitive.
 
@@ -841,11 +843,11 @@ _TIP:_ If a table doesn't contain a primary key, a custom set of columns can be 
 |Notes
 
 |`alias`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |A logical name of the target used in JSON file for referencing.
 
 |`source`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |A logical name of the source which this target should be connected with.
 
 |`writer`
@@ -864,7 +866,7 @@ _TIP:_ If a table doesn't contain a primary key, a custom set of columns can be 
 |Notes
 
 |`brokers`
-|_text_, max length: 4096, mandatory
+|_string_, max length: 4096, mandatory
 |String list of Kafka brokers.
 
 Example: `"brokers": "host1:9092, host2:9092"`
@@ -872,13 +874,13 @@ Example: `"brokers": "host1:9092, host2:9092"`
 _NOTE:_ This field is valid only for `kafka` type.
 
 |`topic`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |Name of a Kafka topic used to send transactions as JSON messages.
 
 _NOTE:_ This field is valid only for `kafka` type.
 
 |`type`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |Possible values are:
 
 * `kafka` -- Connect directly to a Kafka message system and send transactions.
@@ -896,7 +898,7 @@ If the client disconnects, the server will wait for a new client to connect and 
 _TIP:_ Technically this is the same as `network` but instead of using plain TCP/IP connection it uses ZeroMQ messaging.
 
 |`uri`
-|_text_, max length: 256, mandatory
+|_string_, max length: 256, mandatory
 |For network: `<host>:<port>` -- information for network listener.
 
 For zeromq: `<protocol>://<host>:<port>` -– URI for ZeroMQ connection.
@@ -959,7 +961,7 @@ Possible values are:
 _NOTE:_ This field is valid only for `file` type.
 
 |`output`
-|_text_, max length: 256
+|_string_, max length: 256
 | Format of output file.
 The format is the same as for `strftime` function.
 
@@ -998,7 +1000,7 @@ If the message transport doesn't offer a level of parallelism, messages are sent
 The larger the value, the more messages can be sent in parallel.
 
 |`timestamp-format`
-|_text_, max length: 256, default: `"%F_%T"`
+|_string_, max length: 256, default: `"%F_%T"`
 |Format of timestamp (defined using placeholder `%t` in field `output`) in output file name.
 The format is the same as for `strftime` function in C.
 Please refer to the documentation of your C library for more information.

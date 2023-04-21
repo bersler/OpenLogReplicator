@@ -179,13 +179,90 @@ But it can also read just archived redo logs – in this scenario transactions w
 
 == Output Format
 
+The output format is fully configurable.
+There are 2 formats implemented: JSON and protocol buffer, but the architecture of the program allows implementing any other format in the future.
+
 === JSON format
 
-*TODO:* write
+JSON format is the first implemented format with very fast write speed.
+The stream is directly constructed from the redo log data and uses no additional memory.
+It does not use dynami memory allocation for constructing output.
+Instead, the json stream is directly constructed and populated while redo log data is parsed.
+This makes the speed of the output very fast; internal tests show that it is about 2.5 times faster than the protocol buffer format, even though the size of the output might be longer.
+
+JSON format has just one element with the following fields:
+
+==== SCN
+
+SCN related with the element. The type of the field is dependent on the parameter
+
+The value can be stored in:
+
+- field `scn` and stored as decimal (default);
+- field `scns` and stored as string in hex format "C" styl (example: `"scns":"0x0000008a33ac2263"` -- when xref:../reference-manual/reference-manual.adoc#scn[scn] field has set `0x0002` flag.
+
+==== Timestamp
+
+Time value is related to the moment in time when the transaction has been committed.
+The timestamps of particular DML operations are irrelevant.
+They have no meaning, and might be inaccurate.
+OpenLogReplicator does not collect timestamps of DML operations.
+The timestamp of the commit is treated as a timestamp of all DML operations from the transaction.
+
+The value of the timestamp is stored in:
+
+- field "tm" -- contains timestamp stored in Unix format in millisecond (default);
+- field "tms" -- contains timestamp stored in ISO-8601 format as a string -- when xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0001` flag.
+Example: `"tms":"2019-01-01T12:00:00"`.
+
+When the xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0002` flag -- the timestamp value is added to every message -- not only to message with begin transaction record.
+
+==== Transaction ID (XID)
+
+The transaction ID field is present only in messages which are related to transactions, like DML, begin, commit.
+It is not present in checkpoint messages.
+
+The value of the timestamp is stored in:
+
+- field "xid" -- contains transaction ID stored as hex as a string (default).
+An example value would be: `"xid":"0x0009.003.0000568e"`.
+- field "xid" -- like previous but using decimal numbers, for example:
+`"xid":"9.3.22158"`.
+This type is used when the xref:../reference-manual/reference-manual.adoc#xid[xid] field is equal `1`.
+- field "xidn" -- contains transaction ID stored as decimal number, (for example, `"xidn":22158`).
+This type is used when the xref:../reference-manual/reference-manual.adoc#xid[xid] field is equal to `2`.
+
+NOTE: Since the XID is internally a 64-bit number -- all values represent the same transaction ID.
+
+All information realated to scn, timestamp and xid is stored in the `payload` field.
+
+==== Payload: op field
+
+The `op` field contains a string describing the type of the operation.
+The following operation types are supported:
+
+- `"begin"` -- begin transaction record;
+- `"commit"` -- commit transaction record;
+- `"c"` -- create record -- field would represent INSERT DML operation;
+- `"u"` -- update record -- field would represent UPDATE DML operation;
+- `"d"` -- delete record -- field would represent DELETE DML operation;
+- `"ddl"` -- DDL operation;
+- `"chkpt"` -- checkpoint record.
+
+==== Payload: schema field
+
+A `schema` field is present only in DML operations and contains an object with the information about schema.
+
+Below are listed the fields of the `schema` object. *TODO*
+
+
 
 === Protocol buffer format
 
-*TODO:* write
+The Protocol buffer format is the second implemented format.
+The field types and names are the same as in the JSON format, so there is no need to explain them again.
+The writer of this format constructs objects table by table, column by column, field by field and then serializes them to the output stream.
+Because every field is allocated separately, the memory consumption is higher than in the JSON writer, and internal tests show that the time of generating the stream is about 2.5 times slower.
 
 == Output target
 
