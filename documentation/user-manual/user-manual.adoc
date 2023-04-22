@@ -236,7 +236,7 @@ NOTE: Since the XID is internally a 64-bit number -- all values represent the sa
 
 All information realated to scn, timestamp and xid is stored in the `payload` field.
 
-==== Payload: op field
+==== Field: payload.op
 
 The `op` field contains a string describing the type of the operation.
 The following operation types are supported:
@@ -249,13 +249,47 @@ The following operation types are supported:
 - `"ddl"` -- DDL operation;
 - `"chkpt"` -- checkpoint record.
 
-==== Payload: schema field
+==== Field payload.schema
 
 A `schema` field is present only in DML operations and contains an object with the information about schema.
 
-Below are listed the fields of the `schema` object. *TODO*
+Below are listed the fields of the `schema` object.
 
+- `"owner"` -- owner of the schema, optonal field, may not be present when schemaless mode is used;
+- `"table"` -- name of the table, in case of schemaless mode the value is `OBJ_xxx`, where `xxx` is the object identifier;
+- `"obj"` -- object identifier of the table;
+- `"columns"` -- array of columns (described below).
 
+==== Field payload.schema.columns
+
+The `schema.columns` field is an array of objects, each object describing one column.
+
+The following fields are present in the column object:
+
+- `"name"` -- name of the column;
+- `"type"` -- type of the column;
+- `"length"` -- length of the column, present for `varchar2`, `raw`, `char`, `timestamp`, `timestamp with time zone`, `interval year to month`, `interval day to second`, `urawid`, `timestamp with local time zone` types;
+- `"precision"` -- precision of the column, present for `number` type;
+- `"scale"` -- scale of the column, present for `number` type;
+- `"nullable"` -- `true` if the column is nullable, `false` otherwise;
+
+==== Field payload.before
+
+The before field contains the old values of the columns.
+It is present only in update and delete operations.
+The field is an array of objects, each object describing one column.
+
+CAUTION: Only data that is present in the redo log is present in the output.
+For update operations, values may be missing from the list in case the actual value did not change, depending on the value of the xref:../reference-manual/reference-manual.adoc#column[column] field.
+
+==== Field.payload.after
+
+The before field contains the new values of the columns.
+It is present only in insert and update operations.
+The field is an array of objects, each object describing one column.
+
+CAUTION: Only data that is present in the redo log is present in the output.
+For update operations, values may be missing from the list in case the actual value did not change, depending on the value of the xref:../reference-manual/reference-manual.adoc#column[column] field.
 
 === Protocol buffer format
 
@@ -289,7 +323,7 @@ A message can theoretically contain multiple LOB columns, which would exceed the
 
 ==== Idempotent Producer
 
-OpenLogReplicator can act as an idempotent producer.
+OpenLogReplicator can act as an idempotent producer, and this is the default behavior.
 This is default behavior and is controlled by the `enable-idempotence` parameter.
 
 ==== Performance
@@ -299,7 +333,7 @@ The number of messages sent simultaneously to Kafka is controlled by the `max-me
 
 ==== Checkpointing
 
-TODO: write
+Kafka messaging is a one-way communication.
 
 === File target
 

@@ -115,6 +115,10 @@ The default requirements of having enabled MINIMAL SUPPLEMENTAL LOGGING are enou
 In such case, the output contains only modified columns.
 However, typically this is not enough, and it is required that the output contains also values of columns which haven't been modified: primary key, unique key or all columns.
 
+IMPORTANT: OpenLogReplicator leaves the decission to the user which data is present in the database redo logs.
+Besides the minimal supplemental logging option, it doesn't force the user to enable any other supplemental logging options per table.
+The user can decide which tables should have supplemental logging enabled and which not.
+
 ==== Adding Primary Key to Supplemental Logging
 
 A typical configuration requirement is that the primary key is added to supplemental logging.

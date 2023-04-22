@@ -632,7 +632,7 @@ Field value is a sum of:
 
 * `0x0002` -- Instead of characters, the output is in HEX format (using hex format -- for example `"column":"4b4c204d"`).
 
-|`column`
+|`column` [[column]]
 |_numeric_, min: 0, max: 2, default: 0
 |Column duplicate specification.
 
