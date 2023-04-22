@@ -414,9 +414,9 @@ namespace OpenLogReplicator {
 
                 builderAppend(R"(,"nullable":)", sizeof(R"(,"nullable":)") - 1);
                 if (table->columns[column]->nullable)
-                    builderAppend('1');
+                    builderAppend("true");
                 else
-                    builderAppend('0');
+                    builderAppend("false");
 
                 builderAppend('}');
             }
