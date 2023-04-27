@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-04-20
+:revdate: 2022-04-27
 :imagesdir: ./images
 :toc: preamble
 
@@ -65,4 +65,6 @@ If the target is accepting transactions slower than they are created -- delay mi
 
 == Database availability
 
-In case of errors related with database availability, please check the following:
+In case of errors related to database availability, please check the following:
+
+TODO: write

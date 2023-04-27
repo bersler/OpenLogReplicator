@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-04-20
+:revdate: 2022-04-27
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-librdkafka: https://github.com/edenhill/librdkafka
@@ -33,7 +33,7 @@ Transactions are directly decoded from redo log files.
 If possible, online redo logs are parsed, but if it is not possible –- archived redo logs are parsed instead.
 It is crucial that the process has physical access to files and the files aren't deleted before they're processed.
 
-HINT: Refer to Oracle Database manual for defining retention period for archived redo logs.
+HINT: Refer to Oracle Database manual for defining a retention period for archived redo logs.
 
 The architecture of the program is multithreading.
 The following threads are used:
@@ -159,7 +159,7 @@ image:replication-start.png[Replication start example,,,]
 
 NOTE: In the example above, _Transaction 2_ and _Transaction 4_ have already been processed and would not be processed again.
 Since OpenLogReplicator doesn't cache in the checkpoint files transaction DML commands, all redo log data need which would contain it has to be processed again after restart.
-In the example above this would include data for _Transaction 1_ and _Transaction 3_.
+In the example above, this would include data for _Transaction 1_ and _Transaction 3_.
 
 When run for the first time, OpenLogReplicator would start from the beginning of some redo log file.
 It is up to the user to decide the moment from which the redo log would be parsed.
@@ -189,13 +189,13 @@ This is the recommended solution.
 For this scenario, you must make sure that the redo log files are possible to read.
 This may be achieved by:
 
-* mounting read only remote filesystem, (for example, using SSHFS),
+* mounting read only remote filesystem, (for example, using SSHFS);
 
-* reading from SRDF copy,
+* reading from SRDF copy;
 
-* reading from standby database,
+* reading from standby database;
 
-* reading just archived redo logs copied by batch file;
+* reading just archived redo logs copied by batch file.
 
 .Remote access to redo log files
 image:architecture-sshfs.png[Remote access to redo log files,,,]
@@ -218,7 +218,7 @@ This makes the speed of the output very fast; internal tests show that it is abo
 
 JSON format has just one element with the following fields:
 
-==== SCN
+==== Field containing _SCN_
 
 SCN related with the element. The type of the field is dependent on the parameter
 
@@ -227,7 +227,7 @@ The value can be stored in:
 - field `scn` and stored as decimal (default);
 - field `scns` and stored as string in hex format "C" styl (example: `"scns":"0x0000008a33ac2263"` -- when xref:../reference-manual/reference-manual.adoc#scn[scn] field has set `0x0002` flag.
 
-==== Timestamp
+==== Field containing _timestamp_
 
 Time value is related to the moment in time when the transaction has been committed.
 The timestamps of particular DML operations are irrelevant.
@@ -241,9 +241,9 @@ The value of the timestamp is stored in:
 - Field `"tms"` -- contains timestamp stored in ISO-8601 format as a string -- when xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0001` flag.
 Example: `"tms":"2019-01-01T12:00:00"`.
 
-When the xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0002` flag -- the timestamp value is added to every message -- not only to message with begin transaction record.
+When the xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0002` flag -- the timestamp value is added to every message -- not only to message with a _begin transaction_ record.
 
-==== Transaction ID (XID)
+==== Field containing _Transaction ID (XID)_
 
 The transaction ID field is present only in messages which are related to transactions, like DML, begin, commit.
 It is not present in checkpoint messages.
@@ -262,7 +262,7 @@ NOTE: Since the XID is internally a 64-bit number -- all values represent the sa
 
 All information realated to scn, timestamp and xid is stored in the `payload` field.
 
-==== Field: payload.op
+==== Field: _payload.op_
 
 The `op` field contains a string describing the type of the operation.
 The following operation types are supported:
@@ -275,7 +275,7 @@ The following operation types are supported:
 - `"ddl"` -- DDL operation;
 - `"chkpt"` -- checkpoint record.
 
-==== Field payload.schema
+==== Field _payload.schema_
 
 A `schema` field is present only in DML operations and contains an object with the information about schema.
 
@@ -286,7 +286,7 @@ Below are listed the fields of the `schema` object.
 - `"obj"` -- object identifier of the table;
 - `"columns"` -- array of columns (described below).
 
-==== Field payload.schema.columns
+==== Field _payload.schema.columns_
 
 The `schema.columns` field is an array of objects, each object describing one column.
 
@@ -299,7 +299,7 @@ The following fields are present in the column object:
 - `"scale"` -- scale of the column, present for `number` type;
 - `"nullable"` -- `true` if the column is nullable, `false` otherwise;
 
-==== Field payload.before
+==== Field _payload.before_
 
 The before field contains the old values of the columns.
 It is present only in update and delete operations.
@@ -308,7 +308,7 @@ The field is an array of objects, each object describing one column.
 CAUTION: Only data that is present in the redo log is present in the output.
 For update operations, values may be missing from the list in case the actual value didn't change, depending on the value of the xref:../reference-manual/reference-manual.adoc#column[column] field.
 
-==== Field.payload.after
+==== Field _payload.after_
 
 The before field contains the new values of the columns.
 It is present only in insert and update operations.
@@ -362,7 +362,7 @@ The number of messages sent simultaneously to Kafka is controlled by the `max-me
 Kafka target uses checkpointing the same way as the
 <<file-target,File target>>.
 
-=== File target
+=== File target [[file-target]]
 
 File target is the simplest target.
 It writes the output to a file.
@@ -378,7 +378,7 @@ Those entities are files by default, but future versions might use other storing
 
 There are 2 types of checkpoints:
 
-- SCN checkpoint -- the position in the redo log is defined by the SCN number;
+- SCN checkpoint -- the SCN number defines the position in the redo log;
 The file contains the SCN number of the last transaction sent to output.
 
 - Schema checkpoints -- represented in the checkpoint directory as files with SCN number in the name.
@@ -388,7 +388,7 @@ CAUTION: For performance reasons, the schema checkpoints are not written for eve
 Instead, files are created periodically, and the schema is written to the file only if it changed since the last checkpoint.
 When the schema did not change, the schema checkpoint would reference some other schema checkpoint earlier in time.
 
-CAUTION: By default rhe schema checkpoints are deleted when they are not needed anymore. Different checkpoint options decide how many files are created and how many files are kept. It is also possible to disable the deletion of the schema checkpoints.
+CAUTION: By default, the schema checkpoints are deleted when they are not needed anymore. Different checkpoint options decide how many files are created and how many files are kept. It is also possible to disable the deletion of the schema checkpoints.
 
 === Network target
 
@@ -563,7 +563,7 @@ Transactions which have commit SCN lower than the checkpoint SCN aren't processe
 
 == Advanced Topics
 
-The following chapter describes some advanced topics, which would normaly not be used by a typical user.
+The following chapter describes some advanced topics, which would normally not be used by a typical user.
 
 === Schema changes
 
@@ -587,7 +587,7 @@ All DDL operations which modify data structures are tracked: adding, removing co
 
 For partitioned tables, the schema is automatically updated when a new partition or subpartition is created.
 There is no need for user intervention or program restart.
-In fact, restarting the program would have no impact on the schema, because it would not cause a new schema image to be created.
+In fact, restarting the program would have no impact on the schema because it would not cause a new schema image to be created.
 
 === Offline Reader
 
@@ -621,7 +621,7 @@ Next, edit configuration file and change the type of the reader to `offline`, re
 To create a schema file manually, the user needs to run the `gencfg.sql` script.
 The script is located in the `scripts` folder of the distribution.
 
-Before running the script, it must be edited and the following parameters needs to be provided:
+Before running the script, it must be edited and the following parameters need to be provided:
 
 - `v_NAME` -- the logical name used in the schema file;
 - `v_USERNAME_LIST` -- list of usernames to be tracked;
@@ -670,7 +670,7 @@ The output would contain all tables, even if they aren't in the filter.
 
 After activation, OpenLogReplicator would ignore the lack of schema and lack of information about column data types.
 The data would contain column values in the form of hex strings, since the information about type is not available.
-Column names and table names are missing, since the information about schema is not available.
+Column names and table names are missing since the information about the schema is not available.
 
 Example output for schemaless mode:
 

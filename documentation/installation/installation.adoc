@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-04-20
+:revdate: 2022-04-27
 :imagesdir: ./images
 :toc: preamble
 
@@ -87,7 +87,7 @@ To capture all transactions from the database, it is recommended to have also `F
 But it is not a must-have requirement.
 Having this option turned off results just that the user can dynamically disable logging for some DML operations, leading to transaction loss and data inconsistency.
 
-The following script can be used to configure database:
+The following script can be used to configure a database:
 
 [source, sql]
 ----
@@ -115,7 +115,7 @@ The default requirements of having enabled MINIMAL SUPPLEMENTAL LOGGING are enou
 In such case, the output contains only modified columns.
 However, typically this is not enough, and it is required that the output contains also values of columns which haven't been modified: primary key, unique key or all columns.
 
-IMPORTANT: OpenLogReplicator leaves the decission to the user which data is present in the database redo logs.
+IMPORTANT: OpenLogReplicator leaves the decision to the user which data is present in the database redo logs.
 Besides the minimal supplemental logging option, it doesn't force the user to enable any other supplemental logging options per table.
 The user can decide which tables should have supplemental logging enabled and which not.
 
@@ -152,7 +152,7 @@ Investigate various options of supplemental logging and choose the one which giv
 
 ==== Adding Custom Key to Supplemental Logging
 
-In cases when the primary key is not defined for a table it is possible to define a custom key.
+In cases when the primary key is not defined for a table, it is possible to define a custom key.
 
 [source, sql]
 ----
@@ -186,7 +186,7 @@ ALTER TABLE <SCHEMA>.<TABLE> ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
 SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='ALL COLUMN LOGGING') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
 ----
 
-Supplemental logging for all columns can be enabled for all tables in the database with the folloginw script:
+Supplemental logging for all columns can be enabled for all tables in the database with the following script:
 
 [source, sql]
 ----
