@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 #ifdef LINK_LIBRARY_ZEROMQ
             stream = new OpenLogReplicator::StreamZeroMQ(&ctx, argv[2]);
 #else
-            throw OpenLogReplicator::RuntimeException("ZeroMQ is not compiled");
+            throw OpenLogReplicator::RuntimeException(1, "ZeroMQ is not compiled");
 #endif /* LINK_LIBRARY_ZEROMQ */
         } else {
             throw OpenLogReplicator::RuntimeException(1, "incorrect transport");
@@ -120,10 +120,21 @@ int main(int argc, char** argv) {
             if (response.code() == OpenLogReplicator::pb::ResponseCode::STARTED || response.code() == OpenLogReplicator::pb::ResponseCode::ALREADY_STARTED) {
                 scn = response.scn();
             } else {
-                ctx.error(0, "returned code: " + response.code());
+                ctx.error(0, "returned code: " + std::to_string(response.code()));
+
+                if (stream != nullptr) {
+                    delete stream;
+                    stream = nullptr;
+                }
                 return 1;
             }
         } else {
+            ctx.error(0, "returned code: " + std::to_string(response.code()));
+
+            if (stream != nullptr) {
+                delete stream;
+                stream = nullptr;
+            }
             return 1;
         }
 

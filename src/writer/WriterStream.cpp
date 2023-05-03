@@ -75,8 +75,10 @@ namespace OpenLogReplicator {
     void WriterStream::processInfo() {
         response.Clear();
         if (request.database_name() != database) {
+            ctx->logTrace(TRACE_WRITER, "client requested database: " + std::string(request.database_name()) + " instead of " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
         } else if (metadata->firstDataScn != ZERO_SCN) {
+            ctx->logTrace(TRACE_WRITER, "client requested scn: " + std::to_string(metadata->firstDataScn) + " when already started");
             response.set_code(pb::ResponseCode::STARTED);
             response.set_scn(metadata->firstDataScn);
         } else {
@@ -87,47 +89,61 @@ namespace OpenLogReplicator {
     void WriterStream::processStart() {
         response.Clear();
         if (request.database_name() != database) {
+            ctx->logTrace(TRACE_WRITER, "client requested database: " + std::string(request.database_name()) + " instead of " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
-        } else if (metadata->firstDataScn != ZERO_SCN) {
+            return;
+        }
+
+        if (metadata->firstDataScn != ZERO_SCN) {
+            ctx->logTrace(TRACE_WRITER, "client requested scn: " + std::to_string(metadata->firstDataScn) + " when already started");
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
             response.set_scn(metadata->firstDataScn);
-        } else {
-            metadata->startScn = 0;
-            if (request.has_seq())
-                metadata->startSequence = request.seq();
-            else
-                metadata->startSequence = ZERO_SEQ;
-            metadata->startTime.clear();
-            metadata->startTimeRel = 0;
-
-            switch (request.tm_val_case()) {
-                case pb::RedoRequest::TmValCase::kScn:
-                    metadata->startScn = request.scn();
-                    metadata->setStatusReplicate();
-                    break;
-
-                case pb::RedoRequest::TmValCase::kTms:
-                    metadata->startTime = request.tms();
-                    metadata->setStatusReplicate();
-                    break;
-
-                case pb::RedoRequest::TmValCase::kTmRel:
-                    metadata->startTimeRel = request.tm_rel();
-                    metadata->setStatusReplicate();
-                    break;
-
-                default:
-                    response.set_code(pb::ResponseCode::INVALID_COMMAND);
-                    break;
-            }
-
-            if (metadata->firstDataScn != ZERO_SCN) {
-                response.set_code(pb::ResponseCode::STARTED);
-                response.set_scn(metadata->firstDataScn);
-            } else {
-                response.set_code(pb::ResponseCode::FAILED_START);
-            }
+            return;
         }
+
+        metadata->startScn = 0;
+        if (request.has_seq())
+            metadata->startSequence = request.seq();
+        else
+            metadata->startSequence = ZERO_SEQ;
+        metadata->startTime.clear();
+        metadata->startTimeRel = 0;
+
+        switch (request.tm_val_case()) {
+            case pb::RedoRequest::TmValCase::kScn:
+                metadata->startScn = request.scn();
+                metadata->setStatusReplicate();
+                break;
+
+            case pb::RedoRequest::TmValCase::kTms:
+                metadata->startTime = request.tms();
+                metadata->setStatusReplicate();
+                break;
+
+            case pb::RedoRequest::TmValCase::kTmRel:
+                metadata->startTimeRel = request.tm_rel();
+                metadata->setStatusReplicate();
+                break;
+
+            default:
+                ctx->logTrace(TRACE_WRITER, "client requested invalid tm: " + std::to_string(request.tm_val_case()));
+                response.set_code(pb::ResponseCode::INVALID_COMMAND);
+                break;
+        }
+
+        // TODO: wait for start
+
+        // FIXME: the code is invalid here, the writer module should check if the Replicator
+        // actually started and return proper information to the client
+        // current workaround is to assume that it did start
+
+        //if (metadata->firstDataScn != ZERO_SCN) {
+            response.set_code(pb::ResponseCode::STARTED);
+            response.set_scn(metadata->firstDataScn);
+        //} else {
+        //    ctx->logTrace(TRACE_WRITER, "client did not provide starting scn");
+        //    response.set_code(pb::ResponseCode::FAILED_START);
+        //}
     }
 
     void WriterStream::processRedo() {
@@ -137,6 +153,7 @@ namespace OpenLogReplicator {
             ctx->info(0, "streaming to client");
             streaming = true;
         } else {
+            ctx->logTrace(TRACE_WRITER, "client requested database: " + std::string(request.database_name()) + " instead of " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
         }
     }

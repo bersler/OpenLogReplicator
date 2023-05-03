@@ -786,9 +786,9 @@ namespace OpenLogReplicator {
 
                 const char* topic = Ctx::getJsonFieldS(fileName, JSON_TOPIC_LENGTH, writerJson, "topic");
 
-                writer = new WriterKafka(ctx, std::string(alias) + "-writer", replicator2->database, replicator2->builder,
-                                        replicator2->metadata, brokers, topic, maxMessages,
-                                        enableIdempotence);
+                writer = new WriterKafka(ctx, std::string(alias) + "-writer", replicator2->database,
+                                         replicator2->builder, replicator2->metadata, brokers, topic,
+                                         maxMessages, enableIdempotence);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'type' value: " + std::string(formatType) +
                                              ", expected: not 'kafka' since the code is not compiled");
@@ -799,8 +799,8 @@ namespace OpenLogReplicator {
                 const char* uri = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, writerJson, "uri");
                 StreamZeroMQ* stream = new StreamZeroMQ(ctx, uri);
                 stream->initialize();
-                writer = new WriterStream(ctx, std::string(alias) + "-writer", replicator2->database, replicator2->builder,
-                                          replicator2->metadata, stream);
+                writer = new WriterStream(ctx, std::string(alias) + "-writer", replicator2->database,
+                                          replicator2->builder, replicator2->metadata, stream);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'type' value: " + std::string(writerType) +
                                              ", expected: not 'zeromq' since the code is not compiled");
@@ -811,8 +811,8 @@ namespace OpenLogReplicator {
 
                 StreamNetwork* stream = new StreamNetwork(ctx, uri);
                 stream->initialize();
-                writer = new WriterStream(ctx, std::string(alias) + "-writer", replicator2->database, replicator2->builder,
-                                          replicator2->metadata, stream);
+                writer = new WriterStream(ctx, std::string(alias) + "-writer", replicator2->database,
+                                          replicator2->builder, replicator2->metadata, stream);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'type' value: " + std::string(writerType) +
                                              ", expected: not 'network' since the code is not compiled");

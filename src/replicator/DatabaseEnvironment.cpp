@@ -82,8 +82,8 @@ namespace OpenLogReplicator {
                     errbuf2[len - 1] = 0;
 
                 if (errcode != 100)
-                    ctx->error(10051, "OCI: " + std::string(reinterpret_cast<char*>(errbuf2)) + "]");
-                throw RuntimeException(10051, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)) + "]");
+                    ctx->error(10051, "OCI: [" + std::string(reinterpret_cast<char*>(errbuf2)) + "]");
+                throw RuntimeException(10051, "OCI: [" + std::string(reinterpret_cast<char*>(errbuf1)) + "]");
 
             case OCI_INVALID_HANDLE:
                 throw RuntimeException(10051, "OCI: OCI_INVALID_HANDLE");
