@@ -2155,7 +2155,7 @@ namespace OpenLogReplicator {
                      ++sysCColMapKeyIt) {
                     SysCCol* sysCCol = sysCColMapKeyIt->second;
 
-                    // Count number of PK the column is part of
+                    // Count the number of PKs the column is part of
                     auto sysCDefMapConIt = sysCDefMapCon.find(sysCCol->con);
                     if (sysCDefMapConIt == sysCDefMapCon.end()) {
                         ctx->warning(70005, "data in SYS.CDEF$ missing for CON#: " + std::to_string(sysCCol->con));
@@ -2344,7 +2344,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            // Check if table has all listed columns
+            // Check if a table has all listed columns
             if (static_cast<typeCol>(keys.size()) != keysCnt)
                 throw DataException(10041, "table " + std::string(sysUser->name) + "." + sysObj->name + " - couldn't find all column set (" +
                                     keysStr + ")");
@@ -2363,7 +2363,7 @@ namespace OpenLogReplicator {
                 ss << ", row movement enabled";
 
             if (!DISABLE_CHECKS(DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0) {
-                // Use default primary key
+                // Use a default primary key
                 if (keys.empty()) {
                     if (schemaTable->totalPk == 0)
                         ss << ", primary key missing";

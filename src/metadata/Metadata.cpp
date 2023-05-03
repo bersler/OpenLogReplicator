@@ -277,7 +277,7 @@ namespace OpenLogReplicator {
             if (schema->scn == ZERO_SCN)
                 schema->scn = checkpointScn;
 
-            // Schema not changed
+            // Schema did not change
             bool storeSchema = true;
             if (schema->refScn != ZERO_SCN && schema->refScn >= schema->scn) {
                 if (schemaInterval < ctx->schemaForceInterval) {

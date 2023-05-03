@@ -18,6 +18,7 @@
 - fix: unification of log messages
 - change: config file version is "1.2.0"
 - fix: changed type of nullable field from numeric to boolean
+- fix: uncaught exception in writer module
 
 1.1.0
 - debug: trace formatting changes

@@ -176,6 +176,9 @@ namespace OpenLogReplicator {
         } catch (DataException& ex) {
             ctx->error(ex.code, ex.msg);
             ctx->stopHard();
+        } catch (RuntimeException& ex) {
+            ctx->error(ex.code, ex.msg);
+            ctx->stopHard();
         }
 
         ctx->info(0, "writer is stopping: " + getName() + ", max queue size: " + std::to_string(maxQueueSize));
@@ -199,7 +202,7 @@ namespace OpenLogReplicator {
         // Start streaming
         while (!ctx->hardShutdown) {
 
-            // Get message to send
+            // Get a message to send
             while (!ctx->hardShutdown) {
                 // Check for client checkpoint
                 pollQueue();
@@ -234,7 +237,7 @@ namespace OpenLogReplicator {
                 if (msg->length == 0)
                     break;
 
-                // Queue is full
+                // The queue is full
                 pollQueue();
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
                     if (ctx->trace & TRACE_WRITER)
