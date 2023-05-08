@@ -547,6 +547,9 @@ namespace OpenLogReplicator {
         if (FLAG(REDO_FLAGS_HIDE_CHECKPOINT))
             return;
 
+        lastTime = time_;
+        lastScn = scn;
+        lastSequence = sequence;
         createResponse();
         builderBegin(0);
         appendHeader(true, true);
