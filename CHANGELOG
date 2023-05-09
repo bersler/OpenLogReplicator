@@ -22,6 +22,7 @@
 - fix: protocol buffer message missing scn data
 - fix: allow server to handle bad start requests for network mode
 - fix: network client display fixes and handle big messages
+- fix: network client memory release on error
 
 1.1.0
 - debug: trace formatting changes

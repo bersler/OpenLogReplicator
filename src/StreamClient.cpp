@@ -124,6 +124,11 @@ int main(int argc, char** argv) {
             } else {
                 ctx.error(0, "returned code: " + std::to_string(response.code()));
 
+                if (buffer != nullptr) {
+                    delete[] buffer;
+                    buffer = nullptr;
+                }
+
                 if (stream != nullptr) {
                     delete stream;
                     stream = nullptr;
@@ -132,6 +137,11 @@ int main(int argc, char** argv) {
             }
         } else {
             ctx.error(0, "returned code: " + std::to_string(response.code()));
+
+            if (buffer != nullptr) {
+                delete[] buffer;
+                buffer = nullptr;
+            }
 
             if (stream != nullptr) {
                 delete stream;
