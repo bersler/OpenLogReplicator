@@ -253,12 +253,13 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (*(reinterpret_cast<uint32_t*>(msg)) < 0xFFFFFFFF) {
+        uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
+        if (newLength < 0xFFFFFFFF) {
             // 32-bit message length
-            if (length < *(reinterpret_cast<uint32_t*>(msg)))
-                throw NetworkException(10055, "message from client is incomplete");
-
-            length = *(reinterpret_cast<uint32_t*>(msg));
+            if (length < newLength)
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                                       ", buffer size: " + std::to_string(length) + ")");
+            length = newLength;
             recvd = 0;
         } else {
             // 64-bit message length
@@ -284,10 +285,11 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (length < *(reinterpret_cast<uint64_t*>(msg)))
-                throw NetworkException(10055, "message from client is incomplete");
-
-            length = *(reinterpret_cast<uint64_t*>(msg));
+            newLength = *(reinterpret_cast<uint32_t*>(msg));
+            if (length < newLength)
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                                       ", buffer size: " + std::to_string(length) + ")");
+            length = newLength;
             recvd = 0;
         }
 
@@ -343,10 +345,11 @@ namespace OpenLogReplicator {
 
         if (*(reinterpret_cast<uint32_t*>(msg)) < 0xFFFFFFFF) {
             // 32-bit message length
-            if (length < *(reinterpret_cast<uint32_t*>(msg)))
-                throw NetworkException(10055, "message from client is incomplete");
-\
-            length = *(reinterpret_cast<uint32_t*>(msg));
+            uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
+            if (length < newLength)
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                                       ", buffer size: " + std::to_string(length) + ")");
+            length = newLength;
             recvd = 0;
         } else {
             // 64-bit message length
@@ -376,10 +379,11 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (length < *(reinterpret_cast<uint64_t*>(msg)))
-                throw NetworkException(10055, "message from client is incomplete");
-
-            length = *(reinterpret_cast<uint64_t*>(msg));
+            uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
+            if (length < newLength)
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                                       ", buffer size: " + std::to_string(length) + ")");
+            length = newLength;
             recvd = 0;
         }
 

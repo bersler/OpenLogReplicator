@@ -190,7 +190,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::mainLoop() {
-        // Client isConnected
+        // The client is connected
         readCheckpoint();
 
         BuilderMsg* msg;
@@ -346,7 +346,7 @@ namespace OpenLogReplicator {
         std::string checkpoint;
         rapidjson::Document document;
         if (!metadata->stateRead(name, CHECKPOINT_FILE_MAX_SIZE, checkpoint)) {
-            metadata->setStatusReplicate();
+            metadata->setStatusBoot();
             return;
         }
 

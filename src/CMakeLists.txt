@@ -17,6 +17,7 @@
 # <http://www.gnu.org/licenses/>.
 
 list(APPEND ListCommon
+        common/BootException.cpp
         common/ConfigurationException.cpp
         common/Ctx.cpp
         common/DataException.cpp

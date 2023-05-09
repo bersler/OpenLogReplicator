@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
+#include "../common/BootException.h"
 #include "../common/Ctx.h"
 #include "../common/OracleIncarnation.h"
 #include "../common/RedoLogException.h"
@@ -152,47 +153,65 @@ namespace OpenLogReplicator {
         }
 
         try {
-            loadDatabaseMetadata();
+            metadata->waitForWriter();
 
-            do {
-                metadata->waitForReplication();
+            loadDatabaseMetadata();
+            metadata->readCheckpoints();
+
+            while (metadata->status != METADATA_STATUS_REPLICATE) {
                 if (ctx->softShutdown)
                     break;
+                metadata->waitForWriter();
+
                 if (metadata->status == METADATA_STATUS_INITIALIZE)
                     continue;
 
-                printStartMsg();
                 if (ctx->softShutdown)
                     break;
+                try {
+                    if (metadata->firstDataScn == ZERO_SCN || metadata->sequence == ZERO_SEQ)
+                        positionReader();
 
-                metadata->readCheckpoints();
-                if (metadata->firstDataScn == ZERO_SCN || metadata->sequence == ZERO_SEQ)
-                    positionReader();
+                    // No schema available?
+                    if (metadata->schema->scn == ZERO_SCN)
+                        createSchema();
 
-                ctx->info(0, "current resetlogs is: " + std::to_string(metadata->resetlogs));
-                ctx->info(0, "first data SCN: " + std::to_string(metadata->firstDataScn));
-                if (metadata->firstSchemaScn != ZERO_SCN)
-                    ctx->info(0, "first schema SCN: " + std::to_string(metadata->firstSchemaScn));
+                    if (metadata->sequence == ZERO_SEQ)
+                        throw BootException(10028, "starting sequence is unknown");
 
-                // No schema available?
-                if (metadata->schema->scn == ZERO_SCN)
-                    createSchema();
+                    if (metadata->firstDataScn == ZERO_SCN)
+                        ctx->info(0, "last confirmed scn: <none>, starting sequence: " + std::to_string(metadata->sequence) + ", offset: " +
+                                     std::to_string(metadata->offset));
+                    else
+                        ctx->info(0, "last confirmed scn: " + std::to_string(metadata->firstDataScn) + ", starting sequence: " +
+                                     std::to_string(metadata->sequence) + ", offset: " + std::to_string(metadata->offset));
 
-                if (metadata->sequence == ZERO_SEQ)
-                    throw RuntimeException(10028, "starting sequence is unknown");
+                    if ((metadata->dbBlockChecksum == "OFF" || metadata->dbBlockChecksum == "FALSE") && !DISABLE_CHECKS(DISABLE_CHECKS_BLOCK_SUM)) {
+                        ctx->hint("set DB_BLOCK_CHECKSUM = TYPICAL on the database or turn off consistency checking in OpenLogReplicator "
+                                  "setting parameter disable-checks: " + std::to_string(DISABLE_CHECKS_BLOCK_SUM) + " for the reader");
+                    }
 
-                if (metadata->firstDataScn == ZERO_SCN)
-                    ctx->info(0, "last confirmed scn: <none>, starting sequence: " + std::to_string(metadata->sequence) + ", offset: " +
-                              std::to_string(metadata->offset));
-                else
-                    ctx->info(0, "last confirmed scn: " + std::to_string(metadata->firstDataScn) + ", starting sequence: " +
-                              std::to_string(metadata->sequence) + ", offset: " + std::to_string(metadata->offset));
+                } catch (BootException& ex) {
+                    if (!metadata->bootFailsafe)
+                        throw RuntimeException(ex.code, ex.msg);
 
-                if ((metadata->dbBlockChecksum == "OFF" || metadata->dbBlockChecksum == "FALSE") && !DISABLE_CHECKS(DISABLE_CHECKS_BLOCK_SUM)) {
-                    ctx->hint("set DB_BLOCK_CHECKSUM = TYPICAL on the database or turn off consistency checking in OpenLogReplicator "
-                              "setting parameter disable-checks: " + std::to_string(DISABLE_CHECKS_BLOCK_SUM) + " for the reader");
+                    ctx->error(ex.code, ex.msg);
+                    ctx->info(0, "replication startup failed, waiting for further commands");
+                    metadata->setStatusInitialize();
+                    continue;
                 }
-            } while (metadata->status == METADATA_STATUS_INITIALIZE);
+
+                // boot succeeded
+                ctx->info(0, "resume writer");
+                metadata->setStatusReplicate();
+            }
+            printStartMsg();
+            if (metadata->resetlogs != 0)
+                ctx->info(0, "current resetlogs is: " + std::to_string(metadata->resetlogs));
+            if (metadata->firstDataScn != ZERO_SCN)
+                ctx->info(0, "first data SCN: " + std::to_string(metadata->firstDataScn));
+            if (metadata->firstSchemaScn != ZERO_SCN)
+                ctx->info(0, "first schema SCN: " + std::to_string(metadata->firstSchemaScn));
 
             while (!ctx->softShutdown) {
                 bool logsProcessed = false;
@@ -631,7 +650,7 @@ namespace OpenLogReplicator {
         else if (metadata->startScn != ZERO_SCN)
             starting = "scn: " + std::to_string(metadata->startScn);
         else
-            starting = "now";
+            starting = "NOW";
 
         std::string startingSeq;
         if (metadata->startSequence != ZERO_SEQ)
@@ -782,7 +801,7 @@ namespace OpenLogReplicator {
                         parser = onlineRedo;
                     }
 
-                    if (ctx->trace & TRACE_REDO)
+                    if (ctx->trace & TRACE_REDO && ctx->logLevel >= LOG_LEVEL_DEBUG)
                         ctx->logTrace(TRACE_REDO, onlineRedo->path + " is seq: " +std::to_string(onlineRedo->sequence) +
                                       ", scn: " + std::to_string(onlineRedo->firstScn) + ", blocks: " +
                                       std::to_string(onlineRedo->reader->getNumBlocks()));
@@ -799,6 +818,9 @@ namespace OpenLogReplicator {
 
                 clock_t endTime = Timer::getTime();
                 if (beginTime + (clock_t)ctx->refreshIntervalUs < endTime) {
+                    if (ctx->trace & TRACE_REDO)
+                        ctx->logTrace(TRACE_REDO, "refresh interval reached, checking online redo logs again");
+
                     updateOnlineRedoLogData();
                     updateOnlineLogs();
                     goStandby();
@@ -827,6 +849,11 @@ namespace OpenLogReplicator {
                 // verifySchema(metadata->nextScn);
                 ++metadata->sequence;
             } else if (ret == REDO_STOPPED || ret == REDO_OK) {
+                if (ctx->trace & TRACE_REDO)
+                    ctx->logTrace(TRACE_REDO, "updating redo log files, return code: " + std::to_string(ret) + ", sequence: " +
+                            std::to_string(metadata->sequence) + ", first scn: " + std::to_string(metadata->firstScn) + ", next scn: " +
+                            std::to_string(metadata->nextScn));
+
                 updateOnlineRedoLogData();
                 updateOnlineLogs();
             } else if (ret == REDO_OVERWRITTEN) {

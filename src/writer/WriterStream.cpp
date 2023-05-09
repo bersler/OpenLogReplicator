@@ -32,6 +32,7 @@ namespace OpenLogReplicator {
                                Stream* newStream) :
         Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
         stream(newStream) {
+        metadata->bootFailsafe = true;
     }
 
     WriterStream::~WriterStream() {
@@ -112,17 +113,23 @@ namespace OpenLogReplicator {
         switch (request.tm_val_case()) {
             case pb::RedoRequest::TmValCase::kScn:
                 metadata->startScn = request.scn();
-                metadata->setStatusReplicate();
+                if (metadata->startScn == ZERO_SCN)
+                    ctx->info(0, "client requested start from NOW");
+                else
+                    ctx->info(0, "client requested start from scn: " + std::to_string(metadata->startScn));
+                metadata->setStatusBoot();
                 break;
 
             case pb::RedoRequest::TmValCase::kTms:
                 metadata->startTime = request.tms();
-                metadata->setStatusReplicate();
+                ctx->info(0, "client requested start from time: " + metadata->startTime);
+                metadata->setStatusBoot();
                 break;
 
             case pb::RedoRequest::TmValCase::kTmRel:
                 metadata->startTimeRel = request.tm_rel();
-                metadata->setStatusReplicate();
+                ctx->info(0, "client requested start from relative time: " + std::to_string(metadata->startTimeRel));
+                metadata->setStatusBoot();
                 break;
 
             default:
@@ -131,19 +138,15 @@ namespace OpenLogReplicator {
                 break;
         }
 
-        // TODO: wait for start
+        metadata->waitForReplicator();
 
-        // FIXME: the code is invalid here, the writer module should check if the Replicator
-        // actually started and return proper information to the client
-        // current workaround is to assume that it did start
-
-        //if (metadata->firstDataScn != ZERO_SCN) {
+        if (metadata->status == METADATA_STATUS_REPLICATE) {
             response.set_code(pb::ResponseCode::STARTED);
             response.set_scn(metadata->firstDataScn);
-        //} else {
-        //    ctx->logTrace(TRACE_WRITER, "client did not provide starting scn");
-        //    response.set_code(pb::ResponseCode::FAILED_START);
-        //}
+        } else {
+            ctx->logTrace(TRACE_WRITER, "client did not provide starting scn");
+            response.set_code(pb::ResponseCode::FAILED_START);
+        }
     }
 
     void WriterStream::processRedo() {

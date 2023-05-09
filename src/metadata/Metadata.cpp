@@ -64,6 +64,8 @@ namespace OpenLogReplicator {
             suppLogDbPrimary(false),
             suppLogDbAll(false),
             logArchiveFormatCustom(false),
+            allowedCheckpoints(false),
+            bootFailsafe(false),
             conId(newConId),
             logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
             defaultCharacterMapId(0),
@@ -166,6 +168,10 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setSeqOffset(typeSeq newSequence, uint64_t newOffset) {
+        if (ctx->trace & TRACE_CHECKPOINT)
+            ctx->logTrace(TRACE_CHECKPOINT, "setting sequence to: " + std::to_string(newSequence) + ", offset: " +
+                    std::to_string(newOffset));
+
         std::unique_lock<std::mutex> lck(mtx);
         sequence = newSequence;
         offset = newOffset;
@@ -227,21 +233,45 @@ namespace OpenLogReplicator {
         return element;
     }
 
-    void Metadata::waitForReplication() {
+    void Metadata::waitForWriter() {
         std::unique_lock<std::mutex> lck(mtx);
         if (status == METADATA_STATUS_INITIALIZE)
-            condStartedReplication.wait(lck);
+            condReplicator.wait(lck);
+    }
+
+    void Metadata::waitForReplicator() {
+        std::unique_lock<std::mutex> lck(mtx);
+        if (status == METADATA_STATUS_BOOT)
+            condWriter.wait(lck);
+    }
+
+    void Metadata::setStatusInitialize() {
+        std::unique_lock<std::mutex> lck(mtx);
+        status = METADATA_STATUS_INITIALIZE;
+        firstDataScn = ZERO_SCN;
+        firstSchemaScn = ZERO_SCN;
+        checkpointScn = ZERO_SCN;
+        schema->scn = ZERO_SCN;
+        condWriter.notify_all();
+    }
+
+    void Metadata::setStatusBoot() {
+        std::unique_lock<std::mutex> lck(mtx);
+        status = METADATA_STATUS_BOOT;
+        condReplicator.notify_all();
     }
 
     void Metadata::setStatusReplicate() {
         std::unique_lock<std::mutex> lck(mtx);
         status = METADATA_STATUS_REPLICATE;
-        condStartedReplication.notify_all();
+        condReplicator.notify_all();
+        condWriter.notify_all();
     }
 
     void Metadata::wakeUp() {
         std::unique_lock<std::mutex> lck(mtx);
-        condStartedReplication.notify_all();
+        condReplicator.notify_all();
+        condWriter.notify_all();
     }
 
     void Metadata::checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
@@ -363,6 +393,9 @@ namespace OpenLogReplicator {
 
         std::string name1(database + "-chkpt-" + std::to_string(scn));
         if (!stateRead(name1, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss)) {
+            if (ctx->trace & TRACE_CHECKPOINT)
+                ctx->logTrace(TRACE_CHECKPOINT, "no checkpoint file found, setting unknown sequence");
+
             sequence = ZERO_SEQ;
             return;
         }

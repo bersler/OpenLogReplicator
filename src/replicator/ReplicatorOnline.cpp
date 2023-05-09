@@ -22,6 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
+#include "../common/BootException.h"
 #include "../common/OracleColumn.h"
 #include "../common/OracleTable.h"
 #include "../common/OracleIncarnation.h"
@@ -660,7 +661,7 @@ namespace OpenLogReplicator {
         if (metadata->startTime.length() > 0) {
             DatabaseStatement stmt(conn);
             if (standby)
-                throw RuntimeException(10024, "can't position by time for standby database");
+                throw BootException(10024, "can't position by time for standby database");
 
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SCN_FROM_TIME);
@@ -673,13 +674,13 @@ namespace OpenLogReplicator {
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
-                throw RuntimeException(10025, "can't find scn for: " + metadata->startTime);
+                throw BootException(10025, "can't find scn for: " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
         } else if (metadata->startTimeRel > 0) {
             DatabaseStatement stmt(conn);
             if (standby)
-                throw RuntimeException(10026, "can't position by relative time for standby database");
+                throw BootException(10026, "can't position by relative time for standby database");
 
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SCN_FROM_TIME_RELATIVE);
@@ -690,7 +691,7 @@ namespace OpenLogReplicator {
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
-                throw RuntimeException(10025, "can't find scn for " + metadata->startTime);
+                throw BootException(10025, "can't find scn for " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
         // NOW
@@ -702,7 +703,7 @@ namespace OpenLogReplicator {
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
-                throw RuntimeException(10029, "can't find database current scn");
+                throw BootException(10029, "can't find database current scn");
             metadata->firstDataScn = firstDataScn;
         }
 
@@ -739,14 +740,14 @@ namespace OpenLogReplicator {
             typeSeq sequence; stmt.defineUInt32(1, sequence);
 
             if (!stmt.executeQuery())
-                throw RuntimeException(10030, "getting database sequence for scn: " + std::to_string(metadata->firstDataScn));
+                throw BootException(10030, "getting database sequence for scn: " + std::to_string(metadata->firstDataScn));
 
             metadata->setSeqOffset(sequence, 0);
             ctx->info(0, "starting sequence not found - starting with new batch with seq: " + std::to_string(metadata->sequence));
         }
 
         if (metadata->firstDataScn == ZERO_SCN)
-            throw RuntimeException(10031, "getting database scn");
+            throw BootException(10031, "getting database scn");
     }
 
     bool ReplicatorOnline::checkConnection() {
@@ -951,7 +952,7 @@ namespace OpenLogReplicator {
             }
         } catch (RuntimeException& ex) {
             ctx->error(ex.code, ex.msg);
-            throw RuntimeException(10035, "can't read metadata from flashback, try some later scn for start");
+            throw BootException(10035, "can't read metadata from flashback, try some later scn for start");
         }
     }
 
@@ -1558,10 +1559,10 @@ namespace OpenLogReplicator {
             }
         } catch (DataException& ex) {
             ctx->error(ex.code, ex.msg);
-            throw RuntimeException(10035, "can't read schema from flashback, try some later scn for start");
+            throw BootException(10035, "can't read schema from flashback, try some later scn for start");
         } catch (RuntimeException& ex) {
             ctx->error(ex.code, ex.msg);
-            throw RuntimeException(10035, "can't read schema from flashback, try some later scn for start");
+            throw BootException(10035, "can't read schema from flashback, try some later scn for start");
         }
     }
 

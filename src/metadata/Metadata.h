@@ -33,8 +33,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef METADATA_H_
 #define METADATA_H_
 
+// Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
 #define METADATA_STATUS_INITIALIZE          0
-#define METADATA_STATUS_REPLICATE           1
+
+// Replicator tries to start replication with given parameters.
+#define METADATA_STATUS_BOOT                1
+
+// Replication is running. The metadata is initialized, the starting point of replication is defined.
+#define METADATA_STATUS_REPLICATE           2
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -49,7 +55,8 @@ namespace OpenLogReplicator {
 
     class Metadata {
     protected:
-        std::condition_variable condStartedReplication;
+        std::condition_variable condReplicator;
+        std::condition_variable condWriter;
 
     public:
         Schema* schema;
@@ -72,6 +79,8 @@ namespace OpenLogReplicator {
         bool suppLogDbAll;
         bool logArchiveFormatCustom;
         bool allowedCheckpoints;
+        // The writer is controlling the boot parameters. If the data is not available on startup, don't fail immediately.
+        bool bootFailsafe;
         typeConId conId;
         std::string conName;
         std::string context;
@@ -132,7 +141,10 @@ namespace OpenLogReplicator {
         [[nodiscard]] bool stateDrop(const std::string& name);
         SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
 
-        void waitForReplication();
+        void waitForWriter();
+        void waitForReplicator();
+        void setStatusInitialize();
+        void setStatusBoot();
         void setStatusReplicate();
         void wakeUp();
         void checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
