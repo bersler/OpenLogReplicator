@@ -14,7 +14,7 @@ This document describes installation and configuration guide.
 
 == Setup
 
-=== System Requirements
+=== System requirements
 
 OpenLogReplicator can run together with the database or on a separate host.
 
@@ -26,7 +26,7 @@ The preferred Linux distribution is Debian.
 Official docker images use this distribution.
 Other distributions aren't tested.
 
-=== Database Version Requirements
+=== Database version requirements
 
 OpenLogReplicator has no impact and is not affected when other replication engines are being used, including tools using Streams, XStream or LogMiner.
 Or multiple instances of OpenLogReplicator -- as long as they don't share the same path with checkpoints and configuration file.
@@ -53,9 +53,9 @@ The following limitations apply to the source database:
 
 * Database must be in single instance mode (non RAC).
 
-=== Database Requirements
+=== Database requirements
 
-==== Database Configuration
+==== Database configuration
 
 There are just 2 strict requirements for the database configuration.
 In fact, they're common for absolutely any replication engine.
@@ -81,7 +81,7 @@ In case when it is dynamically disabled (i.e. disabled after program startup), O
 Errors might be printed and behavior might be undefined.
 Transactions might be missing in the output and replication should be restarted.
 
-==== Force Logging
+==== Force logging
 
 To capture all transactions from the database, it is recommended to have also `FORCE LOGGING` turned on.
 But it is not a must-have requirement.
@@ -97,7 +97,7 @@ ALTER SYSTEM ARCHIVE LOG CURRENT;
 SELECT FORCE_LOGGING FROM V$DATABASE;
 ----
 
-==== FRA Configuration
+==== FRA configuration
 
 For OFFLINE reader type, it is required that Fast Recovery Area is configured.
 
@@ -109,7 +109,7 @@ ALTER SYSTEM SET DB_RECOVERY_FILE_DEST_SIZE = 50G;
 ALTER SYSTEM SET DB_RECOVERY_FILE_DEST = '/opt/oracle/fra';
 ----
 
-=== Table Configuration Requirements
+=== Table configuration requirements
 
 The default requirements of having enabled MINIMAL SUPPLEMENTAL LOGGING are enough for OpenLogReplicator to work.
 In such case, the output contains only modified columns.
@@ -119,7 +119,7 @@ IMPORTANT: OpenLogReplicator leaves the decision to the user which data is prese
 Besides the minimal supplemental logging option, it doesn't force the user to enable any other supplemental logging options per table.
 The user can decide which tables should have supplemental logging enabled and which not.
 
-==== Adding Primary Key to Supplemental Logging
+==== Adding primary key to supplemental logging
 
 A typical configuration requirement is that the primary key is added to supplemental logging.
 
@@ -150,7 +150,7 @@ Statistics include a summary of additional space occupied by supplemental log gr
 The value is in bytes.
 Investigate various options of supplemental logging and choose the one which gives the best performance and redo log size.
 
-==== Adding Custom Key to Supplemental Logging
+==== Adding custom key to supplemental logging
 
 In cases when the primary key is not defined for a table, it is possible to define a custom key.
 
@@ -170,7 +170,7 @@ In such case, it is also needed to define the custom key in the configuration fi
 CAUTION: OpenLogReplicator rigorously tests the correctness of the custom key columns. If the defined columns aren't present in the table, the replication will stop.
 This setting overrides the defined primary key.
 
-==== Adding All Columns to Supplemental Logging
+==== Adding all columns to supplemental logging
 
 It is also possible to include all columns in the output for UPDATE operations. To achieve such behavior, it is required to add all columns to supplemental logging and set `column` parameter to value `2`.
 
@@ -195,7 +195,7 @@ ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
 SELECT SUPPLEMENTAL_LOG_DATA_ALL FROM V$DATABASE;
 ----
 
-==== User Requirements
+==== User requirements
 
 Requirements for ONLINE reader type:
 
@@ -240,7 +240,7 @@ GRANT SELECT ON SYS.V_$TRANSPORTABLE_PLATFORM TO <USER>;
 NOTE: Grant script has to be run from _SYS_ account.
 For multi-tenant databases, the user must be created and given grants in PDB.
 
-=== Runtime Permissions
+=== Runtime permissions
 
 During runtime OpenLogReplicator needs to be able to connect to the source database using OCI connection.
 
@@ -259,7 +259,7 @@ During startup, no query is run that would access any data in user tables.
 
 == Source code compilation
 
-=== Docker Image
+=== Docker image
 
 The easiest way to compile source code is to use a docker script from GitHub:
 

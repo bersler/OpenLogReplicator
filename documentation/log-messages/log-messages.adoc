@@ -43,7 +43,7 @@ Format can change without notice.
 
 The following messages may be printed during program execution:
 
-=== Runtime Errors (1xxxx)
+=== Runtime errors (1xxxx)
 
 Errors related to program execution.
 
@@ -375,7 +375,7 @@ Verify if the network is available and if the network is not overloaded.
 Network operation of sending data to a client failed.
 Verify if the network is available and if the network is not overloaded.
 
-==== code 10055: "message from client is incomplete"
+==== code 10055: "message from client is incomplete (length: <number>, buffer size: <number>)"
 
 The message received from a client is incomplete.
 Verify if the network is available and if the network is not overloaded.
@@ -436,7 +436,7 @@ Verify if the ZeroMQ library is installed and available.
 Initialization of ZeroMQ socket failed.
 Verify if the ZeroMQ library is installed and available.
 
-=== Data Exceptions (2xxxx)
+=== Data exceptions (2xxxx)
 
 Errors related to syntax and content of configuration file and checkpoint files.
 
@@ -494,7 +494,7 @@ Row ID is in incorrect format.
 The length of the row ID is not correct.
 Verify if the row ID is correct.
 
-=== Configuration Errors (3xxxx)
+=== Configuration errors (3xxxx)
 
 Parameters defined to start OpenLogReplicator have incorrect values.
 
@@ -541,7 +541,7 @@ Define `max-file-size` parameter.
 URI is missing a `':'` character.
 Verify if the URI is correct.
 
-=== Redo Log Errors (4xxxx)
+=== Redo log errors (4xxxx)
 
 Some data in redo log files aren't correct.
 The data doesn't need the model requirements of OpenLogReplicator or is corrupted.
@@ -606,7 +606,7 @@ Double read error.
 Verify if the file is not corrupted.
 If the problem persists, please report this issue.
 
-=== Internal Errors (5xxxx)
+=== Internal errors (5xxxx)
 
 Provided below is a list of internal errors which should never appear.
 If you encounter any of these errors, please report this issue.
@@ -911,7 +911,7 @@ Reading file metadata failed.
 Check if the file is not corrupted.
 Verify operating system log messages.
 
-=== Internal warnings(7xxxx)
+=== Internal warnings (7xxxx)
 
 Provided below is a list of internal warnings which should never appear.
 If you encounter any of these warnings, please report this issue.
@@ -938,11 +938,11 @@ If you encounter any of these warnings, please report this issue.
 
 ==== code 70011: "unknown rollback OP: <number>, opc: <opc>)
 
-== Info Messages
+== Info messages
 
 === Information (8xxxx)
 
-== Trace Messages
+== Trace messages
 
 === Trace (9xxxx)
 

@@ -50,7 +50,7 @@ If necessary – create appropriate symlinks.
 
 == Performance issues
 
-=== CPU Saturation
+=== CPU saturation
 
 Most possible bottlenecks are:
 

@@ -48,7 +48,7 @@ The following changes are available in version 1.1.0:
 - fix: experimental LOB support Unicode character decoding
 - new feature: basicfile LOB (removed being experimental)
 
-=== Nightly Builds
+=== Nightly builds
 
 The following changes are available in nightly builds:
 

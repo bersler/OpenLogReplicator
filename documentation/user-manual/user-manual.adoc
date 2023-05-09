@@ -66,7 +66,7 @@ Other threads perform operations which aren't CPU intensive, however, might be I
 To prevent multiple instances of OpenLogReplicator running simultaneously and overwriting checkpoint files ane another, the program creates a lock on the config file after startup.
 If another instance is already running and the lock can't be created, the program exits with an error.
 
-=== Memory Allocation
+=== Memory allocation
 
 For most data structures, including disk buffers, output buffers and copy of the redo log vectors the program uses one big pool of memory, which is fully controlled by 2 parameters: `memory-min-mb` and `memory-max-mb`.
 Those parameters allow to fully control the memory usage of the program.
@@ -203,7 +203,7 @@ image:architecture-sshfs.png[Remote access to redo log files,,,]
 OpenLogReplicator by default would read online redo logs and process transactions as soon as they're committed, and this information is written to redo log.
 But it can also read just archived redo logs – in this scenario transactions would be processed when log switch is performed and redo log is archived.
 
-== Output Format
+== Output format
 
 The output format is fully configurable.
 There are 2 formats implemented: JSON and protocol buffer, but the architecture of the program allows implementing any other format in the future.
@@ -243,7 +243,7 @@ Example: `"tms":"2019-01-01T12:00:00"`.
 
 When the xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0002` flag -- the timestamp value is added to every message -- not only to message with a _begin transaction_ record.
 
-==== Field containing _Transaction ID (XID)_
+==== Field containing _transaction ID (XID)_
 
 The transaction ID field is present only in messages which are related to transactions, like DML, begin, commit.
 It is not present in checkpoint messages.
@@ -347,10 +347,12 @@ The library has a limitation of 1.000.000.000 bytes (953 MB) for maximum message
 OpenLogReplicator has no limit for message size and can process rows containing multiple LOB columns which are up to 4GB in size.
 A message can theoretically contain multiple LOB columns, which would exceed the maximum message size for the Kafka client library.
 
-==== Idempotent Producer
+==== Idempotent producer
 
 OpenLogReplicator can act as an idempotent producer, and this is the default behavior.
 This is default behavior and is controlled by the `enable-idempotence` parameter.
+
+CAUTION: OpenLogReplicator does not support the Kafka transactional API.
 
 ==== Performance
 
@@ -421,7 +423,7 @@ TODO: describe the principles of the network target
 
 TODO: write
 
-== Supported Features
+== Supported features
 
 === DML operations
 
@@ -478,7 +480,7 @@ Changes in the schema are supported.
 
 TODO: more
 
-=== Supported Character Sets [[supported-character-sets]]
+=== Supported character sets [[supported-character-sets]]
 
 OpenLogReplicator supports many character sets which can be used in the source Oracle database.
 
@@ -561,7 +563,7 @@ Transactions which have commit SCN lower than the checkpoint SCN aren't processe
 
 
 
-== Advanced Topics
+== Advanced topics
 
 The following chapter describes some advanced topics, which would normally not be used by a typical user.
 
@@ -589,7 +591,7 @@ For partitioned tables, the schema is automatically updated when a new partition
 There is no need for user intervention or program restart.
 In fact, restarting the program would have no impact on the schema because it would not cause a new schema image to be created.
 
-=== Offline Reader
+=== Offline reader
 
 For cases where there is no physical way to connect the database, OpenLogReplictor offers
 an offline reader mode.
@@ -606,7 +608,7 @@ CAUTION: The schema file contains also list locations of redo log files.
 Those parameters are static and aren't tracked.
 Thus, if they change, the schema file needs to be edited manually (this is a json file), or the schema needs to be recreated.
 
-==== Starting as Offline Reader
+==== Starting as offline reader
 
 To start replication with `online` reader, first define the type of the reader as `online`, provide credentials for the database connection and start the program.
 
@@ -651,7 +653,7 @@ Whenever a switch occurs, the program would automatically switch to the new prim
 There is no need to add extra options for the DataGuard configuration.
 OpenLogReplicator would automatically detect the DataGuard configuration and start reading appropriate redo log files depending on the current role of the database that it is connecting to.
 
-=== High Availability
+=== High availability
 
 OpenLogReplicator is designed to work in HA environment, especially when Network Mode is being used.
 The program is not stateless, but keeps all checkpoint data organized.
@@ -659,7 +661,7 @@ The current implementation stores the files in a directory, but future versions 
 
 The best configuration for HA is Stream Mode.
 
-=== Schemaless Mode
+=== Schemaless mode
 
 Sometimes the schema is not available, but in spite of that, the user still wishes to decode the data from redo log.
 In this case, the user can use the schemaless mode.
@@ -682,7 +684,7 @@ It may also be useful to use the adaptive schema mode together with schemaless m
 IMPORTANT: The schemaless mode is not intended for production use.
 It is intended for debugging and analysis of the data in the redo log.
 
-=== Adaptive Schema Mode
+=== Adaptive schema node
 
 Adaptive schema mode is a special debugging mode which is used to analyze the data in the redo log even when the schema file is missing.
 The adaptive schema mode is activated by setting parameter `"flags": 4`.

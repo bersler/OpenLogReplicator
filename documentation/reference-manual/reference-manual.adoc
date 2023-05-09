@@ -899,9 +899,9 @@ _TIP:_ Technically this is the same as `network` but instead of using plain TCP/
 
 |`uri`
 |_string_, max length: 256, mandatory
-|For network: `<host>:<port>` -- information for network listener.
+|For _network_ writer type: `<host>:<port>` -- information for network listener.
 
-For zeromq: `<protocol>://<host>:<port>` -– URI for ZeroMQ connection.
+For _zeromq_ writer type: `<protocol>://<host>:<port>` -– URI for ZeroMQ connection.
 
 _NOTE:_ This field is valid only for `network` and `zeromq` types.
 

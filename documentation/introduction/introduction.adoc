@@ -23,7 +23,7 @@ It would be hard to remember all of those changes without writing them down some
 
 Imagine that your project consists of millions of pieces and changes are done by hundreds of users simultaneously.
 
-== Change Data Capture
+== Change data capture
 
 The same thing can happen in a computer database -- users are adding, modifying, and removing data all the time.
 It's important to keep track of those changes so that you can make sure everything is accurate and up-to-date.
@@ -33,7 +33,7 @@ It's a tool that helps you keep track of all those changes automatically, so you
 
 In the IT stack, this allows ensuring that data is accurate and consistent across different parts of the system.
 
-== CDC Elements
+== CDC elements
 
 A CDC application typically consists of several elements that work together.
 The most important elements are:
@@ -54,7 +54,7 @@ By using a CDC application, organizations can ensure that their data is accurate
 .CDC Architecture
 image:cdc-architecture.png[CDC Architecture,,,]
 
-== Oracle Database
+== Oracle database
 
 An Oracle database is a type of computer database made by a company called Oracle.
 It's used to store large amounts of data, provides the data for  simultaneous change and keeps all consistent.
