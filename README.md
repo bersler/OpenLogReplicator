@@ -10,12 +10,6 @@ Please refer to Docker scripts in https://github.com/bersler/OpenLogReplicator-d
 
 ## Documentation
 
-Please refer to https://www.bersler.com/openlogreplicator/
-
-Please do not create issues claiming that the documentation is missing. It is still being created. This is not speed up the process, but will it will down it down. Instead of writing documenation and finishing the code the time is spent on answering questions.
-
-The currently available chapters are:
-
 1. [Introduction to OpenLogReplicator](documentation/introduction/introduction.adoc)
 2. [User Manual](documentation/user-manual/user-manual.adoc)
 3. [Reference Manual](documentation/reference-manual/reference-manual.adoc)
