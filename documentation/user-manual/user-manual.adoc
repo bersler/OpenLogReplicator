@@ -417,13 +417,62 @@ IMPORTANT: It is not possible to retry the transactions once the Low Watermark h
 
 ==== Architecture
 
-TODO: describe the principles of the network target
+Using the Network target allows moving the responsibility regarding keeping HWM to the target.
+The target decides which transactions it has already processed and which transactions it has not processed yet.
+The target can also decide to keep the transactions in memory for a longer time, for example, to allow the target to retry the transactions in case of failure.
+In case of OpenLogReplicator failure or restart, the target would send the information about the last processed SCN to OpenLogReplicator.
+Based on information about the last processed SCN, OpenLogReplicator would start sending the transactions from the next SCN.
+OpenLogReplicator keeps a local repository about schema changes and is able to resume replication from any SCN, but not lower than the last confirmed SCN by the target.
+
+.Network target architecture
+image:network-target-architecture.png[Network target architecture,,,]
+
+On the image above notice a distinctiobn between:
+- checkpoint files with schema -- are files containing image of the database schema which was present at the time of the SCN number in the file name;
+those files are created periodically and are not created for every transaction;
+they are needed during the restart of OpenLogReplicator to be able to resume replication from any SCN;
+the client is not controlling the process of creating those files;
+the files are periodically deleted -- when the program decides they are not needed anymore;
+- checkpoint SCN position -- is an SCN value controlled by the client and is used to inform OpenLogReplicator about the last processed SCN;
+this value has to be maintained by the client, every time the client reconnects, OpenLogReplicator is expecting the last processed SCN value, so that it is able to resume replication from the last processed SCN;
+
+CAUTION: It is up to the target to decide how often to confirm the SCN to OpenLogReplicator.
+If the target confirms the SCN too seldom, memory usage of OpenLogReplicator might increase since all transactions are cached in memory.
+
+==== Network layer
+
+The server defines the communication protocol by setting the `type` parameter of `writer` element.
+The following protocols are supported:
+
+- network
+- zeromq
+
+This is just the communication layer, and all communication is done the same way.
+Only one user can connect to the server at the same time.
+
+The communication is bidirectional.
+The client and server can send messages to each other.
 
 ==== Communication protocol
 
-TODO: write
+The following steps are performed after the startup:
+
+1. The server is waiting for client connection.
+
+2. The client connects to the server and issues one of the following commands:
+- INFO -- the client requests information about the server;
+- START -- the client requests to start the replication;
+- REDO -- the clients requests replication stream;
+
+3. After receiving the START command, the server tries to initialize redo log parsing starting from the position defined by the client. If this fails, the server sends an error message and waits for further commands.
+
+4. After receiving the REDO command, the server starts sending the redo log records to the client.
+Once the redo stream is started, it is not possible to change the position in the redo log.
+
 
 == Supported features
+
+This chapter describes advanced features of OpenLogReplicator.
 
 === DML operations
 
@@ -478,7 +527,24 @@ If a table contains column types which aren't supported –- `“?”` value is 
 
 Changes in the schema are supported.
 
-TODO: more
+OpenLogReplicator treats DDL operations as DML operations being executed on system tables.
+Some system tables are also tracked for changes.
+
+Whenever a DDL command appears in the redo log, the transaction contained 2 elements:
+- the SQL text of the DDL command (which can be sent to output);
+- a sequence of DML commands on system tables (which can be sent to output as well) -- which is processed and the internal copy of system tables is updated.
+
+The DML commands are parsed, and particular columns are extracted from the system tables and updated in the internal dictionaries.
+After all changes from one system transaction are processed, OpenLogReplicator deletes internal dictionaries and creates them again.
+If a DDL transaction impacts one of the tables, that is tracked for replication, a message would appear in the output stream.
+
+CAUTION: Some of the DDL commands can be internally divided into many transactions.
+For example, there could be one transaction for creating a table and another transaction for creating indexes on that table.
+This would mean that the table for some time existed without indexes.
+Or primary key.
+This could lead to warnings in the OpenLogReplicator log file informing that the table is missing a primary key defined in the configuration files.
+In such cases -- ignore the warnings.
+
 
 === Supported character sets [[supported-character-sets]]
 
