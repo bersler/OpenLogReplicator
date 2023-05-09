@@ -31,26 +31,27 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "stream/StreamZeroMQ.h"
 #endif /* LINK_LIBRARY_ZEROMQ */
 
+#define MAX_CLIENT_MESSAGE_SIZE (2*1024*1024*1024ul - 1)
+
 void send(OpenLogReplicator::pb::RedoRequest& request, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx) {
     std::string buffer;
     bool ret = request.SerializeToString(&buffer);
-    if (!ret) {
-        ctx->error(0, "message serialization");
-        exit(0);
-    }
+    if (!ret)
+        throw OpenLogReplicator::RuntimeException(0, "message serialization");
 
     stream->sendMessage(buffer.c_str(), buffer.length());
 }
 
-void receive(OpenLogReplicator::pb::RedoResponse& response, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx) {
-    uint8_t buffer[READ_NETWORK_BUFFER];
-    uint64_t length = stream->receiveMessage(buffer, READ_NETWORK_BUFFER);
+uint64_t receive(OpenLogReplicator::pb::RedoResponse& response, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx, uint8_t* buffer) {
+    uint64_t length = stream->receiveMessage(buffer, MAX_CLIENT_MESSAGE_SIZE);
 
     response.Clear();
     if (!response.ParseFromArray(buffer, length)) {
         ctx->error(0, "response parse");
         exit(0);
     }
+
+    return length;
 }
 
 int main(int argc, char** argv) {
@@ -74,6 +75,7 @@ int main(int argc, char** argv) {
     OpenLogReplicator::pb::RedoRequest request;
     OpenLogReplicator::pb::RedoResponse response;
     OpenLogReplicator::Stream* stream = nullptr;
+    uint8_t* buffer = new uint8_t[MAX_CLIENT_MESSAGE_SIZE];
 
     try {
         if (strcmp(argv[1], "network") == 0) {
@@ -94,7 +96,7 @@ int main(int argc, char** argv) {
         request.set_database_name(argv[3]);
         ctx.info(0, "database: " + request.database_name());
         send(request, stream, &ctx);
-        receive(response, stream, &ctx);
+        receive(response, stream, &ctx, buffer);
         ctx.info(0, "- code: " + std::to_string(static_cast<uint64_t>(response.code())) + ", scn: " + std::to_string(response.scn()));
 
         uint64_t scn = 0;
@@ -108,12 +110,12 @@ int main(int argc, char** argv) {
                 request.set_scn(atoi(argv[4]));
                 ctx.info(0, "START scn: " + std::to_string(request.scn()) + ", database: " + request.database_name());
             } else {
-                // Start from now, when SCN is not given
+                // Start from NOW, when SCN is not given
                 request.set_scn(ZERO_SCN);
                 ctx.info(0, "START NOW, database: " + request.database_name());
             }
             send(request, stream, &ctx);
-            receive(response, stream, &ctx);
+            receive(response, stream, &ctx, buffer);
             ctx.info(0, "- code: " + std::to_string(static_cast<uint64_t>(response.code())) + ", scn: " +
                      std::to_string(response.scn()));
 
@@ -147,16 +149,50 @@ int main(int argc, char** argv) {
         request.set_database_name(argv[3]);
         ctx.info(0, "REDO database: " + request.database_name() + " scn: " + std::to_string(scn));
         send(request, stream, &ctx);
-        receive(response, stream, &ctx);
+        receive(response, stream, &ctx, buffer);
         ctx.info(0, "- code: " + std::to_string(static_cast<uint64_t>(response.code())));
 
         if (response.code() != OpenLogReplicator::pb::ResponseCode::STREAMING)
             return 1;
 
         for (;;) {
-            receive(response, stream, &ctx);
-            ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", code: " +
-                     std::to_string(static_cast<uint64_t>(response.code())) + " payload size: " + std::to_string(response.payload_size()));
+            uint64_t length = receive(response, stream, &ctx, buffer);
+
+            // display checkpoint messages very seldom
+            if (response.payload(0).op() != OpenLogReplicator::pb::CHKPT || (num > 1000 && prevScn < lastScn)) {
+                if (response.payload_size() == 1) {
+                    const char *msg = "UNKNOWN";
+                    switch (response.payload(0).op()) {
+                        case OpenLogReplicator::pb::BEGIN:
+                            msg = "BEGIN";
+                            break;
+                        case OpenLogReplicator::pb::COMMIT:
+                            msg = "COMMIT";
+                            break;
+                        case OpenLogReplicator::pb::INSERT:
+                            msg = "- INSERT";
+                            break;
+                        case OpenLogReplicator::pb::UPDATE:
+                            msg = "- UPDATE";
+                            break;
+                        case OpenLogReplicator::pb::DELETE:
+                            msg = "- DELETE";
+                            break;
+                        case OpenLogReplicator::pb::DDL:
+                            msg = " DDL";
+                            break;
+                        case OpenLogReplicator::pb::CHKPT:
+                            msg = "*** CHECKPOINT ***";
+                            break;
+                    }
+                    ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", code: " +
+                                std::to_string(static_cast<uint64_t>(response.code())) + ", length: " + std::to_string(length) + ", op: " + msg);
+                } else {
+                    ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", code: " +
+                                std::to_string(static_cast<uint64_t>(response.code())) + ", length: " + std::to_string(length) +
+                                ", payload size: " + std::to_string(response.payload_size()));
+                }
+            }
             lastScn = response.scn();
             ++num;
 
@@ -179,6 +215,11 @@ int main(int argc, char** argv) {
         ctx.error(ex.code, "error: " + ex.msg);
     } catch (std::bad_alloc& ex) {
         ctx.error(0, "memory allocation failed: " + std::string(ex.what()));
+    }
+
+    if (buffer != nullptr) {
+        delete[] buffer;
+        buffer = nullptr;
     }
 
     if (stream != nullptr) {

@@ -21,6 +21,7 @@
 - fix: uncaught exception in writer module
 - fix: protocol buffer message missing scn data
 - fix: allow server to handle bad start requests for network mode
+- fix: network client display fixes and handle big messages
 
 1.1.0
 - debug: trace formatting changes
