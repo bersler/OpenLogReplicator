@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-09
+:revdate: 2022-05-12
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-librdkafka: https://github.com/edenhill/librdkafka
@@ -563,21 +563,63 @@ The target character set is always Unicode and UTF-8 format.
 
 == Replication
 
-=== Selection
+During the first run of replication OpenLogReplicator creates a local copy of the source database.
+The data dictionary may be very large, and by default only a subset of the data is gathered.
+Only schemas which are configured for replication are copied.
+Other schemas -- not.
 
-=== Setup
+If the user wants to replicate other schemas as well.
+For example, the user might stop replication, modify configuration file, add clauses for other schemas, and start replication again.
+In such case, replication would not start because the dictionary data for added schemas is missing.
+A possible workaround would be to delete all checkpoint files and start replication again.
 
+=== Schema creation
 
+The user defines the list of schemas/tables which are replicated.
+Both the schema name and user name may contain wildcards using regex expressions.
+
+A schema name may not yet exist when replication starts and be created in the future.
+OpenLogReplicator would start replicating such schema when it is created.
 
 == Startup
 
+=== Schema
+
+OpenLogReplicator needs a schema of the source database to be able to identify particular objects and know which are relevant for replication.
+The schema is loaded from the source database at startup.
+During consecutive runs, the schema is loaded from the local store (currently: from disk, in the future: also from other stores like Redis).
+
+The schema is a copy of database system tables data dictionary. All data from all tables must be consistent and at the same point in time (same SCN).
+The dictionary tables are read using clause `AS OF SCN` which uses the database undo data, but allows that all data is consistent.
+
+If the database has a big load and/or UNDO area is small, it may not be possible. For such cases the user can create the schema using provided script `gencfg.sql` on a copy of the database.
+
+Refer to examples for details.
+
+=== Checkpoint files
+
+During the first run of OpenLogReplicator, the checkpoint files are created.
+By default, they are placed in the `checkpoint` directory in the current directory but this is a parameter which can be configured.
+Every checkpoint file contains a copy of the schema and is associated with a particular SCN number.
+
 === Position by scn
+
+If the user requests the replication to start from a particular SCN.
+In such case, OpenLogReplicator would try to read the database chema at that SCN.
+
+CAUTION: Do not choose the starting point too far in the past.
+It may not be possible to read a consistent copy of system tables.
 
 === By time
 
+The starting point can also be defined as a time in the past.
+In such case, OpenLogReplicator uses the `TIMESTAMP_TO_SCN` to convert the timestamp value to particular SCN number.
+This function is not available when the first run is executed on an Active DataGuard Standby database.
+
 === By sequence
 
-
+Another way of defining the starting point is selecting a particular redo log file and offset in that file.
+In such case, all transactions started in preceding redo log files are ignored.
 
 == Checkpointing
 
@@ -610,24 +652,6 @@ In case of any problems, the checkpoint records would stop being emitted.
 The SCN value present in the checkpoint record is used as a checkpoint SCN.
 When OpenLogReplicator is restarted, it starts from the last checkpoint SCN.
 Transactions which have commit SCN lower than the checkpoint SCN aren't processed.
-
-== Output
-
-=== Data format
-
-=== DDL and schema changes
-
-=== JSON messages
-
-=== Protobuf messages
-
-
-
-== Running
-
-=== Docker
-
-
 
 == Advanced topics
 
