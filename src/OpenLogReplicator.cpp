@@ -764,31 +764,20 @@ namespace OpenLogReplicator {
                 }
                 replicator2->builder->setMaxMessageMb(maxMessageMb);
 
-                uint64_t maxMessages = 100000;
-                if (writerJson.HasMember("max-messages")) {
-                    maxMessages = Ctx::getJsonFieldU64(fileName, writerJson, "max-messages");
-                    if (maxMessages < 1 || maxMessages > MAX_KAFKA_MAX_MESSAGES)
-                        throw ConfigurationException(30001, "bad JSON, invalid 'max-messages' value: " + std::to_string(maxMessages) +
-                                                     ", expected: one of {1 .. " + std::to_string(MAX_KAFKA_MAX_MESSAGES) + "}");
-                }
-
-                bool enableIdempotence = true;
-                if (writerJson.HasMember("enable-idempotence")) {
-                    uint64_t enableIdempotenceInt = Ctx::getJsonFieldU64(fileName, writerJson, "enable-idempotence");
-                    if (enableIdempotenceInt == 1)
-                        enableIdempotence = true;
-                    else if (enableIdempotenceInt > 1)
-                        throw ConfigurationException(30001, "bad JSON, invalid 'enable-idempotence' value: " +
-                                                     std::to_string(enableIdempotenceInt) + ", expected: one of {0, 1}");
-                }
-
-                const char* brokers = Ctx::getJsonFieldS(fileName, JSON_BROKERS_LENGTH, writerJson, "brokers");
-
                 const char* topic = Ctx::getJsonFieldS(fileName, JSON_TOPIC_LENGTH, writerJson, "topic");
 
                 writer = new WriterKafka(ctx, std::string(alias) + "-writer", replicator2->database,
-                                         replicator2->builder, replicator2->metadata, brokers, topic,
-                                         maxMessages, enableIdempotence);
+                                                 replicator2->builder, replicator2->metadata, topic);
+
+                if (writerJson.HasMember("properties")) {
+                    const rapidjson::Value& propertiesJson = Ctx::getJsonFieldO(fileName, writerJson, "properties");
+
+                    for (rapidjson::Value::ConstMemberIterator itr = propertiesJson.MemberBegin(); itr != propertiesJson.MemberEnd(); ++itr) {
+                        const char* key = itr->name.GetString();
+                        const char* value = itr->value.GetString();
+                        reinterpret_cast<WriterKafka*>(writer)->addProperty(key, value);
+                    }
+                }
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'type' value: " + std::string(formatType) +
                                              ", expected: not 'kafka' since the code is not compiled");

@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <librdkafka/rdkafka.h>
 
+#include <map>
 #include "Writer.h"
 
 #ifndef WRITER_KAFKA_H_
@@ -30,11 +31,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class WriterKafka : public Writer {
     protected:
-        std::string brokers;
         std::string topic;
-        uint64_t maxMessages;
-        bool enableIdempotence;
         char errstr[512];
+        std::map<std::string, std::string> properties;
         rd_kafka_t* rk;
         rd_kafka_topic_t* rkt;
         rd_kafka_conf_t* conf;
@@ -47,10 +46,11 @@ namespace OpenLogReplicator {
         void pollQueue() override;
 
     public:
-        WriterKafka(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newBrokers,
-                    const char* newTopic, uint64_t newMaxMessages, bool newEnableIdempotence);
+        WriterKafka(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
+                    const char* newTopic);
         ~WriterKafka() override;
 
+        void addProperty(const std::string& key, const std::string& value);
         void initialize() override;
     };
 }

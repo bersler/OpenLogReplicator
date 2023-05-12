@@ -77,10 +77,12 @@
       "writer": {
         "type": "kafka",
         "topic": "O112A",
-        "brokers": "localhost:9092",
         "max-message-mb": 500,
-        "max-messages": 200000,
-        "enable-idempotence": 0,
+        "properties": {
+          "bootstrap.servers": "localhost:9092",
+          "enable.idempotence": "false",
+          "queue.buffering.max.messages": "200000"
+        },
         "poll-interval-us": 100000,
         "queue-size": 65536
       }

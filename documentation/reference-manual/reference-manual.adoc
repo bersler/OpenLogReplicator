@@ -5,6 +5,7 @@
 :imagesdir: ./images
 :icons: font
 :toc: preamble
+:url-librdkafka-parameters: https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
 
 [frame="none",grid="none"]
 |====
@@ -865,14 +866,6 @@ _TIP:_ If a table doesn't contain a primary key, a custom set of columns can be 
 |Specification
 |Notes
 
-|`brokers`
-|_string_, max length: 4096, mandatory
-|String list of Kafka brokers.
-
-Example: `"brokers": "host1:9092, host2:9092"`
-
-_NOTE:_ This field is valid only for `kafka` type.
-
 |`topic`
 |_string_, max length: 256, mandatory
 |Name of a Kafka topic used to send transactions as JSON messages.
@@ -914,13 +907,6 @@ _NOTE:_ This field is valid only for `file` type.
 
 _CAUTION:_ Parameter `output` can't be used together with `append`.
 
-|`enable-idempotence`
-|_number_, min: 0, max: 1, default: 1
-|Idempotent producer is enabled when parameter set to `1`.
-Disabled when set to `0`.
-
-_NOTE:_ This field is valid only for `kafka` type.
-
 |`max-message-mb`
 |_number_, min: 1, max: 953, default: 100
 |Maximum size of a message sent to Kafka.
@@ -939,12 +925,6 @@ _NOTE:_ This field is valid only for `kafka` type.
 The size can be defined only when `output` parameter is set and is using `%i` or `%t` placeholder.
 
 _NOTE:_ This field is valid only for `file` type.
-
-|`max-messages`
-|_number_, min: 1, max: 10000000, default: 100000
-|Maximum number of messages handled by the client Kafka library (value of the parameter `queue.buffering.max.messages`).
-
-_NOTE:_ This field is valid only for `kafka` type.
 
 |`new-line`
 |_number_, min: 0, max: 2, default: 0
@@ -989,6 +969,24 @@ The smaller the value, the more often the client library checks for new messages
 The larger the value, the more messages are buffered in the client library.
 
 _NOTE:_ This field is valid only for `kafka`, `network` and `zeromq` types.
+
+|`properties`
+|_map_ of _string_ to _string_
+|Additional properties for Kafka producer. Refer to _librdkafka_ documentation for {url-librdkafka-parameters}[full list of parameters].
+Typically used parameters are:
+
+- `"brokers": "host1:9092, host2:9092"` -- list of Kafka brokers;
+- `"compression.codec": "snappy"` -- compression codec;
+- `"message.send.max.retries": "3"` -- number of retries for sending a message;
+- `"retry.backoff.ms": "500"` -- delay between retries;
+- `"queue.buffering.max.ms": "1000"` -- maximum time in milliseconds to buffer messages in memory;
+- `"enable.idempotence": "true"` -- enable idempotence for producer;
+
+This field allows also setting customer Kafka security related parameters like authentication, encryption, etc.
+
+_CAUTION:_ You should not set the `message.max.bytes` parameter as maximum message size is defined by the `max-message-mb` parameter.
+
+_NOTE:_ This field is valid only for `kafka` type.
 
 |`queue-size`
 |_number_, min: 1, max: 1000000, default: 65536

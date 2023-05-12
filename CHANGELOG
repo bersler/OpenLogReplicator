@@ -23,6 +23,7 @@
 - fix: allow server to handle bad start requests for network mode
 - fix: network client display fixes and handle big messages
 - fix: network client memory release on error
+- change: removed "max-messages", "enable-idempotence" and "brokers" parameters and added "properties" parameter instead
 
 1.1.0
 - debug: trace formatting changes

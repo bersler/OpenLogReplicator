@@ -541,6 +541,15 @@ Define `max-file-size` parameter.
 URI is missing a `':'` character.
 Verify if the URI is correct.
 
+==== code 30009: "Kafka property '<name>' is defined multiple times"
+
+One of the parameters for Kafka writer is defined twice.
+
+==== code 30010: "Kafka property 'message.max.bytes' is defined, but it is not allowed to be set by user"
+
+This property defines the size of maximum message size.
+This parameter is already defined by parameter "max-message-mb" and should not be defined explicitly using Kafka connection parameter.
+
 === Redo log errors (4xxxx)
 
 Some data in redo log files aren't correct.

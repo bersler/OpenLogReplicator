@@ -31,7 +31,9 @@
       "writer": {
         "type": "kafka",
         "topic": "O112A",
-        "brokers": "localhost:9092"
+        "properties": {
+          "bootstrap.servers": "localhost:9092"
+        }
       }
     }
   ]

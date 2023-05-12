@@ -18,17 +18,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../builder/Builder.h"
+#include "../common/ConfigurationException.h"
 #include "../common/RuntimeException.h"
 #include "WriterKafka.h"
 
 namespace OpenLogReplicator {
     WriterKafka::WriterKafka(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
-                             const char* newBrokers, const char* newTopic, uint64_t newMaxMessages, bool newEnableIdempotence) :
+                             const char* newTopic) :
         Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
-        brokers(newBrokers),
         topic(newTopic),
-        maxMessages(newMaxMessages),
-        enableIdempotence(newEnableIdempotence),
         rk(nullptr),
         rkt(nullptr),
         conf(nullptr) {
@@ -48,23 +46,34 @@ namespace OpenLogReplicator {
         ctx->info(0, "Kafka producer exit code: " + std::to_string(err));
     }
 
+    void WriterKafka::addProperty(const std::string& key, const std::string& value) {
+        if (properties.find(key) != properties.end())
+            throw ConfigurationException(30009, "Kafka property '" + key + "' is defined multiple times");
+        properties[key] = value;
+    }
+
     void WriterKafka::initialize() {
         Writer::initialize();
+
+        if (properties.find("message.max.bytes") != properties.end())
+            throw ConfigurationException(30010, "Kafka property 'message.max.bytes' is defined, but it is not allowed to be set by user");
 
         conf = rd_kafka_conf_new();
         if (conf == nullptr)
             throw RuntimeException(10058, "Kafka failed to create configuration, message: " + std::string(errstr));
 
         std::string maxMessageMbStr(std::to_string(builder->getMaxMessageMb() * 1024 * 1024));
-        std::string maxMessagesStr(std::to_string(maxMessages));
-        if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
-            (enableIdempotence && rd_kafka_conf_set(conf, "enable.idempotence", "true", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) ||
-            rd_kafka_conf_set(conf, "client.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
-            rd_kafka_conf_set(conf, "group.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
-            rd_kafka_conf_set(conf, "message.max.bytes", maxMessageMbStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
-            rd_kafka_conf_set(conf, "queue.buffering.max.messages", maxMessagesStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
-            throw RuntimeException(10059, "Kafka message: " + std::string(errstr));
-        }
+        properties["message.max.bytes"] = maxMessageMbStr;
+
+        if (properties.find("client.id") != properties.end())
+            properties["client.id"] = "OpenLogReplicator";
+
+        if (properties.find("group.id") != properties.end())
+            properties["group.id"] = "OpenLogReplicator";
+
+        for (auto& property : properties)
+            if (rd_kafka_conf_set(conf, property.first.c_str(), property.second.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+                throw RuntimeException(10059, "Kafka message: " + std::string(errstr));
 
         rd_kafka_conf_set_opaque(conf, this);
         rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
