@@ -544,7 +544,7 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::processCheckpoint(typeScn scn __attribute__((unused)), typeTime time_ __attribute__((unused)), typeSeq sequence, uint64_t offset,
                                             bool redo) {
-        if (FLAG(REDO_FLAGS_HIDE_CHECKPOINT))
+        if (!FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
             return;
 
         lastTime = time_;

@@ -666,7 +666,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) {
-        if (FLAG(REDO_FLAGS_HIDE_CHECKPOINT))
+        if (!FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
             return;
 
         lastTime = time_;

@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-09
+:revdate: 2022-05-13
 :imagesdir: ./images
 :toc: preamble
 
@@ -11,6 +11,16 @@ a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document is a guide for troubleshooting the most common problems with the OpenLogReplicator.
+
+== Configuration topics
+
+=== Show checkpoint messages
+
+Checkpoint messages are disabled by default.
+However, they are a good indicator for checking if the replication is working correctly.
+They also can be treated as heartbeat messages.
+
+If you want to include checkpoint messages to the target, set the `flags` parameter to `0x1000` in the configuration file.
 
 == Runtime errors
 
