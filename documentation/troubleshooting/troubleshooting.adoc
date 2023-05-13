@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-13
+:revdate: 2022-05-14
 :imagesdir: ./images
 :toc: preamble
 
@@ -16,7 +16,12 @@ This document is a guide for troubleshooting the most common problems with the O
 
 === Show checkpoint messages
 
-Checkpoint messages are disabled by default.
+Checkpoint messages indicate that the replication is working correctly.
+Every message contains the SCN number and timestamp.
+It confirms that a certain LWN block has been processed.
+To reduce the number of messages, a checkpoint message is not sent for every LWN.
+
+By default, the Checkpoint messages are disabled.
 However, they are a good indicator for checking if the replication is working correctly.
 They also can be treated as heartbeat messages.
 
@@ -72,9 +77,3 @@ If the volume of generated redo log files is higher than the speed of parsing --
 
 3. Output performance -- the writer thread sends the transactions to output (sink) using the provided connector.
 If the target is accepting transactions slower than they are created -- delay might appear.
-
-== Database availability
-
-In case of errors related to database availability, please check the following:
-
-TODO: write
