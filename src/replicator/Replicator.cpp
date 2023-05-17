@@ -158,7 +158,7 @@ namespace OpenLogReplicator {
             loadDatabaseMetadata();
             metadata->readCheckpoints();
 
-            while (metadata->status != METADATA_STATUS_REPLICATE) {
+            do {
                 if (ctx->softShutdown)
                     break;
                 metadata->waitForWriter();
@@ -169,6 +169,14 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     break;
                 try {
+                    printStartMsg();
+                    if (metadata->resetlogs != 0)
+                        ctx->info(0, "current resetlogs is: " + std::to_string(metadata->resetlogs));
+                    if (metadata->firstDataScn != ZERO_SCN)
+                        ctx->info(0, "first data SCN: " + std::to_string(metadata->firstDataScn));
+                    if (metadata->firstSchemaScn != ZERO_SCN)
+                        ctx->info(0, "first schema SCN: " + std::to_string(metadata->firstSchemaScn));
+
                     if (metadata->firstDataScn == ZERO_SCN || metadata->sequence == ZERO_SEQ)
                         positionReader();
 
@@ -204,14 +212,7 @@ namespace OpenLogReplicator {
                 // boot succeeded
                 ctx->info(0, "resume writer");
                 metadata->setStatusReplicate();
-            }
-            printStartMsg();
-            if (metadata->resetlogs != 0)
-                ctx->info(0, "current resetlogs is: " + std::to_string(metadata->resetlogs));
-            if (metadata->firstDataScn != ZERO_SCN)
-                ctx->info(0, "first data SCN: " + std::to_string(metadata->firstDataScn));
-            if (metadata->firstSchemaScn != ZERO_SCN)
-                ctx->info(0, "first schema SCN: " + std::to_string(metadata->firstSchemaScn));
+            } while (metadata->status != METADATA_STATUS_REPLICATE);
 
             while (!ctx->softShutdown) {
                 bool logsProcessed = false;
