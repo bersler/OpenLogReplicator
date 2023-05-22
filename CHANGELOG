@@ -26,6 +26,7 @@
 - change: removed "max-messages", "enable-idempotence" and "brokers" parameters and added "properties" parameter instead
 - change: by default checkpoint messages are not sent to output
 - fix: compilation error when Kafka is disabled
+- fix: checkpoint did not advance when no data was replicated
 
 1.1.0
 - debug: trace formatting changes

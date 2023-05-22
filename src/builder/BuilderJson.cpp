@@ -456,7 +456,7 @@ namespace OpenLogReplicator {
         if ((messageFormat & MESSAGE_FORMAT_SKIP_BEGIN) != 0)
             return;
 
-        builderBegin(0);
+        builderBegin(0, 0);
         builderAppend('{');
         hasPreviousValue = false;
         appendHeader(true, true);
@@ -485,7 +485,7 @@ namespace OpenLogReplicator {
             builderAppend("]}", sizeof("]}") - 1);
             builderCommit(true);
         } else if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
-            builderBegin(0);
+            builderBegin(0, 0);
             builderAppend('{');
 
             hasPreviousValue = false;
@@ -514,9 +514,9 @@ namespace OpenLogReplicator {
                 hasPreviousRedo = true;
         } else {
             if (table != nullptr)
-                builderBegin(table->obj);
+                builderBegin(table->obj, 0);
             else
-                builderBegin(0);
+                builderBegin(0, 0);
 
             builderAppend('{');
             hasPreviousValue = false;
@@ -555,9 +555,9 @@ namespace OpenLogReplicator {
                 hasPreviousRedo = true;
         } else {
             if (table != nullptr)
-                builderBegin(table->obj);
+                builderBegin(table->obj, 0);
             else
-                builderBegin(0);
+                builderBegin(0, 0);
 
             builderAppend('{');
             hasPreviousValue = false;
@@ -597,9 +597,9 @@ namespace OpenLogReplicator {
                 hasPreviousRedo = true;
         } else {
             if (table != nullptr)
-                builderBegin(table->obj);
+                builderBegin(table->obj, 0);
             else
-                builderBegin(0);
+                builderBegin(0, 0);
 
             builderAppend('{');
             hasPreviousValue = false;
@@ -638,9 +638,9 @@ namespace OpenLogReplicator {
                 hasPreviousRedo = true;
         } else {
             if (table != nullptr)
-                builderBegin(table->obj);
+                builderBegin(table->obj, 0);
             else
-                builderBegin(0);
+                builderBegin(0, 0);
 
             builderAppend('{');
             hasPreviousValue = false;
@@ -666,13 +666,10 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) {
-        if (!FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
-            return;
-
         lastTime = time_;
         lastScn = scn;
         lastSequence = sequence;
-        builderBegin(0);
+        builderBegin(0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         builderAppend('{');
         hasPreviousValue = false;
         appendHeader(true, false);

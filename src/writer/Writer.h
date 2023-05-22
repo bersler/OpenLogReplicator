@@ -32,15 +32,19 @@ namespace OpenLogReplicator {
         std::string database;
         Builder* builder;
         Metadata* metadata;
+        // Information about local checkpoint
         typeScn checkpointScn;
         time_t checkpointTime;
-        typeScn confirmedScn;
-        uint64_t confirmedMessages;
         uint64_t sentMessages;
         uint64_t currentQueueSize;
         uint64_t maxQueueSize;
-        BuilderMsg** queue;
         bool streaming;
+
+        std::mutex mtx;
+        // Scn confirmed by client
+        typeScn confirmedScn;
+        uint64_t confirmedMessages;
+        BuilderMsg** queue;
 
         void createMessage(BuilderMsg* msg);
         virtual void sendMessage(BuilderMsg* msg) = 0;

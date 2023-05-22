@@ -42,8 +42,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define BUILDER_H_
 
 #define OUTPUT_BUFFER_DATA_SIZE                 (MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue))
-#define OUTPUT_BUFFER_ALLOCATED                 0x0001
-#define OUTPUT_BUFFER_CONFIRMED                 0x0002
+#define OUTPUT_BUFFER_MESSAGE_ALLOCATED         0x0001
+#define OUTPUT_BUFFER_MESSAGE_CONFIRMED         0x0002
+#define OUTPUT_BUFFER_MESSAGE_CHECKPOINT        0x0004
 #define VALUE_BUFFER_MIN                        1048576
 #define VALUE_BUFFER_MAX                        4294967296
 
@@ -215,7 +216,7 @@ namespace OpenLogReplicator {
             lastBuilderQueue->length += bytes;
         };
 
-        void builderBegin(typeObj obj) {
+        void builderBegin(typeObj obj, uint16_t flags) {
             messageLength = 0;
 
             if (lastBuilderQueue->length + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)
@@ -229,7 +230,7 @@ namespace OpenLogReplicator {
             msg->id = id++;
             msg->obj = obj;
             msg->pos = 0;
-            msg->flags = 0;
+            msg->flags = flags;
             msg->data = lastBuilderQueue->data + lastBuilderQueue->length;
         };
 

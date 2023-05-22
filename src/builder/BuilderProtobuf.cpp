@@ -322,7 +322,7 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::processBeginMessage() {
         newTran = false;
-        builderBegin(0);
+        builderBegin(0, 0);
 
         createResponse();
         appendHeader(true, true);
@@ -354,9 +354,9 @@ namespace OpenLogReplicator {
                 throw RuntimeException(50018, "PB insert processing failed, a message is missing");
         } else {
             if (table != nullptr)
-                builderBegin(table->obj);
+                builderBegin(table->obj, 0);
             else
-                builderBegin(0);
+                builderBegin(0, 0);
 
             createResponse();
             appendHeader(true, true);
@@ -395,9 +395,9 @@ namespace OpenLogReplicator {
                 throw RuntimeException(50018, "PB update processing failed, a message is missing");
         } else {
             if (table != nullptr)
-                builderBegin(table->obj);
+                builderBegin(table->obj, 0);
             else
-                builderBegin(0);
+                builderBegin(0, 0);
 
             createResponse();
             appendHeader(true, true);
@@ -438,9 +438,9 @@ namespace OpenLogReplicator {
         } else {
 
             if (table != nullptr)
-                builderBegin(table->obj);
+                builderBegin(table->obj, 0);
             else
-                builderBegin(0);
+                builderBegin(0, 0);
 
             createResponse();
             appendHeader(true, true);
@@ -519,7 +519,7 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
-            builderBegin(0);
+            builderBegin(0, 0);
 
             createResponse();
             appendHeader(true, true);
@@ -544,14 +544,11 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::processCheckpoint(typeScn scn __attribute__((unused)), typeTime time_ __attribute__((unused)), typeSeq sequence, uint64_t offset,
                                             bool redo) {
-        if (!FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
-            return;
-
         lastTime = time_;
         lastScn = scn;
         lastSequence = sequence;
         createResponse();
-        builderBegin(0);
+        builderBegin(0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         appendHeader(true, true);
 
         redoResponsePB->add_payload();

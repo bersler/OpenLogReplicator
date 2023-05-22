@@ -37,13 +37,13 @@ namespace OpenLogReplicator {
             metadata(newMetadata),
             checkpointScn(ZERO_SCN),
             checkpointTime(time(nullptr)),
-            confirmedScn(ZERO_SCN),
-            confirmedMessages(0),
             sentMessages(0),
             currentQueueSize(0),
             maxQueueSize(0),
-            queue(nullptr),
-            streaming(false) {
+            streaming(false),
+            confirmedScn(ZERO_SCN),
+            confirmedMessages(0),
+            queue(nullptr) {
     }
 
     Writer::~Writer() {
@@ -102,6 +102,8 @@ namespace OpenLogReplicator {
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
+        std::unique_lock<std::mutex> lck(mtx);
+
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
                 ctx->warning(70007, "trying to confirm empty message");
@@ -110,16 +112,16 @@ namespace OpenLogReplicator {
             msg = queue[0];
         }
 
-        msg->flags |= OUTPUT_BUFFER_CONFIRMED;
-        if (msg->flags & OUTPUT_BUFFER_ALLOCATED) {
+        msg->flags |= OUTPUT_BUFFER_MESSAGE_CONFIRMED;
+        if (msg->flags & OUTPUT_BUFFER_MESSAGE_ALLOCATED) {
             delete[] msg->data;
-            msg->flags &= ~OUTPUT_BUFFER_ALLOCATED;
+            msg->flags &= ~OUTPUT_BUFFER_MESSAGE_ALLOCATED;
         }
         ++confirmedMessages;
 
         uint64_t maxId = 0;
         {
-            while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_CONFIRMED) != 0) {
+            while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
                 confirmedScn = queue[0]->scn;
 
@@ -258,7 +260,10 @@ namespace OpenLogReplicator {
                 // Message in one part - send directly from buffer
                 if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
-                    sendMessage(msg);
+                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
+                        confirmMessage(msg);
+                    else
+                        sendMessage(msg);
                     oldLength += length8;
 
                 // Message in many parts - merge & copy
@@ -267,7 +272,7 @@ namespace OpenLogReplicator {
                     if (msg->data == nullptr)
                         throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->length) +
                                                " bytes memory for: temporary buffer for JSON message");
-                    msg->flags |= OUTPUT_BUFFER_ALLOCATED;
+                    msg->flags |= OUTPUT_BUFFER_MESSAGE_ALLOCATED;
 
                     uint64_t copied = 0;
                     while (msg->length - copied > 0) {
@@ -288,7 +293,11 @@ namespace OpenLogReplicator {
                     }
 
                     createMessage(msg);
-                    sendMessage(msg);
+                    // checkpoint message to be ignored
+                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
+                        confirmMessage(msg);
+                    else
+                        sendMessage(msg);
                     pollQueue();
                     writeCheckpoint(false);
                     break;
