@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-09
+:revdate: 2022-05-31
 :imagesdir: ./images
 :toc: preamble
 
@@ -270,4 +270,4 @@ The easiest way to compile source code is to use a docker script from GitHub:
 ----
 
 You need at least GCC 4.8 to compile OpenLogReplicator.
-Please refer to Docker images for Ubuntu or CentOS source scripts for details regarding required packages and compilation options.
+Refer to Docker images for Ubuntu or CentOS source scripts for details regarding required packages and compilation options.

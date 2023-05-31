@@ -88,7 +88,7 @@ namespace OpenLogReplicator {
         valuePB->set_value_double(value);
     }
 
-    // TODO: possible precession loss
+    // TODO: possible precision loss
     void BuilderProtobuf::columnDouble(const std::string& columnName, long double value) {
         valuePB->set_name(columnName);
         valuePB->set_value_double(value);

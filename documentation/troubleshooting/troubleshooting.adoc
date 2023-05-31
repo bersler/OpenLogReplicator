@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-14
+:revdate: 2022-05-31
 :imagesdir: ./images
 :toc: preamble
 
@@ -38,7 +38,7 @@ If running OpenLogReplicator gives you a result like:
 ----
 
 This means that the libraries are not correctly linked.
-Please check which libraries are missing, example:
+Check which libraries are missing, example:
 
 [source,shell]
 ----
@@ -60,7 +60,7 @@ libdl.so.2 => /lib64/libdl.so.2 (0x00007f45c17d2000)
 ----
 
 In the above example, all libraries marked with “not found” are missing.
-Please check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located.
+Check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located.
 If necessary – create appropriate symlinks.
 
 == Performance issues

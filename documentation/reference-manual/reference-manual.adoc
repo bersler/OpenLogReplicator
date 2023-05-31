@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-13
+:revdate: 2022-05-31
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -25,7 +25,7 @@ The only parameters accepted are:
 All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
 The file should be in JSON format.
 For start please check example config files in `scripts` folder.
-Please refer to a full parameters list for more details.
+Refer to a full parameters list for more details.
 
 All output messages are sent to _stderr_ stream.
 Optionally, JSON output can be sent to _stdout_ stream when test parameter is set to a no zero value.
@@ -227,12 +227,12 @@ Transactions would not be read until the redo log group is switched.
 * `0x0002` -- _Schemaless_ mode.
 The program can operate without schema.
 
-_NOTE:_ Please refer to details in xref:../user-manual/user-manual.adoc#schemaless-mode[the User Manual] for details.
+_NOTE:_ Refer to details in xref:../user-manual/user-manual.adoc#schemaless-mode[the User Manual] for details.
 
 * `0x0004` -– Adaptive schema mode.
 This mode is only valid when schemaless mode has been chosen.
 
-_NOTE:_ Please refer to details in xref:../user-manual/user-manual.adoc#adaptive-schema-mode_[the User Manual] for details.
+_NOTE:_ Refer to details in xref:../user-manual/user-manual.adoc#adaptive-schema-mode_[the User Manual] for details.
 
 * `0x0008` -- Don’t use direct read (`O_DIRECT`) for reading redo log files.
 
@@ -619,7 +619,7 @@ The transaction doesn't necessary need to be committed.
 
 * `protobuf` -- Transactions in Protocol Buffer format.
 
-See quick start chapter (TODO) for details.
+Refer to details in xref:../user-manual/user-manual.adoc#output-format[output format] chapter for details.
 
 _CAUTION:_ Protocol buffer support is in experimental state.
 It is not fully tested and might not work properly.
@@ -1005,7 +1005,7 @@ The larger the value, the more messages can be sent in parallel.
 |_string_, max length: 256, default: `"%F_%T"`
 |Format of timestamp (defined using placeholder `%t` in field `output`) in output file name.
 The format is the same as for `strftime` function in C.
-Please refer to the documentation of your C library for more information.
+Refer to the documentation of your C library for more information.
 
 _NOTE:_ This field is valid only for `file` type.
 

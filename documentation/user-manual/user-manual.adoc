@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-12
+:revdate: 2022-05-31
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-librdkafka: https://github.com/edenhill/librdkafka
@@ -177,7 +177,7 @@ This is the easiest and most efficient solution.
 But it is not recommended for production systems, as the database performance might be affected when CPU or memory is saturated.
 
 CAUTION: OpenLogReplicator may be using extensive memory and CPU.
-Please make sure that there are enough resources for the database to work properly.
+Make sure that there are enough resources for the database to work properly.
 OpenLogReplicator should use only part of the memory, so that there is memory available for the database.
 
 .Program architecture
@@ -203,7 +203,7 @@ image:architecture-sshfs.png[Remote access to redo log files,,,]
 OpenLogReplicator by default would read online redo logs and process transactions as soon as they're committed, and this information is written to redo log.
 But it can also read just archived redo logs – in this scenario transactions would be processed when log switch is performed and redo log is archived.
 
-== Output format
+== Output format [[output-format]]
 
 The output format is fully configurable.
 There are 2 formats implemented: JSON and protocol buffer, but the architecture of the program allows implementing any other format in the future.
@@ -555,7 +555,7 @@ The output message always uses Unicode as character encoding and UTF-8 format.
 OpenLogReplicator doesn't perform any left-to-right Unicode character replacements.
 
 For test purposes, the character set conversion can be disabled.
-Please check the xref:../reference-manual/reference-manual.adoc#char[char] parameter for details.
+Check the xref:../reference-manual/reference-manual.adoc#char[char] parameter for details.
 
 Full list of supported character sets is: *AL16UTF16*, *AL32UTF8*, AR8ADOS710, AR8ADOS710T, AR8ADOS720, AR8ADOS720T, AR8APTEC715, AR8APTEC715T, AR8ARABICMACS, AR8ASMO708PLUS, AR8ASMO8X, AR8HPARABIC8T, AR8ISO8859P6, AR8MSWIN1256, AR8MUSSAD768, AR8MUSSAD768T, AR8NAFITHA711, AR8NAFITHA711T, AR8NAFITHA721, AR8NAFITHA721T, AR8SAKHR706, AR8SAKHR707, AR8SAKHR707T, AZ8ISO8859P9E, BG8MSWIN, BG8PC437S, BLT8CP921, BLT8ISO8859P13, BLT8MSWIN1257, BLT8PC775, BN8BSCII, CDN8PC863, CEL8ISO8859P14, CL8ISO8859P5, CL8ISOIR111, CL8KOI8R, CL8KOI8U, CL8MACCYRILLICS, CL8MSWIN1251, D7DEC, D7SIEMENS9780X, DK7SIEMENS9780X, E7DEC, E7SIEMENS9780X, EE8ISO8859P2, EE8MACCES, EE8MACCROATIANS, EE8MSWIN1250, EE8PC852, EEC8EUROASCI, EEC8EUROPA3, EL8DEC, EL8ISO8859P7, EL8MACGREEKS, EL8MSWIN1253, EL8PC437S, EL8PC737, EL8PC851, EL8PC869, ET8MSWIN923, HU8ABMOD, HU8CWI2, I7DEC, I7SIEMENS9780X, IN8ISCII, IS8MACICELANDICS, IS8PC861, IW8ISO8859P8, IW8MACHEBREWS, IW8MSWIN1255, IW8PC1507, JA16EUC, JA16EUCTILDE, JA16EUCYEN, JA16SJIS, JA16SJISTILDE, JA16SJISYEN, JA16VMS, KO16KSC5601, KO16KSCCS, KO16MSWIN949, LA8ISO6937, LA8PASSPORT, LT8MSWIN921, LT8PC772, LT8PC774, LV8PC1117, LV8PC8LR, LV8RST104090, N7SIEMENS9780X, N8PC865, NDK7DEC, NE8ISO8859P10, NEE8ISO8859P4, RU8BESTA, RU8PC855, RU8PC866, S7DEC, S7SIEMENS9780X, SE8ISO8859P3, SF7ASCII, SF7DEC, TH8MACTHAIS, TH8TISASCII, TIMESTEN8, TR8DEC, TR8MACTURKISHS, TR8MSWIN1254, TR8PC857, US7ASCII, US8PC437, *UTF8*, VN8MSWIN1258, VN8VN3, WE8DEC, WE8DG, WE8HP, WE8ISO8859P1, WE8ISO8859P15, WE8ISO8859P9, WE8MACROMAN8S, WE8MSWIN1252, WE8NCR4970, WE8NEXTSTEP, WE8PC850, WE8PC858, WE8PC860, WE8ROMAN8, ZHS16CGB231280, ZHS16GBK, ZHS32GB18030, ZHT16BIG5, ZHT16CCDC, ZHT16HKSCS, ZHT16HKSCS31, ZHT16MSWIN950, ZHT32EUC, ZHT32TRIS.
 
