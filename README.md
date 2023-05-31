@@ -1,12 +1,15 @@
 # OpenLogReplicator
-Open Source Oracle database CDC written purely in C++. Reads transactions directly from database redo log files and streams in JSON or Protobuf format to:
-* Kafka
-* flat file
-* network stream (plain TCP/IP or ZeroMQ)
+
+This project contains open source Oracle database CDC written purely in C++.
+OpenLogReplicator reads transactions directly from database redo log files (parses binary files) and streams in JSON or Protobuf format to various targets.
+The following targets are supported:
+- Kafka
+- flat file
+- network stream (plain TCP/IP or ZeroMQ)
 
 ## Getting started
 
-Please refer to Docker scripts in https://github.com/bersler/OpenLogReplicator-docker for compilation and run scripts
+Refer to [OpenLogReplicator tutorials repository](https://github.com/bersler/OpenLogReplicator-tutorials) for a quick start with the project.
 
 ## Documentation
 
@@ -24,8 +27,7 @@ Additionally:
 3. [Support](https://www.bersler.com/openlogreplicator/support/)
 4. [Contribution](https://www.bersler.com/openlogreplicator/contribution/)
 
-Please use also [Gitter chat](https://gitter.im/bersler/OpenLogReplicator).
-
+Use also [Gitter chat](https://gitter.im/bersler/OpenLogReplicator).
 
 ## Sponsoring the Project
 

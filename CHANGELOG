@@ -1,3 +1,6 @@
+1.2.1 (nightly build)
+- doc: updated README.md, added reference to tutorial github project
+
 1.2.0
 - doc: Introduction to OpenLogReplicator
 - fix: minor bug related to sending ddl operations to output
