@@ -103,6 +103,7 @@ namespace OpenLogReplicator {
             "SELECT"
             "   SYS_CONTEXT('USERENV','CON_ID')"
             ",  SYS_CONTEXT('USERENV','CON_NAME')"
+            ",  NVL(SYS_CONTEXT('USERENV','CDB_NAME'), SYS_CONTEXT('USERENV','DB_NAME'))"
             " FROM"
             "   DUAL");
 
@@ -598,10 +599,12 @@ namespace OpenLogReplicator {
                     stmt2.createStatement(SQL_GET_CON_INFO);
                     typeConId conId; stmt2.defineInt16(1, conId);
                     char conNameChar[81]; stmt2.defineString(2, conNameChar, sizeof(conNameChar));
+                    char conContext[81]; stmt2.defineString(3, context, sizeof(conContext));
 
                     if (stmt2.executeQuery()) {
                         metadata->conId = conId;
                         metadata->conName = conNameChar;
+                        metadata->context = conContext;
                     }
                 }
 

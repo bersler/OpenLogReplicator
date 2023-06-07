@@ -1,5 +1,6 @@
 1.2.1 (nightly build)
 - doc: updated README.md, added reference to tutorial github project
+- fix: PDB/CDB support
 
 1.2.0
 - doc: Introduction to OpenLogReplicator
