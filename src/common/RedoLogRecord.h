@@ -76,33 +76,33 @@ namespace OpenLogReplicator {
         uint64_t nullsDelta;
         uint64_t colNumsDelta;
 
-        typeAfn afn;              // absolute file number
-        uint64_t length;          // length
+        typeAfn afn;              // Absolute File Number
+        uint64_t length;          // Length
         typeDba dba;
-        typeDba bdba;             // block DBA
-        typeObj obj;              // object ID
+        typeDba bdba;             // Block DBA
+        typeObj obj;              // Object ID
         typeCol col;              // LOB column ID
-        typeDataObj dataObj;      // data object ID
+        typeDataObj dataObj;      // Data object ID
         uint32_t tsn;
         uint32_t undo;
         typeUsn usn;
-        typeXid xid;              // transaction id
+        typeXid xid;              // Transaction id
         typeUba uba;              // Undo Block Address
         uint32_t pdbId;
 
         typeSlt slt;
         typeRci rci;
-        uint16_t flg;             // flag
-        typeOp1 opCode;           // operation code
-        typeOp1 opc;              // operation code for UNDO
+        uint16_t flg;             // Flag
+        typeOp1 opCode;           // Operation code
+        typeOp1 opc;              // Operation code for UNDO
 
         uint8_t op;
         uint8_t ccData;
         uint8_t cc;
         uint8_t itli;
         typeSlot slot;
-        uint8_t flags;            // flags like xtype, kdoOpCode
-        uint8_t fb;               // row flags like F,L
+        uint8_t flags;            // Flags like xtype, kdoOpCode
+        uint8_t fb;               // Row flags like F,L
         uint16_t sizeDelt;
 
         uint8_t suppLogType;

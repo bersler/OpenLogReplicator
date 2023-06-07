@@ -75,7 +75,7 @@ namespace OpenLogReplicator {
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
             uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-            //auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            // auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
             auto lastRedoLogRecord2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
             bool ok = false;
@@ -418,7 +418,7 @@ namespace OpenLogReplicator {
                             if (redoLogRecord1->suppLogBdba == 0 && op == 0x05010B16 && (redoLogRecord1->suppLogFb & FB_L) == 0) {
                                 log(metadata->ctx, "nul1", redoLogRecord1);
                                 log(metadata->ctx, "nul2", redoLogRecord2);
-                                //ignore
+                                // Ignore
                             } else {
                                 first1 = redoLogRecord1;
                                 first2 = redoLogRecord2;

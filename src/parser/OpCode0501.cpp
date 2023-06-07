@@ -287,7 +287,7 @@ namespace OpenLogReplicator {
             if (fieldLength >= 16) {
                 uint32_t len = ctx->read32(redoLogRecord->data + fieldPos + 4);
                 uint32_t offset = ctx->read32(redoLogRecord->data + fieldPos + 12);
-                uint64_t netstate = 0; // random value observed
+                uint64_t netstate = 0; // Random value observed
 
                 ctx->dumpStream << "Redo for state change" << std::endl;
                 ctx->dumpStream << "Len: " << std::dec << len <<

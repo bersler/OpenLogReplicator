@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
         for (;;) {
             uint64_t length = receive(response, stream, &ctx, buffer);
 
-            // display checkpoint messages very seldom
+            // Display checkpoint messages very seldom
             if (response.payload(0).op() != OpenLogReplicator::pb::CHKPT || (num > 1000 && prevScn < lastScn)) {
                 if (response.payload_size() == 1) {
                     const char *msg = "UNKNOWN";

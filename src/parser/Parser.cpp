@@ -473,7 +473,7 @@ namespace OpenLogReplicator {
                     else if ((redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0B00 || redoLogRecord[vectorCur].opCode == 0x0513 ||
                             redoLogRecord[vectorCur].opCode == 0x0514)
                         appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
-                    // single 5.1
+                    // Single 5.1
                     else if (redoLogRecord[vectorCur].opCode == 0x0501) {
                         appendToTransaction(&redoLogRecord[vectorPrev]);
                         continue;

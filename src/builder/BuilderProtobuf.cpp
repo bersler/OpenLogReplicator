@@ -229,7 +229,8 @@ namespace OpenLogReplicator {
                     columnPB->set_scale(static_cast<int32_t>(table->columns[column]->scale));
                     break;
 
-                case SYS_COL_TYPE_LONG: // long, not supported
+                // Long, not supported
+                case SYS_COL_TYPE_LONG: 
                     columnPB->set_type(pb::LONG);
                     break;
 

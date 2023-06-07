@@ -335,7 +335,8 @@ namespace OpenLogReplicator {
                     appendSDec(table->columns[column]->scale);
                     break;
 
-                case SYS_COL_TYPE_LONG: // long, not supported
+                // Long, not supported
+                case SYS_COL_TYPE_LONG:
                     builderAppend(R"("long")", sizeof(R"("long")") - 1);
                     break;
 

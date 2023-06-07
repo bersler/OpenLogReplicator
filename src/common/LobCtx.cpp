@@ -125,7 +125,7 @@ namespace OpenLogReplicator {
 
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
-            // found
+            // Found
             uint8_t* oldData = listMapIt->second;
             asiz = ctx->read32(oldData + 4);
 
@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
             ctx->write32(newData + 4, asiz);
             delete[] oldData;
         } else {
-            // not found
+            // Not found
             memset(newData, 0, sidx * 8 + 8);
             memcpy(newData + sidx * 8 + 8, data + 12, nent * 8);
 

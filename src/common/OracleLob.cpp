@@ -50,7 +50,8 @@ namespace OpenLogReplicator {
         if (lobPageMapIt != lobPageMap.end())
             return lobPageMapIt->second;
 
-        return 8132; // default value?
+        // Default value?
+        return 8132;
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleLob& lob) {

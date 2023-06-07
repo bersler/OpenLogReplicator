@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
                     pollQueue();
                 }
 
-            // client got disconnected
+            // Client disconnected
             } catch (NetworkException& ex) {
                 ctx->warning(ex.code, ex.msg);
                 streaming = false;
@@ -237,7 +237,7 @@ namespace OpenLogReplicator {
             }
 
         } else if (length == 0) {
-            // no request
+            // No request
         } else if (errno != EAGAIN)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
     }

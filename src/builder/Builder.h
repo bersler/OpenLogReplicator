@@ -486,7 +486,7 @@ namespace OpenLogReplicator {
             typeLobId lobId(data + 10);
             lobCtx->checkOrphanedLobs(ctx, lobId, lastXid, offset);
 
-            // in-index
+            // In-index
             if ((flags & 0x04) == 0) {
                 auto lobsIt = lobCtx->lobs.find(lobId);
                 if (lobsIt == lobCtx->lobs.end()) {
@@ -517,7 +517,8 @@ namespace OpenLogReplicator {
                         return false;
                     }
                     uint32_t chunkLength = lobData->pageSize;
-                    // last
+
+                    // Last
                     if (pageNo == lobData->sizePages) {
                         chunkLength = lobData->sizeRest;
                         hasNext = false;
@@ -536,7 +537,7 @@ namespace OpenLogReplicator {
 
                 if (hasNext)
                     addLobToOutput(nullptr, 0, charsetId, offset, append, isClob, true, false, isSystem);
-            // in-row
+            // In-row
             } else {
                 if (length < 23) {
                     ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
@@ -553,7 +554,7 @@ namespace OpenLogReplicator {
                 uint16_t chunkLength;
                 uint64_t dataOffset;
 
-                // in-index
+                // In-index
                 if ((flg2 & 0x0400) == 0x0400) {
                     if (length < 36) {
                         ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
@@ -590,7 +591,7 @@ namespace OpenLogReplicator {
                             }
                             page = ctx->read32Big(data + dataOffset);
                         } else {
-                            // rest of data in LOB index
+                            // Rest of data in LOB index
                             auto indexMapIt = lobData->indexMap.find(j);
                             if (indexMapIt == lobData->indexMap.end()) {
                                 ctx->warning(60004, "can't find page " + std::to_string(j) + " for xid: " + lastXid.toString() + ", LOB: " +
@@ -628,7 +629,7 @@ namespace OpenLogReplicator {
                         totalLobLength -= chunkLength;
                         dataOffset += 4;
                     }
-                // in-value
+                // In-value
                 } else if ((flg2 & 0x0100) == 0x0100) {
                     if (bodyLength < 16) {
                         ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
@@ -649,7 +650,7 @@ namespace OpenLogReplicator {
                     }
 
                     if (chunkLength == 0) {
-                        //null value
+                        // Null value
                     } else {
                         if (length < static_cast<uint64_t>(chunkLength) + 36) {
                             ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
@@ -714,11 +715,11 @@ namespace OpenLogReplicator {
                     if (totalLobLength == 0)
                         return true;
 
-                    // data
+                    // Data
                     if ((flg2 & 0x0800) == 0x0800) {
                         chunkLength = totalLobLength;
                         if (chunkLength == 0) {
-                            //null value
+                            // Null value
                         } else {
                             if (dataOffset + chunkLength < length) {
                                 ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
@@ -743,7 +744,7 @@ namespace OpenLogReplicator {
                         }
                         LobData* lobData = lobsIt->second;
 
-                        // style 1
+                        // Style 1
                         if ((flg3 & 0xF0) == 0x20) {
                             uint8_t lobPages = data[dataOffset++] + 1;
 
@@ -792,7 +793,7 @@ namespace OpenLogReplicator {
                                 }
                             }
 
-                        // style 2
+                        // Style 2
                         } else if ((flg3 & 0xF0) == 0x40) {
                             if (dataOffset + 4 != length) {
                                 ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
@@ -849,7 +850,7 @@ namespace OpenLogReplicator {
                             return false;
                         }
 
-                    // index
+                    // Index
                     } else {
                         if (dataOffset + 1 >= length) {
                             ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
@@ -950,7 +951,7 @@ namespace OpenLogReplicator {
             uint64_t parseLength = length;
             uint64_t overlap = 0;
 
-            // something left to parse from previous run
+            // Something left to parse from previous run
             if (hasPrev && prevCharsSize > 0) {
                 overlap = 2 * MAX_CHARACTER_LENGTH - prevCharsSize;
                 if (overlap > length)
@@ -961,14 +962,14 @@ namespace OpenLogReplicator {
             }
 
             while (parseLength > 0) {
-                // leave for next time
+                // Leave for next time
                 if (hasNext && parseLength < MAX_CHARACTER_LENGTH && overlap == 0) {
                     memcpy(prevChars, parseData, parseLength);
                     prevCharsSize = parseLength;
                     break;
                 }
 
-                // switch to data buffer
+                // Switch to data buffer
                 if (parseLength <= overlap && length > overlap && overlap > 0) {
                     uint64_t processed = overlap - parseLength;
                     parseData = data + processed;

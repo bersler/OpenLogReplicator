@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
             ctx->error(50029, "schema table partition map not empty, left: " + std::to_string(tablePartitionMap.size()) + " at exit");
         tablePartitionMap.clear();
 
-        //SYS.CCOL$
+        // SYS.CCOL$
         while (!sysCColMapRowId.empty()) {
             auto sysCColMapRowIdIt = sysCColMapRowId.cbegin();
             SysCCol* sysCCol = sysCColMapRowIdIt->second;
@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
         if (!sysCColMapKey.empty())
             ctx->error(50029, "key map SYS.CCOL$ not empty, left: " + std::to_string(sysCColMapKey.size()) + " at exit");
 
-        //SYS.CDEF$
+        // SYS.CDEF$
         while (!sysCDefMapRowId.empty()) {
             auto sysCDefMapRowIdIt = sysCDefMapRowId.cbegin();
             SysCDef *sysCDef = sysCDefMapRowIdIt->second;
@@ -105,7 +105,7 @@ namespace OpenLogReplicator {
         if (!sysCDefMapKey.empty())
             ctx->error(50029, "key map SYS.CDEF$ not empty, left: " + std::to_string(sysCDefMapKey.size()) + " at exit");
 
-        //SYS.COL$
+        // SYS.COL$
         while (!sysColMapRowId.empty()) {
             auto sysColMapRowIdIt = sysColMapRowId.cbegin();
             SysCol* sysCol = sysColMapRowIdIt->second;
@@ -115,7 +115,7 @@ namespace OpenLogReplicator {
         if (!sysColMapSeg.empty())
             ctx->error(50029, "seg# map SYS.COL$ not empty, left: " + std::to_string(sysColMapSeg.size()) + " at exit");
 
-        //SYS.DEFERRED_STG$
+        // SYS.DEFERRED_STG$
         while (!sysDeferredStgMapRowId.empty()) {
             auto sysDeferredStgMapRowIdIt = sysDeferredStgMapRowId.cbegin();
             SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt->second;
@@ -125,7 +125,7 @@ namespace OpenLogReplicator {
         if (!sysDeferredStgMapObj.empty())
             ctx->error(50029, "obj map SYS.DEFERRED_STG$ not empty, left: " + std::to_string(sysDeferredStgMapObj.size()) + " at exit");
 
-        //SYS.ECOL$
+        // SYS.ECOL$
         while (!sysEColMapRowId.empty()) {
             auto sysEColMapRowIdIt = sysEColMapRowId.cbegin();
             SysECol* sysECol = sysEColMapRowIdIt->second;
@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
         if (!sysEColMapKey.empty())
             ctx->error(50029, "key map SYS.ECOL$ not empty, left: " + std::to_string(sysEColMapKey.size()) + " at exit");
 
-        //SYS.LOB$
+        // SYS.LOB$
         while (!sysLobMapRowId.empty()) {
             auto sysLobMapRowIdIt = sysLobMapRowId.cbegin();
             SysLob* sysLob = sysLobMapRowIdIt->second;
@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
         if (!sysLobMapKey.empty())
             ctx->error(50029, "key map SYS.LOB$ not empty, left: " + std::to_string(sysLobMapKey.size()) + " at exit");
 
-        //SYS.LOBCOMPPART$
+        // SYS.LOBCOMPPART$
         while (!sysLobCompPartMapRowId.empty()) {
             auto sysLobCompPartMapRowIdIt = sysLobCompPartMapRowId.cbegin();
             SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt->second;
@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
         if (!sysLobCompPartMapKey.empty())
             ctx->error(50029, "key map SYS.LOBCOMPPART$ not empty, left: " + std::to_string(sysLobCompPartMapKey.size()) + " at exit");
 
-        //SYS.LOBFRAG$
+        // SYS.LOBFRAG$
         while (!sysLobFragMapRowId.empty()) {
             auto sysLobFragMapRowIdIt = sysLobFragMapRowId.cbegin();
             SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt->second;
@@ -170,7 +170,7 @@ namespace OpenLogReplicator {
         if (!sysLobFragMapKey.empty())
             ctx->error(50029, "key map SYS.LOBFRAG$ not empty, left: " + std::to_string(sysLobFragMapKey.size()) + " at exit");
 
-        //SYS.OBJ$
+        // SYS.OBJ$
         while (!sysObjMapRowId.empty()) {
             auto sysObjMapRowIdIt = sysObjMapRowId.cbegin();
             SysObj* sysObj = sysObjMapRowIdIt->second;
@@ -182,7 +182,7 @@ namespace OpenLogReplicator {
         if (!sysObjMapObj.empty())
             ctx->error(50029, "obj# map SYS.OBJ$ not empty, left: " + std::to_string(sysObjMapObj.size()) + " at exit");
 
-        //SYS.TAB$
+        // SYS.TAB$
         while (!sysTabMapRowId.empty()) {
             auto sysTabMapRowIdIt = sysTabMapRowId.cbegin();
             SysTab* sysTab = sysTabMapRowIdIt->second;
@@ -192,7 +192,7 @@ namespace OpenLogReplicator {
         if (!sysTabMapObj.empty())
             ctx->error(50029, "obj# map SYS.TAB$ not empty, left: " + std::to_string(sysTabMapObj.size()) + " at exit");
 
-        //SYS.TABCOMPART$
+        // SYS.TABCOMPART$
         while (!sysTabComPartMapRowId.empty()) {
             auto sysTabComPartMapRowIdIt = sysTabComPartMapRowId.cbegin();
             SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt->second;
@@ -204,7 +204,7 @@ namespace OpenLogReplicator {
         if (!sysTabComPartMapKey.empty())
             ctx->error(50029, "key map SYS.TABCOMPART$ not empty, left: " + std::to_string(sysTabComPartMapKey.size()) + " at exit");
 
-        //SYS.TABPART$
+        // SYS.TABPART$
         while (!sysTabPartMapRowId.empty()) {
             auto sysTabPartMapRowIdIt = sysTabPartMapRowId.cbegin();
             SysTabPart* sysTabPart = sysTabPartMapRowIdIt->second;
@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
         if (!sysTabPartMapKey.empty())
             ctx->error(50029, "key map SYS.TABPART$ not empty, left: " + std::to_string(sysTabPartMapKey.size()) + " at exit");
 
-        //SYS.TABSUBPART$
+        // SYS.TABSUBPART$
         while(!sysTabSubPartMapRowId.empty()) {
             auto sysTabSubPartMapRowIdIt = sysTabSubPartMapRowId.cbegin();
             SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt->second;
@@ -224,7 +224,7 @@ namespace OpenLogReplicator {
         if (!sysTabSubPartMapKey.empty())
             ctx->error(50029, "key map SYS.TABSUBPART$ not empty, left: " + std::to_string(sysTabSubPartMapKey.size()) + " at exit");
 
-        //SYS.TS$
+        // SYS.TS$
         while (!sysTsMapRowId.empty()) {
             auto sysTsMapRowIdIt = sysTsMapRowId.cbegin();
             SysTs* sysTs = sysTsMapRowIdIt->second;
@@ -234,7 +234,7 @@ namespace OpenLogReplicator {
         if (!sysTsMapTs.empty())
             ctx->error(50029, "ts# map SYS.TS$ not empty, left: " + std::to_string(sysTsMapTs.size()) + " at exit");
 
-        //SYS.USER$
+        // SYS.USER$
         while (!sysUserMapRowId.empty()) {
             auto sysUserMapRowIdIt = sysUserMapRowId.cbegin();
             SysUser* sysUser = sysUserMapRowIdIt->second;
@@ -1816,7 +1816,7 @@ namespace OpenLogReplicator {
         }
         tablesTouched.clear();
 
-        //SYS.USER$
+        // SYS.USER$
         for (auto sysUser : sysUserSetTouched) {
             if (users.find(sysUser->name) != users.end())
                 continue;
@@ -1825,7 +1825,7 @@ namespace OpenLogReplicator {
             delete sysUser;
         }
 
-        //SYS.OBJ$
+        // SYS.OBJ$
         for (auto sysObj: sysObjSetTouched) {
             auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
             if (sysUserMapUserIt != sysUserMapUser.end())
@@ -1838,7 +1838,7 @@ namespace OpenLogReplicator {
             delete sysObj;
         }
 
-        //SYS.CCOL$
+        // SYS.CCOL$
         for (auto sysCCol: sysCColSetTouched) {
             if (sysObjMapObj.find(sysCCol->obj) != sysObjMapObj.end())
                 continue;
@@ -1847,7 +1847,7 @@ namespace OpenLogReplicator {
             delete sysCCol;
         }
 
-        //SYS.CDEF$
+        // SYS.CDEF$
         for (auto sysCDef: sysCDefSetTouched) {
             if (sysObjMapObj.find(sysCDef->obj) != sysObjMapObj.end())
                 continue;
@@ -1856,7 +1856,7 @@ namespace OpenLogReplicator {
             delete sysCDef;
         }
 
-        //SYS.COL$
+        // SYS.COL$
         for (auto sysCol: sysColSetTouched) {
             if (sysObjMapObj.find(sysCol->obj) != sysObjMapObj.end())
                 continue;
@@ -1865,7 +1865,7 @@ namespace OpenLogReplicator {
             delete sysCol;
         }
 
-        //SYS.DEFERRED_STG$
+        // SYS.DEFERRED_STG$
         for (auto sysDeferredStg: sysDeferredStgSetTouched) {
             if (sysObjMapObj.find(sysDeferredStg->obj) != sysObjMapObj.end())
                 continue;
@@ -1874,7 +1874,7 @@ namespace OpenLogReplicator {
             delete sysDeferredStg;
         }
 
-        //SYS.ECOL$
+        // SYS.ECOL$
         for (auto sysECol: sysEColSetTouched) {
             if (sysObjMapObj.find(sysECol->tabObj) != sysObjMapObj.end())
                 continue;
@@ -1883,7 +1883,7 @@ namespace OpenLogReplicator {
             delete sysECol;
         }
 
-        //SYS.LOB$
+        // SYS.LOB$
         for (auto sysLob: sysLobSetTouched) {
             if (sysObjMapObj.find(sysLob->obj) != sysObjMapObj.end())
                 continue;
@@ -1892,7 +1892,7 @@ namespace OpenLogReplicator {
             delete sysLob;
         }
 
-        //SYS.LOBCOMPPART$
+        // SYS.LOBCOMPPART$
         for (auto sysLobCompPart: sysLobCompPartSetTouched) {
             if (sysLobMapLObj.find(sysLobCompPart->lObj) != sysLobMapLObj.end())
                 continue;
@@ -1901,7 +1901,7 @@ namespace OpenLogReplicator {
             delete sysLobCompPart;
         }
 
-        //SYS.LOBFRAG$
+        // SYS.LOBFRAG$
         for (auto sysLobFrag: sysLobFragSetTouched) {
             if (sysLobCompPartMapPartObj.find(sysLobFrag->parentObj) != sysLobCompPartMapPartObj.end())
                 continue;
@@ -1912,7 +1912,7 @@ namespace OpenLogReplicator {
             delete sysLobFrag;
         }
 
-        //SYS.TAB$
+        // SYS.TAB$
         for (auto sysTab: sysTabSetTouched) {
             if (sysObjMapObj.find(sysTab->obj) != sysObjMapObj.end())
                 continue;
@@ -1921,7 +1921,7 @@ namespace OpenLogReplicator {
             delete sysTab;
         }
 
-        //SYS.TABCOMPART$
+        // SYS.TABCOMPART$
         for (auto sysTabComPart: sysTabComPartSetTouched) {
             if (sysObjMapObj.find(sysTabComPart->obj) != sysObjMapObj.end())
                 continue;
@@ -1930,7 +1930,7 @@ namespace OpenLogReplicator {
             delete sysTabComPart;
         }
 
-        //SYS.TABPART$
+        // SYS.TABPART$
         for (auto sysTabPart: sysTabPartSetTouched) {
             if (sysObjMapObj.find(sysTabPart->bo) != sysObjMapObj.end())
                 continue;
@@ -1939,7 +1939,7 @@ namespace OpenLogReplicator {
             delete sysTabPart;
         }
 
-        //SYS.TABSUBPART$
+        // SYS.TABSUBPART$
         for (auto sysTabSubPart: sysTabSubPartSetTouched) {
             if (sysObjMapObj.find(sysTabSubPart->obj) != sysObjMapObj.end())
                 continue;
@@ -2223,7 +2223,7 @@ namespace OpenLogReplicator {
                     schemaLob = new OracleLob(schemaTable, sysLob->obj, lobDataObj, sysLob->lObj, sysLob->col,
                                               sysLob->intCol);
 
-                    // indexes
+                    // Indexes
                     std::ostringstream str;
                     str << "SYS_IL" << std::setw(10) << std::setfill('0') << sysObj->obj << "C" << std::setw(5)
                         << std::setfill('0') << sysLob->intCol << "$$";
@@ -2248,9 +2248,9 @@ namespace OpenLogReplicator {
                                      std::to_string(sysLob->lObj) + ", COL#: " + std::to_string(sysLob->intCol) + ")");
                     }
 
-                    // partitioned lob
+                    // Partitioned lob
                     if (sysTab->isPartitioned()) {
-                        // partitions
+                        // Partitions
                         SysLobFragKey sysLobFragKey(sysLob->lObj, 0);
                         for (auto sysLobFragMapKeyIt = sysLobFragMapKey.upper_bound(sysLobFragKey);
                                 sysLobFragMapKeyIt != sysLobFragMapKey.end() &&
@@ -2267,7 +2267,7 @@ namespace OpenLogReplicator {
                             ++lobPartitions;
                         }
 
-                        // subpartitions
+                        // Subpartitions
                         SysLobCompPartKey sysLobCompPartKey(sysLob->lObj, 0);
                         for (auto sysLobCompPartMapKeyIt = sysLobCompPartMapKey.upper_bound(sysLobCompPartKey);
                                 sysLobCompPartMapKeyIt != sysLobCompPartMapKey.end() &&
@@ -2300,8 +2300,8 @@ namespace OpenLogReplicator {
                     schemaLob = nullptr;
                 }
 
-                //0123456 7890123456 7 89012 34
-                //SYS_LOB xxxxxxxxxx C yyyyy $$
+                // 0123456 7890123456 7 89012 34
+                // SYS_LOB xxxxxxxxxx C yyyyy $$
                 typeObj obj2 = sysObj->obj;
                 for (uint j = 0; j < 10; ++j) {
                     sysLobConstraintName[16 - j] = (obj2 % 10) + '0';
@@ -2317,7 +2317,7 @@ namespace OpenLogReplicator {
                     if (sysObjLob->name.length() != 25 || memcmp(colStr, sysLobConstraintName, 18) != 0 || colStr[23] != '$' || colStr[24] != '$')
                         continue;
 
-                    // decode column id
+                    // Decode column id
                     typeCol col = 0;
                     for (uint j = 0; j < 5; ++j) {
                         col += colStr[18 + j] - '0';
@@ -2400,6 +2400,7 @@ namespace OpenLogReplicator {
         } else
             ctx->warning(60022, "missing TS#: " + std::to_string(ts) + ")");
 
-        return 8132; // default value?
+        // Default value?
+        return 8132;
     }
 }

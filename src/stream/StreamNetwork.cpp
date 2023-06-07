@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
     }
 
     void StreamNetwork::initialize() {
-        //colon
+        // Colon
         auto uriIt = uri.find(':');
         if (uriIt == std::string::npos)
             throw ConfigurationException(30008, "uri is missing ':' in parameter: " + uri);

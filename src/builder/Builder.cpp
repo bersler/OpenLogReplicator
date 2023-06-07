@@ -1119,7 +1119,7 @@ namespace OpenLogReplicator {
                                 }
 
                             } else {
-                                // leave null value & propagate
+                                // Leave null value & propagate
                                 if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
                                     values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
                                     lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
