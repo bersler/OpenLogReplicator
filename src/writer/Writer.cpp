@@ -166,7 +166,7 @@ namespace OpenLogReplicator {
                 try {
                     mainLoop();
 
-                // client got disconnected
+                // Client disconnected
                 } catch (NetworkException& ex) {
                     ctx->warning(ex.code, ex.msg);
                     streaming = false;
@@ -293,7 +293,8 @@ namespace OpenLogReplicator {
                     }
 
                     createMessage(msg);
-                    // checkpoint message to be ignored
+
+                    // Checkpoint message to be ignored
                     if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
                         confirmMessage(msg);
                     else
@@ -320,6 +321,10 @@ namespace OpenLogReplicator {
         // Nothing changed
         if (checkpointScn == confirmedScn || confirmedScn == ZERO_SCN)
             return;
+
+        // Force first checkpoint
+        if (checkpointScn == ZERO_SCN)
+            force = true;
 
         // Not yet
         time_t now = time(nullptr);

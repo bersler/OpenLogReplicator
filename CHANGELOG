@@ -2,7 +2,7 @@
 - doc: updated README.md, added reference to tutorial github project
 - fix: PDB/CDB support
 - fix: unified comment style
-
+- fix: checkpoint file is not created when no data is replicated after start
 1.2.0
 - doc: Introduction to OpenLogReplicator
 - fix: minor bug related to sending ddl operations to output
