@@ -49,6 +49,10 @@ namespace OpenLogReplicator {
         throw RuntimeException(10052, "schema file missing");
     }
 
+    void ReplicatorBatch::updateOnlineRedoLogData() {
+        // No need to update online redo log data in batch mode
+    }
+
     const char* ReplicatorBatch::getModeName() const {
         return "batch";
     }

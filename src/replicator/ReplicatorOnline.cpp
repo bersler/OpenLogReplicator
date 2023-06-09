@@ -550,9 +550,8 @@ namespace OpenLogReplicator {
             checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
         }
 
-        updateOnlineRedoLogData();
-
         archReader = readerCreate(0);
+
         {
             DatabaseStatement stmt(conn);
             if (ctx->trace & TRACE_SQL)

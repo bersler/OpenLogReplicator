@@ -31,6 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RuntimeException.h"
 #include "../common/Timer.h"
 #include "../metadata/Metadata.h"
+#include "../metadata/RedoLog.h"
 #include "../metadata/Schema.h"
 #include "../parser/Parser.h"
 #include "../parser/Transaction.h"
@@ -142,7 +143,19 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::updateOnlineRedoLogData() {
-        // Nothing here
+        int64_t lastGroup = -1;
+        Reader* onlineReader = nullptr;
+
+        for (auto redoLog: metadata->redoLogs) {
+            if (redoLog->group != lastGroup) {
+                onlineReader = readerCreate(redoLog->group);
+                onlineReader->paths.clear();
+                lastGroup = redoLog->group;
+            }
+            onlineReader->paths.push_back(redoLog->path);
+        }
+
+        checkOnlineRedoLogs();
     }
 
     void Replicator::run() {
@@ -157,6 +170,7 @@ namespace OpenLogReplicator {
 
             loadDatabaseMetadata();
             metadata->readCheckpoints();
+            updateOnlineRedoLogData();
 
             do {
                 if (ctx->softShutdown)
@@ -209,7 +223,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                // boot succeeded
+                // Boot succeeded
                 ctx->info(0, "resume writer");
                 metadata->setStatusReplicate();
             } while (metadata->status != METADATA_STATUS_REPLICATE);

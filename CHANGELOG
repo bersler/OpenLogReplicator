@@ -3,6 +3,8 @@
 - fix: PDB/CDB support
 - fix: unified comment style
 - fix: checkpoint file is not created when no data is replicated after start
+- fix: offline startup failed to read redo log files
+
 1.2.0
 - doc: Introduction to OpenLogReplicator
 - fix: minor bug related to sending ddl operations to output
