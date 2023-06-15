@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.0
-:revdate: 2022-05-31
+:revdate: 2022-06-16
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -16,13 +16,56 @@ This document describes the release notes of OpenLogReplicator.
 
 == Major Release 1.x
 
-=== Version 1.0
+=== Version 1.2.1
 
-This is the first public release of OpenLogReplicator.
+- doc: updated README.md, added reference to tutorial github project
+- fix: PDB/CDB support
+- fix: unified comment style
+- fix: checkpoint file is not created when no data is replicated after start
+- fix: offline startup failed to read redo log files
+
+=== Version 1.2.0
+
+- doc: Introduction to OpenLogReplicator
+- fix: minor bug related to sending ddl operations to output
+- fix: minor parameter validation bug
+- fix: minor issue related to sending character data in hex format for debug purposes
+- cleanup in parameter names: renamed "max-size" "max-file-size" and "format" to "timestamp-format" for better understanding
+- doc: Commands Reference Manual
+- doc: Log Messages Guide
+- doc: Installation Guide
+- doc: Release Notes
+- doc: Troubleshooting Guide
+- doc: User Manual
+- fix: treat character decoding issues as warnings
+- fix: removed obsolete example file
+- fix: removed obsolete files
+- changed "trace" parameter to "log-level"
+- changed "trace2" parameter to "trace"
+- fix: unification of log messages
+- change: config file version is "1.2.0"
+- fix: changed type of nullable field from numeric to boolean
+- fix: uncaught exception in writer module
+- fix: protocol buffer message missing scn data
+- fix: allow server to handle bad start requests for network mode
+- fix: network client display fixes and handle big messages
+- fix: network client memory release on error
+- change: removed "max-messages", "enable-idempotence" and "brokers" parameters and added "properties" parameter instead
+- change: by default checkpoint messages are not sent to output
+- fix: compilation error when Kafka is disabled
+- fix: checkpoint did not advance when no data was replicated
+
+=== Version 1.1.0
+
+- debug: trace formatting changes
+- enhancement: add handling of OP 26.2 for experimental LOB support
+- fix: experimental LOB support
+- enhancement: code style corrections
+- fix: error handling of incorrect config file
+- fix: experimental LOB support Unicode character decoding
+- new feature: basicfile LOB (removed being experimental)
 
 ==== Version 1.0.1
-
-The following changes are available in version 1.0.1:
 
 - fix: incorrect checkpoint file when non-ascii characters are used in schema files
 - fix: incorrect message printed on error
@@ -36,25 +79,6 @@ The following changes are available in version 1.0.1:
 - enhancement: added support for Oracle 19.18 and 21.8
 - fix: experimental LOB data missing
 
-=== Version 1.1.0
+=== Version 1.0
 
-The following changes are available in version 1.1.0:
-
-- debug: trace formatting changes
-- enhancement: add handling of OP 26.2 for experimental LOB support
-- fix: experimental LOB support
-- enhancement: code style corrections
-- fix: error handling of incorrect config file
-- fix: experimental LOB support Unicode character decoding
-- new feature: basicfile LOB (removed being experimental)
-
-=== Nightly builds
-
-The following changes are available in nightly builds:
-
-- doc: Introduction to OpenLogReplicator
-- fix: minor bug related to sending ddl operations to output
-- fix: minor parameter validation bug
-- fix: minor issue related to sending character data in hex format for debug purposes
-- cleanup in parameter names: renamed "max-size" "max-file-size" and "format" to "timestamp-format" for better understanding
-- doc: Command Reference Manual
+This is the first public release of OpenLogReplicator.
