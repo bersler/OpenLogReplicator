@@ -123,6 +123,7 @@ namespace OpenLogReplicator {
             close(fid);
         if (configFileBuffer != nullptr)
             delete[] configFileBuffer;
+        configFileBuffer = nullptr;
     }
 
     int OpenLogReplicator::run() {
@@ -154,13 +155,13 @@ namespace OpenLogReplicator {
         uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
         if (bytesRead != static_cast<uint64_t>(configFileStat.st_size))
             throw RuntimeException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) + " bytes read instead of " +
-                                          std::to_string(configFileStat.st_size));
+                                   std::to_string(configFileStat.st_size));
         configFileBuffer[configFileStat.st_size] = 0;
 
         rapidjson::Document document;
         if (document.Parse(configFileBuffer).HasParseError())
             throw DataException(20001, "file: " + configFileName + " offset: " +
-                                       std::to_string(document.GetErrorOffset()) + " - parse error: " + GetParseError_En(document.GetParseError()));
+                                std::to_string(document.GetErrorOffset()) + " - parse error: " + GetParseError_En(document.GetParseError()));
 
         const char* version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
         if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0)
@@ -370,22 +371,8 @@ namespace OpenLogReplicator {
             Metadata* metadata = new Metadata(ctx, locales, name, conId, startScn,
                                               startSequence, startTime, startTimeRel);
             metadatas.push_back(metadata);
+            metadata->resetElements();
 
-            metadata->addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-            metadata->addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-            metadata->addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-            metadata->addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-            metadata->addElement("SYS", "LOB\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "LOBCOMPPART\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "LOBFRAG\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "OBJ\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "TAB\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "TABPART\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "TABCOMPART\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "TABSUBPART\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "TS\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
             if (debugOwner != nullptr && debugTable != nullptr)
                 metadata->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
             if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))

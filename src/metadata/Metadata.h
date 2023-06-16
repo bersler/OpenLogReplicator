@@ -140,6 +140,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] bool stateWrite(const std::string& name, std::ostringstream& out);
         [[nodiscard]] bool stateDrop(const std::string& name);
         SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
+        void resetElements();
 
         void waitForWriter();
         void waitForReplicator();

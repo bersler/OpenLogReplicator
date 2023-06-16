@@ -233,6 +233,28 @@ namespace OpenLogReplicator {
         return element;
     }
 
+    void Metadata::resetElements() {
+        for (SchemaElement* element : schemaElements)
+            delete element;
+        schemaElements.clear();
+
+        addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "LOB\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "LOBCOMPPART\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "LOBFRAG\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "OBJ\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TAB\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABPART\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABCOMPART\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABSUBPART\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TS\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
+    }
+
     void Metadata::waitForWriter() {
         std::unique_lock<std::mutex> lck(mtx);
         if (status == METADATA_STATUS_INITIALIZE)
