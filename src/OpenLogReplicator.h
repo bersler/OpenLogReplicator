@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
         Replicator* replicator;
         int fid;
         char* configFileBuffer;
-        std::string fileName;
+        std::string configFileName;
         Ctx* ctx;
 
         void mainProcessMapping(const rapidjson::Value& readerJson);
