@@ -32,11 +32,11 @@ namespace OpenLogReplicator {
         }
 
         bool operator<(const SysTabSubPartKey& other) const {
-            if (other.pObj > pObj)
+            if (pObj < other.pObj)
                 return true;
             if (other.pObj < pObj)
                 return false;
-            if (other.obj > obj)
+            if (obj < other.obj)
                 return true;
             return false;
         }

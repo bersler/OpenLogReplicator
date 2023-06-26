@@ -32,11 +32,11 @@ namespace OpenLogReplicator {
         }
 
         bool operator<(const SysLobFragKey& other) const {
-            if (other.parentObj > parentObj)
+            if (parentObj < other.parentObj)
                 return true;
             if (other.parentObj < parentObj)
                 return false;
-            if (other.fragObj > fragObj)
+            if (fragObj < other.fragObj)
                 return true;
             return false;
         }

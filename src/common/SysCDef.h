@@ -37,11 +37,11 @@ namespace OpenLogReplicator {
         }
 
         bool operator<(const SysCDefKey& other) const {
-            if (other.obj > obj)
+            if (obj < other.obj)
                 return true;
             if (other.obj < obj)
                 return false;
-            if (other.con > con)
+            if (con < other.con)
                 return true;
             return false;
         }

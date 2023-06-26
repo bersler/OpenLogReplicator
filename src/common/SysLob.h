@@ -32,11 +32,11 @@ namespace OpenLogReplicator {
         }
 
         bool operator<(const SysLobKey& other) const {
-            if (other.obj > obj)
+            if (obj < other.obj)
                 return true;
             if (other.obj < obj)
                 return false;
-            if (other.intCol > intCol)
+            if (intCol < other.intCol)
                 return true;
             return false;
         }

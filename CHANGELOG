@@ -4,6 +4,7 @@
 - fix: unified comment style
 - fix: checkpoint file is not created when no data is replicated after start
 - fix: offline startup failed to read redo log files
+- fix: DDL operation that rearranges columns is not handled properly
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

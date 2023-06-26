@@ -86,20 +86,20 @@ namespace OpenLogReplicator {
         }
 
         bool operator<(const SysObjNameKey& other) const {
-            if (other.owner > owner)
+            if (owner < other.owner)
                 return true;
             if (other.owner < owner)
                 return false;
             int cmp = other.name.compare(name);
-            if (cmp > 0)
+            if (0 < cmp)
                 return true;
             if (cmp < 0)
                 return false;
-            if (other.obj > obj)
+            if (obj < other.obj)
                 return true;
             if (other.obj < obj)
                 return false;
-            if (other.dataObj > dataObj)
+            if (dataObj < other.dataObj)
                 return true;
             if (other.dataObj < dataObj)
                 return false;

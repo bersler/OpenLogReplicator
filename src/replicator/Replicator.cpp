@@ -248,6 +248,9 @@ namespace OpenLogReplicator {
                 if (!logsProcessed)
                     usleep(ctx->redoReadSleepUs);
             }
+        } catch (DataException& ex) {
+            ctx->error(ex.code, ex.msg);
+            ctx->stopHard();
         } catch (RedoLogException& ex) {
             ctx->error(ex.code, ex.msg);
             ctx->stopHard();

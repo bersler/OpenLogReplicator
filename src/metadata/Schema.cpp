@@ -871,13 +871,13 @@ namespace OpenLogReplicator {
         sysColMapRowId[sysCol->rowId] = sysCol;
 
         if (sysCol->segCol > 0) {
-            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol);
+            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
             auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
             if (sysColMapSegIt == sysColMapSeg.end())
                 sysColMapSeg[sysColSeg] = sysCol;
             else
                 DataException(50024, "duplicate SYS.COL$ value for unique (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
-                              std::to_string(sysCol->segCol) + ")");
+                              std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
         }
 
         sysColSetTouched.insert(sysCol);
@@ -1244,13 +1244,13 @@ namespace OpenLogReplicator {
         sysColMapRowId.erase(sysColMapRowIdIt);
 
         if (sysCol->segCol > 0) {
-            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol);
+            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
             auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
             if (sysColMapSegIt != sysColMapSeg.end())
                 sysColMapSeg.erase(sysColMapSegIt);
             else
                 throw DataException(50030, "missing index for SYS.COL$ (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
-                                    std::to_string(sysCol->segCol) + ")");
+                                    std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
         }
 
         touchTable(sysCol->obj);
@@ -2115,7 +2115,8 @@ namespace OpenLogReplicator {
                 }
             }
 
-            SysColSeg sysColSegFirst(sysObj->obj, 0);
+            typeRowId rowId;
+            SysColSeg sysColSegFirst(sysObj->obj, 0, rowId);
             for (auto sysColMapSegIt = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt != sysColMapSeg.end() &&
                     sysColMapSegIt->first.obj == sysObj->obj; ++sysColMapSegIt) {
                 SysCol* sysCol = sysColMapSegIt->second;

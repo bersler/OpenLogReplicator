@@ -55,23 +55,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysColSeg {
     public:
-        SysColSeg(typeObj newObj, typeCol newSegCol) :
+        SysColSeg(typeObj newObj, typeCol newSegCol, typeRowId& newRowId) :
                 obj(newObj),
-                segCol(newSegCol) {
+                segCol(newSegCol),
+                rowId(newRowId) {
         }
 
         bool operator<(const SysColSeg& other) const {
-            if (other.obj > obj)
+            if (obj < other.obj)
                 return true;
             if (other.obj < obj)
                 return false;
-            if (other.segCol > segCol)
+            if (segCol < other.segCol)
+                return true;
+            if (other.segCol < segCol)
+                return false;
+            if (rowId < other.rowId)
                 return true;
             return false;
         }
 
         typeObj obj;
         typeCol segCol;
+        typeRowId rowId;
     };
 
     class SysColKey {
@@ -82,11 +88,11 @@ namespace OpenLogReplicator {
         }
 
         bool operator<(const SysColKey& other) const {
-            if (other.obj > obj)
+            if (obj < other.obj)
                 return true;
             if (other.obj < obj)
                 return false;
-            if (other.intCol > intCol)
+            if (intCol < other.intCol)
                 return true;
             return false;
         }

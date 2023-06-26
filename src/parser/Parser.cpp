@@ -1339,6 +1339,12 @@ namespace OpenLogReplicator {
                     for (uint64_t i = 0; i < lwnRecords; ++i) {
                         try {
                             analyzeLwn(lwnMembers[i]);
+                        } catch (DataException &ex) {
+                            if (FLAG(REDO_FLAGS_IGNORE_DATA_ERRORS)) {
+                                ctx->error(ex.code, ex.msg);
+                                ctx->warning(60013, "forced to continue working in spite of error");
+                            } else
+                                throw DataException(ex.code, "runtime error, aborting further redo log processing: " + ex.msg);
                         } catch (RedoLogException &ex) {
                             if (FLAG(REDO_FLAGS_IGNORE_DATA_ERRORS)) {
                                 ctx->error(ex.code, ex.msg);
