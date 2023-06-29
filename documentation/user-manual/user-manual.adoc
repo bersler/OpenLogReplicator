@@ -712,6 +712,10 @@ In the example above, the configuration file is changed and the M1 table is adde
 This operation does not affect the data that is already processed and present in memory.
 Transaction T2 would only contain in the output the UPDATE operation for M1 table, but would not contain the INSERT operation which happened before the configuration file was changed.
 
+IMPORTANT: The operation of updating parameters from the configuration file does not impact all parameters.
+Only paramaters which define the list of replicated tablers are updated.
+This includes only the tags `table` and `owner` both in `debug` and `filter` sections.
+
 === Offline reader
 
 For cases where there is no physical way to connect the database, OpenLogReplictor offers
