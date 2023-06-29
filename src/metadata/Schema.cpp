@@ -46,11 +46,13 @@ namespace OpenLogReplicator {
     }
 
     Schema::~Schema() {
-        purge();
+        purgeMetadata();
+        purgeDicts();
     }
 
-    void Schema::purge() {
+    void Schema::purgeMetadata() {
         scn = ZERO_SCN;
+
         if (schemaColumn != nullptr) {
             delete schemaColumn;
             schemaColumn = nullptr;
@@ -83,6 +85,11 @@ namespace OpenLogReplicator {
             ctx->error(50029, "schema table partition map not empty, left: " + std::to_string(tablePartitionMap.size()) + " at exit");
         tablePartitionMap.clear();
 
+        tablesTouched.clear();
+        identifiersTouched.clear();
+    }
+
+    void Schema::purgeDicts() {
         // SYS.CCOL$
         while (!sysCColMapRowId.empty()) {
             auto sysCColMapRowIdIt = sysCColMapRowId.cbegin();

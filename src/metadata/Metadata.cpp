@@ -70,29 +70,29 @@ namespace OpenLogReplicator {
             logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
-            sequence(ZERO_SEQ),
-            offset(0),
-            resetlogs(0),
-            activation(0),
-            checkpoints(0),
             firstDataScn(ZERO_SCN),
             firstSchemaScn(ZERO_SCN),
-            checkpointScn(ZERO_SCN),
+            resetlogs(0),
+            oracleIncarnationCurrent(nullptr),
+            activation(0),
+            sequence(ZERO_SEQ),
+            lastSequence(ZERO_SEQ),
+            offset(0),
             firstScn(ZERO_SCN),
             nextScn(ZERO_SCN),
+            checkpoints(0),
+            checkpointScn(ZERO_SCN),
+            lastCheckpointScn(ZERO_SCN),
             checkpointTime(0),
+            lastCheckpointTime(),
             checkpointOffset(0),
+            lastCheckpointOffset(0),
             checkpointBytes(0),
+            lastCheckpointBytes(0),
             minSequence(ZERO_SEQ),
             minOffset(0),
             minXid(),
-            schemaInterval(0),
-            lastCheckpointScn(ZERO_SCN),
-            lastSequence(ZERO_SEQ),
-            lastCheckpointOffset(0),
-            lastCheckpointTime(),
-            lastCheckpointBytes(0),
-            oracleIncarnationCurrent(nullptr) {
+            schemaInterval(0) {
     }
 
     Metadata::~Metadata() {
@@ -120,6 +120,11 @@ namespace OpenLogReplicator {
         for (SchemaElement* element : schemaElements)
             delete element;
         schemaElements.clear();
+
+        for (SchemaElement* element : newSchemaElements)
+            delete element;
+        newSchemaElements.clear();
+
         users.clear();
 
         for (OracleIncarnation* oi : oracleIncarnations)
@@ -157,22 +162,36 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setResetlogs(typeResetlogs newResetlogs) {
-        std::unique_lock<std::mutex> lck(mtx);
         resetlogs = newResetlogs;
         activation = 0;
     }
 
     void Metadata::setActivation(typeActivation newActivation) {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         activation = newActivation;
+    }
+
+    void Metadata::setFirstNextScn(typeScn newFirstScn, typeScn newNextScn) {
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
+        firstScn = newFirstScn;
+        nextScn = newNextScn;
+    }
+
+    void Metadata::setNextSequence() {
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
+        ++sequence;
     }
 
     void Metadata::setSeqOffset(typeSeq newSequence, uint64_t newOffset) {
         if (ctx->trace & TRACE_CHECKPOINT)
             ctx->logTrace(TRACE_CHECKPOINT, "setting sequence to: " + std::to_string(newSequence) + ", offset: " +
-                    std::to_string(newOffset));
+                          std::to_string(newOffset));
 
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         sequence = newSequence;
         offset = newOffset;
     }
@@ -229,14 +248,14 @@ namespace OpenLogReplicator {
             throw ConfigurationException(30004, "table '" + std::string(table) +
                                          "' contains lower case characters, value must be upper case");
         auto element = new SchemaElement(owner, table, options);
-        schemaElements.push_back(element);
+        newSchemaElements.push_back(element);
         return element;
     }
 
     void Metadata::resetElements() {
-        for (SchemaElement* element : schemaElements)
+        for (SchemaElement* element : newSchemaElements)
             delete element;
-        schemaElements.clear();
+        newSchemaElements.clear();
 
         addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
         addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
@@ -255,20 +274,35 @@ namespace OpenLogReplicator {
         addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
     }
 
+    void Metadata::commitElements() {
+        std::unique_lock<std::mutex> lck(mtxSchema);
+
+        for (SchemaElement* element : schemaElements)
+            delete element;
+        schemaElements.clear();
+
+        for (SchemaElement* element : newSchemaElements)
+            schemaElements.push_back(element);
+        newSchemaElements.clear();
+    }
+
     void Metadata::waitForWriter() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         if (status == METADATA_STATUS_INITIALIZE)
             condReplicator.wait(lck);
     }
 
     void Metadata::waitForReplicator() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         if (status == METADATA_STATUS_BOOT)
             condWriter.wait(lck);
     }
 
     void Metadata::setStatusInitialize() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         status = METADATA_STATUS_INITIALIZE;
         firstDataScn = ZERO_SCN;
         firstSchemaScn = ZERO_SCN;
@@ -278,30 +312,33 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setStatusBoot() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         status = METADATA_STATUS_BOOT;
         condReplicator.notify_all();
     }
 
     void Metadata::setStatusReplicate() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         status = METADATA_STATUS_REPLICATE;
         condReplicator.notify_all();
         condWriter.notify_all();
     }
 
     void Metadata::wakeUp() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         condReplicator.notify_all();
         condWriter.notify_all();
     }
 
     void Metadata::checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
                               uint64_t newCheckpointBytes, typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid) {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
         checkpointScn = newCheckpointScn;
         checkpointTime = newCheckpointTime;
-        checkpointSequence = newCheckpointSequence;
         checkpointOffset = newCheckpointOffset;
         checkpointBytes += newCheckpointBytes;
         minSequence = newMinSequence;
@@ -313,7 +350,7 @@ namespace OpenLogReplicator {
         std::ostringstream ss;
 
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> lck(mtxCheckpoint);
             if (!allowedCheckpoints)
                 return;
 
@@ -386,6 +423,7 @@ namespace OpenLogReplicator {
 
             if (ctx->trace & TRACE_CHECKPOINT)
                 ctx->logTrace(TRACE_CHECKPOINT, "found: " + name + " scn: " + std::to_string(scn));
+
             checkpointScnList.insert(scn);
             checkpointSchemaMap[scn] = true;
         }
@@ -397,6 +435,7 @@ namespace OpenLogReplicator {
 
         if (ctx->trace & TRACE_CHECKPOINT)
             ctx->logTrace(TRACE_CHECKPOINT, "scn: " + std::to_string(firstDataScn));
+
         if (firstDataScn != ZERO_SCN && firstDataScn != 0) {
             std::set<typeScn>::iterator it = checkpointScnList.end();
 
@@ -470,7 +509,8 @@ namespace OpenLogReplicator {
             return;
 
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
             if (!allowedCheckpoints)
                 return;
 
@@ -504,7 +544,8 @@ namespace OpenLogReplicator {
         }
 
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> lck(mtxCheckpoint);
+
             for (auto scn: scnToDrop) {
                 checkpointScnList.erase(scn);
                 checkpointSchemaMap.erase(scn);

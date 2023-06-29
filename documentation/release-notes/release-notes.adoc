@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.2.0
-:revdate: 2022-06-16
+:revnumber: 1.2.1
+:revdate: 2022-06-29
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -23,6 +23,8 @@ This document describes the release notes of OpenLogReplicator.
 - fix: unified comment style
 - fix: checkpoint file is not created when no data is replicated after start
 - fix: offline startup failed to read redo log files
+- fix: DDL operation that rearranges columns is not handled properly
+- enhancement: reload config file for schema update after the file is updated
 
 === Version 1.2.0
 

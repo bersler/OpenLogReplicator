@@ -50,6 +50,7 @@ namespace OpenLogReplicator {
     SerializerJson::~SerializerJson() = default;
 
     void SerializerJson::serialize(Metadata* metadata, std::ostringstream& ss, bool storeSchema) {
+        // Assuming all locks are held by the caller
         ss << R"({"database":")";
         Ctx::writeEscapeValue(ss, metadata->database);
         ss << R"(","scn":)" << std::dec << metadata->checkpointScn <<
@@ -426,31 +427,32 @@ namespace OpenLogReplicator {
         ss << "]}";
     }
 
-    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::list<std::string>& msgs, bool loadMetadata,
+    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::list<std::string>& msgs, bool loadMetadata,
                                      bool loadSchema) {
         try {
             rapidjson::Document document;
             if (ss.length() == 0 || document.Parse(ss.c_str()).HasParseError())
-                throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
+                throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                     " - parse error: " + GetParseError_En(document.GetParseError()));
 
             {
-                std::unique_lock<std::mutex> lck(metadata->mtx);
+                std::unique_lock<std::mutex> lckCheckpoint(metadata->mtxCheckpoint);
+                std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema);
 
                 if (loadMetadata) {
-                    metadata->checkpointScn = Ctx::getJsonFieldU64(name, document, "scn");
+                    metadata->checkpointScn = Ctx::getJsonFieldU64(fileName, document, "scn");
 
                     if (document.HasMember("min-tran")) {
-                        const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(name, document, "min-tran");
-                        metadata->sequence = Ctx::getJsonFieldU32(name, minTranJson, "seq");
-                        metadata->offset = Ctx::getJsonFieldU64(name, minTranJson, "offset");
+                        const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(fileName, document, "min-tran");
+                        metadata->sequence = Ctx::getJsonFieldU32(fileName, minTranJson, "seq");
+                        metadata->offset = Ctx::getJsonFieldU64(fileName, minTranJson, "offset");
                     } else {
-                        metadata->sequence = Ctx::getJsonFieldU32(name, document, "seq");
-                        metadata->offset = Ctx::getJsonFieldU64(name, document, "offset");
+                        metadata->sequence = Ctx::getJsonFieldU32(fileName, document, "seq");
+                        metadata->offset = Ctx::getJsonFieldU64(fileName, document, "offset");
                     }
 
                     if ((metadata->offset & 511) != 0)
-                        throw DataException(20006, "file: " + name + " - invalid offset: " + std::to_string(metadata->offset) +
+                        throw DataException(20006, "file: " + fileName + " - invalid offset: " + std::to_string(metadata->offset) +
                                             " is not a multiplication of 512");
 
                     metadata->minSequence = ZERO_SEQ;
@@ -464,31 +466,31 @@ namespace OpenLogReplicator {
 
                     if (!metadata->onlineData) {
                         // Database metadata
-                        metadata->database = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
-                        metadata->resetlogs = Ctx::getJsonFieldU32(name, document, "resetlogs");
-                        metadata->activation = Ctx::getJsonFieldU32(name, document, "activation");
-                        int64_t bigEndian = Ctx::getJsonFieldU64(name, document, "big-endian");
+                        metadata->database = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, document, "database");
+                        metadata->resetlogs = Ctx::getJsonFieldU32(fileName, document, "resetlogs");
+                        metadata->activation = Ctx::getJsonFieldU32(fileName, document, "activation");
+                        int64_t bigEndian = Ctx::getJsonFieldU64(fileName, document, "big-endian");
                         if (bigEndian == 1)
                             metadata->ctx->setBigEndian();
-                        metadata->context = Ctx::getJsonFieldS(name, VCONTEXT_LENGTH, document, "context");
-                        metadata->conId = Ctx::getJsonFieldI16(name, document, "con-id");
-                        metadata->conName = Ctx::getJsonFieldS(name, VCONTEXT_LENGTH, document, "con-name");
-                        metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
-                        metadata->dbBlockChecksum = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "db-block-checksum");
+                        metadata->context = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "context");
+                        metadata->conId = Ctx::getJsonFieldI16(fileName, document, "con-id");
+                        metadata->conName = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "con-fileName");
+                        metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
+                        metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-block-checksum");
                         if (!metadata->logArchiveFormatCustom)
-                            metadata->logArchiveFormat = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "log-archive-format");
-                        metadata->logArchiveDest = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "log-archive-dest");
-                        metadata->nlsCharacterSet = Ctx::getJsonFieldS(name, VPROPERTY_LENGTH, document, "nls-character-set");
-                        metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(name, VPROPERTY_LENGTH, document,
+                            metadata->logArchiveFormat = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "log-archive-format");
+                        metadata->logArchiveDest = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "log-archive-dest");
+                        metadata->nlsCharacterSet = Ctx::getJsonFieldS(fileName, VPROPERTY_LENGTH, document, "nls-character-set");
+                        metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(fileName, VPROPERTY_LENGTH, document,
                                                                             "nls-nchar-character-set");
                         metadata->setNlsCharset(metadata->nlsCharacterSet, metadata->nlsNcharCharacterSet);
-                        metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(name, document, "supp-log-db-primary");
-                        metadata->suppLogDbAll = Ctx::getJsonFieldU64(name, document, "supp-log-db-all");
+                        metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(fileName, document, "supp-log-db-primary");
+                        metadata->suppLogDbAll = Ctx::getJsonFieldU64(fileName, document, "supp-log-db-all");
 
-                        const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(name, document, "online-redo");
+                        const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(fileName, document, "online-redo");
                         for (rapidjson::SizeType i = 0; i < onlineRedoJson.Size(); ++i) {
-                            int64_t group = Ctx::getJsonFieldI64(name, onlineRedoJson[i], "group");
-                            const rapidjson::Value& path = Ctx::getJsonFieldA(name, onlineRedoJson[i], "path");
+                            int64_t group = Ctx::getJsonFieldI64(fileName, onlineRedoJson[i], "group");
+                            const rapidjson::Value& path = Ctx::getJsonFieldA(fileName, onlineRedoJson[i], "path");
 
                             for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
                                 const rapidjson::Value& pathVal = path[j];
@@ -497,14 +499,14 @@ namespace OpenLogReplicator {
                             }
                         }
 
-                        const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(name, document, "incarnations");
+                        const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(fileName, document, "incarnations");
                         for (rapidjson::SizeType i = 0; i < incarnationsJson.Size(); ++i) {
-                            uint32_t incarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "incarnation");
-                            typeScn resetlogsScn = Ctx::getJsonFieldU64(name, incarnationsJson[i], "resetlogs-scn");
-                            typeScn priorResetlogsScn = Ctx::getJsonFieldU64(name, incarnationsJson[i], "prior-resetlogs-scn");
-                            const char* status = Ctx::getJsonFieldS(name, 128, incarnationsJson[i], "status");
-                            typeResetlogs resetlogs = Ctx::getJsonFieldU32(name, incarnationsJson[i], "resetlogs");
-                            uint32_t priorIncarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "prior-incarnation");
+                            uint32_t incarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "incarnation");
+                            typeScn resetlogsScn = Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "resetlogs-scn");
+                            typeScn priorResetlogsScn = Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "prior-resetlogs-scn");
+                            const char* status = Ctx::getJsonFieldS(fileName, 128, incarnationsJson[i], "status");
+                            typeResetlogs resetlogs = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "resetlogs");
+                            uint32_t priorIncarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "prior-incarnation");
 
                             auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn,
                                                             status, resetlogs, priorIncarnation);
@@ -517,10 +519,23 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    const rapidjson::Value& usersJson = Ctx::getJsonFieldA(name, document, "users");
-                    for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
-                        const rapidjson::Value& userJson = usersJson[i];;
-                        metadata->users.insert(userJson.GetString());
+                    std::set<std::string> users;
+                    if ((metadata->ctx->flags & REDO_FLAGS_ADAPTIVE_SCHEMA) == 0) {
+                        const rapidjson::Value &usersJson = Ctx::getJsonFieldA(fileName, document, "users");
+                        for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
+                            const rapidjson::Value &userJson = usersJson[i];;
+                            users.insert(userJson.GetString());
+                        }
+
+                        for (auto& user : metadata->users) {
+                            if (users.find(user) == users.end())
+                                throw DataException(20007, "file: " + fileName + " - " + user + " is missing");
+                        }
+                        for (auto& user : users) {
+                            if (metadata->users.find(user) == metadata->users.end())
+                                throw DataException(20007, "file: " + fileName + " - " + user + " is redundant");
+                        }
+                        users.clear();
                     }
                 }
 
@@ -528,46 +543,36 @@ namespace OpenLogReplicator {
                     // Schema referenced to other checkpoint file
                     if (document.HasMember("schema-ref-scn")) {
                         metadata->schema->scn = ZERO_SCN;
-                        metadata->schema->refScn = Ctx::getJsonFieldU64(name, document, "schema-ref-scn");
+                        metadata->schema->refScn = Ctx::getJsonFieldU64(fileName, document, "schema-ref-scn");
 
                     } else {
-                        metadata->schema->scn = Ctx::getJsonFieldU64(name, document, "schema-scn");
+                        metadata->schema->scn = Ctx::getJsonFieldU64(fileName, document, "schema-scn");
                         metadata->schema->refScn = ZERO_SCN;
 
-                        deserializeSysUser(metadata, name, Ctx::getJsonFieldA(name, document, "sys-user"));
-                        deserializeSysObj(metadata, name, Ctx::getJsonFieldA(name, document, "sys-obj"));
-                        deserializeSysCol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-col"));
-                        deserializeSysCCol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ccol"));
-                        deserializeSysCDef(metadata, name, Ctx::getJsonFieldA(name, document, "sys-cdef"));
-                        deserializeSysDeferredStg(metadata, name, Ctx::getJsonFieldA(name, document, "sys-deferredstg"));
-                        deserializeSysECol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ecol"));
-                        deserializeSysLob(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob"));
-                        deserializeSysLobCompPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob-comp-part"));
-                        deserializeSysLobFrag(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob-frag"));
-                        deserializeSysTab(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tab"));
-                        deserializeSysTabPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabpart"));
-                        deserializeSysTabComPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabcompart"));
-                        deserializeSysTabSubPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabsubpart"));
-                        deserializeSysTs(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ts"));
+                        deserializeSysUser(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-user"));
+                        deserializeSysObj(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-obj"));
+                        deserializeSysCol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-col"));
+                        deserializeSysCCol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ccol"));
+                        deserializeSysCDef(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-cdef"));
+                        deserializeSysDeferredStg(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-deferredstg"));
+                        deserializeSysECol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ecol"));
+                        deserializeSysLob(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob"));
+                        deserializeSysLobCompPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob-comp-part"));
+                        deserializeSysLobFrag(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob-frag"));
+                        deserializeSysTab(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tab"));
+                        deserializeSysTabPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabpart"));
+                        deserializeSysTabComPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabcompart"));
+                        deserializeSysTabSubPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabsubpart"));
+                        deserializeSysTs(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ts"));
                     }
 
                     for (SchemaElement *element: metadata->schemaElements) {
                         if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
-                            msgs.push_back(
-                                    "- creating table schema for owner: " + element->owner + " table: " + element->table +
-                                    " options: " + std::to_string(element->options));
+                            msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
+                                           std::to_string(element->options));
 
-                        if ((metadata->ctx->flags & REDO_FLAGS_ADAPTIVE_SCHEMA) == 0) {
-                            if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 && metadata->users.find(element->owner) == metadata->users.end()) {
-                                metadata->ctx->hint("recreate schema file (delete old file and force creation of new)");
-                                throw DataException(20007, "file: " + name + " - database schema name '" + std::string(element->owner) +
-                                                    "' is missing in schema file");
-                            }
-                        }
-
-                        metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr,
-                                                    element->options, msgs, metadata->suppLogDbPrimary,
-                                                    metadata->suppLogDbAll, metadata->defaultCharacterMapId,
+                        metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, msgs,
+                                                    metadata->suppLogDbPrimary, metadata->suppLogDbAll, metadata->defaultCharacterMapId,
                                                     metadata->defaultCharacterNcharMapId);
                     }
 
@@ -584,222 +589,222 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void SerializerJson::deserializeSysCCol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysCColJson) {
+    void SerializerJson::deserializeSysCCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson) {
         for (rapidjson::SizeType i = 0; i < sysCColJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysCColJson[i], "row-id");
-            typeCon con = Ctx::getJsonFieldU32(name, sysCColJson[i], "con");
-            typeCol intCol = Ctx::getJsonFieldI16(name, sysCColJson[i], "int-col");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysCColJson[i], "obj");
-            const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(name, sysCColJson[i], "spare1");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysCColJson[i], "row-id");
+            typeCon con = Ctx::getJsonFieldU32(fileName, sysCColJson[i], "con");
+            typeCol intCol = Ctx::getJsonFieldI16(fileName, sysCColJson[i], "int-col");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysCColJson[i], "obj");
+            const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(fileName, sysCColJson[i], "spare1");
             if (spare1Json.Size() != 2)
-                throw DataException(20005, "file: " + name + " - spare1 should be an array with 2 elements");
-            uint64_t spare11 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 0);
-            uint64_t spare12 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 1);
+                throw DataException(20005, "file: " + fileName + " - spare1 should be an array with 2 elements");
+            uint64_t spare11 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 0);
+            uint64_t spare12 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 1);
 
             metadata->schema->dictSysCColAdd(rowId, con, intCol, obj, spare11, spare12);
         }
     }
 
-    void SerializerJson::deserializeSysCDef(Metadata* metadata, const std::string& name, const rapidjson::Value& sysCDefJson) {
+    void SerializerJson::deserializeSysCDef(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson) {
         for (rapidjson::SizeType i = 0; i < sysCDefJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysCDefJson[i], "row-id");
-            typeCon con = Ctx::getJsonFieldU32(name, sysCDefJson[i], "con");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysCDefJson[i], "obj");
-            typeType type = Ctx::getJsonFieldU16(name, sysCDefJson[i], "type");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysCDefJson[i], "row-id");
+            typeCon con = Ctx::getJsonFieldU32(fileName, sysCDefJson[i], "con");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysCDefJson[i], "obj");
+            typeType type = Ctx::getJsonFieldU16(fileName, sysCDefJson[i], "type");
 
             metadata->schema->dictSysCDefAdd(rowId, con, obj, type);
         }
     }
 
-    void SerializerJson::deserializeSysCol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysColJson) {
+    void SerializerJson::deserializeSysCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysColJson) {
         for (rapidjson::SizeType i = 0; i < sysColJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysColJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysColJson[i], "obj");
-            typeCol col = Ctx::getJsonFieldI16(name, sysColJson[i], "col");
-            typeCol segCol = Ctx::getJsonFieldI16(name, sysColJson[i], "seg-col");
-            typeCol intCol = Ctx::getJsonFieldI16(name, sysColJson[i], "int-col");
-            const char* name_ = Ctx::getJsonFieldS(name, SYS_COL_NAME_LENGTH, sysColJson[i], "name");
-            typeType type = Ctx::getJsonFieldU16(name, sysColJson[i], "type");
-            uint64_t length = Ctx::getJsonFieldU64(name, sysColJson[i], "length");
-            int64_t precision = Ctx::getJsonFieldI64(name, sysColJson[i], "precision");
-            int64_t scale = Ctx::getJsonFieldI64(name, sysColJson[i], "scale");
-            uint64_t charsetForm = Ctx::getJsonFieldU64(name, sysColJson[i], "charset-form");
-            uint64_t charsetId = Ctx::getJsonFieldU64(name, sysColJson[i], "charset-id");
-            int64_t null_ = Ctx::getJsonFieldI64(name, sysColJson[i], "null");
-            const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(name, sysColJson[i], "property");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysColJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysColJson[i], "obj");
+            typeCol col = Ctx::getJsonFieldI16(fileName, sysColJson[i], "col");
+            typeCol segCol = Ctx::getJsonFieldI16(fileName, sysColJson[i], "seg-col");
+            typeCol intCol = Ctx::getJsonFieldI16(fileName, sysColJson[i], "int-col");
+            const char* name_ = Ctx::getJsonFieldS(fileName, SYS_COL_NAME_LENGTH, sysColJson[i], "name");
+            typeType type = Ctx::getJsonFieldU16(fileName, sysColJson[i], "type");
+            uint64_t length = Ctx::getJsonFieldU64(fileName, sysColJson[i], "length");
+            int64_t precision = Ctx::getJsonFieldI64(fileName, sysColJson[i], "precision");
+            int64_t scale = Ctx::getJsonFieldI64(fileName, sysColJson[i], "scale");
+            uint64_t charsetForm = Ctx::getJsonFieldU64(fileName, sysColJson[i], "charset-form");
+            uint64_t charsetId = Ctx::getJsonFieldU64(fileName, sysColJson[i], "charset-id");
+            int64_t null_ = Ctx::getJsonFieldI64(fileName, sysColJson[i], "null");
+            const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(fileName, sysColJson[i], "property");
             if (propertyJson.Size() != 2)
-                throw DataException(20005, "file: " + name + " - property should be an array with 2 elements");
-            uint64_t property1 = Ctx::getJsonFieldU64(name, propertyJson, "property", 0);
-            uint64_t property2 = Ctx::getJsonFieldU64(name, propertyJson, "property", 1);
+                throw DataException(20005, "file: " + fileName + " - property should be an array with 2 elements");
+            uint64_t property1 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 0);
+            uint64_t property2 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 1);
 
             metadata->schema->dictSysColAdd(rowId, obj, col, segCol, intCol, name_, type, length, precision, scale, charsetForm, charsetId,
                                             null_ != 0, property1, property2);
         }
     }
 
-    void SerializerJson::deserializeSysDeferredStg(Metadata* metadata, const std::string& name, const rapidjson::Value& sysDeferredStgJson) {
+    void SerializerJson::deserializeSysDeferredStg(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysDeferredStgJson) {
         for (rapidjson::SizeType i = 0; i < sysDeferredStgJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysDeferredStgJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysDeferredStgJson[i], "obj");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysDeferredStgJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysDeferredStgJson[i], "obj");
 
-            const rapidjson::Value& flagsStgJson = Ctx::getJsonFieldA(name, sysDeferredStgJson[i], "flags-stg");
+            const rapidjson::Value& flagsStgJson = Ctx::getJsonFieldA(fileName, sysDeferredStgJson[i], "flags-stg");
             if (flagsStgJson.Size() != 2)
-                throw DataException(20005, "file: " + name + " - flags-stg should be an array with 2 elements");
-            uint64_t flagsStg1 = Ctx::getJsonFieldU64(name, flagsStgJson, "flags-stg", 0);
-            uint64_t flagsStg2 = Ctx::getJsonFieldU64(name, flagsStgJson, "flags-stg", 1);
+                throw DataException(20005, "file: " + fileName + " - flags-stg should be an array with 2 elements");
+            uint64_t flagsStg1 = Ctx::getJsonFieldU64(fileName, flagsStgJson, "flags-stg", 0);
+            uint64_t flagsStg2 = Ctx::getJsonFieldU64(fileName, flagsStgJson, "flags-stg", 1);
 
             metadata->schema->dictSysDeferredStgAdd(rowId, obj, flagsStg1, flagsStg2);
         }
     }
 
-    void SerializerJson::deserializeSysECol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysEColJson) {
+    void SerializerJson::deserializeSysECol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysEColJson) {
         for (rapidjson::SizeType i = 0; i < sysEColJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysEColJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysEColJson[i], "tab-obj");
-            typeCol colNum = Ctx::getJsonFieldI16(name, sysEColJson[i], "col-num");
-            typeCol guardId = Ctx::getJsonFieldI16(name, sysEColJson[i], "guard-id");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysEColJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysEColJson[i], "tab-obj");
+            typeCol colNum = Ctx::getJsonFieldI16(fileName, sysEColJson[i], "col-num");
+            typeCol guardId = Ctx::getJsonFieldI16(fileName, sysEColJson[i], "guard-id");
 
             metadata->schema->dictSysEColAdd(rowId, obj, colNum, guardId);
         }
     }
 
-    void SerializerJson::deserializeSysLob(Metadata* metadata, const std::string& name, const rapidjson::Value& sysLobJson) {
+    void SerializerJson::deserializeSysLob(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobJson) {
         for (rapidjson::SizeType i = 0; i < sysLobJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysLobJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysLobJson[i], "obj");
-            typeCol col = Ctx::getJsonFieldI16(name, sysLobJson[i], "col");
-            typeCol intCol = Ctx::getJsonFieldI16(name, sysLobJson[i], "int-col");
-            typeObj lObj = Ctx::getJsonFieldU32(name, sysLobJson[i], "l-obj");
-            uint32_t ts = Ctx::getJsonFieldU32(name, sysLobJson[i], "ts");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysLobJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysLobJson[i], "obj");
+            typeCol col = Ctx::getJsonFieldI16(fileName, sysLobJson[i], "col");
+            typeCol intCol = Ctx::getJsonFieldI16(fileName, sysLobJson[i], "int-col");
+            typeObj lObj = Ctx::getJsonFieldU32(fileName, sysLobJson[i], "l-obj");
+            uint32_t ts = Ctx::getJsonFieldU32(fileName, sysLobJson[i], "ts");
 
             metadata->schema->dictSysLobAdd(rowId, obj, col, intCol, lObj, ts);
         }
     }
 
-    void SerializerJson::deserializeSysLobCompPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysLobCompPartJson) {
+    void SerializerJson::deserializeSysLobCompPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobCompPartJson) {
         for (rapidjson::SizeType i = 0; i < sysLobCompPartJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysLobCompPartJson[i], "row-id");
-            typeObj partObj = Ctx::getJsonFieldU32(name, sysLobCompPartJson[i], "part-obj");
-            typeObj lObj = Ctx::getJsonFieldU32(name, sysLobCompPartJson[i], "l-obj");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysLobCompPartJson[i], "row-id");
+            typeObj partObj = Ctx::getJsonFieldU32(fileName, sysLobCompPartJson[i], "part-obj");
+            typeObj lObj = Ctx::getJsonFieldU32(fileName, sysLobCompPartJson[i], "l-obj");
 
             metadata->schema->dictSysLobCompPartAdd(rowId, partObj, lObj);
         }
     }
 
-    void SerializerJson::deserializeSysLobFrag(Metadata* metadata, const std::string& name, const rapidjson::Value& sysLobFragJson) {
+    void SerializerJson::deserializeSysLobFrag(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobFragJson) {
         for (rapidjson::SizeType i = 0; i < sysLobFragJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysLobFragJson[i], "row-id");
-            typeObj fragObj = Ctx::getJsonFieldU32(name, sysLobFragJson[i], "frag-obj");
-            typeObj parentObj = Ctx::getJsonFieldU32(name, sysLobFragJson[i], "parent-obj");
-            uint32_t ts = Ctx::getJsonFieldU32(name, sysLobFragJson[i], "ts");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysLobFragJson[i], "row-id");
+            typeObj fragObj = Ctx::getJsonFieldU32(fileName, sysLobFragJson[i], "frag-obj");
+            typeObj parentObj = Ctx::getJsonFieldU32(fileName, sysLobFragJson[i], "parent-obj");
+            uint32_t ts = Ctx::getJsonFieldU32(fileName, sysLobFragJson[i], "ts");
 
             metadata->schema->dictSysLobFragAdd(rowId, fragObj, parentObj, ts);
         }
     }
 
-    void SerializerJson::deserializeSysObj(Metadata* metadata, const std::string& name, const rapidjson::Value& sysObjJson) {
+    void SerializerJson::deserializeSysObj(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysObjJson) {
         for (rapidjson::SizeType i = 0; i < sysObjJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysObjJson[i], "row-id");
-            typeUser owner = Ctx::getJsonFieldU32(name, sysObjJson[i], "owner");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysObjJson[i], "obj");
-            typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysObjJson[i], "data-obj");
-            typeType type = Ctx::getJsonFieldU16(name, sysObjJson[i], "type");
-            const char* name_ = Ctx::getJsonFieldS(name, SYS_OBJ_NAME_LENGTH, sysObjJson[i], "name");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysObjJson[i], "row-id");
+            typeUser owner = Ctx::getJsonFieldU32(fileName, sysObjJson[i], "owner");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysObjJson[i], "obj");
+            typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysObjJson[i], "data-obj");
+            typeType type = Ctx::getJsonFieldU16(fileName, sysObjJson[i], "type");
+            const char* name_ = Ctx::getJsonFieldS(fileName, SYS_OBJ_NAME_LENGTH, sysObjJson[i], "name");
 
-            const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysObjJson[i], "flags");
+            const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(fileName, sysObjJson[i], "flags");
             if (flagsJson.Size() != 2)
-                throw DataException(20005, "file: " + name + " - flags should be an array with 2 elements");
-            uint64_t flags1 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 0);
-            uint64_t flags2 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 1);
-            uint64_t single = Ctx::getJsonFieldU64(name, sysObjJson[i], "single");
+                throw DataException(20005, "file: " + fileName + " - flags should be an array with 2 elements");
+            uint64_t flags1 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 0);
+            uint64_t flags2 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 1);
+            uint64_t single = Ctx::getJsonFieldU64(fileName, sysObjJson[i], "single");
 
             metadata->schema->dictSysObjAdd(rowId, owner, obj, dataObj, type, name_, flags1, flags2, single != 0u);
         }
     }
 
-    void SerializerJson::deserializeSysTab(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabJson) {
+    void SerializerJson::deserializeSysTab(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabJson) {
         for (rapidjson::SizeType i = 0; i < sysTabJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysTabJson[i], "obj");
-            typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysTabJson[i], "data-obj");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysTabJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysTabJson[i], "obj");
+            typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysTabJson[i], "data-obj");
             typeTs ts = 0;
             if (sysTabJson[i].HasMember("ts"))
-                ts = Ctx::getJsonFieldU32(name, sysTabJson[i], "ts");
-            // typeTs ts = Ctx::getJsonFieldU32(name, sysTabJson[i], "ts");
-            typeCol cluCols = Ctx::getJsonFieldI16(name, sysTabJson[i], "clu-cols");
+                ts = Ctx::getJsonFieldU32(fileName, sysTabJson[i], "ts");
+            // typeTs ts = Ctx::getJsonFieldU32(fileName, sysTabJson[i], "ts");
+            typeCol cluCols = Ctx::getJsonFieldI16(fileName, sysTabJson[i], "clu-cols");
 
-            const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysTabJson[i], "flags");
+            const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(fileName, sysTabJson[i], "flags");
             if (flagsJson.Size() != 2)
-                throw DataException(20005, "file: " + name + " - flags should be an array with 2 elements");
-            uint64_t flags1 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 0);
-            uint64_t flags2 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 1);
+                throw DataException(20005, "file: " + fileName + " - flags should be an array with 2 elements");
+            uint64_t flags1 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 0);
+            uint64_t flags2 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 1);
 
-            const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(name, sysTabJson[i], "property");
+            const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(fileName, sysTabJson[i], "property");
             if (propertyJson.Size() != 2)
-                throw DataException(20005, "file: " + name + " - property should be an array with 2 elements");
-            uint64_t property1 = Ctx::getJsonFieldU64(name, propertyJson, "property", 0);
-            uint64_t property2 = Ctx::getJsonFieldU64(name, propertyJson, "property", 1);
+                throw DataException(20005, "file: " + fileName + " - property should be an array with 2 elements");
+            uint64_t property1 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 0);
+            uint64_t property2 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 1);
 
             metadata->schema->dictSysTabAdd(rowId, obj, dataObj, ts, cluCols, flags1, flags2, property1, property2);
         }
     }
 
-    void SerializerJson::deserializeSysTabComPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabComPartJson) {
+    void SerializerJson::deserializeSysTabComPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabComPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabComPartJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabComPartJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysTabComPartJson[i], "obj");
-            typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysTabComPartJson[i], "data-obj");
-            typeObj bo = Ctx::getJsonFieldU32(name, sysTabComPartJson[i], "bo");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysTabComPartJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysTabComPartJson[i], "obj");
+            typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysTabComPartJson[i], "data-obj");
+            typeObj bo = Ctx::getJsonFieldU32(fileName, sysTabComPartJson[i], "bo");
 
             metadata->schema->dictSysTabComPartAdd(rowId, obj, dataObj, bo);
         }
     }
 
-    void SerializerJson::deserializeSysTabPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabPartJson) {
+    void SerializerJson::deserializeSysTabPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabPartJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabPartJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysTabPartJson[i], "obj");
-            typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysTabPartJson[i], "data-obj");
-            typeObj bo = Ctx::getJsonFieldU32(name, sysTabPartJson[i], "bo");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysTabPartJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysTabPartJson[i], "obj");
+            typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysTabPartJson[i], "data-obj");
+            typeObj bo = Ctx::getJsonFieldU32(fileName, sysTabPartJson[i], "bo");
 
             metadata->schema->dictSysTabPartAdd(rowId, obj, dataObj, bo);
         }
     }
 
-    void SerializerJson::deserializeSysTabSubPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabSubPartJson) {
+    void SerializerJson::deserializeSysTabSubPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabSubPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabSubPartJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabSubPartJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(name, sysTabSubPartJson[i], "obj");
-            typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysTabSubPartJson[i], "data-obj");
-            typeObj pObj = Ctx::getJsonFieldU32(name, sysTabSubPartJson[i], "p-obj");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysTabSubPartJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(fileName, sysTabSubPartJson[i], "obj");
+            typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysTabSubPartJson[i], "data-obj");
+            typeObj pObj = Ctx::getJsonFieldU32(fileName, sysTabSubPartJson[i], "p-obj");
 
             metadata->schema->dictSysTabSubPartAdd(rowId, obj, dataObj, pObj);
         }
     }
 
-    void SerializerJson::deserializeSysTs(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTsJson) {
+    void SerializerJson::deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTsJson) {
         for (rapidjson::SizeType i = 0; i < sysTsJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTsJson[i], "row-id");
-            typeTs ts = Ctx::getJsonFieldU32(name, sysTsJson[i], "ts");
-            const char* name_ = Ctx::getJsonFieldS(name, SYS_TS_NAME_LENGTH, sysTsJson[i], "name");
-            uint32_t blockSize = Ctx::getJsonFieldU32(name, sysTsJson[i], "block-size");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysTsJson[i], "row-id");
+            typeTs ts = Ctx::getJsonFieldU32(fileName, sysTsJson[i], "ts");
+            const char* name_ = Ctx::getJsonFieldS(fileName, SYS_TS_NAME_LENGTH, sysTsJson[i], "name");
+            uint32_t blockSize = Ctx::getJsonFieldU32(fileName, sysTsJson[i], "block-size");
 
             metadata->schema->dictSysTsAdd(rowId, ts, name_, blockSize);
         }
     }
 
-    void SerializerJson::deserializeSysUser(Metadata* metadata, const std::string& name, const rapidjson::Value& sysUserJson) {
+    void SerializerJson::deserializeSysUser(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson) {
         for (rapidjson::SizeType i = 0; i < sysUserJson.Size(); ++i) {
-            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysUserJson[i], "row-id");
-            typeUser user = Ctx::getJsonFieldU32(name, sysUserJson[i], "user");
-            const char* name_ = Ctx::getJsonFieldS(name, SYS_USER_NAME_LENGTH, sysUserJson[i], "name");
+            const char* rowId = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, sysUserJson[i], "row-id");
+            typeUser user = Ctx::getJsonFieldU32(fileName, sysUserJson[i], "user");
+            const char* name_ = Ctx::getJsonFieldS(fileName, SYS_USER_NAME_LENGTH, sysUserJson[i], "name");
 
-            const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(name, sysUserJson[i], "spare1");
+            const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(fileName, sysUserJson[i], "spare1");
             if (spare1Json.Size() != 2)
-                throw DataException(20005, "file: " + name + " - spare1 should be an array with 2 elements");
-            uint64_t spare11 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 0);
-            uint64_t spare12 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 1);
-            uint64_t single = Ctx::getJsonFieldU64(name, sysUserJson[i], "single");
+                throw DataException(20005, "file: " + fileName + " - spare1 should be an array with 2 elements");
+            uint64_t spare11 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 0);
+            uint64_t spare12 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 1);
+            uint64_t single = Ctx::getJsonFieldU64(fileName, sysUserJson[i], "single");
 
             metadata->schema->dictSysUserAdd(rowId, user, name_, spare11, spare12, single != 0u);
         }

@@ -624,6 +624,8 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::updateResetlogs() {
+        std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
+
         for (OracleIncarnation* oi : metadata->oracleIncarnations) {
             if (oi->resetlogs == metadata->resetlogs) {
                 metadata->oracleIncarnationCurrent = oi;
@@ -712,8 +714,10 @@ namespace OpenLogReplicator {
                                   std::to_string(parser->firstScn));
 
                 // When no metadata exists start processing from first file
-                if (metadata->sequence == 0)
+                if (metadata->sequence == 0) {
+                    std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
                     metadata->sequence = parser->sequence;
+                }
 
                 // Skip older archived redo logs
                 if (parser->sequence < metadata->sequence) {
@@ -857,15 +861,14 @@ namespace OpenLogReplicator {
             logsProcessed = true;
 
             ret = parser->parse();
-            metadata->firstScn = parser->firstScn;
-            metadata->nextScn = parser->nextScn;
+            metadata->setFirstNextScn(parser->firstScn, parser->nextScn);
 
             if (ctx->softShutdown)
                 break;
 
             if (ret == REDO_FINISHED) {
                 // verifySchema(metadata->nextScn);
-                ++metadata->sequence;
+                metadata->setNextSequence();
             } else if (ret == REDO_STOPPED || ret == REDO_OK) {
                 if (ctx->trace & TRACE_REDO)
                     ctx->logTrace(TRACE_REDO, "updating redo log files, return code: " + std::to_string(ret) + ", sequence: " +

@@ -178,7 +178,8 @@ namespace OpenLogReplicator {
         Schema(Ctx* newCtx, Locales* newLocales);
         virtual ~Schema();
 
-        void purge();
+        void purgeMetadata();
+        void purgeDicts();
         [[nodiscard]] bool compare(Schema* otherSchema, std::string& msgs);
         void dictSysCColAdd(const char* rowIdStr, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12);
         void dictSysCDefAdd(const char* rowIdStr, typeCon con, typeObj obj, typeType type);

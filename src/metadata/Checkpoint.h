@@ -41,9 +41,12 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         std::mutex mtx;
         std::condition_variable condLoop;
+        char* configFileBuffer;
+        std::string configFileName;
+        time_t configFileChange;
 
     public:
-        Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias);
+        Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, const std::string& newConfigFileName, time_t newConfigFileChange);
         virtual ~Checkpoint();
 
         void wakeUp() override;

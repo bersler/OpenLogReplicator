@@ -190,7 +190,8 @@ namespace OpenLogReplicator {
         bool opFlush = false;
         deallocTc = nullptr;
         uint64_t maxMessageMb = builder->getMaxMessageMb();
-        std::unique_lock<std::mutex> lck(metadata->mtx, std::defer_lock);
+        std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+        std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema, std::defer_lock);
 
         if (opCodes == 0 || rollback)
             return;
@@ -198,7 +199,7 @@ namespace OpenLogReplicator {
             metadata->ctx->logTrace(TRACE_TRANSACTION, toString());
 
         if (system) {
-            lck.lock();
+            lckSchema.lock();
 
             if (builder->systemTransaction != nullptr)
                 throw RedoLogException(50056, "system transaction already active");
@@ -558,7 +559,7 @@ namespace OpenLogReplicator {
             builder->systemTransaction = nullptr;
 
             // Unlock schema
-            lck.unlock();
+            lckSchema.unlock();
         }
         builder->processCommit();
     }

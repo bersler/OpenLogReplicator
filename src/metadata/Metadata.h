@@ -66,13 +66,14 @@ namespace OpenLogReplicator {
         State* stateDisk;
         Serializer* serializer;
         std::atomic<uint64_t> status;
-        std::mutex mtx;
+
         // Startup parameters
         std::string database;
         typeScn startScn;
         typeSeq startSequence;
         std::string startTime;
         uint64_t startTimeRel;
+
         // Database parameters
         bool onlineData;
         bool suppLogDbPrimary;
@@ -92,38 +93,46 @@ namespace OpenLogReplicator {
         std::string nlsNcharCharacterSet;
         uint64_t defaultCharacterMapId;
         uint64_t defaultCharacterNcharMapId;
-        // Read position
-        typeSeq sequence;
-        uint64_t offset;
-        typeResetlogs resetlogs;
-        typeActivation activation;
-        uint64_t checkpoints;
         typeScn firstDataScn;
-        typeScn firstSchemaScn;
-        typeScn checkpointScn;
+        typeScn     firstSchemaScn;
+        std::set<RedoLog*> redoLogs;
+
+        // Transaction schema consistency mutex
+        std::mutex mtxTransaction;
+
+        // Checkpoint information
+        std::mutex mtxCheckpoint;
+        typeResetlogs resetlogs;
+        std::set<OracleIncarnation*> oracleIncarnations;
+        OracleIncarnation* oracleIncarnationCurrent;
+        typeActivation activation;
+        typeSeq sequence;
+        typeSeq lastSequence;
+        uint64_t offset;
         typeScn firstScn;
         typeScn nextScn;
+        uint64_t checkpoints;
+        typeScn checkpointScn;
+        typeScn lastCheckpointScn;
         typeTime checkpointTime;
-        typeSeq checkpointSequence;
+        typeTime lastCheckpointTime;
         uint64_t checkpointOffset;
+        uint64_t lastCheckpointOffset;
         uint64_t checkpointBytes;
+        uint64_t lastCheckpointBytes;
         typeSeq minSequence;
         uint64_t minOffset;
         typeXid minXid;
         uint64_t schemaInterval;
-        typeScn lastCheckpointScn;
-        typeSeq lastSequence;
-        uint64_t lastCheckpointOffset;
-        typeTime lastCheckpointTime;
-        uint64_t lastCheckpointBytes;
-        // Schema
-        std::vector<SchemaElement*> schemaElements;
-        std::set<std::string> users;
-        std::set<RedoLog*> redoLogs;
-        std::set<OracleIncarnation*> oracleIncarnations;
-        OracleIncarnation* oracleIncarnationCurrent;
         std::set<typeScn> checkpointScnList;
         std::unordered_map<typeScn, bool> checkpointSchemaMap;
+
+        std::vector<SchemaElement*> newSchemaElements;
+
+        // Schema information
+        std::mutex mtxSchema;
+        std::vector<SchemaElement*> schemaElements;
+        std::set<std::string> users;
 
         Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
                  const char* newStartTime, uint64_t newStartTimeRel);
@@ -134,6 +143,8 @@ namespace OpenLogReplicator {
         void setSeqOffset(typeSeq newSequence, uint64_t newOffset);
         void setResetlogs(typeResetlogs newResetlogs);
         void setActivation(typeActivation newActivation);
+        void setFirstNextScn(typeScn newFirstScn, typeScn newNextScn);
+        void setNextSequence();
         void initializeDisk(const char* path);
         [[nodiscard]] bool stateRead(const std::string& name, uint64_t maxSize, std::string& in);
         [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in);
@@ -141,6 +152,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] bool stateDrop(const std::string& name);
         SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
         void resetElements();
+        void commitElements();
 
         void waitForWriter();
         void waitForReplicator();

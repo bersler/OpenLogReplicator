@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.2.0
-:revdate: 2022-05-31
+:revnumber: 1.2.1
+:revdate: 2022-06-29
 :imagesdir: ./images
 :toc: preamble
 
@@ -481,12 +481,12 @@ The file is not a valid archived redo log file.
 Verify if the file exists and has the correct permissions.
 Verify if the file is not corrupted and contains correct JSON content.
 
-==== code 20007: "file: <file name> - database schema name '<owner>' is missing in schema file"
+==== code 20007: "file: <file name> - <schema> is [missing|redundant]"
 
-After starting of replication and collecting schema file, a new owner has been added to the configuration file OpenLogReplicator.json.
-For this user, there is no schema collected.
-If the new tables of the new user are supposed to be replicated -- recreate schema files.
-Delete old schema files and force creation of new schema files.
+After starting of replication and collecting schema file, OpenLogReplicator monitors all tables in the database which match defined schema and user mask.
+If replication is stopped, the configuration file should not be altered and new schemas can't be added to the list of replicated tables.
+If such event happens, replication can't start, and the following message is printed.
+This error reports that either a schema is missing or is redundant compared to the main configuration file (OpenLogReplicator.json).
 
 ==== code 20008: "row ID incorrect length: <number>"
 

@@ -347,6 +347,7 @@ namespace OpenLogReplicator {
                 if (!FLAG(REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
                     debugOwner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
                     debugTable = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
+
                     ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
                 }
             }
@@ -372,6 +373,8 @@ namespace OpenLogReplicator {
                                               startSequence, startTime, startTimeRel);
             metadatas.push_back(metadata);
             metadata->resetElements();
+            if (debugOwner != nullptr)
+                metadata->users.insert(std::string(debugOwner));
 
             if (debugOwner != nullptr && debugTable != nullptr)
                 metadata->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
@@ -382,7 +385,8 @@ namespace OpenLogReplicator {
                 metadata->initializeDisk(statePath);
 
             // CHECKPOINT
-            auto checkpoint = new Checkpoint(ctx, metadata, std::string(alias) + "-checkpoint");
+            auto checkpoint = new Checkpoint(ctx, metadata, std::string(alias) + "-checkpoint", configFileName,
+                                             configFileStat.st_mtime);
             checkpoints.push_back(checkpoint);
             ctx->spawnThread(checkpoint);
 
@@ -618,6 +622,9 @@ namespace OpenLogReplicator {
                         const char* table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, 0);
 
+                        if (metadata->users.find(owner) == metadata->users.end())
+                            metadata->users.insert(owner);
+
                         if (tableElementJson.HasMember("key")) {
                             element->keysStr = Ctx::getJsonFieldS(configFileName, JSON_KEY_LENGTH, tableElementJson, "key");
                             std::stringstream keyStream(element->keysStr);
@@ -660,6 +667,7 @@ namespace OpenLogReplicator {
                                                                             "log-archive-format");
             }
 
+            metadata->commitElements();
             replicators.push_back(replicator);
             ctx->spawnThread(replicator);
             replicator = nullptr;

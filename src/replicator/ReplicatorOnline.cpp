@@ -910,8 +910,9 @@ namespace OpenLogReplicator {
 
         std::list<std::string> msgs;
         {
-            std::unique_lock<std::mutex> lck(metadata->mtx);
-            metadata->schema->purge();
+            std::unique_lock<std::mutex> lck(metadata->mtxSchema);
+            metadata->schema->purgeMetadata();
+            metadata->schema->purgeDicts();
             metadata->schema->scn = metadata->firstDataScn;
             metadata->firstSchemaScn = metadata->firstDataScn;
             readSystemDictionariesMetadata(metadata->schema, metadata->firstDataScn);
@@ -1579,14 +1580,13 @@ namespace OpenLogReplicator {
         metadata->schema->buildMaps(owner, table, keys, keysStr, options, msgs, metadata->suppLogDbPrimary,
                                     metadata->suppLogDbAll, metadata->defaultCharacterMapId,
                                     metadata->defaultCharacterNcharMapId);
-
-        if ((options & OPTIONS_SYSTEM_TABLE) == 0 && metadata->users.find(owner) == metadata->users.end())
-            metadata->users.insert(owner);
     }
 
     void ReplicatorOnline::updateOnlineRedoLogData() {
         if (!checkConnection())
             return;
+
+        std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
 
         // Reload incarnation ctx
         typeResetlogs oldResetlogs = metadata->resetlogs;

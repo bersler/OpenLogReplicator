@@ -555,12 +555,17 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+        Transaction *transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
                                                                       true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
 
-        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        OracleTable *table = nullptr;
+        {
+            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        }
+
         if (table == nullptr) {
             if (!FLAG(REDO_FLAGS_SCHEMALESS) && !FLAG(REDO_FLAGS_SHOW_DDL)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
@@ -587,7 +592,12 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionLob(RedoLogRecord* redoLogRecord1) {
-        OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
+        OracleLob* lob = nullptr;
+        {
+            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
+        }
+
         if (lob == nullptr) {
             if (ctx->trace & TRACE_LOB)
                 ctx->logTrace(TRACE_LOB, "skip dataobj: " + std::to_string(redoLogRecord1->dataObj) + " xid: " +
@@ -644,7 +654,12 @@ namespace OpenLogReplicator {
             return;
         }
 
-        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        OracleTable* table = nullptr;
+        {
+            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        }
+
         if (table == nullptr) {
             if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
@@ -691,7 +706,12 @@ namespace OpenLogReplicator {
             return;
         }
 
-        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        OracleTable* table = nullptr;
+        {
+            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        }
+
         if (table == nullptr) {
             if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "rls ", redoLogRecord1);
@@ -834,7 +854,12 @@ namespace OpenLogReplicator {
             // Logminer support - KDOCMP
             case 0x0B16:
                 {
-                    OracleTable* table = metadata->schema->checkTableDict(obj);
+                    OracleTable* table = nullptr;
+                    {
+                        std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+                        table = metadata->schema->checkTableDict(obj);
+                    }
+
                     if (table == nullptr) {
                         if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                             transaction->log(ctx, "tbl1", redoLogRecord1);
@@ -910,7 +935,12 @@ namespace OpenLogReplicator {
             throw RedoLogException(50045, "bdba does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                                    std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
 
-        OracleTable* table = metadata->schema->checkTableDict(obj);
+        OracleTable* table = nullptr;
+        {
+            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            table = metadata->schema->checkTableDict(obj);
+        }
+
         if (table == nullptr) {
             if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "rls1", redoLogRecord1);
@@ -982,7 +1012,12 @@ namespace OpenLogReplicator {
             throw RedoLogException(50045, "bdba does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                                    std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
 
-        OracleLob* lob = metadata->schema->checkLobIndexDict(dataObj);
+        OracleLob* lob = nullptr;
+        {
+            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            lob = metadata->schema->checkLobIndexDict(dataObj);
+        }
+
         if (lob == nullptr && redoLogRecord2->opCode != 0x1A02) {
             if (ctx->trace & TRACE_LOB)
                 ctx->logTrace(TRACE_LOB, "skip index dataobj: " + std::to_string(dataObj) + " (" +

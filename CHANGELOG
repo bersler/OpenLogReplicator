@@ -5,6 +5,7 @@
 - fix: checkpoint file is not created when no data is replicated after start
 - fix: offline startup failed to read redo log files
 - fix: DDL operation that rearranges columns is not handled properly
+- enhancement: reload config file for schema update after the file is updated
 
 1.2.0
 - doc: Introduction to OpenLogReplicator
