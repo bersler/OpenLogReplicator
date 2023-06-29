@@ -681,6 +681,37 @@ For partitioned tables, the schema is automatically updated when a new partition
 There is no need for user intervention or program restart.
 In fact, restarting the program would have no impact on the schema because it would not cause a new schema image to be created.
 
+=== Configuration updates
+
+On startup OpenLogReplicator reads the configuration from the configuration file `OpenLogReplicator.json`.
+The configuration file defines which tables are replicated, and which not.
+To minimize the size of the schema, the system tables are only read for the schemas which are replicated.
+
+Once started, the schema file contains list of schemas for which the metadata was gathered.
+
+It is not possible to add new schemas.
+
+But it is possible to change the list of tables that are replicated, as long as the list
+of schemas does not change.
+
+The change can be done offline, while OpenLogReplicator is not running, but also online - when OpenLogReplicator is running.
+To allow online configuration updates, the configuration file is monitored for changes.
+Once the timestamp of the last file modification is changed, the configuration is reloaded.
+
+CAUTION: The configuration changes are not performed in an atomic way.
+If some long-running transactions are partially processed, the processed data in memory does not change.
+This can lead to situations like shown below: a transaction can contain data sets from two different configurations.
+
+.Memory buffers before configuration change
+image:buffers-in-memory1.png[Memory buffers before configuration change,,,]
+
+.Memory buffers after configuration change
+image:buffers-in-memory2.png[Memory buffers after configuration change,,,]
+
+In the example above, the configuration file is changed and the M1 table is added to the list of tables which are replicated.
+This operation does not affect the data that is already processed and present in memory.
+Transaction T2 would only contain in the output the UPDATE operation for M1 table, but would not contain the INSERT operation which happened before the configuration file was changed.
+
 === Offline reader
 
 For cases where there is no physical way to connect the database, OpenLogReplictor offers
