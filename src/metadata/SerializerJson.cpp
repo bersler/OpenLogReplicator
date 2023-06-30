@@ -474,7 +474,7 @@ namespace OpenLogReplicator {
                             metadata->ctx->setBigEndian();
                         metadata->context = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "context");
                         metadata->conId = Ctx::getJsonFieldI16(fileName, document, "con-id");
-                        metadata->conName = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "con-fileName");
+                        metadata->conName = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "con-name");
                         metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
                         metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-block-checksum");
                         if (!metadata->logArchiveFormatCustom)
