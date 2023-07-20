@@ -6,6 +6,7 @@
 - fix: offline startup failed to read redo log files
 - fix: DDL operation that rearranges columns is not handled properly
 - enhancement: reload config file for schema update after the file is updated
+- fix: stacktrace when processing DDL data to protobuf format
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

@@ -230,7 +230,7 @@ namespace OpenLogReplicator {
                     break;
 
                 // Long, not supported
-                case SYS_COL_TYPE_LONG: 
+                case SYS_COL_TYPE_LONG:
                     columnPB->set_type(pb::LONG);
                     break;
 
@@ -437,7 +437,6 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException(50018, "PB delete processing failed, a message is missing");
         } else {
-
             if (table != nullptr)
                 builderBegin(table->obj, 0);
             else
@@ -480,6 +479,11 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
+            if (table != nullptr)
+                builderBegin(table->obj, 0);
+            else
+                builderBegin(0, 0);
+
             createResponse();
             appendHeader(true, true);
 
@@ -548,8 +552,8 @@ namespace OpenLogReplicator {
         lastTime = time_;
         lastScn = scn;
         lastSequence = sequence;
-        createResponse();
         builderBegin(0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
+        createResponse();
         appendHeader(true, true);
 
         redoResponsePB->add_payload();
