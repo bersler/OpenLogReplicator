@@ -1162,8 +1162,8 @@ namespace OpenLogReplicator {
         if (ctx->trace & TRACE_SYSTEM)
             ctx->logTrace(TRACE_SYSTEM, "insert SYS.USER$ (ROWID: " + sysUser->rowId.toString() +
                           ", USER#: " + std::to_string(sysUser->user) +
-                          ", NAME: " + sysUser->name +
-                          ", SPARE1: " + sysUser->spare1.toString() + ")");
+                          ", NAME: '" + sysUser->name +
+                          "', SPARE1: " + sysUser->spare1.toString() + ")");
         sysUserMapRowId[sysUser->rowId] = sysUser;
 
         auto sysUserMapUserIt = sysUserMapUser.find(sysUser->user);
@@ -1556,8 +1556,8 @@ namespace OpenLogReplicator {
         if (ctx->trace & TRACE_SYSTEM)
             ctx->logTrace(TRACE_SYSTEM, "delete SYS.USER$ (ROWID: " + sysUser->rowId.toString() +
                           ", USER#: " + std::to_string(sysUser->user) +
-                          ", NAME: " + sysUser->name +
-                          ", SPARE1: " + sysUser->spare1.toString() + ")");
+                          ", NAME: '" + sysUser->name +
+                          "', SPARE1: " + sysUser->spare1.toString() + ")");
         auto sysUserMapRowIdIt = sysUserMapRowId.find(sysUser->rowId);
         if (sysUserMapRowIdIt == sysUserMapRowId.end())
             return;
