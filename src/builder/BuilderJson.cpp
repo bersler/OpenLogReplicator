@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction + 500000);
+                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
                 } else
                     appendDec(0);
                 break;
@@ -193,7 +193,7 @@ namespace OpenLogReplicator {
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction + 500000);
+                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
                 } else
                     appendDec(0);
                 builderAppend('"');
