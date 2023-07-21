@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2022-06-29
+:revdate: 2023-07-22
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -25,6 +25,9 @@ This document describes the release notes of OpenLogReplicator.
 - fix: offline startup failed to read redo log files
 - fix: DDL operation that rearranges columns is not handled properly
 - enhancement: reload config file for schema update after the file is updated
+- fix: stacktrace when processing DDL data to protobuf format
+- fix: typo in trace message
+- enhancement: added more timestamp formatting options
 
 === Version 1.2.0
 

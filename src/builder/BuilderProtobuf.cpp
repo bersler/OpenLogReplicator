@@ -26,11 +26,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat,
-                                     uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat,
-                                     uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
-                                     uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newCharFormat, newScnFormat,
-                    newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+                                     uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampAll, uint64_t newCharFormat,
+                                     uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
+                                     uint64_t newUnknownType, uint64_t newFlushBuffer) :
+            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampAll, newCharFormat,
+                    newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
             redoResponsePB(nullptr),
             valuePB(nullptr),
             payloadPB(nullptr),
@@ -143,7 +143,7 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::appendHeader(bool first, bool showXid) {
         redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
-        if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
+        if (first || (scnAll & SCN_ALL_PAYLOADS) != 0) {
             if ((scnFormat & SCN_FORMAT_TEXT_HEX) != 0) {
                 char buf[17];
                 numToString(lastScn, buf, 16);
@@ -153,13 +153,42 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
-            if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
-                char iso[21];
-                lastTime.toIso8601(iso);
-                redoResponsePB->set_tms(iso);
-            } else {
-                redoResponsePB->set_tm(lastTime.toTime() * 1000);
+        if (first || (timestampAll & TIMESTAMP_ALL_PAYLOADS) != 0) {
+            std::string str;
+            switch(timestampFormat) {
+                case TIMESTAMP_FORMAT_UNIX_NANO:
+                    redoResponsePB->set_tm(lastTime.toTime() * 1000000000L);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MICRO:
+                    redoResponsePB->set_tm(lastTime.toTime() * 1000000L);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MILLI:
+                    redoResponsePB->set_tm(lastTime.toTime() * 1000L);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX:
+                    redoResponsePB->set_tm(lastTime.toTime());
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
+                    str = std::to_string(lastTime.toTime() * 1000000000L);
+                    redoResponsePB->set_tms(str);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
+                    str = std::to_string(lastTime.toTime() * 1000000L);
+                    redoResponsePB->set_tms(str);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
+                    str = std::to_string(lastTime.toTime() * 1000L);
+                    redoResponsePB->set_tms(str);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_STRING:
+                    str = std::to_string(lastTime.toTime());
+                    redoResponsePB->set_tms(str);
+                    break;
+                case TIMESTAMP_FORMAT_ISO8601:
+                    char iso[21];
+                    lastTime.toIso8601(iso);
+                    redoResponsePB->set_tms(iso);
+                    break;
             }
         }
 

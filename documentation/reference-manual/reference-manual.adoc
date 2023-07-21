@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2022-06-29
+:revdate: 2023-07-22
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -730,26 +730,50 @@ Example output:
 
 |`scn` [[scn]]
 |_number_, min: 0, max: 3, default: 0
-|By default, SCN is present only in a first message (when message = `0`) in scn field.
+|SCN field format.
 
-Number is a sum of:
+Possible values are:
 
-* `0x0001` -– Print SCN values in hexadecimal format (in _“C”_ format – like `0xFF`) in `scns` field.
-Otherwise, the SCN value is stored as a decimal number in `scn` field.
+* `0x0000` -- SCN is stored as a decimal number in `scn` field.
 
-* `0x0002` -- Put SCN field in every message (when a message is set to `0`).
-If this parameter is not used, the `scn`/`scns` field is present just in checkpoint records and begin of transaction records.
+* `0x0001` -– SCN values is stored in a text format in hexadecimal format (in _“C”_ format – like `0xFF`) in `scns` field.
+
+|`scn-all` [[timestamp-all]]
+|_number_, min: 0, max: 1, default: 0
+|Include `scn` field in every payload.
+
+Possible values are:
+
+* `0x0000` -- Put `scn` field only in the first message.
+
+* `0x0001` -- Put `scn` field in every message.
 
 |`timestamp` [[timestamp]]
 |_number_, min: 0, max: 3, default: 0
 |Format of timestamp values.
-By default `tm` field is used and timestamp in Unix Epoch format (example: `"tm": 1679100920000`).
 
-Number is a sum of:
+In the following description the following timerstamp is used as an example: `"2022-05-01 06:00:00.123456789"`.
+Possible values are:
 
-* `0x0001` -- Use _tms_ field name instead and assign string value of timestamp in _ISO-8601_ format (`"tms":"YYYY-MM-DDTHH:MI:SSS"`).
+* `0x0000` -- Unix with nanoseconds -- `"tm": 1651384800123456789`.
+* `0x0001` -- Unix with microseconds precision -- `"tm": 1651384800123457`.
+* `0x0002` -- Unix with milliseconds precision -- `"tm": 1651384800123`.
+* `0x0003` -- Unix with seconds precision -- `"tm": 1651384800`.
+* `0x0004` -- Unix with nanoseconds stored as character -- `"tms": "1651384800123456789"`.
+* `0x0005` -- Unix with microseconds precision stored as character -- `"tms": "1651384800123457"`.
+* `0x0006` -- Unix with milliseconds precision stored as character -- `"tms": "1651384800123"`.
+* `0x0007` -- Unix with seconds precision stored as character -- `"tms": "1651384800"`.
+* `0x0008` -- _ISO-8601_ format stored as character -- `"tms": "2022-05-01 06:00:00.123456789"`.
 
-* `0x0002` -- Put timestamp field in every message (when _message_ field doesn't contain the bit set to `0x0001`).
+|`timestamp-all` [[timestamp-all]]
+|_number_, min: 0, max: 1, default: 0
+|Include `timestamp` field in every payload.
+
+Possible values are:
+
+* `0x0000` -- Put `timestamp` field only in the first message.
+
+* `0x0001` -- Put `timestamp` field in every message.
 
 |`unknown`
 |_number_, min: 0, max: 1, default: 0

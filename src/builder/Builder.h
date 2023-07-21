@@ -88,8 +88,10 @@ namespace OpenLogReplicator {
         uint64_t ridFormat;
         uint64_t xidFormat;
         uint64_t timestampFormat;
+        uint64_t timestampAll;
         uint64_t charFormat;
         uint64_t scnFormat;
+        uint64_t scnAll;
         uint64_t unknownFormat;
         uint64_t schemaFormat;
         uint64_t columnFormat;
@@ -1100,8 +1102,8 @@ namespace OpenLogReplicator {
         BuilderQueue* lastBuilderQueue;
 
         Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
-                uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
+                uint64_t newTimestampFormat, uint64_t newTimestampAll,  uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
+                uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
         virtual ~Builder();
 
         [[nodiscard]] uint64_t builderSize() const;

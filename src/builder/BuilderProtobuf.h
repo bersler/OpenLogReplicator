@@ -148,8 +148,8 @@ namespace OpenLogReplicator {
 
     public:
         BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                        uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
-                        uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
+                        uint64_t newTimestampFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
+                        uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
         ~BuilderProtobuf() override;
 
         void initialize() override;

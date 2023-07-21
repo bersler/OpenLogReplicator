@@ -426,12 +426,20 @@ namespace OpenLogReplicator {
                                                  ", expected: one of {0, 1, 2}");
             }
 
-            uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX;
+            uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX_NANO;
             if (formatJson.HasMember("timestamp")) {
                 timestampFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp");
-                if (timestampFormat > 3)
+                if (timestampFormat > 8)
                     throw ConfigurationException(30001, "bad JSON, invalid 'timestamp' value: " + std::to_string(timestampFormat) +
-                                                 ", expected: one of {0, 1, 2, 3}");
+                                                 ", expected: one of {0, 1, 2, 3, 4, 5, 6, 7, 8}");
+            }
+
+            uint64_t timestampAll = TIMESTAMP_FORMAT_UNIX;
+            if (formatJson.HasMember("timestamp-all")) {
+                timestampAll = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-all");
+                if (timestampAll > 1)
+                    throw ConfigurationException(30001, "bad JSON, invalid 'timestamp-all' value: " + std::to_string(timestampAll) +
+                                                        ", expected: one of {0, 1}");
             }
 
             uint64_t charFormat = CHAR_FORMAT_UTF8;
@@ -445,9 +453,17 @@ namespace OpenLogReplicator {
             uint64_t scnFormat = SCN_FORMAT_NUMERIC;
             if (formatJson.HasMember("scn")) {
                 scnFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "scn");
-                if (scnFormat > 3)
+                if (scnFormat > 1)
                     throw ConfigurationException(30001, "bad JSON, invalid 'scn' value: " + std::to_string(scnFormat) +
-                                                 ", expected: one of {0, 1, 2, 3}");
+                                                 ", expected: one of {0, 1}");
+            }
+
+            uint64_t scnAll = SCN_JUST_BEGIN;
+            if (formatJson.HasMember("scn-all")) {
+                scnAll = Ctx::getJsonFieldU64(configFileName, formatJson, "scn-all");
+                if (scnAll > 1)
+                    throw ConfigurationException(30001, "bad JSON, invalid 'scn-all' value: " + std::to_string(scnAll) +
+                                                 ", expected: one of {0, 1}");
             }
 
             uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION_MARK;
@@ -495,15 +511,15 @@ namespace OpenLogReplicator {
             Builder* builder;
             if (strcmp("json", formatType) == 0) {
                 builder = new BuilderJson(ctx, locales, metadata, messageFormat, ridFormat,
-                                          xidFormat, timestampFormat, charFormat, scnFormat,
-                                          unknownFormat, schemaFormat, columnFormat,
-                                          unknownType, flushBuffer);
+                                          xidFormat, timestampFormat, timestampAll, charFormat,
+                                          scnFormat, scnAll, unknownFormat, schemaFormat,
+                                          columnFormat, unknownType, flushBuffer);
             } else if (strcmp("protobuf", formatType) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
                 builder = new BuilderProtobuf(ctx, locales, metadata, messageFormat, ridFormat,
-                                              xidFormat, timestampFormat, charFormat, scnFormat,
-                                              unknownFormat, schemaFormat, columnFormat,
-                                              unknownType, flushBuffer);
+                                              xidFormat, timestampFormat, timestampAll, charFormat,
+                                              scnFormat, scnAll, unknownFormat, schemaFormat,
+                                              columnFormat, unknownType, flushBuffer);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'format' value: " + std::string(formatType) +
                                              ", expected: not 'protobuf' since the code is not compiled");

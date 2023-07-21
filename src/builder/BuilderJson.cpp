@@ -25,10 +25,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                             uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
-                             uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
-        Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newCharFormat, newScnFormat,
-                newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+                             uint64_t newTimestampFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
+                             uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+        Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampAll, newCharFormat, newScnFormat,
+                newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
                 hasPreviousValue(false),
                 hasPreviousRedo(false),
                 hasPreviousColumn(false) {
@@ -155,44 +155,110 @@ namespace OpenLogReplicator {
         builderAppend(columnName);
         builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
-        if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
-            // 2012-04-23T18:25:43.511Z - ISO 8601 format
-            builderAppend('"');
-            if (epochTime.tm_year > 0) {
-                appendDec(static_cast<uint64_t>(epochTime.tm_year));
-            } else {
-                appendDec(static_cast<uint64_t>(-epochTime.tm_year));
-                builderAppend("BC", sizeof("BC") - 1);
-            }
-            builderAppend('-');
-            appendDec(epochTime.tm_mon, 2);
-            builderAppend('-');
-            appendDec(epochTime.tm_mday, 2);
-            builderAppend('T');
-            appendDec(epochTime.tm_hour, 2);
-            builderAppend(':');
-            appendDec(epochTime.tm_min, 2);
-            builderAppend(':');
-            appendDec(epochTime.tm_sec, 2);
+        switch(timestampFormat) {
+            case TIMESTAMP_FORMAT_UNIX_NANO:
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction + 500000);
+                } else
+                    appendDec(0);
+                break;
+            case TIMESTAMP_FORMAT_UNIX_MICRO:
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
+                } else
+                    appendDec(0);
+                break;
+            case TIMESTAMP_FORMAT_UNIX_MILLI:
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
+                } else
+                    appendDec(0);
+                break;
+            case TIMESTAMP_FORMAT_UNIX:
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
+                } else
+                    appendDec(0);
+                break;
+            case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction + 500000);
+                } else
+                    appendDec(0);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
+                } else
+                    appendDec(0);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
+                } else
+                    appendDec(0);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_FORMAT_UNIX_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
+                } else
+                    appendDec(0);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_FORMAT_ISO8601:
+                // 2012-04-23T18:25:43.511Z - ISO 8601 format
+                builderAppend('"');
+                if (epochTime.tm_year > 0) {
+                    appendDec(static_cast<uint64_t>(epochTime.tm_year));
+                } else {
+                    appendDec(static_cast<uint64_t>(-epochTime.tm_year));
+                    builderAppend("BC", sizeof("BC") - 1);
+                }
+                builderAppend('-');
+                appendDec(epochTime.tm_mon, 2);
+                builderAppend('-');
+                appendDec(epochTime.tm_mday, 2);
+                builderAppend('T');
+                appendDec(epochTime.tm_hour, 2);
+                builderAppend(':');
+                appendDec(epochTime.tm_min, 2);
+                builderAppend(':');
+                appendDec(epochTime.tm_sec, 2);
 
-            if (fraction > 0) {
-                builderAppend('.');
-                appendDec(fraction, 9);
-            }
+                if (fraction > 0) {
+                    builderAppend('.');
+                    appendDec(fraction, 9);
+                }
 
-            if (tz != nullptr) {
-                builderAppend(' ');
-                builderAppend(tz);
-            }
-            builderAppend('"');
-        } else {
-            // Unix epoch format
-            if (epochTime.tm_year >= 1900) {
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) * 1000 + ((fraction + 500000) / 1000000));
-            } else
-                appendDec(0);
+                if (tz != nullptr) {
+                    builderAppend(' ');
+                    builderAppend(tz);
+                }
+                builderAppend('"');
+                break;
         }
     }
 
@@ -215,7 +281,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::appendHeader(bool first, bool showXid) {
-        if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
+        if (first || (scnAll & SCN_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
                 builderAppend(',');
             else
@@ -231,21 +297,56 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
+        if (first || (timestampAll & TIMESTAMP_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
                 builderAppend(',');
             else
                 hasPreviousValue = true;
 
-            if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
-                builderAppend(R"("tms":")", sizeof(R"("tms":")") - 1);
-                char iso[21];
-                lastTime.toIso8601(iso);
-                builderAppend(iso, 20);
-                builderAppend('"');
-            } else {
-                builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
-                appendDec(lastTime.toTime() * 1000);
+            switch(timestampFormat) {
+                case TIMESTAMP_FORMAT_UNIX_NANO:
+                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime() * 1000000000L);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MICRO:
+                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime() * 1000000L);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MILLI:
+                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime() * 1000L);
+                    break;
+                case TIMESTAMP_FORMAT_UNIX:
+                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime());
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
+                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime() * 1000000000L);
+                    builderAppend('"');
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
+                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime() * 1000000L);
+                    builderAppend('"');
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
+                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime() * 1000L);
+                    builderAppend('"');
+                    break;
+                case TIMESTAMP_FORMAT_UNIX_STRING:
+                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    appendDec(lastTime.toTime());
+                    builderAppend('"');
+                    break;
+                case TIMESTAMP_FORMAT_ISO8601:
+                    builderAppend(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    char iso[21];
+                    lastTime.toIso8601(iso);
+                    builderAppend(iso, 20);
+                    builderAppend('"');
+                    break;
             }
         }
 

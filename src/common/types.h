@@ -81,9 +81,18 @@ typedef uint64_t typeUnicode;
 #define MESSAGE_FORMAT_SKIP_BEGIN               4
 #define MESSAGE_FORMAT_SKIP_COMMIT              8
 
-#define TIMESTAMP_FORMAT_UNIX                   0
-#define TIMESTAMP_FORMAT_ISO8601                1
-#define TIMESTAMP_FORMAT_ALL_PAYLOADS           2
+#define TIMESTAMP_FORMAT_UNIX_NANO              0
+#define TIMESTAMP_FORMAT_UNIX_MICRO             1
+#define TIMESTAMP_FORMAT_UNIX_MILLI             2
+#define TIMESTAMP_FORMAT_UNIX                   3
+#define TIMESTAMP_FORMAT_UNIX_NANO_STRING       4
+#define TIMESTAMP_FORMAT_UNIX_MICRO_STRING      5
+#define TIMESTAMP_FORMAT_UNIX_MILLI_STRING      6
+#define TIMESTAMP_FORMAT_UNIX_STRING            7
+#define TIMESTAMP_FORMAT_ISO8601                8
+
+#define TIMESTAMP_JUST_BEGIN                    0
+#define TIMESTAMP_ALL_PAYLOADS                  1
 
 #define CHAR_FORMAT_UTF8                        0
 #define CHAR_FORMAT_NOMAPPING                   1
@@ -91,7 +100,9 @@ typedef uint64_t typeUnicode;
 
 #define SCN_FORMAT_NUMERIC                      0
 #define SCN_FORMAT_TEXT_HEX                     1
-#define SCN_FORMAT_ALL_PAYLOADS                 2
+
+#define SCN_JUST_BEGIN                          0
+#define SCN_ALL_PAYLOADS                        1
 
 #define RID_FORMAT_SKIP                         0
 #define RID_FORMAT_TEXT                         1
