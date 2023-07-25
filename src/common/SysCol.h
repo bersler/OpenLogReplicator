@@ -39,7 +39,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_COL_TYPE_DATE                    12
 #define SYS_COL_TYPE_RAW                     23
 #define SYS_COL_TYPE_LONG_RAW                24
-#define SYS_COL_TYPE_ROWID                   69
 #define SYS_COL_TYPE_CHAR                    96
 #define SYS_COL_TYPE_FLOAT                   100
 #define SYS_COL_TYPE_DOUBLE                  101
@@ -49,7 +48,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_COL_TYPE_TIMESTAMP_WITH_TZ       181
 #define SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH  182
 #define SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND  183
-#define SYS_COL_TYPE_URAWID                  208
+#define SYS_COL_TYPE_UROWID                  208
 #define SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ 231
 
 namespace OpenLogReplicator {

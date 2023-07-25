@@ -131,6 +131,21 @@ namespace OpenLogReplicator {
         builderAppend(valueBuffer, valueLength);
     }
 
+    void BuilderJson::columnRowId(const std::string& columnName, typeRowId rowId) {
+        if (hasPreviousColumn)
+            builderAppend(',');
+        else
+            hasPreviousColumn = true;
+
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":")", sizeof(R"(":")") - 1);
+        char str[19];
+        rowId.toHex(str);
+        builderAppend(str, 18);
+        builderAppend('"');
+    }
+
     void BuilderJson::columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) {
         if (hasPreviousColumn)
             builderAppend(',');
@@ -454,10 +469,6 @@ namespace OpenLogReplicator {
                     builderAppend(R"("long raw")", sizeof(R"("long raw")") - 1);
                     break;
 
-                case SYS_COL_TYPE_ROWID: // Not supported
-                    builderAppend(R"("rowid")", sizeof(R"("rowid")") - 1);
-                    break;
-
                 case SYS_COL_TYPE_CHAR:
                     builderAppend(R"("char","length":)", sizeof(R"("char","length":)") - 1);
                     appendDec(table->columns[column]->length);
@@ -499,8 +510,8 @@ namespace OpenLogReplicator {
                     appendDec(table->columns[column]->length);
                     break;
 
-                case SYS_COL_TYPE_URAWID:
-                    builderAppend(R"("urawid","length":)", sizeof(R"("urawid","length":)") - 1);
+                case SYS_COL_TYPE_UROWID:
+                    builderAppend(R"("urowid","length":)", sizeof(R"("urowid","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 

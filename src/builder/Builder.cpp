@@ -237,6 +237,17 @@ namespace OpenLogReplicator {
                 columnUnknown(column->name, data, length);
             break;
 
+        case SYS_COL_TYPE_UROWID:
+            if (length == 13 && data[0] == 0x01) {
+                typeRowId rowId;
+                rowId.decodeFromHex(data + 1);
+                columnRowId(column->name, rowId);
+
+            } else {
+                columnUnknown(column->name, data, length);
+            }
+            break;
+
         // case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
         case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
             if (length != 9 && length != 13) {

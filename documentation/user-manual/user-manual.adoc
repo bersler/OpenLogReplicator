@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-06-29
+:revdate: 2023-07-26
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-librdkafka: https://github.com/edenhill/librdkafka
@@ -294,7 +294,7 @@ The following fields are present in the column object:
 
 - `"name"` -- name of the column;
 - `"type"` -- type of the column;
-- `"length"` -- length of the column, present for `varchar2`, `raw`, `char`, `timestamp`, `timestamp with time zone`, `interval year to month`, `interval day to second`, `urawid`, `timestamp with local time zone` types;
+- `"length"` -- length of the column, present for `varchar2`, `raw`, `char`, `timestamp`, `timestamp with time zone`, `interval year to month`, `interval day to second`, `urowid`, `timestamp with local time zone` types;
 - `"precision"` -- precision of the column, present for `number` type;
 - `"scale"` -- scale of the column, present for `number` type;
 - `"nullable"` -- `true` if the column is nullable, `false` otherwise;
@@ -519,7 +519,7 @@ List of supported column types (with internal Oracle codes):
 - 181 –- timestamp with time zone;
 - 182 -- interval year to month;
 - 183 -- interval day to second;
-- 208 -- urawid.
+- 208 -- urowid.
 
 If a table contains column types which aren't supported –- `“?”` value is presented in output data.
 

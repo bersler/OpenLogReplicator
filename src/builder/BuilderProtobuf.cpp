@@ -118,6 +118,10 @@ namespace OpenLogReplicator {
         }
     }
 
+    void BuilderProtobuf::columnRowId(const std::string& columnName, typeRowId rowId) {
+
+    }
+
     void BuilderProtobuf::columnRaw(const std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t length __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
@@ -276,10 +280,6 @@ namespace OpenLogReplicator {
                     columnPB->set_type(pb::LONG_RAW);
                     break;
 
-                case SYS_COL_TYPE_ROWID: // Not supported
-                    columnPB->set_type(pb::ROWID);
-                    break;
-
                 case SYS_COL_TYPE_CHAR:
                     columnPB->set_type(pb::CHAR);
                     columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
@@ -321,7 +321,7 @@ namespace OpenLogReplicator {
                     columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
-                case SYS_COL_TYPE_URAWID:
+                case SYS_COL_TYPE_UROWID:
                     columnPB->set_type(pb::UROWID);
                     columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;

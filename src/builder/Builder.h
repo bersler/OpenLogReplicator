@@ -33,6 +33,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RedoLogException.h"
 #include "../common/types.h"
 #include "../common/typeLobId.h"
+#include "../common/typeRowId.h"
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
 #include "../locales/CharacterSet.h"
@@ -1084,6 +1085,7 @@ namespace OpenLogReplicator {
         virtual void columnString(const std::string& columnName) = 0;
         virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) = 0;
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) = 0;
+        virtual void columnRowId(const std::string& columnName, typeRowId rowId) = 0;
         virtual void columnTimestamp(const std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
         virtual void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
                                    uint64_t offset) = 0;

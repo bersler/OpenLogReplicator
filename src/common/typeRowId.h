@@ -46,12 +46,12 @@ namespace OpenLogReplicator {
             if (strlen(rowid) != 18)
                 throw DataException(20008, "row ID incorrect length: " + std::string(rowid));
 
-            dataObj = (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
-                      (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
-                      (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
-                      (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
-                      (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
-                      static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[5])]);
+            dataObj = (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
+                      static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[5])]);
 
             typeAfn afn = (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[6])]) << 12) |
                           (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
@@ -88,6 +88,25 @@ namespace OpenLogReplicator {
             return false;
         }
 
+        void decodeFromHex(const uint8_t* data) {
+            dataObj = (static_cast<typeDataObj>(data[0]) << 24) |
+                      (static_cast<typeDataObj>(data[1]) << 16) |
+                      (static_cast<typeDataObj>(data[2]) << 8) |
+                      (static_cast<typeDataObj>(data[3]));
+
+            slot = (static_cast<typeSlot>(data[4]) << 8) |
+                   (static_cast<typeSlot>(data[5]));
+
+            typeAfn afn = (static_cast<typeAfn>(data[6]) << 8) |
+                          (static_cast<typeAfn>(data[7]));
+
+            dba = (static_cast<typeDataObj>(data[8]) << 24) |
+                  (static_cast<typeDataObj>(data[9]) << 16) |
+                  (static_cast<typeDataObj>(data[10]) << 8) |
+                  (static_cast<typeDataObj>(data[11])) |
+                  (static_cast<typeDba>(afn) << 22);
+        }
+
         bool operator!=(const typeRowId& other) const {
             return (other.dataObj != dataObj) ||
                    (other.dba != dba) ||
@@ -98,6 +117,28 @@ namespace OpenLogReplicator {
             return (other.dataObj == dataObj) &&
                    (other.dba == dba) &&
                    (other.slot == slot);
+        }
+
+        void toHex(char* str) const {
+            str[0] = Ctx::map16[(dba >> 28) & 0x0F];
+            str[1] = Ctx::map16[(dba >> 24) & 0x0F];
+            str[2] = Ctx::map16[(dba >> 20) & 0x0F];
+            str[3] = Ctx::map16[(dba >> 16) & 0x0F];
+            str[4] = Ctx::map16[(dba >> 12) & 0x0F];
+            str[5] = Ctx::map16[(dba >> 8) & 0x0F];
+            str[6] = Ctx::map16[(dba >> 4) & 0x0F];
+            str[7] = Ctx::map16[(dba) & 0x0F];
+            str[8] = '.';
+            str[9] = Ctx::map16[(dataObj >> 12) & 0x0F];
+            str[10] = Ctx::map16[(dataObj >> 8) & 0x0F];
+            str[11] = Ctx::map16[(dataObj >> 4) & 0x0F];
+            str[12] = Ctx::map16[(dataObj) & 0x0F];
+            str[13] = '.';
+            str[14] = Ctx::map16[(slot >> 12) & 0x0F];
+            str[15] = Ctx::map16[(slot >> 8) & 0x0F];
+            str[16] = Ctx::map16[(slot >> 4) & 0x0F];
+            str[17] = Ctx::map16[(slot) & 0x0F];
+            str[18] = 0;
         }
 
         void toString(char* str) const {
