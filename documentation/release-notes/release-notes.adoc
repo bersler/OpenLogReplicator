@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-07-26
+:revdate: 2023-07-30
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -29,6 +29,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: typo in trace message
 - enhancement: added more timestamp formatting options
 - enhancement: added support for UROWID format
+- fix: LOB handing improvement for Oracle 19c
 
 === Version 1.2.0
 

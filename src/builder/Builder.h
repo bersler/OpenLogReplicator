@@ -481,7 +481,7 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_LOB_DATA, dumpLob(data, length));
 
             if (length < 20) {
-                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 1");
                 return false;
             }
 
@@ -506,7 +506,7 @@ namespace OpenLogReplicator {
                     uint32_t pageNoLob = indexMapIt.first;
                     typeDba page = indexMapIt.second;
                     if (pageNo != pageNoLob) {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 2");
                         pageNo = pageNoLob;
                     }
 
@@ -543,12 +543,12 @@ namespace OpenLogReplicator {
             // In-row
             } else {
                 if (length < 23) {
-                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 3");
                     return false;
                 }
                 uint16_t bodyLength = ctx->read16Big(data + 20);
                 if (length != static_cast<uint64_t>(bodyLength + 20)) {
-                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 4");
                     return false;
                 }
                 uint16_t flg2 = ctx->read16Big(data + 22);
@@ -560,7 +560,7 @@ namespace OpenLogReplicator {
                 // In-index
                 if ((flg2 & 0x0400) == 0x0400) {
                     if (length < 36) {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 5");
                         return false;
                     }
                     uint32_t pageCnt = ctx->read32Big(data + 24);
@@ -589,7 +589,8 @@ namespace OpenLogReplicator {
                         typeDba page = 0;
                         if (dataOffset < length) {
                             if (length < dataOffset + 4) {
-                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                             ", location: 6");
                                 return false;
                             }
                             page = ctx->read32Big(data + dataOffset);
@@ -635,12 +636,12 @@ namespace OpenLogReplicator {
                 // In-value
                 } else if ((flg2 & 0x0100) == 0x0100) {
                     if (bodyLength < 16) {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 7");
                         return false;
                     }
 
                     if (length < 34) {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 8");
                         return false;
                     }
                     uint32_t zero1 = ctx->read32Big(data + 24);
@@ -648,7 +649,7 @@ namespace OpenLogReplicator {
                     uint32_t zero2 = ctx->read32Big(data + 30);
 
                     if (zero1 != 0 || zero2 != 0 || chunkLength + 16  != bodyLength) {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 9");
                         return false;
                     }
 
@@ -656,7 +657,8 @@ namespace OpenLogReplicator {
                         // Null value
                     } else {
                         if (length < static_cast<uint64_t>(chunkLength) + 36) {
-                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                         ", location: 10");
                             return false;
                         }
 
@@ -664,14 +666,16 @@ namespace OpenLogReplicator {
                     }
                 } else {
                     if (bodyLength < 10) {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                     ", location: 11");
                         return false;
                     }
                     uint8_t flg3 = data[26];
                     uint8_t flg4 = data[27];
                     if ((flg3 & 0x03) == 0) {
                         if (length < 30) {
-                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                         ", location: 12");
                             return false;
                         }
 
@@ -679,7 +683,8 @@ namespace OpenLogReplicator {
                         dataOffset = 29;
                     } else if ((flg3 & 0x03) == 1) {
                         if (length < 30) {
-                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                         ", location: 13");
                             return false;
                         }
 
@@ -687,7 +692,8 @@ namespace OpenLogReplicator {
                         dataOffset = 30;
                     } else if ((flg3 & 0x03) == 2) {
                         if (length < 32) {
-                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                         ", location: 14");
                             return false;
                         }
 
@@ -695,14 +701,16 @@ namespace OpenLogReplicator {
                         dataOffset = 31;
                     } else if ((flg3 & 0x03) == 3) {
                         if (length < 32) {
-                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                         ", location: 15");
                             return false;
                         }
 
                         totalLobLength = ctx->read32Big(data + 28);
                         dataOffset = 32;
                     } else {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                     ", location: 16");
                         return false;
                     }
 
@@ -711,7 +719,8 @@ namespace OpenLogReplicator {
                     } else if ((flg4 & 0x0F) == 0x01) {
                         dataOffset += 2;
                     } else {
-                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                        ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                     ", location: 17");
                         return false;
                     }
 
@@ -725,7 +734,8 @@ namespace OpenLogReplicator {
                             // Null value
                         } else {
                             if (dataOffset + chunkLength < length) {
-                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                             ", location: 18");
                                 return false;
                             }
 
@@ -753,7 +763,8 @@ namespace OpenLogReplicator {
 
                             for (uint64_t i = 0; i < lobPages; ++i) {
                                 if (dataOffset + 1 >= length) {
-                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                                 ", location: 19");
                                     return false;
                                 }
                                 uint8_t flg5 = data[dataOffset++];
@@ -799,7 +810,8 @@ namespace OpenLogReplicator {
                         // Style 2
                         } else if ((flg3 & 0xF0) == 0x40) {
                             if (dataOffset + 4 != length) {
-                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                             ", location: 20");
                                 return false;
                             }
                             typeDba listPage = ctx->read32Big(data + dataOffset);
@@ -807,7 +819,8 @@ namespace OpenLogReplicator {
                             while (listPage != 0) {
                                 auto listMapIt = lobCtx->listMap.find(listPage);
                                 if (listMapIt == lobCtx->listMap.end()) {
-                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                                 ", location: 21, page: " + std::to_string(listPage) + ", offset: " + std::to_string(dataOffset));
                                     return false;
                                 }
 
@@ -849,14 +862,16 @@ namespace OpenLogReplicator {
                                 }
                             }
                         } else {
-                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                         ", location: 22");
                             return false;
                         }
 
                     // Index
                     } else {
                         if (dataOffset + 1 >= length) {
-                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                            ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                         ", location: 23");
                             return false;
                         }
 
@@ -875,7 +890,8 @@ namespace OpenLogReplicator {
 
                         for (uint64_t i = 0; i < lobPages; ++i) {
                             if (dataOffset + 5 >= length) {
-                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                             ", location: 24");
                                 return false;
                             }
 
@@ -886,19 +902,22 @@ namespace OpenLogReplicator {
                             uint64_t pageCnt = 0;
                             if ((flg5 & 0xF0) == 0x00) {
                                 if (dataOffset >= length) {
-                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                                 ", location: 25");
                                     return false;
                                 }
                                 pageCnt = data[dataOffset++];
                             } else if ((flg5 & 0xF0) == 0x20) {
                                 if (dataOffset + 1 >= length) {
-                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                    ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                                 ", location: 26");
                                     return false;
                                 }
                                 pageCnt = ctx->read16Big(data + dataOffset);
                                 dataOffset += 2;
                             } else {
-                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + " data: " + dumpLob(data, length));
+                                ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) +
+                                             ", location: 27");
                                 return false;
                             }
 

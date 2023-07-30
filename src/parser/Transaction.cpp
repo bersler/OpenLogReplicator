@@ -326,17 +326,15 @@ namespace OpenLogReplicator {
                         }
                         switch (redoLogRecord2->indKeyDataCode) {
                             case KDLI_CODE_LMAP:
-                                lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData,
-                                               redoLogRecord2->indKeyDataLength);
-                                break;
-
-                            case KDLI_CODE_ALMAP:
-                                lobCtx.appendList(metadata->ctx, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData);
-                                break;
-
                             case KDLI_CODE_LOAD_ITREE:
                                 lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData,
                                                redoLogRecord2->indKeyDataLength);
+                                break;
+
+                            case KDLI_CODE_IMAP:
+                            case KDLI_CODE_ALMAP:
+                                lobCtx.appendList(metadata->ctx, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData);
+                                break;
                         }
                         break;
 

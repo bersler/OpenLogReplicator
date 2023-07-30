@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-06-29
+:revdate: 2023-07-30
 :imagesdir: ./images
 :toc: preamble
 
@@ -762,7 +762,7 @@ Might be related to extensive using of dbms_lob package.
 In this case, please try to use direct DML operations for LOB columns instead.
 If the problem persists, please report this issue.
 
-==== code 60003: "incorrect LOB for xid: <xid>> data: <data>"
+==== code 60003: "incorrect LOB for xid: <xid>, data: <data>, location: <number>"
 
 See comment for warning 60002.
 
