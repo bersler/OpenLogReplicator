@@ -661,14 +661,16 @@ _CAUTION:_ It is technically not possible to differentiate if the column was act
 The receiver of the output stream shouldn't make any assumption that the user included a column in the UPDATE operation if it appeared in the output stream and has the same _before_ and _after_ image.
 
 |`db` [[db]]
-|_number_, min: 0, max: 1, default: 0
+|_number_, min: 0, max: 3, default: 0
 |Present database name in payload.
 
-Possible values are:
+Value is a sum of:
 
 * `0x0000` -- Database name is not present.
 
-* `0x0001` -– Database name is present in `db` field in every payload message.
+* `0x0001` -– Database name is present in `db` field in every DML message.
+
+* `0x0002` -– Database name is present in `db` field in every DDL message.
 
 |`flush-buffer`
 |_numeric_, min: 0, default: 1048576
