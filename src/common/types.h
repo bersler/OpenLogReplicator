@@ -74,6 +74,10 @@ typedef uint64_t typeUnicode;
 #define MAX_TRANSACTIONS_LIMIT                  1048576
 #define MAX_RECORDS_IN_LWN                      1048576
 
+#define DB_FORMAT_DEFAULT                       0
+#define DB_FORMAT_ADD_DML                       1
+#define DB_FORMAT_ADD_DDL                       2
+
 #define MESSAGE_FORMAT_DEFAULT                  0
 #define MESSAGE_FORMAT_FULL                     1
 #define MESSAGE_FORMAT_ADD_SEQUENCES            2

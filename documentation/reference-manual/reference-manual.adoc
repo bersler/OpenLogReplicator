@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-01
+:revdate: 2023-08-02
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -210,7 +210,7 @@ If the filter is changed, the schema would not update.
 Startup would fail because the set of users present in checkpoint files would not match the set of users defined in config file.
 The schema would update only when the program is reset, (i.e. the checkpoint files are removed and forced recreation).
 
-|`flags`
+|`flags` [[flags]]
 |_number_, min: 0, max: 65535, default: 0
 |A sum of various flags.
 Flags define various options for the program.
@@ -660,13 +660,23 @@ _CAUTION:_ It is technically not possible to differentiate if the column was act
 `UPDATE X SET A = A` might have the same redo log vector as `UPDATE X SET A = A, B = B` -- in some cases (especially for tables with large schema).
 The receiver of the output stream shouldn't make any assumption that the user included a column in the UPDATE operation if it appeared in the output stream and has the same _before_ and _after_ image.
 
+|`db` [[db]]
+|_number_, min: 0, max: 1, default: 0
+|Present database name in payload.
+
+Possible values are:
+
+* `0x0000` -- Database name is not present.
+
+* `0x0001` -– Database name is present in `db` field in every payload message.
+
 |`flush-buffer`
 |_numeric_, min: 0, default: 1048576
 |Number of bytes after which the output buffer is flushed.
 
 When set to `0` then the buffer is flushed immediately as a new message arrives.
 
-|`message`
+|`message` [[message]]
 |_number_, min: 0, max: 15, default: 0
 |Message format specification.
 
@@ -687,7 +697,7 @@ For JSON only target, the following additional flags are available:
 
 * `0x0008` -- Skip commit message (when using flag `0x0001`).
 
-|`rid`
+|`rid` [[rid]]
 |_number_, min: 0, max: 1, default: 0
 |Add `rid` field for every row in output with the Row ID.
 

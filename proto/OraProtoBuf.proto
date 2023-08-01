@@ -118,7 +118,7 @@ message Payload {
     uint32 seq = 7;
     uint64 offset = 8;
     bool redo = 9;
-    optional uint64 num = 10;
+    uint64 num = 10;
 }
 
 message SchemaRequest {
@@ -152,5 +152,6 @@ message RedoResponse {
         string xid = 6;
         uint64 xidn = 7;
     }
-    repeated Payload payload = 8;
+    string db = 8;
+    repeated Payload payload = 9;
 }

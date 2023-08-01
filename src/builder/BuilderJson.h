@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         void columnTimestamp(const std::string& columnName, struct tm& epochtime, uint64_t fraction) override;
         void columnTimestampTz(const std::string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
-        void appendHeader(bool first, bool showXid);
+        void appendHeader(bool first, bool showDb, bool showXid);
         void appendSchema(OracleTable* table, typeObj obj);
 
         void appendHex(uint64_t value, uint64_t length) {
@@ -217,10 +217,10 @@ namespace OpenLogReplicator {
         void processBeginMessage() override;
 
     public:
-        BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                    uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
-                    uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
-                    uint64_t newFlushBuffer);
+        BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newMessageFormat, uint64_t newRidFormat,
+                    uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat,
+                    uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
+                    uint64_t newUnknownType, uint64_t newFlushBuffer);
 
         void processCommit() override;
         void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) override;

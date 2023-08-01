@@ -22,15 +22,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RuntimeException.h"
 #include "../common/SysCol.h"
 #include "../common/typeRowId.h"
+#include "../metadata/Metadata.h"
 #include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
-    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat,
-                                     uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll,
-                                     uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
-                                     uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll,
-                    newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newMessageFormat,
+                                     uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat,
+                                     uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat,
+                                     uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+            Builder(newCtx, newLocales, newMetadata, newDbFormat, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat,
+                    newTimestampAll, newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType,
+                    newFlushBuffer),
             redoResponsePB(nullptr),
             valuePB(nullptr),
             payloadPB(nullptr),
@@ -148,7 +150,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::appendHeader(bool first, bool showXid) {
+    void BuilderProtobuf::appendHeader(bool first, bool showDb, bool showXid) {
         redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
         if (first || (scnAll & SCN_ALL_PAYLOADS) != 0) {
             if ((scnFormat & SCN_FORMAT_TEXT_HEX) != 0) {
@@ -221,6 +223,9 @@ namespace OpenLogReplicator {
                 redoResponsePB->set_xidn(lastXid.getData());
             }
         }
+
+        if (showDb)
+            redoResponsePB->set_db(metadata->conName);
     }
 
     void BuilderProtobuf::appendSchema(OracleTable* table, typeObj obj) {
@@ -358,7 +363,7 @@ namespace OpenLogReplicator {
         builderBegin(0, 0);
 
         createResponse();
-        appendHeader(true, true);
+        appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             redoResponsePB->add_payload();
@@ -392,7 +397,7 @@ namespace OpenLogReplicator {
                 builderBegin(0, 0);
 
             createResponse();
-            appendHeader(true, true);
+            appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
         }
 
         redoResponsePB->add_payload();
@@ -433,7 +438,7 @@ namespace OpenLogReplicator {
                 builderBegin(0, 0);
 
             createResponse();
-            appendHeader(true, true);
+            appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
         }
 
         redoResponsePB->add_payload();
@@ -475,7 +480,7 @@ namespace OpenLogReplicator {
                 builderBegin(0, 0);
 
             createResponse();
-            appendHeader(true, true);
+            appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
         }
 
         redoResponsePB->add_payload();
@@ -517,7 +522,7 @@ namespace OpenLogReplicator {
                 builderBegin(0, 0);
 
             createResponse();
-            appendHeader(true, true);
+            appendHeader(true, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
 
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
@@ -559,7 +564,7 @@ namespace OpenLogReplicator {
             builderBegin(0, 0);
 
             createResponse();
-            appendHeader(true, true);
+            appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
@@ -586,7 +591,7 @@ namespace OpenLogReplicator {
         lastSequence = sequence;
         builderBegin(0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         createResponse();
-        appendHeader(true, true);
+        appendHeader(true, false, false);
 
         redoResponsePB->add_payload();
         payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);

@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-01
+:revdate: 2023-08-02
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -32,6 +32,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: LOB handing improvement for Oracle 19c
 - enhancement: added timezone field for timestamp with timezone type
 - fix: file writer path handling and file handling fixes
+- enhancement: add database name to payload data
 
 === Version 1.2.0
 

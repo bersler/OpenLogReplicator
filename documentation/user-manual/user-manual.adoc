@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-07-26
+:revdate: 2023-08-02
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-librdkafka: https://github.com/edenhill/librdkafka
@@ -211,58 +211,59 @@ There are 2 formats implemented: JSON and protocol buffer, but the architecture 
 === JSON format
 
 JSON format is the first implemented format with very fast write speed.
-The stream is directly constructed from the redo log data and uses no additional memory.
-It doesn't use dynami memory allocation for constructing output.
+The stream is directly constructed from the redo log data.
+The process of constructing the stream does not use dynamic memory allocation.
 Instead, the json stream is directly constructed and populated while redo log data is parsed.
 This makes the speed of the output very fast; internal tests show that it is about 2.5 times faster than the protocol buffer format, even though the size of the output might be longer.
 
-JSON format has just one element with the following fields:
+==== Response: _scn_val_
 
-==== Field containing _SCN_
-
-SCN related with the element. The type of the field is dependent on the parameter
+The field contains the SCN value associated with the payload data.
 
 The value can be stored in:
 
 - field `scn` and stored as decimal (default);
-- field `scns` and stored as string in hex format "C" styl (example: `"scns":"0x0000008a33ac2263"` -- when xref:../reference-manual/reference-manual.adoc#scn[scn] field has set `0x0002` flag.
+- field `scns` and stored as a string in hex format "C" styl (example: `"scns":"0x0000008a33ac2263"`
 
-==== Field containing _timestamp_
+See:  xref:../reference-manual/reference-manual.adoc#scn[scn] parameter for configuration details.
 
-Time value is related to the moment in time when the transaction has been committed.
-The timestamps of particular DML operations are irrelevant.
-They have no meaning, and might be inaccurate.
-OpenLogReplicator doesn't collect timestamps of DML operations.
-The timestamp of the commit is treated as a timestamp of all DML operations from the transaction.
+==== Response: _tm_val_
 
-The value of the timestamp is stored in:
+The Time field contains the timestamp related to the payload data.
+If the transaction contains multiple DML opertaions, then the timestamps of particular DML operations are possible to distinguish.
+Instead, just the timestamp related to the commmit record is used.
 
-- Field `"tm"` -- contains timestamp stored in Unix format in millisecond (default);
-- Field `"tms"` -- contains timestamp stored in ISO-8601 format as a string -- when xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0001` flag.
-Example: `"tms":"2019-01-01T12:00:00"`.
+The value can be stored in:
 
-When the xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] field has set `0x0002` flag -- the timestamp value is added to every message -- not only to message with a _begin transaction_ record.
+- Field `"tm"` and stored using a number;
+- Field `"tms"` and stored as a string.
 
-==== Field containing _transaction ID (XID)_
+See:  xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] parameter for configuration details.
 
-The transaction ID field is present only in messages which are related to transactions, like DML, begin, commit.
+==== Response: _xid_val_
+
+The field contains the transaction ID associated with the payload data.
 It is not present in checkpoint messages.
 
-The value of the timestamp is stored in:
+The value can be stored in:
 
-- Field `"xid"` -- contains transaction ID stored as hex as a string (default).
+- Field `"xid"` and stored as a string in hex (default).
 An example value would be: `"xid":"0x0009.003.0000568e"`.
 - Field `"xid"` -- like previous but using decimal numbers, for example:
 `"xid":"9.3.22158"`.
-This type is used when the xref:../reference-manual/reference-manual.adoc#xid[xid] field is equal `1`.
-- Field `"xidn"` -- contains transaction ID stored as decimal number, (for example, `"xidn":22158`).
-This type is used when the xref:../reference-manual/reference-manual.adoc#xid[xid] field is equal to `2`.
+- Field `"xidn"` and storead as a decimal number, (for example, `"xidn":22158`).
 
-NOTE: Since the XID is internally a 64-bit number -- all values represent the same transaction ID.
+See: xref:../reference-manual/reference-manual.adoc#xid[xid] parameter for configuration details.
 
-All information realated to scn, timestamp and xid is stored in the `payload` field.
+NOTE: Internally, the transaction ID (XID) is stored using an 64-bit number.
 
-==== Field: _payload.op_
+==== Response: _db_
+
+The `db` field contains database name.
+
+See: xref:../reference-manual/reference-manual.adoc#db[db] parameter for configuration details.
+
+==== Response: _payload.op_
 
 The `op` field contains a string describing the type of the operation.
 The following operation types are supported:
@@ -275,7 +276,7 @@ The following operation types are supported:
 - `"ddl"` -- DDL operation;
 - `"chkpt"` -- checkpoint record.
 
-==== Field _payload.schema_
+==== Response: _payload.schema_
 
 A `schema` field is present only in DML operations and contains an object with the information about schema.
 
@@ -286,7 +287,7 @@ Below are listed the fields of the `schema` object.
 - `"obj"` -- object identifier of the table;
 - `"columns"` -- array of columns (described below).
 
-==== Field _payload.schema.columns_
+==== Response: _payload.schema.columns_
 
 The `schema.columns` field is an array of objects, each object describing one column.
 
@@ -299,23 +300,60 @@ The following fields are present in the column object:
 - `"scale"` -- scale of the column, present for `number` type;
 - `"nullable"` -- `true` if the column is nullable, `false` otherwise;
 
-==== Field _payload.before_
+==== Response: _payload.rid_
+
+The field contains the row identifier (_row ID_, _rid_) of the row.
+
+See: xref:../reference-manual/reference-manual.adoc#rid[rid] parameter for configuration details.
+
+==== Response: _payload.before_
 
 The before field contains the old values of the columns.
 It is present only in update and delete operations.
 The field is an array of objects, each object describing one column.
 
 CAUTION: Only data that is present in the redo log is present in the output.
-For update operations, values may be missing from the list in case the actual value didn't change, depending on the value of the xref:../reference-manual/reference-manual.adoc#column[column] field.
+For update operations, values may be missing from the list in case the actual value didn't change.
 
-==== Field _payload.after_
+See: xref:../reference-manual/reference-manual.adoc#column[column] parameter for configuration details.
+
+==== Response: _payload.after_
 
 The before field contains the new values of the columns.
 It is present only in insert and update operations.
 The field is an array of objects, each object describing one column.
 
 CAUTION: Only data that is present in the redo log is present in the output.
-For update operations, values may be missing from the list in case the actual value didn't change, depending on the value of the xref:../reference-manual/reference-manual.adoc#column[column] field.
+For update operations, values may be missing from the list in case the actual value didn't change.
+
+See: xref:../reference-manual/reference-manual.adoc#column[column] parameter for configuration details.
+
+==== Response: _payload.ddl_
+
+The field contains the text of the DDL statement.
+
+The DDL payload elements are not present by default.
+
+See: xref:../reference-manual/reference-manual.adoc#flags[flags] parameter for configuration details.
+
+==== Response: _payload.seq_
+
+The field is only present for _checkpoint_ messages. It contains information about the sequence number of the redo log file.
+
+==== Response: _payload.offset_
+
+The field is only present for _checkpoint_ messages. It contains information the byte offset of the redo log file associated with the checkpoint record.
+
+==== Response: _payload.redo_
+
+The field is only present for _checkpoint_ messages. It contains value 1 for checkpoint messages which are related to redo log file switch.
+
+==== Response: _payload.num_
+
+The field contains a consecutive number of the payload data.
+
+See: xref:../reference-manual/reference-manual.adoc#message[message] parameter for configuration details.
+
 
 === Protocol buffer format
 

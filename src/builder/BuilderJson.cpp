@@ -21,15 +21,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/OracleTable.h"
 #include "../common/SysCol.h"
 #include "../common/typeRowId.h"
+#include "../metadata/Metadata.h"
 #include "BuilderJson.h"
 
 namespace OpenLogReplicator {
-    BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                             uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
-                             uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
-                             uint64_t newFlushBuffer) :
-        Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll,
-                newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+    BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newMessageFormat, uint64_t newRidFormat,
+                             uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll,
+                             uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
+                             uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+        Builder(newCtx, newLocales, newMetadata, newDbFormat, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat,
+                newTimestampAll, newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
                 hasPreviousValue(false),
                 hasPreviousRedo(false),
                 hasPreviousColumn(false) {
@@ -382,7 +383,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::appendHeader(bool first, bool showXid) {
+    void BuilderJson::appendHeader(bool first, bool showDb, bool showXid) {
         if (first || (scnAll & SCN_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
                 builderAppend(',');
@@ -478,6 +479,17 @@ namespace OpenLogReplicator {
                 builderAppend(R"("xidn":)", sizeof(R"("xidn":)") - 1);
                 appendDec(lastXid.getData());
             }
+        }
+
+        if (showDb) {
+            if (hasPreviousValue)
+                builderAppend(',');
+            else
+                hasPreviousValue = true;
+
+            builderAppend(R"("db":")", sizeof(R"("db":")") - 1);
+            builderAppend(metadata->conName);
+            builderAppend('"');
         }
     }
 
@@ -659,7 +671,7 @@ namespace OpenLogReplicator {
         builderBegin(0, 0);
         builderAppend('{');
         hasPreviousValue = false;
-        appendHeader(true, true);
+        appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
         if (hasPreviousValue)
             builderAppend(',');
@@ -689,7 +701,7 @@ namespace OpenLogReplicator {
             builderAppend('{');
 
             hasPreviousValue = false;
-            appendHeader(false, true);
+            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -720,7 +732,7 @@ namespace OpenLogReplicator {
 
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, true);
+            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -761,7 +773,7 @@ namespace OpenLogReplicator {
 
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, true);
+            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -803,7 +815,7 @@ namespace OpenLogReplicator {
 
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, true);
+            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -844,7 +856,7 @@ namespace OpenLogReplicator {
 
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, true);
+            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -872,7 +884,7 @@ namespace OpenLogReplicator {
         builderBegin(0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         builderAppend('{');
         hasPreviousValue = false;
-        appendHeader(true, false);
+        appendHeader(true, false, false);
 
         if (hasPreviousValue)
             builderAppend(',');

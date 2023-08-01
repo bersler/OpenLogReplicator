@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         void columnTimestamp(const std::string& columnName, struct tm& time_, uint64_t fraction) override;
         void columnTimestampTz(const std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
-        void appendHeader(bool first, bool showXid);
+        void appendHeader(bool first, bool showDb, bool showXid);
         void appendSchema(OracleTable* table, typeObj obj);
 
         void appendAfter(LobCtx* lobCtx, OracleTable* table, uint64_t offset) {
@@ -149,10 +149,10 @@ namespace OpenLogReplicator {
         void processBeginMessage() override;
 
     public:
-        BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                        uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
-                        uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
-                        uint64_t newFlushBuffer);
+        BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newMessageFormat, uint64_t newRidFormat,
+                        uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat,
+                        uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
+                        uint64_t newUnknownType, uint64_t newFlushBuffer);
         ~BuilderProtobuf() override;
 
         void initialize() override;

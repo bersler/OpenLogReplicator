@@ -397,6 +397,14 @@ namespace OpenLogReplicator {
             // FORMAT
             const rapidjson::Value& formatJson = Ctx::getJsonFieldO(configFileName, sourceJson, "format");
 
+            uint64_t dbFormat = DB_FORMAT_DEFAULT;
+            if (formatJson.HasMember("db")) {
+                dbFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "db");
+                if (dbFormat > 3)
+                    throw ConfigurationException(30001, "bad JSON, invalid 'db' value: " + std::to_string(dbFormat) +
+                                                        ", expected: one of {0.. 3}");
+            }
+
             uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
             if (formatJson.HasMember("message")) {
                 messageFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "message");
@@ -518,17 +526,17 @@ namespace OpenLogReplicator {
 
             Builder* builder;
             if (strcmp("json", formatType) == 0) {
-                builder = new BuilderJson(ctx, locales, metadata, messageFormat, ridFormat,
-                                          xidFormat, timestampFormat, timestampTzFormat,
-                                          timestampAll, charFormat, scnFormat, scnAll,
-                                          unknownFormat, schemaFormat, columnFormat,
+                builder = new BuilderJson(ctx, locales, metadata, dbFormat, messageFormat,
+                                          ridFormat, xidFormat, timestampFormat,
+                                          timestampTzFormat, timestampAll, charFormat, scnFormat,
+                                          scnAll, unknownFormat, schemaFormat, columnFormat,
                                           unknownType, flushBuffer);
             } else if (strcmp("protobuf", formatType) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                builder = new BuilderProtobuf(ctx, locales, metadata, messageFormat, ridFormat,
-                                              xidFormat, timestampFormat, timestampTzFormat,
-                                              timestampAll, charFormat, scnFormat, scnAll,
-                                              unknownFormat, schemaFormat,
+                builder = new BuilderProtobuf(ctx, locales, metadata, dbFormat, messageFormat,
+                                              ridFormat, xidFormat, timestampFormat,
+                                              timestampTzFormat, timestampAll, charFormat,
+                                              scnFormat, scnAll, unknownFormat, schemaFormat,
                                               columnFormat, unknownType, flushBuffer);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'format' value: " + std::string(formatType) +
