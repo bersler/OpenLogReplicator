@@ -89,6 +89,7 @@ namespace OpenLogReplicator {
         uint64_t ridFormat;
         uint64_t xidFormat;
         uint64_t timestampFormat;
+        uint64_t timestampTzFormat;
         uint64_t timestampAll;
         uint64_t charFormat;
         uint64_t scnFormat;
@@ -1105,7 +1106,8 @@ namespace OpenLogReplicator {
         virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) = 0;
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) = 0;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) = 0;
-        virtual void columnTimestamp(const std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
+        virtual void columnTimestamp(const std::string& columnName, struct tm &time_, uint64_t fraction) = 0;
+        virtual void columnTimestampTz(const std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
         virtual void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
                                    uint64_t offset) = 0;
         virtual void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
@@ -1123,8 +1125,9 @@ namespace OpenLogReplicator {
         BuilderQueue* lastBuilderQueue;
 
         Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                uint64_t newTimestampFormat, uint64_t newTimestampAll,  uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
-                uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
+                uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll,  uint64_t newCharFormat, uint64_t newScnFormat,
+                uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
+                uint64_t newFlushBuffer);
         virtual ~Builder();
 
         [[nodiscard]] uint64_t builderSize() const;

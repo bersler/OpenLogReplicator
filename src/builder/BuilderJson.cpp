@@ -25,10 +25,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                             uint64_t newTimestampFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
-                             uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
-        Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampAll, newCharFormat, newScnFormat,
-                newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+                             uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
+                             uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
+                             uint64_t newFlushBuffer) :
+        Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll,
+                newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
                 hasPreviousValue(false),
                 hasPreviousRedo(false),
                 hasPreviousColumn(false) {
@@ -160,7 +161,7 @@ namespace OpenLogReplicator {
         builderAppend('"');
     }
 
-    void BuilderJson::columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
+    void BuilderJson::columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -170,7 +171,7 @@ namespace OpenLogReplicator {
         builderAppend(columnName);
         builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
-        switch(timestampFormat) {
+        switch (timestampFormat) {
             case TIMESTAMP_FORMAT_UNIX_NANO:
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
@@ -268,10 +269,96 @@ namespace OpenLogReplicator {
                     appendDec(fraction, 9);
                 }
 
-                if (tz != nullptr) {
-                    builderAppend(' ');
-                    builderAppend(tz);
+                builderAppend('"');
+                break;
+        }
+    }
+
+    void BuilderJson::columnTimestampTz(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
+        if (hasPreviousColumn)
+            builderAppend(',');
+        else
+            hasPreviousColumn = true;
+
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":)", sizeof(R"(":)") - 1);
+
+        switch (timestampTzFormat) {
+            case TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
+                } else
+                    appendDec(0);
+                builderAppend(',');
+                builderAppend(tz);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_TZ_FORMAT_UNIX_MICRO_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
+                } else
+                    appendDec(0);
+                builderAppend(',');
+                builderAppend(tz);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_TZ_FORMAT_UNIX_MILLI_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
+                } else
+                    appendDec(0);
+                builderAppend(',');
+                builderAppend(tz);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_TZ_FORMAT_UNIX_STRING:
+                builderAppend('"');
+                if (epochTime.tm_year >= 1900) {
+                    --epochTime.tm_mon;
+                    epochTime.tm_year -= 1900;
+                    appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
+                } else
+                    appendDec(0);
+                builderAppend('"');
+                break;
+            case TIMESTAMP_TZ_FORMAT_ISO8601:
+                // 2012-04-23T18:25:43.511Z - ISO 8601 format
+                builderAppend('"');
+                if (epochTime.tm_year > 0) {
+                    appendDec(static_cast<uint64_t>(epochTime.tm_year));
+                } else {
+                    appendDec(static_cast<uint64_t>(-epochTime.tm_year));
+                    builderAppend("BC", sizeof("BC") - 1);
                 }
+                builderAppend('-');
+                appendDec(epochTime.tm_mon, 2);
+                builderAppend('-');
+                appendDec(epochTime.tm_mday, 2);
+                builderAppend('T');
+                appendDec(epochTime.tm_hour, 2);
+                builderAppend(':');
+                appendDec(epochTime.tm_min, 2);
+                builderAppend(':');
+                appendDec(epochTime.tm_sec, 2);
+
+                if (fraction > 0) {
+                    builderAppend('.');
+                    appendDec(fraction, 9);
+                }
+
+                builderAppend(' ');
+                builderAppend(tz);
+
                 builderAppend('"');
                 break;
         }
@@ -318,7 +405,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            switch(timestampFormat) {
+            switch (timestampFormat) {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
                     builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
                     appendDec(lastTime.toTime() * 1000000000L);

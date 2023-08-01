@@ -91,6 +91,12 @@ typedef uint64_t typeUnicode;
 #define TIMESTAMP_FORMAT_UNIX_STRING            7
 #define TIMESTAMP_FORMAT_ISO8601                8
 
+#define TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING    0
+#define TIMESTAMP_TZ_FORMAT_UNIX_MICRO_STRING   1
+#define TIMESTAMP_TZ_FORMAT_UNIX_MILLI_STRING   2
+#define TIMESTAMP_TZ_FORMAT_UNIX_STRING         3
+#define TIMESTAMP_TZ_FORMAT_ISO8601             4
+
 #define TIMESTAMP_JUST_BEGIN                    0
 #define TIMESTAMP_ALL_PAYLOADS                  1
 

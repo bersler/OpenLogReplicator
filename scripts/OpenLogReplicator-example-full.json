@@ -23,6 +23,7 @@
         "message": 0,
         "xid": 0,
         "timestamp": 0,
+        "timestamp-tz": 0,
         "timestamp-all": 0,
         "char": 0,
         "scn": 0,

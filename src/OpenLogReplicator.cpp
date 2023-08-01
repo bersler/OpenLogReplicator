@@ -434,7 +434,15 @@ namespace OpenLogReplicator {
                                                  ", expected: one of {0, 1, 2, 3, 4, 5, 6, 7, 8}");
             }
 
-            uint64_t timestampAll = TIMESTAMP_FORMAT_UNIX;
+            uint64_t timestampTzFormat = TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING;
+            if (formatJson.HasMember("timestamp-tz")) {
+                timestampTzFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-tz");
+                if (timestampTzFormat > 4)
+                    throw ConfigurationException(30001, "bad JSON, invalid 'timestamp-tz' value: " + std::to_string(timestampTzFormat) +
+                                                        ", expected: one of {0, 1, 2, 3, 4}");
+            }
+
+            uint64_t timestampAll = TIMESTAMP_JUST_BEGIN;
             if (formatJson.HasMember("timestamp-all")) {
                 timestampAll = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-all");
                 if (timestampAll > 1)
@@ -511,14 +519,16 @@ namespace OpenLogReplicator {
             Builder* builder;
             if (strcmp("json", formatType) == 0) {
                 builder = new BuilderJson(ctx, locales, metadata, messageFormat, ridFormat,
-                                          xidFormat, timestampFormat, timestampAll, charFormat,
-                                          scnFormat, scnAll, unknownFormat, schemaFormat,
-                                          columnFormat, unknownType, flushBuffer);
+                                          xidFormat, timestampFormat, timestampTzFormat,
+                                          timestampAll, charFormat, scnFormat, scnAll,
+                                          unknownFormat, schemaFormat, columnFormat,
+                                          unknownType, flushBuffer);
             } else if (strcmp("protobuf", formatType) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
                 builder = new BuilderProtobuf(ctx, locales, metadata, messageFormat, ridFormat,
-                                              xidFormat, timestampFormat, timestampAll, charFormat,
-                                              scnFormat, scnAll, unknownFormat, schemaFormat,
+                                              xidFormat, timestampFormat, timestampTzFormat,
+                                              timestampAll, charFormat, scnFormat, scnAll,
+                                              unknownFormat, schemaFormat,
                                               columnFormat, unknownType, flushBuffer);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'format' value: " + std::string(formatType) +

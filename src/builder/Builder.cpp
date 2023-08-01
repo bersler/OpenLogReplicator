@@ -29,8 +29,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
 
     Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                     uint64_t newTimestampFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
-                     uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+                     uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
+                     uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
+                     uint64_t newFlushBuffer) :
             ctx(newCtx),
             locales(newLocales),
             metadata(newMetadata),
@@ -39,6 +40,7 @@ namespace OpenLogReplicator {
             ridFormat(newRidFormat),
             xidFormat(newXidFormat),
             timestampFormat(newTimestampFormat),
+            timestampTzFormat(newTimestampTzFormat),
             timestampAll(newTimestampAll),
             charFormat(newCharFormat),
             scnFormat(newScnFormat),
@@ -214,7 +216,7 @@ namespace OpenLogReplicator {
                     epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
                     columnUnknown(column->name, data, length);
                 } else {
-                    columnTimestamp(column->name, epochTime, fraction, nullptr);
+                    columnTimestamp(column->name, epochTime, fraction);
                 }
             }
             break;
@@ -328,7 +330,7 @@ namespace OpenLogReplicator {
                     epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
                     columnUnknown(column->name, data, length);
                 } else {
-                    columnTimestamp(column->name, epochTime, fraction, tz);
+                    columnTimestampTz(column->name, epochTime, fraction, tz);
                 }
             }
             break;

@@ -26,11 +26,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat,
-                                     uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampAll, uint64_t newCharFormat,
-                                     uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
-                                     uint64_t newUnknownType, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampAll, newCharFormat,
-                    newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+                                     uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll,
+                                     uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
+                                     uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll,
+                    newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
             redoResponsePB(nullptr),
             valuePB(nullptr),
             payloadPB(nullptr),
@@ -119,15 +119,18 @@ namespace OpenLogReplicator {
     }
 
     void BuilderProtobuf::columnRowId(const std::string& columnName, typeRowId rowId) {
-
     }
 
     void BuilderProtobuf::columnRaw(const std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t length __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
 
-    void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)),
-            const char* tz __attribute__((unused))) {
+    void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused))) {
+        valuePB->set_name(columnName);
+    }
+
+    void BuilderProtobuf::columnTimestampTz(const std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)),
+                                          const char* tz __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
 
@@ -159,7 +162,7 @@ namespace OpenLogReplicator {
 
         if (first || (timestampAll & TIMESTAMP_ALL_PAYLOADS) != 0) {
             std::string str;
-            switch(timestampFormat) {
+            switch (timestampFormat) {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
                     redoResponsePB->set_tm(lastTime.toTime() * 1000000000L);
                     break;

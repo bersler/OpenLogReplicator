@@ -11,6 +11,7 @@
 - enhancement: added more timestamp formatting options
 - enhancement: added support for UROWID format
 - fix: LOB handing improvement for Oracle 19c
+- enhancement: added timezone field for timestamp with timezone type
 
 1.2.0
 - doc: Introduction to OpenLogReplicator
