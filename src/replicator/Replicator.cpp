@@ -476,7 +476,7 @@ namespace OpenLogReplicator {
 
             struct stat fileStat;
             std::string mappedSubPath(mappedPath + "/" + ent->d_name);
-            if (stat(mappedSubPath.c_str(), &fileStat)) {
+            if (stat(mappedSubPath.c_str(), &fileStat) != 0) {
                 replicator->ctx->warning(60034, "file: " + mappedSubPath + " - stat returned: " + strerror(errno));
                 continue;
             }
@@ -485,7 +485,7 @@ namespace OpenLogReplicator {
                 continue;
 
             // Skip earlier days
-            if (replicator->lastCheckedDay == ent->d_name)
+            if (replicator->lastCheckedDay.length() == 0 && replicator->lastCheckedDay == ent->d_name)
                 continue;
 
             if (replicator->ctx->trace & TRACE_ARCHIVE_LIST)
@@ -525,7 +525,7 @@ namespace OpenLogReplicator {
             }
             closedir(dir2);
 
-            if (newLastCheckedDay.length() == 0 || (newLastCheckedDay == ent->d_name))
+            if (newLastCheckedDay.length() == 0 || (newLastCheckedDay != ent->d_name))
                 newLastCheckedDay = ent->d_name;
         }
         closedir(dir);
@@ -545,7 +545,7 @@ namespace OpenLogReplicator {
                 replicator->ctx->logTrace(TRACE_ARCHIVE_LIST, "checking path: " + mappedPath);
 
             struct stat fileStat;
-            if (stat(mappedPath.c_str(), &fileStat)) {
+            if (stat(mappedPath.c_str(), &fileStat) != 0) {
                 replicator->ctx->warning(60034, "file: " + mappedPath + " - stat returned: " + strerror(errno));
                 continue;
             }

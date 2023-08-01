@@ -31,6 +31,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: added support for UROWID format
 - fix: LOB handing improvement for Oracle 19c
 - enhancement: added timezone field for timestamp with timezone type
+- fix: file writer path handling and file handling fixes
 
 === Version 1.2.0
 

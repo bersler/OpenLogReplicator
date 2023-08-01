@@ -79,53 +79,53 @@ namespace OpenLogReplicator {
             fileNameMask = this->output;
         }
 
-        if ((prefixPos = this->output.find("%i")) != std::string::npos) {
+        if ((prefixPos = fileNameMask.find("%i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             suffixPos = prefixPos + 2;
-        } else if ((prefixPos = this->output.find("%2i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%2i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 2;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%3i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%3i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 3;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%4i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%4i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 4;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%5i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%5i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 5;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%6i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%6i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 6;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%7i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%7i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 7;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%8i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%8i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 8;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%9i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%9i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 9;
             suffixPos = prefixPos + 3;
-        } else if ((prefixPos = this->output.find("%10i")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%10i")) != std::string::npos) {
             mode = WRITER_FILE_MODE_NUM;
             fill = 10;
             suffixPos = prefixPos + 4;
-        } else if ((prefixPos = this->output.find("%t")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%t")) != std::string::npos) {
             mode = WRITER_FILE_MODE_TIMESTAMP;
             suffixPos = prefixPos + 2;
-        } else if ((prefixPos = this->output.find("%s")) != std::string::npos) {
+        } else if ((prefixPos = fileNameMask.find("%s")) != std::string::npos) {
             mode = WRITER_FILE_MODE_SEQUENCE;
             suffixPos = prefixPos + 2;
         } else {
-            if ((prefixPos = this->output.find('%')) != std::string::npos)
+            if ((prefixPos = fileNameMask.find('%')) != std::string::npos)
                 throw ConfigurationException(30005, "invalid value for 'output': " + this->output);
             if (append == 0)
                 throw ConfigurationException(30006, "output file is with no rotation: " + this->output + " - 'append' must be set to 1");
@@ -264,7 +264,7 @@ namespace OpenLogReplicator {
         // File is closed, open it
         if (outputDes == -1) {
             struct stat fileStat;
-            if (stat(fullFileName.c_str(), &fileStat) != 0) {
+            if (stat(fullFileName.c_str(), &fileStat) == 0) {
                 // File already exists, append?
                 if (append == 0)
                     throw RuntimeException(10003, "file: " + fullFileName + " - stat returned: " + strerror(errno));
