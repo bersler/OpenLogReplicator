@@ -119,8 +119,9 @@ namespace OpenLogReplicator {
                     builderAppend("\\f", sizeof("\\f") - 1);
                 } else if (*str == '\b') {
                     builderAppend("\\b", sizeof("\\b") - 1);
-                } else if (*str == 0) {
-                    builderAppend("\\u0000", sizeof("\\u0000") - 1);
+                } else if (*str < 32) {
+                    builderAppend("\\u00", sizeof("\\u00") - 1);
+                    appendDec(*str, 2);
                 } else {
                     if (*str == '"' || *str == '\\' || *str == '/')
                         builderAppend('\\');
