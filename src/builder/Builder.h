@@ -1115,7 +1115,7 @@ namespace OpenLogReplicator {
                                    uint64_t offset) = 0;
         virtual void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
                                    uint64_t offset) = 0;
-        virtual void processDdl(OracleTable* table, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql,
+        virtual void processDdl(OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql,
                                 uint64_t sqlLength) = 0;
         virtual void processBeginMessage() = 0;
 

@@ -14,6 +14,7 @@
 - enhancement: added timezone field for timestamp with timezone type
 - fix: file writer path handling and file handling fixes
 - enhancement: add database name to payload data
+- enhancement: add schema information for ddl events
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

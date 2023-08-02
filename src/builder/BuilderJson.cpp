@@ -22,6 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/SysCol.h"
 #include "../common/typeRowId.h"
 #include "../metadata/Metadata.h"
+#include "../metadata/Schema.h"
 #include "BuilderJson.h"
 
 namespace OpenLogReplicator {
@@ -495,10 +496,27 @@ namespace OpenLogReplicator {
 
     void BuilderJson::appendSchema(OracleTable* table, typeObj obj) {
         if (table == nullptr) {
-            builderAppend(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
-            std::string tableName("OBJ_" + std::to_string(obj));
-            builderAppend(tableName);
-            builderAppend(R"("})");
+            std::string ownerName;
+            std::string tableName;
+            // try to read object name from ongoing uncommitted transaction data
+            if (metadata->schema->checkTableDictUncommitted(obj, ownerName, tableName)) {
+                builderAppend(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
+                builderAppend(ownerName);
+                builderAppend(R"(","table":")", sizeof(R"(","table":")") - 1);
+                builderAppend(tableName);
+                builderAppend('"');
+            } else {
+                builderAppend(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
+                tableName = "OBJ_" + std::to_string(obj);
+                builderAppend(tableName);
+                builderAppend('"');
+            }
+
+            if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
+                builderAppend(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
+                appendDec(obj);
+            }
+            builderAppend('}');
             return;
         }
 
@@ -510,7 +528,7 @@ namespace OpenLogReplicator {
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
             builderAppend(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
-            appendDec(table->obj);
+            appendDec(obj);
         }
 
         if ((schemaFormat & SCHEMA_FORMAT_FULL) != 0) {
@@ -725,11 +743,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
@@ -766,11 +780,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
@@ -808,11 +818,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
@@ -838,7 +844,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDdl(OracleTable* table, typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)),
+    void BuilderJson::processDdl(OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)),
                                  uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
             processBeginMessage();
@@ -849,11 +855,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
@@ -866,9 +868,11 @@ namespace OpenLogReplicator {
             builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        builderAppend(R"({"op":"ddl","sql":")", sizeof(R"({"op":"ddl","sql":")") - 1);
+        builderAppend(R"({"op":"ddl",)", sizeof(R"({"op":"ddl",)") - 1);
+        appendSchema(table, obj);
+        builderAppend(R"(,"sql":")", sizeof(R"(,"sql":")") - 1);
         appendEscape(sql, sqlLength);
-        builderAppend(R"("})", sizeof(R"("})") - 1);
+        builderAppend(R"("},)", sizeof(R"("},)") - 1);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             builderAppend("]}", sizeof("]}") - 1);

@@ -250,6 +250,7 @@ namespace OpenLogReplicator {
 
         void touchTable(typeObj obj);
         [[nodiscard]] OracleTable* checkTableDict(typeObj obj);
+        [[nodiscard]] bool checkTableDictUncommitted(typeObj obj, std::string &owner, std::string &table);
         [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj);
         [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj);
         void dropUnusedMetadata(const std::set<std::string>& users, std::list<std::string>& msgs);

@@ -33,6 +33,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: added timezone field for timestamp with timezone type
 - fix: file writer path handling and file handling fixes
 - enhancement: add database name to payload data
+- enhancement: add schema information for ddl events
 
 === Version 1.2.0
 

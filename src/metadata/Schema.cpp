@@ -1716,6 +1716,22 @@ namespace OpenLogReplicator {
         return nullptr;
     }
 
+    bool Schema::checkTableDictUncommitted(typeObj obj, std::string &owner, std::string &table) {
+        auto objIt = sysObjMapObj.find(obj);
+        if (objIt == sysObjMapObj.end())
+            return false;
+        SysObj* sysObj = objIt->second;
+
+        auto userIt = sysUserMapUser.find(sysObj->owner);
+        if (userIt == sysUserMapUser.end())
+            return false;
+        SysUser* sysUser = userIt->second;
+
+        table = sysObj->name;
+        owner = sysUser->name;
+        return true;
+    }
+
     OracleLob* Schema::checkLobDict(typeDataObj dataObj) {
         auto lobPartitionMapIt = lobPartitionMap.find(dataObj);
         if (lobPartitionMapIt != lobPartitionMap.end())

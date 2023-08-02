@@ -1332,13 +1332,13 @@ namespace OpenLogReplicator {
         sqlText = reinterpret_cast<char*>(redoLogRecord1->data) + fieldPos;
 
         if (type == 85)
-            processDdl(table, redoLogRecord1->dataObj, type, seq, "truncate", sqlText, sqlLength - 1);
+            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "truncate", sqlText, sqlLength - 1);
         else if (type == 12)
-            processDdl(table, redoLogRecord1->dataObj, type, seq, "drop", sqlText, sqlLength - 1);
+            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "drop", sqlText, sqlLength - 1);
         else if (type == 15)
-            processDdl(table, redoLogRecord1->dataObj, type, seq, "alter", sqlText, sqlLength - 1);
+            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "alter", sqlText, sqlLength - 1);
         else
-            processDdl(table, redoLogRecord1->dataObj, type, seq, "?", sqlText, sqlLength - 1);
+            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "?", sqlText, sqlLength - 1);
     }
 
     void Builder::releaseBuffers(uint64_t maxId) {

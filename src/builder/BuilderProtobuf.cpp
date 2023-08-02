@@ -23,6 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/SysCol.h"
 #include "../common/typeRowId.h"
 #include "../metadata/Metadata.h"
+#include "../metadata/Schema.h"
 #include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
@@ -230,8 +231,20 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::appendSchema(OracleTable* table, typeObj obj) {
         if (table == nullptr) {
-            std::string tableName("OBJ_" + std::to_string(obj));
-            schemaPB->set_name(tableName);
+            std::string ownerName;
+            std::string tableName;
+            // try to read object name from ongoing uncommitted transaction data
+            if (metadata->schema->checkTableDictUncommitted(obj, ownerName, tableName)) {
+                schemaPB->set_owner(ownerName);
+                schemaPB->set_name(tableName);
+            } else {
+                tableName = "OBJ_" + std::to_string(obj);
+                schemaPB->set_name(tableName);
+            }
+
+            if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0)
+                schemaPB->set_obj(obj);
+
             return;
         }
 
@@ -239,7 +252,7 @@ namespace OpenLogReplicator {
         schemaPB->set_name(table->name);
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0)
-            schemaPB->set_obj(table->obj);
+            schemaPB->set_obj(obj);
 
         if ((schemaFormat & SCHEMA_FORMAT_FULL) != 0) {
             if ((schemaFormat & SCHEMA_FORMAT_REPEATED) == 0) {
@@ -361,7 +374,6 @@ namespace OpenLogReplicator {
     void BuilderProtobuf::processBeginMessage() {
         newTran = false;
         builderBegin(0, 0);
-
         createResponse();
         appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
@@ -391,11 +403,7 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException(50018, "PB insert processing failed, a message is missing");
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             createResponse();
             appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
         }
@@ -432,11 +440,7 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException(50018, "PB update processing failed, a message is missing");
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             createResponse();
             appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
         }
@@ -474,11 +478,7 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException(50018, "PB delete processing failed, a message is missing");
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             createResponse();
             appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
         }
@@ -506,7 +506,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDdl(OracleTable* table __attribute__((unused)), typeDataObj dataObj __attribute__((unused)),
+    void BuilderProtobuf::processDdl(OracleTable* table __attribute__((unused)), typeObj obj, typeDataObj dataObj __attribute__((unused)),
                                      uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)),
                                      const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
@@ -516,17 +516,14 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
-            if (table != nullptr)
-                builderBegin(table->obj, 0);
-            else
-                builderBegin(0, 0);
-
+            builderBegin(obj, 0);
             createResponse();
             appendHeader(true, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
 
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::DDL);
+            appendSchema(table, obj);
             payloadPB->set_ddl(sql, sqlLength);
         }
 
@@ -562,7 +559,6 @@ namespace OpenLogReplicator {
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
             builderBegin(0, 0);
-
             createResponse();
             appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
