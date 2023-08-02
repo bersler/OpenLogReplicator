@@ -872,7 +872,7 @@ namespace OpenLogReplicator {
         appendSchema(table, obj);
         builderAppend(R"(,"sql":")", sizeof(R"(,"sql":")") - 1);
         appendEscape(sql, sqlLength);
-        builderAppend(R"("},)", sizeof(R"("},)") - 1);
+        builderAppend(R"("})", sizeof(R"("})") - 1);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             builderAppend("]}", sizeof("]}") - 1);
