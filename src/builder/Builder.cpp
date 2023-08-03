@@ -240,18 +240,6 @@ namespace OpenLogReplicator {
                 columnUnknown(column->name, data, length);
             break;
 
-        case SYS_COL_TYPE_UROWID:
-            if (length == 13 && data[0] == 0x01) {
-                typeRowId rowId;
-                rowId.decodeFromHex(data + 1);
-                columnRowId(column->name, rowId);
-
-            } else {
-                columnUnknown(column->name, data, length);
-            }
-            break;
-
-        // case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
         case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
             if (length != 9 && length != 13) {
                 columnUnknown(column->name, data, length);
@@ -335,6 +323,107 @@ namespace OpenLogReplicator {
                 }
             }
             break;
+
+        case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
+            if (length != 5 || (data[0] & 0x80) == 0 || data[4] < 60 || data[4] > 71)
+                columnUnknown(column->name, data, length);
+            else {
+                uint64_t year = Ctx::read32Big(data) - 0x80000000;
+                if (year > 999999999)
+                    columnUnknown(column->name, data, length);
+                else {
+                    uint64_t month = data[4] - 60;
+                    char buffer[9];
+                    valueLength = 0;
+
+                    uint64_t val = year;
+                    uint64_t len = 0;
+                    if (year == 0) {
+                        valueBuffer[valueLength++] = '0';
+                    } else {
+                        while (val) {
+                            buffer[len++] = ctx->map10[val % 10];
+                            val /= 10;
+                        }
+                        while (len > 0)
+                            valueBuffer[valueLength++] = buffer[--len];
+                    }
+
+                    valueBuffer[valueLength++] = ',';
+
+                    if (month >= 10) {
+                        valueBuffer[valueLength++] = '1';
+                        valueBuffer[valueLength++] = ctx->map10[month - 10];
+                    } else
+                        valueBuffer[valueLength++] = ctx->map10[month];
+
+                    columnString(column->name);
+                }
+            }
+            break;
+
+        case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
+            if (length != 11 || (data[0] & 0x80) == 0 || data[4] < 60 || data[4] > 83 || data[5] < 60 || data[5] > 119 || data[6] < 60 || data[6] > 119 ||
+                    (data[7] & 0x80) == 0)
+                columnUnknown(column->name, data, length);
+            else {
+                uint64_t day = Ctx::read32Big(data) - 0x80000000;
+                uint64_t us = Ctx::read32Big(data + 7) - 0x80000000;
+                if (day > 999999999 || us > 999999999)
+                    columnUnknown(column->name, data, length);
+                else {
+                    uint64_t hour = data[4] - 60;
+                    uint64_t minute = data[5] - 60;
+                    uint64_t second = data[6] - 60;
+                    char buffer[29];
+                    valueLength = 0;
+
+                    uint64_t val = day;
+                    uint64_t len = 0;
+                    if (day == 0) {
+                        valueBuffer[valueLength++] = '0';
+                    } else {
+                        while (val) {
+                            buffer[len++] = ctx->map10[val % 10];
+                            val /= 10;
+                        }
+                        while (len > 0)
+                            valueBuffer[valueLength++] = buffer[--len];
+                    }
+
+                    valueBuffer[valueLength++] = ',';
+                    valueBuffer[valueLength++] = ctx->map10[hour / 10];
+                    valueBuffer[valueLength++] = ctx->map10[hour % 10];
+                    valueBuffer[valueLength++] = ':';
+                    valueBuffer[valueLength++] = ctx->map10[minute / 10];
+                    valueBuffer[valueLength++] = ctx->map10[minute % 10];
+                    valueBuffer[valueLength++] = ':';
+                    valueBuffer[valueLength++] = ctx->map10[second / 10];
+                    valueBuffer[valueLength++] = ctx->map10[second % 10];
+                    valueBuffer[valueLength++] = '.';
+
+                    for (uint64_t j = 0; j < 9; ++j) {
+                        valueBuffer[valueLength + 8 - j] = ctx->map10[us % 10];
+                        us /= 10;
+                    }
+                    valueLength += 9;
+
+                    columnString(column->name);
+                }
+            }
+            break;
+
+        case SYS_COL_TYPE_UROWID:
+            if (length == 13 && data[0] == 0x01) {
+                typeRowId rowId;
+                rowId.decodeFromHex(data + 1);
+                columnRowId(column->name, rowId);
+            } else {
+                columnUnknown(column->name, data, length);
+            }
+            break;
+
+        // case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ - not yet supported
 
         default:
             if (unknownType == UNKNOWN_TYPE_SHOW)

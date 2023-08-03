@@ -51,16 +51,18 @@ namespace OpenLogReplicator {
 
             uint64_t typeNo = table->columns[col]->type;
             if (typeNo != SYS_COL_TYPE_VARCHAR
-                    && typeNo != SYS_COL_TYPE_CHAR
                     && typeNo != SYS_COL_TYPE_NUMBER
                     && typeNo != SYS_COL_TYPE_DATE
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP
                     && typeNo != SYS_COL_TYPE_RAW
+                    && typeNo != SYS_COL_TYPE_CHAR
                     && typeNo != SYS_COL_TYPE_FLOAT
                     && typeNo != SYS_COL_TYPE_DOUBLE
-                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
                     && (typeNo != SYS_COL_TYPE_CLOB || !after)
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_TZ)
+                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
+                    && typeNo != SYS_COL_TYPE_TIMESTAMP
+                    && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
+                    && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
+                    && typeNo != SYS_COL_TYPE_UROWID)
                 return;
         }
 
