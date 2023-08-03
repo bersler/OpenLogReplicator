@@ -119,7 +119,7 @@ namespace OpenLogReplicator {
                     builderAppend("\\f", sizeof("\\f") - 1);
                 } else if (*str == '\b') {
                     builderAppend("\\b", sizeof("\\b") - 1);
-                } else if (*str < 32) {
+                } else if (static_cast<unsigned char>(*str) < 32) {
                     builderAppend("\\u00", sizeof("\\u00") - 1);
                     appendDec(*str, 2);
                 } else {
