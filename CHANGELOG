@@ -17,6 +17,8 @@
 - enhancement: add schema information for ddl events
 - fix: correctly handling of non-ASCII characters in DDL text
 - enhancement: added support for interval type
+- fix: removed unused flags for showing constraint columns
+- enhancement: added xmltype support
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

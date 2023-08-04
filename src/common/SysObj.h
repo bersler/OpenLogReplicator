@@ -24,11 +24,44 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_OBJ_H_
 #define SYS_OBJ_H_
 
-#define SYS_OBJ_FLAGS_TEMPORARY              2
-#define SYS_OBJ_FLAGS_SECONDARY              16
-#define SYS_OBJ_FLAGS_IN_MEMORY_TEMP         32
-#define SYS_OBJ_FLAGS_DROPPED                128
+#define SYS_OBJ_FLAGS_FDOM                              1
+#define SYS_OBJ_FLAGS_TEMPORARY                         2
+#define SYS_OBJ_FLAGS_SYSTEM_GENERATED                  4
+#define SYS_OBJ_FLAGS_UNBOUND                           8
+#define SYS_OBJ_FLAGS_SECONDARY                         16
+#define SYS_OBJ_FLAGS_IN_MEMORY_TEMP                    32
+#define SYS_OBJ_FLAGS_PERMANENTLY_KEPT_JAVA_CLASS       64
+#define SYS_OBJ_FLAGS_DROPPED                           128
+#define SYS_OBJ_FLAGS_SYNONYM_HAS_VPD_POLICIES          256
+#define SYS_OBJ_FLAGS_SYNONYM_HAS_VPD_GROUPS            512
+#define SYS_OBJ_FLAGS_SYNONYM_HAS_VPD_CONTEXT           1024
+#define SYS_OBJ_FLAGS_CURSOR_DURATION                   2048
+#define SYS_OBJ_FLAGS_DEPENDENCY_TYPE_EVOLVED           4096
+#define SYS_OBJ_FLAGS_DISABLE_FAST_VALIDATION           8192
+#define SYS_OBJ_FLAGS_NESTED_TABLE_PARTITION            16384
+#define SYS_OBJ_FLAGS_OBJERROR_ROW                      32768
+#define SYS_OBJ_FLAGS_METADATA_LINK                     65536
+#define SYS_OBJ_FLAGS_OBJECT_LINK                       131072
+#define SYS_OBJ_FLAGS_LONG_IDENTIFIER                   262144
+#define SYS_OBJ_FLAGS_ALLOW_FAST_ALTER_TABLE_UPGRADE    524288
+#define SYS_OBJ_FLAGS_NOT_EDITIONABLE                   1048576
+#define SYS_OBJ_FLAGS_SPECIAL_INVOKER_RIGHTS            2097152
+#define SYS_OBJ_FLAGS_ORACLE_SUPPLIED_OBJECT            4194304
+#define SYS_OBJ_FLAGS_NO_FINE_GRAINED_DEP               8388608
+#define SYS_OBJ_FLAGS_COMMON_OBJECT_MISMATCH            16777216
+#define SYS_OBJ_FLAGS_LOCAL_MCODE                       33554432
+#define SYS_OBJ_FLAGS_LOCAL_DIANA                       67108864
+#define SYS_OBJ_FLAGS_FEDERATION_OBJECT                 134217728
+#define SYS_OBJ_FLAGS_DEFAULT_COLLATION                 268435456
+#define SYS_OBJ_FLAGS_ON_ALL_SHARDS                     536870912
+#define SYS_OBJ_FLAGS_SHARDED                           1073741824
+#define SYS_OBJ_FLAGS_REFERENCE                         2147483648
+#define SYS_OBJ_FLAGS_EXTENDED_DATA_LINK                4294967296
+#define SYS_OBJ_FLAGS_BINARY_COLLATION                  8589934592
+#define SYS_OBJ_FLAGS_DISABLE_LOG_REPLICATION           17179869184
+
 #define SYS_OBJ_NAME_LENGTH                  128
+
 // 11.2
 #define SYS_OBJ_TYPE_NEXT_OBJECT             0
 #define SYS_OBJ_TYPE_INDEX                   1

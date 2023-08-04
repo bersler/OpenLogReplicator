@@ -252,9 +252,9 @@ namespace OpenLogReplicator {
 
             if (sourceJson.HasMember("flags")) {
                 ctx->flags = Ctx::getJsonFieldU64(configFileName, sourceJson, "flags");
-                if (ctx->flags > 65535)
+                if (ctx->flags > 32767)
                     throw ConfigurationException(30001, "bad JSON, invalid 'flags' value: " + std::to_string(ctx->flags) +
-                                                 ", expected: one of {0 .. 65535}");
+                                                 ", expected: one of {0 .. 32767}");
                 if (FLAG(REDO_FLAGS_DIRECT_DISABLE))
                     ctx->redoVerifyDelayUs = 500000;
             }

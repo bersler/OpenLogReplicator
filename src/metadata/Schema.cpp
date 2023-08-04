@@ -877,15 +877,13 @@ namespace OpenLogReplicator {
                           ", PROPERTY: " + sysCol->property.toString() + ")");
         sysColMapRowId[sysCol->rowId] = sysCol;
 
-        if (sysCol->segCol > 0) {
-            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
-            auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
-            if (sysColMapSegIt == sysColMapSeg.end())
-                sysColMapSeg[sysColSeg] = sysCol;
-            else
-                DataException(50024, "duplicate SYS.COL$ value for unique (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
-                              std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
-        }
+        SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
+        auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
+        if (sysColMapSegIt == sysColMapSeg.end())
+            sysColMapSeg[sysColSeg] = sysCol;
+        else
+            DataException(50024, "duplicate SYS.COL$ value for unique (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
+                          std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
 
         sysColSetTouched.insert(sysCol);
         touchTable(sysCol->obj);
@@ -1250,15 +1248,13 @@ namespace OpenLogReplicator {
             return;
         sysColMapRowId.erase(sysColMapRowIdIt);
 
-        if (sysCol->segCol > 0) {
-            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
-            auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
-            if (sysColMapSegIt != sysColMapSeg.end())
-                sysColMapSeg.erase(sysColMapSegIt);
-            else
-                throw DataException(50030, "missing index for SYS.COL$ (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
-                                    std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
-        }
+        SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
+        auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
+        if (sysColMapSegIt != sysColMapSeg.end())
+            sysColMapSeg.erase(sysColMapSegIt);
+        else
+            throw DataException(50030, "missing index for SYS.COL$ (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
+                                std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
 
         touchTable(sysCol->obj);
         touched = true;
@@ -2143,6 +2139,8 @@ namespace OpenLogReplicator {
             for (auto sysColMapSegIt = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt != sysColMapSeg.end() &&
                     sysColMapSegIt->first.obj == sysObj->obj; ++sysColMapSegIt) {
                 SysCol* sysCol = sysColMapSegIt->second;
+                if (sysCol->segCol == 0)
+                    continue;
 
                 uint64_t charmapId = 0;
                 typeCol numPk = 0;
@@ -2218,10 +2216,26 @@ namespace OpenLogReplicator {
                     msgs.push_back("- col: " + std::to_string(sysCol->segCol) + ": " + sysCol->name + " (pk: " + std::to_string(numPk) + ", S: " +
                                 std::to_string(numSup) + ", G: " + std::to_string(guardSeg) + ")");
 
-                schemaColumn = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, sysCol->name,
+                // For system-generated columns, check column name from base column
+                std::string columnName = sysCol->name;
+                if (sysCol->isSystemGenerated()) {
+                    typeRowId rid2(0, 0, 0);
+                    SysColSeg sysColSegFirst2(sysObj->obj - 1, 0, rid2);
+                    for (auto sysColMapSegIt = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt != sysColMapSeg.end() &&
+                                                                                   sysColMapSegIt->first.obj <= sysObj->obj; ++sysColMapSegIt) {
+                        SysCol* sysCol2 = sysColMapSegIt->second;
+                        if (sysCol->col == sysCol2->col && sysCol2->segCol == 0) {
+                            columnName = sysCol2->name;
+                            std::cerr << " replace column name: " << sysCol->name << " with: " << columnName << "\n";
+                            break;
+                        }
+                    }
+                }
+
+                schemaColumn = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, columnName,
                                                 sysCol->type,sysCol->length, sysCol->precision, sysCol->scale,
-                                                numPk,charmapId, sysCol->isNullable(), sysCol->isInvisible(),
-                                                sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isNested(),
+                                                numPk,charmapId, sysCol->isNullable(), sysCol->isHidden(),
+                                                sysCol->isStoredAsLob(), sysCol->isNested(),
                                                 sysCol->isUnused(), sysCol->isAdded(), sysCol->isGuard());
 
                 schemaTable->addColumn(schemaColumn);

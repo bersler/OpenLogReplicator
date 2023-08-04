@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     OracleColumn::OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
-                               int64_t newPrecision, int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newInvisible,
-                               bool newStoredAsLob, bool newConstraint, bool newNested, bool newUnused, bool newAdded, bool newGuard) :
+                               int64_t newPrecision, int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newHidden,
+                               bool newStoredAsLob, bool newNested, bool newUnused, bool newAdded, bool newGuard) :
             col(newCol),
             guardSeg(newGuardSeg),
             segCol(newSegCol),
@@ -35,9 +35,8 @@ namespace OpenLogReplicator {
             numPk(newNumPk),
             charsetId(newCharsetId),
             nullable(newNullable),
-            invisible(newInvisible),
+            hidden(newHidden),
             storedAsLob(newStoredAsLob),
-            constraint(newConstraint),
             nested(newNested),
             unused(newUnused),
             added(newAdded),

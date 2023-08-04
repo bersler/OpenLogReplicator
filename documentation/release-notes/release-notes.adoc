@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-03
+:revdate: 2023-08-04
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -36,6 +36,8 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: add schema information for ddl events
 - fix: correctly handling of non-ASCII characters in DDL text
 - enhancement: added support for interval type
+- fix: removed unused flags for showing constraint columns
+- enhancement: added xmltype support
 
 === Version 1.2.0
 

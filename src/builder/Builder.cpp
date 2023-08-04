@@ -131,11 +131,9 @@ namespace OpenLogReplicator {
             columnRaw(column->name, data, length);
             return;
         }
-        if (column->constraint && !FLAG(REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS))
-            return;
         if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
             return;
-        if (column->invisible && !FLAG(REDO_FLAGS_SHOW_INVISIBLE_COLUMNS))
+        if (column->hidden && !FLAG(REDO_FLAGS_SHOW_HIDDEN_COLUMNS))
             return;
         if (column->unused && !FLAG(REDO_FLAGS_SHOW_UNUSED_COLUMNS))
             return;

@@ -24,21 +24,49 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_COL_H_
 #define SYS_COL_H_
 
-#define SYS_COL_NAME_LENGTH                  128
-#define SYS_COL_PROPERTY_INVISIBLE           32
-#define SYS_COL_PROPERTY_STORED_AS_LOB       128
-#define SYS_COL_PROPERTY_CONSTRAINT          256
-#define SYS_COL_PROPERTY_NESTED              1024
-#define SYS_COL_PROPERTY_UNUSED              32768
-#define SYS_COL_PROPERTY_LENGTH_IN_CHARS     8388608
-#define SYS_COL_PROPERTY_ADDED               1073741824
-#define SYS_COL_PROPERTY_GUARD               549755813888
+#define SYS_COL_NAME_LENGTH                             128
+#define SYS_COL_PROPERTY_ADT                            1
+#define SYS_COL_PROPERTY_OID                            2
+#define SYS_COL_PROPERTY_NESTED1                        4
+#define SYS_COL_PROPERTY_VIRTUAL1                       8
+#define SYS_COL_PROPERTY_NESTED_TABLE_SETID             16
+#define SYS_COL_PROPERTY_HIDDEN                         32
+#define SYS_COL_PROPERTY_PRIMARY_KEY_BASED_OID          64
+#define SYS_COL_PROPERTY_STORED_AS_LOB                  128
+#define SYS_COL_PROPERTY_SYSTEM_GENERATED               256
+#define SYS_COL_PROPERTY_ROWINFO_TYPED_TABLE_VIEW       512
+#define SYS_COL_PROPERTY_NESTED_TABLES_SETID            1024
+#define SYS_COL_PROPERTY_NOT_INSERTABLE                 2048
+#define SYS_COL_PROPERTY_NOT_UPDATABLE                  4096
+#define SYS_COL_PROPERTY_NOT_DELETABLE                  8192
+#define SYS_COL_PROPERTY_DROPPED                        16384
+#define SYS_COL_PROPERTY_UNUSED                         32768
+#define SYS_COL_PROPERTY_VIRTUAL2                       65536
+#define SYS_COL_PROPERTY_PLACE_DESCEND_OPERATOR_ON_TOP  131072
+#define SYS_COL_PROPERTY_VIRTUAL_IS_NLS_DEPENDENT       262144
+#define SYS_COL_PROPERTY_REF_OID_COL                    524288
+#define SYS_COL_PROPERTY_HIDDEN_SNAPSHOT_BASE_TABLE     1048576
+#define SYS_COL_PROPERTY_ATTRIBUTE_OF_USER_DEFINED_REF  2097152
+#define SYS_COL_PROPERTY_HIDDEN_RLS                     4194304
+#define SYS_COL_PROPERTY_LENGTH_IN_CHARS                8388608
+#define SYS_COL_PROPERTY_VIRTUAL_EXPRESSION_SPECIFIED   16777216
+#define SYS_COL_PROPERTY_TYPEID                         33554432
+#define SYS_COL_PROPERTY_ENCRYPTED                      67108864
+#define SYS_COL_PROPERTY_ENCRYPTED_WITHOUT_SALT         536870912
+#define SYS_COL_PROPERTY_ADDED                          1073741824
+#define SYS_COL_PROPERTY_DEFAULT_WITH_SEQUENCE          34359738368
+#define SYS_COL_PROPERTY_DEFAULT_ON_NULL                68719476736
+#define SYS_COL_PROPERTY_GENERATED_ALWAYS_IDENTITY      137438953472
+#define SYS_COL_PROPERTY_GENERATED_BY_DEFAULT_IDENTITY  274877906944
+#define SYS_COL_PROPERTY_GUARD                          549755813888
+
 #define SYS_COL_TYPE_VARCHAR                 1
 #define SYS_COL_TYPE_NUMBER                  2
 #define SYS_COL_TYPE_LONG                    8
 #define SYS_COL_TYPE_DATE                    12
 #define SYS_COL_TYPE_RAW                     23
 #define SYS_COL_TYPE_LONG_RAW                24
+#define SYS_COL_TYPE_XMLTYPE                 58
 #define SYS_COL_TYPE_CHAR                    96
 #define SYS_COL_TYPE_FLOAT                   100
 #define SYS_COL_TYPE_DOUBLE                  101
@@ -127,8 +155,8 @@ namespace OpenLogReplicator {
                    (other.charsetForm != charsetForm) || (other.charsetId != charsetId) || (other.null_ != null_) || (other.property != property);
         }
 
-        [[nodiscard]] bool isInvisible() {
-            return property.isSet64(SYS_COL_PROPERTY_INVISIBLE);
+        [[nodiscard]] bool isHidden() {
+            return property.isSet64(SYS_COL_PROPERTY_HIDDEN);
         }
 
         [[nodiscard]] bool isNullable() {
@@ -139,12 +167,12 @@ namespace OpenLogReplicator {
             return property.isSet64(SYS_COL_PROPERTY_STORED_AS_LOB);
         }
 
-        [[nodiscard]] bool isConstraint() {
-            return property.isSet64(SYS_COL_PROPERTY_CONSTRAINT);
+        [[nodiscard]] bool isSystemGenerated() {
+            return property.isSet64(SYS_COL_PROPERTY_SYSTEM_GENERATED);
         }
 
         [[nodiscard]] bool isNested() {
-            return property.isSet64(SYS_COL_PROPERTY_NESTED);
+            return property.isSet64(SYS_COL_PROPERTY_NESTED_TABLES_SETID);
         }
 
         [[nodiscard]] bool isUnused() {

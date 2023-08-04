@@ -24,18 +24,45 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_TAB_H_
 #define SYS_TAB_H_
 
-#define SYS_TAB_PROPERTY_BINARY                       1
-#define SYS_TAB_PROPERTY_PARTITIONED_TABLE            32
-#define SYS_TAB_PROPERTY_IOT_OVERFLOW_SEGMENT         512
-#define SYS_TAB_PROPERTY_CLUSTERED_TABLE              1024
-#define SYS_TAB_PROPERTY_NESTED_TABLE                 8192
-#define SYS_TAB_PROPERTY_ROW_MOVEMENT                 131072
-#define SYS_TAB_PROPERTY_GLOBAL_TEMPORARY_TABLE       4194304
-#define SYS_TAB_PROPERTY_DEPENDENCIES                 8388608
-#define SYS_TAB_PROPERTY_READ_ONLY_MATERIALIZED_VIEW  33554432
-#define SYS_TAB_PROPERTY_MATERIALIZED_VIEW_TABLE      67108864
-#define SYS_TAB_PROPERTY_IOT2                         536870912
-#define SYS_TAB_PROPERTY_INITIAL                      17179869184
+#define SYS_TAB_PROPERTY_BINARY                         1
+#define SYS_TAB_PROPERTY_ATD_COLUMNS                    2
+#define SYS_TAB_PROPERTY_NESTED_TABLE_COLUMNS           4
+#define SYS_TAB_PROPERTY_REF_COLUMNS                    8
+#define SYS_TAB_PROPERTY_ARRAY_COLUMNS                  16
+#define SYS_TAB_PROPERTY_PARTITIONED                    32
+#define SYS_TAB_PROPERTY_INDEX_ONLY                     64
+#define SYS_TAB_PROPERTY_IOT_ROW_OVERFLOW               128
+#define SYS_TAB_PROPERTY_IOT_ROW_CLUSTERING             256
+#define SYS_TAB_PROPERTY_IOT_OVERFLOW_SEGMENT           512
+#define SYS_TAB_PROPERTY_CLUSTERED                      1024
+#define SYS_TAB_PROPERTY_INTERNAL_LOB_COLUMNS           2048
+#define SYS_TAB_PROPERTY_PRIMARY_KEY_BASED_OID_COLUMN   4096
+#define SYS_TAB_PROPERTY_NESTED                         8192
+#define SYS_TAB_PROPERTY_READ_ONLY                      16384
+#define SYS_TAB_PROPERTY_FILE_COLUMNS                   32768
+#define SYS_TAB_PROPERTY_OID_GENERATED_BY_DEFAULT       65536
+#define SYS_TAB_PROPERTY_ROW_MOVEMENT                   131072
+#define SYS_TAB_PROPERTY_USER_DEFINED_LOB_COLUMNS       262144
+#define SYS_TAB_PROPERTY_UNUSED_COLUMNS                 524288
+#define SYS_TAB_PROPERTY_ON_COMMIT_MATERIALIZED_VIEW    1048576
+#define SYS_TAB_PROPERTY_SYSTEM_GENERATED_COLUMN_NAMES  2097152
+#define SYS_TAB_PROPERTY_GLOBAL_TEMPORARY_TABLE         4194304
+#define SYS_TAB_PROPERTY_DEPENDENCIES                   8388608
+#define SYS_TAB_PROPERTY_READ_ONLY_MATERIALIZED_VIEW    33554432
+#define SYS_TAB_PROPERTY_MATERIALIZED_VIEW_TABLE        67108864
+#define SYS_TAB_PROPERTY_SUB_TABLE                      134217728
+#define SYS_TAB_PROPERTY_IOT2                           536870912
+#define SYS_TAB_PROPERTY_EXTERNAL                       2147483648
+#define SYS_TAB_PROPERTY_CUBE                           4294967296
+#define SYS_TAB_PROPERTY_DELAYED_SEGMENT_CREATION       17179869184
+#define SYS_TAB_PROPERTY_RESULT_CACHE_FORCE             2199023255552
+#define SYS_TAB_PROPERTY_RESULT_CACHE_MANUAL            4398046511104
+#define SYS_TAB_PROPERTY_RESULT_CACHE_AUTO              8796093022208
+#define SYS_TAB_PROPERTY_LONG_VARCHAR_COLUMN            9007199254740992
+#define SYS_TAB_PROPERTY_CLUSTERING_CLAUSE              18014398509481984
+#define SYS_TAB_PROPERTY_ZONEMAPS                       36028797018963968
+#define SYS_TAB_PROPERTY_IDENTITY_COLUMN                288230376151711744
+#define SYS_TAB_PROPERTY_DIMENTION                      1152921504606846976
 
 namespace OpenLogReplicator {
     class SysTab {
@@ -61,7 +88,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isClustered() {
-            return property.isSet64(SYS_TAB_PROPERTY_CLUSTERED_TABLE);
+            return property.isSet64(SYS_TAB_PROPERTY_CLUSTERED);
         }
 
         [[nodiscard]] bool isIot() {
@@ -69,11 +96,11 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isPartitioned() {
-            return property.isSet64(SYS_TAB_PROPERTY_PARTITIONED_TABLE);
+            return property.isSet64(SYS_TAB_PROPERTY_PARTITIONED);
         }
 
         [[nodiscard]] bool isNested() {
-            return property.isSet64(SYS_TAB_PROPERTY_NESTED_TABLE);
+            return property.isSet64(SYS_TAB_PROPERTY_NESTED);
         }
 
         [[nodiscard]] bool isRowMovement() {
@@ -85,7 +112,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isInitial() {
-            return flags.isSet64(SYS_TAB_PROPERTY_INITIAL);
+            return flags.isSet64(SYS_TAB_PROPERTY_DELAYED_SEGMENT_CREATION);
         }
 
         typeRowId rowId;

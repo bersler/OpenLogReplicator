@@ -36,17 +36,16 @@ namespace OpenLogReplicator {
         typeCol numPk;
         uint64_t charsetId;
         bool nullable;
-        bool invisible;
+        bool hidden;
         bool storedAsLob;
-        bool constraint;
         bool nested;
         bool unused;
         bool added;
         bool guard;
 
         OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
-                     int64_t newPrecision,  int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newInvisible,
-                     bool newStoredAsLob, bool newConstraint, bool newNested, bool newUnused, bool newAdded, bool newGuard);
+                     int64_t newPrecision,  int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newHidden,
+                     bool newStoredAsLob, bool newNested, bool newUnused, bool newAdded, bool newGuard);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleColumn& column);
     };
