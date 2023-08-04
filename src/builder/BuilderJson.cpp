@@ -40,6 +40,8 @@ namespace OpenLogReplicator {
     void BuilderJson::columnNull(OracleTable* table, typeCol col, bool after) {
         if (table != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
             OracleColumn* column = table->columns[col];
+            if (column->guard && !FLAG(REDO_FLAGS_SHOW_GUARD_COLUMNS))
+                return;
             if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
                 return;
             if (column->hidden && !FLAG(REDO_FLAGS_SHOW_HIDDEN_COLUMNS))

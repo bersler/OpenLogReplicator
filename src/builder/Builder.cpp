@@ -131,6 +131,8 @@ namespace OpenLogReplicator {
             columnRaw(column->name, data, length);
             return;
         }
+        if (column->guard && !FLAG(REDO_FLAGS_SHOW_GUARD_COLUMNS))
+            return;
         if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
             return;
         if (column->hidden && !FLAG(REDO_FLAGS_SHOW_HIDDEN_COLUMNS))

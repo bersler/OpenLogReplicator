@@ -250,32 +250,34 @@ The program is not designed to continue after error as this can lead to schema d
 
 * `0x0040` -- Show invisible (hidden) columns in output.
 
-* `0x0080` -- Show nested columns in output.
+* `0x0080` -– Show guard columns in output.
 
-* `0x0100` -- Show unused columns in output.
+* `0x0100` -- Show nested columns in output.
 
-* `0x0200` -- Include incomplete transactions in output.
+* `0x0200` -- Show unused columns in output.
+
+* `0x0400` -- Include incomplete transactions in output.
 
 _TIP_: Incomplete transactions are transactions which have started before replication was set up.
 Some starting elements of such transactions may be missing in the output.
 By default such transacions are ignored.
 
-* `0x0400` -- Include system transactions in output.
+* `0x0800` -- Include system transactions in output.
 
-* `0x0800` -- Show checkpoint information in output.
+* `0x1000` -- Show checkpoint information in output.
 
 _TIP:_ The checkpoint records are useful to monitor the progress of replication.
 They're also used to detect the last processed transaction.
 If the checkpoint records are hidden and there is low activity of data changes, it may be difficult to detect OpenLogReplicator failure.
 
-* `0x1000` -- Don’t delete old checkpoint files.
+* `0x2000` -- Don’t delete old checkpoint files.
 
 _TIP:_ The number of checkpoint files left is defined by parameter `keep-checkpoints`.
 This flag overrides this number and leaves the checkpoint file.
 
-* `0x2000` -- Reserved for future use.
+* `0x4000` -- Reserved for future use.
 
-* `0x4000` -- Send column data to output in raw (hex) format.
+* `0x8000` -- Send column data to output in raw (hex) format.
 
 |`memory-max-mb`
 |_number_, min: 16, default: 1024

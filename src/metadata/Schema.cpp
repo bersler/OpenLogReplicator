@@ -2226,7 +2226,6 @@ namespace OpenLogReplicator {
                         SysCol* sysCol2 = sysColMapSegIt->second;
                         if (sysCol->col == sysCol2->col && sysCol2->segCol == 0) {
                             columnName = sysCol2->name;
-                            std::cerr << " replace column name: " << sysCol->name << " with: " << columnName << "\n";
                             break;
                         }
                     }
@@ -2235,7 +2234,7 @@ namespace OpenLogReplicator {
                 schemaColumn = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, columnName,
                                                 sysCol->type,sysCol->length, sysCol->precision, sysCol->scale,
                                                 numPk,charmapId, sysCol->isNullable(), sysCol->isHidden(),
-                                                sysCol->isStoredAsLob(), sysCol->isNested(),
+                                                sysCol->isStoredAsLob(), sysCol->isSystemGenerated(), sysCol->isNested(),
                                                 sysCol->isUnused(), sysCol->isAdded(), sysCol->isGuard());
 
                 schemaTable->addColumn(schemaColumn);
