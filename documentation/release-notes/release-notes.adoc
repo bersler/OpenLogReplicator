@@ -30,13 +30,14 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: added more timestamp formatting options
 - enhancement: added support for UROWID format
 - fix: LOB handing improvement for Oracle 19c
-- enhancement: added timezone field for timestamp with timezone type
+- enhancement: added timezone field for timestamp with time zone type
 - fix: file writer path handling and file handling fixes
 - enhancement: add database name to payload data
 - enhancement: add schema information for ddl events
 - fix: correctly handling of non-ASCII characters in DDL text
 - enhancement: added support for interval type
 - enhancement: added xmltype support
+- enhancement: added support for type timestamp with local time zone
 
 === Version 1.2.0
 

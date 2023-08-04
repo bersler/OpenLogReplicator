@@ -18,6 +18,7 @@
 - fix: correctly handling of non-ASCII characters in DDL text
 - enhancement: added support for interval type
 - enhancement: added xmltype support
+- enhancement: added support for type timestamp with local time zone
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

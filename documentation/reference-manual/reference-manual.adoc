@@ -777,18 +777,20 @@ Possible values are:
 * `0x0007` -- Unix with seconds precision stored as character -- `"tms": "1651384800"`.
 * `0x0008` -- _ISO-8601_ format stored as character -- `"tms": "2022-05-01 06:00:00.123456789"`.
 
+_NOTE:_ This format is also used for type `timestamp with local time zone` since this type internally does not contain time zone data.
+
 |`timestamp-tz` [[timestamp]]
 |_number_, min: 0, max: 4, default: 0
-|Format of timestamp with timezone values.
+|Format of timestamp with time zone values.
 
-In the following description, the following timerstamp with timezone is used as an example: `"2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+In the following description, the following timerstamp with time zone is used as an example: `"2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
 Possible values are:
 
-* `0x0000` -- Unix with nanoseconds stored as character with timezone after comma sign -- `"tms": "1651384800123456789,Europe/Warsaw"`.
-* `0x0001` -- Unix with microseconds precision stored as character with timezone after comma sign -- `"tms": "1651384800123457,Europe/Warsaw"`.
-* `0x0002` -- Unix with milliseconds precision stored as character with timezone after comma sign -- `"tms": "1651384800123,Europe/Warsaw"`.
-* `0x0003` -- Unix with seconds precision stored as character with timezone after comma sign -- `"tms": "1651384800,Europe/Warsaw"`.
-* `0x0004` -- _ISO-8601_ format stored as character with timezone after space sign-- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+* `0x0000` -- Unix with nanoseconds stored as character with time zone after comma sign -- `"tms": "1651384800123456789,Europe/Warsaw"`.
+* `0x0001` -- Unix with microseconds precision stored as character with time zone after comma sign -- `"tms": "1651384800123457,Europe/Warsaw"`.
+* `0x0002` -- Unix with milliseconds precision stored as character with time zone after comma sign -- `"tms": "1651384800123,Europe/Warsaw"`.
+* `0x0003` -- Unix with seconds precision stored as character with time zone after comma sign -- `"tms": "1651384800,Europe/Warsaw"`.
+* `0x0004` -- _ISO-8601_ format stored as character with time zone after space sign-- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
 
 |`timestamp-all` [[timestamp-all]]
 |_number_, min: 0, max: 1, default: 0

@@ -181,6 +181,7 @@ namespace OpenLogReplicator {
 
         case SYS_COL_TYPE_DATE:
         case SYS_COL_TYPE_TIMESTAMP:
+        case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
             if (length != 7 && length != 11)
                 columnUnknown(column->name, data, length);
             else {
@@ -422,8 +423,6 @@ namespace OpenLogReplicator {
                 columnUnknown(column->name, data, length);
             }
             break;
-
-        // case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ - not yet supported
 
         default:
             if (unknownType == UNKNOWN_TYPE_SHOW)

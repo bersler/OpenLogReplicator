@@ -230,8 +230,8 @@ See:  xref:../reference-manual/reference-manual.adoc#scn[scn] parameter for conf
 ==== Response: _tm_val_
 
 The Time field contains the timestamp related to the payload data.
-If the transaction contains multiple DML opertaions, then the timestamps of particular DML operations are possible to distinguish.
-Instead, just the timestamp related to the commmit record is used.
+If the transaction contains multiple DML operations, then the timestamps of particular DML operations are possible to distinguish.
+Instead, just the timestamp related to the commit record is used.
 
 The value can be stored in:
 
@@ -558,7 +558,8 @@ List of supported column types (with internal Oracle codes):
 - 181 –- timestamp with time zone;
 - 182 -- interval year to month;
 - 183 -- interval day to second;
-- 208 -- urowid.
+- 208 -- urowid;
+- 231 –- timestamp with local time zone.
 
 If a table contains column types which aren't supported –- `“?”` value is presented in output data.
 

@@ -63,7 +63,8 @@ namespace OpenLogReplicator {
                     && typeNo != SYS_COL_TYPE_TIMESTAMP
                     && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
                     && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
-                    && typeNo != SYS_COL_TYPE_UROWID)
+                    && typeNo != SYS_COL_TYPE_UROWID
+                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ)
                 return;
         }
 
@@ -635,7 +636,7 @@ namespace OpenLogReplicator {
                     appendDec(table->columns[column]->length);
                     break;
 
-                case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: // Not supported
+                case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
                     builderAppend(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
