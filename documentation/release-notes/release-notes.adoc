@@ -40,6 +40,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: added support for type timestamp with local time zone
 - fix: client stream disconnect causes replication to stop
 - enhancement: added options interval-ytm and interval-dts to control interval type output format
+- fix: minor style fixes
 
 === Version 1.2.0
 
