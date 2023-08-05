@@ -2221,9 +2221,9 @@ namespace OpenLogReplicator {
                 if (sysCol->isSystemGenerated()) {
                     typeRowId rid2(0, 0, 0);
                     SysColSeg sysColSegFirst2(sysObj->obj - 1, 0, rid2);
-                    for (auto sysColMapSegIt = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt != sysColMapSeg.end() &&
-                                                                                   sysColMapSegIt->first.obj <= sysObj->obj; ++sysColMapSegIt) {
-                        SysCol* sysCol2 = sysColMapSegIt->second;
+                    for (auto sysColMapSegIt2 = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt2 != sysColMapSeg.end() &&
+                                                                                   sysColMapSegIt2->first.obj <= sysObj->obj; ++sysColMapSegIt2) {
+                        SysCol* sysCol2 = sysColMapSegIt2->second;
                         if (sysCol->col == sysCol2->col && sysCol2->segCol == 0) {
                             columnName = sysCol2->name;
                             break;

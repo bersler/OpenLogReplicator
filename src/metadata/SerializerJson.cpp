@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
                 R"(,"resetlogs":)" << std::dec << metadata->resetlogs <<
                 R"(,"activation":)" << std::dec << metadata->activation <<
                 R"(,"time":)" << std::dec << metadata->checkpointTime.getVal() <<
-                R"(,"seq":)" << std::dec << metadata->sequence <<
+                R"(,"seq":)" << std::dec << metadata->checkpointSequence <<
                 R"(,"offset":)" << std::dec << metadata->checkpointOffset;
         if (metadata->minSequence != ZERO_SEQ) {
             ss << R"(,"min-tran":{)" <<

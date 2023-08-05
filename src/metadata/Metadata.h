@@ -116,6 +116,7 @@ namespace OpenLogReplicator {
         typeScn lastCheckpointScn;
         typeTime checkpointTime;
         typeTime lastCheckpointTime;
+        typeSeq checkpointSequence;
         uint64_t checkpointOffset;
         uint64_t lastCheckpointOffset;
         uint64_t checkpointBytes;

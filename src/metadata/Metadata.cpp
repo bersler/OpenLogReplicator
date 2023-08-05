@@ -85,6 +85,7 @@ namespace OpenLogReplicator {
             lastCheckpointScn(ZERO_SCN),
             checkpointTime(0),
             lastCheckpointTime(),
+            checkpointSequence(ZERO_SEQ),
             checkpointOffset(0),
             lastCheckpointOffset(0),
             checkpointBytes(0),
@@ -339,6 +340,7 @@ namespace OpenLogReplicator {
 
         checkpointScn = newCheckpointScn;
         checkpointTime = newCheckpointTime;
+        checkpointSequence = newCheckpointSequence;
         checkpointOffset = newCheckpointOffset;
         checkpointBytes += newCheckpointBytes;
         minSequence = newMinSequence;
