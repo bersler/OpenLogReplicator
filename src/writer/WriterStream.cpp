@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../builder/Builder.h"
 #include "../common/NetworkException.h"
 #include "../common/OraProtoBuf.pb.h"
-#include "../common/RuntimeException.h"
 #include "../metadata/Metadata.h"
 #include "../stream/Stream.h"
 #include "WriterStream.h"
@@ -239,7 +238,7 @@ namespace OpenLogReplicator {
         } else if (length == 0) {
             // No request
         } else if (errno != EAGAIN)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
     }
 
     void WriterStream::sendMessage(BuilderMsg* msg) {
