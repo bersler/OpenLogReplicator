@@ -19,6 +19,7 @@
 - enhancement: added support for interval type
 - enhancement: added xmltype support
 - enhancement: added support for type timestamp with local time zone
+- fix: client stream disconnect causes replication to stop
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

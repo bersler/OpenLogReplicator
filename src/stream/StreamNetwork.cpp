@@ -418,14 +418,14 @@ namespace OpenLogReplicator {
             if (errno == EWOULDBLOCK)
                 return false;
 
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
         }
 
         int flags = fcntl(socketFD, F_GETFL);
         if (flags < 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
         if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
 
         if (socketFD != -1)
             return true;

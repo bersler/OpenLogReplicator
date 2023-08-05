@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-04
+:revdate: 2023-08-05
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -38,6 +38,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: added support for interval type
 - enhancement: added xmltype support
 - enhancement: added support for type timestamp with local time zone
+- fix: client stream disconnect causes replication to stop
 
 === Version 1.2.0
 
