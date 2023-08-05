@@ -21,6 +21,8 @@
       "format": {
         "type": "json",
         "db": 0,
+        "interval-dts": 0,
+        "interval-ytm": 0,
         "message": 0,
         "xid": 0,
         "timestamp": 0,

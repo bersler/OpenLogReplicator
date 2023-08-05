@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-04
+:revdate: 2023-08-06
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -20,6 +20,7 @@ OpenLogReplicator program is non-interactive.
 The only parameters accepted are:
 
 * `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`)
+
 * `-v|--version` -- print version and exit
 
 All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
@@ -678,6 +679,49 @@ Value is a sum of:
 
 When set to `0` then the buffer is flushed immediately as a new message arrives.
 
+|`interval-dts` [[interval-dts]]
+|_number_, min: 0, max: 10, default: 0
+|INTERVAL DAY TO SECONDS field format.
+
+Possible values are:
+
+* `0` -- Value in nanoseconds -- `"val": 123456000000000`.
+
+* `1` -- Value in microseconds (possible data precission loss) -- `"val": 123456000000`.
+
+* `2` -- Value in milliseconds (possible data precission loss) -- `"val": 123456000`.
+
+* `3` -- Value in seconds (possible data precission loss) -- `"val": 123456`.
+
+* `4` -- Value in nanoseconds stored as a string -- `"val": "123456000000000"`.
+
+* `5` -- Value in microseconds stored as a string (possible data precission loss) -- `"val": "123456000000"`.
+
+* `6` -- Value in milliseconds stored as a string (possible data precission loss) -- `"val": "123456000"`.
+
+* `7` -- Value in seconds stored as a string (possible data precission loss) -- `"val": "123456"`.
+
+* `8` -- Value stored in part of _ISO-8601_ format stored as a string -- `"val": "01 06:00:00.123456789"`.
+
+* `9` -- Value stored in part of _ISO-8601_ format stored as a string using `","` as a separator between the number of days and time -- `"val": "01,06:00:00.123456789"`.
+
+* `10` -- Value stored in part of _ISO-8601_ format stored as a string using `"-"` as a separator between the number of days and time -- `"val": "01-06:00:00.123456789"`.
+
+|`interval-ytm` [[interval-ytm]]
+|_number_, min: 0, max: 4, default: 0
+|INTERVAL YEAR TO MONTH field format.
+
+Possible values are:
+* `0` -- Value in months -- `"val": 20` (1 year, 8 months).
+
+* `1` -- Value in months as a string -- `"val": "20"`.
+
+* `2` -- Value in string format, number of years and months separated by `" "` -- `"val": "1 8"`.
+
+* `3` -- Value in string format, number of years and months separated by `","` -- `"val": "1,8"`.
+
+* `4` -- Value in string format, number of years and months separated by `"-"` -- `"val": "1-8"`.
+
 |`message` [[message]]
 |_number_, min: 0, max: 15, default: 0
 |Message format specification.
@@ -746,9 +790,9 @@ Example output:
 
 Possible values are:
 
-* `0x0000` -- SCN is stored as a decimal number in `scn` field.
+* `0` -- SCN is stored as a decimal number in `scn` field.
 
-* `0x0001` -– SCN values is stored in a text format in hexadecimal format (in _“C”_ format – like `0xFF`) in `scns` field.
+* `1` -– SCN values is stored in a text format in hexadecimal format (in _“C”_ format – like `0xFF`) in `scns` field.
 
 |`scn-all` [[timestamp-all]]
 |_number_, min: 0, max: 1, default: 0
@@ -756,9 +800,9 @@ Possible values are:
 
 Possible values are:
 
-* `0x0000` -- Put `scn` field only in the first message.
+* `0` -- Put `scn` field only in the first message.
 
-* `0x0001` -- Put `scn` field in every message.
+* `1` -- Put `scn` field in every message.
 
 |`timestamp` [[timestamp]]
 |_number_, min: 0, max: 8, default: 0
@@ -767,15 +811,23 @@ Possible values are:
 In the following description, the following timerstamp is used as an example: `"2022-05-01 06:00:00.123456789"`.
 Possible values are:
 
-* `0x0000` -- Unix with nanoseconds -- `"tm": 1651384800123456789`.
-* `0x0001` -- Unix with microseconds precision -- `"tm": 1651384800123457`.
-* `0x0002` -- Unix with milliseconds precision -- `"tm": 1651384800123`.
-* `0x0003` -- Unix with seconds precision -- `"tm": 1651384800`.
-* `0x0004` -- Unix with nanoseconds stored as character -- `"tms": "1651384800123456789"`.
-* `0x0005` -- Unix with microseconds precision stored as character -- `"tms": "1651384800123457"`.
-* `0x0006` -- Unix with milliseconds precision stored as character -- `"tms": "1651384800123"`.
-* `0x0007` -- Unix with seconds precision stored as character -- `"tms": "1651384800"`.
-* `0x0008` -- _ISO-8601_ format stored as character -- `"tms": "2022-05-01 06:00:00.123456789"`.
+* `0` -- Unix with nanoseconds -- `"tm": 1651384800123456789`.
+
+* `1` -- Unix with microseconds precision (possible data precission loss) -- `"tm": 1651384800123457`.
+
+* `2` -- Unix with milliseconds precision (possible data precission loss) -- `"tm": 1651384800123`.
+
+* `3` -- Unix with seconds precision (possible data precission loss) -- `"tm": 1651384800`.
+
+* `4` -- Unix with nanoseconds stored as a string -- `"tms": "1651384800123456789"`.
+
+* `5` -- Unix with microseconds precision stored as a string (possible data precission loss) -- `"tms": "1651384800123457"`.
+
+* `6` -- Unix with milliseconds precision stored as a string (possible data precission loss) -- `"tms": "1651384800123"`.
+
+* `7` -- Unix with seconds precision stored as a string (possible data precission loss) -- `"tms": "1651384800"`.
+
+* `8` -- _ISO-8601_ format stored as a string -- `"tms": "2022-05-01 06:00:00.123456789"`.
 
 _NOTE:_ This format is also used for type `timestamp with local time zone` since this type internally does not contain time zone data.
 
@@ -784,13 +836,18 @@ _NOTE:_ This format is also used for type `timestamp with local time zone` since
 |Format of timestamp with time zone values.
 
 In the following description, the following timerstamp with time zone is used as an example: `"2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+
 Possible values are:
 
-* `0x0000` -- Unix with nanoseconds stored as character with time zone after comma sign -- `"tms": "1651384800123456789,Europe/Warsaw"`.
-* `0x0001` -- Unix with microseconds precision stored as character with time zone after comma sign -- `"tms": "1651384800123457,Europe/Warsaw"`.
-* `0x0002` -- Unix with milliseconds precision stored as character with time zone after comma sign -- `"tms": "1651384800123,Europe/Warsaw"`.
-* `0x0003` -- Unix with seconds precision stored as character with time zone after comma sign -- `"tms": "1651384800,Europe/Warsaw"`.
-* `0x0004` -- _ISO-8601_ format stored as character with time zone after space sign-- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+* `0` -- Unix with nanoseconds stored as a string with time zone after comma sign -- `"tms": "1651384800123456789,Europe/Warsaw"`.
+
+* `1` -- Unix with microseconds precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800123457,Europe/Warsaw"`.
+
+* `2` -- Unix with milliseconds precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800123,Europe/Warsaw"`.
+
+* `3` -- Unix with seconds precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800,Europe/Warsaw"`.
+
+* `4` -- _ISO-8601_ format stored as a string with time zone after space sign-- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
 
 |`timestamp-all` [[timestamp-all]]
 |_number_, min: 0, max: 1, default: 0
@@ -798,9 +855,9 @@ Possible values are:
 
 Possible values are:
 
-* `0x0000` -- Put `timestamp` field only in the first message.
+* `0` -- Put `timestamp` field only in the first message.
 
-* `0x0001` -- Put `timestamp` field in every message.
+* `1` -- Put `timestamp` field in every message.
 
 |`unknown`
 |_number_, min: 0, max: 1, default: 0
@@ -823,7 +880,7 @@ Possible values are:
 
 * `1` -- decimal format (like: `"xid":"2.18.16738"`).
 
-* `2` -- single 64-bit number format (like: `"xidn":563027262849378`).
+* `2` -- a single 64-bit number format (like: `"xidn":563027262849378`).
 
 |===
 

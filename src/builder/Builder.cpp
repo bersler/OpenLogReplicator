@@ -28,15 +28,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newMessageFormat, uint64_t newRidFormat,
-                     uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat,
-                     uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
-                     uint64_t newUnknownType, uint64_t newFlushBuffer) :
+    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat,  uint64_t newIntervalDtsFormat,
+                     uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat,
+                     uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
+                     uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
             ctx(newCtx),
             locales(newLocales),
             metadata(newMetadata),
             msg(nullptr),
             dbFormat(newDbFormat),
+            intervalDtsFormat(newIntervalDtsFormat),
+            intervalYtmFormat(newIntervalYtmFormat),
             messageFormat(newMessageFormat),
             ridFormat(newRidFormat),
             xidFormat(newXidFormat),
@@ -335,30 +337,55 @@ namespace OpenLogReplicator {
                 else {
                     uint64_t month = data[4] - 60;
                     char buffer[9];
+                    uint64_t val = 0;
+                    uint64_t len = 0;
                     valueLength = 0;
 
-                    uint64_t val = year;
-                    uint64_t len = 0;
-                    if (year == 0) {
-                        valueBuffer[valueLength++] = '0';
-                    } else {
-                        while (val) {
-                            buffer[len++] = ctx->map10[val % 10];
-                            val /= 10;
+                    if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS || intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS_STRING) {
+                        val = year * 12 + month;
+                        if (val == 0) {
+                            valueBuffer[valueLength++] = '0';
+                        } else {
+                            while (val) {
+                                buffer[len++] = ctx->map10[val % 10];
+                                val /= 10;
+                            }
+                            while (len > 0)
+                                valueBuffer[valueLength++] = buffer[--len];
                         }
-                        while (len > 0)
-                            valueBuffer[valueLength++] = buffer[--len];
+
+                        if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS)
+                            columnNumber(column->name, 17, 0);
+                        else
+                            columnString(column->name);
+                    } else {
+                        val = year;
+                        if (val == 0) {
+                            valueBuffer[valueLength++] = '0';
+                        } else {
+                            while (val) {
+                                buffer[len++] = ctx->map10[val % 10];
+                                val /= 10;
+                            }
+                            while (len > 0)
+                                valueBuffer[valueLength++] = buffer[--len];
+                        }
+
+                        if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_SPACE)
+                            valueBuffer[valueLength++] = ' ';
+                        else if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_COMMA)
+                            valueBuffer[valueLength++] = ',';
+                        else if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_DASH)
+                            valueBuffer[valueLength++] = '-';
+
+                        if (month >= 10) {
+                            valueBuffer[valueLength++] = '1';
+                            valueBuffer[valueLength++] = ctx->map10[month - 10];
+                        } else
+                            valueBuffer[valueLength++] = ctx->map10[month];
+
+                        columnString(column->name);
                     }
-
-                    valueBuffer[valueLength++] = ',';
-
-                    if (month >= 10) {
-                        valueBuffer[valueLength++] = '1';
-                        valueBuffer[valueLength++] = ctx->map10[month - 10];
-                    } else
-                        valueBuffer[valueLength++] = ctx->map10[month];
-
-                    columnString(column->name);
                 }
             }
             break;
@@ -378,38 +405,95 @@ namespace OpenLogReplicator {
                     uint64_t second = data[6] - 60;
                     char buffer[29];
                     valueLength = 0;
-
-                    uint64_t val = day;
+                    uint64_t val = 0;
                     uint64_t len = 0;
-                    if (day == 0) {
-                        valueBuffer[valueLength++] = '0';
-                    } else {
-                        while (val) {
-                            buffer[len++] = ctx->map10[val % 10];
-                            val /= 10;
+
+                    if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE || intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA ||
+                            intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH) {
+                        val = day;
+                        if (day == 0) {
+                            valueBuffer[valueLength++] = '0';
+                        } else {
+                            while (val) {
+                                buffer[len++] = ctx->map10[val % 10];
+                                val /= 10;
+                            }
+                            while (len > 0)
+                                valueBuffer[valueLength++] = buffer[--len];
                         }
-                        while (len > 0)
-                            valueBuffer[valueLength++] = buffer[--len];
+
+                        if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE)
+                            valueBuffer[valueLength++] = ' ';
+                        else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA)
+                            valueBuffer[valueLength++] = ',';
+                        else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH)
+                            valueBuffer[valueLength++] = '-';
+
+                        valueBuffer[valueLength++] = ctx->map10[hour / 10];
+                        valueBuffer[valueLength++] = ctx->map10[hour % 10];
+                        valueBuffer[valueLength++] = ':';
+                        valueBuffer[valueLength++] = ctx->map10[minute / 10];
+                        valueBuffer[valueLength++] = ctx->map10[minute % 10];
+                        valueBuffer[valueLength++] = ':';
+                        valueBuffer[valueLength++] = ctx->map10[second / 10];
+                        valueBuffer[valueLength++] = ctx->map10[second % 10];
+                        valueBuffer[valueLength++] = '.';
+
+                        for (uint64_t j = 0; j < 9; ++j) {
+                            valueBuffer[valueLength + 8 - j] = ctx->map10[us % 10];
+                            us /= 10;
+                        }
+                        valueLength += 9;
+
+                        columnString(column->name);
+                    } else {
+                        switch (intervalDtsFormat) {
+                            case INTERVAL_DTS_FORMAT_UNIX_NANO:
+                            case INTERVAL_DTS_FORMAT_UNIX_NANO_STRING:
+                                val = (((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us;
+                                break;
+
+                            case INTERVAL_DTS_FORMAT_UNIX_MICRO:
+                            case INTERVAL_DTS_FORMAT_UNIX_MICRO_STRING:
+                                val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500) / 1000;
+                                break;
+
+                            case INTERVAL_DTS_FORMAT_UNIX_MILLI:
+                            case INTERVAL_DTS_FORMAT_UNIX_MILLI_STRING:
+                                val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000) / 1000000;
+                                break;
+
+                            case INTERVAL_DTS_FORMAT_UNIX:
+                            case INTERVAL_DTS_FORMAT_UNIX_STRING:
+                                val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000000) / 1000000000;
+                        }
+
+                        if (val == 0) {
+                            valueBuffer[valueLength++] = '0';
+                        } else {
+                            while (val) {
+                                buffer[len++] = ctx->map10[val % 10];
+                                val /= 10;
+                            }
+                            while (len > 0)
+                                valueBuffer[valueLength++] = buffer[--len];
+                        }
+
+                        switch (intervalDtsFormat) {
+                            case INTERVAL_DTS_FORMAT_UNIX_NANO:
+                            case INTERVAL_DTS_FORMAT_UNIX_MICRO:
+                            case INTERVAL_DTS_FORMAT_UNIX_MILLI:
+                            case INTERVAL_DTS_FORMAT_UNIX:
+                                columnNumber(column->name, 17, 0);
+                                break;
+
+                            case INTERVAL_DTS_FORMAT_UNIX_NANO_STRING:
+                            case INTERVAL_DTS_FORMAT_UNIX_MICRO_STRING:
+                            case INTERVAL_DTS_FORMAT_UNIX_MILLI_STRING:
+                            case INTERVAL_DTS_FORMAT_UNIX_STRING:
+                                columnString(column->name);
+                        }
                     }
-
-                    valueBuffer[valueLength++] = ',';
-                    valueBuffer[valueLength++] = ctx->map10[hour / 10];
-                    valueBuffer[valueLength++] = ctx->map10[hour % 10];
-                    valueBuffer[valueLength++] = ':';
-                    valueBuffer[valueLength++] = ctx->map10[minute / 10];
-                    valueBuffer[valueLength++] = ctx->map10[minute % 10];
-                    valueBuffer[valueLength++] = ':';
-                    valueBuffer[valueLength++] = ctx->map10[second / 10];
-                    valueBuffer[valueLength++] = ctx->map10[second % 10];
-                    valueBuffer[valueLength++] = '.';
-
-                    for (uint64_t j = 0; j < 9; ++j) {
-                        valueBuffer[valueLength + 8 - j] = ctx->map10[us % 10];
-                        us /= 10;
-                    }
-                    valueLength += 9;
-
-                    columnString(column->name);
                 }
             }
             break;

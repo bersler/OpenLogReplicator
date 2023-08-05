@@ -27,13 +27,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
-    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newMessageFormat,
-                                     uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat,
-                                     uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat,
-                                     uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newDbFormat, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat,
-                    newTimestampAll, newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType,
-                    newFlushBuffer),
+    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newIntervalDtsFormat,
+                                     uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
+                                     uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat,
+                                     uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
+                                     uint64_t newUnknownType, uint64_t newFlushBuffer) :
+            Builder(newCtx, newLocales, newMetadata, newDbFormat, newIntervalDtsFormat, newIntervalYtmFormat, newMessageFormat, newRidFormat, newXidFormat,
+                    newTimestampFormat, newTimestampTzFormat, newTimestampAll, newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat,
+                    newColumnFormat, newUnknownType, newFlushBuffer),
             redoResponsePB(nullptr),
             valuePB(nullptr),
             payloadPB(nullptr),

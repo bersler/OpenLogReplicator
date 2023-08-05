@@ -86,6 +86,8 @@ namespace OpenLogReplicator {
         BuilderMsg* msg;
 
         uint64_t dbFormat;
+        uint64_t intervalDtsFormat;
+        uint64_t intervalYtmFormat;
         uint64_t messageFormat;
         uint64_t ridFormat;
         uint64_t xidFormat;
@@ -1125,10 +1127,10 @@ namespace OpenLogReplicator {
         BuilderQueue* firstBuilderQueue;
         BuilderQueue* lastBuilderQueue;
 
-        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newMessageFormat, uint64_t newRidFormat,
-                uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll,  uint64_t newCharFormat,
-                uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
-                uint64_t newUnknownType, uint64_t newFlushBuffer);
+        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newIntervalDtsFormat, uint64_t newIntervalYtmFormat,
+                uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat,
+                uint64_t newTimestampAll,  uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat,
+                uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
         virtual ~Builder();
 
         [[nodiscard]] uint64_t builderSize() const;
