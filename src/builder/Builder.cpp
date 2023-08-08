@@ -328,18 +328,36 @@ namespace OpenLogReplicator {
             break;
 
         case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
-            if (length != 5 || (data[0] & 0x80) == 0 || data[4] < 60 || data[4] > 71)
+            if (length != 5 || data[4] < 49 || data[4] > 71)
                 columnUnknown(column->name, data, length);
             else {
-                uint64_t year = Ctx::read32Big(data) - 0x80000000;
+                bool minus = false;
+                uint64_t year = 0;
+                if ((data[0] & 0x80) != 0)
+                    year = Ctx::read32Big(data) - 0x80000000;
+                else {
+                    year = 0x80000000 - Ctx::read32Big(data);
+                    minus = true;
+                }
+
                 if (year > 999999999)
                     columnUnknown(column->name, data, length);
                 else {
-                    uint64_t month = data[4] - 60;
-                    char buffer[9];
+                    uint64_t month = 0;
+                    if (data[4] >= 60)
+                        month = data[4] - 60;
+                    else {
+                        month = 60 - data[4];
+                        minus = true;
+                    }
+
+                    char buffer[12];
                     uint64_t val = 0;
                     uint64_t len = 0;
                     valueLength = 0;
+
+                    if (minus)
+                        valueBuffer[valueLength++] = '-';
 
                     if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS || intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS_STRING) {
                         val = year * 12 + month;
@@ -391,22 +409,60 @@ namespace OpenLogReplicator {
             break;
 
         case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
-            if (length != 11 || (data[0] & 0x80) == 0 || data[4] < 60 || data[4] > 83 || data[5] < 60 || data[5] > 119 || data[6] < 60 || data[6] > 119 ||
-                    (data[7] & 0x80) == 0)
+            if (length != 11 || data[4] < 37 || data[4] > 83 || data[5] < 1 || data[5] > 119 || data[6] < 1 || data[6] > 119)
                 columnUnknown(column->name, data, length);
             else {
-                uint64_t day = Ctx::read32Big(data) - 0x80000000;
-                uint64_t us = Ctx::read32Big(data + 7) - 0x80000000;
+                bool minus = false;
+                uint64_t day = 0;
+                if ((data[0] & 0x80) != 0)
+                    day = Ctx::read32Big(data) - 0x80000000;
+                else {
+                    day = 0x80000000 - Ctx::read32Big(data);
+                    minus = true;
+                }
+
+                int32_t us = 0;
+                if ((data[7] & 0x80) != 0)
+                    us = Ctx::read32Big(data + 7) - 0x80000000;
+                else {
+                    us = 0x80000000 - Ctx::read32Big(data + 7);
+                    minus = true;
+                }
+
                 if (day > 999999999 || us > 999999999)
                     columnUnknown(column->name, data, length);
                 else {
-                    uint64_t hour = data[4] - 60;
-                    uint64_t minute = data[5] - 60;
-                    uint64_t second = data[6] - 60;
-                    char buffer[29];
+                    uint64_t hour = 0;
+                    if (data[4] >= 60)
+                        hour = data[4] - 60;
+                    else {
+                        hour = 60 - data[4];
+                        minus = true;
+                    }
+
+                    uint64_t minute = 0;
+                    if (data[5] >= 60)
+                        minute = data[5] - 60;
+                    else {
+                        minute = 60 - data[5];
+                        minus = true;
+                    }
+
+                    uint64_t second = 0;
+                    if (data[6] >= 60)
+                        second = data[6] - 60;
+                    else {
+                        second = 60 - data[6];
+                        minus = true;
+                    }
+
+                    char buffer[30];
                     valueLength = 0;
                     uint64_t val = 0;
                     uint64_t len = 0;
+
+                    if (minus)
+                        valueBuffer[valueLength++] = '-';
 
                     if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE || intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA ||
                             intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH) {
