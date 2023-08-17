@@ -22,6 +22,7 @@
 - fix: client stream disconnect causes replication to stop
 - enhancement: added options interval-ytm and interval-dts to control interval type output format
 - fix: minor style fixes
+- fix: network client date was not consistent when reconnected
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

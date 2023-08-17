@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-07-30
+:revdate: 2023-08-17
 :imagesdir: ./images
 :toc: preamble
 
@@ -919,6 +919,10 @@ Invalid request data received by the network client.
 Reading file metadata failed.
 Check if the file is not corrupted.
 Verify operating system log messages.
+
+==== code 60035, "unknown database requested, got: <name>, expected: <name>"
+
+Client requested a database which is not configured in the program.
 
 === Internal warnings (7xxxx)
 

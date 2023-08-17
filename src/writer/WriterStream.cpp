@@ -75,12 +75,12 @@ namespace OpenLogReplicator {
     void WriterStream::processInfo() {
         response.Clear();
         if (request.database_name() != database) {
-            ctx->logTrace(TRACE_WRITER, "client requested database: " + std::string(request.database_name()) + " instead of " + database);
+            ctx->warning(60035, "unknown database requested, got: " + request.database_name() + ", expected: " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
         } else if (metadata->firstDataScn != ZERO_SCN) {
             ctx->logTrace(TRACE_WRITER, "client requested scn: " + std::to_string(metadata->firstDataScn) + " when already started");
             response.set_code(pb::ResponseCode::STARTED);
-            response.set_scn(metadata->firstDataScn);
+            response.set_scn(confirmedScn);
         } else {
             response.set_code(pb::ResponseCode::READY);
         }
@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
     void WriterStream::processStart() {
         response.Clear();
         if (request.database_name() != database) {
-            ctx->logTrace(TRACE_WRITER, "client requested database: " + std::string(request.database_name()) + " instead of " + database);
+            ctx->warning(60035, "unknown database requested, got: " + request.database_name() + ", expected: " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
             return;
         }
@@ -151,11 +151,16 @@ namespace OpenLogReplicator {
     void WriterStream::processRedo() {
         response.Clear();
         if (request.database_name() == database) {
+            if (request.has_scn()) {
+                confirmedScn = request.scn();
+                ctx->info(0, "client requested scn: " + std::to_string(metadata->firstDataScn));
+            }
+
             response.set_code(pb::ResponseCode::STREAMING);
             ctx->info(0, "streaming to client");
             streaming = true;
         } else {
-            ctx->logTrace(TRACE_WRITER, "client requested database: " + std::string(request.database_name()) + " instead of " + database);
+            ctx->warning(60035, "unknown database requested, got: " + std::string(request.database_name()) + " instead of " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
         }
     }
@@ -164,6 +169,8 @@ namespace OpenLogReplicator {
         if (request.database_name() == database) {
             while (currentQueueSize > 0 && queue[0]->scn <= request.scn())
                 confirmMessage(queue[0]);
+        } else {
+            ctx->warning(60035, "unknown database confirmed, got: " + request.database_name() + ", expected: " + database);
         }
     }
 

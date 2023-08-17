@@ -123,7 +123,8 @@ namespace OpenLogReplicator {
         {
             while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
-                confirmedScn = queue[0]->scn;
+                if (queue[0]->scn > confirmedScn || confirmedScn == ZERO_SCN)
+                    confirmedScn = queue[0]->scn;
 
                 if (--currentQueueSize == 0)
                     break;
@@ -218,7 +219,7 @@ namespace OpenLogReplicator {
                     }
 
                 // Found something
-                msg = (BuilderMsg*) (builderQueue->data + oldLength);
+                msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldLength);
                 if (builderQueue->length > oldLength + sizeof(struct BuilderMsg) && msg->length > 0) {
                     newLength = builderQueue->length;
                     break;
@@ -235,7 +236,7 @@ namespace OpenLogReplicator {
 
             // Send message
             while (oldLength + sizeof(struct BuilderMsg) < newLength && !ctx->hardShutdown) {
-                msg = (BuilderMsg*) (builderQueue->data + oldLength);
+                msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldLength);
                 if (msg->length == 0)
                     break;
 
@@ -260,7 +261,8 @@ namespace OpenLogReplicator {
                 // Message in one part - send directly from buffer
                 if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
-                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
+                    // Send only new messages to the client
+                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) || msg->scn <= confirmedScn)
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
@@ -294,8 +296,9 @@ namespace OpenLogReplicator {
 
                     createMessage(msg);
 
-                    // Checkpoint message to be ignored
-                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
+                    // Checkpoint message is to be ignored
+                    // Send only new messages to the client
+                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) || msg->scn <= confirmedScn)
                         confirmMessage(msg);
                     else
                         sendMessage(msg);

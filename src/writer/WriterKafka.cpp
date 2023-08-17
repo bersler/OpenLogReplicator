@@ -114,14 +114,14 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::logger_cb(const rd_kafka_t* rkCb, int level, const char* fac, const char* buf) {
-        WriterKafka* writer = (WriterKafka*) rd_kafka_opaque(rkCb);
+        WriterKafka* writer = reinterpret_cast<WriterKafka*>(rd_kafka_opaque(rkCb));
         if (writer->ctx->trace & TRACE_WRITER)
             writer->ctx->logTrace(TRACE_WRITER, std::to_string(level) + ", rk: " + (rkCb ? rd_kafka_name(rkCb) : nullptr) +
                                   ", fac: " + fac + ", err: " + buf);
     }
 
     void WriterKafka::sendMessage(BuilderMsg* msg) {
-        msg->ptr = (void*)this;
+        msg->ptr = reinterpret_cast<void*>(this);
         for(;;) {
             rd_kafka_resp_err_t err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic.c_str()), RD_KAFKA_V_VALUE(msg->data, msg->length),
                     RD_KAFKA_V_OPAQUE(msg), RD_KAFKA_V_END);
