@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-17
+:revdate: 2023-08-18
 :imagesdir: ./images
 :toc: preamble
 
@@ -890,7 +890,7 @@ Invalid archive log file name.
 Verify if the file is correct.
 If the problem persists, please report this issue.
 
-==== code 60029: "message size (<number>) will exceed 'max-file' size (<number>)"
+==== code 60029: "message size (<number>) will exceed 'max-file-size' size (<number>)"
 
 The defined maximum size for the file is too small to write a single message.
 Increase the size.

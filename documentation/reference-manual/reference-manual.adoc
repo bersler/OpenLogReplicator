@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-06
+:revdate: 2023-08-18
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -1066,7 +1066,7 @@ The following placeholders are supported:
 * `%s` -- database sequence number.
 
 _NOTE:_ There should be only one placeholder in the format.
-When using `%i` or `%t` format `max-size` parameter must be set to value greater than 0.
+When using `%i` or `%t` format `max-file-size` parameter must be set to value greater than 0.
 
 _NOTE:_ This field is valid only for `file` type.
 
