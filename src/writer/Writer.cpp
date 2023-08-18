@@ -123,7 +123,7 @@ namespace OpenLogReplicator {
         {
             while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
-                if (queue[0]->scn > confirmedScn || confirmedScn == ZERO_SCN)
+                if ((queue[0]->scn > confirmedScn || confirmedScn == ZERO_SCN) && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) != 0)
                     confirmedScn = queue[0]->scn;
 
                 if (--currentQueueSize == 0)
