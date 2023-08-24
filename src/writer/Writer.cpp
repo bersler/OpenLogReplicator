@@ -111,6 +111,8 @@ namespace OpenLogReplicator {
             }
             msg = queue[0];
         }
+        if (msg->scn > confirmedScn || confirmedScn == ZERO_SCN)
+            confirmedScn = msg->scn;
 
         msg->flags |= OUTPUT_BUFFER_MESSAGE_CONFIRMED;
         if (msg->flags & OUTPUT_BUFFER_MESSAGE_ALLOCATED) {
@@ -261,8 +263,7 @@ namespace OpenLogReplicator {
                 if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send only new messages to the client
-                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
-                            (msg->scn <= confirmedScn && confirmedScn != ZERO_SCN))
+                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
@@ -298,8 +299,7 @@ namespace OpenLogReplicator {
 
                     // Checkpoint message is to be ignored
                     // Send only new messages to the client
-                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
-                            (msg->scn <= confirmedScn && confirmedScn != ZERO_SCN))
+                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
