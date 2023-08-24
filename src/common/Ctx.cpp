@@ -602,9 +602,12 @@ namespace OpenLogReplicator {
         if (memoryChunksFree == 0) {
             while (memoryChunksAllocated == memoryChunksMax && !softShutdown) {
                 if (memoryChunksReusable > 1) {
+                    warning(10067, "out of memory, but there are reusable memory chunks, trying to reuse some memory");
+
+                    if (trace & TRACE_SLEEP)
+                        logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
                     condOutOfMemory.wait(lck);
-                }
-                if (memoryChunksAllocated == memoryChunksMax && memoryChunksReusable == 0) {
+                } else {
                     hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
                          "transaction would be skipped");
                     throw RuntimeException(10017, "out of memory");
@@ -706,8 +709,11 @@ namespace OpenLogReplicator {
 
         {
             std::unique_lock<std::mutex> lck(mtx);
-            if (!hardShutdown)
+            if (!hardShutdown) {
+                if (trace & TRACE_SLEEP)
+                    logTrace(TRACE_SLEEP, "Ctx:mainLoop");
                 condMainLoop.wait(lck);
+            }
         }
 
         logTrace(TRACE_THREADS, "main loop end");
@@ -1006,6 +1012,9 @@ namespace OpenLogReplicator {
                 break;
             case TRACE_LOB_DATA:
                 code = "LOBDT";
+                break;
+            case TRACE_SLEEP:
+                code = "SLEEP";
                 break;
         }
 

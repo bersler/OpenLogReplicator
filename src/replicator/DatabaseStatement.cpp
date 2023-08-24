@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
             executed = false;
         }
 
-        conn->env->checkErr(conn->errhp, OCIStmtPrepare2(conn->svchp, &stmthp, conn->errhp, (const OraText*) sql,
+        conn->env->checkErr(conn->errhp, OCIStmtPrepare2(conn->svchp, &stmthp, conn->errhp, reinterpret_cast<const OraText*>(sql),
                                                          strlen(sql), nullptr, 0, OCI_NTV_SYNTAX, OCI_DEFAULT));
     }
 
@@ -222,7 +222,7 @@ namespace OpenLogReplicator {
         conn->env->checkErr(conn->errhp, OCIParamGet(stmthp, OCI_HTYPE_STMT, conn->errhp,
                                                      reinterpret_cast<void**>(&paramdp), col));
         uint32_t fieldLength = 0;
-        conn->env->checkErr(conn->errhp, OCIAttrGet(paramdp, OCI_DTYPE_PARAM, (dvoid*) &fieldLength, nullptr,
+        conn->env->checkErr(conn->errhp, OCIAttrGet(paramdp, OCI_DTYPE_PARAM, reinterpret_cast<dvoid*>(&fieldLength), nullptr,
                                                     OCI_ATTR_DATA_SIZE, conn->errhp));
         return (fieldLength == 0);
     }

@@ -602,9 +602,13 @@ namespace OpenLogReplicator {
                 condParserSleeping.notify_all();
 
                 if (status == READER_STATUS_SLEEPING && !ctx->softShutdown) {
+                    if (ctx->trace & TRACE_SLEEP)
+                        ctx->logTrace(TRACE_SLEEP, "Reader:mainLoop:sleep");
                     condReaderSleeping.wait(lck);
                 } else if (status == READER_STATUS_READ && !ctx->softShutdown && ctx->buffersFree == 0 && (bufferEnd % MEMORY_CHUNK_SIZE) == 0) {
                     // Buffer full
+                    if (ctx->trace & TRACE_SLEEP)
+                        ctx->logTrace(TRACE_SLEEP, "Reader:mainLoop:buffer");
                     condBufferFull.wait(lck);
                 }
             }
@@ -679,6 +683,8 @@ namespace OpenLogReplicator {
                     if (bufferStart + ctx->bufferSizeMax == bufferEnd) {
                         std::unique_lock<std::mutex> lck(mtx);
                         if (!ctx->softShutdown && bufferStart + ctx->bufferSizeMax == bufferEnd) {
+                            if (ctx->trace & TRACE_SLEEP)
+                                ctx->logTrace(TRACE_SLEEP, "Reader:mainLoop:bufferFull");
                             condBufferFull.wait(lck);
                             continue;
                         }
@@ -1040,6 +1046,8 @@ namespace OpenLogReplicator {
         while (status == READER_STATUS_CHECK) {
             if (ctx->softShutdown)
                 break;
+            if (ctx->trace & TRACE_SLEEP)
+                ctx->logTrace(TRACE_SLEEP, "Reader:checkRedoLog");
             condParserSleeping.wait(lck);
         }
         if (ret == REDO_OK)
@@ -1058,6 +1066,8 @@ namespace OpenLogReplicator {
             while (status == READER_STATUS_UPDATE) {
                 if (ctx->softShutdown)
                     break;
+                if (ctx->trace & TRACE_SLEEP)
+                    ctx->logTrace(TRACE_SLEEP, "Reader:updateRedoLog");
                 condParserSleeping.wait(lck);
             }
 
@@ -1097,6 +1107,8 @@ namespace OpenLogReplicator {
         if (confirmedBufferStart == bufferEnd) {
             if (ret == REDO_STOPPED || ret == REDO_OVERWRITTEN || ret == REDO_FINISHED || status == READER_STATUS_SLEEPING)
                 return true;
+            if (ctx->trace & TRACE_SLEEP)
+                ctx->logTrace(TRACE_SLEEP, "Reader:checkFinished");
             condParserSleeping.wait(lck);
         }
         return false;

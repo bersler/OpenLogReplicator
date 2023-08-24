@@ -225,7 +225,6 @@ namespace OpenLogReplicator {
                     break;
                 }
 
-                ctx->wakeAllOutOfMemory();
                 if (ctx->softShutdown && ctx->replicatorFinished)
                     break;
                 builder->sleepForWriterWork(currentQueueSize, ctx->pollIntervalUs);
@@ -262,7 +261,8 @@ namespace OpenLogReplicator {
                 if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send only new messages to the client
-                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) || msg->scn <= confirmedScn)
+                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                            (msg->scn <= confirmedScn && confirmedScn != ZERO_SCN))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
@@ -298,7 +298,8 @@ namespace OpenLogReplicator {
 
                     // Checkpoint message is to be ignored
                     // Send only new messages to the client
-                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) || msg->scn <= confirmedScn)
+                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                            (msg->scn <= confirmedScn && confirmedScn != ZERO_SCN))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
@@ -349,7 +350,7 @@ namespace OpenLogReplicator {
                 << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
                 << R"(,"activation":)" << std::dec << metadata->activation << "}";
 
-        if (metadata->stateWrite(name, ss)) {
+        if (metadata->stateWrite(name, confirmedScn, ss)) {
             checkpointScn = confirmedScn;
             checkpointTime = now;
         }

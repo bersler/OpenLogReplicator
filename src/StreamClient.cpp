@@ -224,10 +224,10 @@ int main(int argc, char** argv) {
                 lastScn = response.scn();
             } else {
                 buffer[length] = 0;
-                ctx.info(0, std::string("message: ") + ((const char*)buffer));
+                ctx.info(0, std::string("message: ") + reinterpret_cast<const char*>(buffer));
 
                 rapidjson::Document document;
-                if (document.Parse((const char*)buffer).HasParseError())
+                if (document.Parse(reinterpret_cast<const char*>(buffer)).HasParseError())
                     throw OpenLogReplicator::RuntimeException(20001, "offset: " +
                                                std::to_string(document.GetErrorOffset()) + " - parse error: " + GetParseError_En(document.GetParseError()));
 

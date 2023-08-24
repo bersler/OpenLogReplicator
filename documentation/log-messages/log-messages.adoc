@@ -436,6 +436,10 @@ Verify if the ZeroMQ library is installed and available.
 Initialization of ZeroMQ socket failed.
 Verify if the ZeroMQ library is installed and available.
 
+==== code 10067: "out of memory, but there are reusable memory chunks, trying to reuse some memory"
+
+The module which builds output stream is out of memory. Stream building is suspended until memory is released. If possible, configure higher memory limits.
+
 === Data exceptions (2xxxx)
 
 Errors related to syntax and content of configuration file and checkpoint files.

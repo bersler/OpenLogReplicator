@@ -23,6 +23,8 @@
 - enhancement: added options interval-ytm and interval-dts to control interval type output format
 - fix: minor style fixes
 - fix: network client date was not consistent when reconnected
+- fix: scn information inconsistency in transaction fix
+- enhancement: added flag 2 for "scn" field type to control scn values
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

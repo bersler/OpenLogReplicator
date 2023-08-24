@@ -45,6 +45,9 @@ namespace OpenLogReplicator {
         std::string configFileName;
         time_t configFileChange;
 
+        void trackConfigFile();
+        void updateConfigFile();
+
     public:
         Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, const std::string& newConfigFileName, time_t newConfigFileChange);
         virtual ~Checkpoint();

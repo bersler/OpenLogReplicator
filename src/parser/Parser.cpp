@@ -764,8 +764,8 @@ namespace OpenLogReplicator {
 
         transaction->log(ctx, "C   ", redoLogRecord1);
         transaction->commitTimestamp = lwnTimestamp;
-        transaction->commitScn = redoLogRecord1->scnRecord;
-        transaction->commitSequence = redoLogRecord1->sequence;
+        transaction->commitScn = redoLogRecord1->scnRecord; //lwnScn;
+        transaction->commitSequence = sequence; //redoLogRecord1->sequence;
         if ((redoLogRecord1->flg & FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
 
@@ -1370,7 +1370,7 @@ namespace OpenLogReplicator {
                                   " num: " + std::to_string(lwnNumCnt) + "/" + std::to_string(lwnNumMax));
                 if (currentBlock == lwnEndBlock && lwnNumCnt == lwnNumMax) {
                     if (ctx->trace & TRACE_LWN)
-                        ctx->logTrace(TRACE_LWN, "analyze");
+                        ctx->logTrace(TRACE_LWN, "* analyze: " + std::to_string(lwnScn));
                     for (uint64_t i = 0; i < lwnRecords; ++i) {
                         try {
                             analyzeLwn(lwnMembers[i]);
@@ -1392,12 +1392,14 @@ namespace OpenLogReplicator {
                     if (lwnScn > metadata->firstDataScn) {
                         if (ctx->trace & TRACE_CHECKPOINT)
                             ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn));
-                        builder->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->getBlockSize(), switchRedo);
+                        builder->processCheckpoint(lwnScn, sequence, lwnTimestamp, currentBlock * reader->getBlockSize(), switchRedo);
 
                         typeSeq minSequence = ZERO_SEQ;
                         uint64_t minOffset = -1;
                         typeXid minXid;
                         transactionBuffer->checkpoint(minSequence, minOffset, minXid);
+                        if (ctx->trace & TRACE_LWN)
+                            ctx->logTrace(TRACE_LWN, "* checkpoint: " + std::to_string(lwnScn));
                         metadata->checkpoint(lwnScn, lwnTimestamp, sequence,
                                              currentBlock * reader->getBlockSize(),
                                              (currentBlock - lwnConfirmedBlock) * reader->getBlockSize(), minSequence,
@@ -1435,11 +1437,11 @@ namespace OpenLogReplicator {
                 switchRedo = true;
                 if (ctx->trace & TRACE_CHECKPOINT)
                     ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " with switch");
-                builder->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->getBlockSize(), switchRedo);
+                builder->processCheckpoint(lwnScn, sequence, lwnTimestamp, currentBlock * reader->getBlockSize(), switchRedo);
             } else if (ctx->softShutdown) {
                 if (ctx->trace & TRACE_CHECKPOINT)
                     ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " at exit");
-                builder->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->getBlockSize(), false);
+                builder->processCheckpoint(lwnScn, sequence, lwnTimestamp, currentBlock * reader->getBlockSize(), false);
             }
 
             if (ctx->softShutdown) {

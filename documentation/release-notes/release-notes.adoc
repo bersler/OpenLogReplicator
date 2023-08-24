@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.2.1
-:revdate: 2023-08-17
+:revdate: 2023-08-24
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -42,6 +42,8 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: added options interval-ytm and interval-dts to control interval type output format
 - fix: minor style fixes
 - fix: network client date was not consistent when reconnected
+- fix: scn information inconsistency in transaction fix
+- enhancement: added flag 2 for "scn-format" field type to control scn values
 
 === Version 1.2.0
 

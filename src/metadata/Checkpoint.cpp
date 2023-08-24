@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <algorithm>
 #include <fcntl.h>
 #include <list>
 #include <sys/stat.h>
@@ -55,6 +56,167 @@ namespace OpenLogReplicator {
         condLoop.notify_all();
     }
 
+    void Checkpoint::trackConfigFile() {
+        struct stat configFileStat;
+        if (stat(configFileName.c_str(), &configFileStat) != 0)
+            throw RuntimeException(10003, "file: " + configFileName + " - stat returned: " + strerror(errno));
+
+        if (configFileStat.st_mtime == configFileChange)
+            return;
+
+        ctx->info(0, "config file changed, reloading");
+
+        try {
+            int fid = open(configFileName.c_str(), O_RDONLY);
+            if (fid == -1)
+                throw ConfigurationException(10001, "file: " + configFileName + " - open returned: " + strerror(errno));
+
+            if (configFileStat.st_size > CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0)
+                throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " +
+                                                    std::to_string(configFileStat.st_size));
+
+            if (configFileBuffer != nullptr)
+                delete[] configFileBuffer;
+
+            configFileBuffer = new char[configFileStat.st_size + 1];
+            uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
+            if (bytesRead != static_cast<uint64_t>(configFileStat.st_size))
+                throw ConfigurationException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) +
+                                                    " bytes read instead of " + std::to_string(configFileStat.st_size));
+            configFileBuffer[configFileStat.st_size] = 0;
+
+            updateConfigFile();
+
+            if (configFileBuffer != nullptr)
+                delete[] configFileBuffer;
+            configFileBuffer = nullptr;
+
+        } catch (ConfigurationException& ex) {
+            ctx->error(ex.code, ex.msg);
+        }
+
+        configFileChange = configFileStat.st_mtime;
+    }
+
+    void Checkpoint::updateConfigFile() {
+        rapidjson::Document document;
+        if (document.Parse(configFileBuffer).HasParseError())
+            throw ConfigurationException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
+                                         " - parse error: " + GetParseError_En(document.GetParseError()));
+
+        const char *version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
+        if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0)
+            throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + std::string(version) + ", expected: " +
+                                         CONFIG_SCHEMA_VERSION);
+
+        // Iterate through sources
+        const rapidjson::Value &sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
+        if (sourceArrayJson.Size() != 1) {
+            throw ConfigurationException(30001, "bad JSON, invalid 'source' value: " + std::to_string(sourceArrayJson.Size()) +
+                                         " elements, expected: 1 element");
+        }
+
+        for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
+            const rapidjson::Value &sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
+
+            metadata->resetElements();
+
+            const char *debugOwner = nullptr;
+            const char *debugTable = nullptr;
+
+            if (sourceJson.HasMember("debug")) {
+                const rapidjson::Value &debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
+
+                if (!FLAG(REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
+                    debugOwner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
+                    debugTable = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
+                    ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
+                }
+            }
+
+            std::set<std::string> users;
+            if (debugOwner != nullptr && debugTable != nullptr) {
+                metadata->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
+                users.insert(std::string(debugOwner));
+            }
+            if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                metadata->addElement(".*", ".*", 0);
+
+            if (sourceJson.HasMember("filter")) {
+                const rapidjson::Value &filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
+
+                if (filterJson.HasMember("table") && !FLAG(REDO_FLAGS_SCHEMALESS)) {
+                    const rapidjson::Value &tableArrayJson = Ctx::getJsonFieldA(configFileName, filterJson, "table");
+
+                    for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {
+                        const rapidjson::Value &tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
+
+                        const char *owner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
+                        const char *table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
+                        SchemaElement *element = metadata->addElement(owner, table, 0);
+
+                        if (users.find(owner) == users.end())
+                            users.insert(owner);
+
+                        if (tableElementJson.HasMember("key")) {
+                            element->keysStr = Ctx::getJsonFieldS(configFileName, JSON_KEY_LENGTH, tableElementJson, "key");
+                            std::stringstream keyStream(element->keysStr);
+
+                            while (keyStream.good()) {
+                                std::string keyCol;
+                                std::string keyCol2;
+                                getline(keyStream, keyCol, ',');
+                                keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
+                                transform(keyCol.begin(), keyCol.end(), keyCol.begin(), ::toupper);
+                                element->keys.push_back(keyCol);
+                            }
+                        } else
+                            element->keysStr = "";
+                    }
+
+                    for (auto& user : metadata->users) {
+                        if (users.find(user) == users.end())
+                            throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is missing");
+                    }
+                    for (auto& user : users) {
+                        if (metadata->users.find(user) == metadata->users.end())
+                            throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is redundant");
+                    }
+
+                    users.clear();
+                }
+            }
+        }
+
+        ctx->info(0, "scanning objects which match the configuration file");
+        // Suspend transaction processing for the schema update
+        {
+            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            metadata->commitElements();
+            metadata->schema->purgeMetadata();
+
+            // Mark all tables as touched to force a schema update
+            for (auto& it: metadata->schema->sysObjMapRowId)
+                metadata->schema->touchTable(it.second->obj);
+
+            std::list<std::string> msgs;
+            for (SchemaElement *element: metadata->schemaElements) {
+                if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
+                    msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
+                                   std::to_string(element->options));
+
+                metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, msgs,
+                                            metadata->suppLogDbPrimary, metadata->suppLogDbAll, metadata->defaultCharacterMapId,
+                                            metadata->defaultCharacterNcharMapId);
+            }
+            for (const auto& msg: msgs) {
+                ctx->info(0, "- found: " + msg);
+            }
+
+            metadata->schema->resetTouched();
+        }
+    }
+
     void Checkpoint::run() {
         if (ctx->trace & TRACE_THREADS) {
             std::ostringstream ss;
@@ -73,163 +235,13 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown && ctx->replicatorFinished)
                     break;
 
-                // Track config file changes
-                struct stat configFileStat;
-                if (stat(configFileName.c_str(), &configFileStat) != 0)
-                    throw RuntimeException(10003, "file: " + configFileName + " - stat returned: " + strerror(errno));
-
-                if (configFileStat.st_mtime != configFileChange) {
-                    ctx->info(0, "config file changed, reloading");
-
-                    try {
-                        int fid = open(configFileName.c_str(), O_RDONLY);
-                        if (fid == -1)
-                            throw ConfigurationException(10001, "file: " + configFileName + " - open returned: " + strerror(errno));
-
-                        if (configFileStat.st_size > CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0)
-                            throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " +
-                                                         std::to_string(configFileStat.st_size));
-
-                        if (configFileBuffer != nullptr)
-                            delete[] configFileBuffer;
-
-                        configFileBuffer = new char[configFileStat.st_size + 1];
-                        uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
-                        if (bytesRead != static_cast<uint64_t>(configFileStat.st_size))
-                            throw ConfigurationException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) +
-                                                         " bytes read instead of " + std::to_string(configFileStat.st_size));
-                        configFileBuffer[configFileStat.st_size] = 0;
-
-                        rapidjson::Document document;
-                        if (document.Parse(configFileBuffer).HasParseError())
-                            throw ConfigurationException(20001, "file: " + configFileName + " offset: " +
-                                                         std::to_string(document.GetErrorOffset()) + " - parse error: " +
-                                                         GetParseError_En(document.GetParseError()));
-
-                        const char *version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
-                        if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0)
-                            throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + std::string(version) +
-                                                         ", expected: " + CONFIG_SCHEMA_VERSION);
-
-                        // Iterate through sources
-                        const rapidjson::Value &sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
-                        if (sourceArrayJson.Size() != 1) {
-                            throw ConfigurationException(30001, "bad JSON, invalid 'source' value: " +
-                                                         std::to_string(sourceArrayJson.Size()) + " elements, expected: 1 element");
-                        }
-
-                        for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
-                            const rapidjson::Value &sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
-
-                            metadata->resetElements();
-
-                            const char *debugOwner = nullptr;
-                            const char *debugTable = nullptr;
-
-                            if (sourceJson.HasMember("debug")) {
-                                const rapidjson::Value &debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
-
-                                if (!FLAG(REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
-                                    debugOwner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
-                                    debugTable = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
-                                    ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
-                                }
-                            }
-
-                            std::set<std::string> users;
-                            if (debugOwner != nullptr && debugTable != nullptr) {
-                                metadata->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
-                                users.insert(std::string(debugOwner));
-                            }
-                            if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
-                                metadata->addElement(".*", ".*", 0);
-
-                            if (sourceJson.HasMember("filter")) {
-                                const rapidjson::Value &filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
-
-                                if (filterJson.HasMember("table") && !FLAG(REDO_FLAGS_SCHEMALESS)) {
-                                    const rapidjson::Value &tableArrayJson = Ctx::getJsonFieldA(configFileName, filterJson, "table");
-
-                                    for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {
-                                        const rapidjson::Value &tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
-
-                                        const char *owner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
-                                        const char *table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
-                                        SchemaElement *element = metadata->addElement(owner, table, 0);
-
-                                        if (users.find(owner) == users.end())
-                                            users.insert(owner);
-
-                                        if (tableElementJson.HasMember("key")) {
-                                            element->keysStr = Ctx::getJsonFieldS(configFileName, JSON_KEY_LENGTH, tableElementJson, "key");
-                                            std::stringstream keyStream(element->keysStr);
-
-                                            while (keyStream.good()) {
-                                                std::string keyCol;
-                                                std::string keyCol2;
-                                                getline(keyStream, keyCol, ',');
-                                                keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
-                                                transform(keyCol.begin(), keyCol.end(), keyCol.begin(), ::toupper);
-                                                element->keys.push_back(keyCol);
-                                            }
-                                        } else
-                                            element->keysStr = "";
-                                    }
-
-                                    for (auto& user : metadata->users) {
-                                        if (users.find(user) == users.end())
-                                            throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is missing");
-                                    }
-                                    for (auto& user : users) {
-                                        if (metadata->users.find(user) == metadata->users.end())
-                                            throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is redundant");
-                                    }
-
-                                    users.clear();
-                                }
-                            }
-                        }
-
-                        ctx->info(0, "scanning objects which match the configuration file");
-                        // Suspend transaction processing for the schema update
-                        {
-                            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
-                            metadata->commitElements();
-                            metadata->schema->purgeMetadata();
-
-                            // Mark all tables as touched to force a schema update
-                            for (auto& it: metadata->schema->sysObjMapRowId)
-                                metadata->schema->touchTable(it.second->obj);
-
-                            std::list<std::string> msgs;
-                            for (SchemaElement *element: metadata->schemaElements) {
-                                if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
-                                    msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
-                                                   std::to_string(element->options));
-
-                                metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, msgs,
-                                                            metadata->suppLogDbPrimary, metadata->suppLogDbAll, metadata->defaultCharacterMapId,
-                                                            metadata->defaultCharacterNcharMapId);
-                            }
-                            for (const auto& msg: msgs) {
-                                ctx->info(0, "- found: " + msg);
-                            }
-
-                            metadata->schema->resetTouched();
-                        }
-
-                        if (configFileBuffer != nullptr)
-                            delete[] configFileBuffer;
-                        configFileBuffer = nullptr;
-
-                    } catch (ConfigurationException& ex) {
-                        ctx->error(ex.code, ex.msg);
-                    }
-
-                    configFileChange = configFileStat.st_mtime;
-                }
+                trackConfigFile();
 
                 {
+                    if (ctx->trace & TRACE_SLEEP)
+                        ctx->logTrace(TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
+                                      " checkpointScn: " + std::to_string(metadata->checkpointScn));
+
                     std::unique_lock<std::mutex> lck(mtx);
                     condLoop.wait_for(lck, std::chrono::milliseconds (100));
                 }

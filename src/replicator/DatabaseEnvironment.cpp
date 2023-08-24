@@ -72,12 +72,12 @@ namespace OpenLogReplicator {
                 // Fetched column value is NULL
                 if (errcode == 1405)
                     return;
-                len = strlen((char*)errbuf1);
+                len = strlen(reinterpret_cast<char*>(errbuf1));
                 if (len > 0 && errbuf1[len - 1] == '\n')
                     errbuf1[len - 1] = 0;
 
                 OCIErrorGet(errhp, 2, nullptr, &errcode, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
-                len = strlen((char*)errbuf2);
+                len = strlen(reinterpret_cast<char*>(errbuf2));
                 if (len > 0 && errbuf2[len - 1] == '\n')
                     errbuf2[len - 1] = 0;
 

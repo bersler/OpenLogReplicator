@@ -108,9 +108,7 @@ namespace OpenLogReplicator {
         uint64_t valueBufferLength;
         uint64_t valueLength;
         std::unordered_set<OracleTable*> tables;
-        typeTime lastTime;
-        typeScn lastScn;
-        typeSeq lastSequence;
+        typeScn commitScn;
         typeXid lastXid;
         uint64_t valuesSet[MAX_NO_COLUMNS / sizeof(uint64_t)];
         uint64_t valuesMerge[MAX_NO_COLUMNS / sizeof(uint64_t)];
@@ -223,16 +221,18 @@ namespace OpenLogReplicator {
             lastBuilderQueue->length += bytes;
         };
 
-        void builderBegin(typeObj obj, uint16_t flags) {
+        void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, uint16_t flags) {
             messageLength = 0;
+            if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+                scn = commitScn;
 
             if (lastBuilderQueue->length + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)
                 builderRotate(true);
 
             msg = reinterpret_cast<BuilderMsg*>(lastBuilderQueue->data + lastBuilderQueue->length);
             builderShift(sizeof(struct BuilderMsg), true);
-            msg->scn = lastScn;
-            msg->sequence = lastSequence;
+            msg->scn = scn;
+            msg->sequence = sequence;
             msg->length = 0;
             msg->id = id++;
             msg->obj = obj;
@@ -1111,15 +1111,15 @@ namespace OpenLogReplicator {
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) = 0;
         virtual void columnTimestamp(const std::string& columnName, struct tm &time_, uint64_t fraction) = 0;
         virtual void columnTimestampTz(const std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
-        virtual void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
-                                   uint64_t offset) = 0;
-        virtual void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
-                                   uint64_t offset) = 0;
-        virtual void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
-                                   uint64_t offset) = 0;
-        virtual void processDdl(OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql,
-                                uint64_t sqlLength) = 0;
-        virtual void processBeginMessage() = 0;
+        virtual void processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
+                                   typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+        virtual void processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
+                                   typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+        virtual void processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
+                                   typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+        virtual void processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
+                                uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) = 0;
+        virtual void processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) = 0;
 
     public:
         SystemTransaction* systemTransaction;
@@ -1136,14 +1136,17 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid);
-        void processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
-        void processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
-        void processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema, bool dump);
-        void processDdlHeader(RedoLogRecord* redoLogRecord1);
+        void processBegin(typeXid xid, typeScn scn);
+        void processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
+                                   bool system, bool schema, bool dump);
+        void processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
+                                   bool system, bool schema, bool dump);
+        void processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
+                        uint64_t type, bool system, bool schema, bool dump);
+        void processDdlHeader(typeScn scn, typeSeq sequence, typeTime time_, RedoLogRecord* redoLogRecord1);
         virtual void initialize();
-        virtual void processCommit() = 0;
-        virtual void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) = 0;
+        virtual void processCommit(typeScn scn, typeSeq sequence, typeTime time_) = 0;
+        virtual void processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) = 0;
         void releaseBuffers(uint64_t maxId);
         void sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds);
         void wakeUp();

@@ -43,7 +43,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Metadata.h"
 #include "Schema.h"
 #include "SchemaElement.h"
-#include "SerializerJson.h"
+#include "Serializer.h"
 
 namespace OpenLogReplicator {
     Metadata::Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
@@ -197,12 +197,6 @@ namespace OpenLogReplicator {
         offset = newOffset;
     }
 
-    void Metadata::initializeDisk(const char* path) {
-        state = new StateDisk(ctx, path);
-        stateDisk = new StateDisk(ctx, "scripts");
-        serializer = new SerializerJson();
-    }
-
     bool Metadata::stateRead(const std::string& name, uint64_t maxSize, std::string& in) {
         try {
             return state->read(name, maxSize, in);
@@ -221,9 +215,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool Metadata::stateWrite(const std::string& name, std::ostringstream& out) {
+    bool Metadata::stateWrite(const std::string& name, typeScn scn, std::ostringstream& out) {
         try {
-            state->write(name, out);
+            state->write(name, scn, out);
             return true;
         } catch (RuntimeException& ex) {
             ctx->error(ex.code, ex.msg);
@@ -290,15 +284,21 @@ namespace OpenLogReplicator {
     void Metadata::waitForWriter() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_INITIALIZE)
+        if (status == METADATA_STATUS_INITIALIZE) {
+            if (ctx->trace & TRACE_SLEEP)
+                ctx->logTrace(TRACE_SLEEP, "Metadata:waitForWriter");
             condReplicator.wait(lck);
+        }
     }
 
     void Metadata::waitForReplicator() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_BOOT)
+        if (status == METADATA_STATUS_BOOT) {
+            if (ctx->trace & TRACE_SLEEP)
+                ctx->logTrace(TRACE_SLEEP, "Metadata:waitForReplicator");
             condWriter.wait(lck);
+        }
     }
 
     void Metadata::setStatusInitialize() {
@@ -398,7 +398,7 @@ namespace OpenLogReplicator {
                           std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
                           std::to_string(lastCheckpointOffset));
 
-        if (!stateWrite(checkpointName, ss))
+        if (!stateWrite(checkpointName, lastCheckpointScn, ss))
             ctx->warning(60018, "file: " + checkpointName + " - couldn't write checkpoint");
     }
 

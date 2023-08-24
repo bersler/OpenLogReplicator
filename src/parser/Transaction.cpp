@@ -205,7 +205,7 @@ namespace OpenLogReplicator {
                 throw RedoLogException(50056, "system transaction already active");
             builder->systemTransaction = new SystemTransaction(builder, metadata);
         }
-        builder->processBegin(commitScn, commitTimestamp, commitSequence, xid);
+        builder->processBegin(xid, commitScn);
 
         uint64_t pos;
         uint64_t type = 0;
@@ -469,26 +469,29 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            builder->processDml(&lobCtx, first1, first2, type, system, schema, dump);
+                            builder->processDml(first2->scnRecord, commitSequence, commitTimestamp, &lobCtx, first1,
+                                                first2, type, system, schema, dump);
                             opFlush = true;
                         }
                         break;
 
                     // Insert multiple rows
                     case 0x05010B0B:
-                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system, schema, dump);
+                        builder->processInsertMultiple(redoLogRecord2->scnRecord, commitSequence, commitTimestamp, &lobCtx, redoLogRecord1,
+                                                       redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;
 
                     // Delete multiple rows
                     case 0x05010B0C:
-                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system, schema, dump);
+                        builder->processDeleteMultiple(redoLogRecord2->scnRecord, commitSequence, commitTimestamp, &lobCtx, redoLogRecord1,
+                                                       redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;
 
                     // Truncate table
                     case 0x18010000:
-                        builder->processDdlHeader(redoLogRecord1);
+                        builder->processDdlHeader(redoLogRecord1->scnRecord, commitSequence, commitTimestamp, redoLogRecord1);
                         opFlush = true;
                         break;
 
@@ -515,8 +518,8 @@ namespace OpenLogReplicator {
                         builder->systemTransaction = new SystemTransaction(builder, metadata);
                     }
 
-                    builder->processCommit();
-                    builder->processBegin(commitScn, commitTimestamp, commitSequence, xid);
+                    builder->processCommit(commitScn, commitSequence, commitTimestamp);
+                    builder->processBegin(xid, commitScn);
                 }
 
                 if (opFlush) {
@@ -559,7 +562,7 @@ namespace OpenLogReplicator {
             // Unlock schema
             lckSchema.unlock();
         }
-        builder->processCommit();
+        builder->processCommit(commitScn, commitSequence, commitTimestamp);
     }
 
     void Transaction::purge(TransactionBuffer* transactionBuffer) {

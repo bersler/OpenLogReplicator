@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         void columnTimestamp(const std::string& columnName, struct tm& time_, uint64_t fraction) override;
         void columnTimestampTz(const std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
-        void appendHeader(bool first, bool showDb, bool showXid);
+        void appendHeader(typeScn scn, typeTime time_, bool first, bool showDb, bool showXid);
         void appendSchema(OracleTable* table, typeObj obj);
 
         void appendAfter(LobCtx* lobCtx, OracleTable* table, uint64_t offset) {
@@ -138,15 +138,15 @@ namespace OpenLogReplicator {
         }
 
         void numToString(uint64_t value, char* buf, uint64_t length);
-        void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
-                           uint64_t offset) override;
-        void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
-                           uint64_t offset) override;
-        void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid,
-                           uint64_t offset) override;
-        void processDdl(OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength)
-                override;
-        void processBeginMessage() override;
+        void processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba,
+                           typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba,
+                           typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba,
+                           typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type, uint16_t seq,
+                        const char* operation, const char* sql, uint64_t sqlLength) override;
+        void processBeginMessage(typeScn scn, typeSeq sequence, typeTime time) override;
 
     public:
         BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newIntervalDtsFormat,
@@ -156,8 +156,8 @@ namespace OpenLogReplicator {
         ~BuilderProtobuf() override;
 
         void initialize() override;
-        void processCommit() override;
-        void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) override;
+        void processCommit(typeScn scn, typeSeq sequence, typeTime time) override;
+        void processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) override;
     };
 }
 

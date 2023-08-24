@@ -68,6 +68,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TRACE_CHECKPOINT                        0x00004000
 #define TRACE_SYSTEM                            0x00008000
 #define TRACE_LOB_DATA                          0x00010000
+#define TRACE_SLEEP                             0x00020000
 
 #define REDO_FLAGS_ARCH_ONLY                    0x00000001
 #define REDO_FLAGS_SCHEMALESS                   0x00000002

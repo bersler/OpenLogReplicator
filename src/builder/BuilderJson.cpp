@@ -390,7 +390,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::appendHeader(bool first, bool showDb, bool showXid) {
+    void BuilderJson::appendHeader(typeScn scn, typeTime time_, bool first, bool showDb, bool showXid) {
         if (first || (scnAll & SCN_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
                 builderAppend(',');
@@ -399,11 +399,11 @@ namespace OpenLogReplicator {
 
             if ((scnFormat & SCN_FORMAT_TEXT_HEX) != 0) {
                 builderAppend(R"("scns":"0x)", sizeof(R"("scns":"0x)") - 1);
-                appendHex(lastScn, 16);
+                appendHex(scn, 16);
                 builderAppend('"');
             } else {
                 builderAppend(R"("scn":)", sizeof(R"("scn":)") - 1);
-                appendDec(lastScn);
+                appendDec(scn);
             }
         }
 
@@ -416,44 +416,44 @@ namespace OpenLogReplicator {
             switch (timestampFormat) {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
                     builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime() * 1000000000L);
+                    appendDec(time_.toTime() * 1000000000L);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO:
                     builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime() * 1000000L);
+                    appendDec(time_.toTime() * 1000000L);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
                     builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime() * 1000L);
+                    appendDec(time_.toTime() * 1000L);
                     break;
                 case TIMESTAMP_FORMAT_UNIX:
                     builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime());
+                    appendDec(time_.toTime());
                     break;
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                     builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime() * 1000000000L);
+                    appendDec(time_.toTime() * 1000000000L);
                     builderAppend('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                     builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime() * 1000000L);
+                    appendDec(time_.toTime() * 1000000L);
                     builderAppend('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
                     builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime() * 1000L);
+                    appendDec(time_.toTime() * 1000L);
                     builderAppend('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_STRING:
                     builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(lastTime.toTime());
+                    appendDec(time_.toTime());
                     builderAppend('"');
                     break;
                 case TIMESTAMP_FORMAT_ISO8601:
                     builderAppend(R"("tms":")", sizeof(R"("tms":")") - 1);
                     char iso[21];
-                    lastTime.toIso8601(iso);
+                    time_.toIso8601(iso);
                     builderAppend(iso, 20);
                     builderAppend('"');
                     break;
@@ -685,17 +685,17 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    void BuilderJson::processBeginMessage() {
+    void BuilderJson::processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) {
         newTran = false;
         hasPreviousRedo = false;
 
         if ((messageFormat & MESSAGE_FORMAT_SKIP_BEGIN) != 0)
             return;
 
-        builderBegin(0, 0);
+        builderBegin(scn, sequence, 0, 0);
         builderAppend('{');
         hasPreviousValue = false;
-        appendHeader(true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+        appendHeader(scn, time_, true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
         if (hasPreviousValue)
             builderAppend(',');
@@ -710,7 +710,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::processCommit() {
+    void BuilderJson::processCommit(typeScn scn, typeSeq sequence, typeTime time_) {
         // Skip empty transaction
         if (newTran) {
             newTran = false;
@@ -721,11 +721,11 @@ namespace OpenLogReplicator {
             builderAppend("]}", sizeof("]}") - 1);
             builderCommit(true);
         } else if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
-            builderBegin(0, 0);
+            builderBegin(scn, sequence, 0, 0);
             builderAppend('{');
 
             hasPreviousValue = false;
-            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -738,10 +738,10 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderJson::processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
-                                    typeXid xid  __attribute__((unused)), uint64_t offset) {
+    void BuilderJson::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
+                                    typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
-            processBeginMessage();
+            processBeginMessage(scn, sequence, time_);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -749,10 +749,10 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            builderBegin(obj, 0);
+            builderBegin(scn, sequence, obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -775,10 +775,10 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
-                                    typeXid xid  __attribute__((unused)), uint64_t offset) {
+    void BuilderJson::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
+                                    typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
-            processBeginMessage();
+            processBeginMessage(scn, sequence, time_);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -786,10 +786,10 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            builderBegin(obj, 0);
+            builderBegin(scn, sequence, obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -813,10 +813,10 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
-                                    typeXid xid __attribute__((unused)), uint64_t offset) {
+    void BuilderJson::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
+                                    typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
-            processBeginMessage();
+            processBeginMessage(scn, sequence, time_);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -824,10 +824,10 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            builderBegin(obj, 0);
+            builderBegin(scn, sequence, obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -850,10 +850,11 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDdl(OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)),
-                                 uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
+    void BuilderJson::processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
+                                 uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)),
+                                 const char* sql, uint64_t sqlLength) {
         if (newTran)
-            processBeginMessage();
+            processBeginMessage(scn, sequence, time_);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -861,10 +862,10 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            builderBegin(obj, 0);
+            builderBegin(scn, sequence, obj, 0);
             builderAppend('{');
             hasPreviousValue = false;
-            appendHeader(false, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
+            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
 
             if (hasPreviousValue)
                 builderAppend(',');
@@ -887,14 +888,11 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) {
-        lastTime = time_;
-        lastScn = scn;
-        lastSequence = sequence;
-        builderBegin(0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
+    void BuilderJson::processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) {
+        builderBegin(scn, sequence, 0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         builderAppend('{');
         hasPreviousValue = false;
-        appendHeader(true, false, false);
+        appendHeader(scn, time_, true, false, false);
 
         if (hasPreviousValue)
             builderAppend(',');

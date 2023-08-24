@@ -38,6 +38,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "metadata/Checkpoint.h"
 #include "metadata/Metadata.h"
 #include "metadata/SchemaElement.h"
+#include "metadata/SerializerJson.h"
 #include "parser/TransactionBuffer.h"
 #include "replicator/Replicator.h"
 #include "replicator/ReplicatorBatch.h"
@@ -196,9 +197,9 @@ namespace OpenLogReplicator {
 
         if (document.HasMember("trace")) {
             ctx->trace = Ctx::getJsonFieldU64(configFileName, document, "trace");
-            if (ctx->trace > 131071)
+            if (ctx->trace > 262143)
                 throw ConfigurationException(30001, "bad JSON, invalid 'trace' value: " + std::to_string(ctx->trace) +
-                                             ", expected: one of {0 .. 131071}");
+                                             ", expected: one of {0 .. 262143}");
         }
 
         // Iterate through sources
@@ -381,8 +382,11 @@ namespace OpenLogReplicator {
             if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 metadata->addElement(".*", ".*", 0);
 
-            if (stateType == STATE_TYPE_DISK)
-                metadata->initializeDisk(statePath);
+            if (stateType == STATE_TYPE_DISK) {
+                metadata->state = new StateDisk(ctx, statePath);
+                metadata->stateDisk = new StateDisk(ctx, "scripts");
+                metadata->serializer = new SerializerJson();
+            }
 
             // CHECKPOINT
             auto checkpoint = new Checkpoint(ctx, metadata, std::string(alias) + "-checkpoint", configFileName,
@@ -485,9 +489,9 @@ namespace OpenLogReplicator {
             uint64_t scnFormat = SCN_FORMAT_NUMERIC;
             if (formatJson.HasMember("scn")) {
                 scnFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "scn");
-                if (scnFormat > 1)
+                if (scnFormat > 3)
                     throw ConfigurationException(30001, "bad JSON, invalid 'scn' value: " + std::to_string(scnFormat) +
-                                                 ", expected: one of {0, 1}");
+                                                 ", expected: one of {0 .. 3}");
             }
 
             uint64_t scnAll = SCN_JUST_BEGIN;

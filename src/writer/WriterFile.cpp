@@ -290,7 +290,7 @@ namespace OpenLogReplicator {
         else
             checkFile(msg->scn, msg->sequence, msg->length);
 
-        int64_t bytesWritten = write(outputDes, (const char*)msg->data, msg->length);
+        int64_t bytesWritten = write(outputDes, reinterpret_cast<const char*>(msg->data), msg->length);
         if (static_cast<uint64_t>(bytesWritten) != msg->length)
             throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
                                    std::to_string(msg->length) + ", code returned: " + strerror(errno));

@@ -58,9 +58,7 @@ namespace OpenLogReplicator {
             valueBuffer(nullptr),
             valueBufferLength(0),
             valueLength(0),
-            lastTime(0),
-            lastScn(0),
-            lastSequence(0),
+            commitScn(ZERO_SCN),
             lastXid(typeXid()),
             valuesMax(0),
             mergesMax(0),
@@ -668,16 +666,15 @@ namespace OpenLogReplicator {
         maxMessageMb = maxMessageMb_;
     }
 
-    void Builder::processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid) {
-        lastTime = time_;
-        lastScn = scn;
-        lastSequence = sequence;
+    void Builder::processBegin(typeXid xid, typeScn scn) {
         lastXid = xid;
+        commitScn = scn;
         newTran = true;
     }
 
     // 0x05010B0B
-    void Builder::processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
+    void Builder::processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1,
+                                        RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -685,6 +682,8 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+            scn = commitScn;
 
         while (fieldNum < redoLogRecord2->rowData)
             RedoLogRecord::nextField(ctx, redoLogRecord2, fieldNum, fieldPos, fieldLength, 0x000001);
@@ -735,7 +734,7 @@ namespace OpenLogReplicator {
                                                  redoLogRecord1->dataOffset);
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
                     FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processInsert(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                processInsert(scn, sequence, time_, lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
 
@@ -746,7 +745,8 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0C
-    void Builder::processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
+    void Builder::processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1,
+                                        RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -754,6 +754,8 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+            scn = commitScn;
 
         while (fieldNum < redoLogRecord1->rowData)
             RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000002);
@@ -805,7 +807,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
                     FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processDelete(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                processDelete(scn, sequence, time_, lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
 
@@ -815,8 +817,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Builder::processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema,
-                             bool dump) {
+    void Builder::processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
+                             uint64_t type, bool system, bool schema, bool dump) {
         uint8_t fb;
         typeObj obj;
         typeDataObj dataObj;
@@ -825,6 +827,8 @@ namespace OpenLogReplicator {
         RedoLogRecord* redoLogRecord1p;
         RedoLogRecord* redoLogRecord2p = nullptr;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+            scn = commitScn;
 
         if (type == TRANSACTION_INSERT) {
             redoLogRecord2p = redoLogRecord2;
@@ -1395,7 +1399,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
                     FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processUpdate(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processUpdate(scn, sequence, time_, lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_INSERT) {
             if (table != nullptr && !compressedAfter) {
@@ -1450,7 +1454,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
                     FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processInsert(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processInsert(scn, sequence, time_, lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_DELETE) {
             if (table != nullptr && !compressedBefore) {
@@ -1505,14 +1509,14 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
                     FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processDelete(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processDelete(scn, sequence, time_, lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
         }
 
         valuesRelease();
     }
 
     // 0x18010000
-    void Builder::processDdlHeader(RedoLogRecord* redoLogRecord1) {
+    void Builder::processDdlHeader(typeScn scn, typeSeq sequence, typeTime time_, RedoLogRecord* redoLogRecord1) {
         uint64_t fieldPos = 0;
         uint64_t sqlLength;
         typeField fieldNum = 0;
@@ -1522,6 +1526,8 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         char* sqlText = nullptr;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+            scn = commitScn;
 
         RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000009);
         // Field: 1
@@ -1560,13 +1566,14 @@ namespace OpenLogReplicator {
         sqlText = reinterpret_cast<char*>(redoLogRecord1->data) + fieldPos;
 
         if (type == 85)
-            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "truncate", sqlText, sqlLength - 1);
+            processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "truncate", sqlText,
+                       sqlLength - 1);
         else if (type == 12)
-            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "drop", sqlText, sqlLength - 1);
+            processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "drop", sqlText, sqlLength - 1);
         else if (type == 15)
-            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "alter", sqlText, sqlLength - 1);
+            processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "alter", sqlText, sqlLength - 1);
         else
-            processDdl(table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "?", sqlText, sqlLength - 1);
+            processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "?", sqlText, sqlLength - 1);
     }
 
     void Builder::releaseBuffers(uint64_t maxId) {
@@ -1590,6 +1597,9 @@ namespace OpenLogReplicator {
     }
 
     void Builder::sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds) {
+        if (ctx->trace & TRACE_SLEEP)
+            ctx->logTrace(TRACE_SLEEP, "Builder:sleepForWriterWork");
+
         std::unique_lock<std::mutex> lck(mtx);
         if (queueSize > 0)
             condNoWriterWork.wait_for(lck, std::chrono::nanoseconds(nanoseconds));

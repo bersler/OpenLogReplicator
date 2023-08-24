@@ -131,6 +131,7 @@ typedef uint64_t typeUnicode;
 
 #define SCN_JUST_BEGIN                          0
 #define SCN_ALL_PAYLOADS                        1
+#define SCN_ALL_COMMIT_VALUE                    2
 
 #define RID_FORMAT_SKIP                         0
 #define RID_FORMAT_TEXT                         1
