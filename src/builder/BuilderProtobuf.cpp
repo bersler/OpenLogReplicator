@@ -137,11 +137,11 @@ namespace OpenLogReplicator {
         valuePB->set_name(columnName);
     }
 
-    void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused))) {
+    void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& epochTime __attribute__((unused)), uint64_t fraction __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
 
-    void BuilderProtobuf::columnTimestampTz(const std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)),
+    void BuilderProtobuf::columnTimestampTz(const std::string& columnName, struct tm& epochTime __attribute__((unused)), uint64_t fraction __attribute__((unused)),
                                           const char* tz __attribute__((unused))) {
         valuePB->set_name(columnName);
     }

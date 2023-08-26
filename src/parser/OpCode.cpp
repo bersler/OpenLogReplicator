@@ -1498,7 +1498,7 @@ namespace OpenLogReplicator {
             throw RedoLogException(50061, "too short field kdo OpCode QMI (1): " + std::to_string(fieldLength) + " offset: " +
                                    std::to_string(redoLogRecord->dataOffset));
 
-        redoLogRecord->nrow = redoLogRecord->data[fieldPos + 18];
+        redoLogRecord->nRow = redoLogRecord->data[fieldPos + 18];
         redoLogRecord->slotsDelta = fieldPos + 20;
 
         if (ctx->dumpRedoLog >= 1) {
@@ -1507,9 +1507,9 @@ namespace OpenLogReplicator {
 
             ctx->dumpStream << "tabn: " << static_cast<uint64_t>(tabn) <<
                 " lock: " << std::dec << static_cast<uint64_t>(lock) <<
-                " nrow: " << std::dec << static_cast<uint64_t>(redoLogRecord->nrow) << std::endl;
+                " nRow: " << std::dec << static_cast<uint64_t>(redoLogRecord->nRow) << std::endl;
 
-            if (fieldLength < 22 + static_cast<uint64_t>(redoLogRecord->nrow) * 2)
+            if (fieldLength < 22 + static_cast<uint64_t>(redoLogRecord->nRow) * 2)
                 throw RedoLogException(50061, "too short field kdo OpCode QMI (2): " + std::to_string(fieldLength) + " offset: " +
                                        std::to_string(redoLogRecord->dataOffset));
         }
@@ -1980,7 +1980,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpColVector(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colnum) {
+    void OpCode::dumpColVector(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colNum) {
         uint64_t pos = 0;
 
         ctx->dumpStream << "Vector content: " << std::endl;
@@ -1995,7 +1995,7 @@ namespace OpenLogReplicator {
                 pos += 2;
             }
 
-            dumpCols(ctx, redoLogRecord, data + pos, colnum + k, fieldLength, isNull);
+            dumpCols(ctx, redoLogRecord, data + pos, colNum + k, fieldLength, isNull);
 
             if (!isNull)
                 pos += fieldLength;
@@ -2020,12 +2020,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpCols(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint8_t* data, uint64_t colnum, uint16_t fieldLength,
+    void OpCode::dumpCols(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint8_t* data, uint64_t colNum, uint16_t fieldLength,
                           uint8_t isNull) {
         if (isNull) {
-            ctx->dumpStream << "col " << std::setfill(' ') << std::setw(2) << std::dec << colnum << ": *NULL*" << std::endl;
+            ctx->dumpStream << "col " << std::setfill(' ') << std::setw(2) << std::dec << colNum << ": *NULL*" << std::endl;
         } else {
-            ctx->dumpStream << "col " << std::setfill(' ') << std::setw(2) << std::dec << colnum << ": " <<
+            ctx->dumpStream << "col " << std::setfill(' ') << std::setw(2) << std::dec << colNum << ": " <<
                     "[" << std::setfill(' ') << std::setw(2) << std::dec << fieldLength << "]";
 
             if (fieldLength <= 20)
@@ -2048,7 +2048,7 @@ namespace OpenLogReplicator {
             uint64_t pos = 0;
             char fbStr[9] = "--------";
 
-            for (uint64_t r = 0; r < redoLogRecord->nrow; ++r) {
+            for (uint64_t r = 0; r < redoLogRecord->nRow; ++r) {
                 ctx->dumpStream << "slot[" << std::dec << r << "]: " << std::dec << ctx->read16(redoLogRecord->data + redoLogRecord->slotsDelta + r * 2) <<
                         std::endl;
                 processFbFlags(data[pos + 0], fbStr);
@@ -2124,8 +2124,8 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::processFbFlags(uint8_t fb, char* fbStr) {
-        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; // The last column continues in a Next piece
-        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; // The first column continues from a Previous piece
+        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; // The last column continues in the Next piece
+        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; // The first column continues from the Previous piece
         if ((fb & FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; // Last ctx piece
         if ((fb & FB_F) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; // First ctx piece
         if ((fb & FB_D) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; // Deleted row

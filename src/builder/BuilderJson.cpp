@@ -663,12 +663,12 @@ namespace OpenLogReplicator {
     }
 
     time_t BuilderJson::tmToEpoch(struct tm* epoch) {
-        static const int cumdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+        static const int cumDays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
         long year;
         time_t result;
 
         year = 1900 + epoch->tm_year + epoch->tm_mon / 12;
-        result = (year - 1970) * 365 + cumdays[epoch->tm_mon % 12];
+        result = (year - 1970) * 365 + cumDays[epoch->tm_mon % 12];
         result += (year - 1968) / 4;
         result -= (year - 1900) / 100;
         result += (year - 1600) / 400;

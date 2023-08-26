@@ -26,18 +26,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define WRITER_KAFKA_H_
 
 #define MAX_KAFKA_MESSAGE_MB        953
-#define MAX_KAFKA_MAX_MESSAGES      10000000
 
 namespace OpenLogReplicator {
     class WriterKafka : public Writer {
     protected:
         std::string topic;
-        char errstr[512];
+        char errStr[512];
         std::map<std::string, std::string> properties;
         rd_kafka_t* rk;
         rd_kafka_topic_t* rkt;
         rd_kafka_conf_t* conf;
-        static void dr_msg_cb(rd_kafka_t* rkCb, const rd_kafka_message_t* rkmessage, void* opaque);
+        static void dr_msg_cb(rd_kafka_t* rkCb, const rd_kafka_message_t* rkMessage, void* opaque);
         static void error_cb(rd_kafka_t* rkCb, int err, const char* reason, void* opaque);
         static void logger_cb(const rd_kafka_t* rkCb, int level, const char* fac, const char* buf);
 

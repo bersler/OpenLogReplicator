@@ -36,8 +36,8 @@ namespace OpenLogReplicator {
         void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) override;
         void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) override;
         void columnRowId(const std::string& columnName, typeRowId rowId);
-        void columnTimestamp(const std::string& columnName, struct tm& epochtime, uint64_t fraction) override;
-        void columnTimestampTz(const std::string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz) override;
+        void columnTimestamp(const std::string& columnName, struct tm& epochTime, uint64_t fraction) override;
+        void columnTimestampTz(const std::string& columnName, struct tm& epochTime, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void appendHeader(typeScn scn, typeTime time_, bool first, bool showDb, bool showXid);
         void appendSchema(OracleTable* table, typeObj obj);

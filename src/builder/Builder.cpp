@@ -305,8 +305,8 @@ namespace OpenLogReplicator {
                     tz2[6] = 0;
                     tz = tz2;
                 } else {
-                    uint16_t tzkey = (data[11] << 8) | data[12];
-                    auto timeZoneMapIt = locales->timeZoneMap.find(tzkey);
+                    uint16_t tzKey = (data[11] << 8) | data[12];
+                    auto timeZoneMapIt = locales->timeZoneMap.find(tzKey);
                     if (timeZoneMapIt != locales->timeZoneMap.end())
                         tz = timeZoneMapIt->second;
                     else
@@ -690,7 +690,7 @@ namespace OpenLogReplicator {
 
         fieldPosStart = fieldPos;
 
-        for (uint64_t r = 0; r < redoLogRecord2->nrow; ++r) {
+        for (uint64_t r = 0; r < redoLogRecord2->nRow; ++r) {
             pos = 0;
             fieldPos = fieldPosStart;
             uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
@@ -762,7 +762,7 @@ namespace OpenLogReplicator {
 
         fieldPosStart = fieldPos;
 
-        for (uint64_t r = 0; r < redoLogRecord1->nrow; ++r) {
+        for (uint64_t r = 0; r < redoLogRecord1->nRow; ++r) {
             pos = 0;
             fieldPos = fieldPosStart;
             uint8_t jcc = redoLogRecord1->data[fieldPos + pos + 2];

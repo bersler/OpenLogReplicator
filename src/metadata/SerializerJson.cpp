@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
     SerializerJson::~SerializerJson() = default;
 
     void SerializerJson::serialize(Metadata* metadata, std::ostringstream& ss, bool storeSchema) {
-        // Assuming all locks are held by the caller
+        // Assuming the caller holds all locks
         ss << R"({"database":")";
         Ctx::writeEscapeValue(ss, metadata->database);
         ss << R"(","scn":)" << std::dec << metadata->checkpointScn <<
@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
 
         ss << "]," SERIALIZER_ENDL;
 
-        // Schema did not change since last checkpoint file
+        // Schema did not change since the last checkpoint file
         if (!storeSchema) {
             ss << R"("schema-ref-scn":)" << metadata->schema->refScn << "}";
             return;

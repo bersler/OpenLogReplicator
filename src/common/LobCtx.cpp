@@ -118,31 +118,31 @@ namespace OpenLogReplicator {
     }
 
     void LobCtx::appendList(Ctx* ctx, typeDba page, uint8_t* data) {
-        uint32_t asiz;
-        uint32_t nent = ctx->read32(data + 4);
-        uint32_t sidx = ctx->read32(data + 8);
-        uint8_t* newData = new uint8_t[8 + (sidx + nent) * 8];
+        uint32_t aSiz;
+        uint32_t nEnt = ctx->read32(data + 4);
+        uint32_t sIdx = ctx->read32(data + 8);
+        uint8_t* newData = new uint8_t[8 + (sIdx + nEnt) * 8];
 
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
             // Found
             uint8_t* oldData = listMapIt->second;
-            asiz = ctx->read32(oldData + 4);
+            aSiz = ctx->read32(oldData + 4);
 
             memcpy(newData, oldData, 4);
-            memcpy(newData + 8, oldData + 8, asiz * 8);
-            memcpy(newData + 8 + sidx * 8, data + 12, nent * 8);
+            memcpy(newData + 8, oldData + 8, aSiz * 8);
+            memcpy(newData + 8 + sIdx * 8, data + 12, nEnt * 8);
 
-            asiz = sidx + nent;
-            ctx->write32(newData + 4, asiz);
+            aSiz = sIdx + nEnt;
+            ctx->write32(newData + 4, aSiz);
             delete[] oldData;
         } else {
             // Not found
-            memset(newData, 0, sidx * 8 + 8);
-            memcpy(newData + sidx * 8 + 8, data + 12, nent * 8);
+            memset(newData, 0, sIdx * 8 + 8);
+            memcpy(newData + sIdx * 8 + 8, data + 12, nEnt * 8);
 
-            asiz = sidx + nent;
-            ctx->write32(newData + 4, asiz);
+            aSiz = sIdx + nEnt;
+            ctx->write32(newData + 4, aSiz);
         }
 
         listMap[page] = newData;

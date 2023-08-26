@@ -21,7 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <cerrno>
 #include <fcntl.h>
 #include <regex>
-#include <sys/file.h>
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>

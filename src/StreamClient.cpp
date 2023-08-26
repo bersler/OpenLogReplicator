@@ -18,7 +18,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <atomic>
-#include <stdint.h>
 
 #include "common/Ctx.h"
 #include "common/ConfigurationException.h"

@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051405))
             return;
         // Field: 5
-        dumpMsgAuditSessionid(ctx, redoLogRecord, fieldPos, fieldLength);
+        dumpMsgAuditSessionId(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051406))
             return;

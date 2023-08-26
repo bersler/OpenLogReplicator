@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         static void dumpMsgSessionSerial(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void dumpMsgFlags(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void dumpMsgVersion(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void dumpMsgAuditSessionid(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void dumpMsgAuditSessionId(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
 
     public:
         static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);

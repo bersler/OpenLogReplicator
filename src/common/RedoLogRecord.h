@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
         typeField fieldCnt;
         uint64_t fieldPos;
         typeField rowData;
-        uint8_t nrow;
+        uint8_t nRow;
         uint64_t slotsDelta;
         uint64_t rowLenghsDelta;
         uint64_t fieldLengthsDelta;

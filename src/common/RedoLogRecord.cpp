@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
                 " flgRecord: " << std::dec << redo.flgRecord <<
                 " robj: " << std::dec << redo.recordObj <<
                 " rdataObj: " << std::dec << redo.recordDataObj <<
-                " nrow: " << std::dec << static_cast<uint64_t>(redo.nrow) <<
+                " nrow: " << std::dec << static_cast<uint64_t>(redo.nRow) <<
                 " afn: " << std::dec << redo.afn <<
                 " length: " << std::dec << redo.length <<
                 " dba: 0x" << std::hex << redo.dba <<

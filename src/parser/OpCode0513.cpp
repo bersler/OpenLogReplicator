@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130D))
             return;
         // Field: 13
-        dumpMsgAuditSessionid(ctx, redoLogRecord, fieldPos, fieldLength);
+        dumpMsgAuditSessionId(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130E))
             return;
@@ -167,7 +167,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::dumpMsgAuditSessionid(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength __attribute__((unused))) {
+    void OpCode0513::dumpMsgAuditSessionId(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength __attribute__((unused))) {
         if (ctx->dumpRedoLog >= 1) {
             uint32_t auditSessionid = ctx->read32(redoLogRecord->data + fieldPos + 0);
             ctx->dumpStream << "audit sessionid " << auditSessionid << std::endl;

@@ -294,9 +294,9 @@ namespace OpenLogReplicator {
                 lastBuilderQueue->length += length;
                 messageLength += length;
             } else {
-                const char* charstr = str.c_str();
+                const char* charStr = str.c_str();
                 for (uint64_t i = 0; i < length; ++i)
-                    builderAppend(*charstr++);
+                    builderAppend(*charStr++);
             }
         };
 
@@ -344,7 +344,7 @@ namespace OpenLogReplicator {
                         zeros = 0xC0 - digits;
                     } else {
                         digits -= 0xC0;
-                        // Part of the total - omitting first zero for first digit
+                        // Part of the total - omitting first zero for a first digit
                         value = data[j] - 1;
                         if (value < 10)
                             valueBufferAppend('0' + value);
@@ -830,9 +830,9 @@ namespace OpenLogReplicator {
 
                                 uint8_t* dataLob = listMapIt->second;
                                 listPage = *(reinterpret_cast<typeDba*>(dataLob));
-                                uint32_t asiz = ctx->read32(dataLob + 4);
+                                uint32_t aSiz = ctx->read32(dataLob + 4);
 
-                                for (uint64_t i = 0; i < asiz; ++i) {
+                                for (uint64_t i = 0; i < aSiz; ++i) {
                                     uint16_t pageCnt = ctx->read16(dataLob + i * 8 + 8 + 2);
                                     typeDba page = ctx->read32(dataLob + i * 8 + 8 + 4);
 
@@ -853,7 +853,7 @@ namespace OpenLogReplicator {
                                         RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
                                         redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkLength = redoLogRecordLob->lobDataLength;
-                                        if (listPage == 0 && i == static_cast<uint64_t>(asiz - 1) && j == static_cast<uint64_t>(pageCnt - 1))
+                                        if (listPage == 0 && i == static_cast<uint64_t>(aSiz - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                             hasNext = false;
 
                                         addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, append,
@@ -1109,8 +1109,8 @@ namespace OpenLogReplicator {
         virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) = 0;
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) = 0;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) = 0;
-        virtual void columnTimestamp(const std::string& columnName, struct tm &time_, uint64_t fraction) = 0;
-        virtual void columnTimestampTz(const std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
+        virtual void columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction) = 0;
+        virtual void columnTimestampTz(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) = 0;
         virtual void processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
                                    typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
         virtual void processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,

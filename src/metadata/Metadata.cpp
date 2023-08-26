@@ -18,7 +18,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <list>
-#include <unistd.h>
 
 #include "../common/Ctx.h"
 #include "../common/ConfigurationException.h"
