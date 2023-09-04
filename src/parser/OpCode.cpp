@@ -367,7 +367,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdli(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength) {
+    void OpCode::kdli(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         uint8_t code = redoLogRecord->data[fieldPos + 0];
 
         switch (code) {
@@ -437,7 +437,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliInfo(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliInfo(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
         if (fieldLength < 17)
             throw RedoLogException(50061, "too short field kdli info: " + std::to_string(fieldLength) + " offset: " +
                                    std::to_string(redoLogRecord->dataOffset));
@@ -455,15 +455,15 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliLoadCommon(Ctx *ctx, RedoLogRecord *redoLogRecord __attribute__((unused)), uint64_t &fieldPos __attribute__((unused)),
-                                uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliLoadCommon(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)),
+                                uint16_t& fieldLength, uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI load common [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish
         }
     }
 
-    void OpCode::kdliLoadData(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliLoadData(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
         if (fieldLength < 56)
             throw RedoLogException(50061, "too short field kdli load data: " + std::to_string(fieldLength) + " offset: " +
                                    std::to_string(redoLogRecord->dataOffset));
@@ -473,7 +473,7 @@ namespace OpenLogReplicator {
         if (ctx->dumpRedoLog >= 1) {
             typeScn scn = ctx->readScnR(redoLogRecord->data + fieldPos + 2);
             uint8_t flg0 = redoLogRecord->data[fieldPos + 10];
-            const char *flg0typ = "";
+            const char* flg0typ = "";
             switch (flg0 & KDLI_TYPE_MASK) {
                 case KDLI_TYPE_NEW:
                     flg0typ = "new";
@@ -494,37 +494,37 @@ namespace OpenLogReplicator {
                     flg0typ = "aux";
                     break;
             }
-            const char *flg0lock = "n";
+            const char* flg0lock = "n";
             if (flg0 & KDLI_TYPE_LOCK)
                 flg0lock = "y";
-            const char *flg0ver = "0";
+            const char* flg0ver = "0";
             if (flg0 & KDLI_TYPE_VER1)
                 flg0ver = "1";
             uint8_t flg1 = redoLogRecord->data[fieldPos + 11];
             uint16_t rid1 = ctx->read16(redoLogRecord->data + fieldPos + 22);
             uint32_t rid2 = ctx->read32(redoLogRecord->data + fieldPos + 24);
             uint8_t flg2 = redoLogRecord->data[fieldPos + 28];
-            const char *flg2pfill = "n";
+            const char* flg2pfill = "n";
             if (flg2 & KDLI_FLG2_121_PFILL)
                 flg2pfill = "y";
-            const char *flg2cmap = "n";
+            const char* flg2cmap = "n";
             if (flg2 & KDLI_FLG2_121_CMAP)
                 flg2cmap = "y";
-            const char *flg2hash = "n";
+            const char* flg2hash = "n";
             if (flg2 & KDLI_FLG2_121_HASH)
                 flg2hash = "y";
-            const char *flg2lid = "short-rowid";
+            const char* flg2lid = "short-rowid";
             if (flg2 & KDLI_FLG2_121_LHB)
                 flg2lid = "lhb-dba";
-            const char *flg2ver1 = "0";
+            const char* flg2ver1 = "0";
             if (flg2 & KDLI_FLG2_121_VER1)
                 flg2ver1 = "1";
             uint8_t flg3 = redoLogRecord->data[fieldPos + 29];
             uint8_t pskip = redoLogRecord->data[fieldPos + 30];
             uint8_t sskip = redoLogRecord->data[fieldPos + 31];
             uint8_t hash[20];
-            memcpy(reinterpret_cast<void *>(hash),
-                   reinterpret_cast<const void *>(redoLogRecord->data + fieldPos + 32), 20);
+            memcpy(reinterpret_cast<void*>(hash),
+                   reinterpret_cast<const void*>(redoLogRecord->data + fieldPos + 32), 20);
             uint16_t hwm = ctx->read16(redoLogRecord->data + fieldPos + 52);
             uint16_t spr = ctx->read16(redoLogRecord->data + fieldPos + 54);
 
@@ -558,7 +558,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliZero(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliZero(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
         if (fieldLength < 6)
             throw RedoLogException(50061, "too short field kdli zero: " + std::to_string(fieldLength) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
@@ -573,7 +573,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliFill(Ctx *ctx, RedoLogRecord *redoLogRecord __attribute__((unused)), uint64_t &fieldPos __attribute__((unused)), uint16_t &fieldLength,
+    void OpCode::kdliFill(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
                           uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI fill [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
@@ -581,7 +581,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliLmap(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliLmap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
         if (fieldLength < 8)
             throw RedoLogException(50061, "too short field kdli lmap: " + std::to_string(fieldLength) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
@@ -615,7 +615,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliLmapx(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliLmapx(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
         if (fieldLength < 8)
             throw RedoLogException(50061, "too short field kdli lmapx: " + std::to_string(fieldLength) + " offset: " +
                                    std::to_string(redoLogRecord->dataOffset));
@@ -796,19 +796,19 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << "kdlihh  [0xXXXXXXXXXXXX 24]" << std::endl;
 
                 if (ctx->version < REDO_VERSION_12_2) {
-                    const char *flg2pfill = "n";
+                    const char* flg2pfill = "n";
                     if (flg2 & KDLI_FLG2_121_PFILL)
                         flg2pfill = "y";
-                    const char *flg2cmap = "n";
+                    const char* flg2cmap = "n";
                     if (flg2 & KDLI_FLG2_121_CMAP)
                         flg2cmap = "y";
-                    const char *flg2hash = "n";
+                    const char* flg2hash = "n";
                     if (flg2 & KDLI_FLG2_121_HASH)
                         flg2hash = "y";
-                    const char *flg2lid = "short-rowid";
+                    const char* flg2lid = "short-rowid";
                     if (flg2 & KDLI_FLG2_121_LHB)
                         flg2lid = "lhb-dba";
-                    const char *flg2ver1 = "0";
+                    const char* flg2ver1 = "0";
                     if (flg2 & KDLI_FLG2_121_VER1)
                         flg2ver1 = "1";
 
@@ -816,28 +816,28 @@ namespace OpenLogReplicator {
                                     " [ver=" << flg2ver1 << " lid=" << flg2lid << " hash=" << flg2hash << " cmap=" << flg2cmap << " pfill=" <<
                                     flg2pfill << "]" << std::endl;
                 } else {
-                    const char *flg2descn = "n";
+                    const char* flg2descn = "n";
                     if (flg2 & KDLI_FLG2_122_DESCN)
                         flg2descn = "y";
-                    const char *flg2ovr = "n";
+                    const char* flg2ovr = "n";
                     if (flg2 & KDLI_FLG2_122_OVR)
                         flg2ovr = "y";
-                    const char *flg2xfm = "n";
+                    const char* flg2xfm = "n";
                     if (flg2 & KDLI_FLG2_122_XFM)
                         flg2xfm = "y";
-                    const char *flg2bt = "n";
+                    const char* flg2bt = "n";
                     if (flg2 & KDLI_FLG2_122_BT)
                         flg2bt = "y";
-                    const char *flg2it = "n";
+                    const char* flg2it = "n";
                     if (flg2 & KDLI_FLG2_122_IT)
                         flg2it = "y";
-                    const char *flg2hash = "n";
+                    const char* flg2hash = "n";
                     if (flg2 & KDLI_FLG2_122_HASH)
                         flg2hash = "y";
-                    const char *flg2lid = "short-rowid";
+                    const char* flg2lid = "short-rowid";
                     if (flg2 & KDLI_FLG2_122_LID)
                         flg2lid = "iot-guess";
-                    const char *flg2ver1 = "0";
+                    const char* flg2ver1 = "0";
                     if (flg2 & KDLI_FLG2_121_VER1)
                         flg2ver1 = "1";
 
@@ -846,7 +846,7 @@ namespace OpenLogReplicator {
                                     flg2bt << " xfm=" << flg2xfm << " ovr=" << flg2ovr << " descn=" << flg2descn << "]" << std::endl;
                 }
 
-                const char *flg3vll = "n";
+                const char* flg3vll = "n";
                 if (flg3 & KDLI_FLG3_VLL)
                     flg3vll = "y";
                 ctx->dumpStream << "  flg3  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg3) <<
@@ -953,7 +953,7 @@ namespace OpenLogReplicator {
         if (ctx->dumpRedoLog >= 1) {
             typeScn scn = ctx->readScnR(redoLogRecord->data + fieldPos + 2);
             uint8_t flg0 = redoLogRecord->data[fieldPos + 10];
-            const char *flg0typ = "";
+            const char* flg0typ = "";
             switch (flg0 & KDLI_TYPE_MASK) {
                 case KDLI_TYPE_NEW:
                     flg0typ = "new";
@@ -974,20 +974,20 @@ namespace OpenLogReplicator {
                     flg0typ = "aux";
                     break;
             }
-            const char *flg0lock = "n";
+            const char* flg0lock = "n";
             if (flg0 & KDLI_TYPE_LOCK)
                 flg0lock = "y";
-            const char *flg0ver = "0";
+            const char* flg0ver = "0";
             if (flg0 & KDLI_TYPE_VER1)
                 flg0ver = "1";
             uint8_t flg1 = redoLogRecord->data[fieldPos + 11];
             uint16_t rid1 = ctx->read16(redoLogRecord->data + fieldPos + 22);
             uint32_t rid2 = ctx->read32(redoLogRecord->data + fieldPos + 24);
             uint8_t flg2 = redoLogRecord->data[fieldPos + 28];
-            const char *flg2xfm = "n";
+            const char* flg2xfm = "n";
             if (flg2 & KDLI_FLG2_122_XFM)
                 flg2xfm = "y";
-            const char *flg2ver1 = "0";
+            const char* flg2ver1 = "0";
             if (flg2 & KDLI_FLG2_121_VER1)
                 flg2ver1 = "1";
             uint8_t flg3 = redoLogRecord->data[fieldPos + 29];

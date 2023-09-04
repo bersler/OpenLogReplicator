@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
         // SYS.CDEF$
         while (!sysCDefMapRowId.empty()) {
             auto sysCDefMapRowIdIt = sysCDefMapRowId.cbegin();
-            SysCDef *sysCDef = sysCDefMapRowIdIt->second;
+            SysCDef* sysCDef = sysCDefMapRowIdIt->second;
             dictSysCDefDrop(sysCDef);
             delete sysCDef;
         }

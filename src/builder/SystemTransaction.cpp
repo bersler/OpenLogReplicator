@@ -1891,7 +1891,7 @@ namespace OpenLogReplicator {
         metadata->schema->scn = scn;
         metadata->schema->dropUnusedMetadata(metadata->users, msgsDropped);
 
-        for (SchemaElement *element: metadata->schemaElements)
+        for (SchemaElement* element: metadata->schemaElements)
             metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options,
                                         msgsUpdated, metadata->suppLogDbPrimary, metadata->suppLogDbAll,
                                         metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);

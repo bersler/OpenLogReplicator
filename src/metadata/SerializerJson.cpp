@@ -566,7 +566,7 @@ namespace OpenLogReplicator {
                         deserializeSysTs(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ts"));
                     }
 
-                    for (SchemaElement *element: metadata->schemaElements) {
+                    for (SchemaElement* element: metadata->schemaElements) {
                         if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
                             msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                            std::to_string(element->options));

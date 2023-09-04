@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
             throw ConfigurationException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                          " - parse error: " + GetParseError_En(document.GetParseError()));
 
-        const char *version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
+        const char* version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
         if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0)
             throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + std::string(version) + ", expected: " +
                                          CONFIG_SCHEMA_VERSION);
@@ -121,8 +121,8 @@ namespace OpenLogReplicator {
 
             metadata->resetElements();
 
-            const char *debugOwner = nullptr;
-            const char *debugTable = nullptr;
+            const char* debugOwner = nullptr;
+            const char* debugTable = nullptr;
 
             if (sourceJson.HasMember("debug")) {
                 const rapidjson::Value &debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
@@ -151,9 +151,9 @@ namespace OpenLogReplicator {
                     for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {
                         const rapidjson::Value &tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
 
-                        const char *owner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
-                        const char *table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
-                        SchemaElement *element = metadata->addElement(owner, table, 0);
+                        const char* owner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
+                        const char* table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
+                        SchemaElement* element = metadata->addElement(owner, table, 0);
 
                         if (users.find(owner) == users.end())
                             users.insert(owner);
@@ -200,7 +200,7 @@ namespace OpenLogReplicator {
                 metadata->schema->touchTable(it.second->obj);
 
             std::list<std::string> msgs;
-            for (SchemaElement *element: metadata->schemaElements) {
+            for (SchemaElement* element: metadata->schemaElements) {
                 if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
                     msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                    std::to_string(element->options));
