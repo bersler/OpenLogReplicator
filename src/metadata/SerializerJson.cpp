@@ -578,7 +578,6 @@ namespace OpenLogReplicator {
 
                     metadata->schema->resetTouched();
                     metadata->schema->loaded = true;
-                    metadata->allowedCheckpoints = true;
                     return true;
                 }
             }

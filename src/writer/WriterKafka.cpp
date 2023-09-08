@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../builder/Builder.h"
 #include "../common/ConfigurationException.h"
 #include "../common/RuntimeException.h"
+#include "../metadata/Metadata.h"
 #include "WriterKafka.h"
 
 namespace OpenLogReplicator {
@@ -86,6 +87,7 @@ namespace OpenLogReplicator {
         conf = nullptr;
 
         rkt = rd_kafka_topic_new(rk, topic.c_str(), nullptr);
+        streaming = true;
     }
 
     void WriterKafka::dr_msg_cb(rd_kafka_t* rkCb __attribute__((unused)), const rd_kafka_message_t* rkMessage, void* opaque __attribute__((unused))) {
@@ -148,6 +150,9 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::pollQueue() {
+        if (metadata->status == METADATA_STATUS_READY)
+            metadata->setStatusStart();
+
         if (currentQueueSize > 0)
             rd_kafka_poll(rk, 0);
     }

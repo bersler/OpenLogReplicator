@@ -921,7 +921,10 @@ namespace OpenLogReplicator {
                 createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keys,
                                      element->keysStr, element->options, msgs);
             metadata->schema->resetTouched();
-            metadata->allowedCheckpoints = true;
+
+            if (metadata->ctx->trace & TRACE_CHECKPOINT)
+                metadata->ctx->logTrace(TRACE_CHECKPOINT, "schema creation completed, allowing checkpoints");
+            metadata->allowCheckpoints();
         }
 
         for (const auto& msg: msgs) {

@@ -34,10 +34,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define METADATA_H_
 
 // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
-#define METADATA_STATUS_INITIALIZE          0
+#define METADATA_STATUS_READY               0
 
 // Replicator tries to start replication with given parameters.
-#define METADATA_STATUS_BOOT                1
+#define METADATA_STATUS_START               1
 
 // Replication is running. The metadata is initialized, the starting point of replication is defined.
 #define METADATA_STATUS_REPLICATE           2
@@ -94,7 +94,7 @@ namespace OpenLogReplicator {
         uint64_t defaultCharacterMapId;
         uint64_t defaultCharacterNcharMapId;
         typeScn firstDataScn;
-        typeScn     firstSchemaScn;
+        typeScn firstSchemaScn;
         std::set<RedoLog*> redoLogs;
 
         // Transaction schema consistency mutex
@@ -111,6 +111,8 @@ namespace OpenLogReplicator {
         uint64_t offset;
         typeScn firstScn;
         typeScn nextScn;
+        typeScn clientScn;
+        typeIdx clientIdx;
         uint64_t checkpoints;
         typeScn checkpointScn;
         typeScn lastCheckpointScn;
@@ -156,8 +158,8 @@ namespace OpenLogReplicator {
 
         void waitForWriter();
         void waitForReplicator();
-        void setStatusInitialize();
-        void setStatusBoot();
+        void setStatusReady();
+        void setStatusStart();
         void setStatusReplicate();
         void wakeUp();
         void checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
@@ -167,6 +169,8 @@ namespace OpenLogReplicator {
         void readCheckpoint(typeScn scn);
         void deleteOldCheckpoints();
         void loadAdaptiveSchema();
+        void allowCheckpoints();
+        bool isNewData(typeScn scn, typeIdx idx);
     };
 }
 

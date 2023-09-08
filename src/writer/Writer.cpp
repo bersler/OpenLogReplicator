@@ -36,13 +36,14 @@ namespace OpenLogReplicator {
             builder(newBuilder),
             metadata(newMetadata),
             checkpointScn(ZERO_SCN),
+            checkpointIdx(0),
             checkpointTime(time(nullptr)),
             sentMessages(0),
             currentQueueSize(0),
             maxQueueSize(0),
             streaming(false),
             confirmedScn(ZERO_SCN),
-            confirmedMessages(0),
+            confirmedIdx(0),
             queue(nullptr) {
     }
 
@@ -106,27 +107,26 @@ namespace OpenLogReplicator {
 
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
-                ctx->warning(70007, "trying to confirm empty message");
+                ctx->warning(70007, "trying to confirm an empty message");
                 return;
             }
             msg = queue[0];
         }
-        if (msg->scn > confirmedScn || confirmedScn == ZERO_SCN)
-            confirmedScn = msg->scn;
+        confirmedScn = msg->lwnScn;
+        confirmedIdx = msg->lwnIdx;
 
         msg->flags |= OUTPUT_BUFFER_MESSAGE_CONFIRMED;
         if (msg->flags & OUTPUT_BUFFER_MESSAGE_ALLOCATED) {
             delete[] msg->data;
             msg->flags &= ~OUTPUT_BUFFER_MESSAGE_ALLOCATED;
         }
-        ++confirmedMessages;
 
         uint64_t maxId = 0;
         {
             while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
-                if ((queue[0]->scn > confirmedScn || confirmedScn == ZERO_SCN) && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) != 0)
-                    confirmedScn = queue[0]->scn;
+                confirmedScn = msg->lwnScn;
+                confirmedIdx = msg->lwnIdx;
 
                 if (--currentQueueSize == 0)
                     break;
@@ -163,6 +163,9 @@ namespace OpenLogReplicator {
 
         ctx->info(0, "writer is starting with " + getName());
 
+        // Before anything, read the latest checkpoint
+        readCheckpoint();
+
         try {
             // External loop for client disconnection
             while (!ctx->hardShutdown) {
@@ -195,9 +198,6 @@ namespace OpenLogReplicator {
     }
 
     void Writer::mainLoop() {
-        // The client is connected
-        readCheckpoint();
-
         BuilderMsg* msg;
         BuilderQueue* builderQueue = builder->firstBuilderQueue;
         uint64_t oldLength = 0;
@@ -206,11 +206,24 @@ namespace OpenLogReplicator {
 
         // Start streaming
         while (!ctx->hardShutdown) {
+            // Check if the writer has a receiver of data which defined starting point of replication
+            while (!ctx->hardShutdown) {
+                pollQueue();
+
+                if (streaming && metadata->status == METADATA_STATUS_REPLICATE)
+                    break;
+
+                if (ctx->trace & TRACE_WRITER)
+                    ctx->logTrace(TRACE_WRITER, "waiting for client");
+                usleep(ctx->pollIntervalUs);
+            }
 
             // Get a message to send
             while (!ctx->hardShutdown) {
-                // Check for client checkpoint
+                // Verify sent messages, check what is received by client
                 pollQueue();
+
+                // Update checkpoint
                 writeCheckpoint(false);
 
                 // Next buffer
@@ -232,10 +245,7 @@ namespace OpenLogReplicator {
                 builder->sleepForWriterWork(currentQueueSize, ctx->pollIntervalUs);
             }
 
-            if (ctx->hardShutdown)
-                break;
-
-            // Send message
+            // Send the message
             while (oldLength + sizeof(struct BuilderMsg) < newLength && !ctx->hardShutdown) {
                 msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldLength);
                 if (msg->length == 0)
@@ -255,7 +265,6 @@ namespace OpenLogReplicator {
                 if (ctx->hardShutdown)
                     break;
 
-                // builder->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
                 uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
                 oldLength += sizeof(struct BuilderMsg);
 
@@ -263,13 +272,14 @@ namespace OpenLogReplicator {
                 if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send only new messages to the client
-                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
+                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                            !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
                     oldLength += length8;
 
-                // Message in many parts - merge & copy
+                // The message is split to many parts - merge & copy
                 } else {
                     msg->data = new uint8_t[msg->length];
                     if (msg->data == nullptr)
@@ -296,10 +306,9 @@ namespace OpenLogReplicator {
                     }
 
                     createMessage(msg);
-
-                    // Checkpoint message is to be ignored
                     // Send only new messages to the client
-                    if ((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT))
+                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                            !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
@@ -311,7 +320,7 @@ namespace OpenLogReplicator {
 
             // All work done?
             if (ctx->softShutdown && ctx->replicatorFinished) {
-                // Some data to send?
+                // Is there still some data to send?
                 if (builderQueue->length != oldLength || builderQueue->next != nullptr)
                     continue;
                 break;
@@ -323,7 +332,7 @@ namespace OpenLogReplicator {
 
     void Writer::writeCheckpoint(bool force) {
         // Nothing changed
-        if (checkpointScn == confirmedScn || confirmedScn == ZERO_SCN)
+        if ((checkpointScn == confirmedScn && checkpointIdx == confirmedIdx) || confirmedScn == ZERO_SCN)
             return;
 
         // Force first checkpoint
@@ -338,20 +347,24 @@ namespace OpenLogReplicator {
 
         if (ctx->trace & TRACE_CHECKPOINT) {
             if (checkpointScn == ZERO_SCN)
-                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn));
+                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
+                        std::to_string(confirmedIdx));
             else
-                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + "checkpoint scn: " +
-                              std::to_string(checkpointScn));
+                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
+                        std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
+                        std::to_string(checkpointIdx));
         }
         std::string name(database + "-chkpt");
         std::ostringstream ss;
         ss << R"({"database":")" << database
                 << R"(","scn":)" << std::dec << confirmedScn
+                << R"(,"idx":)" << std::dec << confirmedIdx
                 << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
                 << R"(,"activation":)" << std::dec << metadata->activation << "}";
 
         if (metadata->stateWrite(name, confirmedScn, ss)) {
             checkpointScn = confirmedScn;
+            checkpointIdx = confirmedIdx;
             checkpointTime = now;
         }
     }
@@ -363,10 +376,8 @@ namespace OpenLogReplicator {
         // Checkpoint is present - read it
         std::string checkpoint;
         rapidjson::Document document;
-        if (!metadata->stateRead(name, CHECKPOINT_FILE_MAX_SIZE, checkpoint)) {
-            metadata->setStatusBoot();
+        if (!metadata->stateRead(name, CHECKPOINT_FILE_MAX_SIZE, checkpoint))
             return;
-        }
 
         if (checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError())
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
@@ -380,16 +391,25 @@ namespace OpenLogReplicator {
         metadata->setActivation(Ctx::getJsonFieldU32(name, document, "activation"));
 
         // Started earlier - continue work & ignore default startup parameters
-        metadata->startScn = Ctx::getJsonFieldU64(name, document, "scn");
+        checkpointScn = Ctx::getJsonFieldU64(name, document, "scn");
+        metadata->clientScn = checkpointScn;
+        if (document.HasMember("idx"))
+            checkpointIdx = Ctx::getJsonFieldU64(name, document, "idx");
+        else
+            checkpointIdx = 0;
+        metadata->clientIdx = checkpointIdx;
+        metadata->startScn = checkpointScn;
         metadata->startSequence = ZERO_SEQ;
         metadata->startTime.clear();
         metadata->startTimeRel = 0;
-        ctx->info(0, "checkpoint - reading scn: " + std::to_string(metadata->startScn));
 
+        ctx->info(0, "checkpoint - all confirmed till scn: " + std::to_string(checkpointScn) + ", idx: " +
+                std::to_string(checkpointIdx));
         metadata->setStatusReplicate();
     }
 
     void Writer::wakeUp() {
+        Thread::wakeUp();
         builder->wakeUp();
     }
 }

@@ -688,7 +688,7 @@ namespace OpenLogReplicator {
         logTrace(TRACE_THREADS, "main finish start");
 
         while (wakeThreads()) {
-            usleep(1000);
+            usleep(10000);
             wakeAllOutOfMemory();
         }
 
@@ -746,20 +746,13 @@ namespace OpenLogReplicator {
             std::unique_lock<std::mutex> lck(mtx);
             for (Thread* thread: threads) {
                 if (!thread->finished) {
+                    logTrace(TRACE_THREADS, "waking up thread: " + thread->alias);
                     thread->wakeUp();
                     wakingUp = true;
                 }
             }
         }
-        {
-            std::unique_lock<std::mutex> lck(memoryMtx);
-            for (Thread* thread: threads) {
-                if (!thread->finished) {
-                    thread->wakeUp();
-                    wakingUp = true;
-                }
-            }
-        }
+        wakeAllOutOfMemory();
 
         return wakingUp;
     }

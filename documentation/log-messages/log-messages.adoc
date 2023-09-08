@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.2.1
-:revdate: 2023-08-18
+:revnumber: 1.3.0
+:revdate: 2023-09-05
 :imagesdir: ./images
 :toc: preamble
 
@@ -945,7 +945,7 @@ If you encounter any of these warnings, please report this issue.
 
 ==== code 70006: "OCI: <message>"
 
-==== code 70007: "trying to confirm empty message"
+==== code 70007: "trying to confirm an empty message"
 
 ==== code 70008: "Kafka: <number> delivery failed: <message>"
 

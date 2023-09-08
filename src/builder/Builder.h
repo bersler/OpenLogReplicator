@@ -72,6 +72,8 @@ namespace OpenLogReplicator {
         uint64_t length;
         typeScn scn;
         typeSeq sequence;
+        typeScn lwnScn;
+        typeIdx lwnIdx;
         uint8_t* data;
         typeObj obj;
         uint16_t pos;
@@ -232,6 +234,8 @@ namespace OpenLogReplicator {
             msg = reinterpret_cast<BuilderMsg*>(lastBuilderQueue->data + lastBuilderQueue->length);
             builderShift(sizeof(struct BuilderMsg), true);
             msg->scn = scn;
+            msg->lwnScn = lwnScn;
+            msg->lwnIdx = lwnIdx++;
             msg->sequence = sequence;
             msg->length = 0;
             msg->id = id++;
@@ -580,7 +584,7 @@ namespace OpenLogReplicator {
                         }
                         return false;
                     }
-                    LobData *lobData = lobsIt->second;
+                    LobData* lobData = lobsIt->second;
                     totalLobLength = pageCnt * lobData->pageSize + sizeRest;
                     if (totalLobLength == 0)
                         return true;
@@ -620,8 +624,8 @@ namespace OpenLogReplicator {
                         }
 
                         valueBufferCheck(lobData->pageSize * 4, offset);
-                        RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
-                        redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
+                        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                        redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                         if (j < pageCnt)
                             chunkLength = redoLogRecordLob->lobDataLength;
                         else
@@ -796,8 +800,8 @@ namespace OpenLogReplicator {
                                     }
 
                                     valueBufferCheck(lobData->pageSize * 4, offset);
-                                    RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
-                                    redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
+                                    RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                                    redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                     chunkLength = redoLogRecordLob->lobDataLength;
                                     if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                         hasNext = false;
@@ -850,8 +854,8 @@ namespace OpenLogReplicator {
                                         }
 
                                         valueBufferCheck(lobData->pageSize * 4, offset);
-                                        RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
-                                        redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
+                                        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                                        redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkLength = redoLogRecordLob->lobDataLength;
                                         if (listPage == 0 && i == static_cast<uint64_t>(aSiz - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                             hasNext = false;
@@ -935,7 +939,7 @@ namespace OpenLogReplicator {
                                 }
 
                                 valueBufferCheck(lobData->pageSize * 4, offset);
-                                RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                                RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                 redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                 chunkLength = redoLogRecordLob->lobDataLength;
                                 if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
@@ -1126,6 +1130,8 @@ namespace OpenLogReplicator {
         uint64_t buffersAllocated;
         BuilderQueue* firstBuilderQueue;
         BuilderQueue* lastBuilderQueue;
+        typeScn lwnScn;
+        typeIdx lwnIdx;
 
         Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newIntervalDtsFormat, uint64_t newIntervalYtmFormat,
                 uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat,
@@ -1136,7 +1142,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(typeXid xid, typeScn scn);
+        void processBegin(typeXid xid, typeScn scn, typeScn newLwnScn);
         void processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
                                    bool system, bool schema, bool dump);
         void processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,

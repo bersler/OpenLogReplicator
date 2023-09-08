@@ -156,7 +156,7 @@ inline bool ColumnType_Parse(
 enum RequestCode : int {
   INFO = 0,
   START = 1,
-  REDO = 2,
+  CONTINUE = 2,
   CONFIRM = 3,
   RequestCode_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   RequestCode_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
@@ -183,9 +183,9 @@ inline bool RequestCode_Parse(
 enum ResponseCode : int {
   READY = 0,
   FAILED_START = 1,
-  STARTED = 2,
+  STARTING = 2,
   ALREADY_STARTED = 3,
-  STREAMING = 4,
+  REPLICATE = 4,
   PAYLOAD = 5,
   INVALID_DATABASE = 6,
   INVALID_COMMAND = 7,
@@ -1522,6 +1522,8 @@ class RedoRequest final :
     kSchemaFieldNumber = 7,
     kDatabaseNameFieldNumber = 2,
     kSeqFieldNumber = 6,
+    kCScnFieldNumber = 8,
+    kCIdxFieldNumber = 9,
     kCodeFieldNumber = 1,
     kScnFieldNumber = 3,
     kTmsFieldNumber = 4,
@@ -1570,6 +1572,32 @@ class RedoRequest final :
   private:
   uint64_t _internal_seq() const;
   void _internal_set_seq(uint64_t value);
+  public:
+
+  // optional uint64 c_scn = 8;
+  bool has_c_scn() const;
+  private:
+  bool _internal_has_c_scn() const;
+  public:
+  void clear_c_scn();
+  uint64_t c_scn() const;
+  void set_c_scn(uint64_t value);
+  private:
+  uint64_t _internal_c_scn() const;
+  void _internal_set_c_scn(uint64_t value);
+  public:
+
+  // optional uint64 c_idx = 9;
+  bool has_c_idx() const;
+  private:
+  bool _internal_has_c_idx() const;
+  public:
+  void clear_c_idx();
+  uint64_t c_idx() const;
+  void set_c_idx(uint64_t value);
+  private:
+  uint64_t _internal_c_idx() const;
+  void _internal_set_c_idx(uint64_t value);
   public:
 
   // .OpenLogReplicator.pb.RequestCode code = 1;
@@ -1646,6 +1674,8 @@ class RedoRequest final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::SchemaRequest > schema_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr database_name_;
     uint64_t seq_;
+    uint64_t c_scn_;
+    uint64_t c_idx_;
     int code_;
     union TmValUnion {
       constexpr TmValUnion() : _constinit_{} {}
@@ -1803,6 +1833,8 @@ class RedoResponse final :
   enum : int {
     kPayloadFieldNumber = 9,
     kDbFieldNumber = 8,
+    kCScnFieldNumber = 10,
+    kCIdxFieldNumber = 11,
     kCodeFieldNumber = 1,
     kScnFieldNumber = 2,
     kScnsFieldNumber = 3,
@@ -1841,6 +1873,24 @@ class RedoResponse final :
   const std::string& _internal_db() const;
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_db(const std::string& value);
   std::string* _internal_mutable_db();
+  public:
+
+  // uint64 c_scn = 10;
+  void clear_c_scn();
+  uint64_t c_scn() const;
+  void set_c_scn(uint64_t value);
+  private:
+  uint64_t _internal_c_scn() const;
+  void _internal_set_c_scn(uint64_t value);
+  public:
+
+  // uint64 c_idx = 11;
+  void clear_c_idx();
+  uint64_t c_idx() const;
+  void set_c_idx(uint64_t value);
+  private:
+  uint64_t _internal_c_idx() const;
+  void _internal_set_c_idx(uint64_t value);
   public:
 
   // .OpenLogReplicator.pb.ResponseCode code = 1;
@@ -1976,6 +2026,8 @@ class RedoResponse final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload > payload_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr db_;
+    uint64_t c_scn_;
+    uint64_t c_idx_;
     int code_;
     union ScnValUnion {
       constexpr ScnValUnion() : _constinit_{} {}
@@ -3555,6 +3607,62 @@ RedoRequest::schema() const {
   return _impl_.schema_;
 }
 
+// optional uint64 c_scn = 8;
+inline bool RedoRequest::_internal_has_c_scn() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  return value;
+}
+inline bool RedoRequest::has_c_scn() const {
+  return _internal_has_c_scn();
+}
+inline void RedoRequest::clear_c_scn() {
+  _impl_.c_scn_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000002u;
+}
+inline uint64_t RedoRequest::_internal_c_scn() const {
+  return _impl_.c_scn_;
+}
+inline uint64_t RedoRequest::c_scn() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RedoRequest.c_scn)
+  return _internal_c_scn();
+}
+inline void RedoRequest::_internal_set_c_scn(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_.c_scn_ = value;
+}
+inline void RedoRequest::set_c_scn(uint64_t value) {
+  _internal_set_c_scn(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoRequest.c_scn)
+}
+
+// optional uint64 c_idx = 9;
+inline bool RedoRequest::_internal_has_c_idx() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  return value;
+}
+inline bool RedoRequest::has_c_idx() const {
+  return _internal_has_c_idx();
+}
+inline void RedoRequest::clear_c_idx() {
+  _impl_.c_idx_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline uint64_t RedoRequest::_internal_c_idx() const {
+  return _impl_.c_idx_;
+}
+inline uint64_t RedoRequest::c_idx() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RedoRequest.c_idx)
+  return _internal_c_idx();
+}
+inline void RedoRequest::_internal_set_c_idx(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_.c_idx_ = value;
+}
+inline void RedoRequest::set_c_idx(uint64_t value) {
+  _internal_set_c_idx(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoRequest.c_idx)
+}
+
 inline bool RedoRequest::has_tm_val() const {
   return tm_val_case() != TM_VAL_NOT_SET;
 }
@@ -4021,6 +4129,46 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb:
 RedoResponse::payload() const {
   // @@protoc_insertion_point(field_list:OpenLogReplicator.pb.RedoResponse.payload)
   return _impl_.payload_;
+}
+
+// uint64 c_scn = 10;
+inline void RedoResponse::clear_c_scn() {
+  _impl_.c_scn_ = uint64_t{0u};
+}
+inline uint64_t RedoResponse::_internal_c_scn() const {
+  return _impl_.c_scn_;
+}
+inline uint64_t RedoResponse::c_scn() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RedoResponse.c_scn)
+  return _internal_c_scn();
+}
+inline void RedoResponse::_internal_set_c_scn(uint64_t value) {
+  
+  _impl_.c_scn_ = value;
+}
+inline void RedoResponse::set_c_scn(uint64_t value) {
+  _internal_set_c_scn(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoResponse.c_scn)
+}
+
+// uint64 c_idx = 11;
+inline void RedoResponse::clear_c_idx() {
+  _impl_.c_idx_ = uint64_t{0u};
+}
+inline uint64_t RedoResponse::_internal_c_idx() const {
+  return _impl_.c_idx_;
+}
+inline uint64_t RedoResponse::c_idx() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RedoResponse.c_idx)
+  return _internal_c_idx();
+}
+inline void RedoResponse::_internal_set_c_idx(uint64_t value) {
+  
+  _impl_.c_idx_ = value;
+}
+inline void RedoResponse::set_c_idx(uint64_t value) {
+  _internal_set_c_idx(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoResponse.c_idx)
 }
 
 inline bool RedoResponse::has_scn_val() const {

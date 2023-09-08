@@ -460,6 +460,15 @@ namespace OpenLogReplicator {
             }
         }
 
+        if (hasPreviousValue)
+            builderAppend(',');
+        else
+            hasPreviousValue = true;
+        builderAppend(R"("c_scn":)", sizeof(R"("c_scn":)") - 1);
+        appendDec(lwnScn);
+        builderAppend(R"(,"c_idx":)", sizeof(R"(,"c_idx":)") - 1);
+        appendDec(lwnIdx);
+
         if (showXid) {
             if (hasPreviousValue)
                 builderAppend(',');
@@ -889,6 +898,11 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) {
+        if (lwnScn != scn) {
+            lwnScn = scn;
+            lwnIdx = 0;
+        }
+
         builderBegin(scn, sequence, 0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         builderAppend('{');
         hasPreviousValue = false;

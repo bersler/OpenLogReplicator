@@ -76,11 +76,11 @@ namespace OpenLogReplicator {
         addressC.sin_port = htons(atoi(port.c_str()));
 
         if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (1)");
 
         struct hostent* server = gethostbyname(host.c_str());
         if (server == nullptr)
-            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (2)");
 
         memcpy(reinterpret_cast<void*>(&addressC.sin_addr.s_addr),
                reinterpret_cast<const void*>(server->h_addr), server->h_length);
@@ -97,26 +97,26 @@ namespace OpenLogReplicator {
         hints.ai_flags = AI_PASSIVE;
 
         if (getaddrinfo(host.c_str(), port.c_str(), &hints, &res) != 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (3)");
 
         serverFD = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         if (serverFD == 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (4)");
 
         int flags = fcntl(serverFD, F_GETFL);
         if (flags < 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (5)");
         if (fcntl(serverFD, F_SETFL, flags | O_NONBLOCK) < 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (6)");
 
         int64_t opt = 1;
         if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (7)");
 
         if (bind(serverFD, res->ai_addr, res->ai_addrlen) < 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (8)");
         if (listen(serverFD, 1) < 0)
-            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (9)");
 
         if (res != nullptr) {
             freeaddrinfo(res);
@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
         uint64_t sent = 0;
 
         if (socketFD == -1)
-            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (10)");
 
         fd_set wset;
         fd_set w;
@@ -154,7 +154,7 @@ namespace OpenLogReplicator {
                        close(socketFD);
                        socketFD = -1;
                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                              strerror(errno));
+                                              strerror(errno) + " (11)");
                    }
                 }
                 sent += r;
@@ -177,7 +177,7 @@ namespace OpenLogReplicator {
                        close(socketFD);
                        socketFD = -1;
                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                              strerror(errno));
+                                              strerror(errno) + " (12)");
                    }
                 }
                 sent += r;
@@ -199,7 +199,7 @@ namespace OpenLogReplicator {
                        close(socketFD);
                        socketFD = -1;
                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                              strerror(errno));
+                                              strerror(errno) + " (13)");
                    }
                 }
                 sent += r;
@@ -223,7 +223,7 @@ namespace OpenLogReplicator {
                    close(socketFD);
                    socketFD = -1;
                    throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                          strerror(errno));
+                                          strerror(errno) + " (14)");
                }
             }
             sent += r;
@@ -249,7 +249,7 @@ namespace OpenLogReplicator {
             } else {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (15)");
             }
         }
 
@@ -281,7 +281,7 @@ namespace OpenLogReplicator {
                     close(socketFD);
                     socketFD = -1;
                     throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                           strerror(errno));
+                                           strerror(errno) + " (16)");
                 }
             }
 
@@ -308,7 +308,7 @@ namespace OpenLogReplicator {
             } else {
                 close(socketFD);
                 socketFD = -1;
-                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (17)");
             }
         }
 
@@ -418,14 +418,14 @@ namespace OpenLogReplicator {
             if (errno == EWOULDBLOCK)
                 return false;
 
-            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (18)");
         }
 
         int flags = fcntl(socketFD, F_GETFL);
         if (flags < 0)
-            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (19)");
         if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0)
-            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
+            throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (20)");
 
         if (socketFD != -1)
             return true;

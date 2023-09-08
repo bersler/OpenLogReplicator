@@ -186,7 +186,7 @@ namespace OpenLogReplicator {
                                " empty buffer, offset: " + std::to_string(redoLogRecord1->dataOffset) + ", xid: " + xid.toString() + ", pos: 1");
     }
 
-    void Transaction::flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder) {
+    void Transaction::flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn) {
         bool opFlush = false;
         deallocTc = nullptr;
         uint64_t maxMessageMb = builder->getMaxMessageMb();
@@ -204,8 +204,9 @@ namespace OpenLogReplicator {
             if (builder->systemTransaction != nullptr)
                 throw RedoLogException(50056, "system transaction already active");
             builder->systemTransaction = new SystemTransaction(builder, metadata);
+            metadata->schema->scn = commitScn;
         }
-        builder->processBegin(xid, commitScn);
+        builder->processBegin(xid, commitScn, lwnScn);
 
         uint64_t pos;
         uint64_t type = 0;
@@ -519,7 +520,7 @@ namespace OpenLogReplicator {
                     }
 
                     builder->processCommit(commitScn, commitSequence, commitTimestamp);
-                    builder->processBegin(xid, commitScn);
+                    builder->processBegin(xid, commitScn, lwnScn);
                 }
 
                 if (opFlush) {
@@ -558,6 +559,7 @@ namespace OpenLogReplicator {
             builder->systemTransaction->commit(commitScn);
             delete builder->systemTransaction;
             builder->systemTransaction = nullptr;
+            metadata->schema->scn = commitScn;
 
             // Unlock schema
             lckSchema.unlock();

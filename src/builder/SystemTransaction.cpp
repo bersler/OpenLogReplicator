@@ -365,7 +365,7 @@ namespace OpenLogReplicator {
         SysCDef* sysCDef2 = metadata->schema->dictSysCDefFind(rowId);
         if (sysCDef2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
-                throw RuntimeException(50022, "ddl: duplicate SYS.DEF$: (rowid: " + rowId.toString() + ") for insert at offset: " +
+                throw RuntimeException(50022, "ddl: duplicate SYS.CDEF$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
             metadata->schema->dictSysCDefDrop(sysCDef2);
             delete sysCDef2;

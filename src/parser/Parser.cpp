@@ -555,12 +555,12 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction *transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
                                                                       true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
 
-        OracleTable *table = nullptr;
+        OracleTable* table = nullptr;
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
@@ -773,9 +773,9 @@ namespace OpenLogReplicator {
             (transaction->commitScn > metadata->firstSchemaScn && transaction->system)) {
 
             if (transaction->begin) {
-                transaction->flush(metadata, transactionBuffer, builder);
+                transaction->flush(metadata, transactionBuffer, builder, lwnScn);
 
-                if (ctx->stopTransactions > 0) {
+                if (ctx->stopTransactions > 0 && metadata->isNewData(lwnScn, builder->lwnIdx)) {
                     --ctx->stopTransactions;
                     if (ctx->stopTransactions == 0) {
                         ctx->info(0, "shutdown started - exhausted number of transactions");
@@ -783,7 +783,7 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (transaction->shutdown) {
+                if (transaction->shutdown && metadata->isNewData(lwnScn, builder->lwnIdx)) {
                     ctx->info(0, "shutdown started - initiated by debug transaction " + transaction->xid.toString() +
                               " at scn " + std::to_string(transaction->commitScn));
                     ctx->stopSoft();
@@ -1405,7 +1405,7 @@ namespace OpenLogReplicator {
                                              (currentBlock - lwnConfirmedBlock) * reader->getBlockSize(), minSequence,
                                              minOffset, minXid);
 
-                        if (ctx->stopCheckpoints > 0) {
+                        if (ctx->stopCheckpoints > 0 && metadata->isNewData(lwnScn, builder->lwnIdx)) {
                             --ctx->stopCheckpoints;
                             if (ctx->stopCheckpoints == 0) {
                                 ctx->info(0, "shutdown started - exhausted number of checkpoints");

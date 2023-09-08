@@ -33,10 +33,9 @@ namespace OpenLogReplicator {
         pb::RedoResponse response;
 
         std::string getName() const override;
-        void readCheckpoint() override;
         void processInfo();
         void processStart();
-        void processRedo();
+        void processContinue();
         void processConfirm();
         void pollQueue() override;
         void sendMessage(BuilderMsg* msg) override;

@@ -72,7 +72,9 @@ namespace OpenLogReplicator {
             systemTransaction(nullptr),
             buffersAllocated(0),
             firstBuilderQueue(nullptr),
-            lastBuilderQueue(nullptr) {
+            lastBuilderQueue(nullptr),
+            lwnScn(ZERO_SCN),
+            lwnIdx(0) {
         memset(reinterpret_cast<void*>(valuesSet), 0, sizeof(valuesSet));
         memset(reinterpret_cast<void*>(valuesMerge), 0, sizeof(valuesMerge));
         memset(reinterpret_cast<void*>(values), 0, sizeof(values));
@@ -666,9 +668,13 @@ namespace OpenLogReplicator {
         maxMessageMb = maxMessageMb_;
     }
 
-    void Builder::processBegin(typeXid xid, typeScn scn) {
+    void Builder::processBegin(typeXid xid, typeScn scn, typeScn newLwnScn) {
         lastXid = xid;
         commitScn = scn;
+        if (lwnScn != newLwnScn) {
+            lwnScn = newLwnScn;
+            lwnIdx = 0;
+        }
         newTran = true;
     }
 

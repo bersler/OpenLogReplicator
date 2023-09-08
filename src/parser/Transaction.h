@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
         void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
-        void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder);
+        void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn);
         void purge(TransactionBuffer* transactionBuffer);
 
         void log(Ctx* ctx, const char* msg, RedoLogRecord* redoLogRecord1) {

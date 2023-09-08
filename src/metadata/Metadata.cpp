@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
             state(nullptr),
             stateDisk(nullptr),
             serializer(nullptr),
-            status(METADATA_STATUS_INITIALIZE),
+            status(METADATA_STATUS_READY),
             database(newDatabase),
             startScn(newStartScn),
             startSequence(newStartSequence),
@@ -79,6 +79,8 @@ namespace OpenLogReplicator {
             offset(0),
             firstScn(ZERO_SCN),
             nextScn(ZERO_SCN),
+            clientScn(ZERO_SCN),
+            clientIdx(0),
             checkpoints(0),
             checkpointScn(ZERO_SCN),
             lastCheckpointScn(ZERO_SCN),
@@ -283,7 +285,7 @@ namespace OpenLogReplicator {
     void Metadata::waitForWriter() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_INITIALIZE) {
+        if (status == METADATA_STATUS_READY) {
             if (ctx->trace & TRACE_SLEEP)
                 ctx->logTrace(TRACE_SLEEP, "Metadata:waitForWriter");
             condReplicator.wait(lck);
@@ -293,17 +295,17 @@ namespace OpenLogReplicator {
     void Metadata::waitForReplicator() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_BOOT) {
+        if (status == METADATA_STATUS_START) {
             if (ctx->trace & TRACE_SLEEP)
                 ctx->logTrace(TRACE_SLEEP, "Metadata:waitForReplicator");
             condWriter.wait(lck);
         }
     }
 
-    void Metadata::setStatusInitialize() {
+    void Metadata::setStatusReady() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_INITIALIZE;
+        status = METADATA_STATUS_READY;
         firstDataScn = ZERO_SCN;
         firstSchemaScn = ZERO_SCN;
         checkpointScn = ZERO_SCN;
@@ -311,10 +313,10 @@ namespace OpenLogReplicator {
         condWriter.notify_all();
     }
 
-    void Metadata::setStatusBoot() {
+    void Metadata::setStatusStart() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_BOOT;
+        status = METADATA_STATUS_START;
         condReplicator.notify_all();
     }
 
@@ -364,9 +366,6 @@ namespace OpenLogReplicator {
                 (checkpointBytes - lastCheckpointBytes) / 1024 / 1024 < ctx->checkpointIntervalMb )
                 return;
 
-            if (schema->scn == ZERO_SCN)
-                schema->scn = checkpointScn;
-
             // Schema did not change
             bool storeSchema = true;
             if (schema->refScn != ZERO_SCN && schema->refScn >= schema->scn) {
@@ -395,7 +394,7 @@ namespace OpenLogReplicator {
         if (ctx->trace & TRACE_CHECKPOINT)
             ctx->logTrace(TRACE_CHECKPOINT, "write scn: " + std::to_string(lastCheckpointScn) + " time: " +
                           std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
-                          std::to_string(lastCheckpointOffset));
+                          std::to_string(lastCheckpointOffset) + " name: " + checkpointName);
 
         if (!stateWrite(checkpointName, lastCheckpointScn, ss))
             ctx->warning(60018, "file: " + checkpointName + " - couldn't write checkpoint");
@@ -580,5 +579,26 @@ namespace OpenLogReplicator {
         for (const auto& msg: msgs) {
             ctx->info(0, "- found: " + msg);
         }
+    }
+
+    void Metadata::allowCheckpoints() {
+        if (ctx->trace & TRACE_CHECKPOINT)
+            ctx->logTrace(TRACE_CHECKPOINT, "allowing checkpoints");
+
+        std::unique_lock<std::mutex> lck(mtxCheckpoint);
+        allowedCheckpoints = true;
+    }
+
+    bool Metadata::isNewData(typeScn scn, typeIdx idx) {
+        if (clientScn == ZERO_SCN)
+            return true;
+
+        if (clientScn < scn)
+            return true;
+
+        if (clientScn == scn && clientIdx < idx)
+            return true;
+
+        return false;
     }
 }

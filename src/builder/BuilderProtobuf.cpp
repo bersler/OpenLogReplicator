@@ -211,6 +211,9 @@ namespace OpenLogReplicator {
             }
         }
 
+        redoResponsePB->set_c_scn(lwnScn);
+        redoResponsePB->set_c_idx(lwnIdx);
+
         if (showXid) {
             if (xidFormat == XID_FORMAT_TEXT_HEX) {
                 std::ostringstream ss;
@@ -590,6 +593,11 @@ namespace OpenLogReplicator {
     }
 
     void BuilderProtobuf::processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_ __attribute__((unused)), uint64_t offset, bool redo) {
+        if (lwnScn != scn) {
+            lwnScn = scn;
+            lwnIdx = 0;
+        }
+
         builderBegin(scn, sequence, 0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         createResponse();
         appendHeader(scn, time_, true, false, false);

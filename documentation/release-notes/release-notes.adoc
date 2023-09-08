@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.2.1
-:revdate: 2023-08-24
+:revnumber: 1.3.0
+:revdate: 2023-09-05
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -16,7 +16,7 @@ This document describes the release notes of OpenLogReplicator.
 
 == Major Release 1.x
 
-=== Version 1.2.1
+=== Version 1.3.0
 
 - doc: updated README.md, added reference to tutorial github project
 - fix: PDB/CDB support
@@ -44,6 +44,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: network client date was not consistent when reconnected
 - fix: scn information inconsistency in transaction fix
 - enhancement: added flag 2 for "scn-format" field type to control scn values
+- enhancement: changed checkpointing mechanism to allow more frequent checkpoints
 
 === Version 1.2.0
 
@@ -52,7 +53,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: minor parameter validation bug
 - fix: minor issue related to sending character data in hex format for debug purposes
 - cleanup in parameter names: renamed "max-size" "max-file-size" and "format" to "timestamp-format" for better understanding
-- doc: Commands Reference Manual
+- doc: Command Reference Manual
 - doc: Log Messages Guide
 - doc: Installation Guide
 - doc: Release Notes

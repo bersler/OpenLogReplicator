@@ -29,6 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../builder/Builder.h"
 #include "../common/ConfigurationException.h"
 #include "../common/RuntimeException.h"
+#include "../metadata/Metadata.h"
 #include "WriterFile.h"
 
 namespace OpenLogReplicator {
@@ -188,6 +189,8 @@ namespace OpenLogReplicator {
             closedir(dir);
             ctx->info(0, "next number for " + this->output + " is: " + std::to_string(fileNameNum));
         }
+
+        streaming = true;
     }
 
     void WriterFile::closeFile() {
@@ -316,5 +319,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterFile::pollQueue() {
+        if (metadata->status == METADATA_STATUS_READY)
+            metadata->setStatusStart();
     }
 }

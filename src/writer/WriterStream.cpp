@@ -51,39 +51,30 @@ namespace OpenLogReplicator {
         return stream->getName();
     }
 
-    void WriterStream::readCheckpoint() {
-        while (!streaming && !ctx->softShutdown) {
-            try {
-                usleep(ctx->pollIntervalUs);
-                if (stream->isConnected()) {
-                    pollQueue();
-                }
-
-            // Client disconnected
-            } catch (NetworkException& ex) {
-                ctx->warning(ex.code, ex.msg);
-                streaming = false;
-            }
-        }
-
-        if (metadata->firstDataScn != ZERO_SCN) {
-            if (ctx->trace & TRACE_WRITER)
-                ctx->logTrace(TRACE_WRITER, "client requested scn: " + std::to_string(metadata->firstDataScn));
-        }
-    }
-
     void WriterStream::processInfo() {
         response.Clear();
         if (request.database_name() != database) {
             ctx->warning(60035, "unknown database requested, got: " + request.database_name() + ", expected: " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
-        } else if (metadata->firstDataScn != ZERO_SCN) {
-            ctx->logTrace(TRACE_WRITER, "client requested scn: " + std::to_string(metadata->firstDataScn) + " when already started");
-            response.set_code(pb::ResponseCode::STARTED);
-            response.set_scn(confirmedScn);
-        } else {
-            response.set_code(pb::ResponseCode::READY);
+            return;
         }
+
+        if (metadata->status == METADATA_STATUS_READY) {
+            ctx->logTrace(TRACE_WRITER, "info, ready");
+            response.set_code(pb::ResponseCode::READY);
+            return;
+        }
+
+        if (metadata->status == METADATA_STATUS_START) {
+            ctx->logTrace(TRACE_WRITER, "info, start");
+            response.set_code(pb::ResponseCode::STARTING);
+        }
+
+        ctx->logTrace(TRACE_WRITER, "info, first scn: " + std::to_string(metadata->firstDataScn));
+        response.set_code(pb::ResponseCode::REPLICATE);
+        response.set_scn(metadata->firstDataScn);
+        response.set_c_scn(confirmedScn);
+        response.set_c_idx(confirmedIdx);
     }
 
     void WriterStream::processStart() {
@@ -94,87 +85,113 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (metadata->firstDataScn != ZERO_SCN) {
-            ctx->logTrace(TRACE_WRITER, "client requested scn: " + std::to_string(metadata->firstDataScn) + " when already started");
+        if (metadata->status == METADATA_STATUS_REPLICATE) {
+            ctx->logTrace(TRACE_WRITER, "client requested start when already started");
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
             response.set_scn(metadata->firstDataScn);
+            response.set_c_scn(confirmedScn);
+            response.set_c_idx(confirmedIdx);
             return;
         }
 
-        metadata->startScn = 0;
-        if (request.has_seq())
+        if (metadata->status == METADATA_STATUS_START) {
+            ctx->logTrace(TRACE_WRITER, "client requested start when already starting");
+            response.set_code(pb::ResponseCode::STARTING);
+            return;
+        }
+
+        std::string paramSeq;
+        if (request.has_seq()) {
             metadata->startSequence = request.seq();
-        else
+            paramSeq = ", seq: " + std::to_string(request.seq());
+        } else
             metadata->startSequence = ZERO_SEQ;
-        metadata->startTime.clear();
+
+        metadata->startScn = ZERO_SCN;
+        metadata->startTime = "";
         metadata->startTimeRel = 0;
 
         switch (request.tm_val_case()) {
             case pb::RedoRequest::TmValCase::kScn:
                 metadata->startScn = request.scn();
                 if (metadata->startScn == ZERO_SCN)
-                    ctx->info(0, "client requested start from NOW");
+                    ctx->info(0, "client requested to start from NOW" + paramSeq);
                 else
-                    ctx->info(0, "client requested start from scn: " + std::to_string(metadata->startScn));
-                metadata->setStatusBoot();
+                    ctx->info(0, "client requested to start from scn: " + std::to_string(metadata->startScn) + paramSeq);
                 break;
 
             case pb::RedoRequest::TmValCase::kTms:
                 metadata->startTime = request.tms();
-                ctx->info(0, "client requested start from time: " + metadata->startTime);
-                metadata->setStatusBoot();
+                ctx->info(0, "client requested to start from time: " + metadata->startTime + paramSeq);
                 break;
 
             case pb::RedoRequest::TmValCase::kTmRel:
                 metadata->startTimeRel = request.tm_rel();
-                ctx->info(0, "client requested start from relative time: " + std::to_string(metadata->startTimeRel));
-                metadata->setStatusBoot();
+                ctx->info(0, "client requested to start from relative time: " + std::to_string(metadata->startTimeRel) + paramSeq);
                 break;
 
             default:
-                ctx->logTrace(TRACE_WRITER, "client requested invalid tm: " + std::to_string(request.tm_val_case()));
+                ctx->logTrace(TRACE_WRITER, "client requested an invalid starting point");
                 response.set_code(pb::ResponseCode::INVALID_COMMAND);
-                break;
+                return;
         }
+        metadata->setStatusStart();
 
         metadata->waitForReplicator();
 
         if (metadata->status == METADATA_STATUS_REPLICATE) {
-            response.set_code(pb::ResponseCode::STARTED);
+            response.set_code(pb::ResponseCode::REPLICATE);
             response.set_scn(metadata->firstDataScn);
+            response.set_c_scn(confirmedScn);
+            response.set_c_idx(confirmedIdx);
+
+            ctx->info(0, "streaming to client");
+            streaming = true;
         } else {
-            ctx->logTrace(TRACE_WRITER, "client did not provide starting scn");
+            ctx->logTrace(TRACE_WRITER, "starting failed");
             response.set_code(pb::ResponseCode::FAILED_START);
         }
     }
 
-    void WriterStream::processRedo() {
+    void WriterStream::processContinue() {
         response.Clear();
-        if (request.database_name() == database) {
-            if (request.has_scn()) {
-                confirmedScn = request.scn();
-                ctx->info(0, "client requested scn: " + std::to_string(metadata->firstDataScn));
-            }
-
-            response.set_code(pb::ResponseCode::STREAMING);
-            ctx->info(0, "streaming to client");
-            streaming = true;
-        } else {
+        if (request.database_name() != database) {
             ctx->warning(60035, "unknown database requested, got: " + std::string(request.database_name()) + " instead of " + database);
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
+            return;
         }
+
+        std::string paramIdx;
+        if (request.has_c_idx()) {
+            metadata->clientIdx = request.c_idx();
+            paramIdx = ", idx: " + std::to_string(metadata->clientIdx);
+        }
+
+        if (request.has_c_scn()) {
+            metadata->clientScn = request.c_scn();
+            ctx->info(0, "client requested scn: " + std::to_string(request.c_scn()) + paramIdx);
+        }
+
+        response.set_code(pb::ResponseCode::REPLICATE);
+        ctx->info(0, "streaming to client");
+        streaming = true;
     }
 
     void WriterStream::processConfirm() {
-        if (request.database_name() == database) {
-            while (currentQueueSize > 0 && queue[0]->scn <= request.scn())
-                confirmMessage(queue[0]);
-        } else {
+        if (request.database_name() != database) {
             ctx->warning(60035, "unknown database confirmed, got: " + request.database_name() + ", expected: " + database);
+            return;
         }
+
+        while (currentQueueSize > 0 && (queue[0]->lwnScn < request.c_scn() || (queue[0]->lwnScn == request.c_scn() && queue[0]->lwnIdx <= request.c_idx())))
+            confirmMessage(queue[0]);
     }
 
     void WriterStream::pollQueue() {
+        // No client connected
+        if (!stream->isConnected())
+            return;
+
         uint8_t msgR[READ_NETWORK_BUFFER];
         std::string msgS;
 
@@ -206,7 +223,6 @@ namespace OpenLogReplicator {
                     }
                 } else {
                     switch (request.code()) {
-
                         case pb::RequestCode::INFO:
                             processInfo();
                             response.SerializeToString(&msgS);
@@ -219,8 +235,8 @@ namespace OpenLogReplicator {
                             stream->sendMessage(msgS.c_str(), msgS.length());
                             break;
 
-                        case pb::RequestCode::REDO:
-                            processRedo();
+                        case pb::RequestCode::CONTINUE:
+                            processContinue();
                             response.SerializeToString(&msgS);
                             stream->sendMessage(msgS.c_str(), msgS.length());
                             break;
@@ -241,7 +257,6 @@ namespace OpenLogReplicator {
                     ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(msgR[i]) << " ";
                 ctx->warning(60033, ss.str());
             }
-
         } else if (length == 0) {
             // No request
         } else if (errno != EAGAIN)

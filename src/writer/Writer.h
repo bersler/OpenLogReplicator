@@ -35,6 +35,7 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         // Information about local checkpoint
         typeScn checkpointScn;
+        typeIdx checkpointIdx;
         time_t checkpointTime;
         uint64_t sentMessages;
         uint64_t currentQueueSize;
@@ -42,9 +43,9 @@ namespace OpenLogReplicator {
         bool streaming;
 
         std::mutex mtx;
-        // Scn confirmed by client
+        // scn,idx confirmed by client
         typeScn confirmedScn;
-        uint64_t confirmedMessages;
+        typeIdx confirmedIdx;
         BuilderMsg** queue;
 
         void createMessage(BuilderMsg* msg);
@@ -54,7 +55,7 @@ namespace OpenLogReplicator {
         void run() override;
         void mainLoop();
         virtual void writeCheckpoint(bool force);
-        virtual void readCheckpoint();
+        void readCheckpoint();
         void sortQueue();
 
     public:

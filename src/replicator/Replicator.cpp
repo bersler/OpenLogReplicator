@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
 
     void Replicator::createSchema() {
         if (FLAG(REDO_FLAGS_SCHEMALESS)) {
-            metadata->allowedCheckpoints = true;
+            metadata->allowCheckpoints();
             return;
         }
 
@@ -177,7 +177,7 @@ namespace OpenLogReplicator {
                     break;
                 metadata->waitForWriter();
 
-                if (metadata->status == METADATA_STATUS_INITIALIZE)
+                if (metadata->status == METADATA_STATUS_READY)
                     continue;
 
                 if (ctx->softShutdown)
@@ -219,7 +219,7 @@ namespace OpenLogReplicator {
 
                     ctx->error(ex.code, ex.msg);
                     ctx->info(0, "replication startup failed, waiting for further commands");
-                    metadata->setStatusInitialize();
+                    metadata->setStatusReady();
                     continue;
                 }
 
