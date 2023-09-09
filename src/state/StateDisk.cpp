@@ -90,7 +90,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void StateDisk::write(const std::string& name, typeScn scn, const std::ostringstream& out) {
+    void StateDisk::write(const std::string& name, typeScn scn __attribute__((unused)), const std::ostringstream& out) {
         std::string fileName(path + "/" + name + ".json");
         std::ofstream outputStream;
 

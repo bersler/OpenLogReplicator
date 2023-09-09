@@ -112,8 +112,6 @@ namespace OpenLogReplicator {
             }
             msg = queue[0];
         }
-        confirmedScn = msg->lwnScn;
-        confirmedIdx = msg->lwnIdx;
 
         msg->flags |= OUTPUT_BUFFER_MESSAGE_CONFIRMED;
         if (msg->flags & OUTPUT_BUFFER_MESSAGE_ALLOCATED) {
@@ -125,8 +123,11 @@ namespace OpenLogReplicator {
         {
             while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
-                confirmedScn = msg->lwnScn;
-                confirmedIdx = msg->lwnIdx;
+                if (confirmedScn == ZERO_SCN || msg->lwnScn > confirmedScn) {
+                    confirmedScn = msg->lwnScn;
+                    confirmedIdx = msg->lwnIdx;
+                } else if (msg->lwnScn == confirmedScn && msg->lwnIdx > confirmedIdx)
+                    confirmedIdx = msg->lwnIdx;
 
                 if (--currentQueueSize == 0)
                     break;

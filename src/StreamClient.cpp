@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/OraProtoBuf.pb.h"
 #include "common/NetworkException.h"
 #include "common/RuntimeException.h"
+#include "common/Timer.h"
 #include "common/types.h"
 #include "stream/StreamNetwork.h"
 
@@ -182,7 +183,7 @@ int main(int argc, char** argv) {
 
         // Index to count messages, to confirm after 1000th
         uint64_t num = 0;
-        bool first10 = true;
+        time_t last = OpenLogReplicator::Timer::getTime();
 
         send(request, stream, &ctx);
         receive(response, stream, &ctx, buffer, true);
@@ -248,9 +249,11 @@ int main(int argc, char** argv) {
             }
 
             ++num;
+            time_t now = OpenLogReplicator::Timer::getTime();
+            double timeDelta = (double)(now - last) / 1000000.0;
 
-            // Confirm every 1000 messages
-            if (num > 1000 || (num > 10 && first10)) {
+            // Confirm every 1000 messages or every 10 seconds
+            if (num > 1000 || timeDelta > 10) {
                 request.Clear();
                 request.set_code(OpenLogReplicator::pb::RequestCode::CONFIRM);
                 request.set_c_scn(cScn);
@@ -260,7 +263,7 @@ int main(int argc, char** argv) {
                          ", database: " + request.database_name());
                 send(request, stream, &ctx);
                 num = 0;
-                first10 = false;
+                last = now;
             }
         }
 
