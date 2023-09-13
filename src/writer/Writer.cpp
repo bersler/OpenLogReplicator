@@ -35,10 +35,12 @@ namespace OpenLogReplicator {
             database(newDatabase),
             builder(newBuilder),
             metadata(newMetadata),
+            builderQueue(nullptr),
             checkpointScn(ZERO_SCN),
             checkpointIdx(0),
             checkpointTime(time(nullptr)),
             sentMessages(0),
+            oldLength(0),
             currentQueueSize(0),
             maxQueueSize(0),
             streaming(false),
@@ -100,6 +102,17 @@ namespace OpenLogReplicator {
 
         if (oldQueue != nullptr)
             delete[] oldQueue;
+    }
+
+    void Writer::resetMessageQueue() {
+        for (uint64_t i = 0; i < currentQueueSize; ++i) {
+            BuilderMsg* msg = queue[i];
+            if ((msg->flags & OUTPUT_BUFFER_MESSAGE_ALLOCATED) != 0)
+                delete[] msg->data;
+        }
+        currentQueueSize = 0;
+
+        oldLength = builderQueue->start;
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
@@ -166,6 +179,9 @@ namespace OpenLogReplicator {
 
         // Before anything, read the latest checkpoint
         readCheckpoint();
+        builderQueue = builder->firstBuilderQueue;
+        oldLength = 0;
+        currentQueueSize = 0;
 
         try {
             // External loop for client disconnection
@@ -200,8 +216,6 @@ namespace OpenLogReplicator {
 
     void Writer::mainLoop() {
         BuilderMsg* msg;
-        BuilderQueue* builderQueue = builder->firstBuilderQueue;
-        uint64_t oldLength = 0;
         uint64_t newLength = 0;
         currentQueueSize = 0;
 
@@ -257,7 +271,7 @@ namespace OpenLogReplicator {
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
                     if (ctx->trace & TRACE_WRITER)
                         ctx->logTrace(TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
-                                      " schemaElements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
+                                      " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     usleep(ctx->pollIntervalUs);
                     pollQueue();
                 }
@@ -272,7 +286,7 @@ namespace OpenLogReplicator {
                 // Message in one part - send directly from buffer
                 if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
-                    // Send only new messages to the client
+                    // Send the message to the client in one part
                     if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
                             !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
@@ -289,7 +303,7 @@ namespace OpenLogReplicator {
                     msg->flags |= OUTPUT_BUFFER_MESSAGE_ALLOCATED;
 
                     uint64_t copied = 0;
-                    while (msg->length - copied > 0) {
+                    while (msg->length > copied) {
                         uint64_t toCopy = msg->length - copied;
                         if (toCopy > newLength - oldLength) {
                             toCopy = newLength - oldLength;
@@ -313,8 +327,6 @@ namespace OpenLogReplicator {
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
-                    pollQueue();
-                    writeCheckpoint(false);
                     break;
                 }
             }

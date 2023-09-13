@@ -490,9 +490,9 @@ namespace OpenLogReplicator {
                         opFlush = true;
                         break;
 
-                    // Truncate table
+                    // DDL operation
                     case 0x18010000:
-                        builder->processDdlHeader(redoLogRecord1->scnRecord, commitSequence, commitTimestamp, redoLogRecord1);
+                        builder->processDdlHeader( commitScn, commitSequence, commitTimestamp, redoLogRecord1);
                         opFlush = true;
                         break;
 

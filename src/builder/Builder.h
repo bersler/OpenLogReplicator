@@ -48,6 +48,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OUTPUT_BUFFER_MESSAGE_CHECKPOINT        0x0004
 #define VALUE_BUFFER_MIN                        1048576
 #define VALUE_BUFFER_MAX                        4294967296
+#define BUFFER_START_UNDEFINED                  0xFFFFFFFFFFFFFFFF
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -61,6 +62,7 @@ namespace OpenLogReplicator {
     struct BuilderQueue {
         uint64_t id;
         std::atomic<uint64_t> length;
+        std::atomic<uint64_t> start;
         uint8_t* data;
         std::atomic<BuilderQueue*> next;
     };
@@ -253,6 +255,8 @@ namespace OpenLogReplicator {
             builderShift((8 - (messageLength & 7)) & 7, false);
             unconfirmedLength += messageLength;
             msg->length = messageLength;
+            if (lastBuilderQueue->start == BUFFER_START_UNDEFINED)
+                lastBuilderQueue->start = (uint64_t)lastBuilderQueue->length;
 
             if (force || flushBuffer == 0 || unconfirmedLength > flushBuffer) {
                 {
@@ -264,13 +268,13 @@ namespace OpenLogReplicator {
             msg = nullptr;
         };
 
-        void builderAppend(char character) {
+        void append(char character) {
             lastBuilderQueue->data[lastBuilderQueue->length] = character;
             ++messageLength;
             builderShift(1, true);
         };
 
-        void builderAppend(const char* str, uint64_t length) {
+        void append(const char* str, uint64_t length) {
             if (lastBuilderQueue->length + length < OUTPUT_BUFFER_DATA_SIZE) {
                 memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderQueue->length),
                        reinterpret_cast<const void*>(str), length);
@@ -278,19 +282,19 @@ namespace OpenLogReplicator {
                 messageLength += length;
             } else {
                 for (uint64_t i = 0; i < length; ++i)
-                    builderAppend(*str++);
+                    append(*str++);
             }
         };
 
-        void builderAppend(const char* str) {
+        void append(const char* str) {
             char character = *str++;
             while (character != 0) {
-                builderAppend(character);
+                append(character);
                 character = *str++;
             }
         };
 
-        void builderAppend(const std::string& str) {
+        void append(const std::string& str) {
             uint64_t length = str.length();
             if (lastBuilderQueue->length + length < OUTPUT_BUFFER_DATA_SIZE) {
                 memcpy(lastBuilderQueue->data + lastBuilderQueue->length,
@@ -300,7 +304,7 @@ namespace OpenLogReplicator {
             } else {
                 const char* charStr = str.c_str();
                 for (uint64_t i = 0; i < length; ++i)
-                    builderAppend(*charStr++);
+                    append(*charStr++);
             }
         };
 
@@ -471,10 +475,10 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        void addLobToOutput(const uint8_t* data, uint32_t length, uint64_t charsetId, uint64_t offset, bool append, bool isClob, bool hasPrev, bool hasNext,
-                            bool isSystem) {
+        void addLobToOutput(const uint8_t* data, uint32_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool isClob, bool hasPrev,
+                            bool hasNext, bool isSystem) {
             if (isClob) {
-                parseString(data, length, charsetId, offset, append, hasPrev, hasNext, isSystem);
+                parseString(data, length, charsetId, offset, appendData, hasPrev, hasNext, isSystem);
             } else {
                 memcpy(reinterpret_cast<void*>(valueBuffer + valueLength),
                        reinterpret_cast<const void*>(data), length);
@@ -483,7 +487,7 @@ namespace OpenLogReplicator {
         }
 
         bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t length, uint64_t charsetId, typeObj obj, uint64_t offset, bool isClob, bool isSystem) {
-            bool append = false, hasPrev = false, hasNext = true;
+            bool appendData = false, hasPrev = false, hasNext = true;
             valueLength = 0;
             if (ctx->trace & TRACE_LOB_DATA)
                 ctx->logTrace(TRACE_LOB_DATA, dumpLob(data, length));
@@ -539,15 +543,15 @@ namespace OpenLogReplicator {
                     RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                     redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
 
-                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, append, isClob, hasPrev,
-                                   hasNext, isSystem);
-                    append = true;
+                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData, isClob,
+                                   hasPrev, hasNext, isSystem);
+                    appendData = true;
                     hasPrev = true;
                     ++pageNo;
                 }
 
                 if (hasNext)
-                    addLobToOutput(nullptr, 0, charsetId, offset, append, isClob, true, false, isSystem);
+                    addLobToOutput(nullptr, 0, charsetId, offset, appendData, isClob, true, false, isSystem);
             // In-row
             } else {
                 if (length < 23) {
@@ -633,9 +637,9 @@ namespace OpenLogReplicator {
                         if (j == jMax - 1)
                             hasNext = false;
 
-                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, append, isClob, hasPrev,
-                                       hasNext, isSystem);
-                        append = true;
+                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData, isClob,
+                                       hasPrev, hasNext, isSystem);
+                        appendData = true;
                         hasPrev = true;
                         ++page;
                         totalLobLength -= chunkLength;
@@ -806,9 +810,9 @@ namespace OpenLogReplicator {
                                     if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                         hasNext = false;
 
-                                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, append, isClob,
-                                                   hasPrev, hasNext, isSystem);
-                                    append = true;
+                                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData,
+                                                   isClob, hasPrev, hasNext, isSystem);
+                                    appendData = true;
                                     hasPrev = true;
                                     totalLobLength -= chunkLength;
                                     ++page;
@@ -860,9 +864,9 @@ namespace OpenLogReplicator {
                                         if (listPage == 0 && i == static_cast<uint64_t>(aSiz - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                             hasNext = false;
 
-                                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, append,
-                                                       isClob, hasPrev, hasNext, isSystem);
-                                        append = true;
+                                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset,
+                                                       appendData, isClob, hasPrev, hasNext, isSystem);
+                                        appendData = true;
                                         hasPrev = true;
                                         totalLobLength -= chunkLength;
                                         ++page;
@@ -945,9 +949,9 @@ namespace OpenLogReplicator {
                                 if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                     hasNext = false;
 
-                                addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, append, isClob,
-                                               hasPrev, hasNext, isSystem);
-                                append = true;
+                                addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData,
+                                               isClob, hasPrev, hasNext, isSystem);
+                                appendData = true;
                                 hasPrev = true;
                                 ++page;
                                 totalLobLength -= chunkLength;
@@ -967,12 +971,13 @@ namespace OpenLogReplicator {
             return true;
         }
 
-        void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool append, bool hasPrev, bool hasNext, bool isSystem) {
+        void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool hasPrev, bool hasNext,
+                         bool isSystem) {
             CharacterSet* characterSet = locales->characterMap[charsetId];
             if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0)
                 throw RedoLogException(50010, "can't find character set map for id = " + std::to_string(charsetId) + " at offset: " +
                                        std::to_string(offset));
-            if (!append)
+            if (!appendData)
                 valueBufferPurge();
             if (length == 0 && !(hasPrev && prevCharsSize > 0))
                 return;

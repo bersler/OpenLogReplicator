@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         void appendHex(uint64_t value, uint64_t length) {
             uint64_t j = (length - 1) * 4;
             for (uint64_t i = 0; i < length; ++i) {
-                builderAppend(ctx->map16[(value >> j) & 0xF]);
+                append(ctx->map16[(value >> j) & 0xF]);
                 j -= 4;
             }
         }
@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
             }
 
             for (uint64_t i = 0; i < length; ++i)
-                builderAppend(buffer[length - i - 1]);
+                append(buffer[length - i - 1]);
         }
 
         void appendDec(uint64_t value) {
@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
             }
 
             for (uint64_t i = 0; i < length; ++i)
-                builderAppend(buffer[length - i - 1]);
+                append(buffer[length - i - 1]);
         }
 
         void appendSDec(int64_t value) {
@@ -104,28 +104,32 @@ namespace OpenLogReplicator {
             }
 
             for (uint64_t i = 0; i < length; ++i)
-                builderAppend(buffer[length - i - 1]);
+                append(buffer[length - i - 1]);
+        }
+
+        void appendEscape(const std::string& str) {
+            appendEscape(str.c_str(), str.length());
         }
 
         void appendEscape(const char* str, uint64_t length) {
             while (length > 0) {
                 if (*str == '\t') {
-                    builderAppend("\\t", sizeof("\\t") - 1);
+                    append("\\t", sizeof("\\t") - 1);
                 } else if (*str == '\r') {
-                    builderAppend("\\r", sizeof("\\r") - 1);
+                    append("\\r", sizeof("\\r") - 1);
                 } else if (*str == '\n') {
-                    builderAppend("\\n", sizeof("\\n") - 1);
+                    append("\\n", sizeof("\\n") - 1);
                 } else if (*str == '\f') {
-                    builderAppend("\\f", sizeof("\\f") - 1);
+                    append("\\f", sizeof("\\f") - 1);
                 } else if (*str == '\b') {
-                    builderAppend("\\b", sizeof("\\b") - 1);
+                    append("\\b", sizeof("\\b") - 1);
                 } else if (static_cast<unsigned char>(*str) < 32) {
-                    builderAppend("\\u00", sizeof("\\u00") - 1);
+                    append("\\u00", sizeof("\\u00") - 1);
                     appendDec(*str, 2);
                 } else {
                     if (*str == '"' || *str == '\\' || *str == '/')
-                        builderAppend('\\');
-                    builderAppend(*str);
+                        append('\\');
+                    append(*str);
                 }
                 ++str;
                 --length;
@@ -133,7 +137,7 @@ namespace OpenLogReplicator {
         }
 
         void appendAfter(LobCtx* lobCtx, OracleTable* table, uint64_t offset) {
-            builderAppend(R"(,"after":{)", sizeof(R"(,"after":{)") - 1);
+            append(R"(,"after":{)", sizeof(R"(,"after":{)") - 1);
 
             hasPreviousColumn = false;
             if (columnFormat > 0 && table != nullptr) {
@@ -166,11 +170,11 @@ namespace OpenLogReplicator {
                     }
                 }
             }
-            builderAppend('}');
+            append('}');
         }
 
         void appendBefore(LobCtx* lobCtx, OracleTable* table, uint64_t offset) {
-            builderAppend(R"(,"before":{)", sizeof(R"(,"before":{)") - 1);
+            append(R"(,"before":{)", sizeof(R"(,"before":{)") - 1);
 
             hasPreviousColumn = false;
             if (columnFormat > 0 && table != nullptr) {
@@ -203,7 +207,7 @@ namespace OpenLogReplicator {
                     }
                 }
             }
-            builderAppend('}');
+            append('}');
         }
 
         static time_t tmToEpoch(struct tm*);

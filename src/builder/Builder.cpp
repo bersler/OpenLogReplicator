@@ -110,6 +110,7 @@ namespace OpenLogReplicator {
         firstBuilderQueue->next = nullptr;
         firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
         firstBuilderQueue->length = 0;
+        firstBuilderQueue->start = 0;
         lastBuilderQueue = firstBuilderQueue;
 
         valueBuffer = new char[VALUE_BUFFER_MIN];
@@ -644,9 +645,12 @@ namespace OpenLogReplicator {
             msg = reinterpret_cast<BuilderMsg*>(nextBuffer->data);
             msg->data = nextBuffer->data + sizeof(struct BuilderMsg);
             nextBuffer->length = sizeof(struct BuilderMsg) + messageLength;
+            nextBuffer->start = 0;
             lastBuilderQueue->length -= sizeof(struct BuilderMsg) + messageLength;
-        } else
+        } else {
             nextBuffer->length = 0;
+            nextBuffer->start = BUFFER_START_UNDEFINED;
+        }
 
         {
             std::unique_lock<std::mutex> lck(mtx);

@@ -71,113 +71,113 @@ namespace OpenLogReplicator {
         }
 
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
+        append('"');
         if (table != nullptr)
-            builderAppend(table->columns[col]->name);
+            appendEscape(table->columns[col]->name);
         else {
             std::string columnName("COL_" + std::to_string(col));
-            builderAppend(columnName);
+            append(columnName);
         }
-        builderAppend(R"(":null)", sizeof(R"(":null)") - 1);
+        append(R"(":null)", sizeof(R"(":null)") - 1);
     }
 
     void BuilderJson::columnFloat(const std::string& columnName, double value) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":)", sizeof(R"(":)") - 1);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":)", sizeof(R"(":)") - 1);
 
         std::ostringstream ss;
         ss << value;
-        builderAppend(ss.str());
+        append(ss.str());
     }
 
     void BuilderJson::columnDouble(const std::string& columnName, long double value) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":)", sizeof(R"(":)") - 1);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":)", sizeof(R"(":)") - 1);
 
         std::ostringstream ss;
         ss << value;
-        builderAppend(ss.str());
+        append(ss.str());
     }
 
     void BuilderJson::columnString(const std::string& columnName) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":")", sizeof(R"(":")") - 1);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":")", sizeof(R"(":")") - 1);
         appendEscape(valueBuffer, valueLength);
-        builderAppend('"');
+        append('"');
     }
 
     void BuilderJson::columnNumber(const std::string& columnName, uint64_t precision __attribute__((unused)), uint64_t scale __attribute__((unused))) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":)", sizeof(R"(":)") - 1);
-        builderAppend(valueBuffer, valueLength);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":)", sizeof(R"(":)") - 1);
+        append(valueBuffer, valueLength);
     }
 
     void BuilderJson::columnRowId(const std::string& columnName, typeRowId rowId) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":")", sizeof(R"(":")") - 1);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":")", sizeof(R"(":")") - 1);
         char str[19];
         rowId.toHex(str);
-        builderAppend(str, 18);
-        builderAppend('"');
+        append(str, 18);
+        append('"');
     }
 
     void BuilderJson::columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":")", sizeof(R"(":")") - 1);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":")", sizeof(R"(":")") - 1);
         for (uint64_t j = 0; j < length; ++j)
             appendHex(*(data + j), 2);
-        builderAppend('"');
+        append('"');
     }
 
     void BuilderJson::columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":)", sizeof(R"(":)") - 1);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":)", sizeof(R"(":)") - 1);
 
         switch (timestampFormat) {
             case TIMESTAMP_FORMAT_UNIX_NANO:
@@ -213,168 +213,168 @@ namespace OpenLogReplicator {
                     appendDec(0);
                 break;
             case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
                 } else
                     appendDec(0);
-                builderAppend('"');
+                append('"');
                 break;
             case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
                 } else
                     appendDec(0);
-                builderAppend('"');
+                append('"');
                 break;
             case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
                 } else
                     appendDec(0);
-                builderAppend('"');
+                append('"');
                 break;
             case TIMESTAMP_FORMAT_UNIX_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 } else
                     appendDec(0);
-                builderAppend('"');
+                append('"');
                 break;
             case TIMESTAMP_FORMAT_ISO8601:
                 // 2012-04-23T18:25:43.511Z - ISO 8601 format
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year > 0) {
                     appendDec(static_cast<uint64_t>(epochTime.tm_year));
                 } else {
                     appendDec(static_cast<uint64_t>(-epochTime.tm_year));
-                    builderAppend("BC", sizeof("BC") - 1);
+                    append("BC", sizeof("BC") - 1);
                 }
-                builderAppend('-');
+                append('-');
                 appendDec(epochTime.tm_mon, 2);
-                builderAppend('-');
+                append('-');
                 appendDec(epochTime.tm_mday, 2);
-                builderAppend('T');
+                append('T');
                 appendDec(epochTime.tm_hour, 2);
-                builderAppend(':');
+                append(':');
                 appendDec(epochTime.tm_min, 2);
-                builderAppend(':');
+                append(':');
                 appendDec(epochTime.tm_sec, 2);
 
                 if (fraction > 0) {
-                    builderAppend('.');
+                    append('.');
                     appendDec(fraction, 9);
                 }
 
-                builderAppend('"');
+                append('"');
                 break;
         }
     }
 
     void BuilderJson::columnTimestampTz(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
         if (hasPreviousColumn)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousColumn = true;
 
-        builderAppend('"');
-        builderAppend(columnName);
-        builderAppend(R"(":)", sizeof(R"(":)") - 1);
+        append('"');
+        appendEscape(columnName);
+        append(R"(":)", sizeof(R"(":)") - 1);
 
         switch (timestampTzFormat) {
             case TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
                 } else
                     appendDec(0);
-                builderAppend(',');
-                builderAppend(tz);
-                builderAppend('"');
+                append(',');
+                append(tz);
+                append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_UNIX_MICRO_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
                 } else
                     appendDec(0);
-                builderAppend(',');
-                builderAppend(tz);
-                builderAppend('"');
+                append(',');
+                append(tz);
+                append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_UNIX_MILLI_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
                 } else
                     appendDec(0);
-                builderAppend(',');
-                builderAppend(tz);
-                builderAppend('"');
+                append(',');
+                append(tz);
+                append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_UNIX_STRING:
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year >= 1900) {
                     --epochTime.tm_mon;
                     epochTime.tm_year -= 1900;
                     appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 } else
                     appendDec(0);
-                builderAppend('"');
+                append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_ISO8601:
                 // 2012-04-23T18:25:43.511Z - ISO 8601 format
-                builderAppend('"');
+                append('"');
                 if (epochTime.tm_year > 0) {
                     appendDec(static_cast<uint64_t>(epochTime.tm_year));
                 } else {
                     appendDec(static_cast<uint64_t>(-epochTime.tm_year));
-                    builderAppend("BC", sizeof("BC") - 1);
+                    append("BC", sizeof("BC") - 1);
                 }
-                builderAppend('-');
+                append('-');
                 appendDec(epochTime.tm_mon, 2);
-                builderAppend('-');
+                append('-');
                 appendDec(epochTime.tm_mday, 2);
-                builderAppend('T');
+                append('T');
                 appendDec(epochTime.tm_hour, 2);
-                builderAppend(':');
+                append(':');
                 appendDec(epochTime.tm_min, 2);
-                builderAppend(':');
+                append(':');
                 appendDec(epochTime.tm_sec, 2);
 
                 if (fraction > 0) {
-                    builderAppend('.');
+                    append('.');
                     appendDec(fraction, 9);
                 }
 
-                builderAppend(' ');
-                builderAppend(tz);
+                append(' ');
+                append(tz);
 
-                builderAppend('"');
+                append('"');
                 break;
         }
     }
 
     void BuilderJson::appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
         if ((messageFormat & MESSAGE_FORMAT_ADD_SEQUENCES) != 0) {
-            builderAppend(R"(,"num":)", sizeof(R"(,"num":)") - 1);
+            append(R"(,"num":)", sizeof(R"(,"num":)") - 1);
             appendDec(num);
         }
 
@@ -384,128 +384,128 @@ namespace OpenLogReplicator {
             typeRowId rowId(dataObj, bdba, slot);
             char str[19];
             rowId.toString(str);
-            builderAppend(R"(,"rid":")", sizeof(R"(,"rid":")") - 1);
-            builderAppend(str, 18);
-            builderAppend('"');
+            append(R"(,"rid":")", sizeof(R"(,"rid":")") - 1);
+            append(str, 18);
+            append('"');
         }
     }
 
     void BuilderJson::appendHeader(typeScn scn, typeTime time_, bool first, bool showDb, bool showXid) {
         if (first || (scnAll & SCN_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
             if ((scnFormat & SCN_FORMAT_TEXT_HEX) != 0) {
-                builderAppend(R"("scns":"0x)", sizeof(R"("scns":"0x)") - 1);
+                append(R"("scns":"0x)", sizeof(R"("scns":"0x)") - 1);
                 appendHex(scn, 16);
-                builderAppend('"');
+                append('"');
             } else {
-                builderAppend(R"("scn":)", sizeof(R"("scn":)") - 1);
+                append(R"("scn":)", sizeof(R"("scn":)") - 1);
                 appendDec(scn);
             }
         }
 
         if (first || (timestampAll & TIMESTAMP_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
             switch (timestampFormat) {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
-                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    append(R"("tm":)", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime() * 1000000000L);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO:
-                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    append(R"("tm":)", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime() * 1000000L);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
-                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    append(R"("tm":)", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime() * 1000L);
                     break;
                 case TIMESTAMP_FORMAT_UNIX:
-                    builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
+                    append(R"("tm":)", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime());
                     break;
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
-                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime() * 1000000000L);
-                    builderAppend('"');
+                    append('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
-                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime() * 1000000L);
-                    builderAppend('"');
+                    append('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
-                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime() * 1000L);
-                    builderAppend('"');
+                    append('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_STRING:
-                    builderAppend(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime());
-                    builderAppend('"');
+                    append('"');
                     break;
                 case TIMESTAMP_FORMAT_ISO8601:
-                    builderAppend(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
                     char iso[21];
                     time_.toIso8601(iso);
-                    builderAppend(iso, 20);
-                    builderAppend('"');
+                    append(iso, 20);
+                    append('"');
                     break;
             }
         }
 
         if (hasPreviousValue)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousValue = true;
-        builderAppend(R"("c_scn":)", sizeof(R"("c_scn":)") - 1);
+        append(R"("c_scn":)", sizeof(R"("c_scn":)") - 1);
         appendDec(lwnScn);
-        builderAppend(R"(,"c_idx":)", sizeof(R"(,"c_idx":)") - 1);
+        append(R"(,"c_idx":)", sizeof(R"(,"c_idx":)") - 1);
         appendDec(lwnIdx);
 
         if (showXid) {
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
             if (xidFormat == XID_FORMAT_TEXT_HEX) {
-                builderAppend(R"("xid":"0x)", sizeof(R"("xid":"0x)") - 1);
+                append(R"("xid":"0x)", sizeof(R"("xid":"0x)") - 1);
                 appendHex(lastXid.usn(), 4);
-                builderAppend('.');
+                append('.');
                 appendHex(lastXid.slt(), 3);
-                builderAppend('.');
+                append('.');
                 appendHex(lastXid.sqn(), 8);
-                builderAppend('"');
+                append('"');
             } else if (xidFormat == XID_FORMAT_TEXT_DEC) {
-                builderAppend(R"("xid":")", sizeof(R"("xid":")") - 1);
+                append(R"("xid":")", sizeof(R"("xid":")") - 1);
                 appendDec(lastXid.usn());
-                builderAppend('.');
+                append('.');
                 appendDec(lastXid.slt());
-                builderAppend('.');
+                append('.');
                 appendDec(lastXid.sqn());
-                builderAppend('"');
+                append('"');
             } else if (xidFormat == XID_FORMAT_NUMERIC) {
-                builderAppend(R"("xidn":)", sizeof(R"("xidn":)") - 1);
+                append(R"("xidn":)", sizeof(R"("xidn":)") - 1);
                 appendDec(lastXid.getData());
             }
         }
 
         if (showDb) {
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
-            builderAppend(R"("db":")", sizeof(R"("db":")") - 1);
-            builderAppend(metadata->conName);
-            builderAppend('"');
+            append(R"("db":")", sizeof(R"("db":")") - 1);
+            append(metadata->conName);
+            append('"');
         }
     }
 
@@ -515,34 +515,34 @@ namespace OpenLogReplicator {
             std::string tableName;
             // try to read object name from ongoing uncommitted transaction data
             if (metadata->schema->checkTableDictUncommitted(obj, ownerName, tableName)) {
-                builderAppend(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
-                builderAppend(ownerName);
-                builderAppend(R"(","table":")", sizeof(R"(","table":")") - 1);
-                builderAppend(tableName);
-                builderAppend('"');
+                append(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
+                appendEscape(ownerName);
+                append(R"(","table":")", sizeof(R"(","table":")") - 1);
+                appendEscape(tableName);
+                append('"');
             } else {
-                builderAppend(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
+                append(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
                 tableName = "OBJ_" + std::to_string(obj);
-                builderAppend(tableName);
-                builderAppend('"');
+                append(tableName);
+                append('"');
             }
 
             if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
-                builderAppend(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
+                append(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
                 appendDec(obj);
             }
-            builderAppend('}');
+            append('}');
             return;
         }
 
-        builderAppend(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
-        builderAppend(table->owner);
-        builderAppend(R"(","table":")", sizeof(R"(","table":")") - 1);
-        builderAppend(table->name);
-        builderAppend('"');
+        append(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
+        appendEscape(table->owner);
+        append(R"(","table":")", sizeof(R"(","table":")") - 1);
+        appendEscape(table->name);
+        append('"');
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
-            builderAppend(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
+            append(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
             appendDec(obj);
         }
 
@@ -554,7 +554,7 @@ namespace OpenLogReplicator {
                     tables.insert(table);
             }
 
-            builderAppend(R"(,"columns":[)", sizeof(R"(,"columns":[)") - 1);
+            append(R"(,"columns":[)", sizeof(R"(,"columns":[)") - 1);
 
             bool hasPrev = false;
             for (typeCol column = 0; column < static_cast<typeCol>(table->columns.size()); ++column) {
@@ -562,113 +562,113 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (hasPrev)
-                    builderAppend(',');
+                    append(',');
                 else
                     hasPrev = true;
 
-                builderAppend(R"({"name":")", sizeof(R"({"name":")") - 1);
-                builderAppend(table->columns[column]->name);
+                append(R"({"name":")", sizeof(R"({"name":")") - 1);
+                appendEscape(table->columns[column]->name);
 
-                builderAppend(R"(","type":)", sizeof(R"(","type":)") - 1);
+                append(R"(","type":)", sizeof(R"(","type":)") - 1);
                 switch (table->columns[column]->type) {
                 case SYS_COL_TYPE_VARCHAR:
-                    builderAppend(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
+                    append(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_NUMBER:
-                    builderAppend(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
+                    append(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
                     appendSDec(table->columns[column]->precision);
-                    builderAppend(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
+                    append(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
                     appendSDec(table->columns[column]->scale);
                     break;
 
                 // Long, not supported
                 case SYS_COL_TYPE_LONG:
-                    builderAppend(R"("long")", sizeof(R"("long")") - 1);
+                    append(R"("long")", sizeof(R"("long")") - 1);
                     break;
 
                 case SYS_COL_TYPE_DATE:
-                    builderAppend(R"("date")", sizeof(R"("date")") - 1);
+                    append(R"("date")", sizeof(R"("date")") - 1);
                     break;
 
                 case SYS_COL_TYPE_RAW:
-                    builderAppend(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
+                    append(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_LONG_RAW: // Not supported
-                    builderAppend(R"("long raw")", sizeof(R"("long raw")") - 1);
+                    append(R"("long raw")", sizeof(R"("long raw")") - 1);
                     break;
 
                 case SYS_COL_TYPE_CHAR:
-                    builderAppend(R"("char","length":)", sizeof(R"("char","length":)") - 1);
+                    append(R"("char","length":)", sizeof(R"("char","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_FLOAT:
-                    builderAppend(R"("binary_float")", sizeof(R"("binary_float")") - 1);
+                    append(R"("binary_float")", sizeof(R"("binary_float")") - 1);
                     break;
 
                 case SYS_COL_TYPE_DOUBLE:
-                    builderAppend(R"("binary_double")", sizeof(R"("binary_double")") - 1);
+                    append(R"("binary_double")", sizeof(R"("binary_double")") - 1);
                     break;
 
                 case SYS_COL_TYPE_CLOB:
-                    builderAppend(R"("clob")", sizeof(R"("clob")") - 1);
+                    append(R"("clob")", sizeof(R"("clob")") - 1);
                     break;
 
                 case SYS_COL_TYPE_BLOB:
-                    builderAppend(R"("blob")", sizeof(R"("blob")") - 1);
+                    append(R"("blob")", sizeof(R"("blob")") - 1);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP:
-                    builderAppend(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
+                    append(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
-                    builderAppend(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
+                    append(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
-                    builderAppend(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
+                    append(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
-                    builderAppend(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
+                    append(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_UROWID:
-                    builderAppend(R"("urowid","length":)", sizeof(R"("urowid","length":)") - 1);
+                    append(R"("urowid","length":)", sizeof(R"("urowid","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
-                    builderAppend(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
+                    append(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
                     appendDec(table->columns[column]->length);
                     break;
 
                 default:
-                    builderAppend(R"("unknown")", sizeof(R"("unknown")") - 1);
+                    append(R"("unknown")", sizeof(R"("unknown")") - 1);
                     break;
                 }
 
-                builderAppend(R"(,"nullable":)", sizeof(R"(,"nullable":)") - 1);
+                append(R"(,"nullable":)", sizeof(R"(,"nullable":)") - 1);
                 if (table->columns[column]->nullable)
-                    builderAppend("true");
+                    append("true");
                 else
-                    builderAppend("false");
+                    append("false");
 
-                builderAppend('}');
+                append('}');
             }
-            builderAppend(']');
+            append(']');
         }
 
-        builderAppend('}');
+        append('}');
     }
 
     time_t BuilderJson::tmToEpoch(struct tm* epoch) {
@@ -702,19 +702,19 @@ namespace OpenLogReplicator {
             return;
 
         builderBegin(scn, sequence, 0, 0);
-        builderAppend('{');
+        append('{');
         hasPreviousValue = false;
         appendHeader(scn, time_, true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
         if (hasPreviousValue)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousValue = true;
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
+            append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         } else {
-            builderAppend(R"("payload":[{"op":"begin"}]})", sizeof(R"("payload":[{"op":"begin"}]})") - 1);
+            append(R"("payload":[{"op":"begin"}]})", sizeof(R"("payload":[{"op":"begin"}]})") - 1);
             builderCommit(false);
         }
     }
@@ -727,21 +727,21 @@ namespace OpenLogReplicator {
         }
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            builderAppend("]}", sizeof("]}") - 1);
+            append("]}", sizeof("]}") - 1);
             builderCommit(true);
         } else if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
             builderBegin(scn, sequence, 0, 0);
-            builderAppend('{');
+            append('{');
 
             hasPreviousValue = false;
             appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
-            builderAppend(R"("payload":[{"op":"commit"}]})", sizeof(R"("payload":[{"op":"commit"}]})") - 1);
+            append(R"("payload":[{"op":"commit"}]})", sizeof(R"("payload":[{"op":"commit"}]})") - 1);
             builderCommit(true);
         }
         num = 0;
@@ -754,31 +754,31 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousRedo = true;
         } else {
             builderBegin(scn, sequence, obj, 0);
-            builderAppend('{');
+            append('{');
             hasPreviousValue = false;
             appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
-            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
+            append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        builderAppend(R"({"op":"c",)", sizeof(R"({"op":"c",)") - 1);
+        append(R"({"op":"c",)", sizeof(R"({"op":"c",)") - 1);
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
         appendAfter(lobCtx, table, offset);
-        builderAppend('}');
+        append('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            builderAppend("]}", sizeof("]}") - 1);
+            append("]}", sizeof("]}") - 1);
             builderCommit(false);
         }
         ++num;
@@ -791,32 +791,32 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousRedo = true;
         } else {
             builderBegin(scn, sequence, obj, 0);
-            builderAppend('{');
+            append('{');
             hasPreviousValue = false;
             appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
-            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
+            append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        builderAppend(R"({"op":"u",)", sizeof(R"({"op":"u",)") - 1);
+        append(R"({"op":"u",)", sizeof(R"({"op":"u",)") - 1);
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
         appendBefore(lobCtx, table, offset);
         appendAfter(lobCtx, table, offset);
-        builderAppend('}');
+        append('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            builderAppend("]}", sizeof("]}") - 1);
+            append("]}", sizeof("]}") - 1);
             builderCommit(false);
         }
         ++num;
@@ -829,31 +829,31 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousRedo = true;
         } else {
             builderBegin(scn, sequence, obj, 0);
-            builderAppend('{');
+            append('{');
             hasPreviousValue = false;
             appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
-            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
+            append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        builderAppend(R"({"op":"d",)", sizeof(R"({"op":"d",)") - 1);
+        append(R"({"op":"d",)", sizeof(R"({"op":"d",)") - 1);
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
         appendBefore(lobCtx, table, offset);
-        builderAppend('}');
+        append('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            builderAppend("]}", sizeof("]}") - 1);
+            append("]}", sizeof("]}") - 1);
             builderCommit(false);
         }
         ++num;
@@ -867,31 +867,31 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousRedo = true;
         } else {
             builderBegin(scn, sequence, obj, 0);
-            builderAppend('{');
+            append('{');
             hasPreviousValue = false;
             appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
 
             if (hasPreviousValue)
-                builderAppend(',');
+                append(',');
             else
                 hasPreviousValue = true;
 
-            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
+            append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        builderAppend(R"({"op":"ddl",)", sizeof(R"({"op":"ddl",)") - 1);
+        append(R"({"op":"ddl",)", sizeof(R"({"op":"ddl",)") - 1);
         appendSchema(table, obj);
-        builderAppend(R"(,"sql":")", sizeof(R"(,"sql":")") - 1);
+        append(R"(,"sql":")", sizeof(R"(,"sql":")") - 1);
         appendEscape(sql, sqlLength);
-        builderAppend(R"("})", sizeof(R"("})") - 1);
+        append(R"("})", sizeof(R"("})") - 1);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            builderAppend("]}", sizeof("]}") - 1);
+            append("]}", sizeof("]}") - 1);
             builderCommit(true);
         }
         ++num;
@@ -904,22 +904,22 @@ namespace OpenLogReplicator {
         }
 
         builderBegin(scn, sequence, 0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
-        builderAppend('{');
+        append('{');
         hasPreviousValue = false;
         appendHeader(scn, time_, true, false, false);
 
         if (hasPreviousValue)
-            builderAppend(',');
+            append(',');
         else
             hasPreviousValue = true;
 
-        builderAppend(R"("payload":[{"op":"chkpt","seq":)", sizeof(R"("payload":[{"op":"chkpt","seq":)") - 1);
+        append(R"("payload":[{"op":"chkpt","seq":)", sizeof(R"("payload":[{"op":"chkpt","seq":)") - 1);
         appendDec(sequence);
-        builderAppend(R"(,"offset":)", sizeof(R"(,"offset":)") - 1);
+        append(R"(,"offset":)", sizeof(R"(,"offset":)") - 1);
         appendDec(offset);
         if (redo)
-            builderAppend(R"(,"redo":true)", sizeof(R"(,"redo":true)") - 1);
-        builderAppend("}]}", sizeof("}]}") - 1);
+            append(R"(,"redo":true)", sizeof(R"(,"redo":true)") - 1);
+        append("}]}", sizeof("}]}") - 1);
         builderCommit(true);
     }
 }

@@ -161,17 +161,22 @@ namespace OpenLogReplicator {
             return;
         }
 
+        // default values
+        metadata->clientScn = confirmedScn;
+        metadata->clientIdx = confirmedIdx;
         std::string paramIdx;
-        if (request.has_c_idx()) {
-            metadata->clientIdx = request.c_idx();
+
+        // 0 means continue with last value
+        if (request.has_c_scn() && request.c_scn() != 0) {
+            metadata->clientScn = request.c_scn();
+
+            if (request.has_c_idx())
+                metadata->clientIdx = request.c_idx();
             paramIdx = ", idx: " + std::to_string(metadata->clientIdx);
         }
+        ctx->info(0, "client requested scn: " + std::to_string(metadata->clientScn) + paramIdx);
 
-        if (request.has_c_scn()) {
-            metadata->clientScn = request.c_scn();
-            ctx->info(0, "client requested scn: " + std::to_string(request.c_scn()) + paramIdx);
-        }
-
+        resetMessageQueue();
         response.set_code(pb::ResponseCode::REPLICATE);
         ctx->info(0, "streaming to client");
         streaming = true;

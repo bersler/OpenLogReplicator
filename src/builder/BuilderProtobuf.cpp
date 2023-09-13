@@ -401,7 +401,7 @@ namespace OpenLogReplicator {
 
             if (!ret)
                 throw RuntimeException(50017, "PB begin processing failed, error serializing to string");
-            builderAppend(output);
+            append(output);
             builderCommit(false);
         }
     }
@@ -437,7 +437,7 @@ namespace OpenLogReplicator {
 
             if (!ret)
                 throw RuntimeException(50017, "PB insert processing failed, error serializing to string");
-            builderAppend(output);
+            append(output);
             builderCommit(false);
         }
         ++num;
@@ -475,7 +475,7 @@ namespace OpenLogReplicator {
 
             if (!ret)
                 throw RuntimeException(50017, "PB update processing failed, error serializing to string");
-            builderAppend(output);
+            append(output);
             builderCommit(false);
         }
         ++num;
@@ -512,7 +512,7 @@ namespace OpenLogReplicator {
 
             if (!ret)
                 throw RuntimeException(50017, "PB delete processing failed, error serializing to string");
-            builderAppend(output);
+            append(output);
             builderCommit(false);
         }
         ++num;
@@ -547,7 +547,7 @@ namespace OpenLogReplicator {
 
             if (!ret)
                 throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
-            builderAppend(output);
+            append(output);
             builderCommit(true);
         }
         ++num;
@@ -586,7 +586,7 @@ namespace OpenLogReplicator {
 
         if (!ret)
             throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
-        builderAppend(output);
+        append(output);
         builderCommit(true);
 
         num = 0;
@@ -616,7 +616,7 @@ namespace OpenLogReplicator {
 
         if (!ret)
             throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
-        builderAppend(output);
+        append(output);
         builderCommit(true);
     }
 }

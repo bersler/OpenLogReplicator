@@ -26,6 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Builder;
     struct BuilderMsg;
+    struct BuilderQueue;
     class Metadata;
 
     class Writer : public Thread {
@@ -34,10 +35,12 @@ namespace OpenLogReplicator {
         Builder* builder;
         Metadata* metadata;
         // Information about local checkpoint
+        BuilderQueue* builderQueue;
         typeScn checkpointScn;
         typeIdx checkpointIdx;
         time_t checkpointTime;
         uint64_t sentMessages;
+        uint64_t oldLength;
         uint64_t currentQueueSize;
         uint64_t maxQueueSize;
         bool streaming;
@@ -57,6 +60,7 @@ namespace OpenLogReplicator {
         virtual void writeCheckpoint(bool force);
         void readCheckpoint();
         void sortQueue();
+        void resetMessageQueue();
 
     public:
         Writer(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata);

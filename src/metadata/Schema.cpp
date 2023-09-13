@@ -51,8 +51,6 @@ namespace OpenLogReplicator {
     }
 
     void Schema::purgeMetadata() {
-        scn = ZERO_SCN;
-
         if (schemaColumn != nullptr) {
             delete schemaColumn;
             schemaColumn = nullptr;
