@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDOLOG_H_
 
 namespace OpenLogReplicator {
-    class RedoLog {
+    class RedoLog final {
     public:
         int64_t group;
         std::string path;

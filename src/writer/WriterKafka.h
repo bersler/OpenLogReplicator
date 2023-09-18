@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define MAX_KAFKA_MESSAGE_MB        953
 
 namespace OpenLogReplicator {
-    class WriterKafka : public Writer {
+    class WriterKafka final : public Writer {
     protected:
         std::string topic;
         char errStr[512];

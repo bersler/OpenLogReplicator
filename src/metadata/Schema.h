@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
     class SysTab;
     class SysUser;
 
-    class Schema {
+    class Schema final {
     protected:
         Ctx* ctx;
         Locales* locales;

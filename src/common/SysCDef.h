@@ -41,7 +41,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_ALL      17
 
 namespace OpenLogReplicator {
-    class SysCDefKey {
+    class SysCDefKey final {
     public:
         SysCDefKey(typeObj newObj, typeCon newCon) :
                 obj(newObj),
@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
         typeCon con;
     };
 
-    class SysCDef {
+    class SysCDef final {
     public:
         SysCDef(typeRowId& newRowId, typeCon newCon, typeObj newObj, typeType newType) :
                 rowId(newRowId),

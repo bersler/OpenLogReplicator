@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define LOB_INDEX_H_
 
 namespace OpenLogReplicator {
-    class LobIndex {
+    class LobIndex final {
     public:
         LobIndex();
         virtual ~LobIndex();

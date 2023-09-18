@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.0
-:revdate: 2023-09-05
+:revdate: 2023-09-18
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -212,7 +212,7 @@ Startup would fail because the set of users present in checkpoint files would no
 The schema would update only when the program is reset, (i.e. the checkpoint files are removed and forced recreation).
 
 |`flags` [[flags]]
-|_number_, min: 0, max: 65535, default: 0
+|_number_, min: 0, max: 131071, default: 0
 |A sum of various flags.
 Flags define various options for the program.
 
@@ -279,6 +279,10 @@ This flag overrides this number and leaves the checkpoint file.
 * `0x4000` -- Reserved for future use.
 
 * `0x8000` -- Send column data to output in raw (hex) format.
+
+* `0x10000` -- Decode binary XMLType data (experimental).
+This implementation is not even partially working correctly and output contains just technical data.
+Don't use it.
 
 |`memory-max-mb`
 |_number_, min: 16, default: 1024

@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define READER_FILESYSTEM_H_
 
 namespace OpenLogReplicator {
-    class ReaderFilesystem : public Reader {
+    class ReaderFilesystem final : public Reader {
     protected:
         int fileDes;
         int flags;

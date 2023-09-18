@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ROWID_LENGTH 18
 
 namespace OpenLogReplicator {
-    class typeRowId {
+    class typeRowId final {
     public:
         typeDataObj dataObj;
         typeDba dba;

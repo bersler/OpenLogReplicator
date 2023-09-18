@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_TAB_PART_H_
 
 namespace OpenLogReplicator {
-    class SysTabPartKey {
+    class SysTabPartKey final {
     public:
         SysTabPartKey(typeObj newBo, typeObj newObj) :
                 bo(newBo),
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         typeObj obj;
     };
 
-    class SysTabPart {
+    class SysTabPart final {
     public:
         SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
                 rowId(newRowId),

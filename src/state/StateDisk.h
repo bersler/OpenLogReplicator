@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define STATE_DISK_H_
 
 namespace OpenLogReplicator {
-    class StateDisk : public State {
+    class StateDisk final : public State {
     protected:
         std::string path;
 

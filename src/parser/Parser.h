@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         typeBlk block;
     };
 
-    class Parser {
+    class Parser final {
     protected:
         Ctx* ctx;
         Builder* builder;

@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OP_CODE_05_04_H_
 
 namespace OpenLogReplicator {
-    class OpCode0504: public OpCode {
+    class OpCode0504 final : public OpCode {
     protected:
         static void ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);

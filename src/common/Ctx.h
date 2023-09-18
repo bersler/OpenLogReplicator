@@ -86,6 +86,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_FLAGS_CHECKPOINT_KEEP              0x00002000
 #define REDO_FLAGS_VERIFY_SCHEMA                0x00004000
 #define REDO_FLAGS_RAW_COLUMN_DATA              0x00008000
+#define REDO_FLAGS_EXPERIMENTAL_XMLTYPE         0x00010000
 
 #define FLAG(x)                                 ((ctx->flags&(x))!=0)
 
@@ -101,7 +102,7 @@ extern uint64_t OLR_LOCALES;
 namespace OpenLogReplicator {
     class Thread;
 
-    class Ctx {
+    class Ctx final {
     protected:
         bool bigEndian;
         std::atomic<uint64_t> memoryMinMb;

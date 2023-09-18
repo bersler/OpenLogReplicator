@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TYPE_INTX_DIGITS                        39
 
 namespace OpenLogReplicator {
-    class typeIntX {
+    class typeIntX final {
     private:
         uint64_t data[TYPE_INTX_LENGTH];
         static typeIntX BASE10[TYPE_INTX_DIGITS][10];

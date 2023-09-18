@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define WRITER_FILE_MODE_SEQUENCE           4
 
 namespace OpenLogReplicator {
-    class WriterFile : public Writer {
+    class WriterFile final : public Writer {
     protected:
         size_t prefixPos;
         size_t suffixPos;

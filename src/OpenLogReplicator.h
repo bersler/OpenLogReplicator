@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
     class TransactionBuffer;
     class Writer;
 
-    class OpenLogReplicator {
+    class OpenLogReplicator final {
     protected:
         std::list<Replicator*> replicators;
         std::list<Checkpoint*> checkpoints;

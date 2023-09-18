@@ -27,7 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class DatabaseEnvironment;
 
-    class DatabaseConnection {
+    class DatabaseConnection final {
     public:
         std::string user;
         std::string password;

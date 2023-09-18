@@ -50,6 +50,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define VALUE_BUFFER_MAX                        4294967296
 #define BUFFER_START_UNDEFINED                  0xFFFFFFFFFFFFFFFF
 
+#define XML_PROLOG_RGUID                        0x04
+#define XML_PROLOG_DOCID                        0x08
+#define XML_PROLOG_PATHID                       0x10
+#define XML_PROLOG_BIGINT                       0x40
+
+#define XML_HEADER_STANDALONE                   0x01
+#define XML_HEADER_XMLDECL                      0x02
+#define XML_HEADER_ENCODING                     0x04
+#define XML_HEADER_VERSION_1_1                  0x08
+#define XML_HEADER_STANDALONE_YES               0x10
+
 namespace OpenLogReplicator {
     class Ctx;
     class CharacterSet;
@@ -111,6 +122,8 @@ namespace OpenLogReplicator {
         char* valueBuffer;
         uint64_t valueBufferLength;
         uint64_t valueLength;
+        char* valueBufferOld;
+        uint64_t valueLengthOld;
         std::unordered_set<OracleTable*> tables;
         typeScn commitScn;
         typeXid lastXid;
@@ -318,6 +331,11 @@ namespace OpenLogReplicator {
                     ss << " " << std::hex << std::setfill('0') << std::setw(2) << (static_cast<uint64_t>(data[j]));
                 ctx->warning(60002, "unknown value (column: " + columnName + "): " + std::to_string(length) + " - " + ss.str());
             }
+        };
+
+        void valueBufferAppend(const char* text, uint64_t length) {
+            for (uint64_t i = 0; i < length; ++i)
+                valueBufferAppend(text[i]);
         };
 
         void valueBufferAppend(uint8_t value) {
@@ -1129,6 +1147,7 @@ namespace OpenLogReplicator {
         virtual void processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
                                 uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) = 0;
         virtual void processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) = 0;
+        bool parseXml(const std::string& columnName, const uint8_t* data, uint64_t length, uint64_t offset);
 
     public:
         SystemTransaction* systemTransaction;

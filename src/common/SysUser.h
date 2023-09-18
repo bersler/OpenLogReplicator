@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_USER_SPARE1_SUPP_LOG_ALL         8
 
 namespace OpenLogReplicator {
-    class SysUser {
+    class SysUser final {
     public:
         SysUser(typeRowId& newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),

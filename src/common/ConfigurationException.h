@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define CONFIGURATION_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class ConfigurationException: public std::exception {
+    class ConfigurationException final : public std::exception {
     public:
         int code;
         std::string msg;

@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Ctx;
 
-    class SerializerJson: public Serializer {
+    class SerializerJson final : public Serializer {
     protected:
         void deserializeSysCCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson);
         void deserializeSysCDef(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson);

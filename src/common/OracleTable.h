@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
     class OracleColumn;
     class OracleLob;
 
-    class OracleTable {
+    class OracleTable final {
     public:
         typeObj obj;
         typeDataObj dataObj;

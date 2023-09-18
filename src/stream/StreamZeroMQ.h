@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define STREAM_ZERO_MQ_H_
 
 namespace OpenLogReplicator {
-    class StreamZeroMQ : public Stream {
+    class StreamZeroMQ final : public Stream {
     protected:
         void* socket;
         void* context;

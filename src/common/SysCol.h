@@ -80,7 +80,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ 231
 
 namespace OpenLogReplicator {
-    class SysColSeg {
+    class SysColSeg final {
     public:
         SysColSeg(typeObj newObj, typeCol newSegCol, typeRowId& newRowId) :
                 obj(newObj),
@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
         typeRowId rowId;
     };
 
-    class SysColKey {
+    class SysColKey final {
     public:
         SysColKey(typeObj newObj, typeCol newIntCol) :
                 obj(newObj),
@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
         typeCol intCol;
     };
 
-    class SysCol {
+    class SysCol final {
     public:
         SysCol(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
                uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,

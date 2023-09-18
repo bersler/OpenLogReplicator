@@ -109,7 +109,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_OBJ_TYPE_QUEUE                   24
 
 namespace OpenLogReplicator {
-    class SysObjNameKey {
+    class SysObjNameKey final {
     public:
         SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj, typeDataObj newDataObj) :
                 owner(newOwner),
@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
         typeDataObj dataObj;
     };
 
-    class SysObj {
+    class SysObj final {
     public:
         SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
                uint64_t newFlags2, bool newSingle) :

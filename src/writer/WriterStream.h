@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Stream;
 
-    class WriterStream : public Writer {
+    class WriterStream final : public Writer {
     protected:
         Stream* stream;
         pb::RedoRequest request;

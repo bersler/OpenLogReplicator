@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SCHEMA_ELEMENT_H_
 
 namespace OpenLogReplicator {
-    class SchemaElement {
+    class SchemaElement final {
 
     public:
         std::string owner;

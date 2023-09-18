@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define RUNTIME_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class RuntimeException: public std::exception {
+    class RuntimeException final : public std::exception {
     public:
         int code;
         std::string msg;

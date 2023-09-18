@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define BUILDER_JSON_H_
 
 namespace OpenLogReplicator {
-    class BuilderJson : public Builder {
+    class BuilderJson final : public Builder {
     protected:
         bool hasPreviousValue;
         bool hasPreviousRedo;

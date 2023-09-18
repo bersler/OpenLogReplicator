@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REPLICATOR_BATCH_H_
 
 namespace OpenLogReplicator {
-    class ReplicatorBatch : public Replicator {
+    class ReplicatorBatch final : public Replicator {
     protected:
         const char* getModeName() const override;
         bool continueWithOnline() override;

@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_LOB_H_
 
 namespace OpenLogReplicator {
-    class SysLobKey {
+    class SysLobKey final {
     public:
         SysLobKey(typeObj newObj, typeCol newIntCol) :
                 obj(newObj),
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         typeCol intCol;
     };
 
-    class SysLob {
+    class SysLob final {
     public:
         SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs) :
                 rowId(newRowId),

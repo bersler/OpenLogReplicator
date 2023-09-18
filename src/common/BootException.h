@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define BOOT_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class BootException: public std::exception {
+    class BootException final : public std::exception {
     public:
         int code;
         std::string msg;

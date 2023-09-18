@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.0
-:revdate: 2023-09-05
+:revdate: 2023-09-18
 :imagesdir: ./images
 :toc: preamble
 
@@ -927,6 +927,10 @@ Verify operating system log messages.
 ==== code 60035, "unknown database requested, got: <name>, expected: <name>"
 
 Client requested a database which is not configured in the program.
+
+==== code 60036, "incorrect XML data: <message>"
+
+Data for XMLTYPE column type is not correct.
 
 === Internal warnings (7xxxx)
 

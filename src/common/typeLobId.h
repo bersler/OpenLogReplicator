@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TYPE_LOBID_LENGTH                       10
 
 namespace OpenLogReplicator {
-    class typeLobId {
+    class typeLobId final {
     public:
         uint8_t data[TYPE_LOBID_LENGTH];
 

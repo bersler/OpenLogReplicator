@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define NETWORK_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class NetworkException: public std::exception {
+    class NetworkException final : public std::exception {
     public:
         int code;
         std::string msg;

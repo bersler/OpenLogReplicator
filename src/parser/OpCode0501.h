@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OP_CODE_05_01_H_
 
 namespace OpenLogReplicator {
-    class OpCode0501: public OpCode {
+    class OpCode0501 final : public OpCode {
     protected:
         static void init(Ctx* ctx, RedoLogRecord* redoLogRecord);
         static void ktudb(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);

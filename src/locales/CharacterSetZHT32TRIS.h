@@ -31,7 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ZHT32TRIS_b4_max    0xFE
 
 namespace OpenLogReplicator {
-    class CharacterSetZHT32TRIS : public CharacterSet {
+    class CharacterSetZHT32TRIS final : public CharacterSet {
     protected:
         static typeUnicode16 unicode_map_ZHT32TRIS_4b[(ZHT32TRIS_b2_max - ZHT32TRIS_b2_min + 1) *
                                                       (ZHT32TRIS_b3_max - ZHT32TRIS_b3_min + 1) *

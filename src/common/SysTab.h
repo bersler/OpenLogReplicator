@@ -65,7 +65,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_TAB_PROPERTY_DIMENTION                      1152921504606846976
 
 namespace OpenLogReplicator {
-    class SysTab {
+    class SysTab final {
     public:
         SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeTs newTs, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
                uint64_t newProperty1, uint64_t newProperty2) :

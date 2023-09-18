@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_LOG_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class RedoLogException: public std::exception {
+    class RedoLogException final : public std::exception {
     public:
         int code;
         std::string msg;

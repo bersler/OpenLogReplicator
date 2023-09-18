@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
     class OracleIncarnation;
     class TransactionBuffer;
 
-    class Checkpoint : public Thread {
+    class Checkpoint final : public Thread {
     protected:
         Metadata* metadata;
         std::mutex mtx;

@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class DatabaseConnection;
 
-    class DatabaseStatement {
+    class DatabaseStatement final {
     protected:
         DatabaseConnection* conn;
         bool executed;

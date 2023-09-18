@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ZHS16GBK_b2_max         0xFE
 
 namespace OpenLogReplicator {
-    class CharacterSetZHS16GBK : public CharacterSet16bit {
+    class CharacterSetZHS16GBK final : public CharacterSet16bit {
     protected:
         static typeUnicode16 unicode_map_ZHS16GBK_2b[(ZHS16GBK_b1_max - ZHS16GBK_b1_min + 1) *
                                                      (ZHS16GBK_b2_max - ZHS16GBK_b2_min + 1)];

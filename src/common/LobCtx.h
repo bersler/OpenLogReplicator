@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
     class Ctx;
     class Schema;
 
-    class LobCtx {
+    class LobCtx final {
     public:
         virtual ~LobCtx();
 

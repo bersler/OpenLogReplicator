@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define CHARACTER_SET_8BIT_H_
 
 namespace OpenLogReplicator {
-    class CharacterSet8bit : public CharacterSet7bit {
+    class CharacterSet8bit final : public CharacterSet7bit {
     protected:
         [[nodiscard]] typeUnicode readMap(uint64_t character) const override;
         bool customAscii;

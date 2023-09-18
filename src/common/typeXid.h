@@ -28,8 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TYPE_XID_H_
 
 namespace OpenLogReplicator {
-
-    class typeXid {
+    class typeXid final {
         uint64_t data;
     public:
         typeXid() : data(0) {

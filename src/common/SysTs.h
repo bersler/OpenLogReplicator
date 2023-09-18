@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_TS_NAME_LENGTH                 30
 
 namespace OpenLogReplicator {
-    class SysTs {
+    class SysTs final {
     public:
         SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
                 rowId(newRowId),

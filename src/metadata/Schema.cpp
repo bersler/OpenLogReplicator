@@ -2194,6 +2194,7 @@ namespace OpenLogReplicator {
                     msgs.push_back("- col: " + std::to_string(sysCol->segCol) + ": " + sysCol->name + " (pk: " + std::to_string(numPk) + ", S: " +
                                 std::to_string(numSup) + ", G: " + std::to_string(guardSeg) + ")");
 
+                bool xmlType = false;
                 // For system-generated columns, check column name from base column
                 std::string columnName = sysCol->name;
                 if (sysCol->isSystemGenerated()) {
@@ -2204,6 +2205,7 @@ namespace OpenLogReplicator {
                         SysCol* sysCol2 = sysColMapSegIt2->second;
                         if (sysCol->col == sysCol2->col && sysCol2->segCol == 0) {
                             columnName = sysCol2->name;
+                            xmlType = true;
                             break;
                         }
                     }
@@ -2212,8 +2214,9 @@ namespace OpenLogReplicator {
                 schemaColumn = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, columnName,
                                                 sysCol->type,sysCol->length, sysCol->precision, sysCol->scale,
                                                 numPk,charmapId, sysCol->isNullable(), sysCol->isHidden(),
-                                                sysCol->isStoredAsLob(), sysCol->isSystemGenerated(), sysCol->isNested(),
-                                                sysCol->isUnused(), sysCol->isAdded(), sysCol->isGuard());
+                                                sysCol->isStoredAsLob(), sysCol->isSystemGenerated(),
+                                                sysCol->isNested(), sysCol->isUnused(), sysCol->isAdded(),
+                                                sysCol->isGuard(), xmlType);
 
                 schemaTable->addColumn(schemaColumn);
                 schemaColumn = nullptr;

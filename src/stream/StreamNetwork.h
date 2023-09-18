@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define STREAM_NETWORK_H_
 
 namespace OpenLogReplicator {
-    class StreamNetwork : public Stream {
+    class StreamNetwork final : public Stream {
     protected:
         int socketFD;
         int serverFD;

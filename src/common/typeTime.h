@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TYPE_TIME_H_
 
 namespace OpenLogReplicator {
-    class typeTime {
+    class typeTime final {
         uint32_t data;
     public:
         typeTime() : data(0) {

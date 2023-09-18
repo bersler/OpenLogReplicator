@@ -56,8 +56,10 @@ namespace OpenLogReplicator {
             messageLength(0),
             flushBuffer(newFlushBuffer),
             valueBuffer(nullptr),
-            valueBufferLength(0),
             valueLength(0),
+            valueBufferLength(0),
+            valueBufferOld(nullptr),
+            valueLengthOld(0),
             commitScn(ZERO_SCN),
             lastXid(typeXid()),
             valuesMax(0),
@@ -100,6 +102,11 @@ namespace OpenLogReplicator {
         if (valueBuffer != nullptr) {
             delete[] valueBuffer;
             valueBuffer = nullptr;
+        }
+
+        if (valueBufferOld != nullptr) {
+            delete[] valueBufferOld;
+            valueBufferOld = nullptr;
         }
     }
 
@@ -170,8 +177,15 @@ namespace OpenLogReplicator {
 
         case SYS_COL_TYPE_BLOB:
             if (after && table != nullptr) {
-                if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys))
-                    columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
+                if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
+                    if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
+                        if (parseXml(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
+                            columnString(column->name);
+                        else
+                            columnUnknown(column->name, reinterpret_cast<uint8_t *>(valueBufferOld), valueLengthOld);
+                    } else
+                        columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength);
+                }
             }
             break;
 
@@ -1584,6 +1598,152 @@ namespace OpenLogReplicator {
             processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "alter", sqlText, sqlLength - 1);
         else
             processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "?", sqlText, sqlLength - 1);
+    }
+
+    // This is just a partial parsing of XMLType data
+    bool Builder::parseXml(const std::string& columnName, const uint8_t* data, uint64_t length, uint64_t offset) {
+        if (valueBufferOld != nullptr) {
+            delete[] valueBufferOld;
+            valueBufferOld = nullptr;
+        }
+
+        valueBufferOld = valueBuffer;
+        valueLengthOld = valueLength;
+        valueBuffer = new char[VALUE_BUFFER_MIN];
+        valueBufferLength = VALUE_BUFFER_MIN;
+        valueLength = 0;
+        bool bigint = false;
+        bool xmlDecl = false;
+        char *standalone = "";
+        char *version = "\"1.0\"";
+        char *encoding = "";
+
+        ctx->warning(0, "XML binary data");
+        uint64_t pos = 0;
+
+        while (pos < length) {
+            // Header
+            if (data[pos] == 158) {
+                ++pos;
+                if (pos + 2 >= length) {
+                    ctx->warning(60036, "incorrect XML data: header too short, can't read flags");
+                    return false;
+                }
+                uint8_t flags0 = data[pos++];
+                uint8_t flags1 = data[pos++];
+                uint8_t flags2 = data[pos++];
+
+                if ((flags2 & XML_HEADER_XMLDECL) != 0)
+                    xmlDecl = true;
+
+                if ((flags2 & XML_HEADER_STANDALONE) != 0) {
+                    if ((flags2 & XML_HEADER_STANDALONE_YES) != 0)
+                        standalone = " standalone=\"yes\"";
+                    else
+                        standalone = " standalone=\"no\"";
+                }
+
+                if ((flags2 & XML_HEADER_ENCODING) != 0)
+                    encoding = " encoding=\"UTF=8\"";
+
+                if ((flags2 & XML_HEADER_VERSION_1_1) != 0)
+                    version = "\"1.1\"";
+
+                continue;
+
+            // Prolog
+            } else if (data[pos] == 159) {
+                ++pos;
+                if (pos + 1 >= length) {
+                    ctx->warning(60036, "incorrect XML data: prolog too short, can't read version and flags");
+                    return false;
+                }
+                uint8_t version = data[pos++];
+                if (version != 1) {
+                    ctx->warning(60036, "incorrect XML data: prolog contains incorrect version, expected: 1, found: " +
+                                 std::to_string(static_cast<int>(data[pos + 1])));
+                    return false;
+                }
+                uint8_t flags0 = data[pos++];
+
+                if ((flags0 & XML_PROLOG_DOCID) != 0) {
+                    if (pos >= length) {
+                        ctx->warning(60036, "incorrect XML data: prolog too short, can't read docid length");
+                        return false;
+                    }
+                    uint8_t docidLength = data[pos++];
+
+                    if (pos + docidLength - 1 >= length) {
+                        ctx->warning(60036, "incorrect XML data: prolog too short, can't read docid data");
+                        return false;
+                    }
+
+                    pos += docidLength;
+                }
+
+                if ((flags0 & XML_PROLOG_PATHID) != 0) {
+                    if (pos >= length) {
+                        ctx->warning(60036, "incorrect XML data: prolog too short, can't read path length (1)");
+                        return false;
+                    }
+                    uint8_t pathidLength = data[pos++];
+
+                    if (pos + pathidLength - 1 >= length) {
+                        ctx->warning(60036, "incorrect XML data: prolog too short, can't read pathid data (1)");
+                        return false;
+                    }
+
+                    pos += pathidLength;
+
+                    if (pos >= length) {
+                        ctx->warning(60036, "incorrect XML data: prolog too short, can't read path length (2)");
+                        return false;
+                    }
+                    pathidLength = data[pos++];
+
+                    if (pos + pathidLength - 1 >= length) {
+                        ctx->warning(60036, "incorrect XML data: prolog too short, can't read pathid data (2)");
+                        return false;
+                    }
+
+                    pos += pathidLength;
+                }
+
+                if ((flags0 & XML_PROLOG_BIGINT) != 0)
+                    bigint = true;
+
+                continue;
+            }
+
+            ++pos;
+        }
+
+        if (xmlDecl) {
+            valueBufferCheck(100, offset);
+
+            valueBufferAppend("<?xml", 5);
+            valueBufferAppend(" version=", 9);
+            valueBufferAppend(version, strlen(version));
+            valueBufferAppend(standalone, strlen(standalone));
+            valueBufferAppend(encoding, strlen(encoding));
+            valueBufferAppend("?>", 2);
+
+            ctx->info(0, "length: " + std::to_string(valueLengthOld));
+            ctx->info(0, "ptr: " + std::to_string((uint64_t)valueBufferOld));
+
+            // Dump raw data for future development
+            for (uint64_t i = 0; i < valueLengthOld; ++i) {
+                char txt[3];
+                txt[0] = ' ';
+                ctx->info(0, "val: " + std::to_string((uint64_t)((unsigned char)valueBufferOld[i])));
+                txt[1] = ctx->map16[((unsigned char)valueBufferOld[i]) >> 4];
+                txt[2] = ctx->map16[valueBufferOld[i] & 0x0F];
+
+                valueBufferAppend(txt, 3);
+            }
+        }
+
+        return true;
     }
 
     void Builder::releaseBuffers(uint64_t maxId) {

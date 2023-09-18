@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
     class SysTs;
     class SysUser;
 
-    class SystemTransaction {
+    class SystemTransaction final {
     protected:
         Ctx* ctx;
         Builder* builder;

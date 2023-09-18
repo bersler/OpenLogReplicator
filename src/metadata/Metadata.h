@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
     class State;
     class StateDisk;
 
-    class Metadata {
+    class Metadata final {
     protected:
         std::condition_variable condReplicator;
         std::condition_variable condWriter;

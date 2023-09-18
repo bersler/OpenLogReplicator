@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define DATA_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class DataException: public std::exception {
+    class DataException final : public std::exception {
     public:
         int code;
         std::string msg;

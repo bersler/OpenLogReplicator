@@ -27,7 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Ctx;
 
-    class DatabaseEnvironment {
+    class DatabaseEnvironment final {
         Ctx* ctx;
     public:
         OCIEnv* envhp;

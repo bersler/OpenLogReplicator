@@ -135,15 +135,18 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::columnRaw(const std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t length __attribute__((unused))) {
         valuePB->set_name(columnName);
+        // TODO: implement
     }
 
     void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& epochTime __attribute__((unused)), uint64_t fraction __attribute__((unused))) {
         valuePB->set_name(columnName);
+        // TODO: implement
     }
 
     void BuilderProtobuf::columnTimestampTz(const std::string& columnName, struct tm& epochTime __attribute__((unused)), uint64_t fraction __attribute__((unused)),
                                           const char* tz __attribute__((unused))) {
         valuePB->set_name(columnName);
+        // TODO: implement
     }
 
     void BuilderProtobuf::appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {

@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define CHARACTER_SET_AL32UTF8_H_
 
 namespace OpenLogReplicator {
-    class CharacterSetAL32UTF8 : public CharacterSet {
+    class CharacterSetAL32UTF8 final : public CharacterSet {
     public:
         CharacterSetAL32UTF8();
         ~CharacterSetAL32UTF8() override;

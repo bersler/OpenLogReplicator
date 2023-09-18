@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define INVALID_LOB_PAGE_NO 0xFFFFFFFF
 
 namespace OpenLogReplicator {
-    class RedoLogRecord {
+    class RedoLogRecord final {
     public:
         RedoLogRecord* next;
         RedoLogRecord* prev;

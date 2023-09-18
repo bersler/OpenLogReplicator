@@ -27,7 +27,7 @@ namespace OpenLogReplicator {
     class DatabaseEnvironment;
     class Schema;
 
-    class ReplicatorOnline : public Replicator {
+    class ReplicatorOnline final : public Replicator {
     protected:
         static const char* SQL_GET_ARCHIVE_LOG_LIST;
         static const char* SQL_GET_DATABASE_INFORMATION;

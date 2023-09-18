@@ -46,7 +46,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ZHS32GB18030_42_b4_max       0x39
 
 namespace OpenLogReplicator {
-    class CharacterSetZHS32GB18030 : public CharacterSet {
+    class CharacterSetZHS32GB18030 final : public CharacterSet {
     protected:
         static typeUnicode16 unicode_map_ZHS32GB18030_2b[(ZHS32GB18030_2_b1_max - ZHS32GB18030_2_b1_min + 1) *
                                                          (ZHS32GB18030_2_b2_max - ZHS32GB18030_2_b2_min + 1)];

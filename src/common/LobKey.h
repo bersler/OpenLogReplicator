@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define LOB_KEY_H_
 
 namespace OpenLogReplicator {
-    class LobKey {
+    class LobKey final {
     public:
         LobKey(const typeLobId& newLobId, typeDba newPage);
         LobKey(const LobKey& other);

@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_LOB_COMP_PART_H_
 
 namespace OpenLogReplicator {
-    class SysLobCompPartKey {
+    class SysLobCompPartKey final {
     public:
         SysLobCompPartKey(typeObj newLObj, typeObj newPartObj) :
                 lObj(newLObj),
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         typeObj partObj;
     };
 
-    class SysLobCompPart {
+    class SysLobCompPart final {
     public:
         SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj) :
                 rowId(newRowId),

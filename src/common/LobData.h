@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define LOB_DATA_H_
 
 namespace OpenLogReplicator {
-    class LobData {
+    class LobData final {
     public:
         LobData();
         virtual ~LobData();

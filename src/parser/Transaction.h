@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
     class TransactionBuffer;
     struct TransactionChunk;
 
-    class Transaction {
+    class Transaction final {
     protected:
         TransactionChunk* deallocTc;
         uint64_t opCodes;

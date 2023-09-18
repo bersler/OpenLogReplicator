@@ -27,7 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSet;
 
-    class Locales {
+    class Locales final {
     public:
         std::unordered_map<uint64_t, CharacterSet*> characterMap;
         std::unordered_map<uint16_t, const char*> timeZoneMap;

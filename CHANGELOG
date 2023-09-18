@@ -26,6 +26,8 @@
 - fix: scn information inconsistency in transaction fix
 - enhancement: added flag 2 for "scn" field type to control scn values
 - enhancement: changed checkpointing mechanism to allow more frequent checkpoints
+- experimental: added partial support for binary XMLType data
+- enhancement: performance optimizations
 
 1.2.0
 - doc: Introduction to OpenLogReplicator

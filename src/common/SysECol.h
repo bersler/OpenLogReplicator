@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_ECOL_H_
 
 namespace OpenLogReplicator {
-    class SysEColKey {
+    class SysEColKey final {
     public:
         SysEColKey(typeObj newTabObj, typeCol newColNum) :
                 tabObj(newTabObj),
@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         typeCol colNum;
     };
 
-    class SysECol {
+    class SysECol final {
     public:
         SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId) :
                 rowId(newRowId),

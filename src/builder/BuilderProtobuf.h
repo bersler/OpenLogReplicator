@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define BUILDER_PROTOBUF_H_
 
 namespace OpenLogReplicator {
-    class BuilderProtobuf : public Builder {
+    class BuilderProtobuf final : public Builder {
     protected:
         pb::RedoResponse* redoResponsePB;
         pb::Value* valuePB;

@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_CCOL_H_
 
 namespace OpenLogReplicator {
-    class SysCColKey {
+    class SysCColKey final {
     public:
         SysCColKey(typeObj newObj, typeCol newIntCol, typeCon newCon) :
                 obj(newObj),
@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
         typeCon con;
     };
 
-    class SysCCol {
+    class SysCCol final {
     public:
         SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
                 rowId(newRowId),

@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_LOB_FRAG_H_
 
 namespace OpenLogReplicator {
-    class SysLobFragKey {
+    class SysLobFragKey final {
     public:
         SysLobFragKey(typeObj newParentObj, typeObj newFragObj) :
                 parentObj(newParentObj),
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         typeObj fragObj;
     };
 
-    class SysLobFrag {
+    class SysLobFrag final {
     public:
         SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
                 rowId(newRowId),

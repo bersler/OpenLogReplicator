@@ -27,7 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYSDEFERREDSTG_FLAGSSTG_COMPRESSED  4
 
 namespace OpenLogReplicator {
-    class SysDeferredStg {
+    class SysDeferredStg final {
     public:
         SysDeferredStg(typeRowId& newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
                 rowId(newRowId),

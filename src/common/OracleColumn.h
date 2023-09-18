@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ORACLE_COLUMN_H_
 
 namespace OpenLogReplicator {
-    class OracleColumn {
+    class OracleColumn final {
     public:
         typeCol col;
         typeCol guardSeg;
@@ -43,10 +43,11 @@ namespace OpenLogReplicator {
         bool unused;
         bool added;
         bool guard;
+        bool xmlType;
 
         OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
                      int64_t newPrecision,  int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newHidden,
-                     bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard);
+                     bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleColumn& column);
     };
