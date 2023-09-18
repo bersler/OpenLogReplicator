@@ -179,7 +179,7 @@ namespace OpenLogReplicator {
             if (after && table != nullptr) {
                 if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
                     if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
-                        if (parseXml(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
+                        if (parseXml(reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
                             columnString(column->name);
                         else
                             columnUnknown(column->name, reinterpret_cast<uint8_t *>(valueBufferOld), valueLengthOld);
@@ -1601,7 +1601,7 @@ namespace OpenLogReplicator {
     }
 
     // This is just a partial parsing of XMLType data
-    bool Builder::parseXml(const std::string& columnName, const uint8_t* data, uint64_t length, uint64_t offset) {
+    bool Builder::parseXml(const uint8_t* data, uint64_t length, uint64_t offset) {
         if (valueBufferOld != nullptr) {
             delete[] valueBufferOld;
             valueBufferOld = nullptr;
@@ -1612,11 +1612,11 @@ namespace OpenLogReplicator {
         valueBuffer = new char[VALUE_BUFFER_MIN];
         valueBufferLength = VALUE_BUFFER_MIN;
         valueLength = 0;
-        bool bigint = false;
+        // bool bigint = false;
         bool xmlDecl = false;
-        char *standalone = "";
-        char *version = "\"1.0\"";
-        char *encoding = "";
+        const char* standalone = "";
+        const char* version = "\"1.0\"";
+        const char* encoding = "";
 
         ctx->warning(0, "XML binary data");
         uint64_t pos = 0;
@@ -1709,8 +1709,8 @@ namespace OpenLogReplicator {
                     pos += pathidLength;
                 }
 
-                if ((flags0 & XML_PROLOG_BIGINT) != 0)
-                    bigint = true;
+                //if ((flags0 & XML_PROLOG_BIGINT) != 0)
+                //    bigint = true;
 
                 continue;
             }

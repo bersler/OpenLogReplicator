@@ -120,8 +120,8 @@ namespace OpenLogReplicator {
         uint64_t messageLength;
         uint64_t flushBuffer;
         char* valueBuffer;
-        uint64_t valueBufferLength;
         uint64_t valueLength;
+        uint64_t valueBufferLength;
         char* valueBufferOld;
         uint64_t valueLengthOld;
         std::unordered_set<OracleTable*> tables;
@@ -1147,7 +1147,7 @@ namespace OpenLogReplicator {
         virtual void processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
                                 uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) = 0;
         virtual void processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) = 0;
-        bool parseXml(const std::string& columnName, const uint8_t* data, uint64_t length, uint64_t offset);
+        bool parseXml(const uint8_t* data, uint64_t length, uint64_t offset);
 
     public:
         SystemTransaction* systemTransaction;
