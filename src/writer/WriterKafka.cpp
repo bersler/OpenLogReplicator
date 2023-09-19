@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
     void WriterKafka::addProperty(const std::string& key, const std::string& value) {
         if (properties.find(key) != properties.end())
             throw ConfigurationException(30009, "Kafka property '" + key + "' is defined multiple times");
-        properties[key] = value;
+        properties.insert_or_assign(key, value);
     }
 
     void WriterKafka::initialize() {
@@ -64,13 +64,13 @@ namespace OpenLogReplicator {
             throw RuntimeException(10058, "Kafka failed to create configuration, message: " + std::string(errStr));
 
         std::string maxMessageMbStr(std::to_string(builder->getMaxMessageMb() * 1024 * 1024));
-        properties["message.max.bytes"] = maxMessageMbStr;
+        properties.insert_or_assign("message.max.bytes", maxMessageMbStr);
 
         if (properties.find("client.id") != properties.end())
-            properties["client.id"] = "OpenLogReplicator";
+            properties.insert_or_assign("client.id", "OpenLogReplicator");
 
         if (properties.find("group.id") != properties.end())
-            properties["group.id"] = "OpenLogReplicator";
+            properties.insert_or_assign("group.id", "OpenLogReplicator");
 
         for (auto& property : properties)
             if (rd_kafka_conf_set(conf, property.first.c_str(), property.second.c_str(), errStr, sizeof(errStr)) != RD_KAFKA_CONF_OK)

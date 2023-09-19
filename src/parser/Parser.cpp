@@ -1131,7 +1131,7 @@ namespace OpenLogReplicator {
         if (lobIdToXidMapIt == ctx->lobIdToXidMap.end()) {
             if (ctx->trace & TRACE_LOB)
                 ctx->logTrace(TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + redoLogRecord1->xid.toString() + " MAP");
-            ctx->lobIdToXidMap[redoLogRecord2->lobId] = redoLogRecord1->xid;
+            ctx->lobIdToXidMap.insert_or_assign(redoLogRecord2->lobId, redoLogRecord1->xid);
             transaction->lobCtx.checkOrphanedLobs(ctx, redoLogRecord2->lobId, redoLogRecord1->xid, redoLogRecord1->dataOffset);
         }
 

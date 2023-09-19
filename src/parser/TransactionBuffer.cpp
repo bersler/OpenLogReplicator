@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
             transaction = new Transaction(xid, &orphanedLobs);
             {
                 std::unique_lock<std::mutex> lck(mtx);
-                xidTransactionMap[xidMap] = transaction;
+                xidTransactionMap.insert_or_assign(xidMap, transaction);
             }
 
             if (dumpXidList.find(xid) != dumpXidList.end())
@@ -103,12 +103,12 @@ namespace OpenLogReplicator {
             if (freeMap == 0)
                 partiallyFullChunks.erase(chunk);
             else
-                partiallyFullChunks[chunk] = freeMap;
+                partiallyFullChunks.insert_or_assign(chunk, freeMap);
         } else {
             chunk = ctx->getMemoryChunk("transaction", false);
             pos = 0;
             freeMap = BUFFERS_FREE_MASK & (~1);
-            partiallyFullChunks[chunk] = freeMap;
+            partiallyFullChunks.insert_or_assign(chunk, freeMap);
         }
 
         tc = reinterpret_cast<TransactionChunk*>(chunk + FULL_BUFFER_SIZE * pos);
@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
             ctx->freeMemoryChunk("transaction", chunk, false);
             partiallyFullChunks.erase(chunk);
         } else
-            partiallyFullChunks[chunk] = freeMap;
+            partiallyFullChunks.insert_or_assign(chunk, freeMap);
     }
 
     void TransactionBuffer::deleteTransactionChunks(TransactionChunk* tc) {
@@ -371,7 +371,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        orphanedLobs[lobKey] = allocateLob(redoLogRecord1);
+        orphanedLobs.insert_or_assign(lobKey, allocateLob(redoLogRecord1));
     }
 
     uint8_t* TransactionBuffer::allocateLob(RedoLogRecord* redoLogRecord1) {

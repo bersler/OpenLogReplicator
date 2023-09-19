@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
 
     void OracleLob::addPartition(typeDataObj newDataObj, uint16_t pageSize) {
         lobPartitions.push_back(newDataObj);
-        lobPageMap[newDataObj] = pageSize;
+        lobPageMap.insert_or_assign(newDataObj, pageSize);
     }
 
     uint32_t OracleLob::checkLobPageSize(typeDataObj newDataObj) {

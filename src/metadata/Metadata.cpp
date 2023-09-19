@@ -386,7 +386,7 @@ namespace OpenLogReplicator {
             lastCheckpointBytes = checkpointBytes;
             ++checkpoints;
             checkpointScnList.insert(checkpointScn);
-            checkpointSchemaMap[checkpointScn] = storeSchema;
+            checkpointSchemaMap.insert_or_assign(checkpointScn, storeSchema);
         }
 
         std::string checkpointName = database + "-chkpt-" + std::to_string(lastCheckpointScn);
@@ -425,7 +425,7 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_CHECKPOINT, "found: " + name + " scn: " + std::to_string(scn));
 
             checkpointScnList.insert(scn);
-            checkpointSchemaMap[scn] = true;
+            checkpointSchemaMap.insert_or_assign(scn, true);
         }
 
         if (startScn != ZERO_SCN)

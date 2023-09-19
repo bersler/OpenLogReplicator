@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
             lobData = lobsIt->second;
         } else {
             lobData = new LobData();
-            lobs[lobId] = lobData;
+            lobs.insert_or_assign(lobId, lobData);
         }
 
         auto dataMapIt = lobData->dataMap.find(page);
@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
             delete[] lobData->dataMap[page];
         }
 
-        lobData->dataMap[page] = data;
+        lobData->dataMap.insert_or_assign(page, data);
 
         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t));
         if (lobData->pageSize == 0) {
@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
                                            ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString()  + ", offset: " +
                                            std::to_string(offset));
             } else {
-                lobData->indexMap[pageNo] = page;
+                lobData->indexMap.insert_or_assign(pageNo, page);
             }
         }
     }
@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
             *(dba++) = next;
             *dba = 0;
 
-            listMap[page] = newData;
+            listMap.insert_or_assign(page, newData);
         }
     }
 
@@ -114,7 +114,7 @@ namespace OpenLogReplicator {
         *newPage = nextPage;
         memcpy(newData + 4, data + 4, length - 4);
 
-        listMap[page] = newData;
+        listMap.insert_or_assign(page, newData);
     }
 
     void LobCtx::appendList(Ctx* ctx, typeDba page, uint8_t* data) {
@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
             ctx->write32(newData + 4, aSiz);
         }
 
-        listMap[page] = newData;
+        listMap.insert_or_assign(page, newData);
     }
 
     void LobCtx::setLength(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest) {
@@ -155,7 +155,7 @@ namespace OpenLogReplicator {
             lobData = lobsIt->second;
         } else {
             lobData = new LobData();
-            lobs[lobId] = lobData;
+            lobs.insert_or_assign(lobId, lobData);
         }
 
         lobData->sizePages = sizePages;
@@ -169,7 +169,7 @@ namespace OpenLogReplicator {
             lobData = lobsIt->second;
         } else {
             lobData = new LobData();
-            lobs[lobId] = lobData;
+            lobs.insert_or_assign(lobId, lobData);
         }
 
         auto indexMapIt = lobData->indexMap.find(page);
@@ -181,7 +181,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        lobData->indexMap[pageNo] = page;
+        lobData->indexMap.insert_or_assign(pageNo, page);
     }
 
     void LobCtx::purge() {
