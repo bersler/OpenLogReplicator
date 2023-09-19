@@ -1629,8 +1629,8 @@ namespace OpenLogReplicator {
                     ctx->warning(60036, "incorrect XML data: header too short, can't read flags");
                     return false;
                 }
-                uint8_t flags0 = data[pos++];
-                uint8_t flags1 = data[pos++];
+                pos++; //uint8_t flags0 = data[pos++];
+                pos++; //uint8_t flags1 = data[pos++];
                 uint8_t flags2 = data[pos++];
 
                 if ((flags2 & XML_HEADER_XMLDECL) != 0)
@@ -1658,8 +1658,8 @@ namespace OpenLogReplicator {
                     ctx->warning(60036, "incorrect XML data: prolog too short, can't read version and flags");
                     return false;
                 }
-                uint8_t version = data[pos++];
-                if (version != 1) {
+                uint8_t binaryXmlVersion = data[pos++];
+                if (binaryXmlVersion != 1) {
                     ctx->warning(60036, "incorrect XML data: prolog contains incorrect version, expected: 1, found: " +
                                  std::to_string(static_cast<int>(data[pos + 1])));
                     return false;
