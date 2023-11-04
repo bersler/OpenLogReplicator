@@ -213,7 +213,7 @@ namespace OpenLogReplicator {
                 break;
             case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                 append('"');
-      X          --epochTime.tm_mon;
+                --epochTime.tm_mon;
                 epochTime.tm_year -= 1900;
                 val = tmToEpoch(&epochTime);
                 if (val == -1) {
