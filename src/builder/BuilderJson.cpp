@@ -170,6 +170,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction) {
+        int64_t val;
         if (hasPreviousColumn)
             append(',');
         else
@@ -181,75 +182,71 @@ namespace OpenLogReplicator {
 
         switch (timestampFormat) {
             case TIMESTAMP_FORMAT_UNIX_NANO:
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                val = tmToEpoch(&epochTime);
+                if (val == -1) {
+                    appendSDec(val * 1000000000L + fraction);
+                } else {
+                    if (val < 0 && fraction > 0) {
+                        ++val;
+                        fraction = 1000000000 - fraction;
+                    }
+                    appendSDec(val);
+                    appendDec(fraction, 9);
+                }
                 break;
             case TIMESTAMP_FORMAT_UNIX_MICRO:
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
                 break;
             case TIMESTAMP_FORMAT_UNIX_MILLI:
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
                 break;
             case TIMESTAMP_FORMAT_UNIX:
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 break;
             case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
-                } else
-                    appendDec(0);
+      X          --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                val = tmToEpoch(&epochTime);
+                if (val == -1) {
+                    appendSDec(val * 1000000000L + fraction);
+                } else {
+                    if (val < 0 && fraction > 0) {
+                        ++val;
+                        fraction = 1000000000 - fraction;
+                    }
+                    appendSDec(val);
+                    appendDec(fraction, 9);
+                }
                 append('"');
                 break;
             case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
                 append('"');
                 break;
             case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
                 append('"');
                 break;
             case TIMESTAMP_FORMAT_UNIX_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 append('"');
                 break;
             case TIMESTAMP_FORMAT_ISO8601:
@@ -283,6 +280,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnTimestampTz(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
+        int64_t val;
         if (hasPreviousColumn)
             append(',');
         else
@@ -295,48 +293,46 @@ namespace OpenLogReplicator {
         switch (timestampTzFormat) {
             case TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000000L + fraction);
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                val = tmToEpoch(&epochTime);
+                if (val == -1) {
+                    appendSDec(val * 1000000000L + fraction);
+                } else {
+                    if (val < 0 && fraction > 0) {
+                        ++val;
+                        fraction = 1000000000 - fraction;
+                    }
+                    appendSDec(val);
+                    appendDec(fraction, 9);
+                }
                 append(',');
                 append(tz);
                 append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_UNIX_MICRO_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
                 append(',');
                 append(tz);
                 append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_UNIX_MILLI_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
                 append(',');
                 append(tz);
                 append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_UNIX_STRING:
                 append('"');
-                if (epochTime.tm_year >= 1900) {
-                    --epochTime.tm_mon;
-                    epochTime.tm_year -= 1900;
-                    appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
-                } else
-                    appendDec(0);
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 append('"');
                 break;
             case TIMESTAMP_TZ_FORMAT_ISO8601:
@@ -416,15 +412,18 @@ namespace OpenLogReplicator {
             switch (timestampFormat) {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime() * 1000000000L);
+                    appendDec(time_.toTime());
+                    append("000000000", 9);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime() * 1000000L);
+                    appendDec(time_.toTime());
+                    append("000000", 6);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime() * 1000L);
+                    appendDec(time_.toTime());
+                    append("000", 3);
                     break;
                 case TIMESTAMP_FORMAT_UNIX:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
@@ -432,18 +431,18 @@ namespace OpenLogReplicator {
                     break;
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime() * 1000000000L);
-                    append('"');
+                    appendDec(time_.toTime());
+                    append(R"(000000000")", 10);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime() * 1000000L);
-                    append('"');
+                    appendDec(time_.toTime());
+                    append(R"(000000")", 7);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime() * 1000L);
-                    append('"');
+                    appendDec(time_.toTime());
+                    append(R"(000")", 4);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
