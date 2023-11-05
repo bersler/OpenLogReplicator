@@ -192,8 +192,12 @@ namespace OpenLogReplicator {
                         ++val;
                         fraction = 1000000000 - fraction;
                     }
-                    appendSDec(val);
-                    appendDec(fraction, 9);
+                    if (val != 0) {
+                        appendSDec(val);
+                        appendDec(fraction, 9);
+                    } else {
+                        appendDec(fraction);
+                    }
                 }
                 break;
             case TIMESTAMP_FORMAT_UNIX_MICRO:
@@ -223,8 +227,12 @@ namespace OpenLogReplicator {
                         ++val;
                         fraction = 1000000000 - fraction;
                     }
-                    appendSDec(val);
-                    appendDec(fraction, 9);
+                    if (val != 0) {
+                        appendSDec(val);
+                        appendDec(fraction, 9);
+                    } else {
+                        appendDec(fraction);
+                    }
                 }
                 append('"');
                 break;
@@ -303,8 +311,11 @@ namespace OpenLogReplicator {
                         ++val;
                         fraction = 1000000000 - fraction;
                     }
-                    appendSDec(val);
-                    appendDec(fraction, 9);
+                    if (val != 0) {
+                        appendSDec(val);
+                        appendDec(fraction, 9);
+                    } else
+                        appendDec(fraction);
                 }
                 append(',');
                 append(tz);
@@ -409,16 +420,21 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
+            time_t val;
             switch (timestampFormat) {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
-                    append("000000000", 9);
+                    val = time_.toTime();
+                    appendDec(val);
+                    if (val != 0)
+                        append("000000000", 9);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
-                    append("000000", 6);
+                    val = time_.toTime();
+                    appendDec(val);
+                    if (val != 0)
+                        append("000000", 6);
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
@@ -431,18 +447,27 @@ namespace OpenLogReplicator {
                     break;
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
-                    append(R"(000000000")", 10);
+                    val = time_.toTime();
+                    appendDec(val);
+                    if (val != 0)
+                        append("000000000", 9);
+                    append('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
-                    append(R"(000000")", 7);
+                    val = time_.toTime();
+                    appendDec(val);
+                    if (val != 0)
+                        append("000000", 6);
+                    append('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
-                    append(R"(000")", 4);
+                    val = time_.toTime();
+                    appendDec(val);
+                    if (val != 0)
+                        append("000", 3);
+                    append('"');
                     break;
                 case TIMESTAMP_FORMAT_UNIX_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
@@ -675,22 +700,42 @@ namespace OpenLogReplicator {
         long year;
         time_t result;
 
-        year = 1900 + epoch->tm_year + epoch->tm_mon / 12;
-        result = (year - 1970) * 365 + cumDays[epoch->tm_mon % 12];
-        result += (year - 1968) / 4;
-        result -= (year - 1900) / 100;
-        result += (year - 1600) / 400;
-        if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) &&
-            (epoch->tm_mon % 12) < 2)
-            result--;
-        result += epoch->tm_mday - 1;
-        result *= 24;
-        result += epoch->tm_hour;
-        result *= 60;
-        result += epoch->tm_min;
-        result *= 60;
-        result += epoch->tm_sec;
-        return result;
+        year = 1900 + epoch->tm_year;
+        if (year > 0) {
+            result = year * 365 + cumDays[epoch->tm_mon % 12];
+            result += year / 4;
+            result -= year / 100;
+            result += year / 400;
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && (epoch->tm_mon % 12) < 2)
+                result--;
+            result += epoch->tm_mday - 1;
+            result *= 24;
+            result += epoch->tm_hour;
+            result *= 60;
+            result += epoch->tm_min;
+            result *= 60;
+            result += epoch->tm_sec;
+            return result - 62167132800L; // adjust to 1970 epoch, 719527 days
+        } else {
+            // treat dates BC with the exact rules as AD for leap years
+            year = -year;
+            result = year * 365 - cumDays[epoch->tm_mon % 12];
+            result += year / 4;
+            result -= year / 100;
+            result += year / 400;
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && (epoch->tm_mon % 12) < 2)
+                result--;
+            result -= epoch->tm_mday - 1;
+            result *= 24;
+            result -= epoch->tm_hour;
+            result *= 60;
+            result -= epoch->tm_min;
+            result *= 60;
+            result -= epoch->tm_sec;
+            result = -result;
+            return result - 62104147200L; // adjust to 1970 epoch, 718798 days (year 0 does not exist)
+            return 0;
+        }
     }
 
     void BuilderJson::processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) {
