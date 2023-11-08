@@ -65,6 +65,16 @@ DECLARE
     v_FILE VARCHAR2(256);
     v_NAME VARCHAR2(256);
     v_GROUP NUMBER;
+    TYPE T_REF_CUR IS REF CURSOR;
+    CV T_REF_CUR;
+    TYPE T_SYS_ECOL IS RECORD (
+        ROWID UROWID,
+        TABOBJ# NUMBER,
+        COLNUM NUMBER,
+        GUARD_ID NUMBER
+    );
+    v_SYS_ECOL T_SYS_ECOL;
+    SQLTEXT VARCHAR2(2000);
 BEGIN
     -- set script parameters:
     --------------------------------------------
@@ -95,9 +105,13 @@ BEGIN
         v_USERNAME_LIST(v_USERNAME_LIST.LAST) := 'SYS';
     END IF;
 
-    SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, D.SUPPLEMENTAL_LOG_DATA_PK, D.SUPPLEMENTAL_LOG_DATA_ALL, TP.ENDIAN_FORMAT, D.CURRENT_SCN, D.ACTIVATION#, VER.BANNER
-    INTO v_LOG_MODE, v_SUPPLEMENTAL_LOG_DATA_MIN, v_SUPPLEMENTAL_LOG_DATA_PK, v_SUPPLEMENTAL_LOG_DATA_ALL, v_ENDIAN_FORMAT, v_CURRENT_SCN, v_ACTIVATION#, v_BANNER
-    FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%';
+    SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, D.SUPPLEMENTAL_LOG_DATA_PK, D.SUPPLEMENTAL_LOG_DATA_ALL, TP.ENDIAN_FORMAT, D.CURRENT_SCN, D.ACTIVATION#,
+        VER.BANNER
+    INTO v_LOG_MODE, v_SUPPLEMENTAL_LOG_DATA_MIN, v_SUPPLEMENTAL_LOG_DATA_PK, v_SUPPLEMENTAL_LOG_DATA_ALL, v_ENDIAN_FORMAT, v_CURRENT_SCN, v_ACTIVATION#,
+        v_BANNER
+    FROM SYS.V_$DATABASE D
+    JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME
+    JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%';
 
     IF v_LOG_MODE <> 'ARCHIVELOG' THEN
         DBMS_OUTPUT.PUT_LINE('ERROR: database not in ARCHIVELOG mode');
@@ -116,7 +130,8 @@ BEGIN
     END IF;
 
     IF INSTR(v_BANNER, 'Oracle Database 11g') = 0 THEN
-        EXECUTE IMMEDIATE 'SELECT SYS_CONTEXT(''USERENV'',''CON_ID''), SYS_CONTEXT(''USERENV'',''CON_NAME''), NVL(SYS_CONTEXT(''USERENV'',''CDB_NAME''), SYS_CONTEXT(''USERENV'',''DB_NAME'')) FROM DUAL'
+        EXECUTE IMMEDIATE 'SELECT SYS_CONTEXT(''USERENV'',''CON_ID''), SYS_CONTEXT(''USERENV'',''CON_NAME''), NVL(SYS_CONTEXT(''USERENV'',''CDB_NAME''), ' ||
+            'SYS_CONTEXT(''USERENV'',''DB_NAME'')) FROM DUAL'
         INTO v_CON_ID, v_CON_NAME, v_DB_NAME;
         v_VERSION11 := FALSE;
     ELSE
@@ -177,10 +192,10 @@ BEGIN
     DBMS_OUTPUT.PUT(',"nls-character-set":"' || v_NLS_CHARACTERSET || '"');
     DBMS_OUTPUT.PUT(',"nls-nchar-character-set":"' || v_NLS_NCHAR_CHARACTERSET || '"');
     DBMS_OUTPUT.PUT(',"supp-log-db-primary":' || v_SUPPLEMENTAL_LOG_DB_PRIMARY);
-    DBMS_OUTPUT.PUT(',"supp-log-db-all":' || v_SUPPLEMENTAL_LOG_DB_ALL || ',');
+    DBMS_OUTPUT.PUT(',"supp-log-db-all":' || v_SUPPLEMENTAL_LOG_DB_ALL);
     DBMS_OUTPUT.NEW_LINE();
 
-    DBMS_OUTPUT.PUT('"incarnations":[');
+    DBMS_OUTPUT.PUT(',"incarnations":[');
     v_PREV := FALSE;
     FOR v_INCARNATION IN (
         SELECT INCARNATION#, RESETLOGS_CHANGE#, PRIOR_RESETLOGS_CHANGE#, STATUS, RESETLOGS_ID, PRIOR_INCARNATION#
@@ -200,10 +215,10 @@ BEGIN
             ',"resetlogs":' || v_INCARNATION.RESETLOGS_ID ||
             ',"prior-incarnation":' || v_INCARNATION.PRIOR_INCARNATION# || '}');
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
-    DBMS_OUTPUT.PUT('"online-redo":[');
+    DBMS_OUTPUT.PUT(',"online-redo":[');
     v_GROUP := -1;
     v_PREV := FALSE;
     FOR v_REDO IN (
@@ -226,11 +241,11 @@ BEGIN
     IF v_GROUP <> -1 THEN
         DBMS_OUTPUT.PUT(']}');
     END IF;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"users":[');
+    DBMS_OUTPUT.PUT(',"users":[');
     FOR I IN v_USERNAME_LIST.FIRST .. v_USERNAME_LIST.LAST LOOP
         FOR v_SYS_USER IN (
             SELECT U.NAME, U.USER#
@@ -244,7 +259,7 @@ BEGIN
                 END IF;
             END LOOP;
 
-            IF v_SYS_USER.NAME <> 'SYS' OR v_SYS_SINGLE = 0 THEN
+            IF (v_SYS_USER.NAME <> 'SYS' OR v_SYS_SINGLE = 0) THEN
                 IF v_PREV = TRUE THEN
                     DBMS_OUTPUT.PUT(',');
                 ELSE
@@ -259,22 +274,22 @@ BEGIN
             v_USER_LIST(v_USERS) := v_SYS_USER.USER#;
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
-    DBMS_OUTPUT.PUT('"schema-scn":' || v_SCN || ',');
+    DBMS_OUTPUT.PUT(',"schema-scn":' || v_SCN);
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-ccol":[');
+    DBMS_OUTPUT.PUT(',"sys-ccol":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_CCOL IN (
             SELECT L.ROWID, L.CON#, L.INTCOL#, L.OBJ#, MOD(NVL(L.SPARE1, 0), 18446744073709551616) AS SPARE11,
             MOD(TRUNC(NVL(L.SPARE1, 0) / 18446744073709551616), 18446744073709551616) AS SPARE12
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.CCOL$ AS OF SCN v_SCN L
-            WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY L.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -291,18 +306,18 @@ BEGIN
                 ',"spare1":[' || v_SYS_CCOL.SPARE11 || ',' || v_SYS_CCOL.SPARE12 || ']}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-cdef":[');
+    DBMS_OUTPUT.PUT(',"sys-cdef":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_CDEF IN (
             SELECT D.ROWID, D.CON#, D.OBJ#, D.TYPE#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.CDEF$ AS OF SCN v_SCN D
-            WHERE O.OBJ# = D.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = D.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY D.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -318,20 +333,20 @@ BEGIN
                 ',"type":' || v_SYS_CDEF.TYPE# || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-col":[');
+    DBMS_OUTPUT.PUT(',"sys-col":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_COL IN (
             SELECT C.ROWID, C.OBJ#, C.COL#, C.SEGCOL#, C.INTCOL#, C.NAME, C.TYPE#, C.LENGTH, NVL(C.PRECISION#, -1) AS PRECISION#, NVL(C.SCALE, -1) AS SCALE,
                 NVL(C.CHARSETFORM, 0) AS CHARSETFORM, NVL(C.CHARSETID, 0) AS CHARSETID, C.NULL$,
                 MOD(C.PROPERTY, 18446744073709551616) AS PROPERTY1, MOD(TRUNC(C.PROPERTY / 18446744073709551616), 18446744073709551616) AS PROPERTY2
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.COL$ AS OF SCN v_SCN C
-            WHERE O.OBJ# = C.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = C.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY C.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -357,19 +372,19 @@ BEGIN
                 ',"property":[' || v_SYS_COL.PROPERTY1 || ',' || v_SYS_COL.PROPERTY2 || ']}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-deferredstg":[');
+    DBMS_OUTPUT.PUT(',"sys-deferredstg":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_DEFERRED_STG IN (
             SELECT DS.ROWID, DS.OBJ#, MOD(NVL(DS.FLAGS_STG, 0), 18446744073709551616) AS FLAGS_STG1,
                 MOD(TRUNC(NVL(DS.FLAGS_STG, 0) / 18446744073709551616), 18446744073709551616) AS FLAGS_STG2
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.DEFERRED_STG$ AS OF SCN v_SCN DS
-            WHERE O.OBJ# = DS.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = DS.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY DS.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -384,26 +399,35 @@ BEGIN
                 ',"flags-stg":[' || v_SYS_DEFERRED_STG.FLAGS_STG1 || ',' || v_SYS_DEFERRED_STG.FLAGS_STG2 || ']}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-ecol":[');
+    DBMS_OUTPUT.PUT(',"sys-ecol":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
-        FOR v_SYS_ECOL IN (
-            -- uncomment proper line based on your database version
-            --------------------------------------------
-            -- 11.2 code:
-            -- SELECT E.ROWID, E.TABOBJ#, NVL(E.COLNUM, 0) AS COLNUM, -1 as GUARD_ID
-            -- 12.1+ code:
-            SELECT E.ROWID, E.TABOBJ#, NVL(E.COLNUM, 0) AS COLNUM, NVL(E.GUARD_ID, -1) as GUARD_ID
-            --------------------------------------------
-            FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.ECOL$ AS OF SCN v_SCN E
-            WHERE O.OBJ# = E.TABOBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
-            ORDER BY E.ROWID
-        ) LOOP
+        IF v_VERSION11 = TRUE THEN
+            SQLTEXT := 'SELECT E.ROWID, E.TABOBJ#, NVL(E.COLNUM, 0) AS COLNUM, -1 as GUARD_ID ' ||
+                'FROM SYS.OBJ$ AS OF SCN ' || TO_CHAR(v_SCN) || ' O, SYS.ECOL$ AS OF SCN ' || TO_CHAR(v_SCN) || ' E ' ||
+                'WHERE O.OBJ# = E.TABOBJ# AND O.OWNER# = ''' || v_USER_LIST(I) || '''' ||
+                ' AND (''' || v_USERNAME_LIST(I) || ''' <> ''SYS'' OR ' || TO_CHAR(v_SYS_SINGLE) || ' = 0' ||
+                ' OR O.NAME IN (''CCOL$'', ''CDEF$'', ''COL$'', ''DEFERRED_STG$'', ''ECOL$'', ''LOB$'', ''LOBFRAG$'', ''LOBCOMPPART$'', ''OBJ$'', ' ||
+                '''TAB$'', ''TABCOMPART$'', ''TABPART$'', ''TABSUBPART$'', ''TS$'', ''USER$''))' ||
+                ' ORDER BY E.ROWID';
+        ELSE
+            SQLTEXT := 'SELECT E.ROWID, E.TABOBJ#, NVL(E.COLNUM, 0) AS COLNUM, NVL(E.GUARD_ID, -1) as GUARD_ID ' ||
+                'FROM SYS.OBJ$ AS OF SCN ' || TO_CHAR(v_SCN) || ' O, SYS.ECOL$ AS OF SCN ' || TO_CHAR(v_SCN) || ' E ' ||
+                'WHERE O.OBJ# = E.TABOBJ# AND O.OWNER# = ''' || v_USER_LIST(I) || '''' ||
+                ' AND (''' || v_USERNAME_LIST(I) || ''' <> ''SYS'' OR ' || TO_CHAR(v_SYS_SINGLE) || ' = 0' ||
+                ' OR O.NAME IN (''CCOL$'', ''CDEF$'', ''COL$'', ''DEFERRED_STG$'', ''ECOL$'', ''LOB$'', ''LOBFRAG$'', ''LOBCOMPPART$'', ''OBJ$'', ' ||
+                '''TAB$'', ''TABCOMPART$'', ''TABPART$'', ''TABSUBPART$'', ''TS$'', ''USER$''))' ||
+                ' ORDER BY E.ROWID';
+        END IF;
+
+        OPEN CV FOR SQLTEXT;
+        LOOP
+        FETCH CV INTO v_SYS_ECOL;
+            EXIT WHEN cv%NOTFOUND;
+
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
             ELSE
@@ -417,30 +441,24 @@ BEGIN
                 ',"guard-id":' || v_SYS_ECOL.GUARD_ID || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-lob":[');
+    DBMS_OUTPUT.PUT(',"sys-lob":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_LOB IN (
             SELECT L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#, L.TS#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L
-            WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY L.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
             ELSE
                 v_PREV := TRUE;
-            END IF;
-
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
-            ELSE
-                v_OBJECT_SINGLE := 0;
             END IF;
 
             DBMS_OUTPUT.NEW_LINE();
@@ -452,18 +470,18 @@ BEGIN
                 ',"ts":' || v_SYS_LOB.TS# || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-lob-comp-part":[');
+    DBMS_OUTPUT.PUT(',"sys-lob-comp-part":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_LOB_COMP_PART IN (
             SELECT LCP.ROWID, LCP.PARTOBJ#, LCP.LOBJ#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L, SYS.LOBCOMPPART$ AS OF SCN v_SCN LCP
-            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY LCP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -472,48 +490,36 @@ BEGIN
                 v_PREV := TRUE;
             END IF;
 
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
-            ELSE
-                v_OBJECT_SINGLE := 0;
-            END IF;
-
             DBMS_OUTPUT.NEW_LINE();
             DBMS_OUTPUT.PUT('{"row-id":"' || v_SYS_LOB_COMP_PART.ROWID || '"' ||
                 ',"part-obj":' || v_SYS_LOB_COMP_PART.PARTOBJ# ||
                 ',"l-obj":' || v_SYS_LOB_COMP_PART.LOBJ# || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-lob-frag":[');
+    DBMS_OUTPUT.PUT(',"sys-lob-frag":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_LOB_FRAG IN (
             SELECT LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L, SYS.LOBCOMPPART$ AS OF SCN v_SCN LCP, SYS.LOBFRAG$ AS OF SCN v_SCN LF
-            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND LCP.PARTOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND LCP.PARTOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             UNION ALL
             SELECT LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L, SYS.LOBFRAG$ AS OF SCN v_SCN LF
-            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY 4
         ) LOOP
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
             ELSE
                 v_PREV := TRUE;
-            END IF;
-
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
-            ELSE
-                v_OBJECT_SINGLE := 0;
             END IF;
 
             DBMS_OUTPUT.NEW_LINE();
@@ -523,18 +529,18 @@ BEGIN
                 ',"ts":' || v_SYS_LOB_FRAG.TS# || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-obj":[');
+    DBMS_OUTPUT.PUT(',"sys-obj":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_OBJ IN (
             SELECT O.ROWID, O.OWNER#, O.OBJ#, NVL(O.DATAOBJ#, 0) AS DATAOBJ#, O.NAME, O.TYPE#, MOD(NVL(O.FLAGS, 0), 18446744073709551616) AS FLAGS1,
             MOD(TRUNC(NVL(O.FLAGS, 0) / 18446744073709551616), 18446744073709551616) AS FLAGS2
-            FROM SYS.OBJ$ AS OF SCN v_SCN O WHERE O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            FROM SYS.OBJ$ AS OF SCN v_SCN O WHERE O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY O.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -543,8 +549,8 @@ BEGIN
                 v_PREV := TRUE;
             END IF;
 
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
+            IF (v_USERNAME_LIST(I) = 'SYS' AND v_SYS_SINGLE = 1) THEN
+                v_OBJECT_SINGLE := 1;
             ELSE
                 v_OBJECT_SINGLE := 0;
             END IF;
@@ -560,32 +566,26 @@ BEGIN
                 ',"single":' || v_OBJECT_SINGLE || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-tab":[');
+    DBMS_OUTPUT.PUT(',"sys-tab":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_TAB IN (
             SELECT T.ROWID, T.OBJ#, NVL(T.DATAOBJ#, 0) AS DATAOBJ#, T.TS#, NVL(T.CLUCOLS, 0) AS CLUCOLS,
                 MOD(T.FLAGS, 18446744073709551616) AS FLAGS1, MOD(TRUNC(T.FLAGS / 18446744073709551616), 18446744073709551616) AS FLAGS2,
                 MOD(T.PROPERTY, 18446744073709551616) AS PROPERTY1, MOD(TRUNC(T.PROPERTY / 18446744073709551616), 18446744073709551616) AS PROPERTY2
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TAB$ AS OF SCN v_SCN T
-            WHERE O.OBJ# = T.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = T.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY T.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
             ELSE
                 v_PREV := TRUE;
-            END IF;
-
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
-            ELSE
-                v_OBJECT_SINGLE := 0;
             END IF;
 
             DBMS_OUTPUT.NEW_LINE();
@@ -598,30 +598,24 @@ BEGIN
                 ',"property":[' || v_SYS_TAB.PROPERTY1 || ',' || v_SYS_TAB.PROPERTY2 || ']}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-tabcompart":[');
+    DBMS_OUTPUT.PUT(',"sys-tabcompart":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_TABCOMPART IN (
             SELECT TCP.ROWID, TCP.OBJ#, NVL(TCP.DATAOBJ#, 0) AS DATAOBJ#, TCP.BO#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TABCOMPART$ AS OF SCN v_SCN TCP
-            WHERE O.OBJ# = TCP.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = TCP.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY TCP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
             ELSE
                 v_PREV := TRUE;
-            END IF;
-
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
-            ELSE
-                v_OBJECT_SINGLE := 0;
             END IF;
 
             DBMS_OUTPUT.NEW_LINE();
@@ -631,30 +625,24 @@ BEGIN
                 ',"bo":' || v_SYS_TABCOMPART.BO# || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-tabpart":[');
+    DBMS_OUTPUT.PUT(',"sys-tabpart":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_TABPART IN (
             SELECT TP.ROWID, TP.OBJ#, NVL(TP.DATAOBJ#, 0) AS DATAOBJ#, TP.BO#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TABPART$ AS OF SCN v_SCN TP
-            WHERE O.OBJ# = TP.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = TP.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY TP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
             ELSE
                 v_PREV := TRUE;
-            END IF;
-
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
-            ELSE
-                v_OBJECT_SINGLE := 0;
             END IF;
 
             DBMS_OUTPUT.NEW_LINE();
@@ -664,30 +652,24 @@ BEGIN
                 ',"bo":' || v_SYS_TABPART.BO# || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-tabsubpart":[');
+    DBMS_OUTPUT.PUT(',"sys-tabsubpart":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_TABSUBPART IN (
             SELECT TSP.ROWID, TSP.OBJ#, NVL(TSP.DATAOBJ#, 0) AS DATAOBJ#, TSP.POBJ#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TABSUBPART$ AS OF SCN v_SCN TSP
-            WHERE O.OBJ# = TSP.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
-                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            WHERE O.OBJ# = TSP.OBJ# AND O.OWNER# = v_USER_LIST(I)
+                AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
+                    'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY TSP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
             ELSE
                 v_PREV := TRUE;
-            END IF;
-
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_OBJECT_SINGLE := v_SYS_SINGLE;
-            ELSE
-                v_OBJECT_SINGLE := 0;
             END IF;
 
             DBMS_OUTPUT.NEW_LINE();
@@ -697,11 +679,11 @@ BEGIN
                 ',"p-obj":' || v_SYS_TABSUBPART.POBJ# || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-ts":[');
+    DBMS_OUTPUT.PUT(',"sys-ts":[');
     FOR v_SYS_TS IN (
         SELECT T.ROWID, T.TS#, T.NAME, T.BLOCKSIZE
         FROM SYS.TS$ AS OF SCN v_SCN T
@@ -719,11 +701,11 @@ BEGIN
             ',"name":"' || v_SYS_TS.NAME || '"' ||
             ',"block-size":' || v_SYS_TS.BLOCKSIZE || '}');
     END LOOP;
-    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
 
     v_PREV := FALSE;
-    DBMS_OUTPUT.PUT('"sys-user":[');
+    DBMS_OUTPUT.PUT(',"sys-user":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_USER IN (
             SELECT U.ROWID, U.USER#, U.NAME, MOD(NVL(U.SPARE1, 0), 18446744073709551616) AS SPARE11,
@@ -738,8 +720,8 @@ BEGIN
                 v_PREV := TRUE;
             END IF;
 
-            IF v_USERNAME_LIST(I) = 'SYS' THEN
-                v_USER_SINGLE := v_SYS_SINGLE;
+            IF (v_USERNAME_LIST(I) = 'SYS' AND v_SYS_SINGLE = 1) THEN
+                v_USER_SINGLE := 1;
             ELSE
                 v_USER_SINGLE := 0;
             END IF;
@@ -752,7 +734,10 @@ BEGIN
                 ',"single":' || v_USER_SINGLE || '}');
         END LOOP;
     END LOOP;
-    DBMS_OUTPUT.PUT(']}');
+    DBMS_OUTPUT.PUT(']');
+    DBMS_OUTPUT.NEW_LINE();
+
+    DBMS_OUTPUT.PUT('}');
     DBMS_OUTPUT.NEW_LINE();
 END;
 /
