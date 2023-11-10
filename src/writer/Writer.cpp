@@ -177,13 +177,13 @@ namespace OpenLogReplicator {
 
         ctx->info(0, "writer is starting with " + getName());
 
-        // Before anything, read the latest checkpoint
-        readCheckpoint();
-        builderQueue = builder->firstBuilderQueue;
-        oldLength = 0;
-        currentQueueSize = 0;
-
         try {
+            // Before anything, read the latest checkpoint
+            readCheckpoint();
+            builderQueue = builder->firstBuilderQueue;
+            oldLength = 0;
+            currentQueueSize = 0;
+
             // External loop for client disconnection
             while (!ctx->hardShutdown) {
                 try {
