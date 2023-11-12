@@ -43,12 +43,12 @@ namespace OpenLogReplicator {
             if (fieldLength < 6)
                 return;
 
-            uint16_t itl = ctx->read16(redoLogRecord->data + fieldPos);
+            uint8_t itl = redoLogRecord->data[fieldPos];
             uint16_t sno = ctx->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t rowSize = ctx->read16(redoLogRecord->data + fieldPos + 4);
 
             ctx->dumpStream << "REDO: SINGLE / -- / -- " << std::endl;
-            ctx->dumpStream << "itl: " << std::dec << itl <<
+            ctx->dumpStream << "itl: " << std::dec << static_cast<uint64_t>(itl) <<
                     ", sno: " << std::dec << sno <<
                     ", row size " << std::dec << rowSize << std::endl;
         }

@@ -130,135 +130,101 @@ namespace OpenLogReplicator {
             ctx->dumpStream << " padding: " << padding << std::endl;
         }
         char opCode = '?';
+        uint64_t startPos = 8;
+        if ((flg & 0x08) == 0)
+            startPos = 4;
 
         if ((ktbOp & 0x0F) == KTBOP_C) {
-            if (fieldLength < 16)
+            opCode = 'C';
+
+            if (fieldLength < startPos + 8)
                 throw RedoLogException(50061, "too short field KTP Redo C: " + std::to_string(fieldLength) + " offset: " +
                                        std::to_string(redoLogRecord->dataOffset));
 
-            opCode = 'C';
-            if ((flg & 0x04) != 0)
-                redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 8);
-            else
-                redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 4);
+            redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + startPos);
+
             if (ctx->dumpRedoLog >= 1) {
                 ctx->dumpStream << "op: " << opCode << " " << " uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
             }
+
         } else if ((ktbOp & 0x0F) == KTBOP_Z) {
             opCode = 'Z';
+
             if (ctx->dumpRedoLog >= 1) {
                 ctx->dumpStream << "op: " << opCode << std::endl;
             }
+
         } else if ((ktbOp & 0x0F) == KTBOP_L) {
             opCode = 'L';
-            if ((flg & 0x08) == 0) {
-                if (fieldLength < 28)
-                    throw RedoLogException(50061, "too short field KTP Redo L: " + std::to_string(fieldLength) + " offset: " +
-                                           std::to_string(redoLogRecord->dataOffset));
 
-                redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 12);
+            if (fieldLength < startPos + 24)
+                throw RedoLogException(50061, "too short field KTP Redo L2: " + std::to_string(fieldLength) + " offset: " +
+                                       std::to_string(redoLogRecord->dataOffset));
 
-                if (ctx->dumpRedoLog >= 1) {
-                    typeXid itlXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 4)),
-                                             ctx->read16(redoLogRecord->data + fieldPos + 6),
-                                             ctx->read32(redoLogRecord->data + fieldPos + 8));
+            redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + startPos + 8);
 
-                    ctx->dumpStream << "op: " << opCode << " " <<
-                            " itl:" <<
-                            " xid:  " << itlXid.toString() <<
-                            " uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
+            if (ctx->dumpRedoLog >= 1) {
+                typeXid itlXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + startPos)),
+                                         ctx->read16(redoLogRecord->data + fieldPos + startPos + 2),
+                                         ctx->read32(redoLogRecord->data + fieldPos + startPos + 4));
 
-                    uint8_t lkc = redoLogRecord->data[fieldPos + 20];
-                    uint8_t flag = redoLogRecord->data[fieldPos + 19];
-                    char flagStr[5] = "----";
-                    if ((flag & 0x80) != 0) flagStr[0] = 'C';
-                    if ((flag & 0x40) != 0) flagStr[1] = 'B';
-                    if ((flag & 0x20) != 0) flagStr[2] = 'U';
-                    if ((flag & 0x10) != 0) flagStr[3] = 'T';
-                    typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + 26);
+                ctx->dumpStream << "op: " << opCode << " " <<
+                        " itl:" <<
+                        " xid:  " << itlXid.toString() <<
+                        " uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
 
-                    if (ctx->version < REDO_VERSION_12_2)
-                        ctx->dumpStream << "                     " <<
-                                " flg: " << flagStr << "   " <<
-                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
-                                " fac: " << PRINTSCN48(scnx) << std::endl;
-                    else
-                        ctx->dumpStream << "                     " <<
-                                " flg: " << flagStr << "   " <<
-                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
-                                " fac:  " << PRINTSCN64(scnx) << std::endl;
+                uint8_t lkc;
+                uint8_t flag;
+                if (ctx->isBigEndian()) {
+                    lkc = redoLogRecord->data[fieldPos + startPos + 17];
+                    flag = redoLogRecord->data[fieldPos + startPos + 16];
+                } else {
+                    lkc = redoLogRecord->data[fieldPos + startPos + 16];
+                    flag = redoLogRecord->data[fieldPos + startPos + 17];
                 }
+                char flagStr[5] = "----";
+                if ((flag & 0x10) != 0) flagStr[3] = 'T';
+                if ((flag & 0x20) != 0) flagStr[2] = 'U';
+                if ((flag & 0x40) != 0) flagStr[1] = 'B';
+                if ((flag & 0x80) != 0) flagStr[0] = 'C';
+                typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + startPos + 18);
 
-            } else {
-                if (fieldLength < 32)
-                    throw RedoLogException(50061, "too short field KTP Redo L2: " + std::to_string(fieldLength) + " offset: " +
-                                           std::to_string(redoLogRecord->dataOffset));
-
-                redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 16);
-
-                if (ctx->dumpRedoLog >= 1) {
-                    typeXid itlXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 8)),
-                                             ctx->read16(redoLogRecord->data + fieldPos + 10),
-                                             ctx->read32(redoLogRecord->data + fieldPos + 12));
-
-                    ctx->dumpStream << "op: " << opCode << " " <<
-                            " itl:" <<
-                            " xid:  " << itlXid.toString() <<
-                            " uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
-
-                    uint8_t lkc;
-                    uint8_t flag;
-                    if (ctx->isBigEndian()) {
-                        lkc = redoLogRecord->data[fieldPos + 25];
-                        flag = redoLogRecord->data[fieldPos + 24];
-                    } else {
-                        lkc = redoLogRecord->data[fieldPos + 24];
-                        flag = redoLogRecord->data[fieldPos + 25];
-                    }
-                    char flagStr[5] = "----";
-                    if ((flag & 0x10) != 0) flagStr[3] = 'T';
-                    if ((flag & 0x20) != 0) flagStr[2] = 'U';
-                    if ((flag & 0x40) != 0) flagStr[1] = 'B';
-                    if ((flag & 0x80) != 0) flagStr[0] = 'C';
-                    typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + 26);
-
-                    if (ctx->version < REDO_VERSION_12_2)
-                        ctx->dumpStream << "                     " <<
-                                " flg: " << flagStr << "   " <<
-                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
-                                " scn: " << PRINTSCN48(scnx) << std::endl;
-                    else
-                        ctx->dumpStream << "                     " <<
-                                " flg: " << flagStr << "   " <<
-                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
-                                " scn:  " << PRINTSCN64(scnx) << std::endl;
-                }
+                if (ctx->version < REDO_VERSION_12_2)
+                    ctx->dumpStream << "                     " <<
+                            " flg: " << flagStr << "   " <<
+                            " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
+                            " scn: " << PRINTSCN48(scnx) << std::endl;
+                else
+                    ctx->dumpStream << "                     " <<
+                            " flg: " << flagStr << "   " <<
+                            " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
+                            " scn:  " << PRINTSCN64(scnx) << std::endl;
             }
 
         } else if ((ktbOp & 0x0F) == KTBOP_R) {
             opCode = 'R';
 
             if (ctx->dumpRedoLog >= 1) {
-                int16_t itc = ctx->read16(redoLogRecord->data + fieldPos + 10);
+                int16_t itc = ctx->read16(redoLogRecord->data + fieldPos + startPos + 0);
                 ctx->dumpStream << "op: " << opCode << "  itc: " << std::dec << itc << std::endl;
                 if (itc < 0)
                     itc = 0;
 
-                if (fieldLength < 20 + itc * 24)
+                if (fieldLength < startPos + 12 + itc * 24)
                     throw RedoLogException(50061, "too short field KTB Redo R: " + std::to_string(fieldLength) + " offset: " +
                                            std::to_string(redoLogRecord->dataOffset));
 
                 ctx->dumpStream << " Itl           Xid                  Uba         Flag  Lck        Scn/Fsc" << std::endl;
                 for (uint64_t i = 0; i < static_cast<uint64_t>(itc); ++i) {
-                    typeXid itcXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 20 + i * 24)),
-                                             ctx->read16(redoLogRecord->data + fieldPos + 20 + 2 + i * 24),
-                                             ctx->read32(redoLogRecord->data + fieldPos + 20 + 4 + i * 24));
+                    typeXid itcXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + startPos + 12 + i * 24)),
+                                             ctx->read16(redoLogRecord->data + fieldPos + startPos + 12 + 2 + i * 24),
+                                             ctx->read32(redoLogRecord->data + fieldPos + startPos + 12 + 4 + i * 24));
 
-                    typeUba itcUba = ctx->read56(redoLogRecord->data + fieldPos + 20 + 8 + i * 24);
+                    typeUba itcUba = ctx->read56(redoLogRecord->data + fieldPos + startPos + 12 + 8 + i * 24);
                     char flagsStr[5] = "----";
                     typeScn scnfsc;
                     const char* scnfscStr = "fsc";
-                    uint16_t lck = ctx->read16(redoLogRecord->data + fieldPos + 20 + 16 + i * 24);
+                    uint16_t lck = ctx->read16(redoLogRecord->data + fieldPos + startPos + 12 + 16 + i * 24);
                     if ((lck & 0x1000) != 0) flagsStr[3] = 'T';
                     if ((lck & 0x2000) != 0) flagsStr[2] = 'U';
                     if ((lck & 0x4000) != 0) flagsStr[1] = 'B';
@@ -266,12 +232,11 @@ namespace OpenLogReplicator {
                         flagsStr[0] = 'C';
                         scnfscStr = "scn";
                         lck = 0;
-                        scnfsc = ctx->readScn(redoLogRecord->data + fieldPos + 20 + 18 + i * 24);
+                        scnfsc = ctx->readScn(redoLogRecord->data + fieldPos + startPos + 12 + 18 + i * 24);
                     } else
-                        scnfsc = (static_cast<uint64_t>(ctx->read16(redoLogRecord->data + fieldPos + 20 + 18 + i * 24)) << 32) |
-                                static_cast<uint64_t>(ctx->read32(redoLogRecord->data + fieldPos + 20 + 20 + i * 24));
+                        scnfsc = (static_cast<uint64_t>(ctx->read16(redoLogRecord->data + fieldPos + startPos + 12 + 18 + i * 24)) << 32) |
+                                static_cast<uint64_t>(ctx->read32(redoLogRecord->data + fieldPos + startPos + 12 + 20 + i * 24));
                     lck &= 0x0FFF;
-
 
                     ctx->dumpStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << (i + 1) << "   " <<
                             itcXid.toString() << "  " <<
@@ -283,23 +248,24 @@ namespace OpenLogReplicator {
 
         } else if ((ktbOp & 0x0F) == KTBOP_N) {
             opCode = 'N';
+
             if (ctx->dumpRedoLog >= 1) {
                 ctx->dumpStream << "op: " << opCode << std::endl;
             }
 
         } else if ((ktbOp & 0x0F) == KTBOP_F) {
-            if (fieldLength < 24)
+            opCode = 'F';
+
+            if (fieldLength < startPos + 16)
                 throw RedoLogException(50061, "too short field KTB Redo F: " + std::to_string(fieldLength) + " offset: " +
                                        std::to_string(redoLogRecord->dataOffset));
 
-            opCode = 'F';
-            redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 8)),
-                                         ctx->read16(redoLogRecord->data + fieldPos + 10),
-                                         ctx->read32(redoLogRecord->data + fieldPos + 12));
-            redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 16);
+            redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + startPos)),
+                                         ctx->read16(redoLogRecord->data + fieldPos + startPos + 2),
+                                         ctx->read32(redoLogRecord->data + fieldPos + startPos + 4));
+            redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + startPos + 8);
 
             if (ctx->dumpRedoLog >= 1) {
-
                 ctx->dumpStream << "op: " << opCode << " " <<
                         " xid:  " << redoLogRecord->xid.toString() <<
                         "    uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
@@ -309,10 +275,10 @@ namespace OpenLogReplicator {
         // Block clean record
         if ((ktbOp & KTBOP_BLOCKCLEANOUT) != 0) {
             if (ctx->dumpRedoLog >= 1) {
-                typeScn scn = ctx->readScn(redoLogRecord->data + fieldPos + 48);
-                uint8_t opt = redoLogRecord->data[fieldPos + 44];
-                uint8_t ver2 = redoLogRecord->data[fieldPos + 46];
-                uint8_t entries = redoLogRecord->data[fieldPos + 45];
+                typeScn scn = ctx->readScn(redoLogRecord->data + fieldPos + startPos + 40);
+                uint8_t opt = redoLogRecord->data[fieldPos + startPos + 36];
+                uint8_t ver2 = redoLogRecord->data[fieldPos + startPos + 38];
+                uint8_t entries = redoLogRecord->data[fieldPos + startPos + 37];
 
                 if (ctx->version < REDO_VERSION_12_2)
                     ctx->dumpStream << "Block cleanout record, scn: " <<
@@ -339,14 +305,14 @@ namespace OpenLogReplicator {
                             ", entries follow..." << std::endl;
                 }
 
-                if (fieldLength < 56 + entries * static_cast<uint64_t>(8))
+                if (fieldLength < startPos + 48 + entries * static_cast<uint64_t>(8))
                     throw RedoLogException(50061, "too short field KTB Read F2: " + std::to_string(fieldLength) + " offset: " +
                                            std::to_string(redoLogRecord->dataOffset));
 
                 for (uint64_t j = 0; j < entries; ++j) {
-                    uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
-                    uint8_t flg2 = redoLogRecord->data[fieldPos + 57 + j * 8];
-                    typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + 58 + j * 8);
+                    uint8_t itli = redoLogRecord->data[fieldPos + startPos + 48 + j * 8];
+                    uint8_t flg2 = redoLogRecord->data[fieldPos + startPos + 49 + j * 8];
+                    typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + startPos + 50 + j * 8);
                     if (ctx->version < REDO_VERSION_12_1)
                         ctx->dumpStream << "  itli: " << std::dec << static_cast<uint64_t>(itli) << " " <<
                                 " flg: " << static_cast<uint64_t>(flg2) << " " <<
@@ -1507,7 +1473,7 @@ namespace OpenLogReplicator {
 
             ctx->dumpStream << "tabn: " << static_cast<uint64_t>(tabn) <<
                 " lock: " << std::dec << static_cast<uint64_t>(lock) <<
-                " nRow: " << std::dec << static_cast<uint64_t>(redoLogRecord->nRow) << std::endl;
+                " nrow: " << std::dec << static_cast<uint64_t>(redoLogRecord->nRow) << std::endl;
 
             if (fieldLength < 22 + static_cast<uint64_t>(redoLogRecord->nRow) * 2)
                 throw RedoLogException(50061, "too short field kdo OpCode QMI (2): " + std::to_string(fieldLength) + " offset: " +
