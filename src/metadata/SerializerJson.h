@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SERIALIZER_JSON_H_
 #define SERIALIZER_JSON_H_
 
-#define SERIALIZER_ENDL     <<std::endl
+#define SERIALIZER_ENDL     <<'\n'
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         void deserializeSysTabComPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabComPartJson);
         void deserializeSysTabPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabPartJson);
         void deserializeSysTabSubPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabSubPartJson);
-        void deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson);
+        void deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTsJson);
         void deserializeSysUser(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson);
 
     public:

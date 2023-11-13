@@ -206,21 +206,27 @@ int main(int argc, char** argv) {
                         case OpenLogReplicator::pb::BEGIN:
                             msg = "BEGIN";
                             break;
+
                         case OpenLogReplicator::pb::COMMIT:
                             msg = "COMMIT";
                             break;
+
                         case OpenLogReplicator::pb::INSERT:
                             msg = "- INSERT";
                             break;
+
                         case OpenLogReplicator::pb::UPDATE:
                             msg = "- UPDATE";
                             break;
+
                         case OpenLogReplicator::pb::DELETE:
                             msg = "- DELETE";
                             break;
+
                         case OpenLogReplicator::pb::DDL:
                             msg = " DDL";
                             break;
+
                         case OpenLogReplicator::pb::CHKPT:
                             msg = "*** CHECKPOINT ***";
                             break;

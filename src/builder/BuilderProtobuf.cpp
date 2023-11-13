@@ -181,31 +181,39 @@ namespace OpenLogReplicator {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
                     redoResponsePB->set_tm(time_.toTime() * 1000000000L);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MICRO:
                     redoResponsePB->set_tm(time_.toTime() * 1000000L);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
                     redoResponsePB->set_tm(time_.toTime() * 1000L);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX:
                     redoResponsePB->set_tm(time_.toTime());
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                     str = std::to_string(time_.toTime() * 1000000000L);
                     redoResponsePB->set_tms(str);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                     str = std::to_string(time_.toTime() * 1000000L);
                     redoResponsePB->set_tms(str);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
                     str = std::to_string(time_.toTime() * 1000L);
                     redoResponsePB->set_tms(str);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_STRING:
                     str = std::to_string(time_.toTime());
                     redoResponsePB->set_tms(str);
                     break;
+
                 case TIMESTAMP_FORMAT_ISO8601:
                     char iso[21];
                     time_.toIso8601(iso);
@@ -287,89 +295,89 @@ namespace OpenLogReplicator {
                 columnPB->set_name(table->columns[column]->name);
 
                 switch (table->columns[column]->type) {
-                case SYS_COL_TYPE_VARCHAR:
-                    columnPB->set_type(pb::VARCHAR2);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_VARCHAR:
+                        columnPB->set_type(pb::VARCHAR2);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_NUMBER:
-                    columnPB->set_type(pb::NUMBER);
-                    columnPB->set_precision(static_cast<int32_t>(table->columns[column]->precision));
-                    columnPB->set_scale(static_cast<int32_t>(table->columns[column]->scale));
-                    break;
+                    case SYS_COL_TYPE_NUMBER:
+                        columnPB->set_type(pb::NUMBER);
+                        columnPB->set_precision(static_cast<int32_t>(table->columns[column]->precision));
+                        columnPB->set_scale(static_cast<int32_t>(table->columns[column]->scale));
+                        break;
 
-                // Long, not supported
-                case SYS_COL_TYPE_LONG:
-                    columnPB->set_type(pb::LONG);
-                    break;
+                    // Long, not supported
+                    case SYS_COL_TYPE_LONG:
+                        columnPB->set_type(pb::LONG);
+                        break;
 
-                case SYS_COL_TYPE_DATE:
-                    columnPB->set_type(pb::DATE);
-                    break;
+                    case SYS_COL_TYPE_DATE:
+                        columnPB->set_type(pb::DATE);
+                        break;
 
-                case SYS_COL_TYPE_RAW:
-                    columnPB->set_type(pb::RAW);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_RAW:
+                        columnPB->set_type(pb::RAW);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_LONG_RAW: // Not supported
-                    columnPB->set_type(pb::LONG_RAW);
-                    break;
+                    case SYS_COL_TYPE_LONG_RAW: // Not supported
+                        columnPB->set_type(pb::LONG_RAW);
+                        break;
 
-                case SYS_COL_TYPE_CHAR:
-                    columnPB->set_type(pb::CHAR);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_CHAR:
+                        columnPB->set_type(pb::CHAR);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_FLOAT:
-                    columnPB->set_type(pb::BINARY_FLOAT);
-                    break;
+                    case SYS_COL_TYPE_FLOAT:
+                        columnPB->set_type(pb::BINARY_FLOAT);
+                        break;
 
-                case SYS_COL_TYPE_DOUBLE:
-                    columnPB->set_type(pb::BINARY_DOUBLE);
-                    break;
+                    case SYS_COL_TYPE_DOUBLE:
+                        columnPB->set_type(pb::BINARY_DOUBLE);
+                        break;
 
-                case SYS_COL_TYPE_CLOB:
-                    columnPB->set_type(pb::CLOB);
-                    break;
+                    case SYS_COL_TYPE_CLOB:
+                        columnPB->set_type(pb::CLOB);
+                        break;
 
-                case SYS_COL_TYPE_BLOB:
-                    columnPB->set_type(pb::BLOB);
-                    break;
+                    case SYS_COL_TYPE_BLOB:
+                        columnPB->set_type(pb::BLOB);
+                        break;
 
-                case SYS_COL_TYPE_TIMESTAMP:
-                    columnPB->set_type(pb::TIMESTAMP);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_TIMESTAMP:
+                        columnPB->set_type(pb::TIMESTAMP);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
-                    columnPB->set_type(pb::TIMESTAMP_WITH_TZ);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
+                        columnPB->set_type(pb::TIMESTAMP_WITH_TZ);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
-                    columnPB->set_type(pb::INTERVAL_YEAR_TO_MONTH);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                        columnPB->set_type(pb::INTERVAL_YEAR_TO_MONTH);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
-                    columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
+                        columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_UROWID:
-                    columnPB->set_type(pb::UROWID);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_UROWID:
+                        columnPB->set_type(pb::UROWID);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
-                    columnPB->set_type(pb::TIMESTAMP_WITH_LOCAL_TZ);
-                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
-                    break;
+                    case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
+                        columnPB->set_type(pb::TIMESTAMP_WITH_LOCAL_TZ);
+                        columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                        break;
 
-                default:
-                    columnPB->set_type(pb::UNKNOWN);
-                    break;
+                    default:
+                        columnPB->set_type(pb::UNKNOWN);
+                        break;
                 }
 
                 columnPB->set_nullable(table->columns[column]->nullable);

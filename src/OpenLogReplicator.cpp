@@ -689,7 +689,7 @@ namespace OpenLogReplicator {
                                 std::string keyCol2;
                                 getline(keyStream, keyCol, ',');
                                 keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
-                                transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
+                                transform(keyCol.begin(), keyCol.end(), keyCol.begin(), ::toupper);
                                 element->keys.push_back(keyCol);
                             }
                         } else
@@ -801,8 +801,8 @@ namespace OpenLogReplicator {
                 }
 
                 writer = new WriterFile(ctx, std::string(alias) + "-writer", replicator2->database,
-                                        replicator2->builder,replicator2->metadata, output, timestampFormat,
-                                        maxFileSize,newLine,append);
+                                        replicator2->builder, replicator2->metadata, output, timestampFormat,
+                                        maxFileSize, newLine, append);
             } else if (strcmp(writerType, "kafka") == 0) {
 #ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;

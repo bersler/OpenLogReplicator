@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         if (ctx->dumpRedoLog >= 1) {
-            ctx->dumpStream << "index redo (kdxlin):  insert leaf row" << std::endl;
+            ctx->dumpStream << "index redo (kdxlin):  insert leaf row\n";
         }
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0201);
@@ -47,10 +47,10 @@ namespace OpenLogReplicator {
             uint16_t sno = ctx->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t rowSize = ctx->read16(redoLogRecord->data + fieldPos + 4);
 
-            ctx->dumpStream << "REDO: SINGLE / -- / -- " << std::endl;
+            ctx->dumpStream << "REDO: SINGLE / -- / -- " << '\n';
             ctx->dumpStream << "itl: " << std::dec << static_cast<uint64_t>(itl) <<
                     ", sno: " << std::dec << sno <<
-                    ", row size " << std::dec << rowSize << std::endl;
+                    ", row size " << std::dec << rowSize << '\n';
         }
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0202))
@@ -64,14 +64,14 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "insert key: (" << std::dec << fieldLength << "): ";
 
             if (fieldLength > 20)
-                ctx->dumpStream << std::endl;
+                ctx->dumpStream << '\n';
 
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
-                if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
-                    ctx->dumpStream << std::endl;
+                if ((j % 25) == 24 && j != static_cast<uint64_t>(fieldLength) - 1)
+                    ctx->dumpStream << '\n';
             }
-            ctx->dumpStream << std::endl;
+            ctx->dumpStream << '\n';
         }
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0202))
@@ -85,14 +85,14 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "keydata: (" << std::dec << fieldLength << "): ";
 
             if (fieldLength > 20)
-                ctx->dumpStream << std::endl;
+                ctx->dumpStream << '\n';
 
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
-                if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
-                    ctx->dumpStream << std::endl;
+                if ((j % 25) == 24 && j != static_cast<uint64_t>(fieldLength) - 1)
+                    ctx->dumpStream << '\n';
             }
-            ctx->dumpStream << std::endl;
+            ctx->dumpStream << '\n';
         }
     }
 }

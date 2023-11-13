@@ -99,38 +99,38 @@ namespace OpenLogReplicator {
 
     void OpCode0513::dumpMsgFlags(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength __attribute__((unused))) {
         uint16_t flags = ctx->read16(redoLogRecord->data + fieldPos + 0);
-        if ((flags & 0x0001) != 0) ctx->dumpStream << "DDL transaction" << std::endl;
-        if ((flags & 0x0002) != 0) ctx->dumpStream << "Space Management transaction" << std::endl;
-        if ((flags & 0x0004) != 0) ctx->dumpStream << "Recursive transaction" << std::endl;
+        if ((flags & 0x0001) != 0) ctx->dumpStream << "DDL transaction\n";
+        if ((flags & 0x0002) != 0) ctx->dumpStream << "Space Management transaction\n";
+        if ((flags & 0x0004) != 0) ctx->dumpStream << "Recursive transaction\n";
         if ((flags & 0x0008) != 0) {
             if (ctx->version < REDO_VERSION_19_0) {
-                ctx->dumpStream << "Logmnr Internal transaction" << std::endl;
+                ctx->dumpStream << "Logmnr Internal transaction\n";
             } else {
-                ctx->dumpStream << "LogMiner Internal transaction" << std::endl;
+                ctx->dumpStream << "LogMiner Internal transaction\n";
             }
         }
-        if ((flags & 0x0010) != 0) ctx->dumpStream << "DB Open in Migrate Mode" << std::endl;
-        if ((flags & 0x0020) != 0) ctx->dumpStream << "LSBY ignore" << std::endl;
-        if ((flags & 0x0040) != 0) ctx->dumpStream << "LogMiner no tx chunking" << std::endl;
-        if ((flags & 0x0080) != 0) ctx->dumpStream << "LogMiner Stealth transaction" << std::endl;
-        if ((flags & 0x0100) != 0) ctx->dumpStream << "LSBY preserve" << std::endl;
-        if ((flags & 0x0200) != 0) ctx->dumpStream << "LogMiner Marker transaction" << std::endl;
-        if ((flags & 0x0400) != 0) ctx->dumpStream << "Transaction in pragama'ed plsql" << std::endl;
+        if ((flags & 0x0010) != 0) ctx->dumpStream << "DB Open in Migrate Mode\n";
+        if ((flags & 0x0020) != 0) ctx->dumpStream << "LSBY ignore\n";
+        if ((flags & 0x0040) != 0) ctx->dumpStream << "LogMiner no tx chunking\n";
+        if ((flags & 0x0080) != 0) ctx->dumpStream << "LogMiner Stealth transaction\n";
+        if ((flags & 0x0100) != 0) ctx->dumpStream << "LSBY preserve\n";
+        if ((flags & 0x0200) != 0) ctx->dumpStream << "LogMiner Marker transaction\n";
+        if ((flags & 0x0400) != 0) ctx->dumpStream << "Transaction in pragama'ed plsql\n";
         if ((flags & 0x0800) != 0) {
             if (ctx->version < REDO_VERSION_19_0) {
-                ctx->dumpStream << "Tx audit CV flags undefined" << std::endl;
+                ctx->dumpStream << "Tx audit CV flags undefined\n";
             } else {
-                ctx->dumpStream << "Disabled Logical Repln. txn." << std::endl;
+                ctx->dumpStream << "Disabled Logical Repln. txn.\n";
             }
         }
-        if ((flags & 0x1000) != 0) ctx->dumpStream << "Datapump import txn" << std::endl;
-        if ((flags & 0x8000) != 0) ctx->dumpStream << "Tx audit CV flags undefined" << std::endl;
+        if ((flags & 0x1000) != 0) ctx->dumpStream << "Datapump import txn\n";
+        if ((flags & 0x8000) != 0) ctx->dumpStream << "Tx audit CV flags undefined\n";
 
         uint16_t flags2 = ctx->read16(redoLogRecord->data + fieldPos + 4);
-        if ((flags2 & 0x0001) != 0) ctx->dumpStream << "Federation PDB replay" << std::endl;
-        if ((flags2 & 0x0002) != 0) ctx->dumpStream << "PDB DDL replay" << std::endl;
-        if ((flags2 & 0x0004) != 0) ctx->dumpStream << "LogMiner SKIP transaction" << std::endl;
-        if ((flags2 & 0x0008) != 0) ctx->dumpStream << "SEQ$ update transaction" << std::endl;
+        if ((flags2 & 0x0001) != 0) ctx->dumpStream << "Federation PDB replay\n";
+        if ((flags2 & 0x0002) != 0) ctx->dumpStream << "PDB DDL replay\n";
+        if ((flags2 & 0x0004) != 0) ctx->dumpStream << "LogMiner SKIP transaction\n";
+        if ((flags2 & 0x0008) != 0) ctx->dumpStream << "SEQ$ update transaction\n";
     }
 
     void OpCode0513::dumpMsgSessionSerial(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
@@ -155,22 +155,22 @@ namespace OpenLogReplicator {
             }
 
             ctx->dumpStream <<
-                    "session number   = " << std::dec << sessionNumber << std::endl <<
-                    "serial  number   = " << std::dec << serialNumber << std::endl;
+                    "session number   = " << std::dec << sessionNumber << '\n' <<
+                    "serial  number   = " << std::dec << serialNumber << '\n';
         }
     }
 
     void OpCode0513::dumpMsgVersion(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength __attribute__((unused))) {
         if (ctx->dumpRedoLog >= 1) {
             uint32_t version = ctx->read32(redoLogRecord->data + fieldPos + 0);
-            ctx->dumpStream << "version " << std::dec << version << std::endl;
+            ctx->dumpStream << "version " << std::dec << version << '\n';
         }
     }
 
     void OpCode0513::dumpMsgAuditSessionId(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength __attribute__((unused))) {
         if (ctx->dumpRedoLog >= 1) {
             uint32_t auditSessionid = ctx->read32(redoLogRecord->data + fieldPos + 0);
-            ctx->dumpStream << "audit sessionid " << auditSessionid << std::endl;
+            ctx->dumpStream << "audit sessionid " << auditSessionid << '\n';
         }
     }
 }

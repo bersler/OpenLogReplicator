@@ -200,21 +200,25 @@ namespace OpenLogReplicator {
                     }
                 }
                 break;
+
             case TIMESTAMP_FORMAT_UNIX_MICRO:
                 --epochTime.tm_mon;
                 epochTime.tm_year -= 1900;
                 appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
                 break;
+
             case TIMESTAMP_FORMAT_UNIX_MILLI:
                 --epochTime.tm_mon;
                 epochTime.tm_year -= 1900;
                 appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
                 break;
+
             case TIMESTAMP_FORMAT_UNIX:
                 --epochTime.tm_mon;
                 epochTime.tm_year -= 1900;
                 appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 break;
+
             case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                 append('"');
                 --epochTime.tm_mon;
@@ -236,6 +240,7 @@ namespace OpenLogReplicator {
                 }
                 append('"');
                 break;
+
             case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                 append('"');
                 --epochTime.tm_mon;
@@ -243,6 +248,7 @@ namespace OpenLogReplicator {
                 appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
                 append('"');
                 break;
+
             case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
                 append('"');
                 --epochTime.tm_mon;
@@ -250,6 +256,7 @@ namespace OpenLogReplicator {
                 appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
                 append('"');
                 break;
+
             case TIMESTAMP_FORMAT_UNIX_STRING:
                 append('"');
                 --epochTime.tm_mon;
@@ -257,6 +264,7 @@ namespace OpenLogReplicator {
                 appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 append('"');
                 break;
+
             case TIMESTAMP_FORMAT_ISO8601:
                 // 2012-04-23T18:25:43.511Z - ISO 8601 format
                 append('"');
@@ -321,6 +329,7 @@ namespace OpenLogReplicator {
                 append(tz);
                 append('"');
                 break;
+
             case TIMESTAMP_TZ_FORMAT_UNIX_MICRO_STRING:
                 append('"');
                 --epochTime.tm_mon;
@@ -330,6 +339,7 @@ namespace OpenLogReplicator {
                 append(tz);
                 append('"');
                 break;
+
             case TIMESTAMP_TZ_FORMAT_UNIX_MILLI_STRING:
                 append('"');
                 --epochTime.tm_mon;
@@ -339,6 +349,7 @@ namespace OpenLogReplicator {
                 append(tz);
                 append('"');
                 break;
+
             case TIMESTAMP_TZ_FORMAT_UNIX_STRING:
                 append('"');
                 --epochTime.tm_mon;
@@ -346,6 +357,7 @@ namespace OpenLogReplicator {
                 appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
                 append('"');
                 break;
+
             case TIMESTAMP_TZ_FORMAT_ISO8601:
                 // 2012-04-23T18:25:43.511Z - ISO 8601 format
                 append('"');
@@ -429,6 +441,7 @@ namespace OpenLogReplicator {
                     if (val != 0)
                         append("000000000", 9);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MICRO:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
                     val = time_.toTime();
@@ -436,15 +449,18 @@ namespace OpenLogReplicator {
                     if (val != 0)
                         append("000000", 6);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime());
                     append("000", 3);
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime());
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     val = time_.toTime();
@@ -453,6 +469,7 @@ namespace OpenLogReplicator {
                         append("000000000", 9);
                     append('"');
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     val = time_.toTime();
@@ -461,6 +478,7 @@ namespace OpenLogReplicator {
                         append("000000", 6);
                     append('"');
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     val = time_.toTime();
@@ -469,11 +487,13 @@ namespace OpenLogReplicator {
                         append("000", 3);
                     append('"');
                     break;
+
                 case TIMESTAMP_FORMAT_UNIX_STRING:
                     append(R"("tms":")", sizeof(R"("tm":)") - 1);
                     appendDec(time_.toTime());
                     append('"');
                     break;
+
                 case TIMESTAMP_FORMAT_ISO8601:
                     append(R"("tms":")", sizeof(R"("tms":")") - 1);
                     char iso[21];
@@ -595,90 +615,90 @@ namespace OpenLogReplicator {
 
                 append(R"(","type":)", sizeof(R"(","type":)") - 1);
                 switch (table->columns[column]->type) {
-                case SYS_COL_TYPE_VARCHAR:
-                    append(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_VARCHAR:
+                        append(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_NUMBER:
-                    append(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
-                    appendSDec(table->columns[column]->precision);
-                    append(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
-                    appendSDec(table->columns[column]->scale);
-                    break;
+                    case SYS_COL_TYPE_NUMBER:
+                        append(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
+                        appendSDec(table->columns[column]->precision);
+                        append(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
+                        appendSDec(table->columns[column]->scale);
+                        break;
 
-                // Long, not supported
-                case SYS_COL_TYPE_LONG:
-                    append(R"("long")", sizeof(R"("long")") - 1);
-                    break;
+                    // Long, not supported
+                    case SYS_COL_TYPE_LONG:
+                        append(R"("long")", sizeof(R"("long")") - 1);
+                        break;
 
-                case SYS_COL_TYPE_DATE:
-                    append(R"("date")", sizeof(R"("date")") - 1);
-                    break;
+                    case SYS_COL_TYPE_DATE:
+                        append(R"("date")", sizeof(R"("date")") - 1);
+                        break;
 
-                case SYS_COL_TYPE_RAW:
-                    append(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_RAW:
+                        append(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_LONG_RAW: // Not supported
-                    append(R"("long raw")", sizeof(R"("long raw")") - 1);
-                    break;
+                    case SYS_COL_TYPE_LONG_RAW: // Not supported
+                        append(R"("long raw")", sizeof(R"("long raw")") - 1);
+                        break;
 
-                case SYS_COL_TYPE_CHAR:
-                    append(R"("char","length":)", sizeof(R"("char","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_CHAR:
+                        append(R"("char","length":)", sizeof(R"("char","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_FLOAT:
-                    append(R"("binary_float")", sizeof(R"("binary_float")") - 1);
-                    break;
+                    case SYS_COL_TYPE_FLOAT:
+                        append(R"("binary_float")", sizeof(R"("binary_float")") - 1);
+                        break;
 
-                case SYS_COL_TYPE_DOUBLE:
-                    append(R"("binary_double")", sizeof(R"("binary_double")") - 1);
-                    break;
+                    case SYS_COL_TYPE_DOUBLE:
+                        append(R"("binary_double")", sizeof(R"("binary_double")") - 1);
+                        break;
 
-                case SYS_COL_TYPE_CLOB:
-                    append(R"("clob")", sizeof(R"("clob")") - 1);
-                    break;
+                    case SYS_COL_TYPE_CLOB:
+                        append(R"("clob")", sizeof(R"("clob")") - 1);
+                        break;
 
-                case SYS_COL_TYPE_BLOB:
-                    append(R"("blob")", sizeof(R"("blob")") - 1);
-                    break;
+                    case SYS_COL_TYPE_BLOB:
+                        append(R"("blob")", sizeof(R"("blob")") - 1);
+                        break;
 
-                case SYS_COL_TYPE_TIMESTAMP:
-                    append(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_TIMESTAMP:
+                        append(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
-                    append(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
+                        append(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
-                    append(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                        append(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
-                    append(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
+                        append(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_UROWID:
-                    append(R"("urowid","length":)", sizeof(R"("urowid","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_UROWID:
+                        append(R"("urowid","length":)", sizeof(R"("urowid","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
-                    append(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
-                    appendDec(table->columns[column]->length);
-                    break;
+                    case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
+                        append(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
+                        appendDec(table->columns[column]->length);
+                        break;
 
-                default:
-                    append(R"("unknown")", sizeof(R"("unknown")") - 1);
-                    break;
+                    default:
+                        append(R"("unknown")", sizeof(R"("unknown")") - 1);
+                        break;
                 }
 
                 append(R"(,"nullable":)", sizeof(R"(,"nullable":)") - 1);
@@ -734,7 +754,6 @@ namespace OpenLogReplicator {
             result -= epoch->tm_sec;
             result = -result;
             return result - 62104147200L; // adjust to 1970 epoch, 718798 days (year 0 does not exist)
-            return 0;
         }
     }
 

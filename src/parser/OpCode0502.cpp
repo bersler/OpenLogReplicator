@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            ctx->dumpStream << std::endl;
+            ctx->dumpStream << '\n';
         }
     }
 
@@ -66,16 +66,16 @@ namespace OpenLogReplicator {
             typeBlk mapblk = 0; // TODO: find field position/size
             uint32_t offset = ctx->read32(redoLogRecord->data + fieldPos + 24);
 
-            ctx->dumpStream << "kteop redo - redo operation on extent map" << std::endl;
+            ctx->dumpStream << "kteop redo - redo operation on extent map\n";
             ctx->dumpStream << "   SETHWM:      " <<
                     " Highwater::  0x" << std::setfill('0') << std::setw(8) << std::hex << highwater << " " <<
                     " ext#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << ext <<
                     " blk#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blk <<
-                    " ext size: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << extSize << std::endl;
-            ctx->dumpStream << "  #blocks in seg. hdr's freelists: " << std::dec << blocksFreelist << "     " << std::endl;
-            ctx->dumpStream << "  #blocks below: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blocksBelow << std::endl;
+                    " ext size: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << extSize << '\n';
+            ctx->dumpStream << "  #blocks in seg. hdr's freelists: " << std::dec << blocksFreelist << "     \n";
+            ctx->dumpStream << "  #blocks below: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blocksBelow << '\n';
             ctx->dumpStream << "  mapblk  0x" << std::setfill('0') << std::setw(8) << std::hex << mapblk << " " <<
-                    " offset: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << offset << std::endl;
+                    " offset: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << offset << '\n';
             ctx->dumpStream << std::right;
         }
     }
@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
                     " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
                     " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
                     " siz: " << std::dec << siz <<
-                    " fbi: " << std::dec << static_cast<uint64_t>(fbi) << std::endl;
+                    " fbi: " << std::dec << static_cast<uint64_t>(fbi) << '\n';
             /*if (ctx->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                 ctx->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
@@ -114,7 +114,7 @@ namespace OpenLogReplicator {
                             " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                             " pxid:  " << pXid.toString();
             if (ctx->version < REDO_VERSION_12_1) // || redoLogRecord->conId == 0)
-                ctx->dumpStream << std::endl;
+                ctx->dumpStream << '\n';
         }
     }
 

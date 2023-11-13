@@ -61,6 +61,24 @@ namespace OpenLogReplicator {
         Locales* locales;
         typeRowId sysUserRowId;
         SysUser sysUserAdaptive;
+
+        // temporary objects
+        SysCCol* sysCColTmp;
+        SysCDef* sysCDefTmp;
+        SysCol* sysColTmp;
+        SysDeferredStg* sysDeferredStgTmp;
+        SysECol* sysEColTmp;
+        SysLob* sysLobTmp;
+        SysLobCompPart* sysLobCompPartTmp;
+        SysLobFrag* sysLobFragTmp;
+        SysObj* sysObjTmp;
+        SysTab* sysTabTmp;
+        SysTabComPart* sysTabComPartTmp;
+        SysTabPart* sysTabPartTmp;
+        SysTabSubPart* sysTabSubPartTmp;
+        SysTs* sysTsTmp;
+        SysUser* sysUserTmp;
+
         bool compareSysCCol(Schema* otherSchema, std::string& msgs);
         bool compareSysCDef(Schema* otherSchema, std::string& msgs);
         bool compareSysCol(Schema* otherSchema, std::string& msgs);
@@ -89,9 +107,9 @@ namespace OpenLogReplicator {
         std::unordered_map<typeDataObj, OracleLob*> lobIndexMap;
         std::unordered_map<typeObj, OracleTable*> tableMap;
         std::unordered_map<typeObj, OracleTable*> tablePartitionMap;
-        OracleColumn* schemaColumn;
-        OracleLob* schemaLob;
-        OracleTable* schemaTable;
+        OracleColumn* columnTmp;
+        OracleLob* lobTmp;
+        OracleTable* tableTmp;
         std::set<OracleTable*> tablesTouched;
         std::set<typeObj>identifiersTouched;
         bool touched;

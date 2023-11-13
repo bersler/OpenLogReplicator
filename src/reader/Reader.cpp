@@ -805,31 +805,31 @@ namespace OpenLogReplicator {
                reinterpret_cast<const void*>(headerBuffer + blockSize + 28), 8);
         SID[8] = 0;
 
-        ss << "DUMP OF REDO FROM FILE '" << path << "'" << std::endl;
+        ss << "DUMP OF REDO FROM FILE '" << path << "'\n";
         if (ctx->version >= REDO_VERSION_12_2)
-            ss << " Container ID: 0" << std::endl << " Container UID: 0" << std::endl;
-        ss << " Opcodes *.*" << std::endl;
+            ss << " Container ID: 0\n Container UID: 0\n";
+        ss << " Opcodes *.*\n";
         if (ctx->version >= REDO_VERSION_12_2)
-            ss << " Container ID: 0" << std::endl << " Container UID: 0" << std::endl;
-        ss << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << std::endl;
+            ss << " Container ID: 0\n Container UID: 0\n";
+        ss << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff\n";
         if (ctx->version < REDO_VERSION_12_2)
-            ss << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff" << std::endl;
+            ss << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff\n";
         else
-            ss << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff" << std::endl;
-        ss << " Times: creation thru eternity" << std::endl;
+            ss << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff\n";
+        ss << " Times: creation thru eternity\n";
 
         uint32_t dbid = ctx->read32(headerBuffer + blockSize + 24);
         uint32_t controlSeq = ctx->read32(headerBuffer + blockSize + 36);
         uint32_t fileSizeHeader = ctx->read32(headerBuffer + blockSize + 40);
         uint16_t fileNumber = ctx->read16(headerBuffer + blockSize + 48);
 
-        ss << " FILE HEADER:" << std::endl <<
-                "\tCompatibility Vsn = " << std::dec << compatVsn << "=0x" << std::hex << compatVsn << std::endl <<
-                "\tDb ID=" << std::dec << dbid << "=0x" << std::hex << dbid << ", Db Name='" << SID << "'" << std::endl <<
-                "\tActivation ID=" << std::dec << activation << "=0x" << std::hex << activation << std::endl <<
+        ss << " FILE HEADER:\n" <<
+                "\tCompatibility Vsn = " << std::dec << compatVsn << "=0x" << std::hex << compatVsn << '\n' <<
+                "\tDb ID=" << std::dec << dbid << "=0x" << std::hex << dbid << ", Db Name='" << SID << "'\n" <<
+                "\tActivation ID=" << std::dec << activation << "=0x" << std::hex << activation << '\n' <<
                 "\tControl Seq=" << std::dec << controlSeq << "=0x" << std::hex << controlSeq << ", File size=" << std::dec << fileSizeHeader << "=0x" <<
-                std::hex << fileSizeHeader << std::endl <<
-                "\tFile Number=" << std::dec << fileNumber << ", Blksiz=" << std::dec << blockSize << ", File Type=2 LOG" << std::endl;
+                std::hex << fileSizeHeader << '\n' <<
+                "\tFile Number=" << std::dec << fileNumber << ", Blksiz=" << std::dec << blockSize << ", File Type=2 LOG\n";
 
         typeSeq seq = ctx->read32(headerBuffer + blockSize + 8);
         uint8_t descrip[65];
@@ -841,13 +841,13 @@ namespace OpenLogReplicator {
         uint8_t eot = headerBuffer[blockSize + 204];
         uint8_t dis = headerBuffer[blockSize + 205];
 
-        ss << R"( descrip:")" << descrip << R"(")" << std::endl <<
+        ss << R"( descrip:")" << descrip << R"(")" << '\n' <<
            " thread: " << std::dec << thread <<
            " nab: 0x" << std::hex << numBlocksHeader <<
            " seq: 0x" << std::setfill('0') << std::setw(8) << std::hex << seq <<
            " hws: 0x" << std::hex << hws <<
                 " eot: " << std::dec << static_cast<uint64_t>(eot) <<
-                " dis: " << std::dec << static_cast<uint64_t>(dis) << std::endl;
+                " dis: " << std::dec << static_cast<uint64_t>(dis) << '\n';
 
         typeScn resetlogsScn = ctx->readScn(headerBuffer + blockSize + 164);
         typeResetlogs prevResetlogsCnt = ctx->read32(headerBuffer + blockSize + 292);
@@ -865,37 +865,36 @@ namespace OpenLogReplicator {
 
         if (ctx->version < REDO_VERSION_12_2) {
             ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN48(resetlogsScn) <<
-                    " (" << std::dec << resetlogsScn << ")" << std::endl <<
+                    " (" << std::dec << resetlogsScn << ")\n" <<
                     " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) <<
-                    " (" << std::dec << prevResetlogsScn << ")" << std::endl <<
-                    " Low  scn: " << PRINTSCN48(firstScnHeader) << " (" << std::dec << firstScnHeader << ")" << " " << firstTimeHeader << std::endl <<
-                    " Next scn: " << PRINTSCN48(nextScnHeader) << " (" << std::dec << nextScn << ")" << " " << nextTime << std::endl <<
-                    " Enabled scn: " << PRINTSCN48(enabledScn) << " (" << std::dec << enabledScn << ")" << " " << enabledTime << std::endl <<
+                    " (" << std::dec << prevResetlogsScn << ")\n" <<
+                    " Low  scn: " << PRINTSCN48(firstScnHeader) << " (" << std::dec << firstScnHeader << ")" << " " << firstTimeHeader << '\n' <<
+                    " Next scn: " << PRINTSCN48(nextScnHeader) << " (" << std::dec << nextScn << ")" << " " << nextTime << '\n' <<
+                    " Enabled scn: " << PRINTSCN48(enabledScn) << " (" << std::dec << enabledScn << ")" << " " << enabledTime << '\n' <<
                     " Thread closed scn: " << PRINTSCN48(threadClosedScn) << " (" << std::dec << threadClosedScn << ")" <<
-                    " " << threadClosedTime << std::endl <<
-                    " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << std::endl <<
-                    " Terminal recovery stop scn: " << PRINTSCN48(termialRecScn) << std::endl <<
-                    " Terminal recovery  " << termialRecTime << std::endl <<
-                    " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << std::endl;
+                    " " << threadClosedTime << '\n' <<
+                    " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << '\n' <<
+                    " Terminal recovery stop scn: " << PRINTSCN48(termialRecScn) << '\n' <<
+                    " Terminal recovery  " << termialRecTime << '\n' <<
+                    " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << '\n';
         } else {
             typeScn realNextScn = ctx->readScn(headerBuffer + blockSize + 272);
 
-            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN64(resetlogsScn) << std::endl <<
-                    " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << std::endl <<
-                    " Low  scn: " << PRINTSCN64(firstScnHeader) << " " << firstTimeHeader << std::endl <<
-                    " Next scn: " << PRINTSCN64(nextScnHeader) << " " << nextTime << std::endl <<
-                    " Enabled scn: " << PRINTSCN64(enabledScn) << " " << enabledTime << std::endl <<
-                    " Thread closed scn: " << PRINTSCN64(threadClosedScn) << " " << threadClosedTime << std::endl <<
-                    " Real next scn: " << PRINTSCN64(realNextScn) << std::endl <<
-                    " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << std::endl <<
-                    " Terminal recovery stop scn: " << PRINTSCN64(termialRecScn) << std::endl <<
-                    " Terminal recovery  " << termialRecTime << std::endl <<
-                    " Most recent redo scn: " << PRINTSCN64(mostRecentScn) << std::endl;
+            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN64(resetlogsScn) << '\n' <<
+                    " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << '\n' <<
+                    " Low  scn: " << PRINTSCN64(firstScnHeader) << " " << firstTimeHeader << '\n' <<
+                    " Next scn: " << PRINTSCN64(nextScnHeader) << " " << nextTime << '\n' <<
+                    " Enabled scn: " << PRINTSCN64(enabledScn) << " " << enabledTime << '\n' <<
+                    " Thread closed scn: " << PRINTSCN64(threadClosedScn) << " " << threadClosedTime << '\n' <<
+                    " Real next scn: " << PRINTSCN64(realNextScn) << '\n' <<
+                    " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << '\n' <<
+                    " Terminal recovery stop scn: " << PRINTSCN64(termialRecScn) << '\n' <<
+                    " Terminal recovery  " << termialRecTime << '\n' <<
+                    " Most recent redo scn: " << PRINTSCN64(mostRecentScn) << '\n';
         }
 
         uint32_t largestLwn = ctx->read32(headerBuffer + blockSize + 268);
-        ss <<
-                        " Largest LWN: " << std::dec << largestLwn << " blocks" << std::endl;
+        ss << " Largest LWN: " << std::dec << largestLwn << " blocks\n";
 
         uint32_t miscFlags = ctx->read32(headerBuffer + blockSize + 236);
         const char* endOfRedo;
@@ -904,32 +903,32 @@ namespace OpenLogReplicator {
         else
             endOfRedo = "No";
         if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
-            ss << " FailOver End-of-redo stream : " << endOfRedo << std::endl;
+            ss << " FailOver End-of-redo stream : " << endOfRedo << '\n';
         else
-            ss << " End-of-redo stream : " << endOfRedo << std::endl;
+            ss << " End-of-redo stream : " << endOfRedo << '\n';
 
         if ((miscFlags & REDO_ASYNC) != 0)
-            ss << " Archivelog created using asynchronous network transmittal" << std::endl;
+            ss << " Archivelog created using asynchronous network transmittal" << '\n';
 
         if ((miscFlags & REDO_NODATALOSS) != 0)
-            ss << " No ctx-loss mode" << std::endl;
+            ss << " No ctx-loss mode\n";
 
         if ((miscFlags & REDO_RESYNC) != 0)
-            ss << " Resynchronization mode" << std::endl;
+            ss << " Resynchronization mode\n";
         else
-            ss << " Unprotected mode" << std::endl;
+            ss << " Unprotected mode\n";
 
         if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
-            ss << " Closed thread archival" << std::endl;
+            ss << " Closed thread archival\n";
 
         if ((miscFlags & REDO_MAXPERFORMANCE) != 0)
-            ss << " Maximize performance mode" << std::endl;
+            ss << " Maximize performance mode\n";
 
-        ss << " Miscellaneous flags: 0x" << std::hex << miscFlags << std::endl;
+        ss << " Miscellaneous flags: 0x" << std::hex << miscFlags << '\n';
 
         if (ctx->version >= REDO_VERSION_12_2) {
             uint32_t miscFlags2 = ctx->read32(headerBuffer + blockSize + 296);
-            ss << " Miscellaneous second flags: 0x" << std::hex << miscFlags2 << std::endl;
+            ss << " Miscellaneous second flags: 0x" << std::hex << miscFlags2 << '\n';
         }
 
         auto thr = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 432));
@@ -940,33 +939,33 @@ namespace OpenLogReplicator {
         if (ctx->version < REDO_VERSION_12_2)
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                     " seq: " << std::dec << seq2 <<
-                    " scn: " << PRINTSCN48(scn2) << std::endl <<
-                    " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << std::endl <<
-                    " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << std::endl;
+                    " scn: " << PRINTSCN48(scn2) << '\n' <<
+                    " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << '\n' <<
+                    " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << '\n';
         else
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                     " seq: " << std::dec << seq2 <<
-                    " scn: " << PRINTSCN64(scn2) << std::endl <<
-                    " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << std::endl <<
-                    " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << std::endl;
+                    " scn: " << PRINTSCN64(scn2) << '\n' <<
+                    " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << '\n' <<
+                    " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << '\n';
 
         uint32_t standbyApplyDelay = ctx->read32(headerBuffer + blockSize + 280);
         if (standbyApplyDelay > 0)
-            ss << " Standby Apply Delay: " << std::dec << standbyApplyDelay << " minute(s) " << std::endl;
+            ss << " Standby Apply Delay: " << std::dec << standbyApplyDelay << " minute(s) \n";
 
         typeTime standbyLogCloseTime(ctx->read32(headerBuffer + blockSize + 304));
         if (standbyLogCloseTime.getVal() > 0)
-            ss << " Standby Log Close Time:  " << standbyLogCloseTime << std::endl;
+            ss << " Standby Log Close Time:  " << standbyLogCloseTime << '\n';
 
         ss << " redo log key is ";
         for (uint64_t i = 448; i < 448 + 16; ++i)
             ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[blockSize + i]);
-        ss << std::endl;
+        ss << '\n';
 
         uint16_t redoKeyFlag = ctx->read16(headerBuffer + blockSize + 480);
-        ss << " redo log key flag is " << std::dec << redoKeyFlag << std::endl;
+        ss << " redo log key flag is " << std::dec << redoKeyFlag << '\n';
         uint16_t enabledRedoThreads = 1; // TODO: find field position/size
-        ss << " Enabled redo threads: " << std::dec << enabledRedoThreads << " " << std::endl;
+        ss << " Enabled redo threads: " << std::dec << enabledRedoThreads << " \n";
     }
 
     uint64_t Reader::getBlockSize() {

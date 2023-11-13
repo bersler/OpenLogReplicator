@@ -937,24 +937,23 @@ namespace OpenLogReplicator {
             ctx->logTrace(TRACE_REDO, "reading metadata");
 
         try {
-            DatabaseStatement stmtTs(conn);
-
             // Reading SYS.TS$
+            DatabaseStatement sysTsStmt(conn);
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TS);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
             }
-            stmtTs.createStatement(SQL_GET_SYS_TS);
-            stmtTs.bindUInt64(1, targetScn);
-            char tsRowid[19]; stmtTs.defineString(1, tsRowid, sizeof(tsRowid));
-            typeTs tsTs; stmtTs.defineUInt32(2, tsTs);
-            char tsName[129]; stmtTs.defineString(3, tsName, sizeof(tsName));
-            uint32_t tsBlockSize; stmtTs.defineUInt32(4, tsBlockSize);
+            sysTsStmt.createStatement(SQL_GET_SYS_TS);
+            sysTsStmt.bindUInt64(1, targetScn);
+            char sysTsRowid[19]; sysTsStmt.defineString(1, sysTsRowid, sizeof(sysTsRowid));
+            typeTs sysTsTs; sysTsStmt.defineUInt32(2, sysTsTs);
+            char sysTsName[129]; sysTsStmt.defineString(3, sysTsName, sizeof(sysTsName));
+            uint32_t sysTsBlockSize; sysTsStmt.defineUInt32(4, sysTsBlockSize);
 
-            int64_t retTs = stmtTs.executeQuery();
-            while (retTs) {
-                schema->dictSysTsAdd(tsRowid, tsTs, tsName, tsBlockSize);
-                retTs = stmtTs.next();
+            int64_t sysTsRet = sysTsStmt.executeQuery();
+            while (sysTsRet) {
+                schema->dictSysTsAdd(sysTsRowid, sysTsTs, sysTsName, sysTsBlockSize);
+                sysTsRet = sysTsStmt.next();
             }
         } catch (RuntimeException& ex) {
             ctx->error(ex.code, ex.msg);
@@ -967,16 +966,16 @@ namespace OpenLogReplicator {
             ctx->logTrace(TRACE_REDO, "read dictionaries for user: " + std::to_string(user) + ", object: " + std::to_string(obj));
 
         // Reading SYS.CCOL$
-        DatabaseStatement stmtCCol(conn);
+        DatabaseStatement sysCColStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CCOL_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtCCol.createStatement(SQL_GET_SYS_CCOL_OBJ);
-            stmtCCol.bindUInt64(1, targetScn);
-            stmtCCol.bindUInt32(2, obj);
+            sysCColStmt.createStatement(SQL_GET_SYS_CCOL_OBJ);
+            sysCColStmt.bindUInt64(1, targetScn);
+            sysCColStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CCOL_USER);
@@ -984,38 +983,38 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtCCol.createStatement(SQL_GET_SYS_CCOL_USER);
-            stmtCCol.bindUInt64(1, targetScn);
-            stmtCCol.bindUInt64(2, targetScn);
-            stmtCCol.bindUInt32(3, user);
+            sysCColStmt.createStatement(SQL_GET_SYS_CCOL_USER);
+            sysCColStmt.bindUInt64(1, targetScn);
+            sysCColStmt.bindUInt64(2, targetScn);
+            sysCColStmt.bindUInt32(3, user);
         }
 
-        char ccolRowid[19]; stmtCCol.defineString(1, ccolRowid, sizeof(ccolRowid));
-        typeCon ccolCon; stmtCCol.defineUInt32(2, ccolCon);
-        typeCol ccolIntCol; stmtCCol.defineInt16(3, ccolIntCol);
-        typeObj ccolObj; stmtCCol.defineUInt32(4, ccolObj);
-        uint64_t ccolSpare11 = 0; stmtCCol.defineUInt64(5, ccolSpare11);
-        uint64_t ccolSpare12 = 0; stmtCCol.defineUInt64(6, ccolSpare12);
+        char sysCColRowid[19]; sysCColStmt.defineString(1, sysCColRowid, sizeof(sysCColRowid));
+        typeCon sysCColCon; sysCColStmt.defineUInt32(2, sysCColCon);
+        typeCol sysCColIntCol; sysCColStmt.defineInt16(3, sysCColIntCol);
+        typeObj sysCColObj; sysCColStmt.defineUInt32(4, sysCColObj);
+        uint64_t sysCColSpare11 = 0; sysCColStmt.defineUInt64(5, sysCColSpare11);
+        uint64_t sysCColSpare12 = 0; sysCColStmt.defineUInt64(6, sysCColSpare12);
 
-        int64_t ccolRet = stmtCCol.executeQuery();
-        while (ccolRet) {
-            schema->dictSysCColAdd(ccolRowid, ccolCon, ccolIntCol, ccolObj, ccolSpare11, ccolSpare12);
-            ccolSpare11 = 0;
-            ccolSpare12 = 0;
-            ccolRet = stmtCCol.next();
+        int64_t sysCColRet = sysCColStmt.executeQuery();
+        while (sysCColRet) {
+            schema->dictSysCColAdd(sysCColRowid, sysCColCon, sysCColIntCol, sysCColObj, sysCColSpare11, sysCColSpare12);
+            sysCColSpare11 = 0;
+            sysCColSpare12 = 0;
+            sysCColRet = sysCColStmt.next();
         }
 
         // Reading SYS.CDEF$
-        DatabaseStatement stmtCDef(conn);
+        DatabaseStatement sysCDefStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CDEF_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtCDef.createStatement(SQL_GET_SYS_CDEF_OBJ);
-            stmtCDef.bindUInt64(1, targetScn);
-            stmtCDef.bindUInt32(2, obj);
+            sysCDefStmt.createStatement(SQL_GET_SYS_CDEF_OBJ);
+            sysCDefStmt.bindUInt64(1, targetScn);
+            sysCDefStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_CDEF_USER);
@@ -1023,34 +1022,34 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtCDef.createStatement(SQL_GET_SYS_CDEF_USER);
-            stmtCDef.bindUInt64(1, targetScn);
-            stmtCDef.bindUInt64(2, targetScn);
-            stmtCDef.bindUInt32(3, user);
+            sysCDefStmt.createStatement(SQL_GET_SYS_CDEF_USER);
+            sysCDefStmt.bindUInt64(1, targetScn);
+            sysCDefStmt.bindUInt64(2, targetScn);
+            sysCDefStmt.bindUInt32(3, user);
         }
 
-        char cdefRowid[19]; stmtCDef.defineString(1, cdefRowid, sizeof(cdefRowid));
-        typeCon cdefCon; stmtCDef.defineUInt32(2, cdefCon);
-        typeObj cdefObj; stmtCDef.defineUInt32(3, cdefObj);
-        uint64_t cdefType; stmtCDef.defineUInt64(4, cdefType);
+        char sysCDefRowid[19]; sysCDefStmt.defineString(1, sysCDefRowid, sizeof(sysCDefRowid));
+        typeCon sysCDefCon; sysCDefStmt.defineUInt32(2, sysCDefCon);
+        typeObj sysCDefObj; sysCDefStmt.defineUInt32(3, sysCDefObj);
+        uint64_t sysCDefType; sysCDefStmt.defineUInt64(4, sysCDefType);
 
-        int64_t cdefRet = stmtCDef.executeQuery();
-        while (cdefRet) {
-            schema->dictSysCDefAdd(cdefRowid, cdefCon, cdefObj, cdefType);
-            cdefRet = stmtCDef.next();
+        int64_t sysCDefRet = sysCDefStmt.executeQuery();
+        while (sysCDefRet) {
+            schema->dictSysCDefAdd(sysCDefRowid, sysCDefCon, sysCDefObj, sysCDefType);
+            sysCDefRet = sysCDefStmt.next();
         }
 
         // Reading SYS.COL$
-        DatabaseStatement stmtCol(conn);
+        DatabaseStatement sysColStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_COL_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtCol.createStatement(SQL_GET_SYS_COL_OBJ);
-            stmtCol.bindUInt64(1, targetScn);
-            stmtCol.bindUInt32(2, obj);
+            sysColStmt.createStatement(SQL_GET_SYS_COL_OBJ);
+            sysColStmt.bindUInt64(1, targetScn);
+            sysColStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_COL_USER);
@@ -1058,51 +1057,51 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtCol.createStatement(SQL_GET_SYS_COL_USER);
-            stmtCol.bindUInt64(1, targetScn);
-            stmtCol.bindUInt64(2, targetScn);
-            stmtCol.bindUInt32(3, user);
+            sysColStmt.createStatement(SQL_GET_SYS_COL_USER);
+            sysColStmt.bindUInt64(1, targetScn);
+            sysColStmt.bindUInt64(2, targetScn);
+            sysColStmt.bindUInt32(3, user);
         }
 
-        char colRowid[19]; stmtCol.defineString(1, colRowid, sizeof(colRowid));
-        typeObj colObj; stmtCol.defineUInt32(2, colObj);
-        typeCol colCol; stmtCol.defineInt16(3, colCol);
-        typeCol colSegCol; stmtCol.defineInt16(4, colSegCol);
-        typeCol colIntCol; stmtCol.defineInt16(5, colIntCol);
-        char colName[129]; stmtCol.defineString(6, colName, sizeof(colName));
-        uint64_t colType; stmtCol.defineUInt64(7, colType);
-        uint64_t colLength; stmtCol.defineUInt64(8, colLength);
-        int64_t colPrecision = -1; stmtCol.defineInt64(9, colPrecision);
-        int64_t colScale = -1; stmtCol.defineInt64(10, colScale);
-        uint64_t colCharsetForm = 0; stmtCol.defineUInt64(11, colCharsetForm);
-        uint64_t colCharsetId = 0; stmtCol.defineUInt64(12, colCharsetId);
-        int64_t colNull; stmtCol.defineInt64(13, colNull);
-        uint64_t colProperty1; stmtCol.defineUInt64(14, colProperty1);
-        uint64_t colProperty2; stmtCol.defineUInt64(15, colProperty2);
+        char sysColRowid[19]; sysColStmt.defineString(1, sysColRowid, sizeof(sysColRowid));
+        typeObj sysColObj; sysColStmt.defineUInt32(2, sysColObj);
+        typeCol sysColCol; sysColStmt.defineInt16(3, sysColCol);
+        typeCol sysColSegCol; sysColStmt.defineInt16(4, sysColSegCol);
+        typeCol sysColIntCol; sysColStmt.defineInt16(5, sysColIntCol);
+        char sysColName[129]; sysColStmt.defineString(6, sysColName, sizeof(sysColName));
+        uint64_t sysColType; sysColStmt.defineUInt64(7, sysColType);
+        uint64_t sysColLength; sysColStmt.defineUInt64(8, sysColLength);
+        int64_t sysColPrecision = -1; sysColStmt.defineInt64(9, sysColPrecision);
+        int64_t sysColScale = -1; sysColStmt.defineInt64(10, sysColScale);
+        uint64_t sycColCharsetForm = 0; sysColStmt.defineUInt64(11, sycColCharsetForm);
+        uint64_t sysColCharsetId = 0; sysColStmt.defineUInt64(12, sysColCharsetId);
+        int64_t sysColNull; sysColStmt.defineInt64(13, sysColNull);
+        uint64_t sysColProperty1; sysColStmt.defineUInt64(14, sysColProperty1);
+        uint64_t sysColProperty2; sysColStmt.defineUInt64(15, sysColProperty2);
 
-        int64_t colRet = stmtCol.executeQuery();
-        while (colRet) {
-            schema->dictSysColAdd(colRowid, colObj, colCol, colSegCol, colIntCol, colName, colType, colLength,
-                                  colPrecision, colScale, colCharsetForm, colCharsetId, colNull, colProperty1,
-                                  colProperty2);
-            colPrecision = -1;
-            colScale = -1;
-            colCharsetForm = 0;
-            colCharsetId = 0;
-            colRet = stmtCol.next();
+        int64_t sysColRet = sysColStmt.executeQuery();
+        while (sysColRet) {
+            schema->dictSysColAdd(sysColRowid, sysColObj, sysColCol, sysColSegCol, sysColIntCol, sysColName,
+                                  sysColType, sysColLength, sysColPrecision, sysColScale, sycColCharsetForm,
+                                  sysColCharsetId, sysColNull, sysColProperty1, sysColProperty2);
+            sysColPrecision = -1;
+            sysColScale = -1;
+            sycColCharsetForm = 0;
+            sysColCharsetId = 0;
+            sysColRet = sysColStmt.next();
         }
 
         // Reading SYS.DEFERRED_STG$
-        DatabaseStatement stmtDeferredStg(conn);
+        DatabaseStatement sysDeferredStgStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_DEFERRED_STG_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtDeferredStg.createStatement(SQL_GET_SYS_DEFERRED_STG_OBJ);
-            stmtDeferredStg.bindUInt64(1, targetScn);
-            stmtDeferredStg.bindUInt32(2, obj);
+            sysDeferredStgStmt.createStatement(SQL_GET_SYS_DEFERRED_STG_OBJ);
+            sysDeferredStgStmt.bindUInt64(1, targetScn);
+            sysDeferredStgStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_DEFERRED_STG_USER);
@@ -1110,27 +1109,28 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtDeferredStg.createStatement(SQL_GET_SYS_DEFERRED_STG_USER);
-            stmtDeferredStg.bindUInt64(1, targetScn);
-            stmtDeferredStg.bindUInt64(2, targetScn);
-            stmtDeferredStg.bindUInt32(3, user);
+            sysDeferredStgStmt.createStatement(SQL_GET_SYS_DEFERRED_STG_USER);
+            sysDeferredStgStmt.bindUInt64(1, targetScn);
+            sysDeferredStgStmt.bindUInt64(2, targetScn);
+            sysDeferredStgStmt.bindUInt32(3, user);
         }
 
-        char deferredStgRowid[19]; stmtDeferredStg.defineString(1, deferredStgRowid, sizeof(deferredStgRowid));
-        typeObj deferredStgObj; stmtDeferredStg.defineUInt32(2, deferredStgObj);
-        uint64_t deferredStgFlagsStg1 = 0; stmtDeferredStg.defineUInt64(3, deferredStgFlagsStg1);
-        uint64_t deferredStgFlagsStg2 = 0; stmtDeferredStg.defineUInt64(4, deferredStgFlagsStg2);
+        char sysDeferredStgRowid[19]; sysDeferredStgStmt.defineString(1, sysDeferredStgRowid, sizeof(sysDeferredStgRowid));
+        typeObj sysDeferredStgObj; sysDeferredStgStmt.defineUInt32(2, sysDeferredStgObj);
+        uint64_t sysDeferredStgFlagsStg1 = 0; sysDeferredStgStmt.defineUInt64(3, sysDeferredStgFlagsStg1);
+        uint64_t sysDeferredStgFlagsStg2 = 0; sysDeferredStgStmt.defineUInt64(4, sysDeferredStgFlagsStg2);
 
-        int64_t deferredStgRet = stmtDeferredStg.executeQuery();
-        while (deferredStgRet) {
-            schema->dictSysDeferredStgAdd(deferredStgRowid, deferredStgObj, deferredStgFlagsStg1, deferredStgFlagsStg2);
-            deferredStgFlagsStg1 = 0;
-            deferredStgFlagsStg2 = 0;
-            deferredStgRet = stmtDeferredStg.next();
+        int64_t sysDeferredStgRet = sysDeferredStgStmt.executeQuery();
+        while (sysDeferredStgRet) {
+            schema->dictSysDeferredStgAdd(sysDeferredStgRowid, sysDeferredStgObj, sysDeferredStgFlagsStg1,
+                                          sysDeferredStgFlagsStg2);
+            sysDeferredStgFlagsStg1 = 0;
+            sysDeferredStgFlagsStg2 = 0;
+            sysDeferredStgRet = sysDeferredStgStmt.next();
         }
 
         // Reading SYS.ECOL$
-        DatabaseStatement stmtECol(conn);
+        DatabaseStatement sysEColStmt(conn);
         if (ctx->version12) {
             if (obj != 0) {
                 if (ctx->trace & TRACE_SQL) {
@@ -1138,9 +1138,9 @@ namespace OpenLogReplicator {
                     ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                     ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
                 }
-                stmtECol.createStatement(SQL_GET_SYS_ECOL_OBJ);
-                stmtECol.bindUInt64(1, targetScn);
-                stmtECol.bindUInt32(2, obj);
+                sysEColStmt.createStatement(SQL_GET_SYS_ECOL_OBJ);
+                sysEColStmt.bindUInt64(1, targetScn);
+                sysEColStmt.bindUInt32(2, obj);
             } else {
                 if (ctx->trace & TRACE_SQL) {
                     ctx->logTrace(TRACE_SQL, SQL_GET_SYS_ECOL_USER);
@@ -1148,10 +1148,10 @@ namespace OpenLogReplicator {
                     ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                     ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
                 }
-                stmtECol.createStatement(SQL_GET_SYS_ECOL_USER);
-                stmtECol.bindUInt64(1, targetScn);
-                stmtECol.bindUInt64(2, targetScn);
-                stmtECol.bindUInt32(3, user);
+                sysEColStmt.createStatement(SQL_GET_SYS_ECOL_USER);
+                sysEColStmt.bindUInt64(1, targetScn);
+                sysEColStmt.bindUInt64(2, targetScn);
+                sysEColStmt.bindUInt32(3, user);
             }
         } else {
             if (obj != 0) {
@@ -1160,9 +1160,9 @@ namespace OpenLogReplicator {
                     ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                     ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
                 }
-                stmtECol.createStatement(SQL_GET_SYS_ECOL11_OBJ);
-                stmtECol.bindUInt64(1, targetScn);
-                stmtECol.bindUInt32(2, obj);
+                sysEColStmt.createStatement(SQL_GET_SYS_ECOL11_OBJ);
+                sysEColStmt.bindUInt64(1, targetScn);
+                sysEColStmt.bindUInt32(2, obj);
             } else {
                 if (ctx->trace & TRACE_SQL) {
                     ctx->logTrace(TRACE_SQL, SQL_GET_SYS_ECOL11_USER);
@@ -1170,37 +1170,37 @@ namespace OpenLogReplicator {
                     ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                     ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
                 }
-                stmtECol.createStatement(SQL_GET_SYS_ECOL11_USER);
-                stmtECol.bindUInt64(1, targetScn);
-                stmtECol.bindUInt64(2, targetScn);
-                stmtECol.bindUInt32(3, user);
+                sysEColStmt.createStatement(SQL_GET_SYS_ECOL11_USER);
+                sysEColStmt.bindUInt64(1, targetScn);
+                sysEColStmt.bindUInt64(2, targetScn);
+                sysEColStmt.bindUInt32(3, user);
             }
         }
 
-        char ecolRowid[19]; stmtECol.defineString(1, ecolRowid, sizeof(ecolRowid));
-        typeObj ecolTabObj; stmtECol.defineUInt32(2, ecolTabObj);
-        typeCol ecolColNum = 0; stmtECol.defineInt16(3, ecolColNum);
-        typeCol ecolGuardId = -1; stmtECol.defineInt16(4, ecolGuardId);
+        char sysEColRowid[19]; sysEColStmt.defineString(1, sysEColRowid, sizeof(sysEColRowid));
+        typeObj sysEColTabObj; sysEColStmt.defineUInt32(2, sysEColTabObj);
+        typeCol sysEColColNum = 0; sysEColStmt.defineInt16(3, sysEColColNum);
+        typeCol sysEColGuardId = -1; sysEColStmt.defineInt16(4, sysEColGuardId);
 
-        int64_t ecolRet = stmtECol.executeQuery();
-        while (ecolRet) {
-            schema->dictSysEColAdd(ecolRowid, ecolTabObj, ecolColNum, ecolGuardId);
-            ecolColNum = 0;
-            ecolGuardId = -1;
-            ecolRet = stmtECol.next();
+        int64_t sysEColRet = sysEColStmt.executeQuery();
+        while (sysEColRet) {
+            schema->dictSysEColAdd(sysEColRowid, sysEColTabObj, sysEColColNum, sysEColGuardId);
+            sysEColColNum = 0;
+            sysEColGuardId = -1;
+            sysEColRet = sysEColStmt.next();
         }
 
         // Reading SYS.LOB$
-        DatabaseStatement stmtLob(conn);
+        DatabaseStatement sysLobStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtLob.createStatement(SQL_GET_SYS_LOB_OBJ);
-            stmtLob.bindUInt64(1, targetScn);
-            stmtLob.bindUInt32(2, obj);
+            sysLobStmt.createStatement(SQL_GET_SYS_LOB_OBJ);
+            sysLobStmt.bindUInt64(1, targetScn);
+            sysLobStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_USER);
@@ -1208,27 +1208,27 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtLob.createStatement(SQL_GET_SYS_LOB_USER);
-            stmtLob.bindUInt64(1, targetScn);
-            stmtLob.bindUInt64(2, targetScn);
-            stmtLob.bindUInt32(3, user);
+            sysLobStmt.createStatement(SQL_GET_SYS_LOB_USER);
+            sysLobStmt.bindUInt64(1, targetScn);
+            sysLobStmt.bindUInt64(2, targetScn);
+            sysLobStmt.bindUInt32(3, user);
         }
 
-        char lobRowid[19]; stmtLob.defineString(1, lobRowid, sizeof(lobRowid));
-        typeObj lobObj; stmtLob.defineUInt32(2, lobObj);
-        typeCol lobCol = 0; stmtLob.defineInt16(3, lobCol);
-        typeCol lobIntCol = 0; stmtLob.defineInt16(4, lobIntCol);
-        typeObj lobLObj; stmtLob.defineUInt32(5, lobLObj);
-        typeTs lobTs; stmtLob.defineUInt32(6, lobTs);
+        char sysLobRowid[19]; sysLobStmt.defineString(1, sysLobRowid, sizeof(sysLobRowid));
+        typeObj sysLobObj; sysLobStmt.defineUInt32(2, sysLobObj);
+        typeCol sysLobCol = 0; sysLobStmt.defineInt16(3, sysLobCol);
+        typeCol sysLobIntCol = 0; sysLobStmt.defineInt16(4, sysLobIntCol);
+        typeObj sysLobLObj; sysLobStmt.defineUInt32(5, sysLobLObj);
+        typeTs sysLobTs; sysLobStmt.defineUInt32(6, sysLobTs);
 
-        int64_t lobRet = stmtLob.executeQuery();
-        while (lobRet) {
-            schema->dictSysLobAdd(lobRowid, lobObj, lobCol, lobIntCol, lobLObj, lobTs);
-            lobRet = stmtLob.next();
+        int64_t sysLobRet = sysLobStmt.executeQuery();
+        while (sysLobRet) {
+            schema->dictSysLobAdd(sysLobRowid, sysLobObj, sysLobCol, sysLobIntCol, sysLobLObj, sysLobTs);
+            sysLobRet = sysLobStmt.next();
         }
 
         // Reading SYS.LOBCOMPPART$
-        DatabaseStatement stmtLobCompPart(conn);
+        DatabaseStatement sysLobCompPartStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_COMP_PART_OBJ);
@@ -1236,10 +1236,10 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(obj));
             }
-            stmtLobCompPart.createStatement(SQL_GET_SYS_LOB_COMP_PART_OBJ);
-            stmtLobCompPart.bindUInt64(1, targetScn);
-            stmtLobCompPart.bindUInt64(2, targetScn);
-            stmtLobCompPart.bindUInt32(3, obj);
+            sysLobCompPartStmt.createStatement(SQL_GET_SYS_LOB_COMP_PART_OBJ);
+            sysLobCompPartStmt.bindUInt64(1, targetScn);
+            sysLobCompPartStmt.bindUInt64(2, targetScn);
+            sysLobCompPartStmt.bindUInt32(3, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_COMP_PART_USER);
@@ -1248,25 +1248,25 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM4: " + std::to_string(user));
             }
-            stmtLobCompPart.createStatement(SQL_GET_SYS_LOB_COMP_PART_USER);
-            stmtLobCompPart.bindUInt64(1, targetScn);
-            stmtLobCompPart.bindUInt64(2, targetScn);
-            stmtLobCompPart.bindUInt64(3, targetScn);
-            stmtLobCompPart.bindUInt32(4, user);
+            sysLobCompPartStmt.createStatement(SQL_GET_SYS_LOB_COMP_PART_USER);
+            sysLobCompPartStmt.bindUInt64(1, targetScn);
+            sysLobCompPartStmt.bindUInt64(2, targetScn);
+            sysLobCompPartStmt.bindUInt64(3, targetScn);
+            sysLobCompPartStmt.bindUInt32(4, user);
         }
 
-        char lobCompPartRowid[19]; stmtLobCompPart.defineString(1, lobCompPartRowid, sizeof(lobCompPartRowid));
-        typeObj lobCompPartPartObj; stmtLobCompPart.defineUInt32(2, lobCompPartPartObj);
-        typeObj lobCompPartLObj; stmtLobCompPart.defineUInt32(3, lobCompPartLObj);
+        char sysLobCompPartRowid[19]; sysLobCompPartStmt.defineString(1, sysLobCompPartRowid, sizeof(sysLobCompPartRowid));
+        typeObj sysLobCompPartPartObj; sysLobCompPartStmt.defineUInt32(2, sysLobCompPartPartObj);
+        typeObj sysLobCompPartLObj; sysLobCompPartStmt.defineUInt32(3, sysLobCompPartLObj);
 
-        int64_t lobCompPartRet = stmtLobCompPart.executeQuery();
-        while (lobCompPartRet) {
-            schema->dictSysLobCompPartAdd(lobCompPartRowid, lobCompPartPartObj, lobCompPartLObj);
-            lobCompPartRet = stmtLobCompPart.next();
+        int64_t sysLobCompPartRet = sysLobCompPartStmt.executeQuery();
+        while (sysLobCompPartRet) {
+            schema->dictSysLobCompPartAdd(sysLobCompPartRowid, sysLobCompPartPartObj, sysLobCompPartLObj);
+            sysLobCompPartRet = sysLobCompPartStmt.next();
         }
 
         // Reading SYS.LOBFRAG$
-        DatabaseStatement stmtLobFrag(conn);
+        DatabaseStatement sysLobFragStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_FRAG_OBJ);
@@ -1278,14 +1278,14 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM6: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM7: " + std::to_string(obj));
             }
-            stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_OBJ);
-            stmtLobFrag.bindUInt64(1, targetScn);
-            stmtLobFrag.bindUInt64(2, targetScn);
-            stmtLobFrag.bindUInt64(3, targetScn);
-            stmtLobFrag.bindUInt32(4, obj);
-            stmtLobFrag.bindUInt64(5, targetScn);
-            stmtLobFrag.bindUInt64(6, targetScn);
-            stmtLobFrag.bindUInt32(7, obj);
+            sysLobFragStmt.createStatement(SQL_GET_SYS_LOB_FRAG_OBJ);
+            sysLobFragStmt.bindUInt64(1, targetScn);
+            sysLobFragStmt.bindUInt64(2, targetScn);
+            sysLobFragStmt.bindUInt64(3, targetScn);
+            sysLobFragStmt.bindUInt32(4, obj);
+            sysLobFragStmt.bindUInt64(5, targetScn);
+            sysLobFragStmt.bindUInt64(6, targetScn);
+            sysLobFragStmt.bindUInt32(7, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_LOB_FRAG_USER);
@@ -1299,40 +1299,40 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM8: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM9: " + std::to_string(user));
             }
-            stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_USER);
-            stmtLobFrag.bindUInt64(1, targetScn);
-            stmtLobFrag.bindUInt64(2, targetScn);
-            stmtLobFrag.bindUInt64(3, targetScn);
-            stmtLobFrag.bindUInt64(4, targetScn);
-            stmtLobFrag.bindUInt32(5, user);
-            stmtLobFrag.bindUInt64(6, targetScn);
-            stmtLobFrag.bindUInt64(7, targetScn);
-            stmtLobFrag.bindUInt64(8, targetScn);
-            stmtLobFrag.bindUInt32(9, user);
+            sysLobFragStmt.createStatement(SQL_GET_SYS_LOB_FRAG_USER);
+            sysLobFragStmt.bindUInt64(1, targetScn);
+            sysLobFragStmt.bindUInt64(2, targetScn);
+            sysLobFragStmt.bindUInt64(3, targetScn);
+            sysLobFragStmt.bindUInt64(4, targetScn);
+            sysLobFragStmt.bindUInt32(5, user);
+            sysLobFragStmt.bindUInt64(6, targetScn);
+            sysLobFragStmt.bindUInt64(7, targetScn);
+            sysLobFragStmt.bindUInt64(8, targetScn);
+            sysLobFragStmt.bindUInt32(9, user);
         }
 
-        char lobFragRowid[19]; stmtLobFrag.defineString(1, lobFragRowid, sizeof(lobFragRowid));
-        typeObj lobFragFragObj; stmtLobFrag.defineUInt32(2, lobFragFragObj);
-        typeObj lobFragParentObj; stmtLobFrag.defineUInt32(3, lobFragParentObj);
-        typeTs lobFragTs; stmtLobFrag.defineUInt32(4, lobFragTs);
+        char sysLobFragRowid[19]; sysLobFragStmt.defineString(1, sysLobFragRowid, sizeof(sysLobFragRowid));
+        typeObj sysLobFragFragObj; sysLobFragStmt.defineUInt32(2, sysLobFragFragObj);
+        typeObj sysLobFragParentObj; sysLobFragStmt.defineUInt32(3, sysLobFragParentObj);
+        typeTs sysLobFragTs; sysLobFragStmt.defineUInt32(4, sysLobFragTs);
 
-        int64_t lobFragRet = stmtLobFrag.executeQuery();
-        while (lobFragRet) {
-            schema->dictSysLobFragAdd(lobFragRowid, lobFragFragObj, lobFragParentObj, lobFragTs);
-            lobFragRet = stmtLobFrag.next();
+        int64_t sysLobFragRet = sysLobFragStmt.executeQuery();
+        while (sysLobFragRet) {
+            schema->dictSysLobFragAdd(sysLobFragRowid, sysLobFragFragObj, sysLobFragParentObj, sysLobFragTs);
+            sysLobFragRet = sysLobFragStmt.next();
         }
 
         // Reading SYS.TAB$
-        DatabaseStatement stmtTab(conn);
+        DatabaseStatement sysTabStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TAB_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtTab.createStatement(SQL_GET_SYS_TAB_OBJ);
-            stmtTab.bindUInt64(1, targetScn);
-            stmtTab.bindUInt32(2, obj);
+            sysTabStmt.createStatement(SQL_GET_SYS_TAB_OBJ);
+            sysTabStmt.bindUInt64(1, targetScn);
+            sysTabStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TAB_USER);
@@ -1340,42 +1340,42 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtTab.createStatement(SQL_GET_SYS_TAB_USER);
-            stmtTab.bindUInt64(1, targetScn);
-            stmtTab.bindUInt64(2, targetScn);
-            stmtTab.bindUInt32(3, user);
+            sysTabStmt.createStatement(SQL_GET_SYS_TAB_USER);
+            sysTabStmt.bindUInt64(1, targetScn);
+            sysTabStmt.bindUInt64(2, targetScn);
+            sysTabStmt.bindUInt32(3, user);
         }
 
-        char tabRowid[19]; stmtTab.defineString(1, tabRowid, sizeof(tabRowid));
-        typeObj tabObj; stmtTab.defineUInt32(2, tabObj);
-        typeDataObj tabDataObj = 0; stmtTab.defineUInt32(3, tabDataObj);
-        typeTs tabTs; stmtTab.defineUInt32(4, tabTs);
-        typeCol tabCluCols = 0; stmtTab.defineInt16(5, tabCluCols);
-        uint64_t tabFlags1; stmtTab.defineUInt64(6, tabFlags1);
-        uint64_t tabFlags2; stmtTab.defineUInt64(7, tabFlags2);
-        uint64_t tabProperty1; stmtTab.defineUInt64(8, tabProperty1);
-        uint64_t tabProperty2; stmtTab.defineUInt64(9, tabProperty2);
+        char sysTabRowid[19]; sysTabStmt.defineString(1, sysTabRowid, sizeof(sysTabRowid));
+        typeObj sysTabObj; sysTabStmt.defineUInt32(2, sysTabObj);
+        typeDataObj sysTabDataObj = 0; sysTabStmt.defineUInt32(3, sysTabDataObj);
+        typeTs sysTabTs; sysTabStmt.defineUInt32(4, sysTabTs);
+        typeCol sysTabCluCols = 0; sysTabStmt.defineInt16(5, sysTabCluCols);
+        uint64_t sysTabFlags1; sysTabStmt.defineUInt64(6, sysTabFlags1);
+        uint64_t sysTabFlags2; sysTabStmt.defineUInt64(7, sysTabFlags2);
+        uint64_t sysTabProperty1; sysTabStmt.defineUInt64(8, sysTabProperty1);
+        uint64_t sysTabProperty2; sysTabStmt.defineUInt64(9, sysTabProperty2);
 
-        int64_t tabRet = stmtTab.executeQuery();
-        while (tabRet) {
-            schema->dictSysTabAdd(tabRowid, tabObj, tabDataObj, tabTs, tabCluCols, tabFlags1, tabFlags2,
-                                  tabProperty1, tabProperty2);
-            tabDataObj = 0;
-            tabCluCols = 0;
-            tabRet = stmtTab.next();
+        int64_t sysTabRet = sysTabStmt.executeQuery();
+        while (sysTabRet) {
+            schema->dictSysTabAdd(sysTabRowid, sysTabObj, sysTabDataObj, sysTabTs, sysTabCluCols, sysTabFlags1,
+                                  sysTabFlags2, sysTabProperty1, sysTabProperty2);
+            sysTabDataObj = 0;
+            sysTabCluCols = 0;
+            sysTabRet = sysTabStmt.next();
         }
 
         // Reading SYS.TABCOMPART$
-        DatabaseStatement stmtTabComPart(conn);
+        DatabaseStatement sysTabComPartStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABCOMPART_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtTabComPart.createStatement(SQL_GET_SYS_TABCOMPART_OBJ);
-            stmtTabComPart.bindUInt64(1, targetScn);
-            stmtTabComPart.bindUInt32(2, obj);
+            sysTabComPartStmt.createStatement(SQL_GET_SYS_TABCOMPART_OBJ);
+            sysTabComPartStmt.bindUInt64(1, targetScn);
+            sysTabComPartStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABCOMPART_USER);
@@ -1383,35 +1383,35 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtTabComPart.createStatement(SQL_GET_SYS_TABCOMPART_USER);
-            stmtTabComPart.bindUInt64(1, targetScn);
-            stmtTabComPart.bindUInt64(2, targetScn);
-            stmtTabComPart.bindUInt32(3, user);
+            sysTabComPartStmt.createStatement(SQL_GET_SYS_TABCOMPART_USER);
+            sysTabComPartStmt.bindUInt64(1, targetScn);
+            sysTabComPartStmt.bindUInt64(2, targetScn);
+            sysTabComPartStmt.bindUInt32(3, user);
         }
 
-        char tabComPartRowid[19]; stmtTabComPart.defineString(1, tabComPartRowid, sizeof(tabComPartRowid));
-        typeObj tabComPartObj; stmtTabComPart.defineUInt32(2, tabComPartObj);
-        typeDataObj tabComPartDataObj = 0; stmtTabComPart.defineUInt32(3, tabComPartDataObj);
-        typeObj tabComPartBo; stmtTabComPart.defineUInt32(4, tabComPartBo);
+        char sysTabComPartRowid[19]; sysTabComPartStmt.defineString(1, sysTabComPartRowid, sizeof(sysTabComPartRowid));
+        typeObj sysTabComPartObj; sysTabComPartStmt.defineUInt32(2, sysTabComPartObj);
+        typeDataObj sysTabComPartDataObj = 0; sysTabComPartStmt.defineUInt32(3, sysTabComPartDataObj);
+        typeObj sysTabComPartBo; sysTabComPartStmt.defineUInt32(4, sysTabComPartBo);
 
-        int64_t tabComPartRet = stmtTabComPart.executeQuery();
-        while (tabComPartRet) {
-            schema->dictSysTabComPartAdd(tabComPartRowid, tabComPartObj, tabComPartDataObj, tabComPartBo);
-            tabComPartDataObj = 0;
-            tabComPartRet = stmtTabComPart.next();
+        int64_t sysTabComPartRet = sysTabComPartStmt.executeQuery();
+        while (sysTabComPartRet) {
+            schema->dictSysTabComPartAdd(sysTabComPartRowid, sysTabComPartObj, sysTabComPartDataObj, sysTabComPartBo);
+            sysTabComPartDataObj = 0;
+            sysTabComPartRet = sysTabComPartStmt.next();
         }
 
         // Reading SYS.TABPART$
-        DatabaseStatement stmtTabPart(conn);
+        DatabaseStatement sysTabPartStmt(conn);
         if (obj != 0) {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABPART_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtTabPart.createStatement(SQL_GET_SYS_TABPART_OBJ);
-            stmtTabPart.bindUInt64(1, targetScn);
-            stmtTabPart.bindUInt32(2, obj);
+            sysTabPartStmt.createStatement(SQL_GET_SYS_TABPART_OBJ);
+            sysTabPartStmt.bindUInt64(1, targetScn);
+            sysTabPartStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABPART_USER);
@@ -1419,35 +1419,35 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtTabPart.createStatement(SQL_GET_SYS_TABPART_USER);
-            stmtTabPart.bindUInt64(1, targetScn);
-            stmtTabPart.bindUInt64(2, targetScn);
-            stmtTabPart.bindUInt32(3, user);
+            sysTabPartStmt.createStatement(SQL_GET_SYS_TABPART_USER);
+            sysTabPartStmt.bindUInt64(1, targetScn);
+            sysTabPartStmt.bindUInt64(2, targetScn);
+            sysTabPartStmt.bindUInt32(3, user);
         }
 
-        char tabPartRowid[19]; stmtTabPart.defineString(1, tabPartRowid, sizeof(tabPartRowid));
-        typeObj tabPartObj; stmtTabPart.defineUInt32(2, tabPartObj);
-        typeDataObj tabPartDataObj = 0; stmtTabPart.defineUInt32(3, tabPartDataObj);
-        typeObj tabPartBo; stmtTabPart.defineUInt32(4, tabPartBo);
+        char sysTabPartRowid[19]; sysTabPartStmt.defineString(1, sysTabPartRowid, sizeof(sysTabPartRowid));
+        typeObj sysTabPartObj; sysTabPartStmt.defineUInt32(2, sysTabPartObj);
+        typeDataObj sysTabPartDataObj = 0; sysTabPartStmt.defineUInt32(3, sysTabPartDataObj);
+        typeObj sysTabPartBo; sysTabPartStmt.defineUInt32(4, sysTabPartBo);
 
-        int64_t tabPartRet = stmtTabPart.executeQuery();
-        while (tabPartRet) {
-            schema->dictSysTabPartAdd(tabPartRowid, tabPartObj, tabPartDataObj, tabPartBo);
-            tabPartDataObj = 0;
-            tabPartRet = stmtTabPart.next();
+        int64_t sysTabPartRet = sysTabPartStmt.executeQuery();
+        while (sysTabPartRet) {
+            schema->dictSysTabPartAdd(sysTabPartRowid, sysTabPartObj, sysTabPartDataObj, sysTabPartBo);
+            sysTabPartDataObj = 0;
+            sysTabPartRet = sysTabPartStmt.next();
         }
 
         // Reading SYS.TABSUBPART$
-        DatabaseStatement stmtTabSubPart(conn);
+        DatabaseStatement sysTabSubPartStmt(conn);
         if (obj != 0) {
-                if (ctx->trace & TRACE_SQL) {
+            if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABSUBPART_OBJ);
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(obj));
             }
-            stmtTabSubPart.createStatement(SQL_GET_SYS_TABSUBPART_OBJ);
-            stmtTabSubPart.bindUInt64(1, targetScn);
-            stmtTabSubPart.bindUInt32(2, obj);
+            sysTabSubPartStmt.createStatement(SQL_GET_SYS_TABSUBPART_OBJ);
+            sysTabSubPartStmt.bindUInt64(1, targetScn);
+            sysTabSubPartStmt.bindUInt32(2, obj);
         } else {
             if (ctx->trace & TRACE_SQL) {
                 ctx->logTrace(TRACE_SQL, SQL_GET_SYS_TABSUBPART_USER);
@@ -1455,22 +1455,22 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM3: " + std::to_string(user));
             }
-            stmtTabSubPart.createStatement(SQL_GET_SYS_TABSUBPART_USER);
-            stmtTabSubPart.bindUInt64(1, targetScn);
-            stmtTabSubPart.bindUInt64(2, targetScn);
-            stmtTabSubPart.bindUInt32(3, user);
+            sysTabSubPartStmt.createStatement(SQL_GET_SYS_TABSUBPART_USER);
+            sysTabSubPartStmt.bindUInt64(1, targetScn);
+            sysTabSubPartStmt.bindUInt64(2, targetScn);
+            sysTabSubPartStmt.bindUInt32(3, user);
         }
 
-        char tabSubPartRowid[19]; stmtTabSubPart.defineString(1, tabSubPartRowid, sizeof(tabSubPartRowid));
-        typeObj tabSubPartObj; stmtTabSubPart.defineUInt32(2, tabSubPartObj);
-        typeDataObj tabSubPartDataObj = 0; stmtTabSubPart.defineUInt32(3, tabSubPartDataObj);
-        typeObj tabSubPartPobj; stmtTabSubPart.defineUInt32(4, tabSubPartPobj);
+        char sysTabSubPartRowid[19]; sysTabSubPartStmt.defineString(1, sysTabSubPartRowid, sizeof(sysTabSubPartRowid));
+        typeObj sysTabSubPartObj; sysTabSubPartStmt.defineUInt32(2, sysTabSubPartObj);
+        typeDataObj sysTabSubPartDataObj = 0; sysTabSubPartStmt.defineUInt32(3, sysTabSubPartDataObj);
+        typeObj sysTabSubPartPobj; sysTabSubPartStmt.defineUInt32(4, sysTabSubPartPobj);
 
-        int64_t tabSubPartRet = stmtTabSubPart.executeQuery();
-        while (tabSubPartRet) {
-            schema->dictSysTabSubPartAdd(tabSubPartRowid, tabSubPartObj, tabSubPartDataObj, tabSubPartPobj);
-            tabSubPartDataObj = 0;
-            tabSubPartRet = stmtTabSubPart.next();
+        int64_t sysTabSubPartRet = sysTabSubPartStmt.executeQuery();
+        while (sysTabSubPartRet) {
+            schema->dictSysTabSubPartAdd(sysTabSubPartRowid, sysTabSubPartObj, sysTabSubPartDataObj, sysTabSubPartPobj);
+            sysTabSubPartDataObj = 0;
+            sysTabSubPartRet = sysTabSubPartStmt.next();
         }
     }
 
@@ -1483,7 +1483,7 @@ namespace OpenLogReplicator {
                           std::to_string(static_cast<uint64_t>(options)));
 
         try {
-            DatabaseStatement stmtUser(conn);
+            DatabaseStatement sysUserStmt(conn);
 
             // Reading SYS.USER$
             if (ctx->trace & TRACE_SQL) {
@@ -1491,77 +1491,77 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(TRACE_SQL, "PARAM2: " + ownerRegexp);
             }
-            stmtUser.createStatement(SQL_GET_SYS_USER);
-            stmtUser.bindUInt64(1, targetScn);
-            stmtUser.bindString(2, ownerRegexp);
-            char userRowid[19]; stmtUser.defineString(1, userRowid, sizeof(userRowid));
-            typeUser userUser; stmtUser.defineUInt32(2, userUser);
-            char userName[129]; stmtUser.defineString(3, userName, sizeof(userName));
-            uint64_t userSpare11 = 0; stmtUser.defineUInt64(4, userSpare11);
-            uint64_t userSpare12 = 0; stmtUser.defineUInt64(5, userSpare12);
+            sysUserStmt.createStatement(SQL_GET_SYS_USER);
+            sysUserStmt.bindUInt64(1, targetScn);
+            sysUserStmt.bindString(2, ownerRegexp);
+            char sysUserRowid[19]; sysUserStmt.defineString(1, sysUserRowid, sizeof(sysUserRowid));
+            typeUser sysUserUser; sysUserStmt.defineUInt32(2, sysUserUser);
+            char sysUserName[129]; sysUserStmt.defineString(3, sysUserName, sizeof(sysUserName));
+            uint64_t sysUserSpare11 = 0; sysUserStmt.defineUInt64(4, sysUserSpare11);
+            uint64_t sysUserSpare12 = 0; sysUserStmt.defineUInt64(5, sysUserSpare12);
 
-            int64_t retUser = stmtUser.executeQuery();
-            while (retUser) {
-                if (!schema->dictSysUserAdd(userRowid, userUser, userName, userSpare11, userSpare12,
+            int64_t sysUserRet = sysUserStmt.executeQuery();
+            while (sysUserRet) {
+                if (!schema->dictSysUserAdd(sysUserRowid, sysUserUser, sysUserName, sysUserSpare11, sysUserSpare12,
                         (options & OPTIONS_SYSTEM_TABLE) != 0)) {
-                    userSpare11 = 0;
-                    userSpare12 = 0;
-                    retUser = stmtUser.next();
+                    sysUserSpare11 = 0;
+                    sysUserSpare12 = 0;
+                    sysUserRet = sysUserStmt.next();
                     continue;
                 }
 
-                DatabaseStatement stmtObj(conn);
+                DatabaseStatement sysObjStmt(conn);
                 // Reading SYS.OBJ$
                 if ((options & OPTIONS_SYSTEM_TABLE) == 0) {
                     if (ctx->trace & TRACE_SQL) {
                         ctx->logTrace(TRACE_SQL, SQL_GET_SYS_OBJ_USER);
                         ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
-                        ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(userUser));
+                        ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(sysUserUser));
                     }
-                    stmtObj.createStatement(SQL_GET_SYS_OBJ_USER);
-                    stmtObj.bindUInt64(1, targetScn);
-                    stmtObj.bindUInt32(2, userUser);
+                    sysObjStmt.createStatement(SQL_GET_SYS_OBJ_USER);
+                    sysObjStmt.bindUInt64(1, targetScn);
+                    sysObjStmt.bindUInt32(2, sysUserUser);
                 } else {
                     if (ctx->trace & TRACE_SQL) {
                         ctx->logTrace(TRACE_SQL, SQL_GET_SYS_OBJ_NAME);
                         ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
-                        ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(userUser));
+                        ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(sysUserUser));
                         ctx->logTrace(TRACE_SQL, "PARAM3: " + table);
                     }
-                    stmtObj.createStatement(SQL_GET_SYS_OBJ_NAME);
-                    stmtObj.bindUInt64(1, targetScn);
-                    stmtObj.bindUInt32(2, userUser);
-                    stmtObj.bindString(3, tableRegexp);
+                    sysObjStmt.createStatement(SQL_GET_SYS_OBJ_NAME);
+                    sysObjStmt.bindUInt64(1, targetScn);
+                    sysObjStmt.bindUInt32(2, sysUserUser);
+                    sysObjStmt.bindString(3, tableRegexp);
                 }
 
-                char objRowid[19]; stmtObj.defineString(1, objRowid, sizeof(objRowid));
-                typeUser objOwner; stmtObj.defineUInt32(2, objOwner);
-                typeObj objObj; stmtObj.defineUInt32(3, objObj);
-                typeDataObj objDataObj = 0; stmtObj.defineUInt32(4, objDataObj);
-                char objName[129]; stmtObj.defineString(5, objName, sizeof(objName));
-                uint64_t objType = 0; stmtObj.defineUInt64(6, objType);
-                uint64_t objFlags1; stmtObj.defineUInt64(7, objFlags1);
-                uint64_t objFlags2; stmtObj.defineUInt64(8, objFlags2);
+                char sysObjRowid[19]; sysObjStmt.defineString(1, sysObjRowid, sizeof(sysObjRowid));
+                typeUser sysObjOwner; sysObjStmt.defineUInt32(2, sysObjOwner);
+                typeObj sysObjObj; sysObjStmt.defineUInt32(3, sysObjObj);
+                typeDataObj sysObjDataObj = 0; sysObjStmt.defineUInt32(4, sysObjDataObj);
+                char sysObjName[129]; sysObjStmt.defineString(5, sysObjName, sizeof(sysObjName));
+                uint64_t sysObjType = 0; sysObjStmt.defineUInt64(6, sysObjType);
+                uint64_t sysObjFlags1; sysObjStmt.defineUInt64(7, sysObjFlags1);
+                uint64_t sysObjFlags2; sysObjStmt.defineUInt64(8, sysObjFlags2);
 
-                int64_t objRet = stmtObj.executeQuery();
-                while (objRet) {
-                    if (schema->dictSysObjAdd(objRowid, objOwner, objObj, objDataObj, objType, objName, objFlags1,
-                                              objFlags2, single)) {
+                int64_t sysObjRet = sysObjStmt.executeQuery();
+                while (sysObjRet) {
+                    if (schema->dictSysObjAdd(sysObjRowid, sysObjOwner, sysObjObj, sysObjDataObj, sysObjType, sysObjName,
+                                              sysObjFlags1, sysObjFlags2, single)) {
                         if (single)
-                            readSystemDictionariesDetails(schema, targetScn, userUser, objObj);
+                            readSystemDictionariesDetails(schema, targetScn, sysUserUser, sysObjObj);
                     }
-                    objDataObj = 0;
-                    objFlags1 = 0;
-                    objFlags2 = 0;
-                    objRet = stmtObj.next();
+                    sysObjDataObj = 0;
+                    sysObjFlags1 = 0;
+                    sysObjFlags2 = 0;
+                    sysObjRet = sysObjStmt.next();
                 }
 
                 if (!single)
-                    readSystemDictionariesDetails(schema, targetScn, userUser, 0);
+                    readSystemDictionariesDetails(schema, targetScn, sysUserUser, 0);
 
-                userSpare11 = 0;
-                userSpare12 = 0;
-                retUser = stmtUser.next();
+                sysUserSpare11 = 0;
+                sysUserSpare12 = 0;
+                sysUserRet = sysUserStmt.next();
             }
         } catch (DataException& ex) {
             ctx->error(ex.code, ex.msg);

@@ -43,106 +43,106 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
 
     SystemTransaction::SystemTransaction(Builder* newBuilder, Metadata* newMetadata) :
-                ctx(newMetadata->ctx),
-                builder(newBuilder),
-                metadata(newMetadata),
-                sysCCol(nullptr),
-                sysCDef(nullptr),
-                sysCol(nullptr),
-                sysDeferredStg(nullptr),
-                sysECol(nullptr),
-                sysLob(nullptr),
-                sysLobCompPart(nullptr),
-                sysLobFrag(nullptr),
-                sysObj(nullptr),
-                sysTab(nullptr),
-                sysTabComPart(nullptr),
-                sysTabPart(nullptr),
-                sysTabSubPart(nullptr),
-                sysTs(nullptr),
-                sysUser(nullptr) {
+            ctx(newMetadata->ctx),
+            builder(newBuilder),
+            metadata(newMetadata),
+            sysCColTmp(nullptr),
+            sysCDefTmp(nullptr),
+            sysColTmp(nullptr),
+            sysDeferredStgTmp(nullptr),
+            sysEColTmp(nullptr),
+            sysLobTmp(nullptr),
+            sysLobCompPartTmp(nullptr),
+            sysLobFragTmp(nullptr),
+            sysObjTmp(nullptr),
+            sysTabTmp(nullptr),
+            sysTabComPartTmp(nullptr),
+            sysTabPartTmp(nullptr),
+            sysTabSubPartTmp(nullptr),
+            sysTsTmp(nullptr),
+            sysUserTmp(nullptr) {
         ctx->logTrace(TRACE_SYSTEM, "begin");
     }
 
     SystemTransaction::~SystemTransaction() {
-        if (sysCCol != nullptr) {
-            delete sysCCol;
-            sysCCol = nullptr;
+        if (sysCColTmp != nullptr) {
+            delete sysCColTmp;
+            sysCColTmp = nullptr;
         }
 
-        if (sysCCol != nullptr) {
-            delete sysCCol;
-            sysCCol = nullptr;
+        if (sysCColTmp != nullptr) {
+            delete sysCColTmp;
+            sysCColTmp = nullptr;
         }
 
-        if (sysCDef != nullptr) {
-            delete sysCDef;
-            sysCDef = nullptr;
+        if (sysCDefTmp != nullptr) {
+            delete sysCDefTmp;
+            sysCDefTmp = nullptr;
         }
 
-        if (sysCol != nullptr) {
-            delete sysCol;
-            sysCol = nullptr;
+        if (sysColTmp != nullptr) {
+            delete sysColTmp;
+            sysColTmp = nullptr;
         }
 
-        if (sysDeferredStg != nullptr) {
-            delete sysDeferredStg;
-            sysDeferredStg = nullptr;
+        if (sysDeferredStgTmp != nullptr) {
+            delete sysDeferredStgTmp;
+            sysDeferredStgTmp = nullptr;
         }
 
-        if (sysECol != nullptr) {
-            delete sysECol;
-            sysECol = nullptr;
+        if (sysEColTmp != nullptr) {
+            delete sysEColTmp;
+            sysEColTmp = nullptr;
         }
 
-        if (sysLob != nullptr) {
-            delete sysLob;
-            sysLob = nullptr;
+        if (sysLobTmp != nullptr) {
+            delete sysLobTmp;
+            sysLobTmp = nullptr;
         }
 
-        if (sysLobCompPart != nullptr) {
-            delete sysLobCompPart;
-            sysLobCompPart = nullptr;
+        if (sysLobCompPartTmp != nullptr) {
+            delete sysLobCompPartTmp;
+            sysLobCompPartTmp = nullptr;
         }
 
-        if (sysLobFrag != nullptr) {
-            delete sysLobFrag;
-            sysLobFrag = nullptr;
+        if (sysLobFragTmp != nullptr) {
+            delete sysLobFragTmp;
+            sysLobFragTmp = nullptr;
         }
 
-        if (sysObj != nullptr) {
-            delete sysObj;
-            sysObj = nullptr;
+        if (sysObjTmp != nullptr) {
+            delete sysObjTmp;
+            sysObjTmp = nullptr;
         }
 
-        if (sysTab != nullptr) {
-            delete sysTab;
-            sysTab = nullptr;
+        if (sysTabTmp != nullptr) {
+            delete sysTabTmp;
+            sysTabTmp = nullptr;
         }
 
-        if (sysTabComPart != nullptr) {
-            delete sysTabComPart;
-            sysTabComPart = nullptr;
+        if (sysTabComPartTmp != nullptr) {
+            delete sysTabComPartTmp;
+            sysTabComPartTmp = nullptr;
         }
 
-        if (sysTabPart != nullptr) {
-            delete sysTabPart;
-            sysTabPart = nullptr;
+        if (sysTabPartTmp != nullptr) {
+            delete sysTabPartTmp;
+            sysTabPartTmp = nullptr;
         }
 
-        if (sysTabSubPart != nullptr) {
-            delete sysTabSubPart;
-            sysTabSubPart = nullptr;
+        if (sysTabSubPartTmp != nullptr) {
+            delete sysTabSubPartTmp;
+            sysTabSubPartTmp = nullptr;
         }
 
-        if (sysTs != nullptr) {
-            delete sysTs;
-            sysTs = nullptr;
+        if (sysTsTmp != nullptr) {
+            delete sysTsTmp;
+            sysTsTmp = nullptr;
         }
 
-        if (sysUser != nullptr) {
-            delete sysUser;
-            sysUser = nullptr;
+        if (sysUserTmp != nullptr) {
+            delete sysUserTmp;
+            sysUserTmp = nullptr;
         }
     }
 
@@ -325,16 +325,16 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processInsertCCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysCCol* sysCCol2 = metadata->schema->dictSysCColFind(rowId);
-        if (sysCCol2 != nullptr) {
+    void SystemTransaction::processInsertSysCCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysCCol* sysCCol = metadata->schema->dictSysCColFind(rowId);
+        if (sysCCol != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.CCOL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysCColDrop(sysCCol2);
-            delete sysCCol2;
+            metadata->schema->dictSysCColDrop(sysCCol);
+            delete sysCCol;
         }
-        sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0);
+        sysCColTmp = new SysCCol(rowId, 0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -346,31 +346,31 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "CON#") {
-                    updateNumber32u(sysCCol->con, 0, column, table, offset);
+                    updateNumber32u(sysCColTmp->con, 0, column, table, offset);
                 } else if (table->columns[column]->name == "INTCOL#") {
-                    updateNumber16(sysCCol->intCol, 0, column, table, offset);
+                    updateNumber16(sysCColTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysCCol->obj, 0, column, table, offset);
+                    updateNumber32u(sysCColTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "SPARE1") {
-                    updateNumberXu(sysCCol->spare1, column, table, offset);
+                    updateNumberXu(sysCColTmp->spare1, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysCColAdd(sysCCol);
-        sysCCol = nullptr;
+        metadata->schema->dictSysCColAdd(sysCColTmp);
+        sysCColTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertCDef(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysCDef* sysCDef2 = metadata->schema->dictSysCDefFind(rowId);
-        if (sysCDef2 != nullptr) {
+    void SystemTransaction::processInsertSysCDef(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysCDef* sysCDef = metadata->schema->dictSysCDefFind(rowId);
+        if (sysCDef != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.CDEF$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysCDefDrop(sysCDef2);
-            delete sysCDef2;
+            metadata->schema->dictSysCDefDrop(sysCDef);
+            delete sysCDef;
         }
-        sysCDef = new SysCDef(rowId, 0, 0, 0);
+        sysCDefTmp = new SysCDef(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -382,30 +382,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "CON#") {
-                    updateNumber32u(sysCDef->con, 0, column, table, offset);
+                    updateNumber32u(sysCDefTmp->con, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysCDef->obj, 0, column, table, offset);
+                    updateNumber32u(sysCDefTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
-                    updateNumber16u(sysCDef->type, 0, column, table, offset);
+                    updateNumber16u(sysCDefTmp->type, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysCDefAdd(sysCDef);
-        sysCDef = nullptr;
+        metadata->schema->dictSysCDefAdd(sysCDefTmp);
+        sysCDefTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysCol* sysCol2 = metadata->schema->dictSysColFind(rowId);
-        if (sysCol2 != nullptr) {
+    void SystemTransaction::processInsertSysCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysCol* sysCol = metadata->schema->dictSysColFind(rowId);
+        if (sysCol != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.COL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysColDrop(sysCol2);
-            delete sysCol2;
+            metadata->schema->dictSysColDrop(sysCol);
+            delete sysCol;
         }
-        sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
-                            0, 0, 0, 0, 0);
+        sysColTmp = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
+                               0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -417,49 +417,49 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysCol->obj, 0, column, table, offset);
+                    updateNumber32u(sysColTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "COL#") {
-                    updateNumber16(sysCol->col, 0, column, table, offset);
+                    updateNumber16(sysColTmp->col, 0, column, table, offset);
                 } else if (table->columns[column]->name == "SEGCOL#") {
-                    updateNumber16(sysCol->segCol, 0, column, table, offset);
+                    updateNumber16(sysColTmp->segCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "INTCOL#") {
-                    updateNumber16(sysCol->intCol, 0, column, table, offset);
+                    updateNumber16(sysColTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysCol->name, SYS_COL_NAME_LENGTH, column, table, offset);
+                    updateString(sysColTmp->name, SYS_COL_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
-                    updateNumber16u(sysCol->type, 0, column, table, offset);
+                    updateNumber16u(sysColTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LENGTH") {
-                    updateNumber64u(sysCol->length, 0, column, table, offset);
+                    updateNumber64u(sysColTmp->length, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PRECISION#") {
-                    updateNumber64(sysCol->precision, -1, column, table, offset);
+                    updateNumber64(sysColTmp->precision, -1, column, table, offset);
                 } else if (table->columns[column]->name == "SCALE") {
-                    updateNumber64(sysCol->scale, -1, column, table, offset);
+                    updateNumber64(sysColTmp->scale, -1, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETFORM") {
-                    updateNumber64u(sysCol->charsetForm, 0, column, table, offset);
+                    updateNumber64u(sysColTmp->charsetForm, 0, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETID") {
-                    updateNumber64u(sysCol->charsetId, 0, column, table, offset);
+                    updateNumber64u(sysColTmp->charsetId, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NULL$") {
-                    updateNumber64(sysCol->null_, 0, column, table, offset);
+                    updateNumber64(sysColTmp->null_, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PROPERTY") {
-                    updateNumberXu(sysCol->property, column, table, offset);
+                    updateNumberXu(sysColTmp->property, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysColAdd(sysCol);
-        sysCol = nullptr;
+        metadata->schema->dictSysColAdd(sysColTmp);
+        sysColTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertDeferredStg(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysDeferredStg* sysDeferredStg2 = metadata->schema->dictSysDeferredStgFind(rowId);
-        if (sysDeferredStg2 != nullptr) {
+    void SystemTransaction::processInsertSysDeferredStg(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysDeferredStg* sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
+        if (sysDeferredStg != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysDeferredStgDrop(sysDeferredStg2);
-            delete sysDeferredStg2;
+            metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
+            delete sysDeferredStg;
         }
-        sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0);
+        sysDeferredStgTmp = new SysDeferredStg(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -471,27 +471,27 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysDeferredStg->obj, 0, column, table, offset);
+                    updateNumber32u(sysDeferredStgTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS_STG") {
-                    updateNumberXu(sysDeferredStg->flagsStg, column, table, offset);
+                    updateNumberXu(sysDeferredStgTmp->flagsStg, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysDeferredStgAdd(sysDeferredStg);
-        sysDeferredStg = nullptr;
+        metadata->schema->dictSysDeferredStgAdd(sysDeferredStgTmp);
+        sysDeferredStgTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertECol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysECol* sysECol2 = metadata->schema->dictSysEColFind(rowId);
-        if (sysECol2 != nullptr) {
+    void SystemTransaction::processInsertSysECol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysECol* sysECol = metadata->schema->dictSysEColFind(rowId);
+        if (sysECol != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.ECOL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysEColDrop(sysECol2);
-            delete sysECol2;
+            metadata->schema->dictSysEColDrop(sysECol);
+            delete sysECol;
         }
-        sysECol = new SysECol(rowId, 0, 0, -1);
+        sysEColTmp = new SysECol(rowId, 0, 0, -1);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -503,29 +503,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TABOBJ#") {
-                    updateNumber32u(sysECol->tabObj, 0, column, table, offset);
+                    updateNumber32u(sysEColTmp->tabObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "COLNUM") {
-                    updateNumber16(sysECol->colNum, 0, column, table, offset);
+                    updateNumber16(sysEColTmp->colNum, 0, column, table, offset);
                 } else if (table->columns[column]->name == "GUARD_ID") {
-                    updateNumber16(sysECol->guardId, -1, column, table, offset);
+                    updateNumber16(sysEColTmp->guardId, -1, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysEColAdd(sysECol);
-        sysECol = nullptr;
+        metadata->schema->dictSysEColAdd(sysEColTmp);
+        sysEColTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertLob(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysLob* sysLob2 = metadata->schema->dictSysLobFind(rowId);
-        if (sysLob2 != nullptr) {
+    void SystemTransaction::processInsertSysLob(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysLob* sysLob = metadata->schema->dictSysLobFind(rowId);
+        if (sysLob != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOB$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysLobDrop(sysLob2);
-            delete sysLob2;
+            metadata->schema->dictSysLobDrop(sysLob);
+            delete sysLob;
         }
-        sysLob = new SysLob(rowId, 0, 0, 0, 0, 0);
+        sysLobTmp = new SysLob(rowId, 0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -537,33 +537,33 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysLob->obj, 0, column, table, offset);
+                    updateNumber32u(sysLobTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "COL#") {
-                    updateNumber16(sysLob->col, 0, column, table, offset);
+                    updateNumber16(sysLobTmp->col, 0, column, table, offset);
                 } else if (table->columns[column]->name == "INTCOL#") {
-                    updateNumber16(sysLob->intCol, 0, column, table, offset);
+                    updateNumber16(sysLobTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LOBJ#") {
-                    updateNumber32u(sysLob->lObj, 0, column, table, offset);
+                    updateNumber32u(sysLobTmp->lObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysLob->ts, 0, column, table, offset);
+                    updateNumber32u(sysLobTmp->ts, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysLobAdd(sysLob);
-        sysLob = nullptr;
+        metadata->schema->dictSysLobAdd(sysLobTmp);
+        sysLobTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertLobCompPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysLobCompPart* sysLobCompPart2 = metadata->schema->dictSysLobCompPartFind(rowId);
-        if (sysLobCompPart2 != nullptr) {
+    void SystemTransaction::processInsertSysLobCompPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysLobCompPart* sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
+        if (sysLobCompPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysLobCompPartDrop(sysLobCompPart2);
-            delete sysLobCompPart2;
+            metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
+            delete sysLobCompPart;
         }
-        sysLobCompPart = new SysLobCompPart(rowId, 0, 0);
+        sysLobCompPartTmp = new SysLobCompPart(rowId, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -575,27 +575,27 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "PARTOBJ#") {
-                    updateNumber32u(sysLobCompPart->partObj, 0, column, table, offset);
+                    updateNumber32u(sysLobCompPartTmp->partObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LOBJ#") {
-                    updateNumber32u(sysLobCompPart->lObj, 0, column, table, offset);
+                    updateNumber32u(sysLobCompPartTmp->lObj, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysLobCompPartAdd(sysLobCompPart);
-        sysLobCompPart = nullptr;
+        metadata->schema->dictSysLobCompPartAdd(sysLobCompPartTmp);
+        sysLobCompPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertLobFrag(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysLobFrag* sysLobFrag2 = metadata->schema->dictSysLobFragFind(rowId);
-        if (sysLobFrag2 != nullptr) {
+    void SystemTransaction::processInsertSysLobFrag(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysLobFrag* sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
+        if (sysLobFrag != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysLobFragDrop(sysLobFrag2);
-            delete sysLobFrag2;
+            metadata->schema->dictSysLobFragDrop(sysLobFrag);
+            delete sysLobFrag;
         }
-        sysLobFrag = new SysLobFrag(rowId, 0, 0, 0);
+        sysLobFragTmp = new SysLobFrag(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -607,29 +607,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "FRAGOBJ#") {
-                    updateNumber32u(sysLobFrag->fragObj, 0, column, table, offset);
+                    updateNumber32u(sysLobFragTmp->fragObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PARENTOBJ#") {
-                    updateNumber32u(sysLobFrag->parentObj, 0, column, table, offset);
+                    updateNumber32u(sysLobFragTmp->parentObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysLobFrag->ts, 0, column, table, offset);
+                    updateNumber32u(sysLobFragTmp->ts, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysLobFragAdd(sysLobFrag);
-        sysLobFrag = nullptr;
+        metadata->schema->dictSysLobFragAdd(sysLobFragTmp);
+        sysLobFragTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertObj(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysObj* sysObj2 = metadata->schema->dictSysObjFind(rowId);
-        if (sysObj2 != nullptr) {
+    void SystemTransaction::processInsertSysObj(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysObj* sysObj = metadata->schema->dictSysObjFind(rowId);
+        if (sysObj != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.OBJ$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysObjDrop(sysObj2);
-            delete sysObj2;
+            metadata->schema->dictSysObjDrop(sysObj);
+            delete sysObj;
         }
-        sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
+        sysObjTmp = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -641,35 +641,35 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OWNER#") {
-                    updateNumber32u(sysObj->owner, 0, column, table, offset);
+                    updateNumber32u(sysObjTmp->owner, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysObj->obj, 0, column, table, offset);
+                    updateNumber32u(sysObjTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysObj->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysObjTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysObj->name, SYS_OBJ_NAME_LENGTH, column, table, offset);
+                    updateString(sysObjTmp->name, SYS_OBJ_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
-                    updateNumber16u(sysObj->type, 0, column, table, offset);
+                    updateNumber16u(sysObjTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    updateNumberXu(sysObj->flags, column, table, offset);
+                    updateNumberXu(sysObjTmp->flags, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysObjAdd(sysObj);
-        sysObj = nullptr;
+        metadata->schema->dictSysObjAdd(sysObjTmp);
+        sysObjTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertTab(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysTab* sysTab2 = metadata->schema->dictSysTabFind(rowId);
-        if (sysTab2 != nullptr) {
+    void SystemTransaction::processInsertSysTab(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysTab* sysTab = metadata->schema->dictSysTabFind(rowId);
+        if (sysTab != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TAB$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysTabDrop(sysTab2);
-            delete sysTab2;
+            metadata->schema->dictSysTabDrop(sysTab);
+            delete sysTab;
         }
-        sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0);
+        sysTabTmp = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -681,35 +681,35 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTab->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTab->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysTab->ts, 0, column, table, offset);
+                    updateNumber32u(sysTabTmp->ts, 0, column, table, offset);
                 } else if (table->columns[column]->name == "CLUCOLS") {
-                    updateNumber16(sysTab->cluCols, 0, column, table, offset);
+                    updateNumber16(sysTabTmp->cluCols, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    updateNumberXu(sysTab->flags, column, table, offset);
+                    updateNumberXu(sysTabTmp->flags, column, table, offset);
                 } else if (table->columns[column]->name == "PROPERTY") {
-                    updateNumberXu(sysTab->property, column, table, offset);
+                    updateNumberXu(sysTabTmp->property, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTabAdd(sysTab);
-        sysTab = nullptr;
+        metadata->schema->dictSysTabAdd(sysTabTmp);
+        sysTabTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertTabComPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysTabComPart* sysTabComPart2 = metadata->schema->dictSysTabComPartFind(rowId);
-        if (sysTabComPart2 != nullptr) {
+    void SystemTransaction::processInsertSysTabComPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysTabComPart* sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
+        if (sysTabComPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysTabComPartDrop(sysTabComPart2);
-            delete sysTabComPart2;
+            metadata->schema->dictSysTabComPartDrop(sysTabComPart);
+            delete sysTabComPart;
         }
-        sysTabComPart = new SysTabComPart(rowId, 0, 0, 0);
+        sysTabComPartTmp = new SysTabComPart(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -721,29 +721,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTabComPart->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabComPartTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTabComPart->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabComPartTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "BO#") {
-                    updateNumber32u(sysTabComPart->bo, 0, column, table, offset);
+                    updateNumber32u(sysTabComPartTmp->bo, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTabComPartAdd(sysTabComPart);
-        sysTabComPart = nullptr;
+        metadata->schema->dictSysTabComPartAdd(sysTabComPartTmp);
+        sysTabComPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertTabPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysTabPart* sysTabPart2 = metadata->schema->dictSysTabPartFind(rowId);
-        if (sysTabPart2 != nullptr) {
+    void SystemTransaction::processInsertSysTabPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysTabPart* sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
+        if (sysTabPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysTabPartDrop(sysTabPart2);
-            delete sysTabPart2;
+            metadata->schema->dictSysTabPartDrop(sysTabPart);
+            delete sysTabPart;
         }
-        sysTabPart = new SysTabPart(rowId, 0, 0, 0);
+        sysTabPartTmp = new SysTabPart(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -755,29 +755,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTabPart->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabPartTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTabPart->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabPartTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "BO#") {
-                    updateNumber32u(sysTabPart->bo, 0, column, table, offset);
+                    updateNumber32u(sysTabPartTmp->bo, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTabPartAdd(sysTabPart);
-        sysTabPart = nullptr;
+        metadata->schema->dictSysTabPartAdd(sysTabPartTmp);
+        sysTabPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertTabSubPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysTabSubPart* sysTabSubPart2 = metadata->schema->dictSysTabSubPartFind(rowId);
-        if (sysTabSubPart2 != nullptr) {
+    void SystemTransaction::processInsertSysTabSubPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysTabSubPart* sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
+        if (sysTabSubPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysTabSubPartDrop(sysTabSubPart2);
-            delete sysTabSubPart2;
+            metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
+            delete sysTabSubPart;
         }
-        sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0);
+        sysTabSubPartTmp = new SysTabSubPart(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -789,29 +789,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTabSubPart->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabSubPartTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTabSubPart->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabSubPartTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "POBJ#") {
-                    updateNumber32u(sysTabSubPart->pObj, 0, column, table, offset);
+                    updateNumber32u(sysTabSubPartTmp->pObj, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTabSubPartAdd(sysTabSubPart);
-        sysTabSubPart = nullptr;
+        metadata->schema->dictSysTabSubPartAdd(sysTabSubPartTmp);
+        sysTabSubPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertTs(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysTs* sysTs2 = metadata->schema->dictSysTsFind(rowId);
-        if (sysTs2 != nullptr) {
+    void SystemTransaction::processInsertSysTs(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysTs* sysTs = metadata->schema->dictSysTsFind(rowId);
+        if (sysTs != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TS$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysTsDrop(sysTs2);
-            delete sysTs2;
+            metadata->schema->dictSysTsDrop(sysTs);
+            delete sysTs;
         }
-        sysTs = new SysTs(rowId, 0, "", 0);
+        sysTsTmp = new SysTs(rowId, 0, "", 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -823,29 +823,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysTs->ts, 0, column, table, offset);
+                    updateNumber32u(sysTsTmp->ts, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysTs->name, SYS_TS_NAME_LENGTH, column, table, offset);
+                    updateString(sysTsTmp->name, SYS_TS_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "BLOCKSIZE") {
-                    updateNumber32u(sysTs->blockSize, 0, column, table, offset);
+                    updateNumber32u(sysTsTmp->blockSize, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTsAdd(sysTs);
-        sysTs = nullptr;
+        metadata->schema->dictSysTsAdd(sysTsTmp);
+        sysTsTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertUser(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        SysUser* sysUser2 = metadata->schema->dictSysUserFind(rowId);
-        if (sysUser2 != nullptr) {
+    void SystemTransaction::processInsertSysUser(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        SysUser* sysUser = metadata->schema->dictSysUserFind(rowId);
+        if (sysUser != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.USER$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                        std::to_string(offset));
-            metadata->schema->dictSysUserDrop(sysUser2);
-            delete sysUser2;
+            metadata->schema->dictSysUserDrop(sysUser);
+            delete sysUser;
         }
-        sysUser = new SysUser(rowId, 0, "", 0, 0, false);
+        sysUserTmp = new SysUser(rowId, 0, "", 0, 0, false);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -857,17 +857,17 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "USER#") {
-                    updateNumber32u(sysUser->user, 0, column, table, offset);
+                    updateNumber32u(sysUserTmp->user, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysUser->name, SYS_USER_NAME_LENGTH, column, table, offset);
+                    updateString(sysUserTmp->name, SYS_USER_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "SPARE1") {
-                    updateNumberXu(sysUser->spare1, column, table, offset);
+                    updateNumberXu(sysUserTmp->spare1, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysUserAdd(sysUser);
-        sysUser = nullptr;
+        metadata->schema->dictSysUserAdd(sysUserTmp);
+        sysUserTmp = nullptr;
     }
 
     void SystemTransaction::processInsert(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
@@ -879,78 +879,78 @@ namespace OpenLogReplicator {
 
         switch (table->systemTable) {
             case TABLE_SYS_CCOL:
-                processInsertCCol(table, rowId, offset);
+                processInsertSysCCol(table, rowId, offset);
                 break;
 
             case TABLE_SYS_CDEF:
-                processInsertCDef(table, rowId, offset);
+                processInsertSysCDef(table, rowId, offset);
                 break;
 
             case TABLE_SYS_COL:
-                processInsertCol(table, rowId, offset);
+                processInsertSysCol(table, rowId, offset);
                 break;
 
             case TABLE_SYS_DEFERRED_STG:
-                processInsertDeferredStg(table, rowId, offset);
+                processInsertSysDeferredStg(table, rowId, offset);
                 break;
 
             case TABLE_SYS_ECOL:
-                processInsertECol(table, rowId, offset);
+                processInsertSysECol(table, rowId, offset);
                 break;
 
             case TABLE_SYS_LOB:
-                processInsertLob(table, rowId, offset);
+                processInsertSysLob(table, rowId, offset);
                 break;
 
             case TABLE_SYS_LOB_COMP_PART:
-                processInsertLobCompPart(table, rowId, offset);
+                processInsertSysLobCompPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_LOB_FRAG:
-                processInsertLobFrag(table, rowId, offset);
+                processInsertSysLobFrag(table, rowId, offset);
                 break;
 
             case TABLE_SYS_OBJ:
-                processInsertObj(table, rowId, offset);
+                processInsertSysObj(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TAB:
-                processInsertTab(table, rowId, offset);
+                processInsertSysTab(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TABCOMPART:
-                processInsertTabComPart(table, rowId, offset);
+                processInsertSysTabComPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TABPART:
-                processInsertTabPart(table, rowId, offset);
+                processInsertSysTabPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TABSUBPART:
-                processInsertTabSubPart(table, rowId, offset);
+                processInsertSysTabSubPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TS:
-                processInsertTs(table, rowId, offset);
+                processInsertSysTs(table, rowId, offset);
                 break;
 
             case TABLE_SYS_USER:
-                processInsertUser(table, rowId, offset);
+                processInsertSysUser(table, rowId, offset);
                 break;
         }
     }
 
-    void SystemTransaction::processUpdateCCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysCCol = metadata->schema->dictSysCColFind(rowId);
-        if (sysCCol != nullptr) {
-            metadata->schema->dictSysCColDrop(sysCCol);
+    void SystemTransaction::processUpdateSysCCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysCColTmp = metadata->schema->dictSysCColFind(rowId);
+        if (sysCColTmp != nullptr) {
+            metadata->schema->dictSysCColDrop(sysCColTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0);
+            sysCColTmp = new SysCCol(rowId, 0, 0, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -963,32 +963,32 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "CON#") {
-                    updateNumber32u(sysCCol->con, 0, column, table, offset);
+                    updateNumber32u(sysCColTmp->con, 0, column, table, offset);
                 } else if (table->columns[column]->name == "INTCOL#") {
-                    updateNumber16(sysCCol->intCol, 0, column, table, offset);
+                    updateNumber16(sysCColTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysCCol->obj, 0, column, table, offset);
+                    updateNumber32u(sysCColTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "SPARE1") {
-                    updateNumberXu(sysCCol->spare1, column, table, offset);
+                    updateNumberXu(sysCColTmp->spare1, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysCColAdd(sysCCol);
-        sysCCol = nullptr;
+        metadata->schema->dictSysCColAdd(sysCColTmp);
+        sysCColTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateCDef(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysCDef = metadata->schema->dictSysCDefFind(rowId);
-        if (sysCDef != nullptr) {
-            metadata->schema->dictSysCDefDrop(sysCDef);
+    void SystemTransaction::processUpdateSysCDef(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysCDefTmp = metadata->schema->dictSysCDefFind(rowId);
+        if (sysCDefTmp != nullptr) {
+            metadata->schema->dictSysCDefDrop(sysCDefTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysCDef = new SysCDef(rowId, 0, 0, 0);
+            sysCDefTmp = new SysCDef(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1001,31 +1001,31 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "CON#") {
-                    updateNumber32u(sysCDef->con, 0, column, table, offset);
+                    updateNumber32u(sysCDefTmp->con, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysCDef->obj, 0, column, table, offset);
+                    updateNumber32u(sysCDefTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
-                    updateNumber16u(sysCDef->type, 0, column, table, offset);
+                    updateNumber16u(sysCDefTmp->type, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysCDefAdd(sysCDef);
-        sysCDef = nullptr;
+        metadata->schema->dictSysCDefAdd(sysCDefTmp);
+        sysCDefTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysCol = metadata->schema->dictSysColFind(rowId);
-        if (sysCol != nullptr) {
-            metadata->schema->dictSysColDrop(sysCol);
+    void SystemTransaction::processUpdateSysCol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysColTmp = metadata->schema->dictSysColFind(rowId);
+        if (sysColTmp != nullptr) {
+            metadata->schema->dictSysColDrop(sysColTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.COL$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
-                                0, 0, 0, 0, 0);
+            sysColTmp = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
+                                   0, 0, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1038,50 +1038,50 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysCol->obj, 0, column, table, offset);
+                    updateNumber32u(sysColTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "COL#") {
-                    updateNumber16(sysCol->col, 0, column, table, offset);
+                    updateNumber16(sysColTmp->col, 0, column, table, offset);
                 } else if (table->columns[column]->name == "SEGCOL#") {
-                    updateNumber16(sysCol->segCol, 0, column, table, offset);
+                    updateNumber16(sysColTmp->segCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "INTCOL#") {
-                    updateNumber16(sysCol->intCol, 0, column, table, offset);
+                    updateNumber16(sysColTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysCol->name, SYS_COL_NAME_LENGTH, column, table, offset);
+                    updateString(sysColTmp->name, SYS_COL_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
-                    updateNumber16u(sysCol->type, 0, column, table, offset);
+                    updateNumber16u(sysColTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LENGTH") {
-                    updateNumber64u(sysCol->length, 0, column, table, offset);
+                    updateNumber64u(sysColTmp->length, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PRECISION#") {
-                    updateNumber64(sysCol->precision, -1, column, table, offset);
+                    updateNumber64(sysColTmp->precision, -1, column, table, offset);
                 } else if (table->columns[column]->name == "SCALE") {
-                    updateNumber64(sysCol->scale, -1, column, table, offset);
+                    updateNumber64(sysColTmp->scale, -1, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETFORM") {
-                    updateNumber64u(sysCol->charsetForm, 0, column, table, offset);
+                    updateNumber64u(sysColTmp->charsetForm, 0, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETID") {
-                    updateNumber64u(sysCol->charsetId, 0, column, table, offset);
+                    updateNumber64u(sysColTmp->charsetId, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NULL$") {
-                    updateNumber64(sysCol->null_, 0, column, table, offset);
+                    updateNumber64(sysColTmp->null_, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PROPERTY") {
-                    updateNumberXu(sysCol->property, column, table, offset);
+                    updateNumberXu(sysColTmp->property, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysColAdd(sysCol);
-        sysCol = nullptr;
+        metadata->schema->dictSysColAdd(sysColTmp);
+        sysColTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateDeferredStg(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
-        if (sysDeferredStg != nullptr) {
-            metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
+    void SystemTransaction::processUpdateSysDeferredStg(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysDeferredStgTmp = metadata->schema->dictSysDeferredStgFind(rowId);
+        if (sysDeferredStgTmp != nullptr) {
+            metadata->schema->dictSysDeferredStgDrop(sysDeferredStgTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0);
+            sysDeferredStgTmp = new SysDeferredStg(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1094,28 +1094,28 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysDeferredStg->obj, 0, column, table, offset);
+                    updateNumber32u(sysDeferredStgTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS_STG") {
-                    updateNumberXu(sysDeferredStg->flagsStg, column, table, offset);
+                    updateNumberXu(sysDeferredStgTmp->flagsStg, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysDeferredStgAdd(sysDeferredStg);
-        sysDeferredStg = nullptr;
+        metadata->schema->dictSysDeferredStgAdd(sysDeferredStgTmp);
+        sysDeferredStgTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateECol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysECol = metadata->schema->dictSysEColFind(rowId);
-        if (sysECol != nullptr) {
-            metadata->schema->dictSysEColDrop(sysECol);
+    void SystemTransaction::processUpdateSysECol(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysEColTmp = metadata->schema->dictSysEColFind(rowId);
+        if (sysEColTmp != nullptr) {
+            metadata->schema->dictSysEColDrop(sysEColTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysECol = new SysECol(rowId, 0, 0, -1);
+            sysEColTmp = new SysECol(rowId, 0, 0, -1);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1128,30 +1128,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TABOBJ#") {
-                    updateNumber32u(sysECol->tabObj, 0, column, table, offset);
+                    updateNumber32u(sysEColTmp->tabObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "COLNUM") {
-                    updateNumber16(sysECol->colNum, 0, column, table, offset);
+                    updateNumber16(sysEColTmp->colNum, 0, column, table, offset);
                 } else if (table->columns[column]->name == "GUARD_ID") {
-                    updateNumber16(sysECol->guardId, -1, column, table, offset);
+                    updateNumber16(sysEColTmp->guardId, -1, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysEColAdd(sysECol);
-        sysECol = nullptr;
+        metadata->schema->dictSysEColAdd(sysEColTmp);
+        sysEColTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateLob(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysLob = metadata->schema->dictSysLobFind(rowId);
-        if (sysLob != nullptr) {
-            metadata->schema->dictSysLobDrop(sysLob);
+    void SystemTransaction::processUpdateSysLob(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysLobTmp = metadata->schema->dictSysLobFind(rowId);
+        if (sysLobTmp != nullptr) {
+            metadata->schema->dictSysLobDrop(sysLobTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.LOB$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysLob = new SysLob(rowId, 0, 0, 0, 0, 0);
+            sysLobTmp = new SysLob(rowId, 0, 0, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1164,34 +1164,34 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysLob->obj, 0, column, table, offset);
+                    updateNumber32u(sysLobTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "COL#") {
-                    updateNumber16(sysLob->col, 0, column, table, offset);
+                    updateNumber16(sysLobTmp->col, 0, column, table, offset);
                 } else if (table->columns[column]->name == "INTCOL#") {
-                    updateNumber16(sysLob->intCol, 0, column, table, offset);
+                    updateNumber16(sysLobTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LOBJ#") {
-                    updateNumber32u(sysLob->lObj, 0, column, table, offset);
+                    updateNumber32u(sysLobTmp->lObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysLob->ts,0, column, table, offset);
+                    updateNumber32u(sysLobTmp->ts, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysLobAdd(sysLob);
-        sysLob = nullptr;
+        metadata->schema->dictSysLobAdd(sysLobTmp);
+        sysLobTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateLobCompPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
-        if (sysLobCompPart != nullptr) {
-            metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
+    void SystemTransaction::processUpdateSysLobCompPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysLobCompPartTmp = metadata->schema->dictSysLobCompPartFind(rowId);
+        if (sysLobCompPartTmp != nullptr) {
+            metadata->schema->dictSysLobCompPartDrop(sysLobCompPartTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysLobCompPart = new SysLobCompPart(rowId, 0, 0);
+            sysLobCompPartTmp = new SysLobCompPart(rowId, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1204,28 +1204,28 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "PARTOBJ#") {
-                    updateNumber32u(sysLobCompPart->partObj, 0, column, table, offset);
+                    updateNumber32u(sysLobCompPartTmp->partObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LOBJ#") {
-                    updateNumber32u(sysLobCompPart->lObj, 0, column, table, offset);
+                    updateNumber32u(sysLobCompPartTmp->lObj, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysLobCompPartAdd(sysLobCompPart);
-        sysLobCompPart = nullptr;
+        metadata->schema->dictSysLobCompPartAdd(sysLobCompPartTmp);
+        sysLobCompPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateLobFrag(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
-        if (sysLobFrag != nullptr) {
-            metadata->schema->dictSysLobFragDrop(sysLobFrag);
+    void SystemTransaction::processUpdateSysLobFrag(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysLobFragTmp = metadata->schema->dictSysLobFragFind(rowId);
+        if (sysLobFragTmp != nullptr) {
+            metadata->schema->dictSysLobFragDrop(sysLobFragTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-             sysLobFrag = new SysLobFrag(rowId, 0, 0, 0);
+            sysLobFragTmp = new SysLobFrag(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1238,30 +1238,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "FRAGOBJ#") {
-                    updateNumber32u(sysLobFrag->fragObj, 0, column, table, offset);
+                    updateNumber32u(sysLobFragTmp->fragObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PARENTOBJ#") {
-                    updateNumber32u(sysLobFrag->parentObj, 0, column, table, offset);
+                    updateNumber32u(sysLobFragTmp->parentObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysLobFrag->ts, 0, column, table, offset);
+                    updateNumber32u(sysLobFragTmp->ts, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysLobFragAdd(sysLobFrag);
-        sysLobFrag = nullptr;
+        metadata->schema->dictSysLobFragAdd(sysLobFragTmp);
+        sysLobFragTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateObj(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysObj = metadata->schema->dictSysObjFind(rowId);
-        if (sysObj != nullptr) {
-            metadata->schema->dictSysObjDrop(sysObj);
+    void SystemTransaction::processUpdateSysObj(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysObjTmp = metadata->schema->dictSysObjFind(rowId);
+        if (sysObjTmp != nullptr) {
+            metadata->schema->dictSysObjDrop(sysObjTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
+            sysObjTmp = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1274,36 +1274,36 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OWNER#") {
-                    updateNumber32u(sysObj->owner, 0, column, table, offset);
+                    updateNumber32u(sysObjTmp->owner, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysObj->obj, 0, column, table, offset);
+                    updateNumber32u(sysObjTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysObj->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysObjTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysObj->name, SYS_OBJ_NAME_LENGTH, column, table, offset);
+                    updateString(sysObjTmp->name, SYS_OBJ_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
-                    updateNumber16u(sysObj->type, 0, column, table, offset);
+                    updateNumber16u(sysObjTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    updateNumberXu(sysObj->flags, column, table, offset);
+                    updateNumberXu(sysObjTmp->flags, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysObjAdd(sysObj);
-        sysObj = nullptr;
+        metadata->schema->dictSysObjAdd(sysObjTmp);
+        sysObjTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateTab(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysTab = metadata->schema->dictSysTabFind(rowId);
-        if (sysTab != nullptr) {
-            metadata->schema->dictSysTabDrop(sysTab);
+    void SystemTransaction::processUpdateSysTab(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysTabTmp = metadata->schema->dictSysTabFind(rowId);
+        if (sysTabTmp != nullptr) {
+            metadata->schema->dictSysTabDrop(sysTabTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TAB$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0);
+            sysTabTmp = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1316,36 +1316,36 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTab->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTab->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysTab->ts, 0, column, table, offset);
+                    updateNumber32u(sysTabTmp->ts, 0, column, table, offset);
                 } else if (table->columns[column]->name == "CLUCOLS") {
-                    updateNumber16(sysTab->cluCols, 0, column, table, offset);
+                    updateNumber16(sysTabTmp->cluCols, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    updateNumberXu(sysTab->flags, column, table, offset);
+                    updateNumberXu(sysTabTmp->flags, column, table, offset);
                 } else if (table->columns[column]->name == "PROPERTY") {
-                    updateNumberXu(sysTab->property, column, table, offset);
+                    updateNumberXu(sysTabTmp->property, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTabAdd(sysTab);
-        sysTab = nullptr;
+        metadata->schema->dictSysTabAdd(sysTabTmp);
+        sysTabTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateTabComPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
-        if (sysTabComPart != nullptr) {
-            metadata->schema->dictSysTabComPartDrop(sysTabComPart);
+    void SystemTransaction::processUpdateSysTabComPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysTabComPartTmp = metadata->schema->dictSysTabComPartFind(rowId);
+        if (sysTabComPartTmp != nullptr) {
+            metadata->schema->dictSysTabComPartDrop(sysTabComPartTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysTabComPart = new SysTabComPart(rowId, 0, 0, 0);
+            sysTabComPartTmp = new SysTabComPart(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1358,30 +1358,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTabComPart->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabComPartTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTabComPart->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabComPartTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "BO#") {
-                    updateNumber32u(sysTabComPart->bo, 0, column, table, offset);
+                    updateNumber32u(sysTabComPartTmp->bo, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTabComPartAdd(sysTabComPart);
-        sysTabComPart = nullptr;
+        metadata->schema->dictSysTabComPartAdd(sysTabComPartTmp);
+        sysTabComPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateTabPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
-        if (sysTabPart != nullptr) {
-            metadata->schema->dictSysTabPartDrop(sysTabPart);
+    void SystemTransaction::processUpdateSysTabPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysTabPartTmp = metadata->schema->dictSysTabPartFind(rowId);
+        if (sysTabPartTmp != nullptr) {
+            metadata->schema->dictSysTabPartDrop(sysTabPartTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysTabPart = new SysTabPart(rowId, 0, 0, 0);
+            sysTabPartTmp = new SysTabPart(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1394,29 +1394,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTabPart->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabPartTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTabPart->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabPartTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "BO#") {
-                    updateNumber32u(sysTabPart->bo, 0, column, table, offset);
+                    updateNumber32u(sysTabPartTmp->bo, 0, column, table, offset);
                 }
             }
         }
-        metadata->schema->dictSysTabPartAdd(sysTabPart);
-        sysTabPart = nullptr;
+        metadata->schema->dictSysTabPartAdd(sysTabPartTmp);
+        sysTabPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateTabSubPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
-        if (sysTabSubPart != nullptr) {
-            metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
+    void SystemTransaction::processUpdateSysTabSubPart(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysTabSubPartTmp = metadata->schema->dictSysTabSubPartFind(rowId);
+        if (sysTabSubPartTmp != nullptr) {
+            metadata->schema->dictSysTabSubPartDrop(sysTabSubPartTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0);
+            sysTabSubPartTmp = new SysTabSubPart(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1429,30 +1429,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    updateNumber32u(sysTabSubPart->obj, 0, column, table, offset);
+                    updateNumber32u(sysTabSubPartTmp->obj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    updateNumber32u(sysTabSubPart->dataObj, 0, column, table, offset);
+                    updateNumber32u(sysTabSubPartTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "POBJ#") {
-                    updateNumber32u(sysTabSubPart->pObj, 0, column, table, offset);
+                    updateNumber32u(sysTabSubPartTmp->pObj, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTabSubPartAdd(sysTabSubPart);
-        sysTabSubPart = nullptr;
+        metadata->schema->dictSysTabSubPartAdd(sysTabSubPartTmp);
+        sysTabSubPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateTs(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysTs = metadata->schema->dictSysTsFind(rowId);
-        if (sysTs != nullptr) {
-            metadata->schema->dictSysTsDrop(sysTs);
+    void SystemTransaction::processUpdateSysTs(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysTsTmp = metadata->schema->dictSysTsFind(rowId);
+        if (sysTsTmp != nullptr) {
+            metadata->schema->dictSysTsDrop(sysTsTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TS$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysTs = new SysTs(rowId, 0, "", 0);
+            sysTsTmp = new SysTs(rowId, 0, "", 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1465,30 +1465,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TS#") {
-                    updateNumber32u(sysTs->ts, 0, column, table, offset);
+                    updateNumber32u(sysTsTmp->ts, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysTs->name, SYS_TS_NAME_LENGTH, column, table, offset);
+                    updateString(sysTsTmp->name, SYS_TS_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "BLOCKSIZE") {
-                    updateNumber32u(sysTs->blockSize, 0, column, table, offset);
+                    updateNumber32u(sysTsTmp->blockSize, 0, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysTsAdd(sysTs);
-        sysTs = nullptr;
+        metadata->schema->dictSysTsAdd(sysTsTmp);
+        sysTsTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateUser(OracleTable* table, typeRowId& rowId, uint64_t offset) {
-        sysUser = metadata->schema->dictSysUserFind(rowId);
-        if (sysUser != nullptr) {
-            metadata->schema->dictSysUserDrop(sysUser);
+    void SystemTransaction::processUpdateSysUser(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        sysUserTmp = metadata->schema->dictSysUserFind(rowId);
+        if (sysUserTmp != nullptr) {
+            metadata->schema->dictSysUserDrop(sysUserTmp);
         } else {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.USER$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
-            sysUser = new SysUser(rowId, 0, "", 0, 0, false);
+            sysUserTmp = new SysUser(rowId, 0, "", 0, 0, false);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1501,17 +1501,17 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "USER#") {
-                    updateNumber32u(sysUser->user, 0, column, table, offset);
+                    updateNumber32u(sysUserTmp->user, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysUser->name, SYS_USER_NAME_LENGTH, column, table, offset);
+                    updateString(sysUserTmp->name, SYS_USER_NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "SPARE1") {
-                    updateNumberXu(sysUser->spare1, column, table, offset);
+                    updateNumberXu(sysUserTmp->spare1, column, table, offset);
                 }
             }
         }
 
-        metadata->schema->dictSysUserAdd(sysUser);
-        sysUser = nullptr;
+        metadata->schema->dictSysUserAdd(sysUserTmp);
+        sysUserTmp = nullptr;
     }
 
     void SystemTransaction::processUpdate(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
@@ -1523,70 +1523,70 @@ namespace OpenLogReplicator {
 
         switch (table->systemTable) {
             case TABLE_SYS_CCOL:
-                processUpdateCCol(table, rowId, offset);
+                processUpdateSysCCol(table, rowId, offset);
                 break;
 
             case TABLE_SYS_CDEF:
-                processUpdateCDef(table, rowId, offset);
+                processUpdateSysCDef(table, rowId, offset);
                 break;
 
             case TABLE_SYS_COL:
-                processUpdateCol(table, rowId, offset);
+                processUpdateSysCol(table, rowId, offset);
                 break;
 
             case TABLE_SYS_DEFERRED_STG:
-                processUpdateDeferredStg(table, rowId, offset);
+                processUpdateSysDeferredStg(table, rowId, offset);
                 break;
 
             case TABLE_SYS_ECOL:
-                processUpdateECol(table, rowId, offset);
+                processUpdateSysECol(table, rowId, offset);
                 break;
 
             case TABLE_SYS_LOB:
-                processUpdateLob(table, rowId, offset);
+                processUpdateSysLob(table, rowId, offset);
                 break;
 
             case TABLE_SYS_LOB_COMP_PART:
-                processUpdateLobCompPart(table, rowId, offset);
+                processUpdateSysLobCompPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_LOB_FRAG:
-                processUpdateLobFrag(table, rowId, offset);
+                processUpdateSysLobFrag(table, rowId, offset);
                 break;
 
             case TABLE_SYS_OBJ:
-                processUpdateObj(table, rowId, offset);
+                processUpdateSysObj(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TAB:
-                processUpdateTab(table, rowId, offset);
+                processUpdateSysTab(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TABCOMPART:
-                processUpdateTabComPart(table, rowId, offset);
+                processUpdateSysTabComPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TABPART:
-                processUpdateTabPart(table, rowId, offset);
+                processUpdateSysTabPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TABSUBPART:
-                processUpdateTabSubPart(table, rowId, offset);
+                processUpdateSysTabSubPart(table, rowId, offset);
                 break;
 
             case TABLE_SYS_TS:
-                processUpdateTs(table, rowId, offset);
+                processUpdateSysTs(table, rowId, offset);
                 break;
 
             case TABLE_SYS_USER:
-                processUpdateUser(table, rowId, offset);
+                processUpdateSysUser(table, rowId, offset);
                 break;
         }
     }
 
-    void SystemTransaction::processDeleteCCol(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysCCol = metadata->schema->dictSysCColFind(rowId);
-        if (sysCCol == nullptr) {
+    void SystemTransaction::processDeleteSysCCol(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysCColTmp = metadata->schema->dictSysCColFind(rowId);
+        if (sysCColTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for delete");
@@ -1594,15 +1594,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysCColDrop(sysCCol);
-        metadata->schema->sysCColSetTouched.erase(sysCCol);
-        delete sysCCol;
-        sysCCol = nullptr;
+        metadata->schema->dictSysCColDrop(sysCColTmp);
+        metadata->schema->sysCColSetTouched.erase(sysCColTmp);
+        delete sysCColTmp;
+        sysCColTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteCDef(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysCDef = metadata->schema->dictSysCDefFind(rowId);
-        if (sysCDef == nullptr) {
+    void SystemTransaction::processDeleteSysCDef(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysCDefTmp = metadata->schema->dictSysCDefFind(rowId);
+        if (sysCDefTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for delete");
@@ -1610,15 +1610,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysCDefDrop(sysCDef);
-        metadata->schema->sysCDefSetTouched.erase(sysCDef);
-        delete sysCDef;
-        sysCDef = nullptr;
+        metadata->schema->dictSysCDefDrop(sysCDefTmp);
+        metadata->schema->sysCDefSetTouched.erase(sysCDefTmp);
+        delete sysCDefTmp;
+        sysCDefTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteCol(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysCol = metadata->schema->dictSysColFind(rowId);
-        if (sysCol == nullptr) {
+    void SystemTransaction::processDeleteSysCol(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysColTmp = metadata->schema->dictSysColFind(rowId);
+        if (sysColTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.COL$: (rowid: " + rowId.toString() + ") for delete");
@@ -1626,15 +1626,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysColDrop(sysCol);
-        metadata->schema->sysColSetTouched.erase(sysCol);
-        delete sysCol;
-        sysCol = nullptr;
+        metadata->schema->dictSysColDrop(sysColTmp);
+        metadata->schema->sysColSetTouched.erase(sysColTmp);
+        delete sysColTmp;
+        sysColTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteDeferredStg(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
-        if (sysDeferredStg == nullptr) {
+    void SystemTransaction::processDeleteSysDeferredStg(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysDeferredStgTmp = metadata->schema->dictSysDeferredStgFind(rowId);
+        if (sysDeferredStgTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for delete");
@@ -1642,15 +1642,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
-        metadata->schema->sysDeferredStgSetTouched.erase(sysDeferredStg);
-        delete sysDeferredStg;
-        sysDeferredStg = nullptr;
+        metadata->schema->dictSysDeferredStgDrop(sysDeferredStgTmp);
+        metadata->schema->sysDeferredStgSetTouched.erase(sysDeferredStgTmp);
+        delete sysDeferredStgTmp;
+        sysDeferredStgTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteECol(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysECol = metadata->schema->dictSysEColFind(rowId);
-        if (sysECol == nullptr) {
+    void SystemTransaction::processDeleteSysECol(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysEColTmp = metadata->schema->dictSysEColFind(rowId);
+        if (sysEColTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for delete");
@@ -1658,15 +1658,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysEColDrop(sysECol);
-        metadata->schema->sysEColSetTouched.erase(sysECol);
-        delete sysECol;
-        sysECol = nullptr;
+        metadata->schema->dictSysEColDrop(sysEColTmp);
+        metadata->schema->sysEColSetTouched.erase(sysEColTmp);
+        delete sysEColTmp;
+        sysEColTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteLob(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysLob = metadata->schema->dictSysLobFind(rowId);
-        if (sysLob == nullptr) {
+    void SystemTransaction::processDeleteSysLob(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysLobTmp = metadata->schema->dictSysLobFind(rowId);
+        if (sysLobTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.LOB$: (rowid: " + rowId.toString() + ") for delete");
@@ -1674,15 +1674,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysLobDrop(sysLob);
-        metadata->schema->sysLobSetTouched.erase(sysLob);
-        delete sysLob;
-        sysLob = nullptr;
+        metadata->schema->dictSysLobDrop(sysLobTmp);
+        metadata->schema->sysLobSetTouched.erase(sysLobTmp);
+        delete sysLobTmp;
+        sysLobTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteLobCompPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
-        if (sysLobCompPart == nullptr) {
+    void SystemTransaction::processDeleteSysLobCompPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysLobCompPartTmp = metadata->schema->dictSysLobCompPartFind(rowId);
+        if (sysLobCompPartTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for delete");
@@ -1690,15 +1690,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
-        metadata->schema->sysLobCompPartSetTouched.erase(sysLobCompPart);
-        delete sysLobCompPart;
-        sysLobCompPart = nullptr;
+        metadata->schema->dictSysLobCompPartDrop(sysLobCompPartTmp);
+        metadata->schema->sysLobCompPartSetTouched.erase(sysLobCompPartTmp);
+        delete sysLobCompPartTmp;
+        sysLobCompPartTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteLobFrag(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
-        if (sysLobFrag == nullptr) {
+    void SystemTransaction::processDeleteSysLobFrag(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysLobFragTmp = metadata->schema->dictSysLobFragFind(rowId);
+        if (sysLobFragTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for delete");
@@ -1706,15 +1706,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysLobFragDrop(sysLobFrag);
-        metadata->schema->sysLobFragSetTouched.erase(sysLobFrag);
-        delete sysLobFrag;
-        sysLobFrag = nullptr;
+        metadata->schema->dictSysLobFragDrop(sysLobFragTmp);
+        metadata->schema->sysLobFragSetTouched.erase(sysLobFragTmp);
+        delete sysLobFragTmp;
+        sysLobFragTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteObj(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysObj = metadata->schema->dictSysObjFind(rowId);
-        if (sysObj == nullptr) {
+    void SystemTransaction::processDeleteSysObj(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysObjTmp = metadata->schema->dictSysObjFind(rowId);
+        if (sysObjTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for delete");
@@ -1722,15 +1722,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysObjDrop(sysObj);
-        metadata->schema->sysObjSetTouched.erase(sysObj);
-        delete sysObj;
-        sysObj = nullptr;
+        metadata->schema->dictSysObjDrop(sysObjTmp);
+        metadata->schema->sysObjSetTouched.erase(sysObjTmp);
+        delete sysObjTmp;
+        sysObjTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteTab(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysTab = metadata->schema->dictSysTabFind(rowId);
-        if (sysTab == nullptr) {
+    void SystemTransaction::processDeleteSysTab(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysTabTmp = metadata->schema->dictSysTabFind(rowId);
+        if (sysTabTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TAB$: (rowid: " + rowId.toString() + ") for delete");
@@ -1738,15 +1738,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysTabDrop(sysTab);
-        metadata->schema->sysTabSetTouched.erase(sysTab);
-        delete sysTab;
-        sysTab = nullptr;
+        metadata->schema->dictSysTabDrop(sysTabTmp);
+        metadata->schema->sysTabSetTouched.erase(sysTabTmp);
+        delete sysTabTmp;
+        sysTabTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteTabComPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
-        if (sysTabComPart == nullptr) {
+    void SystemTransaction::processDeleteSysTabComPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysTabComPartTmp = metadata->schema->dictSysTabComPartFind(rowId);
+        if (sysTabComPartTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for delete");
@@ -1754,15 +1754,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysTabComPartDrop(sysTabComPart);
-        metadata->schema->sysTabComPartSetTouched.erase(sysTabComPart);
-        delete sysTabComPart;
-        sysTabComPart = nullptr;
+        metadata->schema->dictSysTabComPartDrop(sysTabComPartTmp);
+        metadata->schema->sysTabComPartSetTouched.erase(sysTabComPartTmp);
+        delete sysTabComPartTmp;
+        sysTabComPartTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteTabPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
-        if (sysTabPart == nullptr) {
+    void SystemTransaction::processDeleteSysTabPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysTabPartTmp = metadata->schema->dictSysTabPartFind(rowId);
+        if (sysTabPartTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for delete");
@@ -1770,15 +1770,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysTabPartDrop(sysTabPart);
-        metadata->schema->sysTabPartSetTouched.erase(sysTabPart);
-        delete sysTabPart;
-        sysTabPart = nullptr;
+        metadata->schema->dictSysTabPartDrop(sysTabPartTmp);
+        metadata->schema->sysTabPartSetTouched.erase(sysTabPartTmp);
+        delete sysTabPartTmp;
+        sysTabPartTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteTabSubPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
-        if (sysTabSubPart == nullptr) {
+    void SystemTransaction::processDeleteSysTabSubPart(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysTabSubPartTmp = metadata->schema->dictSysTabSubPartFind(rowId);
+        if (sysTabSubPartTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for delete");
@@ -1786,15 +1786,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
-        metadata->schema->sysTabSubPartSetTouched.erase(sysTabSubPart);
-        delete sysTabSubPart;
-        sysTabSubPart = nullptr;
+        metadata->schema->dictSysTabSubPartDrop(sysTabSubPartTmp);
+        metadata->schema->sysTabSubPartSetTouched.erase(sysTabSubPartTmp);
+        delete sysTabSubPartTmp;
+        sysTabSubPartTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteTs(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysTs = metadata->schema->dictSysTsFind(rowId);
-        if (sysTs == nullptr) {
+    void SystemTransaction::processDeleteSysTs(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysTsTmp = metadata->schema->dictSysTsFind(rowId);
+        if (sysTsTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.TS$: (rowid: " + rowId.toString() + ") for delete");
@@ -1802,14 +1802,14 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysTsDrop(sysTs);
-        delete sysTs;
-        sysTs = nullptr;
+        metadata->schema->dictSysTsDrop(sysTsTmp);
+        delete sysTsTmp;
+        sysTsTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteUser(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
-        sysUser = metadata->schema->dictSysUserFind(rowId);
-        if (sysUser == nullptr) {
+    void SystemTransaction::processDeleteSysUser(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        sysUserTmp = metadata->schema->dictSysUserFind(rowId);
+        if (sysUserTmp == nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                 if (ctx->trace & TRACE_SYSTEM)
                     ctx->logTrace(TRACE_SYSTEM, "missing SYS.USER$: (rowid: " + rowId.toString() + ") for delete");
@@ -1817,10 +1817,10 @@ namespace OpenLogReplicator {
             }
         }
 
-        metadata->schema->dictSysUserDrop(sysUser);
-        metadata->schema->sysUserSetTouched.erase(sysUser);
-        delete sysUser;
-        sysUser = nullptr;
+        metadata->schema->dictSysUserDrop(sysUserTmp);
+        metadata->schema->sysUserSetTouched.erase(sysUserTmp);
+        delete sysUserTmp;
+        sysUserTmp = nullptr;
     }
 
     void SystemTransaction::processDelete(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
@@ -1832,49 +1832,63 @@ namespace OpenLogReplicator {
 
         switch (table->systemTable) {
             case TABLE_SYS_CCOL:
-                processDeleteCCol(rowId, offset);
+                processDeleteSysCCol(rowId, offset);
                 break;
+
             case TABLE_SYS_CDEF:
-                processDeleteCDef(rowId, offset);
+                processDeleteSysCDef(rowId, offset);
                 break;
+
             case TABLE_SYS_COL:
-                processDeleteCol(rowId, offset);
+                processDeleteSysCol(rowId, offset);
                 break;
+
             case TABLE_SYS_DEFERRED_STG:
-                processDeleteDeferredStg(rowId, offset);
+                processDeleteSysDeferredStg(rowId, offset);
                 break;
+
             case TABLE_SYS_ECOL:
-                processDeleteECol(rowId, offset);
+                processDeleteSysECol(rowId, offset);
                 break;
+
             case TABLE_SYS_LOB:
-                processDeleteLob(rowId, offset);
+                processDeleteSysLob(rowId, offset);
                 break;
+
             case TABLE_SYS_LOB_COMP_PART:
-                processDeleteLobCompPart(rowId, offset);
+                processDeleteSysLobCompPart(rowId, offset);
                 break;
+
             case TABLE_SYS_LOB_FRAG:
-                processDeleteLobFrag(rowId, offset);
+                processDeleteSysLobFrag(rowId, offset);
                 break;
+
             case TABLE_SYS_OBJ:
-                processDeleteObj(rowId, offset);
+                processDeleteSysObj(rowId, offset);
                 break;
+
             case TABLE_SYS_TAB:
-                processDeleteTab(rowId, offset);
+                processDeleteSysTab(rowId, offset);
                 break;
+
             case TABLE_SYS_TABCOMPART:
-                processDeleteTabComPart(rowId, offset);
+                processDeleteSysTabComPart(rowId, offset);
                 break;
+
             case TABLE_SYS_TABPART:
-                processDeleteTabPart(rowId, offset);
+                processDeleteSysTabPart(rowId, offset);
                 break;
+
             case TABLE_SYS_TABSUBPART:
-                processDeleteTabSubPart(rowId, offset);
+                processDeleteSysTabSubPart(rowId, offset);
                 break;
+
             case TABLE_SYS_TS:
-                processDeleteTs(rowId, offset);
+                processDeleteSysTs(rowId, offset);
                 break;
+
             case TABLE_SYS_USER:
-                processDeleteUser(rowId, offset);
+                processDeleteSysUser(rowId, offset);
                 break;
         }
     }
