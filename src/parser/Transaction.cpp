@@ -231,7 +231,7 @@ namespace OpenLogReplicator {
                 pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
                 if (metadata->ctx->trace & TRACE_TRANSACTION)
-                    metadata->ctx->logTrace(TRACE_TRANSACTION,std::to_string(redoLogRecord1->length) + ":" +
+                    metadata->ctx->logTrace(TRACE_TRANSACTION, std::to_string(redoLogRecord1->length) + ":" +
                                             std::to_string(redoLogRecord2->length) + " fb: " +
                                             std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
                                             std::to_string(static_cast<uint64_t>(redoLogRecord2->fb)) + " op: " + std::to_string(op) + " scn: " +

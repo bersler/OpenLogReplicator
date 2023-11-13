@@ -38,9 +38,9 @@ namespace OpenLogReplicator {
             ktucf(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (ctx->dumpRedoLog >= 1) {
-            ctx->dumpStream << std::endl;
+            ctx->dumpStream << '\n';
             if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
-                ctx->dumpStream << "rolled back transaction" << std::endl;
+                ctx->dumpStream << "rolled back transaction\n";
         }
     }
 

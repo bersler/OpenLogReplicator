@@ -429,7 +429,7 @@ namespace OpenLogReplicator {
                 memcpy(reinterpret_cast<void*>(pathBuffer),
                        reinterpret_cast<const void*>(pathMapping[i * 2 + 1].c_str()), targetLength);
                 memcpy(reinterpret_cast<void*>(pathBuffer + targetLength),
-                       reinterpret_cast<const void*>(path.c_str() + sourceLength),newPathLength - sourceLength);
+                       reinterpret_cast<const void*>(path.c_str() + sourceLength), newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
                 if (newPathLength - sourceLength + targetLength >= MAX_PATH_LENGTH)
                     throw RuntimeException(10043, "after mapping path length (" + std::to_string(newPathLength - sourceLength +
@@ -603,8 +603,8 @@ namespace OpenLogReplicator {
                     if (sequence == 0 || sequence < replicator->metadata->sequence)
                         continue;
 
-                    auto parser = new Parser(replicator->ctx,replicator->builder, replicator->metadata,
-                                             replicator->transactionBuffer,0, fileName);
+                    auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
+                                             replicator->transactionBuffer, 0, fileName);
                     parser->firstScn = ZERO_SCN;
                     parser->nextScn = ZERO_SCN;
                     parser->sequence = sequence;

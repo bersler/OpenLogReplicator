@@ -958,54 +958,71 @@ namespace OpenLogReplicator {
             case TRACE_DML:
                 code = "DML  ";
                 break;
+
             case TRACE_DUMP:
                 code = "DUMP ";
                 break;
+
             case TRACE_LOB:
                 code = "LOB  ";
                 break;
+
             case TRACE_LWN:
                 code = "LWN  ";
                 break;
+
             case TRACE_THREADS:
                 code = "THRD ";
                 break;
+
             case TRACE_SQL:
                 code = "SQL  ";
                 break;
+
             case TRACE_FILE:
                 code = "FILE ";
                 break;
+
             case TRACE_DISK:
                 code = "DISK ";
                 break;
+
             case TRACE_PERFORMANCE:
                 code = "PERFM";
                 break;
+
             case TRACE_TRANSACTION:
                 code = "TRANX";
                 break;
+
             case TRACE_REDO:
                 code = "REDO ";
                 break;
+
             case TRACE_ARCHIVE_LIST:
                 code = "ARCHL";
                 break;
+
             case TRACE_SCHEMA_LIST:
                 code = "SCHEM";
                 break;
+
             case TRACE_WRITER:
                 code = "WRITR";
                 break;
+
             case TRACE_CHECKPOINT:
                 code = "CHKPT";
                 break;
+
             case TRACE_SYSTEM:
                 code = "SYSTM";
                 break;
+
             case TRACE_LOB_DATA:
                 code = "LOBDT";
                 break;
+
             case TRACE_SLEEP:
                 code = "SLEEP";
                 break;
@@ -1017,11 +1034,11 @@ namespace OpenLogReplicator {
             tm nowTm = *localtime(&now);
             char str[50];
             strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " TRACE " << code << " " << message << std::endl;
+            s << str << " TRACE " << code << " " << message << '\n';
             std::cerr << s.str();
         } else {
             std::ostringstream s;
-            s << "TRACE " << code << " " << message << std::endl;
+            s << "TRACE " << code << " " << message << '\n';
             std::cerr << s.str();
         }
     }

@@ -46,21 +46,21 @@ namespace OpenLogReplicator {
             uint16_t v1 = ctx->read16(redoLogRecord->data + fieldPos + 20);
             typeDba dba = ctx->read32(redoLogRecord->data + fieldPos + 28);
 
-            ctx->dumpStream << "Direct Loader block redo entry" << std::endl;
-            ctx->dumpStream << "Long field block dump:" << std::endl;
-            ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->dataObj << " " << std::endl;
+            ctx->dumpStream << "Direct Loader block redo entry\n";
+            ctx->dumpStream << "Long field block dump:\n";
+            ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->dataObj << " \n";
             ctx->dumpStream << "LobId: " << redoLogRecord->lobId.narrow() <<
-                    " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " " << std::endl;
+                    " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " \n";
             ctx->dumpStream << "Version: 0x" << std::setfill('0') << std::setw(4) << std::hex << v1 <<
                     "." << std::setfill('0') << std::setw(8) << std::hex << v2 <<
-                    "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  " << std::endl;
+                    "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
 
             for (uint64_t j = 0; j < static_cast<uint64_t>(fieldLength - 36); ++j) {
                 ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j + 36]) << " ";
                 if ((j % 24) == 23 && j != static_cast<uint64_t>(fieldLength) - 1)
-                    ctx->dumpStream << std::endl << "    ";
+                    ctx->dumpStream << "\n    ";
             }
-            ctx->dumpStream << std::endl;
+            ctx->dumpStream << '\n';
         }
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x130102);

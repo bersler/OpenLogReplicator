@@ -269,7 +269,7 @@ namespace OpenLogReplicator {
             unconfirmedLength += messageLength;
             msg->length = messageLength;
             if (lastBuilderQueue->start == BUFFER_START_UNDEFINED)
-                lastBuilderQueue->start = (uint64_t)lastBuilderQueue->length;
+                lastBuilderQueue->start = static_cast<uint64_t>(lastBuilderQueue->length);
 
             if (force || flushBuffer == 0 || unconfirmedLength > flushBuffer) {
                 {

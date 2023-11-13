@@ -164,424 +164,424 @@ namespace OpenLogReplicator {
         }
 
         switch (column->type) {
-        case SYS_COL_TYPE_VARCHAR:
-        case SYS_COL_TYPE_CHAR:
-            parseString(data, length, column->charsetId, offset, false, false, false, table->systemTable > 0);
-            columnString(column->name);
-            break;
+            case SYS_COL_TYPE_VARCHAR:
+            case SYS_COL_TYPE_CHAR:
+                parseString(data, length, column->charsetId, offset, false, false, false, table->systemTable > 0);
+                columnString(column->name);
+                break;
 
-        case SYS_COL_TYPE_NUMBER:
-            parseNumber(data, length, offset);
-            columnNumber(column->name, column->precision, column->scale);
-            break;
+            case SYS_COL_TYPE_NUMBER:
+                parseNumber(data, length, offset);
+                columnNumber(column->name, column->precision, column->scale);
+                break;
 
-        case SYS_COL_TYPE_BLOB:
-            if (after && table != nullptr) {
-                if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
-                    if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
-                        if (parseXml(reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
-                            columnString(column->name);
-                        else
-                            columnUnknown(column->name, reinterpret_cast<uint8_t *>(valueBufferOld), valueLengthOld);
-                    } else
-                        columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength);
-                }
-            }
-            break;
-
-        case SYS_COL_TYPE_CLOB:
-            if (after && table != nullptr) {
-                if (parseLob(lobCtx, data, length, column->charsetId, table->obj, offset, true, table->systemTable > 0))
-                    columnString(column->name);
-            }
-            break;
-
-        case SYS_COL_TYPE_DATE:
-        case SYS_COL_TYPE_TIMESTAMP:
-        case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
-            if (length != 7 && length != 11)
-                columnUnknown(column->name, data, length);
-            else {
-                struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                        nullptr};
-                epochTime.tm_sec = data[6] - 1;  // 0..59
-                epochTime.tm_min = data[5] - 1;  // 0..59
-                epochTime.tm_hour = data[4] - 1; // 0..23
-                epochTime.tm_mday = data[3];     // 1..31
-                epochTime.tm_mon = data[2];      // 1..12
-
-                int val1 = data[0];
-                int val2 = data[1];
-                // AD
-                if (val1 >= 100 && val2 >= 100) {
-                    val1 -= 100;
-                    val2 -= 100;
-                    epochTime.tm_year = val1 * 100 + val2;
-
-                } else {
-                    val1 = 100 - val1;
-                    val2 = 100 - val2;
-                    epochTime.tm_year = - (val1 * 100 + val2);
-                }
-
-                uint64_t fraction = 0;
-                if (length == 11)
-                    fraction = Ctx::read32Big(data + 7);
-
-                if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
-                    epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
-                    epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
-                    epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
-                    epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
-                    columnUnknown(column->name, data, length);
-                } else {
-                    columnTimestamp(column->name, epochTime, fraction);
-                }
-            }
-            break;
-
-        case SYS_COL_TYPE_RAW:
-            columnRaw(column->name, data, length);
-            break;
-
-        case SYS_COL_TYPE_FLOAT:
-            if (length == 4)
-                columnFloat(column->name, decodeFloat(data));
-            else
-                columnUnknown(column->name, data, length);
-            break;
-
-        case SYS_COL_TYPE_DOUBLE:
-            if (length == 8)
-                columnDouble(column->name, decodeDouble(data));
-            else
-                columnUnknown(column->name, data, length);
-            break;
-
-        case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
-            if (length != 9 && length != 13) {
-                columnUnknown(column->name, data, length);
-            } else {
-                struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                        nullptr};
-                epochTime.tm_sec = data[6] - 1;  // 0..59
-                epochTime.tm_min = data[5] - 1;  // 0..59
-                epochTime.tm_hour = data[4] - 1; // 0..23
-                epochTime.tm_mday = data[3];     // 1..31
-                epochTime.tm_mon = data[2];      // 1..12
-
-                int val1 = data[0];
-                int val2 = data[1];
-                // AD
-                if (val1 >= 100 && val2 >= 100) {
-                    val1 -= 100;
-                    val2 -= 100;
-                    epochTime.tm_year = val1 * 100 + val2;
-
-                } else {
-                    val1 = 100 - val1;
-                    val2 = 100 - val2;
-                    epochTime.tm_year = - (val1 * 100 + val2);
-                }
-
-                uint64_t fraction = 0;
-                if (length == 13)
-                    fraction = Ctx::read32Big(data + 7);
-
-                const char* tz = nullptr;
-                char tz2[7];
-
-                if (data[11] >= 5 && data[11] <= 36) {
-                    if (data[11] < 20 ||
-                            (data[11] == 20 && data[12] < 60))
-                        tz2[0] = '-';
-                    else
-                        tz2[0] = '+';
-
-                    if (data[11] < 20) {
-                        uint64_t val = 20 - data[11];
-                        tz2[1] = ctx->map10[val / 10];
-                        tz2[2] = ctx->map10[val % 10];
-                    } else {
-                        uint64_t val = data[11] - 20;
-                        tz2[1] = ctx->map10[val / 10];
-                        tz2[2] = ctx->map10[val % 10];
-                    }
-
-                    tz2[3] = ':';
-
-                    if (data[12] < 60) {
-                        uint64_t val = 60 - data[12];
-                        tz2[4] = ctx->map10[val / 10];
-                        tz2[5] = ctx->map10[val % 10];
-                    } else {
-                        uint64_t val = data[12] - 60;
-                        tz2[4] = ctx->map10[val / 10];
-                        tz2[5] = ctx->map10[val % 10];
-                    }
-                    tz2[6] = 0;
-                    tz = tz2;
-                } else {
-                    uint16_t tzKey = (data[11] << 8) | data[12];
-                    auto timeZoneMapIt = locales->timeZoneMap.find(tzKey);
-                    if (timeZoneMapIt != locales->timeZoneMap.end())
-                        tz = timeZoneMapIt->second;
-                    else
-                        tz = "TZ?";
-                }
-
-                if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
-                    epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
-                    epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
-                    epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
-                    epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
-                    columnUnknown(column->name, data, length);
-                } else {
-                    columnTimestampTz(column->name, epochTime, fraction, tz);
-                }
-            }
-            break;
-
-        case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
-            if (length != 5 || data[4] < 49 || data[4] > 71)
-                columnUnknown(column->name, data, length);
-            else {
-                bool minus = false;
-                uint64_t year = 0;
-                if ((data[0] & 0x80) != 0)
-                    year = Ctx::read32Big(data) - 0x80000000;
-                else {
-                    year = 0x80000000 - Ctx::read32Big(data);
-                    minus = true;
-                }
-
-                if (year > 999999999)
-                    columnUnknown(column->name, data, length);
-                else {
-                    uint64_t month = 0;
-                    if (data[4] >= 60)
-                        month = data[4] - 60;
-                    else {
-                        month = 60 - data[4];
-                        minus = true;
-                    }
-
-                    char buffer[12];
-                    uint64_t val = 0;
-                    uint64_t len = 0;
-                    valueLength = 0;
-
-                    if (minus)
-                        valueBuffer[valueLength++] = '-';
-
-                    if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS || intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS_STRING) {
-                        val = year * 12 + month;
-                        if (val == 0) {
-                            valueBuffer[valueLength++] = '0';
-                        } else {
-                            while (val) {
-                                buffer[len++] = ctx->map10[val % 10];
-                                val /= 10;
-                            }
-                            while (len > 0)
-                                valueBuffer[valueLength++] = buffer[--len];
-                        }
-
-                        if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS)
-                            columnNumber(column->name, 17, 0);
-                        else
-                            columnString(column->name);
-                    } else {
-                        val = year;
-                        if (val == 0) {
-                            valueBuffer[valueLength++] = '0';
-                        } else {
-                            while (val) {
-                                buffer[len++] = ctx->map10[val % 10];
-                                val /= 10;
-                            }
-                            while (len > 0)
-                                valueBuffer[valueLength++] = buffer[--len];
-                        }
-
-                        if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_SPACE)
-                            valueBuffer[valueLength++] = ' ';
-                        else if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_COMMA)
-                            valueBuffer[valueLength++] = ',';
-                        else if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_DASH)
-                            valueBuffer[valueLength++] = '-';
-
-                        if (month >= 10) {
-                            valueBuffer[valueLength++] = '1';
-                            valueBuffer[valueLength++] = ctx->map10[month - 10];
-                        } else
-                            valueBuffer[valueLength++] = ctx->map10[month];
-
-                        columnString(column->name);
-                    }
-                }
-            }
-            break;
-
-        case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
-            if (length != 11 || data[4] < 37 || data[4] > 83 || data[5] < 1 || data[5] > 119 || data[6] < 1 || data[6] > 119)
-                columnUnknown(column->name, data, length);
-            else {
-                bool minus = false;
-                uint64_t day = 0;
-                if ((data[0] & 0x80) != 0)
-                    day = Ctx::read32Big(data) - 0x80000000;
-                else {
-                    day = 0x80000000 - Ctx::read32Big(data);
-                    minus = true;
-                }
-
-                int32_t us = 0;
-                if ((data[7] & 0x80) != 0)
-                    us = Ctx::read32Big(data + 7) - 0x80000000;
-                else {
-                    us = 0x80000000 - Ctx::read32Big(data + 7);
-                    minus = true;
-                }
-
-                if (day > 999999999 || us > 999999999)
-                    columnUnknown(column->name, data, length);
-                else {
-                    uint64_t hour = 0;
-                    if (data[4] >= 60)
-                        hour = data[4] - 60;
-                    else {
-                        hour = 60 - data[4];
-                        minus = true;
-                    }
-
-                    uint64_t minute = 0;
-                    if (data[5] >= 60)
-                        minute = data[5] - 60;
-                    else {
-                        minute = 60 - data[5];
-                        minus = true;
-                    }
-
-                    uint64_t second = 0;
-                    if (data[6] >= 60)
-                        second = data[6] - 60;
-                    else {
-                        second = 60 - data[6];
-                        minus = true;
-                    }
-
-                    char buffer[30];
-                    valueLength = 0;
-                    uint64_t val = 0;
-                    uint64_t len = 0;
-
-                    if (minus)
-                        valueBuffer[valueLength++] = '-';
-
-                    if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE || intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA ||
-                            intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH) {
-                        val = day;
-                        if (day == 0) {
-                            valueBuffer[valueLength++] = '0';
-                        } else {
-                            while (val) {
-                                buffer[len++] = ctx->map10[val % 10];
-                                val /= 10;
-                            }
-                            while (len > 0)
-                                valueBuffer[valueLength++] = buffer[--len];
-                        }
-
-                        if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE)
-                            valueBuffer[valueLength++] = ' ';
-                        else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA)
-                            valueBuffer[valueLength++] = ',';
-                        else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH)
-                            valueBuffer[valueLength++] = '-';
-
-                        valueBuffer[valueLength++] = ctx->map10[hour / 10];
-                        valueBuffer[valueLength++] = ctx->map10[hour % 10];
-                        valueBuffer[valueLength++] = ':';
-                        valueBuffer[valueLength++] = ctx->map10[minute / 10];
-                        valueBuffer[valueLength++] = ctx->map10[minute % 10];
-                        valueBuffer[valueLength++] = ':';
-                        valueBuffer[valueLength++] = ctx->map10[second / 10];
-                        valueBuffer[valueLength++] = ctx->map10[second % 10];
-                        valueBuffer[valueLength++] = '.';
-
-                        for (uint64_t j = 0; j < 9; ++j) {
-                            valueBuffer[valueLength + 8 - j] = ctx->map10[us % 10];
-                            us /= 10;
-                        }
-                        valueLength += 9;
-
-                        columnString(column->name);
-                    } else {
-                        switch (intervalDtsFormat) {
-                            case INTERVAL_DTS_FORMAT_UNIX_NANO:
-                            case INTERVAL_DTS_FORMAT_UNIX_NANO_STRING:
-                                val = (((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us;
-                                break;
-
-                            case INTERVAL_DTS_FORMAT_UNIX_MICRO:
-                            case INTERVAL_DTS_FORMAT_UNIX_MICRO_STRING:
-                                val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500) / 1000;
-                                break;
-
-                            case INTERVAL_DTS_FORMAT_UNIX_MILLI:
-                            case INTERVAL_DTS_FORMAT_UNIX_MILLI_STRING:
-                                val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000) / 1000000;
-                                break;
-
-                            case INTERVAL_DTS_FORMAT_UNIX:
-                            case INTERVAL_DTS_FORMAT_UNIX_STRING:
-                                val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000000) / 1000000000;
-                        }
-
-                        if (val == 0) {
-                            valueBuffer[valueLength++] = '0';
-                        } else {
-                            while (val) {
-                                buffer[len++] = ctx->map10[val % 10];
-                                val /= 10;
-                            }
-                            while (len > 0)
-                                valueBuffer[valueLength++] = buffer[--len];
-                        }
-
-                        switch (intervalDtsFormat) {
-                            case INTERVAL_DTS_FORMAT_UNIX_NANO:
-                            case INTERVAL_DTS_FORMAT_UNIX_MICRO:
-                            case INTERVAL_DTS_FORMAT_UNIX_MILLI:
-                            case INTERVAL_DTS_FORMAT_UNIX:
-                                columnNumber(column->name, 17, 0);
-                                break;
-
-                            case INTERVAL_DTS_FORMAT_UNIX_NANO_STRING:
-                            case INTERVAL_DTS_FORMAT_UNIX_MICRO_STRING:
-                            case INTERVAL_DTS_FORMAT_UNIX_MILLI_STRING:
-                            case INTERVAL_DTS_FORMAT_UNIX_STRING:
+            case SYS_COL_TYPE_BLOB:
+                if (after && table != nullptr) {
+                    if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
+                        if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
+                            if (parseXml(reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
                                 columnString(column->name);
+                            else
+                                columnUnknown(column->name, reinterpret_cast<uint8_t *>(valueBufferOld), valueLengthOld);
+                        } else
+                            columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength);
+                    }
+                }
+                break;
+
+            case SYS_COL_TYPE_CLOB:
+                if (after && table != nullptr) {
+                    if (parseLob(lobCtx, data, length, column->charsetId, table->obj, offset, true, table->systemTable > 0))
+                        columnString(column->name);
+                }
+                break;
+
+            case SYS_COL_TYPE_DATE:
+            case SYS_COL_TYPE_TIMESTAMP:
+            case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
+                if (length != 7 && length != 11)
+                    columnUnknown(column->name, data, length);
+                else {
+                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                            nullptr};
+                    epochTime.tm_sec = data[6] - 1;  // 0..59
+                    epochTime.tm_min = data[5] - 1;  // 0..59
+                    epochTime.tm_hour = data[4] - 1; // 0..23
+                    epochTime.tm_mday = data[3];     // 1..31
+                    epochTime.tm_mon = data[2];      // 1..12
+
+                    int val1 = data[0];
+                    int val2 = data[1];
+                    // AD
+                    if (val1 >= 100 && val2 >= 100) {
+                        val1 -= 100;
+                        val2 -= 100;
+                        epochTime.tm_year = val1 * 100 + val2;
+
+                    } else {
+                        val1 = 100 - val1;
+                        val2 = 100 - val2;
+                        epochTime.tm_year = - (val1 * 100 + val2);
+                    }
+
+                    uint64_t fraction = 0;
+                    if (length == 11)
+                        fraction = Ctx::read32Big(data + 7);
+
+                    if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
+                        epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
+                        epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
+                        epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
+                        epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
+                        columnUnknown(column->name, data, length);
+                    } else {
+                        columnTimestamp(column->name, epochTime, fraction);
+                    }
+                }
+                break;
+
+            case SYS_COL_TYPE_RAW:
+                columnRaw(column->name, data, length);
+                break;
+
+            case SYS_COL_TYPE_FLOAT:
+                if (length == 4)
+                    columnFloat(column->name, decodeFloat(data));
+                else
+                    columnUnknown(column->name, data, length);
+                break;
+
+            case SYS_COL_TYPE_DOUBLE:
+                if (length == 8)
+                    columnDouble(column->name, decodeDouble(data));
+                else
+                    columnUnknown(column->name, data, length);
+                break;
+
+            case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
+                if (length != 9 && length != 13) {
+                    columnUnknown(column->name, data, length);
+                } else {
+                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                            nullptr};
+                    epochTime.tm_sec = data[6] - 1;  // 0..59
+                    epochTime.tm_min = data[5] - 1;  // 0..59
+                    epochTime.tm_hour = data[4] - 1; // 0..23
+                    epochTime.tm_mday = data[3];     // 1..31
+                    epochTime.tm_mon = data[2];      // 1..12
+
+                    int val1 = data[0];
+                    int val2 = data[1];
+                    // AD
+                    if (val1 >= 100 && val2 >= 100) {
+                        val1 -= 100;
+                        val2 -= 100;
+                        epochTime.tm_year = val1 * 100 + val2;
+
+                    } else {
+                        val1 = 100 - val1;
+                        val2 = 100 - val2;
+                        epochTime.tm_year = - (val1 * 100 + val2);
+                    }
+
+                    uint64_t fraction = 0;
+                    if (length == 13)
+                        fraction = Ctx::read32Big(data + 7);
+
+                    const char* tz = nullptr;
+                    char tz2[7];
+
+                    if (data[11] >= 5 && data[11] <= 36) {
+                        if (data[11] < 20 ||
+                                (data[11] == 20 && data[12] < 60))
+                            tz2[0] = '-';
+                        else
+                            tz2[0] = '+';
+
+                        if (data[11] < 20) {
+                            uint64_t val = 20 - data[11];
+                            tz2[1] = ctx->map10[val / 10];
+                            tz2[2] = ctx->map10[val % 10];
+                        } else {
+                            uint64_t val = data[11] - 20;
+                            tz2[1] = ctx->map10[val / 10];
+                            tz2[2] = ctx->map10[val % 10];
+                        }
+
+                        tz2[3] = ':';
+
+                        if (data[12] < 60) {
+                            uint64_t val = 60 - data[12];
+                            tz2[4] = ctx->map10[val / 10];
+                            tz2[5] = ctx->map10[val % 10];
+                        } else {
+                            uint64_t val = data[12] - 60;
+                            tz2[4] = ctx->map10[val / 10];
+                            tz2[5] = ctx->map10[val % 10];
+                        }
+                        tz2[6] = 0;
+                        tz = tz2;
+                    } else {
+                        uint16_t tzKey = (data[11] << 8) | data[12];
+                        auto timeZoneMapIt = locales->timeZoneMap.find(tzKey);
+                        if (timeZoneMapIt != locales->timeZoneMap.end())
+                            tz = timeZoneMapIt->second;
+                        else
+                            tz = "TZ?";
+                    }
+
+                    if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
+                        epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
+                        epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
+                        epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
+                        epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
+                        columnUnknown(column->name, data, length);
+                    } else {
+                        columnTimestampTz(column->name, epochTime, fraction, tz);
+                    }
+                }
+                break;
+
+            case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                if (length != 5 || data[4] < 49 || data[4] > 71)
+                    columnUnknown(column->name, data, length);
+                else {
+                    bool minus = false;
+                    uint64_t year = 0;
+                    if ((data[0] & 0x80) != 0)
+                        year = Ctx::read32Big(data) - 0x80000000;
+                    else {
+                        year = 0x80000000 - Ctx::read32Big(data);
+                        minus = true;
+                    }
+
+                    if (year > 999999999)
+                        columnUnknown(column->name, data, length);
+                    else {
+                        uint64_t month = 0;
+                        if (data[4] >= 60)
+                            month = data[4] - 60;
+                        else {
+                            month = 60 - data[4];
+                            minus = true;
+                        }
+
+                        char buffer[12];
+                        uint64_t val = 0;
+                        uint64_t len = 0;
+                        valueLength = 0;
+
+                        if (minus)
+                            valueBuffer[valueLength++] = '-';
+
+                        if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS || intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS_STRING) {
+                            val = year * 12 + month;
+                            if (val == 0) {
+                                valueBuffer[valueLength++] = '0';
+                            } else {
+                                while (val) {
+                                    buffer[len++] = ctx->map10[val % 10];
+                                    val /= 10;
+                                }
+                                while (len > 0)
+                                    valueBuffer[valueLength++] = buffer[--len];
+                            }
+
+                            if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS)
+                                columnNumber(column->name, 17, 0);
+                            else
+                                columnString(column->name);
+                        } else {
+                            val = year;
+                            if (val == 0) {
+                                valueBuffer[valueLength++] = '0';
+                            } else {
+                                while (val) {
+                                    buffer[len++] = ctx->map10[val % 10];
+                                    val /= 10;
+                                }
+                                while (len > 0)
+                                    valueBuffer[valueLength++] = buffer[--len];
+                            }
+
+                            if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_SPACE)
+                                valueBuffer[valueLength++] = ' ';
+                            else if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_COMMA)
+                                valueBuffer[valueLength++] = ',';
+                            else if (intervalYtmFormat == INTERVAL_YTM_FORMAT_STRING_YM_DASH)
+                                valueBuffer[valueLength++] = '-';
+
+                            if (month >= 10) {
+                                valueBuffer[valueLength++] = '1';
+                                valueBuffer[valueLength++] = ctx->map10[month - 10];
+                            } else
+                                valueBuffer[valueLength++] = ctx->map10[month];
+
+                            columnString(column->name);
                         }
                     }
                 }
-            }
-            break;
+                break;
 
-        case SYS_COL_TYPE_UROWID:
-            if (length == 13 && data[0] == 0x01) {
-                typeRowId rowId;
-                rowId.decodeFromHex(data + 1);
-                columnRowId(column->name, rowId);
-            } else {
-                columnUnknown(column->name, data, length);
-            }
-            break;
+            case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
+                if (length != 11 || data[4] < 37 || data[4] > 83 || data[5] < 1 || data[5] > 119 || data[6] < 1 || data[6] > 119)
+                    columnUnknown(column->name, data, length);
+                else {
+                    bool minus = false;
+                    uint64_t day = 0;
+                    if ((data[0] & 0x80) != 0)
+                        day = Ctx::read32Big(data) - 0x80000000;
+                    else {
+                        day = 0x80000000 - Ctx::read32Big(data);
+                        minus = true;
+                    }
 
-        default:
-            if (unknownType == UNKNOWN_TYPE_SHOW)
-                columnUnknown(column->name, data, length);
+                    int32_t us = 0;
+                    if ((data[7] & 0x80) != 0)
+                        us = Ctx::read32Big(data + 7) - 0x80000000;
+                    else {
+                        us = 0x80000000 - Ctx::read32Big(data + 7);
+                        minus = true;
+                    }
+
+                    if (day > 999999999 || us > 999999999)
+                        columnUnknown(column->name, data, length);
+                    else {
+                        uint64_t hour = 0;
+                        if (data[4] >= 60)
+                            hour = data[4] - 60;
+                        else {
+                            hour = 60 - data[4];
+                            minus = true;
+                        }
+
+                        uint64_t minute = 0;
+                        if (data[5] >= 60)
+                            minute = data[5] - 60;
+                        else {
+                            minute = 60 - data[5];
+                            minus = true;
+                        }
+
+                        uint64_t second = 0;
+                        if (data[6] >= 60)
+                            second = data[6] - 60;
+                        else {
+                            second = 60 - data[6];
+                            minus = true;
+                        }
+
+                        char buffer[30];
+                        valueLength = 0;
+                        uint64_t val = 0;
+                        uint64_t len = 0;
+
+                        if (minus)
+                            valueBuffer[valueLength++] = '-';
+
+                        if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE || intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA ||
+                                intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH) {
+                            val = day;
+                            if (day == 0) {
+                                valueBuffer[valueLength++] = '0';
+                            } else {
+                                while (val) {
+                                    buffer[len++] = ctx->map10[val % 10];
+                                    val /= 10;
+                                }
+                                while (len > 0)
+                                    valueBuffer[valueLength++] = buffer[--len];
+                            }
+
+                            if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE)
+                                valueBuffer[valueLength++] = ' ';
+                            else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA)
+                                valueBuffer[valueLength++] = ',';
+                            else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH)
+                                valueBuffer[valueLength++] = '-';
+
+                            valueBuffer[valueLength++] = ctx->map10[hour / 10];
+                            valueBuffer[valueLength++] = ctx->map10[hour % 10];
+                            valueBuffer[valueLength++] = ':';
+                            valueBuffer[valueLength++] = ctx->map10[minute / 10];
+                            valueBuffer[valueLength++] = ctx->map10[minute % 10];
+                            valueBuffer[valueLength++] = ':';
+                            valueBuffer[valueLength++] = ctx->map10[second / 10];
+                            valueBuffer[valueLength++] = ctx->map10[second % 10];
+                            valueBuffer[valueLength++] = '.';
+
+                            for (uint64_t j = 0; j < 9; ++j) {
+                                valueBuffer[valueLength + 8 - j] = ctx->map10[us % 10];
+                                us /= 10;
+                            }
+                            valueLength += 9;
+
+                            columnString(column->name);
+                        } else {
+                            switch (intervalDtsFormat) {
+                                case INTERVAL_DTS_FORMAT_UNIX_NANO:
+                                case INTERVAL_DTS_FORMAT_UNIX_NANO_STRING:
+                                    val = (((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us;
+                                    break;
+
+                                case INTERVAL_DTS_FORMAT_UNIX_MICRO:
+                                case INTERVAL_DTS_FORMAT_UNIX_MICRO_STRING:
+                                    val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500) / 1000;
+                                    break;
+
+                                case INTERVAL_DTS_FORMAT_UNIX_MILLI:
+                                case INTERVAL_DTS_FORMAT_UNIX_MILLI_STRING:
+                                    val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000) / 1000000;
+                                    break;
+
+                                case INTERVAL_DTS_FORMAT_UNIX:
+                                case INTERVAL_DTS_FORMAT_UNIX_STRING:
+                                    val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000000) / 1000000000;
+                            }
+
+                            if (val == 0) {
+                                valueBuffer[valueLength++] = '0';
+                            } else {
+                                while (val) {
+                                    buffer[len++] = ctx->map10[val % 10];
+                                    val /= 10;
+                                }
+                                while (len > 0)
+                                    valueBuffer[valueLength++] = buffer[--len];
+                            }
+
+                            switch (intervalDtsFormat) {
+                                case INTERVAL_DTS_FORMAT_UNIX_NANO:
+                                case INTERVAL_DTS_FORMAT_UNIX_MICRO:
+                                case INTERVAL_DTS_FORMAT_UNIX_MILLI:
+                                case INTERVAL_DTS_FORMAT_UNIX:
+                                    columnNumber(column->name, 17, 0);
+                                    break;
+
+                                case INTERVAL_DTS_FORMAT_UNIX_NANO_STRING:
+                                case INTERVAL_DTS_FORMAT_UNIX_MICRO_STRING:
+                                case INTERVAL_DTS_FORMAT_UNIX_MILLI_STRING:
+                                case INTERVAL_DTS_FORMAT_UNIX_STRING:
+                                    columnString(column->name);
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case SYS_COL_TYPE_UROWID:
+                if (length == 13 && data[0] == 0x01) {
+                    typeRowId rowId;
+                    rowId.decodeFromHex(data + 1);
+                    columnRowId(column->name, rowId);
+                } else {
+                    columnUnknown(column->name, data, length);
+                }
+                break;
+
+            default:
+                if (unknownType == UNKNOWN_TYPE_SHOW)
+                    columnUnknown(column->name, data, length);
         }
     }
 
@@ -1729,13 +1729,13 @@ namespace OpenLogReplicator {
             valueBufferAppend("?>", 2);
 
             ctx->info(0, "length: " + std::to_string(valueLengthOld));
-            ctx->info(0, "ptr: " + std::to_string((uint64_t)valueBufferOld));
+            ctx->info(0, "ptr: " + std::to_string(reinterpret_cast<uint64_t>(valueBufferOld)));
 
             // Dump raw data for future development
             for (uint64_t i = 0; i < valueLengthOld; ++i) {
                 char txt[3];
                 txt[0] = ' ';
-                ctx->info(0, "val: " + std::to_string((uint64_t)((unsigned char)valueBufferOld[i])));
+                ctx->info(0, "val: " + std::to_string(static_cast<uint64_t>(static_cast<unsigned char>(valueBufferOld[i]))));
                 txt[1] = ctx->map16[((unsigned char)valueBufferOld[i]) >> 4];
                 txt[2] = ctx->map16[valueBufferOld[i] & 0x0F];
 

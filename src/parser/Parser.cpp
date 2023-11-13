@@ -127,19 +127,19 @@ namespace OpenLogReplicator {
 
         if (ctx->dumpRedoLog >= 1) {
             uint16_t thread = 1; // TODO: verify field length/position
-            ctx->dumpStream << " " << std::endl;
+            ctx->dumpStream << " \n";
 
             if (ctx->version < REDO_VERSION_12_1)
                 ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
                         std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                         std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength << " VLD: 0x" <<
-                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << std::endl;
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << '\n';
             else {
                 uint32_t conUid = ctx->read32(data + 16);
                 ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence <<
                         "." << std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                         std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength << " VLD: 0x" <<
-                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << " CON_UID: " << std::dec << conUid << std::endl;
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << " CON_UID: " << std::dec << conUid << '\n';
             }
 
             if (ctx->dumpRawData > 0) {
@@ -151,16 +151,16 @@ namespace OpenLogReplicator {
 
                 for (uint64_t j = 0; j < headerLength; ++j)
                     ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
-                ctx->dumpStream << std::endl;
+                ctx->dumpStream << '\n';
             }
 
             if (headerLength == 68) {
                 if (ctx->version < REDO_VERSION_12_2)
                     ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
-                            lwnMember->subScn << " " << lwnTimestamp << std::endl;
+                            lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
                     ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
-                            lwnMember->subScn << " " << lwnTimestamp << std::endl;
+                            lwnMember->subScn << " " << lwnTimestamp << '\n';
                 uint16_t lwnNst = ctx->read16(data + 26);
                 uint32_t lwnLen = ctx->read32(data + 32);
 
@@ -168,19 +168,19 @@ namespace OpenLogReplicator {
                     ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
                             std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) << std::hex <<
                             lwnMember->offset << " LEN: " << std::setfill('0') << std::setw(4) << std::dec << lwnLen << " NST: " <<
-                            std::setfill('0') << std::setw(4) << std::dec << lwnNst << " SCN: " << PRINTSCN48(lwnScn) << ")" << std::endl;
+                            std::setfill('0') << std::setw(4) << std::dec << lwnNst << " SCN: " << PRINTSCN48(lwnScn) << ")" << '\n';
                 else
                     ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
                             std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) << std::hex <<
                             lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(8) << std::hex << lwnLen << " NST: 0x" <<
-                            std::setfill('0') << std::setw(4) << std::hex << lwnNst << " SCN: " << PRINTSCN64(lwnScn) << ")" << std::endl;
+                            std::setfill('0') << std::setw(4) << std::hex << lwnNst << " SCN: " << PRINTSCN64(lwnScn) << ")" << '\n';
             } else {
                 if (ctx->version < REDO_VERSION_12_2)
                     ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
-                            lwnMember->subScn << " " << lwnTimestamp << std::endl;
+                            lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
                     ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
-                            lwnMember->subScn << " " << lwnTimestamp << std::endl;
+                            lwnMember->subScn << " " << lwnTimestamp << '\n';
             }
         }
 
@@ -1158,11 +1158,11 @@ namespace OpenLogReplicator {
     void Parser::dumpRedoVector(uint8_t* data, uint64_t recordLength) const {
         if (ctx->logLevel >= LOG_LEVEL_WARNING) {
             std::ostringstream ss;
-            ss << "dumping redo vector" << std::endl;
+            ss << "dumping redo vector\n";
             ss << "##: " << std::dec << recordLength;
             for (uint64_t j = 0; j < recordLength; ++j) {
                 if ((j & 0x0F) == 0)
-                    ss << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
+                    ss << "\n##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
                 if ((j & 0x07) == 0)
                     ss << " ";
                 ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
@@ -1492,7 +1492,7 @@ namespace OpenLogReplicator {
         }
 
         if (ctx->dumpRedoLog >= 1 && ctx->dumpStream.is_open()) {
-            ctx->dumpStream << "END OF REDO DUMP" << std::endl;
+            ctx->dumpStream << "END OF REDO DUMP\n";
             ctx->dumpStream.close();
         }
 
