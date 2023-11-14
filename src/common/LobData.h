@@ -25,12 +25,24 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define LOB_DATA_H_
 
 namespace OpenLogReplicator {
+    class LobDataElement final {
+    public:
+        LobDataElement();
+        LobDataElement(typeDba newDba, uint32_t newOffset);
+
+        virtual ~LobDataElement();
+        bool operator<(const LobDataElement& other) const;
+
+        typeDba dba;
+        uint32_t offset;
+    };
+
     class LobData final {
     public:
         LobData();
         virtual ~LobData();
 
-        std::map<typeDba, uint8_t*> dataMap;
+        std::map<LobDataElement, uint8_t*> dataMap;
         std::map<uint32_t, typeDba> indexMap;
 
         uint32_t pageSize;

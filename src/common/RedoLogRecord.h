@@ -44,6 +44,7 @@ namespace OpenLogReplicator {
         typeObj recordObj;
         typeObj recordDataObj;
 
+        uint64_t lobOffset;
         uint64_t lobData;
         uint64_t indKey;
         uint64_t indKeyData;

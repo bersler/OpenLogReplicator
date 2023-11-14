@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
              orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId; ) {
 
-            addLob(ctx, lobId, orphanedLobsIt->first.page, orphanedLobsIt->second, xid, offset);
+            addLob(ctx, lobId, orphanedLobsIt->first.page, 0, orphanedLobsIt->second, xid, offset);
 
             if (ctx->trace & TRACE_LOB)
                 ctx->logTrace(TRACE_LOB, "id: " + lobId.lower() + " page: " + std::to_string(orphanedLobsIt->first.page));
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void LobCtx::addLob(Ctx* ctx, const typeLobId& lobId, typeDba page, uint8_t* data, typeXid xid, uint64_t offset) {
+    void LobCtx::addLob(Ctx* ctx, const typeLobId& lobId, typeDba page, uint64_t pageOffset, uint8_t* data, typeXid xid, uint64_t offset) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -51,22 +51,25 @@ namespace OpenLogReplicator {
             lobs.insert_or_assign(lobId, lobData);
         }
 
-        auto dataMapIt = lobData->dataMap.find(page);
+        LobDataElement element(page, pageOffset);
+        auto dataMapIt = lobData->dataMap.find(element);
         if (dataMapIt != lobData->dataMap.end()) {
             if (ctx->trace & TRACE_LOB)
                 ctx->logTrace(TRACE_LOB, "id: " + lobId.lower() +  " page: " + std::to_string(page) + " OVERWRITE");
-            delete[] lobData->dataMap[page];
+            delete[] dataMapIt->second;
         }
 
-        lobData->dataMap.insert_or_assign(page, data);
+        lobData->dataMap.insert_or_assign(element, data);
 
         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t));
-        if (lobData->pageSize == 0) {
-            lobData->pageSize = redoLogRecordLob->lobPageSize;
-        } else if (lobData->pageSize != redoLogRecordLob->lobPageSize) {
-            throw RedoLogException(50003, "inconsistent page size lobid: " + lobId.upper() + ", new: " +
-                                   std::to_string(redoLogRecordLob->lobPageSize) + ", already set to: " + std::to_string(lobData->pageSize) +
-                                   ", xid: " + xid.toString() + ", offset: " + std::to_string(offset));
+        if (redoLogRecordLob->lobPageSize != 0) {
+            if (lobData->pageSize == 0) {
+                lobData->pageSize = redoLogRecordLob->lobPageSize;
+            } else if (lobData->pageSize != redoLogRecordLob->lobPageSize) {
+                throw RedoLogException(50003, "inconsistent page size lobid: " + lobId.upper() + ", new: " +
+                                       std::to_string(redoLogRecordLob->lobPageSize) + ", already set to: " + std::to_string(lobData->pageSize) +
+                                       ", xid: " + xid.toString() + ", offset: " + std::to_string(offset));
+            }
         }
 
         uint32_t pageNo = redoLogRecordLob->lobPageNo;

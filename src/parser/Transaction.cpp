@@ -298,7 +298,7 @@ namespace OpenLogReplicator {
                     }
                     break;
 
-                    // LOB index 12+
+                    // LOB index 12+ and LOB redo
                     case 0x05011A02:
                         if (metadata->ctx->trace & TRACE_LOB_DATA) {
                             std::ostringstream ss;
@@ -325,6 +325,7 @@ namespace OpenLogReplicator {
                                 }
                             }
                         }
+
                         switch (redoLogRecord2->indKeyDataCode) {
                             case KDLI_CODE_LMAP:
                             case KDLI_CODE_LOAD_ITREE:
@@ -336,6 +337,19 @@ namespace OpenLogReplicator {
                             case KDLI_CODE_ALMAP:
                                 lobCtx.appendList(metadata->ctx, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData);
                                 break;
+
+                            case KDLI_CODE_FILL:
+                                if (metadata->ctx->trace & TRACE_LOB)
+                                    metadata->ctx->logTrace(TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() +
+                                                            " obj: " + std::to_string(redoLogRecord2->dataObj) +  " op: " +
+                                                            std::to_string(redoLogRecord2->opCode) + "     dba: " +
+                                                            std::to_string(redoLogRecord2->dba) + " page: " +
+                                                            std::to_string(redoLogRecord2->lobPageNo) + " pg: " +
+                                                            std::to_string(redoLogRecord2->lobPageSize));
+
+                                lobCtx.addLob(metadata->ctx, redoLogRecord2->lobId, redoLogRecord2->dba, redoLogRecord2->lobOffset,
+                                              transactionBuffer->allocateLob(redoLogRecord2), xid, redoLogRecord2->lobData);
+                                break;
                         }
                         break;
 
@@ -346,9 +360,9 @@ namespace OpenLogReplicator {
                     // Update key data in row
                     case 0x05010A12:
                     {
-                        OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord1->dataObj);
+                        OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord2->dataObj);
                         if (lob == nullptr) {
-                            metadata->ctx->warning(60016, "LOB is null for (obj: " + std::to_string(redoLogRecord1->dataObj) +
+                            metadata->ctx->warning(60016, "LOB is null for (obj: " + std::to_string(redoLogRecord2->obj) +
                                                    ", dataobj: " + std::to_string(redoLogRecord2->dataObj) + ", offset: " +
                                                    std::to_string(redoLogRecord1->dataOffset) + ", xid: " + xid.toString());
                             break;

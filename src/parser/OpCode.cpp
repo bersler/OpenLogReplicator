@@ -545,9 +545,28 @@ namespace OpenLogReplicator {
 
     void OpCode::kdliFill(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
                           uint8_t code) {
+
+        redoLogRecord->indKeyDataCode = code;
+        redoLogRecord->lobOffset = ctx->read16(redoLogRecord->data + fieldPos + 2);;
+        redoLogRecord->lobData = fieldPos + 8;
+        redoLogRecord->lobDataLength = ctx->read16(redoLogRecord->data + fieldPos + 6);
+
         if (ctx->dumpRedoLog >= 1) {
+            uint16_t fsiz = ctx->read16(redoLogRecord->data + fieldPos + 4);
+
             ctx->dumpStream << "KDLI fill [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]\n";
-            // TODO: finish
+            ctx->dumpStream << "  foff  0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord->lobOffset << '\n';
+            ctx->dumpStream << "  fsiz  " << std::dec << fsiz << '\n';
+            ctx->dumpStream << "  flen  " << std::dec << redoLogRecord->lobDataLength << '\n';
+
+            ctx->dumpStream << "  data\n";
+            for (uint64_t j = 0; j < fieldLength - 8; ++j) {
+                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j + 8]);
+                if ((j % 26) < 25)
+                    ctx->dumpStream << " ";
+                if ((j % 26) == 25 || j == static_cast<uint64_t>(fieldLength - 8) - 1)
+                    ctx->dumpStream << '\n';
+            }
         }
     }
 

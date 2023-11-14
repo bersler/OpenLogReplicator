@@ -441,7 +441,7 @@ namespace OpenLogReplicator {
                     OpCode1301::process(ctx, &redoLogRecord[vectorCur]);
                     break;
 
-                // LOB index 12+
+                // LOB index 12+ and LOB redo
                 case 0x1A02:
                     if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
@@ -635,7 +635,7 @@ namespace OpenLogReplicator {
                           std::to_string(redoLogRecord1->dba) + " page: " + std::to_string(redoLogRecord1->lobPageNo) + " pg: " +
                           std::to_string(redoLogRecord1->lobPageSize));
 
-        transaction->lobCtx.addLob(ctx, redoLogRecord1->lobId, redoLogRecord1->dba, transactionBuffer->allocateLob(redoLogRecord1),
+        transaction->lobCtx.addLob(ctx, redoLogRecord1->lobId, redoLogRecord1->dba, 0, transactionBuffer->allocateLob(redoLogRecord1),
                                    transaction->xid, redoLogRecord1->dataOffset);
     }
 
@@ -1096,7 +1096,7 @@ namespace OpenLogReplicator {
             case 0x0A08:
             // Update key data in row
             case 0x0A12:
-            // LOB index 12+
+            // LOB index 12+ and LOB redo
             case 0x1A02:
                 break;
 
