@@ -540,7 +540,8 @@ namespace OpenLogReplicator {
                         pageNo = pageNoLob;
                     }
 
-                    auto dataMapIt = lobData->dataMap.find(page);
+                    LobDataElement element(page, 0);
+                    auto dataMapIt = lobData->dataMap.find(element);
                     if (dataMapIt == lobData->dataMap.end()) {
                         if (ctx->trace & TRACE_LOB_DATA)
                             ctx->logTrace(TRACE_LOB_DATA, "missing LOB (in-index) for xid: " + lastXid.toString() + " LOB: " +
@@ -635,7 +636,8 @@ namespace OpenLogReplicator {
                             page = indexMapIt->second;
                         }
 
-                        auto dataMapIt = lobData->dataMap.find(page);
+                        LobDataElement element(page, 0);
+                        auto dataMapIt = lobData->dataMap.find(element);
                         if (dataMapIt == lobData->dataMap.end()) {
                             if (ctx->trace & TRACE_LOB_DATA) {
                                 ctx->logTrace(TRACE_LOB_DATA, "missing LOB index (in-index) for xid: " + lastXid.toString() + " LOB: " +
@@ -646,21 +648,25 @@ namespace OpenLogReplicator {
                         }
 
                         valueBufferCheck(lobData->pageSize * 4, offset);
-                        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                        redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
-                        if (j < pageCnt)
-                            chunkLength = redoLogRecordLob->lobDataLength;
-                        else
-                            chunkLength = sizeRest;
-                        if (j == jMax - 1)
-                            hasNext = false;
+                        while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
+                            RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
+                            redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
+                            if (j < pageCnt)
+                                chunkLength = redoLogRecordLob->lobDataLength;
+                            else
+                                chunkLength = sizeRest;
+                            if (j == jMax - 1)
+                                hasNext = false;
 
-                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData, isClob,
-                                       hasPrev, hasNext, isSystem);
-                        appendData = true;
-                        hasPrev = true;
+                            addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData, isClob,
+                                           hasPrev, hasNext, isSystem);
+                            appendData = true;
+                            hasPrev = true;
+                            totalLobLength -= chunkLength;
+                            dataMapIt++;
+                        }
+
                         ++page;
-                        totalLobLength -= chunkLength;
                         dataOffset += 4;
                     }
                 // In-value
@@ -810,7 +816,8 @@ namespace OpenLogReplicator {
                                 }
 
                                 for (uint64_t j = 0; j < pageCnt; ++j) {
-                                    auto dataMapIt = lobData->dataMap.find(page);
+                                    LobDataElement element(page, 0);
+                                    auto dataMapIt = lobData->dataMap.find(element);
                                     if (dataMapIt == lobData->dataMap.end()) {
                                         if (ctx->trace & TRACE_LOB_DATA) {
                                             ctx->logTrace(TRACE_LOB_DATA, "missing LOB data (new in-value) for xid: " + lastXid.toString() +
@@ -821,18 +828,21 @@ namespace OpenLogReplicator {
                                         return false;
                                     }
 
-                                    valueBufferCheck(lobData->pageSize * 4, offset);
-                                    RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                                    redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
-                                    chunkLength = redoLogRecordLob->lobDataLength;
-                                    if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
-                                        hasNext = false;
+                                    while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
+                                        valueBufferCheck(lobData->pageSize * 4, offset);
+                                        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
+                                        redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
+                                        chunkLength = redoLogRecordLob->lobDataLength;
+                                        if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
+                                            hasNext = false;
 
-                                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData,
-                                                   isClob, hasPrev, hasNext, isSystem);
-                                    appendData = true;
-                                    hasPrev = true;
-                                    totalLobLength -= chunkLength;
+                                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset,
+                                                       appendData, isClob, hasPrev, hasNext, isSystem);
+                                        appendData = true;
+                                        hasPrev = true;
+                                        totalLobLength -= chunkLength;
+                                        dataMapIt++;
+                                    }
                                     ++page;
                                 }
                             }
@@ -863,7 +873,8 @@ namespace OpenLogReplicator {
                                     typeDba page = ctx->read32(dataLob + i * 8 + 8 + 4);
 
                                     for (uint64_t j = 0; j < pageCnt; ++j) {
-                                        auto dataMapIt = lobData->dataMap.find(page);
+                                        LobDataElement element(page, 0);
+                                        auto dataMapIt = lobData->dataMap.find(element);
                                         if (dataMapIt == lobData->dataMap.end()) {
                                             if (ctx->trace & TRACE_LOB_DATA) {
                                                 ctx->logTrace(TRACE_LOB_DATA, "missing LOB data (new in-value 12+) for xid: " +
@@ -952,7 +963,8 @@ namespace OpenLogReplicator {
                             }
 
                             for (uint64_t j = 0; j < pageCnt; ++j) {
-                                auto dataMapIt = lobData->dataMap.find(page);
+                                LobDataElement element(page, 0);
+                                auto dataMapIt = lobData->dataMap.find(element);
                                 if (dataMapIt == lobData->dataMap.end()) {
                                     ctx->warning(60005, "missing LOB data (new in-value) for xid: " + lastXid.toString() + ", LOB: " +
                                                  lobId.lower() + ", page: " + std::to_string(page) + ", obj: " + std::to_string(obj));

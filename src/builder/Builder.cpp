@@ -1732,6 +1732,7 @@ namespace OpenLogReplicator {
             ctx->info(0, "ptr: " + std::to_string(reinterpret_cast<uint64_t>(valueBufferOld)));
 
             // Dump raw data for future development
+            valueBufferCheck(valueLengthOld * 3, offset);
             for (uint64_t i = 0; i < valueLengthOld; ++i) {
                 char txt[3];
                 txt[0] = ' ';
