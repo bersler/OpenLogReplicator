@@ -176,10 +176,10 @@ int main(int argc, char** argv) {
                 ctx.info(0, "START tm_rel: " + std::to_string(request.tm_rel()) + paramSeq);
             } else
                 throw OpenLogReplicator::RuntimeException(1,"server is waiting to define position to start, expected: [now{,<seq>}|"
-                                                            "scn:<scn>{,<seq>}|tm_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
+                                                          "scn:<scn>{,<seq>}|tm_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
         } else
             throw OpenLogReplicator::RuntimeException(1, "server returned code: " + std::to_string(response.code()) +
-                    " for request code: " + std::to_string(request.code()));
+                                                      " for request code: " + std::to_string(request.code()));
 
         // Index to count messages, to confirm after 1000th
         uint64_t num = 0;
@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
         // Either after start or after continue, the server is expected to start streaming
         if (response.code() != OpenLogReplicator::pb::ResponseCode::REPLICATE)
             throw OpenLogReplicator::RuntimeException(1, "server returned code: " + std::to_string(response.code()) +
-                    " for request code: " + std::to_string(request.code()));
+                                                      " for request code: " + std::to_string(request.code()));
 
         for (;;) {
             uint64_t length = receive(response, stream, &ctx, buffer, formatProtobuf);
@@ -248,7 +248,7 @@ int main(int argc, char** argv) {
                 rapidjson::Document document;
                 if (document.Parse(reinterpret_cast<const char*>(buffer)).HasParseError())
                     throw OpenLogReplicator::RuntimeException(20001, "offset: " + std::to_string(document.GetErrorOffset()) +
-                            " - parse error: " + GetParseError_En(document.GetParseError()));
+                                                              " - parse error: " + GetParseError_En(document.GetParseError()));
 
                 cScn = OpenLogReplicator::Ctx::getJsonFieldU64("network", document, "c_scn");
                 cIdx = OpenLogReplicator::Ctx::getJsonFieldU64("network", document, "c_idx");

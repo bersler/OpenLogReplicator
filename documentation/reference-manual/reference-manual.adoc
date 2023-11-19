@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.1
-:revdate: 2023-10-12
+:revdate: 2023-11-19
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -629,6 +629,18 @@ Refer to details in xref:../user-manual/user-manual.adoc#output-format[output fo
 _CAUTION:_ Protocol buffer support is in experimental state.
 It is not fully tested and might not work properly.
 Don't use it for production without testing.
+
+|`attributes` [[xid]]
+|_number_, min: 0, max: 7, default: 0
+|Transaction attributes location.
+
+Field value is a sum of:
+
+* `0` -- add attributes to the begin message of the transaction.
+
+* `1` -- add attributes to every DML message of the transaction.
+
+* `2` -- add attributes to the commit message of the transaction.
 
 |`char` [[char]]
 |_number_, min: 0, max: 3, default: 0

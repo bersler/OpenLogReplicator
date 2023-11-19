@@ -145,7 +145,6 @@ namespace OpenLogReplicator {
         static void dumpColVector(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colNum);
         static void dumpCompressed(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint16_t fieldLength);
         static void dumpRows(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data);
-        static void dumpVal(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, const char* msg);
         static void dumpHex(Ctx* ctx, RedoLogRecord* redoLogRecord);
         static void processFbFlags(uint8_t fb, char* fbStr);
 

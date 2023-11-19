@@ -61,6 +61,7 @@ namespace OpenLogReplicator {
             builder(newBuilder),
             metadata(newMetadata),
             transactionBuffer(newTransactionBuffer),
+            lastTransaction(nullptr),
             lwnAllocated(0),
             lwnAllocatedMax(0),
             lwnTimestamp(0),
@@ -311,12 +312,12 @@ namespace OpenLogReplicator {
 
                 // Session information
                 case 0x0513:
-                    OpCode0513::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0513::process(ctx, &redoLogRecord[vectorCur], lastTransaction);
                     break;
 
                 // Session information
                 case 0x0514:
-                    OpCode0514::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0514::process(ctx, &redoLogRecord[vectorCur], lastTransaction);
                     break;
 
                 // REDO: Insert leaf row
@@ -555,10 +556,11 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, true,
+                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
+        lastTransaction = transaction;
 
         OracleTable* table = nullptr;
         {
@@ -584,6 +586,8 @@ namespace OpenLogReplicator {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
             transaction->purge(transactionBuffer);
+            if (transaction == lastTransaction)
+                lastTransaction = nullptr;
             delete transaction;
             return;
         }
@@ -620,10 +624,12 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, true,
+                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
+        lastTransaction = transaction;
+
         if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
             transaction->system = true;
         if (lob->table != nullptr && (lob->table->options & OPTIONS_SCHEMA_TABLE) != 0)
@@ -644,10 +650,11 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->xid.getData() != 0 && transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, true,
+                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
+        lastTransaction = transaction;
 
         if (redoLogRecord1->opc != 0x0501 && redoLogRecord1->opc != 0x0A16 && redoLogRecord1->opc != 0x0B01) {
             transaction->log(ctx, "opc ", redoLogRecord1);
@@ -678,6 +685,8 @@ namespace OpenLogReplicator {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
             transaction->purge(transactionBuffer);
+            if (transaction == lastTransaction)
+                lastTransaction = nullptr;
             delete transaction;
             return;
         }
@@ -705,6 +714,7 @@ namespace OpenLogReplicator {
             }
             return;
         }
+        lastTransaction = transaction;
 
         OracleTable* table = nullptr;
         {
@@ -727,12 +737,12 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->xid.sqn() == 0)
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, false, true,
-                                                                      false);
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, false, true, false);
         transaction->begin = true;
         transaction->firstSequence = sequence;
         transaction->firstOffset = lwnCheckpointBlock * reader->getBlockSize();
         transaction->log(ctx, "B   ", redoLogRecord1);
+        lastTransaction = transaction;
     }
 
     void Parser::appendToTransactionCommit(RedoLogRecord* redoLogRecord1) {
@@ -757,8 +767,8 @@ namespace OpenLogReplicator {
         if (brokenXidMapListIt != transactionBuffer->brokenXidMapList.end())
             transactionBuffer->brokenXidMapList.erase(xidMap);
 
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, true,
+                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
 
@@ -798,6 +808,7 @@ namespace OpenLogReplicator {
 
         transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
         transaction->purge(transactionBuffer);
+        lastTransaction = nullptr;
         delete transaction;
     }
 
@@ -814,6 +825,7 @@ namespace OpenLogReplicator {
                                                                       FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
+        lastTransaction = transaction;
 
         typeObj obj;
         if (redoLogRecord1->dataObj != 0) {
@@ -890,6 +902,8 @@ namespace OpenLogReplicator {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
             transaction->purge(transactionBuffer);
+            if (transaction == lastTransaction)
+                lastTransaction = nullptr;
             delete transaction;
             return;
         }
@@ -915,6 +929,7 @@ namespace OpenLogReplicator {
             }
             return;
         }
+        lastTransaction = transaction;
         redoLogRecord1->xid = transaction->xid;
 
         // Skip list
@@ -993,10 +1008,11 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, true,
+                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
+        lastTransaction = transaction;
 
         typeDataObj dataObj;
         if (redoLogRecord1->dataObj != 0) {
@@ -1068,13 +1084,14 @@ namespace OpenLogReplicator {
                     redoLogRecord1->xid = parentXid;
                     redoLogRecord2->xid = parentXid;
 
-                    transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                     true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                    transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, true,
+                                                                     FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
                     if (transaction == nullptr) {
                         if (ctx->trace & TRACE_LOB)
                             ctx->logTrace(TRACE_LOB, "parent transaction not found");
                         return;
                     }
+                    lastTransaction = transaction;
                 }
             }
         } else
@@ -1148,6 +1165,8 @@ namespace OpenLogReplicator {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
             transaction->purge(transactionBuffer);
+            if (transaction == lastTransaction)
+                lastTransaction = nullptr;
             delete transaction;
             return;
         }
@@ -1369,6 +1388,8 @@ namespace OpenLogReplicator {
                     ctx->logTrace(TRACE_LWN, "checkpoint at " + std::to_string(currentBlock) + "/" + std::to_string(lwnEndBlock) +
                                   " num: " + std::to_string(lwnNumCnt) + "/" + std::to_string(lwnNumMax));
                 if (currentBlock == lwnEndBlock && lwnNumCnt == lwnNumMax) {
+                    lastTransaction = nullptr;
+
                     if (ctx->trace & TRACE_LWN)
                         ctx->logTrace(TRACE_LWN, "* analyze: " + std::to_string(lwnScn));
                     for (uint64_t i = 0; i < lwnRecords; ++i) {

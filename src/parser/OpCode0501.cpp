@@ -445,7 +445,7 @@ namespace OpenLogReplicator {
             }
 
             if (fieldLength >= 24) {
-                uint32_t keySizes = ctx->read32(redoLogRecord->data + fieldPos + 20);
+                uint16_t keySizes = ctx->read16(redoLogRecord->data + fieldPos + 20);
 
                 if (fieldLength < keySizes * 2 + 24) {
                     ctx->warning(70001, "too short field kdilk key sizes(" + std::to_string(keySizes) + "): " +

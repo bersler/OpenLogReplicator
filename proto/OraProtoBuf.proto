@@ -158,4 +158,5 @@ message RedoResponse {
     repeated Payload payload = 9;
     uint64 c_scn = 10;
     uint64 c_idx = 11;
+    map<string,string> attributes = 12;
 }

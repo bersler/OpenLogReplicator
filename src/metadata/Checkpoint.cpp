@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
 
             if (configFileStat.st_size > CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0)
                 throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " +
-                                                    std::to_string(configFileStat.st_size));
+                                             std::to_string(configFileStat.st_size));
 
             if (configFileBuffer != nullptr)
                 delete[] configFileBuffer;
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
             uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
             if (bytesRead != static_cast<uint64_t>(configFileStat.st_size))
                 throw ConfigurationException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) +
-                                                    " bytes read instead of " + std::to_string(configFileStat.st_size));
+                                             " bytes read instead of " + std::to_string(configFileStat.st_size));
             configFileBuffer[configFileStat.st_size] = 0;
 
             updateConfigFile();

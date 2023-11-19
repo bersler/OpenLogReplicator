@@ -406,7 +406,15 @@ namespace OpenLogReplicator {
                 dbFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "db");
                 if (dbFormat > 3)
                     throw ConfigurationException(30001, "bad JSON, invalid 'db' value: " + std::to_string(dbFormat) +
-                                                        ", expected: one of {0 .. 3}");
+                                                 ", expected: one of {0 .. 3}");
+            }
+
+            uint64_t attributesFormat = 0;
+            if (formatJson.HasMember("attributes")) {
+                attributesFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
+                if (attributesFormat > 7)
+                    throw ConfigurationException(30001, "bad JSON, invalid 'attributes' value: " + std::to_string(attributesFormat) +
+                                                 ", expected: one of {0 .. 7}");
             }
 
             uint64_t intervalDtsFormat = INTERVAL_DTS_FORMAT_UNIX_NANO;
@@ -414,7 +422,7 @@ namespace OpenLogReplicator {
                 intervalDtsFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "interval-dts");
                 if (intervalDtsFormat > 10)
                     throw ConfigurationException(30001, "bad JSON, invalid 'interval-dts' value: " + std::to_string(intervalDtsFormat) +
-                                                        ", expected: one of {0 .. 10}");
+                                                 ", expected: one of {0 .. 10}");
             }
 
             uint64_t intervalYtmFormat = INTERVAL_YTM_FORMAT_MONTHS;
@@ -422,7 +430,7 @@ namespace OpenLogReplicator {
                 intervalYtmFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "interval-ytm");
                 if (intervalYtmFormat > 4)
                     throw ConfigurationException(30001, "bad JSON, invalid 'interval-ytm' value: " + std::to_string(intervalYtmFormat) +
-                                                        ", expected: one of {0 .. 4}");
+                                                 ", expected: one of {0 .. 4}");
             }
 
             uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
@@ -467,7 +475,7 @@ namespace OpenLogReplicator {
                 timestampTzFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-tz");
                 if (timestampTzFormat > 4)
                     throw ConfigurationException(30001, "bad JSON, invalid 'timestamp-tz' value: " + std::to_string(timestampTzFormat) +
-                                                        ", expected: one of {0 .. 4}");
+                                                 ", expected: one of {0 .. 4}");
             }
 
             uint64_t timestampAll = TIMESTAMP_JUST_BEGIN;
@@ -475,7 +483,7 @@ namespace OpenLogReplicator {
                 timestampAll = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-all");
                 if (timestampAll > 1)
                     throw ConfigurationException(30001, "bad JSON, invalid 'timestamp-all' value: " + std::to_string(timestampAll) +
-                                                        ", expected: one of {0, 1}");
+                                                 ", expected: one of {0, 1}");
             }
 
             uint64_t charFormat = CHAR_FORMAT_UTF8;
@@ -546,19 +554,20 @@ namespace OpenLogReplicator {
 
             Builder* builder;
             if (strcmp("json", formatType) == 0) {
-                builder = new BuilderJson(ctx, locales, metadata, dbFormat, intervalDtsFormat,
-                                          intervalYtmFormat, messageFormat, ridFormat, xidFormat,
-                                          timestampFormat, timestampTzFormat, timestampAll,
-                                          charFormat, scnFormat, scnAll, unknownFormat,
-                                          schemaFormat, columnFormat, unknownType, flushBuffer);
+                builder = new BuilderJson(ctx, locales, metadata, dbFormat, attributesFormat,
+                                          intervalDtsFormat, intervalYtmFormat, messageFormat,
+                                          ridFormat, xidFormat, timestampFormat,
+                                          timestampTzFormat, timestampAll, charFormat, scnFormat,
+                                          scnAll, unknownFormat, schemaFormat, columnFormat,
+                                          unknownType, flushBuffer);
             } else if (strcmp("protobuf", formatType) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                builder = new BuilderProtobuf(ctx, locales, metadata, dbFormat, intervalDtsFormat,
-                                              intervalYtmFormat, messageFormat, ridFormat,
-                                              xidFormat, timestampFormat, timestampTzFormat,
-                                              timestampAll, charFormat, scnFormat, scnAll,
-                                              unknownFormat, schemaFormat, columnFormat,
-                                              unknownType, flushBuffer);
+                builder = new BuilderProtobuf(ctx, locales, metadata, dbFormat, attributesFormat,
+                                              intervalDtsFormat, intervalYtmFormat, messageFormat,
+                                              ridFormat, xidFormat, timestampFormat,
+                                              timestampTzFormat, timestampAll, charFormat, scnFormat,
+                                              scnAll, unknownFormat, schemaFormat,
+                                              columnFormat, unknownType, flushBuffer);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid 'format' value: " + std::string(formatType) +
                                              ", expected: not 'protobuf' since the code is not compiled");

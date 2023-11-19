@@ -26,14 +26,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "BuilderJson.h"
 
 namespace OpenLogReplicator {
-    BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newIntervalDtsFormat,
-                             uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                             uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat,
-                             uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat,
-                             uint64_t newUnknownType, uint64_t newFlushBuffer) :
-        Builder(newCtx, newLocales, newMetadata, newDbFormat, newIntervalDtsFormat, newIntervalYtmFormat, newMessageFormat, newRidFormat, newXidFormat,
-                newTimestampFormat, newTimestampTzFormat, newTimestampAll, newCharFormat, newScnFormat, newScnAll, newUnknownFormat, newSchemaFormat,
-                newColumnFormat, newUnknownType, newFlushBuffer),
+    BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newAttributesFormat,
+                             uint64_t newIntervalDtsFormat, uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat,
+                             uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll,
+                             uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
+                             uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+        Builder(newCtx, newLocales, newMetadata, newDbFormat, newAttributesFormat, newIntervalDtsFormat, newIntervalYtmFormat, newMessageFormat, newRidFormat,
+                newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll, newCharFormat, newScnFormat, newScnAll, newUnknownFormat,
+                newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
                 hasPreviousValue(false),
                 hasPreviousRedo(false),
                 hasPreviousColumn(false) {
@@ -553,6 +553,24 @@ namespace OpenLogReplicator {
         }
     }
 
+    void BuilderJson::appendAttributes() {
+        append(R"("attributes":[)", sizeof(R"("attributes":[)") - 1);
+        bool hasPreviousAttribute = false;
+        for (const auto &attributeIt: *attributes) {
+            if (hasPreviousAttribute)
+                append(',');
+            else
+                hasPreviousAttribute = true;
+
+            append('"');
+            appendEscape(attributeIt.first);
+            append(R"(":")", sizeof(R"(":")") - 1);
+            appendEscape(attributeIt.second);
+            append('"');
+        }
+        append("],", 2);
+    }
+
     void BuilderJson::appendSchema(OracleTable* table, typeObj obj) {
         if (table == nullptr) {
             std::string ownerName;
@@ -774,6 +792,9 @@ namespace OpenLogReplicator {
         else
             hasPreviousValue = true;
 
+        if ((attributesFormat & ATTRIBUTES_FORMAT_BEGIN) != 0)
+            appendAttributes();
+
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         } else {
@@ -804,6 +825,9 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
+            if ((attributesFormat & ATTRIBUTES_FORMAT_COMMIT) != 0)
+                appendAttributes();
+
             append(R"("payload":[{"op":"commit"}]})", sizeof(R"("payload":[{"op":"commit"}]})") - 1);
             builderCommit(true);
         }
@@ -830,6 +854,9 @@ namespace OpenLogReplicator {
                 append(',');
             else
                 hasPreviousValue = true;
+
+            if ((attributesFormat & ATTRIBUTES_FORMAT_DML) != 0)
+                appendAttributes();
 
             append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
@@ -867,6 +894,9 @@ namespace OpenLogReplicator {
                 append(',');
             else
                 hasPreviousValue = true;
+
+            if ((attributesFormat & ATTRIBUTES_FORMAT_DML) != 0)
+                appendAttributes();
 
             append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
@@ -906,6 +936,9 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
+            if ((attributesFormat & ATTRIBUTES_FORMAT_DML) != 0)
+                appendAttributes();
+
             append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
@@ -943,6 +976,9 @@ namespace OpenLogReplicator {
                 append(',');
             else
                 hasPreviousValue = true;
+
+            if ((attributesFormat & ATTRIBUTES_FORMAT_DML) != 0)
+                appendAttributes();
 
             append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }

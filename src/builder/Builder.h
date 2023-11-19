@@ -101,6 +101,7 @@ namespace OpenLogReplicator {
         BuilderMsg* msg;
 
         uint64_t dbFormat;
+        uint64_t attributesFormat;
         uint64_t intervalDtsFormat;
         uint64_t intervalYtmFormat;
         uint64_t messageFormat;
@@ -144,6 +145,7 @@ namespace OpenLogReplicator {
         bool compressedAfter;
         uint8_t prevChars[MAX_CHARACTER_LENGTH * 2];
         uint64_t prevCharsSize;
+        const std::unordered_map<std::string, std::string>* attributes;
 
         std::mutex mtx;
         std::condition_variable condNoWriterWork;
@@ -1169,16 +1171,16 @@ namespace OpenLogReplicator {
         typeScn lwnScn;
         typeIdx lwnIdx;
 
-        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newIntervalDtsFormat, uint64_t newIntervalYtmFormat,
-                uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat,
-                uint64_t newTimestampAll,  uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat,
-                uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
+        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newAttributesFormat, uint64_t newIntervalDtsFormat,
+                uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat,
+                uint64_t newTimestampTzFormat, uint64_t newTimestampAll,  uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
+                uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
         virtual ~Builder();
 
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(typeXid xid, typeScn scn, typeScn newLwnScn);
+        void processBegin(typeXid xid, typeScn scn, typeScn newLwnScn, const std::unordered_map<std::string, std::string>* newAttributes);
         void processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
                                    bool system, bool schema, bool dump);
         void processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,

@@ -941,7 +941,7 @@ namespace OpenLogReplicator {
         auto sysCColMapKeyIt = sysCColMapKey.find(sysCColKey);
         if (sysCColMapKeyIt != sysCColMapKey.end())
             throw DataException(50024, "duplicate SYS.CCOL$ value for unique (OBJ#: " + std::to_string(sysCCol->obj) + ", INTCOL#: " +
-                                       std::to_string(sysCCol->intCol) + ", CON#: " + std::to_string(sysCCol->con) + ")");
+                                std::to_string(sysCCol->intCol) + ", CON#: " + std::to_string(sysCCol->con) + ")");
 
         sysCColMapRowId.insert_or_assign(sysCCol->rowId, sysCCol);
         sysCColMapKey.insert_or_assign(sysCColKey, sysCCol);

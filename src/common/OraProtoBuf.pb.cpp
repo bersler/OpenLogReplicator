@@ -130,9 +130,21 @@ struct RedoRequestDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RedoRequestDefaultTypeInternal _RedoRequest_default_instance_;
+PROTOBUF_CONSTEXPR RedoResponse_AttributesEntry_DoNotUse::RedoResponse_AttributesEntry_DoNotUse(
+    ::_pbi::ConstantInitialized) {}
+struct RedoResponse_AttributesEntry_DoNotUseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR RedoResponse_AttributesEntry_DoNotUseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~RedoResponse_AttributesEntry_DoNotUseDefaultTypeInternal() {}
+  union {
+    RedoResponse_AttributesEntry_DoNotUse _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RedoResponse_AttributesEntry_DoNotUseDefaultTypeInternal _RedoResponse_AttributesEntry_DoNotUse_default_instance_;
 PROTOBUF_CONSTEXPR RedoResponse::RedoResponse(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.payload_)*/{}
+  , /*decltype(_impl_.attributes_)*/{::_pbi::ConstantInitialized()}
   , /*decltype(_impl_.db_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.c_scn_)*/uint64_t{0u}
   , /*decltype(_impl_.c_idx_)*/uint64_t{0u}
@@ -153,7 +165,7 @@ struct RedoResponseDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RedoResponseDefaultTypeInternal _RedoResponse_default_instance_;
 }  // namespace pb
 }  // namespace OpenLogReplicator
-static ::_pb::Metadata file_level_metadata_OraProtoBuf_2eproto[7];
+static ::_pb::Metadata file_level_metadata_OraProtoBuf_2eproto[8];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_OraProtoBuf_2eproto[4];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_OraProtoBuf_2eproto = nullptr;
 
@@ -245,6 +257,16 @@ const uint32_t TableStruct_OraProtoBuf_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,
   1,
   2,
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse, _has_bits_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse, key_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse, value_),
+  0,
+  1,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -262,6 +284,7 @@ const uint32_t TableStruct_OraProtoBuf_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _impl_.payload_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _impl_.c_scn_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _impl_.c_idx_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _impl_.attributes_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _impl_.scn_val_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _impl_.tm_val_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::RedoResponse, _impl_.xid_val_),
@@ -273,7 +296,8 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 38, -1, -1, sizeof(::OpenLogReplicator::pb::Payload)},
   { 54, -1, -1, sizeof(::OpenLogReplicator::pb::SchemaRequest)},
   { 62, 78, -1, sizeof(::OpenLogReplicator::pb::RedoRequest)},
-  { 87, -1, -1, sizeof(::OpenLogReplicator::pb::RedoResponse)},
+  { 87, 95, -1, sizeof(::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse)},
+  { 97, -1, -1, sizeof(::OpenLogReplicator::pb::RedoResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -283,6 +307,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::OpenLogReplicator::pb::_Payload_default_instance_._instance,
   &::OpenLogReplicator::pb::_SchemaRequest_default_instance_._instance,
   &::OpenLogReplicator::pb::_RedoRequest_default_instance_._instance,
+  &::OpenLogReplicator::pb::_RedoResponse_AttributesEntry_DoNotUse_default_instance_._instance,
   &::OpenLogReplicator::pb::_RedoResponse_default_instance_._instance,
 };
 
@@ -313,39 +338,42 @@ const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARI
   "\n\003seq\030\006 \001(\004H\001\210\001\001\0223\n\006schema\030\007 \003(\0132#.OpenL"
   "ogReplicator.pb.SchemaRequest\022\022\n\005c_scn\030\010"
   " \001(\004H\002\210\001\001\022\022\n\005c_idx\030\t \001(\004H\003\210\001\001B\010\n\006tm_valB"
-  "\006\n\004_seqB\010\n\006_c_scnB\010\n\006_c_idx\"\225\002\n\014RedoResp"
+  "\006\n\004_seqB\010\n\006_c_scnB\010\n\006_c_idx\"\220\003\n\014RedoResp"
   "onse\0220\n\004code\030\001 \001(\0162\".OpenLogReplicator.p"
   "b.ResponseCode\022\r\n\003scn\030\002 \001(\004H\000\022\016\n\004scns\030\003 "
   "\001(\tH\000\022\014\n\002tm\030\004 \001(\004H\001\022\r\n\003tms\030\005 \001(\tH\001\022\r\n\003xi"
   "d\030\006 \001(\tH\002\022\016\n\004xidn\030\007 \001(\004H\002\022\n\n\002db\030\010 \001(\t\022.\n"
   "\007payload\030\t \003(\0132\035.OpenLogReplicator.pb.Pa"
-  "yload\022\r\n\005c_scn\030\n \001(\004\022\r\n\005c_idx\030\013 \001(\004B\t\n\007s"
-  "cn_valB\010\n\006tm_valB\t\n\007xid_val*S\n\002Op\022\t\n\005BEG"
-  "IN\020\000\022\n\n\006COMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDATE\020\003"
-  "\022\n\n\006DELETE\020\004\022\007\n\003DDL\020\005\022\t\n\005CHKPT\020\006*\250\002\n\nCol"
-  "umnType\022\013\n\007UNKNOWN\020\000\022\014\n\010VARCHAR2\020\001\022\n\n\006NU"
-  "MBER\020\002\022\010\n\004LONG\020\003\022\010\n\004DATE\020\004\022\007\n\003RAW\020\005\022\014\n\010L"
-  "ONG_RAW\020\006\022\010\n\004CHAR\020\007\022\020\n\014BINARY_FLOAT\020\010\022\021\n"
-  "\rBINARY_DOUBLE\020\t\022\010\n\004CLOB\020\n\022\010\n\004BLOB\020\013\022\r\n\t"
-  "TIMESTAMP\020\014\022\025\n\021TIMESTAMP_WITH_TZ\020\r\022\032\n\026IN"
-  "TERVAL_YEAR_TO_MONTH\020\016\022\032\n\026INTERVAL_DAY_T"
-  "O_SECOND\020\017\022\n\n\006UROWID\020\020\022\033\n\027TIMESTAMP_WITH"
-  "_LOCAL_TZ\020\021*=\n\013RequestCode\022\010\n\004INFO\020\000\022\t\n\005"
-  "START\020\001\022\014\n\010CONTINUE\020\002\022\013\n\007CONFIRM\020\003*\225\001\n\014R"
-  "esponseCode\022\t\n\005READY\020\000\022\020\n\014FAILED_START\020\001"
-  "\022\014\n\010STARTING\020\002\022\023\n\017ALREADY_STARTED\020\003\022\r\n\tR"
-  "EPLICATE\020\004\022\013\n\007PAYLOAD\020\005\022\024\n\020INVALID_DATAB"
-  "ASE\020\006\022\023\n\017INVALID_COMMAND\020\0072f\n\021OpenLogRep"
-  "licator\022Q\n\004Redo\022!.OpenLogReplicator.pb.R"
-  "edoRequest\032\".OpenLogReplicator.pb.RedoRe"
-  "sponse(\0010\001B7\n\"io.debezium.connector.orac"
-  "le.protoB\021OpenLogReplicatorb\006proto3"
+  "yload\022\r\n\005c_scn\030\n \001(\004\022\r\n\005c_idx\030\013 \001(\004\022F\n\na"
+  "ttributes\030\014 \003(\01322.OpenLogReplicator.pb.R"
+  "edoResponse.AttributesEntry\0321\n\017Attribute"
+  "sEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001B\t"
+  "\n\007scn_valB\010\n\006tm_valB\t\n\007xid_val*S\n\002Op\022\t\n\005"
+  "BEGIN\020\000\022\n\n\006COMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDAT"
+  "E\020\003\022\n\n\006DELETE\020\004\022\007\n\003DDL\020\005\022\t\n\005CHKPT\020\006*\250\002\n\n"
+  "ColumnType\022\013\n\007UNKNOWN\020\000\022\014\n\010VARCHAR2\020\001\022\n\n"
+  "\006NUMBER\020\002\022\010\n\004LONG\020\003\022\010\n\004DATE\020\004\022\007\n\003RAW\020\005\022\014"
+  "\n\010LONG_RAW\020\006\022\010\n\004CHAR\020\007\022\020\n\014BINARY_FLOAT\020\010"
+  "\022\021\n\rBINARY_DOUBLE\020\t\022\010\n\004CLOB\020\n\022\010\n\004BLOB\020\013\022"
+  "\r\n\tTIMESTAMP\020\014\022\025\n\021TIMESTAMP_WITH_TZ\020\r\022\032\n"
+  "\026INTERVAL_YEAR_TO_MONTH\020\016\022\032\n\026INTERVAL_DA"
+  "Y_TO_SECOND\020\017\022\n\n\006UROWID\020\020\022\033\n\027TIMESTAMP_W"
+  "ITH_LOCAL_TZ\020\021*=\n\013RequestCode\022\010\n\004INFO\020\000\022"
+  "\t\n\005START\020\001\022\014\n\010CONTINUE\020\002\022\013\n\007CONFIRM\020\003*\225\001"
+  "\n\014ResponseCode\022\t\n\005READY\020\000\022\020\n\014FAILED_STAR"
+  "T\020\001\022\014\n\010STARTING\020\002\022\023\n\017ALREADY_STARTED\020\003\022\r"
+  "\n\tREPLICATE\020\004\022\013\n\007PAYLOAD\020\005\022\024\n\020INVALID_DA"
+  "TABASE\020\006\022\023\n\017INVALID_COMMAND\020\0072f\n\021OpenLog"
+  "Replicator\022Q\n\004Redo\022!.OpenLogReplicator.p"
+  "b.RedoRequest\032\".OpenLogReplicator.pb.Red"
+  "oResponse(\0010\001B7\n\"io.debezium.connector.o"
+  "racle.protoB\021OpenLogReplicatorb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-    false, false, 2115, descriptor_table_protodef_OraProtoBuf_2eproto,
+    false, false, 2238, descriptor_table_protodef_OraProtoBuf_2eproto,
     "OraProtoBuf.proto",
-    &descriptor_table_OraProtoBuf_2eproto_once, nullptr, 0, 7,
+    &descriptor_table_OraProtoBuf_2eproto_once, nullptr, 0, 8,
     schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
     file_level_metadata_OraProtoBuf_2eproto, file_level_enum_descriptors_OraProtoBuf_2eproto,
     file_level_service_descriptors_OraProtoBuf_2eproto,
@@ -2880,6 +2908,20 @@ void RedoRequest::InternalSwap(RedoRequest* other) {
 
 // ===================================================================
 
+RedoResponse_AttributesEntry_DoNotUse::RedoResponse_AttributesEntry_DoNotUse() {}
+RedoResponse_AttributesEntry_DoNotUse::RedoResponse_AttributesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+    : SuperType(arena) {}
+void RedoResponse_AttributesEntry_DoNotUse::MergeFrom(const RedoResponse_AttributesEntry_DoNotUse& other) {
+  MergeFromInternal(other);
+}
+::PROTOBUF_NAMESPACE_ID::Metadata RedoResponse_AttributesEntry_DoNotUse::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_OraProtoBuf_2eproto_getter, &descriptor_table_OraProtoBuf_2eproto_once,
+      file_level_metadata_OraProtoBuf_2eproto[6]);
+}
+
+// ===================================================================
+
 class RedoResponse::_Internal {
  public:
 };
@@ -2888,6 +2930,9 @@ RedoResponse::RedoResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
+  if (arena != nullptr && !is_message_owned) {
+    arena->OwnCustomDestructor(this, &RedoResponse::ArenaDtor);
+  }
   // @@protoc_insertion_point(arena_constructor:OpenLogReplicator.pb.RedoResponse)
 }
 RedoResponse::RedoResponse(const RedoResponse& from)
@@ -2895,6 +2940,7 @@ RedoResponse::RedoResponse(const RedoResponse& from)
   RedoResponse* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.payload_){from._impl_.payload_}
+    , /*decltype(_impl_.attributes_)*/{}
     , decltype(_impl_.db_){}
     , decltype(_impl_.c_scn_){}
     , decltype(_impl_.c_idx_){}
@@ -2906,6 +2952,7 @@ RedoResponse::RedoResponse(const RedoResponse& from)
     , /*decltype(_impl_._oneof_case_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.attributes_.MergeFrom(from._impl_.attributes_);
   _impl_.db_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.db_.Set("", GetArenaForAllocation());
@@ -2968,6 +3015,7 @@ inline void RedoResponse::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.payload_){arena}
+    , /*decltype(_impl_.attributes_)*/{::_pbi::ArenaInitialized(), arena}
     , decltype(_impl_.db_){}
     , decltype(_impl_.c_scn_){uint64_t{0u}}
     , decltype(_impl_.c_idx_){uint64_t{0u}}
@@ -2991,6 +3039,7 @@ RedoResponse::~RedoResponse() {
   // @@protoc_insertion_point(destructor:OpenLogReplicator.pb.RedoResponse)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
+    ArenaDtor(this);
     return;
   }
   SharedDtor();
@@ -2999,6 +3048,8 @@ RedoResponse::~RedoResponse() {
 inline void RedoResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.payload_.~RepeatedPtrField();
+  _impl_.attributes_.Destruct();
+  _impl_.attributes_.~MapField();
   _impl_.db_.Destroy();
   if (has_scn_val()) {
     clear_scn_val();
@@ -3011,6 +3062,10 @@ inline void RedoResponse::SharedDtor() {
   }
 }
 
+void RedoResponse::ArenaDtor(void* object) {
+  RedoResponse* _this = reinterpret_cast< RedoResponse* >(object);
+  _this->_impl_.attributes_.Destruct();
+}
 void RedoResponse::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
@@ -3077,6 +3132,7 @@ void RedoResponse::Clear() {
   (void) cached_has_bits;
 
   _impl_.payload_.Clear();
+  _impl_.attributes_.Clear();
   _impl_.db_.ClearToEmpty();
   ::memset(&_impl_.c_scn_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.code_) -
@@ -3195,6 +3251,19 @@ const char* RedoResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
         } else
           goto handle_unusual;
         continue;
+      // map<string, string> attributes = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 98)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(&_impl_.attributes_, ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<98>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -3309,6 +3378,36 @@ uint8_t* RedoResponse::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(11, this->_internal_c_idx(), target);
   }
 
+  // map<string, string> attributes = 12;
+  if (!this->_internal_attributes().empty()) {
+    using MapType = ::_pb::Map<std::string, std::string>;
+    using WireHelper = RedoResponse_AttributesEntry_DoNotUse::Funcs;
+    const auto& map_field = this->_internal_attributes();
+    auto check_utf8 = [](const MapType::value_type& entry) {
+      (void)entry;
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+        entry.first.data(), static_cast<int>(entry.first.length()),
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+        "OpenLogReplicator.pb.RedoResponse.AttributesEntry.key");
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+        entry.second.data(), static_cast<int>(entry.second.length()),
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+        "OpenLogReplicator.pb.RedoResponse.AttributesEntry.value");
+    };
+
+    if (stream->IsSerializationDeterministic() && map_field.size() > 1) {
+      for (const auto& entry : ::_pbi::MapSorterPtr<MapType>(map_field)) {
+        target = WireHelper::InternalSerialize(12, entry.first, entry.second, target, stream);
+        check_utf8(entry);
+      }
+    } else {
+      for (const auto& entry : map_field) {
+        target = WireHelper::InternalSerialize(12, entry.first, entry.second, target, stream);
+        check_utf8(entry);
+      }
+    }
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -3330,6 +3429,15 @@ size_t RedoResponse::ByteSizeLong() const {
   for (const auto& msg : this->_impl_.payload_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // map<string, string> attributes = 12;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(this->_internal_attributes_size());
+  for (::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >::const_iterator
+      it = this->_internal_attributes().begin();
+      it != this->_internal_attributes().end(); ++it) {
+    total_size += RedoResponse_AttributesEntry_DoNotUse::Funcs::ByteSizeLong(it->first, it->second);
   }
 
   // string db = 8;
@@ -3425,6 +3533,7 @@ void RedoResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
   (void) cached_has_bits;
 
   _this->_impl_.payload_.MergeFrom(from._impl_.payload_);
+  _this->_impl_.attributes_.MergeFrom(from._impl_.attributes_);
   if (!from._internal_db().empty()) {
     _this->_internal_set_db(from._internal_db());
   }
@@ -3496,6 +3605,7 @@ void RedoResponse::InternalSwap(RedoResponse* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.payload_.InternalSwap(&other->_impl_.payload_);
+  _impl_.attributes_.InternalSwap(&other->_impl_.attributes_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.db_, lhs_arena,
       &other->_impl_.db_, rhs_arena
@@ -3517,7 +3627,7 @@ void RedoResponse::InternalSwap(RedoResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RedoResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_OraProtoBuf_2eproto_getter, &descriptor_table_OraProtoBuf_2eproto_once,
-      file_level_metadata_OraProtoBuf_2eproto[6]);
+      file_level_metadata_OraProtoBuf_2eproto[7]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -3547,6 +3657,10 @@ Arena::CreateMaybeMessage< ::OpenLogReplicator::pb::SchemaRequest >(Arena* arena
 template<> PROTOBUF_NOINLINE ::OpenLogReplicator::pb::RedoRequest*
 Arena::CreateMaybeMessage< ::OpenLogReplicator::pb::RedoRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::OpenLogReplicator::pb::RedoRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse*
+Arena::CreateMaybeMessage< ::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse >(arena);
 }
 template<> PROTOBUF_NOINLINE ::OpenLogReplicator::pb::RedoResponse*
 Arena::CreateMaybeMessage< ::OpenLogReplicator::pb::RedoResponse >(Arena* arena) {
