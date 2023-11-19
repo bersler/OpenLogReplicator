@@ -28,15 +28,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat,  uint64_t newIntervalDtsFormat,
-                     uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat,
-                     uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
-                     uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat,  uint64_t newAttributesFormat,
+                     uint64_t newIntervalDtsFormat, uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
+                     uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
+                     uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
+                     uint64_t newFlushBuffer) :
             ctx(newCtx),
             locales(newLocales),
             metadata(newMetadata),
             msg(nullptr),
             dbFormat(newDbFormat),
+            attributesFormat(newAttributesFormat),
             intervalDtsFormat(newIntervalDtsFormat),
             intervalYtmFormat(newIntervalYtmFormat),
             messageFormat(newMessageFormat),
@@ -686,7 +688,7 @@ namespace OpenLogReplicator {
         maxMessageMb = maxMessageMb_;
     }
 
-    void Builder::processBegin(typeXid xid, typeScn scn, typeScn newLwnScn) {
+    void Builder::processBegin(typeXid xid, typeScn scn, typeScn newLwnScn, const std::unordered_map<std::string, std::string>* newAttributes) {
         lastXid = xid;
         commitScn = scn;
         if (lwnScn != newLwnScn) {
@@ -694,6 +696,11 @@ namespace OpenLogReplicator {
             lwnIdx = 0;
         }
         newTran = true;
+        attributes = newAttributes;
+
+        if (attributes->size() == 0) {
+            metadata->ctx->warning(50065, "empty attributes for XID: " + lastXid.toString());
+        }
     }
 
     // 0x05010B0B

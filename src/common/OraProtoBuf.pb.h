@@ -29,6 +29,9 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/repeated_field.h>  // IWYU pragma: export
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
+#include <google/protobuf/map.h>  // IWYU pragma: export
+#include <google/protobuf/map_entry.h>
+#include <google/protobuf/map_field_inl.h>
 #include <google/protobuf/generated_enum_reflection.h>
 #include <google/protobuf/unknown_field_set.h>
 // @@protoc_insertion_point(includes)
@@ -59,6 +62,9 @@ extern RedoRequestDefaultTypeInternal _RedoRequest_default_instance_;
 class RedoResponse;
 struct RedoResponseDefaultTypeInternal;
 extern RedoResponseDefaultTypeInternal _RedoResponse_default_instance_;
+class RedoResponse_AttributesEntry_DoNotUse;
+struct RedoResponse_AttributesEntry_DoNotUseDefaultTypeInternal;
+extern RedoResponse_AttributesEntry_DoNotUseDefaultTypeInternal _RedoResponse_AttributesEntry_DoNotUse_default_instance_;
 class Schema;
 struct SchemaDefaultTypeInternal;
 extern SchemaDefaultTypeInternal _Schema_default_instance_;
@@ -75,6 +81,7 @@ template<> ::OpenLogReplicator::pb::Column* Arena::CreateMaybeMessage<::OpenLogR
 template<> ::OpenLogReplicator::pb::Payload* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Payload>(Arena*);
 template<> ::OpenLogReplicator::pb::RedoRequest* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::RedoRequest>(Arena*);
 template<> ::OpenLogReplicator::pb::RedoResponse* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::RedoResponse>(Arena*);
+template<> ::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::RedoResponse_AttributesEntry_DoNotUse>(Arena*);
 template<> ::OpenLogReplicator::pb::Schema* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Schema>(Arena*);
 template<> ::OpenLogReplicator::pb::SchemaRequest* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::SchemaRequest>(Arena*);
 template<> ::OpenLogReplicator::pb::Value* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Value>(Arena*);
@@ -1692,6 +1699,34 @@ class RedoRequest final :
 };
 // -------------------------------------------------------------------
 
+class RedoResponse_AttributesEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<RedoResponse_AttributesEntry_DoNotUse, 
+    std::string, std::string,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING> {
+public:
+  typedef ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<RedoResponse_AttributesEntry_DoNotUse, 
+    std::string, std::string,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING> SuperType;
+  RedoResponse_AttributesEntry_DoNotUse();
+  explicit PROTOBUF_CONSTEXPR RedoResponse_AttributesEntry_DoNotUse(
+      ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  explicit RedoResponse_AttributesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  void MergeFrom(const RedoResponse_AttributesEntry_DoNotUse& other);
+  static const RedoResponse_AttributesEntry_DoNotUse* internal_default_instance() { return reinterpret_cast<const RedoResponse_AttributesEntry_DoNotUse*>(&_RedoResponse_AttributesEntry_DoNotUse_default_instance_); }
+  static bool ValidateKey(std::string* s) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(s->data(), static_cast<int>(s->size()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::PARSE, "OpenLogReplicator.pb.RedoResponse.AttributesEntry.key");
+ }
+  static bool ValidateValue(std::string* s) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(s->data(), static_cast<int>(s->size()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::PARSE, "OpenLogReplicator.pb.RedoResponse.AttributesEntry.value");
+ }
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  friend struct ::TableStruct_OraProtoBuf_2eproto;
+};
+
+// -------------------------------------------------------------------
+
 class RedoResponse final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.RedoResponse) */ {
  public:
@@ -1758,7 +1793,7 @@ class RedoResponse final :
                &_RedoResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    6;
+    7;
 
   friend void swap(RedoResponse& a, RedoResponse& b) {
     a.Swap(&b);
@@ -1819,6 +1854,8 @@ class RedoResponse final :
   protected:
   explicit RedoResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
+  private:
+  static void ArenaDtor(void* object);
   public:
 
   static const ClassData _class_data_;
@@ -1828,10 +1865,12 @@ class RedoResponse final :
 
   // nested types ----------------------------------------------------
 
+
   // accessors -------------------------------------------------------
 
   enum : int {
     kPayloadFieldNumber = 9,
+    kAttributesFieldNumber = 12,
     kDbFieldNumber = 8,
     kCScnFieldNumber = 10,
     kCIdxFieldNumber = 11,
@@ -1860,6 +1899,23 @@ class RedoResponse final :
   ::OpenLogReplicator::pb::Payload* add_payload();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload >&
       payload() const;
+
+  // map<string, string> attributes = 12;
+  int attributes_size() const;
+  private:
+  int _internal_attributes_size() const;
+  public:
+  void clear_attributes();
+  private:
+  const ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >&
+      _internal_attributes() const;
+  ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >*
+      _internal_mutable_attributes();
+  public:
+  const ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >&
+      attributes() const;
+  ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >*
+      mutable_attributes();
 
   // string db = 8;
   void clear_db();
@@ -2025,6 +2081,11 @@ class RedoResponse final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload > payload_;
+    ::PROTOBUF_NAMESPACE_ID::internal::MapField<
+        RedoResponse_AttributesEntry_DoNotUse,
+        std::string, std::string,
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING> attributes_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr db_;
     uint64_t c_scn_;
     uint64_t c_idx_;
@@ -3674,6 +3735,8 @@ inline RedoRequest::TmValCase RedoRequest::tm_val_case() const {
 }
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
 // RedoResponse
 
 // .OpenLogReplicator.pb.ResponseCode code = 1;
@@ -4171,6 +4234,35 @@ inline void RedoResponse::set_c_idx(uint64_t value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoResponse.c_idx)
 }
 
+// map<string, string> attributes = 12;
+inline int RedoResponse::_internal_attributes_size() const {
+  return _impl_.attributes_.size();
+}
+inline int RedoResponse::attributes_size() const {
+  return _internal_attributes_size();
+}
+inline void RedoResponse::clear_attributes() {
+  _impl_.attributes_.Clear();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >&
+RedoResponse::_internal_attributes() const {
+  return _impl_.attributes_.GetMap();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >&
+RedoResponse::attributes() const {
+  // @@protoc_insertion_point(field_map:OpenLogReplicator.pb.RedoResponse.attributes)
+  return _internal_attributes();
+}
+inline ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >*
+RedoResponse::_internal_mutable_attributes() {
+  return _impl_.attributes_.MutableMap();
+}
+inline ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >*
+RedoResponse::mutable_attributes() {
+  // @@protoc_insertion_point(field_mutable_map:OpenLogReplicator.pb.RedoResponse.attributes)
+  return _internal_mutable_attributes();
+}
+
 inline bool RedoResponse::has_scn_val() const {
   return scn_val_case() != SCN_VAL_NOT_SET;
 }
@@ -4201,6 +4293,8 @@ inline RedoResponse::XidValCase RedoResponse::xid_val_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

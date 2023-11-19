@@ -23,15 +23,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OP_CODE_05_13_H_
 
 namespace OpenLogReplicator {
+    class Transaction;
+
     class OpCode0513 : public OpCode {
     protected:
-        static void dumpMsgSessionSerial(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void dumpMsgFlags(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void dumpMsgVersion(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void dumpMsgAuditSessionId(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void attribute(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, const char* header,
+                              const char* name, Transaction* transaction);
+        static void attributeSessionSerial(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction);
+        static void attributeFlags(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction);
+        static void attributeVersion(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction);
+        static void attributeAuditSessionId(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction);
 
     public:
-        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction);
     };
 }
 

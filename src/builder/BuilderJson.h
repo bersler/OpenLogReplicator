@@ -40,6 +40,7 @@ namespace OpenLogReplicator {
         void columnTimestampTz(const std::string& columnName, struct tm& epochTime, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void appendHeader(typeScn scn, typeTime time_, bool first, bool showDb, bool showXid);
+        void appendAttributes();
         void appendSchema(OracleTable* table, typeObj obj);
 
         void appendHex(uint64_t value, uint64_t length) {
@@ -222,10 +223,10 @@ namespace OpenLogReplicator {
         void processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) override;
 
     public:
-        BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newIntervalDtsFormat, uint64_t newIntervalYtmFormat,
-                    uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat,
-                    uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat,
-                    uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
+        BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newAttributesFormat, uint64_t newIntervalDtsFormat,
+                    uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat, uint64_t newTimestampFormat,
+                    uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll,
+                    uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
 
         void processCommit(typeScn scn, typeSeq sequence, typeTime time) override;
         void processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) override;

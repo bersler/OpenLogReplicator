@@ -32,6 +32,7 @@ namespace OpenLogReplicator {
     class Builder;
     class Reader;
     class Metadata;
+    class Transaction;
     class TransactionBuffer;
 
     struct LwnMember {
@@ -49,6 +50,7 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         TransactionBuffer* transactionBuffer;
         RedoLogRecord zero;
+        Transaction* lastTransaction;
 
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];

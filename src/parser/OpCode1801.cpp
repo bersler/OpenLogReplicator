@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
         // Field: 1
         if (fieldLength < 18)
             throw RedoLogException(50061, "too short field 24.1.1: " +
-                                          std::to_string(fieldLength) + " offset: " + std::to_string(redoLogRecord->dataOffset));
+                                   std::to_string(fieldLength) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 4)),
                                      ctx->read16(redoLogRecord->data + fieldPos + 6),

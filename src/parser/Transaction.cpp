@@ -206,7 +206,7 @@ namespace OpenLogReplicator {
             builder->systemTransaction = new SystemTransaction(builder, metadata);
             metadata->schema->scn = commitScn;
         }
-        builder->processBegin(xid, commitScn, lwnScn);
+        builder->processBegin(xid, commitScn, lwnScn, &attributes);
 
         uint64_t pos;
         uint64_t type = 0;
@@ -534,7 +534,7 @@ namespace OpenLogReplicator {
                     }
 
                     builder->processCommit(commitScn, commitSequence, commitTimestamp);
-                    builder->processBegin(xid, commitScn, lwnScn);
+                    builder->processBegin(xid, commitScn, lwnScn, &attributes);
                 }
 
                 if (opFlush) {

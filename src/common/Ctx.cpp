@@ -383,8 +383,7 @@ namespace OpenLogReplicator {
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFF)
-            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
-                                std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return val;
     }
 
@@ -396,8 +395,7 @@ namespace OpenLogReplicator {
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
-            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
-                                std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return (int16_t)val;
     }
 
@@ -409,8 +407,7 @@ namespace OpenLogReplicator {
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF)
-            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
-                                std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
     }
 
@@ -422,8 +419,7 @@ namespace OpenLogReplicator {
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
-            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" +
-                                std::to_string(val) + ")");
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<int32_t>(val);
     }
 
@@ -462,7 +458,7 @@ namespace OpenLogReplicator {
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a string");
         if (ret.GetStringLength() > maxLength)
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too long (" +
-                    std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
+                                std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return ret.GetString();
     }
 

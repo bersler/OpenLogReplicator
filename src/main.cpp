@@ -106,7 +106,7 @@ namespace OpenLogReplicator {
                 fileName = argv[2];
             } else if (argc > 1)
                 throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
-                        " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+                                             " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
         } catch (ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             return 1;
