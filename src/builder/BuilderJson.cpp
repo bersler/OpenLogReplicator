@@ -554,7 +554,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::appendAttributes() {
-        append(R"("attributes":[)", sizeof(R"("attributes":[)") - 1);
+        append(R"("attributes":{)", sizeof(R"("attributes":[)") - 1);
         bool hasPreviousAttribute = false;
         for (const auto &attributeIt: *attributes) {
             if (hasPreviousAttribute)
@@ -568,7 +568,7 @@ namespace OpenLogReplicator {
             appendEscape(attributeIt.second);
             append('"');
         }
-        append("],", 2);
+        append("},", 2);
     }
 
     void BuilderJson::appendSchema(OracleTable* table, typeObj obj) {
