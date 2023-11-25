@@ -20,21 +20,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Ctx.h"
 #include "../common/DataException.h"
 #include "../common/OracleIncarnation.h"
-#include "../common/SysCCol.h"
-#include "../common/SysCDef.h"
-#include "../common/SysCol.h"
-#include "../common/SysDeferredStg.h"
-#include "../common/SysECol.h"
-#include "../common/SysLob.h"
-#include "../common/SysLobCompPart.h"
-#include "../common/SysLobFrag.h"
-#include "../common/SysObj.h"
-#include "../common/SysTab.h"
-#include "../common/SysTabComPart.h"
-#include "../common/SysTabPart.h"
-#include "../common/SysTabSubPart.h"
-#include "../common/SysUser.h"
 #include "../common/typeRowId.h"
+#include "../common/tables/SysCCol.h"
+#include "../common/tables/SysCDef.h"
+#include "../common/tables/SysCol.h"
+#include "../common/tables/SysDeferredStg.h"
+#include "../common/tables/SysECol.h"
+#include "../common/tables/SysLob.h"
+#include "../common/tables/SysLobCompPart.h"
+#include "../common/tables/SysLobFrag.h"
+#include "../common/tables/SysObj.h"
+#include "../common/tables/SysTab.h"
+#include "../common/tables/SysTabComPart.h"
+#include "../common/tables/SysTabPart.h"
+#include "../common/tables/SysTabSubPart.h"
+#include "../common/tables/SysUser.h"
 #include "RedoLog.h"
 #include "Metadata.h"
 #include "Schema.h"
@@ -42,7 +42,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SerializerJson.h"
 
 namespace OpenLogReplicator {
-
     SerializerJson::SerializerJson() :
             Serializer() {
     }
@@ -571,7 +570,7 @@ namespace OpenLogReplicator {
                             msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                            std::to_string(element->options));
 
-                        metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, msgs,
+                        metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->conditionStr, element->options, msgs,
                                                     metadata->suppLogDbPrimary, metadata->suppLogDbAll, metadata->defaultCharacterMapId,
                                                     metadata->defaultCharacterNcharMapId);
                     }

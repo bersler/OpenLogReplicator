@@ -27,16 +27,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/ConfigurationException.h"
 #include "../common/Ctx.h"
 #include "../common/RuntimeException.h"
-#include "../common/SysObj.h"
-#include "../common/SysUser.h"
 #include "../common/typeTime.h"
+#include "../common/tables/SysObj.h"
+#include "../common/tables/SysUser.h"
 #include "Checkpoint.h"
 #include "Metadata.h"
 #include "Schema.h"
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-
     Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, const std::string& newConfigFileName, time_t newConfigFileChange) :
             Thread(newCtx, newAlias),
             metadata(newMetadata),
@@ -205,7 +204,7 @@ namespace OpenLogReplicator {
                     msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                    std::to_string(element->options));
 
-                metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, msgs,
+                metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->conditionStr, element->options, msgs,
                                             metadata->suppLogDbPrimary, metadata->suppLogDbAll, metadata->defaultCharacterMapId,
                                             metadata->defaultCharacterNcharMapId);
             }

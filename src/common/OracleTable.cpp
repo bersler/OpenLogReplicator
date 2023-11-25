@@ -17,25 +17,30 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "RuntimeException.h"
+#include "Ctx.h"
 #include "OracleColumn.h"
 #include "OracleLob.h"
 #include "OracleTable.h"
+#include "RuntimeException.h"
+#include "expression/BoolValue.h"
+#include "expression/Token.h"
 
 namespace OpenLogReplicator {
     OracleTable::OracleTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, const std::string& newOwner,
                              const std::string& newName) :
-        obj(newObj),
-        dataObj(newDataObj),
-        user(newUser),
-        cluCols(newCluCols),
-        totalPk(0),
-        totalLobs(0),
-        options(newOptions),
-        maxSegCol(0),
-        guardSegNo(-1),
-        owner(newOwner),
-        name(newName) {
+            obj(newObj),
+            dataObj(newDataObj),
+            user(newUser),
+            cluCols(newCluCols),
+            totalPk(0),
+            totalLobs(0),
+            options(newOptions),
+            maxSegCol(0),
+            guardSegNo(-1),
+            owner(newOwner),
+            name(newName),
+            conditionStr(""),
+            condition(nullptr) {
 
         systemTable = 0;
         if (this->owner == "SYS") {
@@ -84,6 +89,19 @@ namespace OpenLogReplicator {
         for (OracleLob* lob: lobs)
             delete lob;
         lobs.clear();
+
+        for (Expression *expression: stack)
+            if (!expression->isToken())
+                delete expression;
+        stack.clear();
+
+        for (Token *token: tokens)
+            delete token;
+        tokens.clear();
+
+        if (condition != nullptr)
+            delete condition;
+        condition = nullptr;
     }
 
     void OracleTable::addColumn(OracleColumn* column) {
@@ -113,6 +131,26 @@ namespace OpenLogReplicator {
     void OracleTable::addTablePartition(typeObj newObj, typeDataObj newDataObj) {
         typeObj2 objx = (static_cast<typeObj2>(newObj) << 32) | static_cast<typeObj2>(newDataObj);
         tablePartitions.push_back(objx);
+    }
+
+    bool OracleTable::matchesCondition(Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) {
+        bool result = true;
+        if (condition != nullptr)
+            result = condition->evaluateToBool(op, attributes);
+
+        if (ctx->trace & TRACE_CONDITION)
+            ctx->logTrace(TRACE_CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + conditionStr + ", result: " +
+                                           std::to_string(result));
+        return result;
+    }
+
+    void OracleTable::setConditionStr(const std::string& newConditionStr) {
+        this->conditionStr = newConditionStr;
+        if (newConditionStr == "")
+            return;
+
+        Expression::buildTokens(newConditionStr, tokens);
+        condition = Expression::buildCondition(newConditionStr, tokens, stack);
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleTable& table) {

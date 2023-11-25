@@ -1056,7 +1056,7 @@ namespace OpenLogReplicator {
     }
 
     bool Reader::updateRedoLog() {
-        for(;;) {
+        for (;;) {
             std::unique_lock<std::mutex> lck(mtx);
             status = READER_STATUS_UPDATE;
             condBufferFull.notify_all();

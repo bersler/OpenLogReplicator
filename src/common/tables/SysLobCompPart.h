@@ -1,4 +1,4 @@
-/* Definition of schema SYS.TABPART$
+/* Definition of schema SYS.LOBCOMPPART$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,51 +17,49 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "typeRowId.h"
+#include "../types.h"
+#include "../typeRowId.h"
 
-#ifndef SYS_TAB_PART_H_
-#define SYS_TAB_PART_H_
+#ifndef SYS_LOB_COMP_PART_H_
+#define SYS_LOB_COMP_PART_H_
 
 namespace OpenLogReplicator {
-    class SysTabPartKey final {
+    class SysLobCompPartKey final {
     public:
-        SysTabPartKey(typeObj newBo, typeObj newObj) :
-                bo(newBo),
-                obj(newObj) {
+        SysLobCompPartKey(typeObj newLObj, typeObj newPartObj) :
+                lObj(newLObj),
+                partObj(newPartObj) {
         }
 
-        bool operator<(const SysTabPartKey& other) const {
-            if (bo < other.bo)
+        bool operator<(const SysLobCompPartKey& other) const {
+            if (lObj < other.lObj)
                 return true;
-            if (other.bo < bo)
+            if (other.lObj < lObj)
                 return false;
-            if (obj < other.obj)
+            if (partObj < other.partObj)
                 return true;
             return false;
         }
 
-        typeObj bo;
-        typeObj obj;
+        typeObj lObj;
+        typeObj partObj;
     };
 
-    class SysTabPart final {
+    class SysLobCompPart final {
     public:
-        SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
+        SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj) :
                 rowId(newRowId),
-                obj(newObj),
-                dataObj(newDataObj),
-                bo(newBo) {
+                partObj(newPartObj),
+                lObj(newLObj) {
         }
 
-        bool operator!=(const SysTabPart& other) const {
-            return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.bo != bo);
+        bool operator!=(const SysLobCompPart& other) const {
+            return (other.rowId != rowId) || (other.partObj != partObj) || (other.lObj != lObj);
         }
 
         typeRowId rowId;
-        typeObj obj;
-        typeDataObj dataObj;        // NULL
-        typeObj bo;
+        typeObj partObj;
+        typeObj lObj;
     };
 }
 

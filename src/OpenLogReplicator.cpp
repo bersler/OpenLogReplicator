@@ -31,9 +31,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/types.h"
 #include "common/ConfigurationException.h"
 #include "common/RuntimeException.h"
-#include "common/SysObj.h"
-#include "common/SysUser.h"
 #include "common/Thread.h"
+#include "common/tables/SysObj.h"
+#include "common/tables/SysUser.h"
 #include "locales/Locales.h"
 #include "metadata/Checkpoint.h"
 #include "metadata/Metadata.h"
@@ -75,7 +75,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #endif /* LINK_LIBRARY_RDKAFKA */
 
 namespace OpenLogReplicator {
-
     OpenLogReplicator::OpenLogReplicator(const std::string& newConfigFileName, Ctx* newCtx) :
             replicator(nullptr),
             fid(-1),
@@ -197,9 +196,9 @@ namespace OpenLogReplicator {
 
         if (document.HasMember("trace")) {
             ctx->trace = Ctx::getJsonFieldU64(configFileName, document, "trace");
-            if (ctx->trace > 262143)
+            if (ctx->trace > 524287)
                 throw ConfigurationException(30001, "bad JSON, invalid 'trace' value: " + std::to_string(ctx->trace) +
-                                             ", expected: one of {0 .. 262143}");
+                                             ", expected: one of {0 .. 524287}");
         }
 
         // Iterate through sources
@@ -703,6 +702,11 @@ namespace OpenLogReplicator {
                             }
                         } else
                             element->keysStr = "";
+
+                        if (tableElementJson.HasMember("condition")) {
+                            element->conditionStr = Ctx::getJsonFieldS(configFileName, JSON_CONDITION_LENGTH, tableElementJson,
+                                                                       "condition");
+                        }
                     }
                 }
 

@@ -1,4 +1,4 @@
-/* Definition of schema SYS.LOBFRAG$
+/* Definition of schema SYS.TABSUBPART$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,51 +17,51 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "typeRowId.h"
+#include "../types.h"
+#include "../typeRowId.h"
 
-#ifndef SYS_LOB_FRAG_H_
-#define SYS_LOB_FRAG_H_
+#ifndef SYS_TAB_SUB_PART_H_
+#define SYS_TAB_SUB_PART_H_
 
 namespace OpenLogReplicator {
-    class SysLobFragKey final {
+    class SysTabSubPartKey final {
     public:
-        SysLobFragKey(typeObj newParentObj, typeObj newFragObj) :
-                parentObj(newParentObj),
-                fragObj(newFragObj) {
+        SysTabSubPartKey(typeObj newPObj, typeObj newObj) :
+                pObj(newPObj),
+                obj(newObj) {
         }
 
-        bool operator<(const SysLobFragKey& other) const {
-            if (parentObj < other.parentObj)
+        bool operator<(const SysTabSubPartKey& other) const {
+            if (pObj < other.pObj)
                 return true;
-            if (other.parentObj < parentObj)
+            if (other.pObj < pObj)
                 return false;
-            if (fragObj < other.fragObj)
+            if (obj < other.obj)
                 return true;
             return false;
         }
 
-        typeObj parentObj;
-        typeObj fragObj;
+        typeObj pObj;
+        typeObj obj;
     };
 
-    class SysLobFrag final {
+    class SysTabSubPart final {
     public:
-        SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
+        SysTabSubPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newPObj) :
                 rowId(newRowId),
-                fragObj(newFragObj),
-                parentObj(newParentObj),
-                ts(newTs) {
+                obj(newObj),
+                dataObj(newDataObj),
+                pObj(newPObj) {
         }
 
-        bool operator!=(const SysLobFrag& other) const {
-            return (other.rowId != rowId) || (other.fragObj != fragObj) || (other.parentObj != parentObj) || (other.ts != ts);
+        bool operator!=(const SysTabSubPart& other) const {
+            return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.pObj != pObj);
         }
 
         typeRowId rowId;
-        typeObj fragObj;
-        typeObj parentObj;
-        typeTs ts;
+        typeObj obj;
+        typeDataObj dataObj;        // NULL
+        typeObj pObj;
     };
 }
 

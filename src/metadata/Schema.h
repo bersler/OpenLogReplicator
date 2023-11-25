@@ -25,21 +25,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
-#include "../common/SysCol.h"
-#include "../common/SysCCol.h"
-#include "../common/SysCDef.h"
-#include "../common/SysECol.h"
-#include "../common/SysLob.h"
-#include "../common/SysLobCompPart.h"
-#include "../common/SysLobFrag.h"
-#include "../common/SysObj.h"
-#include "../common/SysTabComPart.h"
-#include "../common/SysTabPart.h"
-#include "../common/SysTabSubPart.h"
-#include "../common/SysTs.h"
-#include "../common/SysUser.h"
 #include "../common/typeXid.h"
 #include "../common/types.h"
+#include "../common/tables/SysCol.h"
+#include "../common/tables/SysCCol.h"
+#include "../common/tables/SysCDef.h"
+#include "../common/tables/SysECol.h"
+#include "../common/tables/SysLob.h"
+#include "../common/tables/SysLobCompPart.h"
+#include "../common/tables/SysLobFrag.h"
+#include "../common/tables/SysObj.h"
+#include "../common/tables/SysTabComPart.h"
+#include "../common/tables/SysTabPart.h"
+#include "../common/tables/SysTabSubPart.h"
+#include "../common/tables/SysTs.h"
+#include "../common/tables/SysUser.h"
 
 #ifndef SCHEMA_H_
 #define SCHEMA_H_
@@ -273,8 +273,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj);
         void dropUnusedMetadata(const std::set<std::string>& users, std::list<std::string>& msgs);
         void buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
-                       typeOptions options, std::list<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
-                       uint64_t defaultCharacterNcharMapId);
+                       const std::string& conditionStr, typeOptions options, std::list<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
+                       uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId);
         void resetTouched();
     };
 }

@@ -36,7 +36,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Locales.h"
 
 namespace OpenLogReplicator {
-
     Locales::Locales() = default;
 
     Locales::~Locales() {

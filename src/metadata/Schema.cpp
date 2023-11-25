@@ -26,9 +26,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/OracleColumn.h"
 #include "../common/OracleLob.h"
 #include "../common/OracleTable.h"
-#include "../common/SysCol.h"
-#include "../common/SysDeferredStg.h"
-#include "../common/SysTab.h"
+#include "../common/tables/SysCol.h"
+#include "../common/tables/SysDeferredStg.h"
+#include "../common/tables/SysTab.h"
 #include "../locales/Locales.h"
 #include "Schema.h"
 
@@ -315,7 +315,7 @@ namespace OpenLogReplicator {
             ctx->error(50029, "key map SYS.TABPART$ not empty, left: " + std::to_string(sysTabPartMapKey.size()) + " at exit");
 
         // SYS.TABSUBPART$
-        while(!sysTabSubPartMapRowId.empty()) {
+        while (!sysTabSubPartMapRowId.empty()) {
             auto sysTabSubPartMapRowIdIt = sysTabSubPartMapRowId.cbegin();
             SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt->second;
             dictSysTabSubPartDrop(sysTabSubPart);
@@ -2086,7 +2086,7 @@ namespace OpenLogReplicator {
     }
 
     void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
-                           typeOptions options, std::list<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
+                           const std::string& conditionStr, typeOptions options, std::list<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
                            uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
         uint64_t tabCnt = 0;
         std::regex regexOwner(owner);
@@ -2517,6 +2517,7 @@ namespace OpenLogReplicator {
             }
             msgs.push_back(ss.str());
 
+            tableTmp->setConditionStr(conditionStr);
             addTableToDict(tableTmp);
             tableTmp = nullptr;
         }
