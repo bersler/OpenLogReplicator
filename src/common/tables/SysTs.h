@@ -1,4 +1,4 @@
-/* Definition of schema SYS.DEFERRED_STG$
+/* Definition of schema SYS.TS$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,35 +17,32 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "typeIntX.h"
-#include "typeRowId.h"
+#include "../types.h"
+#include "../typeRowId.h"
 
-#ifndef SYS_DEFERRED_STG_H_
-#define SYS_DEFERRED_STG_H_
+#ifndef SYS_TS_H_
+#define SYS_TS_H_
 
-#define SYSDEFERREDSTG_FLAGSSTG_COMPRESSED  4
+#define SYS_TS_NAME_LENGTH                 30
 
 namespace OpenLogReplicator {
-    class SysDeferredStg final {
+    class SysTs final {
     public:
-        SysDeferredStg(typeRowId& newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
+        SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
                 rowId(newRowId),
-                obj(newObj),
-                flagsStg(newFlagsStg1, newFlagsStg2) {
+                ts(newTs),
+                name(newName),
+                blockSize(newBlockSize) {
         }
 
-        bool operator!=(const SysDeferredStg& other) const {
-            return (other.rowId != rowId) || (other.obj != obj) || (other.flagsStg != flagsStg);
-        }
-
-        [[nodiscard]] bool isCompressed() {
-            return flagsStg.isSet64(SYSDEFERREDSTG_FLAGSSTG_COMPRESSED);
+        bool operator!=(const SysTs& other) const {
+            return (other.rowId != rowId) || (other.ts != ts) || (other.name != name) || (other.blockSize != blockSize);
         }
 
         typeRowId rowId;
-        typeObj obj;
-        typeIntX flagsStg;          // NULL
+        typeTs ts;
+        std::string name;
+        uint32_t blockSize;
     };
 }
 

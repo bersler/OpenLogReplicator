@@ -17,16 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <unordered_map>
 #include <vector>
 
 #include "types.h"
+#include "expression/Token.h"
 
 #ifndef ORACLE_OBJECT_H_
 #define ORACLE_OBJECT_H_
 
 namespace OpenLogReplicator {
+    class BoolValue;
+    class Ctx;
+    class Expression;
     class OracleColumn;
     class OracleLob;
+    class Token;
 
     class OracleTable final {
     public:
@@ -41,10 +47,14 @@ namespace OpenLogReplicator {
         typeCol guardSegNo;
         std::string owner;
         std::string name;
+        std::string conditionStr;
+        BoolValue* condition;
         std::vector<OracleColumn*> columns;
         std::vector<OracleLob*> lobs;
         std::vector<typeObj2> tablePartitions;
         std::vector<typeCol> pk;
+        std::vector<Token*> tokens;
+        std::vector<Expression*> stack;
         uint64_t systemTable;
         bool sys;
 
@@ -55,6 +65,8 @@ namespace OpenLogReplicator {
         void addColumn(OracleColumn* column);
         void addLob(OracleLob* lob);
         void addTablePartition(typeObj newObj, typeDataObj newDataObj);
+        bool matchesCondition(Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes);
+        void setConditionStr(const std::string& newConditionStr);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleTable& table);
     };

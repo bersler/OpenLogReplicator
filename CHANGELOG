@@ -6,6 +6,7 @@
 - code style cleanup
 - fix: LOB data handling
 - enhancement: add session information to output
+- enhancement: add row filtering based on condition
 
 1.3.0
 - doc: updated README.md, added reference to tutorial github project

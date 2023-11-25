@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "typeIntX.h"
-#include "typeRowId.h"
+#include "../types.h"
+#include "../typeIntX.h"
+#include "../typeRowId.h"
 
 #ifndef SYS_USER_H_
 #define SYS_USER_H_

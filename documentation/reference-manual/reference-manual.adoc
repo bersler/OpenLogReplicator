@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.1
-:revdate: 2023-11-19
+:revdate: 2023-11-25
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -125,7 +125,7 @@ Possible values are:
 * `4` -- _Debug_ -- print all messages.
 
 |`trace`
-|_number_, min: 0, max: 131071, default: 0
+|_number_, min: 0, max: 524287, default: 0
 |Print debug information.
 
 The value is a sum of various trace parameters, please refer to source code for details.
@@ -963,6 +963,57 @@ The columns are separated by comma.
 The column names are case-sensitive.
 
 _TIP:_ If a table doesn't contain a primary key, a custom set of columns can be treated as a primary key.
+
+|`condition`
+|_string_, max length: 16384
+|An expression which should be evaluated for every row. The format of the field is C-like.
+
+Example:
+`"condition": "([op] != 'd') \|\| ([login username] != 'USER1')"`
+
+The expression is evaluated from left to right. The following tokens can be used:
+
+* \|\| -- logical OR,
+
+* ! -- logical NOT,
+
+* && -- logical AND,
+
+* () -- parentheses to define the order of evaluation,
+
+* == -- equal,
+
+* != -- not equal.
+
+The expression can contain the following tokens, which has name derived from the attribute list of the transaction:
+
+* [audit sessionid]
+
+* [client id]
+
+* [client info]
+
+* [current username]
+
+* [login username] -- the username which performed the operation;
+
+* [machine name]
+
+* [op] -- type of operation: `c` - create (insert), `u` - update, `d` - delete, `ddl` - DDL operation;
+
+* [OS process name]
+
+* [OS process id]
+
+* [OS terminal]
+
+* [serial number]
+
+* [session number]
+
+* [transaction name] -- the name of the transaction;
+
+* [version]
 
 |===
 

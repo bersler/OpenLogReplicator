@@ -69,7 +69,7 @@
       "filter": {
         "table": [
           {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
-          {"owner": "OWNER1", "table": "TABLENAME2"},
+          {"owner": "OWNER1", "table": "TABLENAME2", "condition": "!([op] == 'd' && [login username] == 'USER1')"},
           {"owner": "OWNER2", "table": "TAB.*"}
         ],
         "skip-xid": ["1234.ABC.12345678", "1234.0ABC.12345678", "09000D001D050000"],

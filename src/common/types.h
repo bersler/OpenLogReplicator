@@ -210,6 +210,7 @@ typedef uint64_t typeUnicode;
 #define JSON_PASSWORD_LENGTH    128
 #define JSON_SERVER_LENGTH      4096
 #define JSON_KEY_LENGTH         4096
+#define JSON_CONDITION_LENGTH   16384
 #define JSON_XID_LENGTH         32
 
 #define FB_N                    0x01

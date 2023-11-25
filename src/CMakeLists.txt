@@ -33,7 +33,11 @@ list(APPEND ListCommon
         common/RedoLogRecord.cpp
         common/RuntimeException.cpp
         common/Thread.cpp
-        common/Timer.cpp)
+        common/Timer.cpp
+        common/expression/BoolValue.cpp
+        common/expression/Expression.cpp
+        common/expression/StringValue.cpp
+        common/expression/Token.cpp)
 
 list(APPEND ListReplicator
         replicator/Replicator.cpp

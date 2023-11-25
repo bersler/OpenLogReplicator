@@ -26,12 +26,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class SchemaElement final {
-
     public:
         std::string owner;
         std::string table;
         std::vector<std::string> keys;
         std::string keysStr;
+        std::string conditionStr;
         typeOptions options;
 
         SchemaElement(const char* newOwner, const char* newTable, typeOptions newOptions);

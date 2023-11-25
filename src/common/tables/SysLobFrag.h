@@ -1,4 +1,4 @@
-/* Definition of schema SYS.LOBCOMPPART$
+/* Definition of schema SYS.LOBFRAG$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,49 +17,51 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "typeRowId.h"
+#include "../types.h"
+#include "../typeRowId.h"
 
-#ifndef SYS_LOB_COMP_PART_H_
-#define SYS_LOB_COMP_PART_H_
+#ifndef SYS_LOB_FRAG_H_
+#define SYS_LOB_FRAG_H_
 
 namespace OpenLogReplicator {
-    class SysLobCompPartKey final {
+    class SysLobFragKey final {
     public:
-        SysLobCompPartKey(typeObj newLObj, typeObj newPartObj) :
-                lObj(newLObj),
-                partObj(newPartObj) {
+        SysLobFragKey(typeObj newParentObj, typeObj newFragObj) :
+                parentObj(newParentObj),
+                fragObj(newFragObj) {
         }
 
-        bool operator<(const SysLobCompPartKey& other) const {
-            if (lObj < other.lObj)
+        bool operator<(const SysLobFragKey& other) const {
+            if (parentObj < other.parentObj)
                 return true;
-            if (other.lObj < lObj)
+            if (other.parentObj < parentObj)
                 return false;
-            if (partObj < other.partObj)
+            if (fragObj < other.fragObj)
                 return true;
             return false;
         }
 
-        typeObj lObj;
-        typeObj partObj;
+        typeObj parentObj;
+        typeObj fragObj;
     };
 
-    class SysLobCompPart final {
+    class SysLobFrag final {
     public:
-        SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj) :
+        SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
                 rowId(newRowId),
-                partObj(newPartObj),
-                lObj(newLObj) {
+                fragObj(newFragObj),
+                parentObj(newParentObj),
+                ts(newTs) {
         }
 
-        bool operator!=(const SysLobCompPart& other) const {
-            return (other.rowId != rowId) || (other.partObj != partObj) || (other.lObj != lObj);
+        bool operator!=(const SysLobFrag& other) const {
+            return (other.rowId != rowId) || (other.fragObj != fragObj) || (other.parentObj != parentObj) || (other.ts != ts);
         }
 
         typeRowId rowId;
-        typeObj partObj;
-        typeObj lObj;
+        typeObj fragObj;
+        typeObj parentObj;
+        typeTs ts;
     };
 }
 

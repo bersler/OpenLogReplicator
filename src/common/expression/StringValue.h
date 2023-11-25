@@ -1,4 +1,4 @@
-/* Definition of schema SYS.TS$
+/* Header for ExpressionString class
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,32 +17,28 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "typeRowId.h"
+#include "Expression.h"
 
-#ifndef SYS_TS_H_
-#define SYS_TS_H_
+#ifndef STRING_VALUE_H_
+#define STRING_VALUE_H_
 
-#define SYS_TS_NAME_LENGTH                 30
+#define STRING_SESSION_ATTRIBUTE    0
+#define STRING_OP                   1
+#define STRING_VALUE                2
 
 namespace OpenLogReplicator {
-    class SysTs final {
+    class StringValue : public Expression {
     public:
-        SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
-                rowId(newRowId),
-                ts(newTs),
-                name(newName),
-                blockSize(newBlockSize) {
-        }
+        uint64_t stringType;
+        std::string stringValue;
 
-        bool operator!=(const SysTs& other) const {
-            return (other.rowId != rowId) || (other.ts != ts) || (other.name != name) || (other.blockSize != blockSize);
-        }
+    public:
+        StringValue(uint64_t newStringType, const std::string& newStringValue);
+        virtual ~StringValue();
 
-        typeRowId rowId;
-        typeTs ts;
-        std::string name;
-        uint32_t blockSize;
+        virtual bool isString() { return true; }
+        virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes);
+        virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes);
     };
 }
 
