@@ -18,8 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "Ctx.h"
-#include "RuntimeException.h"
 #include "Thread.h"
+#include "exception/RuntimeException.h"
 
 namespace OpenLogReplicator {
     Thread::Thread(Ctx* newCtx, const std::string& newAlias) :

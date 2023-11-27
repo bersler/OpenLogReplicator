@@ -1,4 +1,4 @@
-/* Header for ConfigurationException class
+/* Header for NetworkException class
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -22,22 +22,22 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sstream>
 #include <string>
 
-#include "types.h"
+#include "../types.h"
 
-#ifndef CONFIGURATION_EXCEPTION_H_
-#define CONFIGURATION_EXCEPTION_H_
+#ifndef NETWORK_EXCEPTION_H_
+#define NETWORK_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class ConfigurationException final : public std::exception {
+    class NetworkException final : public std::exception {
     public:
         int code;
         std::string msg;
 
-        explicit ConfigurationException(int newCode, const std::string& newMsg);
-        explicit ConfigurationException(int newCode, const char* newMsg);
-        ~ConfigurationException() override;
+        explicit NetworkException(int newCode, const std::string newMsg);
+        explicit NetworkException(int newCode, const char* newMsg);
+        ~NetworkException() override;
 
-        friend std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception);
+        friend std::ostream& operator<<(std::ostream& os, const NetworkException& exception);
     };
 }
 

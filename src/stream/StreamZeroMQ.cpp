@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <zmq.h>
 
 #include "../common/Ctx.h"
-#include "../common/NetworkException.h"
-#include "../common/RuntimeException.h"
+#include "../common/exception/NetworkException.h"
+#include "../common/exception/RuntimeException.h"
 #include "StreamZeroMQ.h"
 
 namespace OpenLogReplicator {

@@ -22,13 +22,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <regex>
 
 #include "../common/Ctx.h"
-#include "../common/DataException.h"
 #include "../common/OracleColumn.h"
 #include "../common/OracleLob.h"
 #include "../common/OracleTable.h"
-#include "../common/tables/SysCol.h"
-#include "../common/tables/SysDeferredStg.h"
-#include "../common/tables/SysTab.h"
+#include "../common/exception/DataException.h"
 #include "../locales/Locales.h"
 #include "Schema.h"
 
@@ -383,6 +380,7 @@ namespace OpenLogReplicator {
                 return false;
             }
         }
+
         for (auto sysCDefMapRowIdIt : otherSchema->sysCDefMapRowId) {
             SysCDef* sysCDef = sysCDefMapRowIdIt.second;
             auto sysCDefMapRowIdIt2 = sysCDefMapRowId.find(sysCDef->rowId);
@@ -430,6 +428,7 @@ namespace OpenLogReplicator {
                 return false;
             }
         }
+
         for (auto sysDeferredStgMapRowIdIt : otherSchema->sysDeferredStgMapRowId) {
             SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt.second;
             auto sysDeferredStgMapRowIdIt2 = sysDeferredStgMapRowId.find(sysDeferredStg->rowId);
@@ -477,6 +476,7 @@ namespace OpenLogReplicator {
                 return false;
             }
         }
+
         for (auto sysLobMapRowIdIt : otherSchema->sysLobMapRowId) {
             SysLob* sysLob = sysLobMapRowIdIt.second;
             auto sysLobMapRowIdIt2 = sysLobMapRowId.find(sysLob->rowId);

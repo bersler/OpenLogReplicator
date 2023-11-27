@@ -1,4 +1,4 @@
-/* Definition of LobIndex
+/* Exception used in program
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,13 +17,27 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "LobIndex.h"
+#include <utility>
+
+#include "RuntimeException.h"
 
 namespace OpenLogReplicator {
-    LobIndex::LobIndex()  {
+    RuntimeException::RuntimeException(int newCode, const std::string newMsg) :
+            exception(),
+            code(newCode),
+            msg(std::move(newMsg)) {
     }
 
-    LobIndex::~LobIndex()  {
-        pageMap.clear();
+    RuntimeException::RuntimeException(int newCode, const char* newMsg) :
+            exception(),
+            code(newCode),
+            msg(newMsg) {
+    }
+
+    RuntimeException::~RuntimeException() = default;
+
+    std::ostream& operator<<(std::ostream& os, const RuntimeException& exception) {
+        os << exception.msg;
+        return os;
     }
 }

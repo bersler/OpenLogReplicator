@@ -17,14 +17,14 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../RuntimeException.h"
+#include "../exception/RuntimeException.h"
 #include "Token.h"
 
 namespace OpenLogReplicator {
     Token::Token(uint64_t newTokenType, const std::string& newStringValue) :
-        tokenType(newTokenType),
-        stringValue(newStringValue),
-        Expression() {
+            Expression(),
+            tokenType(newTokenType),
+            stringValue(newStringValue) {
     }
 
     Token::~Token() {

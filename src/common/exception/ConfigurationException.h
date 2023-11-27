@@ -1,4 +1,4 @@
-/* Exception used in program
+/* Header for ConfigurationException class
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,27 +17,28 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "BootException.h"
+#include <ctime>
+#include <exception>
+#include <sstream>
+#include <string>
 
-#include <utility>
+#include "../types.h"
+
+#ifndef CONFIGURATION_EXCEPTION_H_
+#define CONFIGURATION_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    BootException::BootException(int newCode, const std::string newMsg) :
-            exception(),
-            code(newCode),
-            msg(std::move(newMsg)) {
-    }
+    class ConfigurationException final : public std::exception {
+    public:
+        int code;
+        std::string msg;
 
-    BootException::BootException(int newCode, const char* newMsg) :
-            exception(),
-            code(newCode),
-            msg(newMsg) {
-    }
+        explicit ConfigurationException(int newCode, const std::string& newMsg);
+        explicit ConfigurationException(int newCode, const char* newMsg);
+        ~ConfigurationException() override;
 
-    BootException::~BootException() = default;
-
-    std::ostream& operator<<(std::ostream& os, const BootException& exception) {
-        os << exception.msg;
-        return os;
-    }
+        friend std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception);
+    };
 }
+
+#endif

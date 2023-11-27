@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <cstring>
 
-#include "../common/RedoLogException.h"
 #include "../common/RedoLogRecord.h"
+#include "../common/exception/RedoLogException.h"
 #include "OpCode0501.h"
 #include "OpCode050B.h"
 #include "Transaction.h"

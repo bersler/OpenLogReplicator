@@ -22,11 +22,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
-#include "../common/BootException.h"
 #include "../common/OracleColumn.h"
 #include "../common/OracleTable.h"
 #include "../common/OracleIncarnation.h"
-#include "../common/RuntimeException.h"
+#include "../common/exception/BootException.h"
+#include "../common/exception/RuntimeException.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/RedoLog.h"
 #include "../metadata/Schema.h"

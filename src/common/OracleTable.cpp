@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleColumn.h"
 #include "OracleLob.h"
 #include "OracleTable.h"
-#include "RuntimeException.h"
+#include "exception/RuntimeException.h"
 #include "expression/BoolValue.h"
 #include "expression/Token.h"
 

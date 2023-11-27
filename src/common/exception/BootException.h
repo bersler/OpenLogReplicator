@@ -1,4 +1,4 @@
-/* Header for LobIndex class
+/* Header for BootException class
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,23 +17,27 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <map>
+#include <ctime>
+#include <exception>
+#include <sstream>
+#include <string>
 
-#include "types.h"
+#include "../types.h"
 
-#ifndef LOB_INDEX_H_
-#define LOB_INDEX_H_
+#ifndef BOOT_EXCEPTION_H_
+#define BOOT_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class LobIndex final {
+    class BootException final : public std::exception {
     public:
-        LobIndex();
-        virtual ~LobIndex();
+        int code;
+        std::string msg;
 
-        std::map<uint32_t, typeDba> pageMap;
+        explicit BootException(int newCode, const std::string newMsg);
+        explicit BootException(int newCode, const char* newMsg);
+        virtual ~BootException();
 
-        uint32_t pages;
-        uint16_t rest;
+        friend std::ostream& operator<<(std::ostream& os, const BootException& exception);
     };
 }
 

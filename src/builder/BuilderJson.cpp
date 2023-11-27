@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/OracleColumn.h"
 #include "../common/OracleTable.h"
 #include "../common/typeRowId.h"
-#include "../common/tables/SysCol.h"
+#include "../common/table/SysCol.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 #include "BuilderJson.h"
