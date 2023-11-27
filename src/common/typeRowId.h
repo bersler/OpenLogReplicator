@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <cstring>
 
 #include "Ctx.h"
-#include "DataException.h"
 #include "types.h"
+#include "exception/DataException.h"
 
 #ifndef TYPE_ROWID_H_
 #define TYPE_ROWID_H_

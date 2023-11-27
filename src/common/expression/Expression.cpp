@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../RuntimeException.h"
+#include "../exception/RuntimeException.h"
 #include "BoolValue.h"
 #include "Expression.h"
 #include "StringValue.h"

@@ -24,9 +24,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <vector>
 
 #include "../common/Ctx.h"
-#include "../common/RedoLogException.h"
 #include "../common/RedoLogRecord.h"
 #include "../common/Thread.h"
+#include "../common/exception/RedoLogException.h"
 
 #ifndef REPLICATOR_H_
 #define REPLICATOR_H_

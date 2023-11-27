@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <ctime>
 #include <string>
 
-#include "types.h"
+#include "../types.h"
 
 #ifndef REDO_LOG_EXCEPTION_H_
 #define REDO_LOG_EXCEPTION_H_

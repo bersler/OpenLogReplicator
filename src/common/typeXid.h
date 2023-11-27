@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iomanip>
 #include <ostream>
 
-#include "DataException.h"
 #include "types.h"
+#include "exception/DataException.h"
 
 #ifndef TYPE_XID_H_
 #define TYPE_XID_H_

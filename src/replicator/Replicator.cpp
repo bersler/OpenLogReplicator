@@ -24,12 +24,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
-#include "../common/BootException.h"
 #include "../common/Ctx.h"
 #include "../common/OracleIncarnation.h"
-#include "../common/RedoLogException.h"
-#include "../common/RuntimeException.h"
 #include "../common/Timer.h"
+#include "../common/exception/BootException.h"
+#include "../common/exception/RedoLogException.h"
+#include "../common/exception/RuntimeException.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/RedoLog.h"
 #include "../metadata/Schema.h"

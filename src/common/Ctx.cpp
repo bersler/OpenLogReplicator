@@ -28,10 +28,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "Ctx.h"
-#include "DataException.h"
-#include "RuntimeException.h"
 #include "Thread.h"
 #include "typeIntX.h"
+#include "exception/DataException.h"
+#include "exception/RuntimeException.h"
 
 uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
 

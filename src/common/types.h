@@ -79,6 +79,7 @@ typedef uint64_t typeUnicode;
 #define DB_FORMAT_ADD_DML                       1
 #define DB_FORMAT_ADD_DDL                       2
 
+#define ATTRIBUTES_FORMAT_DEFAULT               0
 #define ATTRIBUTES_FORMAT_BEGIN                 1
 #define ATTRIBUTES_FORMAT_DML                   2
 #define ATTRIBUTES_FORMAT_COMMIT                4

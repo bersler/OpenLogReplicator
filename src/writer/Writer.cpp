@@ -23,9 +23,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../builder/Builder.h"
 #include "../common/Ctx.h"
-#include "../common/DataException.h"
-#include "../common/NetworkException.h"
-#include "../common/RuntimeException.h"
+#include "../common/exception/DataException.h"
+#include "../common/exception/NetworkException.h"
+#include "../common/exception/RuntimeException.h"
 #include "../metadata/Metadata.h"
 #include "Writer.h"
 

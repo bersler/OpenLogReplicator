@@ -19,9 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "LobCtx.h"
 #include "LobData.h"
-#include "RedoLogException.h"
 #include "RedoLogRecord.h"
-#include "../metadata/Schema.h"
+#include "exception/RedoLogException.h"
 
 namespace OpenLogReplicator {
     LobCtx::~LobCtx() {

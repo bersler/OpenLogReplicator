@@ -18,10 +18,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "Ctx.h"
-#include "RedoLogException.h"
 #include "types.h"
 #include "typeLobId.h"
 #include "typeXid.h"
+#include "exception/RedoLogException.h"
 
 #ifndef REDO_LOG_RECORD_H_
 #define REDO_LOG_RECORD_H_

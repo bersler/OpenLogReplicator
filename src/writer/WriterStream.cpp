@@ -20,8 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
-#include "../common/NetworkException.h"
 #include "../common/OraProtoBuf.pb.h"
+#include "../common/exception/NetworkException.h"
 #include "../metadata/Metadata.h"
 #include "../stream/Stream.h"
 #include "WriterStream.h"

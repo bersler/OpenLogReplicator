@@ -27,19 +27,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/typeXid.h"
 #include "../common/types.h"
-#include "../common/tables/SysCol.h"
-#include "../common/tables/SysCCol.h"
-#include "../common/tables/SysCDef.h"
-#include "../common/tables/SysECol.h"
-#include "../common/tables/SysLob.h"
-#include "../common/tables/SysLobCompPart.h"
-#include "../common/tables/SysLobFrag.h"
-#include "../common/tables/SysObj.h"
-#include "../common/tables/SysTabComPart.h"
-#include "../common/tables/SysTabPart.h"
-#include "../common/tables/SysTabSubPart.h"
-#include "../common/tables/SysTs.h"
-#include "../common/tables/SysUser.h"
+#include "../common/table/SysCCol.h"
+#include "../common/table/SysCDef.h"
+#include "../common/table/SysCol.h"
+#include "../common/table/SysDeferredStg.h"
+#include "../common/table/SysECol.h"
+#include "../common/table/SysLob.h"
+#include "../common/table/SysLobCompPart.h"
+#include "../common/table/SysLobFrag.h"
+#include "../common/table/SysObj.h"
+#include "../common/table/SysTab.h"
+#include "../common/table/SysTabComPart.h"
+#include "../common/table/SysTabPart.h"
+#include "../common/table/SysTabSubPart.h"
+#include "../common/table/SysTs.h"
+#include "../common/table/SysUser.h"
 
 #ifndef SCHEMA_H_
 #define SCHEMA_H_
@@ -50,10 +52,6 @@ namespace OpenLogReplicator {
     class OracleColumn;
     class OracleLob;
     class OracleTable;
-    class SysColSeg;
-    class SysDeferredStg;
-    class SysTab;
-    class SysUser;
 
     class Schema final {
     protected:

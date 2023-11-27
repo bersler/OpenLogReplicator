@@ -27,8 +27,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
-#include "../common/ConfigurationException.h"
-#include "../common/RuntimeException.h"
+#include "../common/exception/ConfigurationException.h"
+#include "../common/exception/RuntimeException.h"
 #include "../metadata/Metadata.h"
 #include "WriterFile.h"
 

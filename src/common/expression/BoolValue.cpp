@@ -18,16 +18,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../Ctx.h"
-#include "../RuntimeException.h"
+#include "../exception/RuntimeException.h"
 #include "BoolValue.h"
 #include "StringValue.h"
 
 namespace OpenLogReplicator {
     BoolValue::BoolValue(uint64_t newBoolType, Expression* newLeft, Expression* newRight) :
+            Expression(),
             boolType(newBoolType),
             left(newLeft),
-            right(newRight),
-            Expression() {
+            right(newRight) {
     }
 
     BoolValue::~BoolValue() {

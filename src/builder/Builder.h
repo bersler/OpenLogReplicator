@@ -30,12 +30,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/LobData.h"
 #include "../common/LobKey.h"
 #include "../common/RedoLogRecord.h"
-#include "../common/RedoLogException.h"
 #include "../common/types.h"
 #include "../common/typeLobId.h"
 #include "../common/typeRowId.h"
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
+#include "../common/exception/RedoLogException.h"
 #include "../locales/CharacterSet.h"
 #include "../locales/Locales.h"
 

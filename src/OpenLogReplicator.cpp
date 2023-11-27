@@ -29,11 +29,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "builder/BuilderJson.h"
 #include "common/Ctx.h"
 #include "common/types.h"
-#include "common/ConfigurationException.h"
-#include "common/RuntimeException.h"
 #include "common/Thread.h"
-#include "common/tables/SysObj.h"
-#include "common/tables/SysUser.h"
+#include "common/exception/ConfigurationException.h"
+#include "common/exception/RuntimeException.h"
+#include "common/table/SysObj.h"
+#include "common/table/SysUser.h"
 #include "locales/Locales.h"
 #include "metadata/Checkpoint.h"
 #include "metadata/Metadata.h"
@@ -408,7 +408,7 @@ namespace OpenLogReplicator {
                                                  ", expected: one of {0 .. 3}");
             }
 
-            uint64_t attributesFormat = 0;
+            uint64_t attributesFormat = ATTRIBUTES_FORMAT_DEFAULT;
             if (formatJson.HasMember("attributes")) {
                 attributesFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
                 if (attributesFormat > 7)

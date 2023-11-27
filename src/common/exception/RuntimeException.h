@@ -1,4 +1,4 @@
-/* Header for NetworkException class
+/* Header for RuntimeException class
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -22,22 +22,22 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sstream>
 #include <string>
 
-#include "types.h"
+#include "../types.h"
 
-#ifndef NETWORK_EXCEPTION_H_
-#define NETWORK_EXCEPTION_H_
+#ifndef RUNTIME_EXCEPTION_H_
+#define RUNTIME_EXCEPTION_H_
 
 namespace OpenLogReplicator {
-    class NetworkException final : public std::exception {
+    class RuntimeException final : public std::exception {
     public:
         int code;
         std::string msg;
 
-        explicit NetworkException(int newCode, const std::string newMsg);
-        explicit NetworkException(int newCode, const char* newMsg);
-        ~NetworkException() override;
+        explicit RuntimeException(int newCode, const std::string newMsg);
+        explicit RuntimeException(int newCode, const char* newMsg);
+        virtual ~RuntimeException();
 
-        friend std::ostream& operator<<(std::ostream& os, const NetworkException& exception);
+        friend std::ostream& operator<<(std::ostream& os, const RuntimeException& exception);
     };
 }
 

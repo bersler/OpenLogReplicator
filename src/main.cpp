@@ -26,10 +26,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpenLogReplicator.h"
 #include "common/Ctx.h"
-#include "common/ConfigurationException.h"
-#include "common/DataException.h"
-#include "common/RuntimeException.h"
 #include "common/Thread.h"
+#include "common/exception/ConfigurationException.h"
+#include "common/exception/DataException.h"
+#include "common/exception/RuntimeException.h"
 
 #ifdef LINK_LIBRARY_OCI
 #define HAS_OCI " OCI"

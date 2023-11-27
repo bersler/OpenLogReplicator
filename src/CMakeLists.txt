@@ -17,23 +17,23 @@
 # <http://www.gnu.org/licenses/>.
 
 list(APPEND ListCommon
-        common/BootException.cpp
-        common/ConfigurationException.cpp
         common/Ctx.cpp
-        common/DataException.cpp
-        common/NetworkException.cpp
+        common/LobCtx.cpp
+        common/LobData.cpp
+        common/LobKey.cpp
         common/OracleColumn.cpp
         common/OracleIncarnation.cpp
         common/OracleLob.cpp
         common/OracleTable.cpp
-        common/LobCtx.cpp
-        common/LobData.cpp
-        common/LobKey.cpp
-        common/RedoLogException.cpp
         common/RedoLogRecord.cpp
-        common/RuntimeException.cpp
         common/Thread.cpp
         common/Timer.cpp
+        common/exception/BootException.cpp
+        common/exception/ConfigurationException.cpp
+        common/exception/DataException.cpp
+        common/exception/NetworkException.cpp
+        common/exception/RedoLogException.cpp
+        common/exception/RuntimeException.cpp
         common/expression/BoolValue.cpp
         common/expression/Expression.cpp
         common/expression/StringValue.cpp

@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../common/Ctx.h"
-#include "../common/RuntimeException.h"
+#include "../common/exception/RuntimeException.h"
 #include "StateDisk.h"
 
 namespace OpenLogReplicator {

@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <cstring>
 
 #include "../common/Ctx.h"
-#include "../common/RuntimeException.h"
+#include "../common/exception/RuntimeException.h"
 #include "DatabaseEnvironment.h"
 
 namespace OpenLogReplicator {

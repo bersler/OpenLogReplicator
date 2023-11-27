@@ -24,12 +24,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <thread>
 #include <unistd.h>
 
-#include "../common/ConfigurationException.h"
 #include "../common/Ctx.h"
-#include "../common/RuntimeException.h"
 #include "../common/typeTime.h"
-#include "../common/tables/SysObj.h"
-#include "../common/tables/SysUser.h"
+#include "../common/exception/ConfigurationException.h"
+#include "../common/exception/RuntimeException.h"
+#include "../common/table/SysObj.h"
+#include "../common/table/SysUser.h"
 #include "Checkpoint.h"
 #include "Metadata.h"
 #include "Schema.h"
