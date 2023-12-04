@@ -1,0 +1,56 @@
+= Experimental Features
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.3.1
+:revdate: 2023-12-04
+:imagesdir: ./images
+:url-github: https://github.com/bersler/OpenLogReplicator
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This document describes the experimental features of OpenLogReplicator.
+By default, all experimental features are disabled and must be enabled in the configuration file.
+
+== Binary XMLType Support[[binary-xmltype]]
+
+=== Configuration Parameters
+
+To enable binary XMLType support, set the following parameters in the configuration file:
+
+`"flags":65536`
+
+=== Feature Description
+
+The Oracle database uses a special binary format to store XMLType data.
+Let's consider the following SQL commands:
+
+[source,sql]
+----
+CREATE TABLE USR1.ADAM1 (
+  A NUMBER(3),
+  B XMLTYPE
+);
+
+CREATE TABLE USR1.ADAM2 (
+   A NUMBER,
+   B XMLTYPE
+) XMLTYPE B STORE AS CLOB;
+----
+
+In the example above `USR1.ADAM1` table stores XMLType data in a binary format, while `USR1.ADAM2` stores it in a CLOB.
+The binary format is more efficient, but it is not human-readable and requires special tools to decode it.
+The CLOB format is human-readable, but it is less efficient in terms of storage and optimization related size of XML data.
+
+NOTE: Storing in CLOB format causes the data to be stored in the exact same format as it was inserted.
+This means that the data is not optimized and may contain unnecessary whitespaces, line breaks, etc.
+Storing in binary format causes the data to be optimized, which means that it may be stored in a different format than it was inserted.
+
+To decode binary XMLType, OpenLogReplicator uses the data stored in the `XDB` schema dictionaries.
+This might cause the dictionaries to grow significantly, which may lead to performance issues.
+
+IMPORTANT: The feature is in an experimental state, meaning that it may not work correctly in all cases.
+Please report any issues to the project's GitHub page.
+This will help to improve the feature and make it more stable.

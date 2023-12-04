@@ -334,6 +334,10 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::kdli(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
+        if (fieldLength < 1)
+            throw RedoLogException(50061, "too short field kdli: " + std::to_string(fieldLength) + " offset: " +
+                                          std::to_string(redoLogRecord->dataOffset));
+
         uint8_t code = redoLogRecord->data[fieldPos + 0];
 
         switch (code) {
@@ -545,6 +549,9 @@ namespace OpenLogReplicator {
 
     void OpCode::kdliFill(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
                           uint8_t code) {
+        if (fieldLength < 8)
+            throw RedoLogException(50061, "too short field kdli fill: " + std::to_string(fieldLength) + " offset: " +
+                                          std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->indKeyDataCode = code;
         redoLogRecord->lobOffset = ctx->read16(redoLogRecord->data + fieldPos + 2);;
@@ -1021,6 +1028,9 @@ namespace OpenLogReplicator {
 
     void OpCode::kdliImap(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
                           uint8_t code) {
+        if (fieldLength < 8)
+            throw RedoLogException(50061, "too short field kdli imap: " + std::to_string(fieldLength) + " offset: " +
+                                          std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->indKeyDataCode = code;
         redoLogRecord->indKeyData = fieldPos;

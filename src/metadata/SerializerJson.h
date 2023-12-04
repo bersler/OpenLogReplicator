@@ -29,6 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Ctx;
+    class XmlCtx;
 
     class SerializerJson final : public Serializer {
     protected:
@@ -47,6 +48,10 @@ namespace OpenLogReplicator {
         void deserializeSysTabSubPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabSubPartJson);
         void deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTsJson);
         void deserializeSysUser(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson);
+        void deserializeXdbTtSet(Metadata* metadata, const std::string& fileName, const rapidjson::Value& xdbTtSetJson);
+        void deserializeXdbXNm(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXNmJson);
+        void deserializeXdbXPt(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXPtJson);
+        void deserializeXdbXQn(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXQnJson);
 
     public:
         SerializerJson();

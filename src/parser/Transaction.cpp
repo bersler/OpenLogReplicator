@@ -23,6 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/OracleLob.h"
 #include "../common/OracleTable.h"
 #include "../common/RedoLogRecord.h"
+#include "../common/XmlCtx.h"
 #include "../common/exception/RedoLogException.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
@@ -31,10 +32,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Transaction::Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs) :
+    Transaction::Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx) :
         deallocTc(nullptr),
         opCodes(0),
         mergeBuffer(nullptr),
+        xmlCtx(newXmlCtx),
         xid(newXid),
         firstSequence(0),
         firstOffset(0),
@@ -483,7 +485,7 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            builder->processDml(first2->scnRecord, commitSequence, commitTimestamp, &lobCtx, first1,
+                            builder->processDml(first2->scnRecord, commitSequence, commitTimestamp, &lobCtx, xmlCtx, first1,
                                                 first2, type, system, schema, dump);
                             opFlush = true;
                         }
@@ -491,14 +493,14 @@ namespace OpenLogReplicator {
 
                     // Insert multiple rows
                     case 0x05010B0B:
-                        builder->processInsertMultiple(redoLogRecord2->scnRecord, commitSequence, commitTimestamp, &lobCtx, redoLogRecord1,
+                        builder->processInsertMultiple(redoLogRecord2->scnRecord, commitSequence, commitTimestamp, &lobCtx, xmlCtx, redoLogRecord1,
                                                        redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;
 
                     // Delete multiple rows
                     case 0x05010B0C:
-                        builder->processDeleteMultiple(redoLogRecord2->scnRecord, commitSequence, commitTimestamp, &lobCtx, redoLogRecord1,
+                        builder->processDeleteMultiple(redoLogRecord2->scnRecord, commitSequence, commitTimestamp, &lobCtx, xmlCtx, redoLogRecord1,
                                                        redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;

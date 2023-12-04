@@ -28,6 +28,7 @@ list(APPEND ListCommon
         common/RedoLogRecord.cpp
         common/Thread.cpp
         common/Timer.cpp
+        common/XmlCtx.cpp
         common/exception/BootException.cpp
         common/exception/ConfigurationException.cpp
         common/exception/DataException.cpp

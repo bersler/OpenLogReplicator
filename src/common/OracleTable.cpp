@@ -75,6 +75,20 @@ namespace OpenLogReplicator {
                 systemTable = TABLE_SYS_TS;
             else if (this->name == "USER$")
                 systemTable = TABLE_SYS_USER;
+        } else if (this->owner == "XDB") {
+            sys = true;
+            if (this->name == "XDB$TTSET")
+                systemTable = TABLE_XDB_TTSET;
+            else if (this->name.substr(0, 4) == "X$NM") {
+                systemTable = TABLE_XDB_XNM;
+                tokSuf = this->name.substr(4);
+            } else if (this->name.substr(0, 4) == "X$PT") {
+                systemTable = TABLE_XDB_XPT;
+                tokSuf = this->name.substr(4);
+            } else if (this->name.substr(0, 4) == "X$QN") {
+                systemTable = TABLE_XDB_XQN;
+                tokSuf = this->name.substr(4);
+            }
         } else
             sys = false;
     }

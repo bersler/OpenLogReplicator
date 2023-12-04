@@ -192,6 +192,10 @@ typedef uint64_t typeUnicode;
 #define TABLE_SYS_TABSUBPART                    13
 #define TABLE_SYS_TS                            14
 #define TABLE_SYS_USER                          15
+#define TABLE_XDB_TTSET                         16
+#define TABLE_XDB_XNM                           17
+#define TABLE_XDB_XPT                           18
+#define TABLE_XDB_XQN                           19
 
 #define BLOCK(__uba)                            (static_cast<uint32_t>((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         (static_cast<uint16_t>(((static_cast<uint64_t>(__uba))>>32)&0xFFFF))

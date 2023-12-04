@@ -127,6 +127,7 @@ namespace OpenLogReplicator {
     public:
         static const char map10[11];
         static const char map16[17];
+        static const char map16U[17];
         static const char map64[65];
         static const char map64R[256];
 

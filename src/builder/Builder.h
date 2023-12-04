@@ -58,8 +58,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define XML_HEADER_STANDALONE                   0x01
 #define XML_HEADER_XMLDECL                      0x02
 #define XML_HEADER_ENCODING                     0x04
-#define XML_HEADER_VERSION_1_1                  0x08
+#define XML_HEADER_VERSION                      0x08
 #define XML_HEADER_STANDALONE_YES               0x10
+#define XML_HEADER_VERSION_1_1                  0x80
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -69,6 +70,7 @@ namespace OpenLogReplicator {
     class Builder;
     class Metadata;
     class SystemTransaction;
+    class XmlCtx;
 
     struct BuilderQueue {
         uint64_t id;
@@ -153,7 +155,8 @@ namespace OpenLogReplicator {
         double decodeFloat(const uint8_t* data);
         long double decodeDouble(const uint8_t* data);
         void builderRotate(bool copy);
-        void processValue(LobCtx* lobCtx, OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, uint64_t offset, bool after, bool compressed);
+        void processValue(LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, uint64_t offset, bool after,
+                          bool compressed);
 
         void valuesRelease() {
             for (uint64_t i = 0; i < mergesMax; ++i)
@@ -1003,6 +1006,19 @@ namespace OpenLogReplicator {
             return true;
         }
 
+        void parseRaw(const uint8_t* data, uint64_t length, uint64_t offset) {
+            valueBufferPurge();
+            valueBufferCheck(length * 2, offset);
+
+            if (length == 0)
+                return;
+
+            for (uint64_t j = 0; j < length; ++j) {
+                valueBufferAppend(Ctx::map16U[data[j] >> 4]);
+                valueBufferAppend(Ctx::map16U[data[j] & 0x0F]);
+            }
+        };
+
         void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool hasPrev, bool hasNext,
                          bool isSystem) {
             CharacterSet* characterSet = locales->characterMap[charsetId];
@@ -1152,16 +1168,16 @@ namespace OpenLogReplicator {
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) = 0;
         virtual void columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction) = 0;
         virtual void columnTimestampTz(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) = 0;
-        virtual void processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                                   typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
-        virtual void processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                                   typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
-        virtual void processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                                   typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+        virtual void processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+        virtual void processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+        virtual void processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
         virtual void processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
                                 uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) = 0;
         virtual void processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) = 0;
-        bool parseXml(const uint8_t* data, uint64_t length, uint64_t offset);
+        bool parseXml(XmlCtx* xmlCtx, const uint8_t* data, uint64_t length, uint64_t offset);
 
     public:
         SystemTransaction* systemTransaction;
@@ -1181,12 +1197,12 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
         void processBegin(typeXid xid, typeScn scn, typeScn newLwnScn, const std::unordered_map<std::string, std::string>* newAttributes);
-        void processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
-                                   bool system, bool schema, bool dump);
-        void processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
-                                   bool system, bool schema, bool dump);
-        void processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
-                        uint64_t type, bool system, bool schema, bool dump);
+        void processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
+                                   RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
+        void processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
+                                   RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
+        void processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
+                        RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema, bool dump);
         void processDdlHeader(typeScn scn, typeSeq sequence, typeTime time_, RedoLogRecord* redoLogRecord1);
         virtual void initialize();
         virtual void processCommit(typeScn scn, typeSeq sequence, typeTime time_) = 0;

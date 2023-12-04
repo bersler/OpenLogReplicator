@@ -36,6 +36,7 @@ namespace OpenLogReplicator {
     class Metadata;
     class TransactionBuffer;
     struct TransactionChunk;
+    class XmlCtx;
 
     class Transaction final {
     protected:
@@ -45,6 +46,7 @@ namespace OpenLogReplicator {
     public:
         uint8_t* mergeBuffer;
         LobCtx lobCtx;
+        XmlCtx* xmlCtx;
         typeXid xid;
         typeSeq firstSequence;
         uint64_t firstOffset;
@@ -65,7 +67,7 @@ namespace OpenLogReplicator {
         // Attributes
         std::unordered_map<std::string, std::string> attributes;
 
-        explicit Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs);
+        explicit Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx);
 
         void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
         void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);

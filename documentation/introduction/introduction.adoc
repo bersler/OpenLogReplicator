@@ -1,7 +1,7 @@
 = Introduction to OpenLogReplicator
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.1
-:revdate: 2023-10-12
+:revdate: 2023-12-04
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -26,7 +26,7 @@ Imagine that your project consists of millions of pieces and changes are done by
 == Change data capture
 
 The same thing can happen in a computer database -- users are adding, modifying, and removing data all the time.
-It's important to keep track of those changes so that you can make sure everything is accurate and up-to-date.
+It's important to keep track of those changes so that you can make sure everything is accurate and up to date.
 
 This is the place where *CDC (Change Data Capture)* comes to action.
 It's a tool that helps you keep track of all those changes automatically, so you don't have to do it manually.
@@ -49,7 +49,7 @@ It is accessible for future processing.
 4. Monitoring and management component: The whole process is monitored and managed by a CDC application.
 
 These elements work together to capture and process changes made to data in a database, and make it available to downstream systems or applications.
-By using a CDC application, organizations can ensure that their data is accurate and up-to-date, and that it is available to the systems and applications that need it in a timely and efficient manner.
+By using a CDC application, organizations can ensure that their data is accurate and up to date, and that it is available to the systems and applications that need it in a timely and efficient manner.
 
 .CDC Architecture
 image:cdc-architecture.png[CDC Architecture,,,]

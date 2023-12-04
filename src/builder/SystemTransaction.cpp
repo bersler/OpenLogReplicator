@@ -33,7 +33,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/table/SysTabComPart.h"
 #include "../common/table/SysTabPart.h"
 #include "../common/table/SysTabSubPart.h"
+#include "../common/table/SysTs.h"
 #include "../common/table/SysUser.h"
+#include "../common/table/XdbTtSet.h"
+#include "../common/table/XdbXNm.h"
+#include "../common/table/XdbXPt.h"
+#include "../common/table/XdbXQn.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 #include "../metadata/SchemaElement.h"
@@ -59,7 +64,11 @@ namespace OpenLogReplicator {
             sysTabPartTmp(nullptr),
             sysTabSubPartTmp(nullptr),
             sysTsTmp(nullptr),
-            sysUserTmp(nullptr) {
+            sysUserTmp(nullptr),
+            xdbTtSetTmp(nullptr),
+            xdbXNmTmp(nullptr),
+            xdbXPtTmp(nullptr),
+            xdbXQnTmp(nullptr) {
         ctx->logTrace(TRACE_SYSTEM, "begin");
     }
 
@@ -142,6 +151,26 @@ namespace OpenLogReplicator {
         if (sysUserTmp != nullptr) {
             delete sysUserTmp;
             sysUserTmp = nullptr;
+        }
+
+        if (xdbTtSetTmp != nullptr) {
+            delete xdbTtSetTmp;
+            xdbTtSetTmp = nullptr;
+        }
+
+        if (xdbXNmTmp != nullptr) {
+            delete xdbXNmTmp;
+            xdbXNmTmp = nullptr;
+        }
+
+        if (xdbXPtTmp != nullptr) {
+            delete xdbXPtTmp;
+            xdbXPtTmp = nullptr;
+        }
+
+        if (xdbXQnTmp != nullptr) {
+            delete xdbXQnTmp;
+            xdbXQnTmp = nullptr;
         }
     }
 
@@ -297,6 +326,29 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL)");
             val.set(0, 0);
+        }
+    }
+
+    void SystemTransaction::updateRaw(std::string& val, uint64_t maxLength, typeCol column, OracleTable* table, uint64_t offset) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+            if (table->columns[column]->type != SYS_COL_TYPE_RAW)
+                throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
+
+            builder->parseRaw(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            std::string newVal(builder->valueBuffer, builder->valueLength);
+            if (builder->valueLength > maxLength)
+                throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
+                                              table->columns[column]->name + ", length " + std::to_string(builder->valueLength) + " offset: " + std::to_string(offset));
+
+            if (ctx->trace & TRACE_SYSTEM)
+                ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
+            val = newVal;
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+            if (ctx->trace & TRACE_SYSTEM)
+                ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
+            val.assign("");
         }
     }
 
@@ -869,6 +921,141 @@ namespace OpenLogReplicator {
         sysUserTmp = nullptr;
     }
 
+    void SystemTransaction::processInsertXdbTtSet(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        XdbTtSet* xdbTtSet = metadata->schema->dictXdbTtSetFind(rowId);
+        if (xdbTtSet != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(50022, "ddl: duplicate XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for insert at offset: " +
+                                       std::to_string(offset));
+            metadata->schema->dictXdbTtSetDrop(xdbTtSet);
+            delete xdbTtSet;
+        }
+        xdbTtSetTmp = new XdbTtSet(rowId, "", "", 0, 0);
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "GUID") {
+                    updateRaw(xdbTtSetTmp->guid, XDB_TTSET_GUID_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "TOKSUF") {
+                    updateString(xdbTtSetTmp->tokSuf, XDB_TTSET_TOKSUF_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "FLAGS") {
+                    updateNumber64u(xdbTtSetTmp->flags, 0, column, table, offset);
+                } else if (table->columns[column]->name == "OBJ#") {
+                    updateNumber32u(xdbTtSetTmp->obj, 0, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbTtSetAdd(xdbTtSetTmp);
+        xdbTtSetTmp = nullptr;
+    }
+
+    void SystemTransaction::processInsertXdbXNm(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        XdbXNm* xdbXNm = metadata->schema->dictXdbXNmFind(table->tokSuf, rowId);
+        if (xdbXNm != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(50022, "ddl: duplicate XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() +
+                                       ") for insert at offset: " + std::to_string(offset));
+            metadata->schema->dictXdbXNmDrop(table->tokSuf, xdbXNm);
+            delete xdbXNm;
+        }
+        xdbXNmTmp = new XdbXNm(rowId, "", "");
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "NMSPCURI") {
+                    updateString(xdbXNmTmp->nmSpcUri, XDB_XNM_NMSPCURI_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "ID") {
+                    updateRaw(xdbXNmTmp->id, XDB_XNM_ID_LENGTH, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbXNmAdd(table->tokSuf, xdbXNmTmp);
+        xdbXNmTmp = nullptr;
+    }
+
+    void SystemTransaction::processInsertXdbXPt(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        XdbXPt* xdbXPt = metadata->schema->dictXdbXPtFind(table->tokSuf, rowId);
+        if (xdbXPt != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(50022, "ddl: duplicate XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() +
+                                       ") for insert at offset: " + std::to_string(offset));
+            metadata->schema->dictXdbXPtDrop(table->tokSuf, xdbXPt);
+            delete xdbXPt;
+        }
+        xdbXPtTmp = new XdbXPt(rowId, "", "");
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "PATH") {
+                    updateRaw(xdbXPtTmp->path, XDB_XPT_PATH_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "ID") {
+                    updateRaw(xdbXPtTmp->id, XDB_XPT_ID_LENGTH, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbXPtAdd(table->tokSuf, xdbXPtTmp);
+        xdbXPtTmp = nullptr;
+    }
+
+    void SystemTransaction::processInsertXdbXQn(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        XdbXQn* xdbXQn = metadata->schema->dictXdbXQnFind(table->tokSuf, rowId);
+        if (xdbXQn != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(50022, "ddl: duplicate XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() +
+                                       ") for insert at offset: " + std::to_string(offset));
+            metadata->schema->dictXdbXQnDrop(table->tokSuf, xdbXQn);
+            delete xdbXQn;
+        }
+        xdbXQnTmp = new XdbXQn(rowId, "", "", "", "");
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+                if (table->columns[column]->name == "NMSPCID") {
+                    updateRaw(xdbXQnTmp->nmSpcId, XDB_XQN_NMSPCID_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "LOCALNAME") {
+                    updateString(xdbXQnTmp->localName, XDB_XQN_LOCALNAME_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "FLAGS") {
+                    updateRaw(xdbXQnTmp->flags, XDB_XQN_FLAGS_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "ID") {
+                    updateRaw(xdbXQnTmp->id, XDB_XQN_ID_LENGTH, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbXQnAdd(table->tokSuf, xdbXQnTmp);
+        xdbXQnTmp = nullptr;
+    }
+
     void SystemTransaction::processInsert(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         typeRowId rowId(dataObj, bdba, slot);
         char str[19];
@@ -935,6 +1122,22 @@ namespace OpenLogReplicator {
 
             case TABLE_SYS_USER:
                 processInsertSysUser(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_TTSET:
+                processInsertXdbTtSet(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XNM:
+                processInsertXdbXNm(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XPT:
+                processInsertXdbXPt(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XQN:
+                processInsertXdbXQn(table, rowId, offset);
                 break;
         }
     }
@@ -1513,6 +1716,150 @@ namespace OpenLogReplicator {
         sysUserTmp = nullptr;
     }
 
+    void SystemTransaction::processUpdateXdbTtSet(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        xdbTtSetTmp = metadata->schema->dictXdbTtSetFind(rowId);
+        if (xdbTtSetTmp != nullptr) {
+            metadata->schema->dictXdbTtSetDrop(xdbTtSetTmp);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            xdbTtSetTmp = new XdbTtSet(rowId, "", "", 0, 0);
+        }
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "GUID") {
+                    updateRaw(xdbTtSetTmp->guid, XDB_TTSET_GUID_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "TOKSUF") {
+                    updateString(xdbTtSetTmp->tokSuf, XDB_TTSET_TOKSUF_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "FLAGS") {
+                    updateNumber64u(xdbTtSetTmp->flags, 0, column, table, offset);
+                } else if (table->columns[column]->name == "OBJ") {
+                    updateNumber32u(xdbTtSetTmp->obj, 0, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbTtSetAdd(xdbTtSetTmp);
+        xdbTtSetTmp = nullptr;
+    }
+
+    void SystemTransaction::processUpdateXdbXNm(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        xdbXNmTmp = metadata->schema->dictXdbXNmFind(table->tokSuf, rowId);
+        if (xdbXNmTmp != nullptr) {
+            metadata->schema->dictXdbXNmDrop(table->tokSuf, xdbXNmTmp);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            xdbXNmTmp = new XdbXNm(rowId, "", "");
+        }
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "NMSPCURI") {
+                    updateString(xdbXNmTmp->nmSpcUri, XDB_XNM_NMSPCURI_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "ID") {
+                    updateRaw(xdbXNmTmp->id, XDB_XNM_ID_LENGTH, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbXNmAdd(table->tokSuf, xdbXNmTmp);
+        xdbXNmTmp = nullptr;
+    }
+
+    void SystemTransaction::processUpdateXdbXPt(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        xdbXPtTmp = metadata->schema->dictXdbXPtFind(table->tokSuf, rowId);
+        if (xdbXPtTmp != nullptr) {
+            metadata->schema->dictXdbXPtDrop(table->tokSuf, xdbXPtTmp);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            xdbXPtTmp = new XdbXPt(rowId, "", "");
+        }
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "PATH") {
+                    updateRaw(xdbXPtTmp->path, XDB_XPT_PATH_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "ID") {
+                    updateRaw(xdbXPtTmp->id, XDB_XPT_ID_LENGTH, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbXPtAdd(table->tokSuf, xdbXPtTmp);
+        xdbXPtTmp = nullptr;
+    }
+
+    void SystemTransaction::processUpdateXdbXQn(OracleTable* table, typeRowId& rowId, uint64_t offset) {
+        xdbXQnTmp = metadata->schema->dictXdbXQnFind(table->tokSuf, rowId);
+        if (xdbXQnTmp != nullptr) {
+            metadata->schema->dictXdbXQnDrop(table->tokSuf, xdbXQnTmp);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            xdbXQnTmp = new XdbXQn(rowId, "", "", "", "");
+        }
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "NMSPCID") {
+                    updateRaw(xdbXQnTmp->nmSpcId, XDB_XQN_NMSPCID_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "LOCALNAME") {
+                    updateString(xdbXQnTmp->localName, XDB_XQN_LOCALNAME_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "FLAGS") {
+                    updateRaw(xdbXQnTmp->flags, XDB_XQN_FLAGS_LENGTH, column, table, offset);
+                } else if (table->columns[column]->name == "ID") {
+                    updateRaw(xdbXQnTmp->id, XDB_XQN_ID_LENGTH, column, table, offset);
+                }
+            }
+        }
+
+        metadata->schema->dictXdbXQnAdd(table->tokSuf, xdbXQnTmp);
+        xdbXQnTmp = nullptr;
+    }
+
     void SystemTransaction::processUpdate(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         typeRowId rowId(dataObj, bdba, slot);
         char str[19];
@@ -1579,6 +1926,22 @@ namespace OpenLogReplicator {
 
             case TABLE_SYS_USER:
                 processUpdateSysUser(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_TTSET:
+                processUpdateXdbTtSet(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XNM:
+                processUpdateXdbXNm(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XPT:
+                processUpdateXdbXPt(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XQN:
+                processUpdateXdbXQn(table, rowId, offset);
                 break;
         }
     }
@@ -1822,6 +2185,66 @@ namespace OpenLogReplicator {
         sysUserTmp = nullptr;
     }
 
+    void SystemTransaction::processDeleteXdbTtSet(typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        xdbTtSetTmp = metadata->schema->dictXdbTtSetFind(rowId);
+        if (xdbTtSetTmp == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictXdbTtSetDrop(xdbTtSetTmp);
+        delete xdbTtSetTmp;
+        xdbTtSetTmp = nullptr;
+    }
+
+    void SystemTransaction::processDeleteXdbXNm(OracleTable* table, typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        xdbXNmTmp = metadata->schema->dictXdbXNmFind(table->tokSuf, rowId);
+        if (xdbXNmTmp == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictXdbXNmDrop(table->tokSuf, xdbXNmTmp);
+        delete xdbXNmTmp;
+        xdbXNmTmp = nullptr;
+    }
+
+    void SystemTransaction::processDeleteXdbXPt(OracleTable* table, typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        xdbXPtTmp = metadata->schema->dictXdbXPtFind(table->tokSuf, rowId);
+        if (xdbXPtTmp == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictXdbXPtDrop(table->tokSuf, xdbXPtTmp);
+        delete xdbXPtTmp;
+        xdbXPtTmp = nullptr;
+    }
+
+    void SystemTransaction::processDeleteXdbXQn(OracleTable* table, typeRowId& rowId, uint64_t offset __attribute__((unused))) {
+        xdbXQnTmp = metadata->schema->dictXdbXQnFind(table->tokSuf, rowId);
+        if (xdbXQnTmp == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                if (ctx->trace & TRACE_SYSTEM)
+                    ctx->logTrace(TRACE_SYSTEM, "missing XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictXdbXQnDrop(table->tokSuf, xdbXQnTmp);
+        delete xdbXQnTmp;
+        xdbXQnTmp = nullptr;
+    }
+
     void SystemTransaction::processDelete(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
             typeRowId rowId(dataObj, bdba, slot);
         char str[19];
@@ -1889,6 +2312,22 @@ namespace OpenLogReplicator {
             case TABLE_SYS_USER:
                 processDeleteSysUser(rowId, offset);
                 break;
+
+            case TABLE_XDB_TTSET:
+                processDeleteXdbTtSet(rowId, offset);
+                break;
+
+            case TABLE_XDB_XNM:
+                processDeleteXdbXNm(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XPT:
+                processDeleteXdbXPt(table, rowId, offset);
+                break;
+
+            case TABLE_XDB_XQN:
+                processDeleteXdbXQn(table, rowId, offset);
+                break;
         }
     }
 
@@ -1902,7 +2341,7 @@ namespace OpenLogReplicator {
         std::list<std::string> msgsDropped;
         std::list<std::string> msgsUpdated;
         metadata->schema->scn = scn;
-        metadata->schema->dropUnusedMetadata(metadata->users, msgsDropped);
+        metadata->schema->dropUnusedMetadata(metadata->users, metadata->schemaElements, msgsDropped);
 
         for (SchemaElement* element: metadata->schemaElements)
             metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->conditionStr, element->options, msgsUpdated,
@@ -1916,5 +2355,7 @@ namespace OpenLogReplicator {
         for (const auto& msg: msgsUpdated) {
             ctx->info(0, "updated metadata: " + msg);
         }
+
+        metadata->schema->updateXmlCtx();
     }
 }

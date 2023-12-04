@@ -25,8 +25,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/OracleColumn.h"
 #include "../common/OracleTable.h"
 #include "../common/OracleIncarnation.h"
+#include "../common/XmlCtx.h"
 #include "../common/exception/BootException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/table/XdbTtSet.h"
+#include "../common/table/XdbXNm.h"
+#include "../common/table/XdbXQn.h"
+#include "../common/table/XdbXPt.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/RedoLog.h"
 #include "../metadata/Schema.h"
@@ -507,6 +512,12 @@ namespace OpenLogReplicator {
             " WHERE"
             "   REGEXP_LIKE(U.NAME, :j)");
 
+    const char* ReplicatorOnline::SQL_GET_XDB_TTSET(
+            "SELECT"
+            "   T.ROWID, T.GUID, T.TOKSUF, T.FLAGS, T.OBJ#"
+            " FROM"
+            "   XDB.XDB$TTSET AS OF SCN :i T");
+
     const char* ReplicatorOnline::SQL_CHECK_CONNECTION(
             "SELECT 1 FROM DUAL");
 
@@ -954,6 +965,102 @@ namespace OpenLogReplicator {
             while (sysTsRet) {
                 schema->dictSysTsAdd(sysTsRowid, sysTsTs, sysTsName, sysTsBlockSize);
                 sysTsRet = sysTsStmt.next();
+            }
+
+            // Reading XDB.XDB$TTSET
+            DatabaseStatement xdbTtSetStmt(conn);
+            if (ctx->trace & TRACE_SQL) {
+                ctx->logTrace(TRACE_SQL, SQL_GET_XDB_TTSET);
+                ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+            }
+            xdbTtSetStmt.createStatement(SQL_GET_XDB_TTSET);
+            xdbTtSetStmt.bindUInt64(1, targetScn);
+            char xdbTtSetRowid[19]; xdbTtSetStmt.defineString(1, xdbTtSetRowid, sizeof(xdbTtSetRowid));
+            char xdbTtSetGuid[XDB_TTSET_GUID_LENGTH + 1]; xdbTtSetStmt.defineString(2, xdbTtSetGuid, sizeof(xdbTtSetGuid));
+            char xdbTtSetTokSuf[XDB_TTSET_TOKSUF_LENGTH + 1]; xdbTtSetStmt.defineString(3, xdbTtSetTokSuf, sizeof(xdbTtSetTokSuf));
+            uint64_t xdbTtSetFlags; xdbTtSetStmt.defineUInt64(4, xdbTtSetFlags);
+            uint32_t xdbTtSetObj; xdbTtSetStmt.defineUInt32(5, xdbTtSetObj);
+
+            int64_t xdbTtSetRet = xdbTtSetStmt.executeQuery();
+            while (xdbTtSetRet) {
+                schema->dictXdbTtSetAdd(xdbTtSetRowid, xdbTtSetGuid, xdbTtSetTokSuf, xdbTtSetFlags, xdbTtSetObj);
+                xdbTtSetRet = xdbTtSetStmt.next();
+            }
+
+            for (auto ttSetIt: schema->xdbTtSetMapRowId) {
+                XmlCtx* xmlCtx = new XmlCtx(ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
+                schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
+
+                // Reading XDB.X$NMxxxx
+                DatabaseStatement xdbXNmStmt(conn);
+                std::string SQL_GET_XDB_XNM = "SELECT"
+                                              "   T.ROWID, T.NMSPCURI, T.ID "
+                                              " FROM"
+                                              "   XDB.X$NM" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_XDB_XNM);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                }
+                xdbXNmStmt.createStatement(SQL_GET_XDB_XNM.c_str());
+                xdbXNmStmt.bindUInt64(1, targetScn);
+                char xdbXNmRowid[19];
+                xdbXNmStmt.defineString(1, xdbXNmRowid, sizeof(xdbXNmRowid));
+                char xdbNmNmSpcUri[XDB_XNM_NMSPCURI_LENGTH + 1];
+                xdbXNmStmt.defineString(2, xdbNmNmSpcUri, sizeof(xdbNmNmSpcUri));
+                char xdbNmId[XDB_XNM_ID_LENGTH + 1];
+                xdbXNmStmt.defineString(3, xdbNmId, sizeof(xdbNmId));
+
+                int64_t xdbXNmRet = xdbXNmStmt.executeQuery();
+                while (xdbXNmRet) {
+                    schema->dictXdbXNmAdd(xmlCtx, xdbXNmRowid, xdbNmNmSpcUri, xdbNmId);
+                    xdbXNmRet = xdbXNmStmt.next();
+                }
+
+                // Reading XDB.X$PTxxxx
+                DatabaseStatement xdbXPtStmt(conn);
+                std::string SQL_GET_XDB_XPT = "SELECT"
+                                              "   T.ROWID, T.PATH, T.ID "
+                                              " FROM"
+                                              "   XDB.X$PT" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_XDB_XPT);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                }
+                xdbXPtStmt.createStatement(SQL_GET_XDB_XPT.c_str());
+                xdbXPtStmt.bindUInt64(1, targetScn);
+                char xdbXPtRowid[19]; xdbXPtStmt.defineString(1, xdbXPtRowid, sizeof(xdbXPtRowid));
+                char xdbPtPath[XDB_XPT_PATH_LENGTH + 1]; xdbXPtStmt.defineString(2, xdbPtPath, sizeof(xdbPtPath));
+                char xdbPtId[XDB_XPT_ID_LENGTH + 1]; xdbXPtStmt.defineString(3, xdbPtId, sizeof(xdbPtId));
+
+                int64_t xdbXPtRet = xdbXPtStmt.executeQuery();
+                while (xdbXPtRet) {
+                    schema->dictXdbXPtAdd(xmlCtx, xdbXPtRowid, xdbPtPath, xdbPtId);
+                    xdbXPtRet = xdbXPtStmt.next();
+                }
+
+                // Reading XDB.X$QNxxxx
+                DatabaseStatement xdbXQnStmt(conn);
+                std::string SQL_GET_XDB_XQN = "SELECT"
+                                              "   T.ROWID, T.NMSPCID, T.LOCALNAME, T.FLAGS, T.ID "
+                                              " FROM"
+                                              "   XDB.X$QN" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
+                if (ctx->trace & TRACE_SQL) {
+                    ctx->logTrace(TRACE_SQL, SQL_GET_XDB_XQN);
+                    ctx->logTrace(TRACE_SQL, "PARAM1: " + std::to_string(targetScn));
+                }
+                xdbXQnStmt.createStatement(SQL_GET_XDB_XQN.c_str());
+                xdbXQnStmt.bindUInt64(1, targetScn);
+                char xdbXQnRowid[19]; xdbXQnStmt.defineString(1, xdbXQnRowid, sizeof(xdbXQnRowid));
+                char xdbXQnNmSpcId[XDB_XQN_NMSPCID_LENGTH + 1]; xdbXQnStmt.defineString(2, xdbXQnNmSpcId, sizeof(xdbXQnNmSpcId));
+                char xdbXQnLocalName[XDB_XQN_LOCALNAME_LENGTH + 1]; xdbXQnStmt.defineString(3, xdbXQnLocalName, sizeof(xdbXQnLocalName));
+                char xdbXQnFlags[XDB_XQN_FLAGS_LENGTH + 1]; xdbXQnStmt.defineString(4, xdbXQnFlags, sizeof(xdbXQnFlags));
+                char xdbXQnId[XDB_XQN_ID_LENGTH + 1]; xdbXQnStmt.defineString(5, xdbXQnId, sizeof(xdbXQnId));
+
+                int64_t xdbXQnRet = xdbXQnStmt.executeQuery();
+                while (xdbXQnRet) {
+                    schema->dictXdbXQnAdd(xmlCtx, xdbXQnRowid, xdbXQnNmSpcId, xdbXQnLocalName, xdbXQnFlags, xdbXQnId);
+                    xdbXQnRet = xdbXQnStmt.next();
+                }
             }
         } catch (RuntimeException& ex) {
             ctx->error(ex.code, ex.msg);

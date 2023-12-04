@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.1
-:revdate: 2023-11-25
+:revdate: 2023-12-04
 :imagesdir: ./images
 :toc: preamble
 
@@ -297,7 +297,7 @@ Verify if the files exist and have the correct permissions.
 Program started with `offline` reader type but no schema file is available.
 Verify if the schema file exists and has the correct permissions.
 
-==== code 10041: "table <table> - couldn't find all column set (<keys>)"
+==== code 10041: "table <table> - couldn't find all column sets (<keys>)"
 
 One of the columns defined as a primary key is not present in the table definition.
 Verify if the table definition is correct.
@@ -361,7 +361,7 @@ Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-ava
 
 Schema is missing for batch mode.
 
-TIP: If you don't have earlier schema but wish to continue having no information about column names and types, try with schemaless mode (`'flags': 2`).
+TIP: If you don't have an earlier schema but wish to continue having no information about column names and types, try with schemaless mode (`'flags': 2`).
 Refer to the documentation for more information about
 xref:../user-manual/user-manual.adoc#schemaless-mode[schemaless mode].
 
@@ -438,7 +438,9 @@ Verify if the ZeroMQ library is installed and available.
 
 ==== code 10067: "out of memory, but there are reusable memory chunks, trying to reuse some memory"
 
-The module which builds output stream is out of memory. Stream building is suspended until memory is released. If possible, configure higher memory limits.
+The module which builds output stream is out of memory.
+Stream building is suspended until memory is released.
+If possible, configure higher memory limits.
 
 === Data exceptions (2xxxx)
 
@@ -487,9 +489,9 @@ Verify if the file is not corrupted and contains correct JSON content.
 
 ==== code 20007: "file: <file name> - <schema> is [missing|redundant]"
 
-After starting of replication and collecting schema file, OpenLogReplicator monitors all tables in the database which match defined schema and user mask.
+After starting of replication and collecting schema file, OpenLogReplicator monitors all tables in the database such match defined schema and user mask.
 If replication is stopped, the configuration file should not be altered and new schemas can't be added to the list of replicated tables.
-If such event happens, replication can't start, and the following message is printed.
+If such an event happens, replication can't start, and the following message is printed.
 This error reports that either a schema is missing or is redundant compared to the main configuration file (OpenLogReplicator.json).
 
 ==== code 20008: "row ID incorrect length: <number>"
@@ -758,6 +760,13 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50067: "invalid condition: <message>"
 
+==== code 50068: "missing <table> table, <operation> failed"
+
+==== code 50069: "no active XML context found"
+
+The experimental feature to decode binary xmldata has been turned on, but the metdata contains no xml dictionary data.
+Please consider recreating schema checkpoint files: stop replication, delele content of checkpoint folder, and restart to recreate the schema file.
+
 == Warnings Messages
 
 === Warnings (6xxxx)
@@ -808,7 +817,7 @@ See comment for warning 60002.
 This warning could appear during replication startup.
 It means that the beginning of the transaction appeared probably before replication startup.
 
-==== code 60011: "skipping transaction with no begin: <details>"
+==== code 60011: "skipping transaction with no beginning: <details>"
 
 Received commit for a transaction which started before replication startup.
 The transaction is discarded.
@@ -934,7 +943,7 @@ Verify operating system log messages.
 
 ==== code 60035, "unknown database requested, got: <name>, expected: <name>"
 
-Client requested a database which is not configured in the program.
+The client requested a database which is not configured in the program.
 
 ==== code 60036, "incorrect XML data: <message>"
 
