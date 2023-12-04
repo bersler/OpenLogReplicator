@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.1
-:revdate: 2023-10-12
+:revdate: 2023-12-04
 :imagesdir: ./images
 :toc: preamble
 
@@ -57,7 +57,7 @@ The following limitations apply to the source database:
 
 ==== Database configuration
 
-There are just 2 strict requirements for the database configuration.
+There are just two strict requirements for the database configuration.
 In fact, they're common for absolutely any replication engine.
 
 The database must be working in *ARCHIVELOG* mode and having enabled *MINIMAL SUPPLEMENTAL LOGGING*.
@@ -76,8 +76,9 @@ ALTER SYSTEM ARCHIVE LOG CURRENT;
 SELECT SUPPLEMENTAL_LOG_DATA_MIN, LOG_MODE FROM V$DATABASE;
 ----
 
-NOTE: Minimal supplemental logging is required for OpenLogReplicator to work. It is not a must-have requirement.
-In case when it is dynamically disabled (i.e. disabled after program startup), OpenLogReplicator might not be able to replicate all transactions.
+NOTE: Minimal supplemental logging is required for OpenLogReplicator to work.
+It is not a must-have requirement.
+In case when it is dynamically disabled (i.e., disabled after program startup), OpenLogReplicator might not be able to replicate all transactions.
 Errors might be printed and behavior might be undefined.
 Transactions might be missing in the output and replication should be restarted.
 
@@ -112,7 +113,7 @@ ALTER SYSTEM SET DB_RECOVERY_FILE_DEST = '/opt/oracle/fra';
 === Table configuration requirements
 
 The default requirements of having enabled MINIMAL SUPPLEMENTAL LOGGING are enough for OpenLogReplicator to work.
-In such case, the output contains only modified columns.
+In such a case, the output contains only modified columns.
 However, typically this is not enough, and it is required that the output contains also values of columns which haven't been modified: primary key, unique key or all columns.
 
 IMPORTANT: OpenLogReplicator leaves the decision to the user which data is present in the database redo logs.
@@ -148,7 +149,7 @@ Setting `"trace": 256` in the configuration file will enable tracing.
 After finishing redo log file parsing, information is printed with statistics related to the redo log file.
 Statistics include a summary of additional space occupied by supplemental log group.
 The value is in bytes.
-Investigate various options of supplemental logging and choose the one which gives the best performance and redo log size.
+Investigate various options of supplemental logging and choose the one that gives the best performance and redo log size.
 
 ==== Adding custom key to supplemental logging
 
@@ -160,19 +161,22 @@ SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='USER LOG GROUP') and OWNER='
 ALTER TABLE <SCHEMA>.<TABLE> ADD SUPPLEMENTAL LOG GROUP <GROUP NAME> (<COLUMNS>) ALWAYS;               SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='USER LOG GROUP') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
 ----
 
-In such case, it is also needed to define the custom key in the configuration file. In the `filter` group in `table` list add the following entry:
+In such a case, it is also needed to define the custom key in the configuration file.
+In the `filter` group in `table` list add the following entry:
 
 [source, json]
 ----
 {"owner": "<SCHEMA>", "table": "<TABLE>", "key": "<COLUMNS>"}
 ----
 
-CAUTION: OpenLogReplicator rigorously tests the correctness of the custom key columns. If the defined columns aren't present in the table, the replication will stop.
+CAUTION: OpenLogReplicator rigorously tests the correctness of the custom key columns.
+If the defined columns aren't present in the table, the replication will stop.
 This setting overrides the defined primary key.
 
 ==== Adding all columns to supplemental logging
 
-It is also possible to include all columns in the output for UPDATE operations. To achieve such behavior, it is required to add all columns to supplemental logging and set `column` parameter to value `2`.
+It is also possible to include all columns in the output for UPDATE operations.
+To achieve such behavior, it is required to add all columns to supplemental logging and set `column` parameter to value `2`.
 
 CAUTION: Adding all columns to supplemental logging can cause a significant increase of redo log size.
 This is especially true for tables with many columns.
@@ -199,7 +203,7 @@ SELECT SUPPLEMENTAL_LOG_DATA_ALL FROM V$DATABASE;
 
 Requirements for ONLINE reader type:
 
-* user in the source database granted with rights to read some system tables (full list below),
+* user in the source database granted with rights to read some system tables (the full list below),
 
 * physical access to redo log files (online and archived); when running from remote host access through SSHFS is possible.
 

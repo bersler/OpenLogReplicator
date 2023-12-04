@@ -34,6 +34,7 @@ namespace OpenLogReplicator {
     class Metadata;
     class Transaction;
     class TransactionBuffer;
+    class XmlCtx;
 
     struct LwnMember {
         uint64_t offset;

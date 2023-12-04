@@ -40,6 +40,8 @@ namespace OpenLogReplicator {
 
     const char Ctx::map16[17] = "0123456789abcdef";
 
+    const char Ctx::map16U[17] = "0123456789ABCDEF";
+
     const char Ctx::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     const char Ctx::map64R[256] = {

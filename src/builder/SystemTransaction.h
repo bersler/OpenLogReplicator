@@ -47,6 +47,10 @@ namespace OpenLogReplicator {
     class SysTabSubPart;
     class SysTs;
     class SysUser;
+    class XdbTtSet;
+    class XdbXNm;
+    class XdbXPt;
+    class XdbXQn;
 
     class SystemTransaction final {
     protected:
@@ -70,6 +74,10 @@ namespace OpenLogReplicator {
         SysTabSubPart* sysTabSubPartTmp;
         SysTs* sysTsTmp;
         SysUser* sysUserTmp;
+        XdbTtSet* xdbTtSetTmp;
+        XdbXNm* xdbXNmTmp;
+        XdbXPt* xdbXPtTmp;
+        XdbXQn* xdbXQnTmp;
 
         void updateNumber16(int16_t& val, int16_t defVal, typeCol column, OracleTable* table, uint64_t offset);
         void updateNumber16u(uint16_t& val, uint16_t devVal, typeCol column, OracleTable* table, uint64_t offset);
@@ -77,6 +85,7 @@ namespace OpenLogReplicator {
         void updateNumber64(int64_t& val, int64_t defVal, typeCol column, OracleTable* table, uint64_t offset);
         void updateNumber64u(uint64_t& val, uint64_t devVal, typeCol column, OracleTable* table, uint64_t offset);
         void updateNumberXu(typeIntX& val, typeCol column, OracleTable* table, uint64_t offset);
+        void updateRaw(std::string& val, uint64_t maxLength, typeCol column, OracleTable* table, uint64_t offset);
         void updateString(std::string& val, uint64_t maxLength, typeCol column, OracleTable* table, uint64_t offset);
 
         void processInsertSysCCol(OracleTable* table, typeRowId& rowId, uint64_t offset);
@@ -94,6 +103,10 @@ namespace OpenLogReplicator {
         void processInsertSysTabSubPart(OracleTable* table, typeRowId& rowId, uint64_t offset);
         void processInsertSysTs(OracleTable* table, typeRowId& rowId, uint64_t offset);
         void processInsertSysUser(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processInsertXdbTtSet(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processInsertXdbXNm(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processInsertXdbXPt(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processInsertXdbXQn(OracleTable* table, typeRowId& rowId, uint64_t offset);
 
         void processUpdateSysCCol(OracleTable* table, typeRowId& rowId, uint64_t offset);
         void processUpdateSysCDef(OracleTable* table, typeRowId& rowId, uint64_t offset);
@@ -110,6 +123,10 @@ namespace OpenLogReplicator {
         void processUpdateSysTabSubPart(OracleTable* table, typeRowId& rowId, uint64_t offset);
         void processUpdateSysTs(OracleTable* table, typeRowId& rowId, uint64_t offset);
         void processUpdateSysUser(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processUpdateXdbTtSet(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processUpdateXdbXNm(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processUpdateXdbXPt(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processUpdateXdbXQn(OracleTable* table, typeRowId& rowId, uint64_t offset);
 
         void processDeleteSysCCol(typeRowId& rowId, uint64_t offset);
         void processDeleteSysCDef(typeRowId& rowId, uint64_t offset);
@@ -126,6 +143,10 @@ namespace OpenLogReplicator {
         void processDeleteSysTabSubPart(typeRowId& rowId, uint64_t offset);
         void processDeleteSysTs(typeRowId& rowId, uint64_t offset);
         void processDeleteSysUser(typeRowId& rowId, uint64_t offset);
+        void processDeleteXdbTtSet(typeRowId& rowId, uint64_t offset);
+        void processDeleteXdbXNm(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processDeleteXdbXPt(OracleTable* table, typeRowId& rowId, uint64_t offset);
+        void processDeleteXdbXQn(OracleTable* table, typeRowId& rowId, uint64_t offset);
 
     public:
         SystemTransaction(Builder* newBuilder, Metadata* newMetadata);

@@ -268,6 +268,10 @@ namespace OpenLogReplicator {
         addElement("SYS", "TABSUBPART\\$", OPTIONS_SYSTEM_TABLE);
         addElement("SYS", "TS\\$", OPTIONS_SYSTEM_TABLE);
         addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "XDB\\$TTSET", OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$NM.*", OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$PT.*", OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$QN.*", OPTIONS_SYSTEM_TABLE);
     }
 
     void Metadata::commitElements() {

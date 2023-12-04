@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.3.1
-:revdate: 2023-11-25
+:revdate: 2023-12-04
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -175,7 +175,7 @@ It doesn't have to match the actual database _SID_.
 Possible values are:
 
 * `online` -– Archived log list is read directly from the database using database connection.
-The database connection is closed during program work, just open occasionally to read an archived redo log list.
+The database connection is closed during program work, open occasionally to read an archived redo log list.
 
 * `online-keep` -– Like `online`, but the database connection is kept open.
 
@@ -209,7 +209,7 @@ _CAUTION:_ The filter is applied only to the data, not to the DDL operations.
 _IMPORTANT:_ During the first run, the schema is read only for tables which are selected by the filter.
 If the filter is changed, the schema would not update.
 Startup would fail because the set of users present in checkpoint files would not match the set of users defined in config file.
-The schema would update only when the program is reset, (i.e. the checkpoint files are removed and forced recreation).
+The schema would update only when the program is reset, (i.e., the checkpoint files are removed and forced recreation).
 
 |`flags` [[flags]]
 |_number_, min: 0, max: 131071, default: 0
@@ -226,7 +226,7 @@ When the redo log files are big or the operation of switching redo log groups is
 Transactions would not be read until the redo log group is switched.
 
 * `0x0002` -- _Schemaless_ mode.
-The program can operate without schema.
+The program can operate without a schema.
 
 _NOTE:_ Refer to details in xref:../user-manual/user-manual.adoc#schemaless-mode[the User Manual] for details.
 
@@ -259,9 +259,9 @@ The program is not designed to continue after error as this can lead to schema d
 
 * `0x0400` -- Include incomplete transactions in output.
 
-_TIP_: Incomplete transactions are transactions which have started before replication was set up.
+_TIP_: Incomplete transactions are transactions that have started before replication was set up.
 Some starting elements of such transactions may be missing in the output.
-By default such transacions are ignored.
+By default, such transacions are ignored.
 
 * `0x0800` -- Include system transactions in output.
 
@@ -269,7 +269,7 @@ By default such transacions are ignored.
 
 _TIP:_ The checkpoint records are useful to monitor the progress of replication.
 They're also used to detect the last processed transaction.
-If the checkpoint records are hidden and there is low activity of data changes, it may be difficult to detect OpenLogReplicator failure.
+If the checkpoint records are hidden and there is low activity of data changes, it may be challenging to detect OpenLogReplicator failure.
 
 * `0x2000` -- Don’t delete old checkpoint files.
 
@@ -281,8 +281,8 @@ This flag overrides this number and leaves the checkpoint file.
 * `0x8000` -- Send column data to output in raw (hex) format.
 
 * `0x10000` -- Decode binary XMLType data (experimental).
-This implementation is not even partially working correctly and output contains just technical data.
-Don't use it.
+Refer to details in xref:../experimental-features/experimental-features.adoc#binary-xmltype[binary xmltype] chapter for details.
+
 
 |`memory-max-mb`
 |_number_, min: 16, default: 1024
@@ -317,7 +317,7 @@ Disk buffer memory is part of the main memory (controlled by `memory-max-mb` and
 Number in microseconds.
 
 _IMPORTANT:_ The default setting is 50.000 microseconds meaning which is equal to 1/20 s or 50 ms.
-This means that 20 times per second OpenLogReplicator polls disk for new changes on disk (until there is no activity -- after new data appears it is read sequentially to the end).
+This means that 20 times a second OpenLogReplicator polls disk for new changes on disk (until there is no activity -- after new data appears, it is read sequentially to the end).
 With default setting, in the worst case, the read process would notice after 50 ms that new data is ready.
 This is actually very fast and a proper setting for most cases.
 If this delay is potentially too big -- the value can be decreased, but this would increase CPU usage.
@@ -455,7 +455,7 @@ _NOTE:_ This field is valid only for `online` type.
 If not specified, the program will start from the current SCN.
 
 _CAUTION:_ Setting a very low value of starting SCN might cause problems during program startup if the schema has changed since this SCN and the schema is not available to read using database flashback.
-In such case, the program will not be able to read the metadata and will stop.
+In such a case, the program will not be able to read the metadata and will stop.
 
 _IMPORTANT:_ Setting this parameter to some value would mean that transactions started before this SCN would not be processed.
 
@@ -469,7 +469,7 @@ _IMPORTANT:_ If not specified, the first sequence would be determined by reading
 |_number_, min: 0
 |Determine starting SCN by relative time.
 The value and is relative to the current time using `TIMESTAMP_TO_SCN` sql function.
-For example, if the value is set to `3600`, the program will start from the SCN which was active 1 hour ago.
+For example, if the value is set to `3600`, the program will start from the SCN, which was active 1 hour ago.
 
 Number in seconds.
 
@@ -481,7 +481,7 @@ _CAUTION:_ It is invalid to use this parameter when `start-scn` is specified.
 |_string_, max length: 256
 |Determine a starting SCN value by absolute time.
 The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function.
-For example, if the value is set to `2018-01-01 00:00:00`, the program will start from the SCN which was active at the beginning of 2018.
+For example, if the value is set to `2018-01-01 00:00:00`, the program will start from the SCN, which was active at the beginning of 2018.
 
 _NOTE:_ This field is valid only for `online` type.
 
@@ -601,7 +601,7 @@ Stop program after specified number of transactions.
 
 |`table`
 |_string_, max length: 128
-|This is technical parameter primary used only for running test cases and defines table name.
+|This is a technical parameter primary used only for running test cases and defines table name.
 If any DML transactions occur for this table (like insert, update or delete), the program would stop.
 The transaction doesn't necessary need to be committed.
 
@@ -630,7 +630,7 @@ _CAUTION:_ Protocol buffer support is in experimental state.
 It is not fully tested and might not work properly.
 Don't use it for production without testing.
 
-|`attributes` [[xid]]
+|`attributes` [[attributes]]
 |_number_, min: 0, max: 7, default: 0
 |Transaction attributes location.
 
@@ -652,7 +652,7 @@ Field value is a sum of:
 
 * `0x0001` -- No character set transformation is applied, the characters are copied from source “as is”.
 
-* `0x0002` -- Instead of characters, the output is in HEX format (using hex format -- for example `"column":"4b4c204d"`).
+* `0x0002` -- Instead of characters, the output is in HEX format (using hex format -- for example, `"column":"4b4c204d"`).
 
 |`column` [[column]]
 |_numeric_, min: 0, max: 2, default: 0
@@ -661,7 +661,7 @@ Field value is a sum of:
 * `0` -- Default behavior, INSERT and DELETE contain only non-null values.
 UPDATE contains only changed columns or those which are member of the primary key.
 
-_TIP:_ This is the format which takes less space.
+_TIP:_ This is the format that takes less space.
 There is an assumption that if the column doesn't appear in the INSERT of DELETE statement, it means that the value is NULL.
 
 _CAUTION:_ For LOB columns the before value is not available in the REDO stream.
@@ -671,7 +671,7 @@ Only after value is included.
 * `1` -- INSERT and DELETE contain all values.
 UPDATE contains only changed columns or those which are member of a primary key.
 
-* `2` -- JSON output would contain all columns which appear in REDO stream, including those which didn't change.
+* `2` -- JSON output would contain all columns that appear in REDO stream, including those which didn't change.
 
 _CAUTION:_ It is technically not possible to differentiate if the column was actually mentioned by UPDATE DML command or not.
 `UPDATE X SET A = A` might have the same redo log vector as `UPDATE X SET A = A, B = B` -- in some cases (especially for tables with large schema).
@@ -814,7 +814,7 @@ Possible values are:
 
 * `2` -- SCN values for all DML operations are copied from commit SCN record.
 
-|`scn-all` [[timestamp-all]]
+|`scn-all` [[scn-all]]
 |_number_, min: 0, max: 1, default: 0
 |Include `scn` field in every payload.
 
@@ -833,25 +833,25 @@ Possible values are:
 
 * `0` -- Unix with nanoseconds -- `"tm": 1651384800123456789`.
 
-* `1` -- Unix with microseconds precision (possible data precission loss) -- `"tm": 1651384800123457`.
+* `1` -- Unix with microsecond precision (possible data precission loss) -- `"tm": 1651384800123457`.
 
-* `2` -- Unix with milliseconds precision (possible data precission loss) -- `"tm": 1651384800123`.
+* `2` -- Unix with millisecond precision (possible data precission loss) -- `"tm": 1651384800123`.
 
-* `3` -- Unix with seconds precision (possible data precission loss) -- `"tm": 1651384800`.
+* `3` -- Unix with second precision (possible data precission loss) -- `"tm": 1651384800`.
 
 * `4` -- Unix with nanoseconds stored as a string -- `"tms": "1651384800123456789"`.
 
-* `5` -- Unix with microseconds precision stored as a string (possible data precission loss) -- `"tms": "1651384800123457"`.
+* `5` -- Unix with microsecond precision stored as a string (possible data precission loss) -- `"tms": "1651384800123457"`.
 
-* `6` -- Unix with milliseconds precision stored as a string (possible data precission loss) -- `"tms": "1651384800123"`.
+* `6` -- Unix with millisecond precision stored as a string (possible data precission loss) -- `"tms": "1651384800123"`.
 
-* `7` -- Unix with seconds precision stored as a string (possible data precission loss) -- `"tms": "1651384800"`.
+* `7` -- Unix with second precision stored as a string (possible data precission loss) -- `"tms": "1651384800"`.
 
 * `8` -- _ISO-8601_ format stored as a string -- `"tms": "2022-05-01 06:00:00.123456789"`.
 
 _NOTE:_ This format is also used for type `timestamp with local time zone` since this type internally does not contain time zone data.
 
-|`timestamp-tz` [[timestamp]]
+|`timestamp-tz` [[timestamp-tz]]
 |_number_, min: 0, max: 4, default: 0
 |Format of timestamp with time zone values.
 
@@ -861,11 +861,11 @@ Possible values are:
 
 * `0` -- Unix with nanoseconds stored as a string with time zone after comma sign -- `"tms": "1651384800123456789,Europe/Warsaw"`.
 
-* `1` -- Unix with microseconds precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800123457,Europe/Warsaw"`.
+* `1` -- Unix with microsecond precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800123457,Europe/Warsaw"`.
 
-* `2` -- Unix with milliseconds precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800123,Europe/Warsaw"`.
+* `2` -- Unix with millisecond precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800123,Europe/Warsaw"`.
 
-* `3` -- Unix with seconds precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800,Europe/Warsaw"`.
+* `3` -- Unix with second precision stored as a string with time zone after comma sign (possible data precission §loss) -- `"tms": "1651384800,Europe/Warsaw"`.
 
 * `4` -- _ISO-8601_ format stored as a string with time zone after space sign-- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
 
@@ -966,12 +966,14 @@ _TIP:_ If a table doesn't contain a primary key, a custom set of columns can be 
 
 |`condition`
 |_string_, max length: 16384
-|An expression which should be evaluated for every row. The format of the field is C-like.
+|An expression which should be evaluated for every row.
+The format of the field is C-like.
 
 Example:
 `"condition": "([op] != 'd') \|\| ([login username] != 'USER1')"`
 
-The expression is evaluated from left to right. The following tokens can be used:
+The expression is evaluated from left to right.
+The following tokens can be used:
 
 * \|\| -- logical OR,
 
@@ -1155,7 +1157,8 @@ _NOTE:_ This field is valid only for `kafka`, `network` and `zeromq` types.
 
 |`properties`
 |_map_ of _string_ to _string_
-|Additional properties for Kafka producer. Refer to _librdkafka_ documentation for {url-librdkafka-parameters}[full list of parameters].
+|Additional properties for Kafka producer.
+Refer to _librdkafka_ documentation for {url-librdkafka-parameters}[full list of parameters].
 Typically used parameters are:
 
 - `"brokers": "host1:9092, host2:9092"` -- list of Kafka brokers;

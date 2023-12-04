@@ -417,8 +417,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                                        typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
+    void BuilderProtobuf::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+                                        typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
 
@@ -438,7 +438,7 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendAfter(lobCtx, table, offset);
+        appendAfter(lobCtx, xmlCtx, table, offset);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             std::string output;
@@ -454,8 +454,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                                        typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
+    void BuilderProtobuf::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table,
+                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
 
@@ -475,8 +475,8 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(lobCtx, table, offset);
-        appendAfter(lobCtx, table, offset);
+        appendBefore(lobCtx, xmlCtx, table, offset);
+        appendAfter(lobCtx, xmlCtx, table, offset);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             std::string output;
@@ -492,8 +492,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                                        typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
+    void BuilderProtobuf::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+                                        typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
 
@@ -513,7 +513,7 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(lobCtx, table, offset);
+        appendBefore(lobCtx, xmlCtx, table, offset);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             std::string output;

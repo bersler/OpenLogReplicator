@@ -45,6 +45,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class RedoLogRecord;
     class Transaction;
+    class XmlCtx;
 
     struct TransactionChunk {
         uint64_t elements;
@@ -76,7 +77,7 @@ namespace OpenLogReplicator {
         virtual ~TransactionBuffer();
 
         void purge();
-        [[nodiscard]] Transaction* findTransaction(typeXid xid, typeConId conId, bool old, bool add, bool rollback);
+        [[nodiscard]] Transaction* findTransaction(XmlCtx* xmlCtx, typeXid xid, typeConId conId, bool old, bool add, bool rollback);
         void dropTransaction(typeXid xid, typeConId conId);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);

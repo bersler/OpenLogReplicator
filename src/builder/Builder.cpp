@@ -17,9 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <vector>
+
 #include "../common/OracleColumn.h"
 #include "../common/OracleTable.h"
 #include "../common/RedoLogRecord.h"
+#include "../common/XmlCtx.h"
 #include "../common/table/SysCol.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
@@ -125,8 +128,8 @@ namespace OpenLogReplicator {
         valueBufferLength = VALUE_BUFFER_MIN;
     }
 
-    void Builder::processValue(LobCtx* lobCtx, OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, uint64_t offset, bool after,
-                               bool compressed) {
+    void Builder::processValue(LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, uint64_t offset,
+                               bool after, bool compressed) {
         if (compressed) {
             std::string columnName("COMPRESSED");
             columnRaw(columnName, data, length);
@@ -180,10 +183,10 @@ namespace OpenLogReplicator {
                 if (after && table != nullptr) {
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
                         if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
-                            if (parseXml(reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
+                            if (parseXml(xmlCtx, reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
                                 columnString(column->name);
                             else
-                                columnUnknown(column->name, reinterpret_cast<uint8_t *>(valueBufferOld), valueLengthOld);
+                                columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBufferOld), valueLengthOld);
                         } else
                             columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength);
                     }
@@ -703,7 +706,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0B
-    void Builder::processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1,
+    void Builder::processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
                                         RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
@@ -764,7 +767,7 @@ namespace OpenLogReplicator {
                                                  redoLogRecord1->dataOffset);
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                     table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processInsert(scn, sequence, time_, lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                processInsert(scn, sequence, time_, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
 
@@ -775,7 +778,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0C
-    void Builder::processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1,
+    void Builder::processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
                                         RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
@@ -837,7 +840,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                     table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processDelete(scn, sequence, time_, lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                processDelete(scn, sequence, time_, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
 
@@ -847,8 +850,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Builder::processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2,
-                             uint64_t type, bool system, bool schema, bool dump) {
+    void Builder::processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
+                             RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema, bool dump) {
         uint8_t fb;
         typeObj obj;
         typeDataObj dataObj;
@@ -1429,7 +1432,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                     table->matchesCondition(ctx, 'u', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processUpdate(scn, sequence, time_, lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processUpdate(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_INSERT) {
             if (table != nullptr && !compressedAfter) {
@@ -1484,7 +1487,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                     table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processInsert(scn, sequence, time_, lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processInsert(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_DELETE) {
             if (table != nullptr && !compressedBefore) {
@@ -1539,7 +1542,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                     table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processDelete(scn, sequence, time_, lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processDelete(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
         }
 
         valuesRelease();
@@ -1606,8 +1609,8 @@ namespace OpenLogReplicator {
             processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, "?", sqlText, sqlLength - 1);
     }
 
-    // This is just a partial parsing of XMLType data
-    bool Builder::parseXml(const uint8_t* data, uint64_t length, uint64_t offset) {
+    // Parse binary XML format
+    bool Builder::parseXml(XmlCtx* xmlCtx, const uint8_t* data, uint64_t length, uint64_t offset) {
         if (valueBufferOld != nullptr) {
             delete[] valueBufferOld;
             valueBufferOld = nullptr;
@@ -1618,18 +1621,23 @@ namespace OpenLogReplicator {
         valueBuffer = new char[VALUE_BUFFER_MIN];
         valueBufferLength = VALUE_BUFFER_MIN;
         valueLength = 0;
-        // bool bigint = false;
-        bool xmlDecl = false;
-        const char* standalone = "";
-        const char* version = "\"1.0\"";
-        const char* encoding = "";
 
-        ctx->warning(0, "XML binary data");
+        // bool bigint = false;
+        std::string out;
         uint64_t pos = 0;
+        std::vector<std::string> tags;
+        std::map<std::string, std::string> dictNmSpcMap;
+        std::map<std::string, std::string> nmSpcPrefixMap;
+        bool tagOpen = false;
 
         while (pos < length) {
             // Header
-            if (data[pos] == 158) {
+            if (data[pos] == 0x9E) {
+                bool xmlDecl = false;
+                const char* standalone = "";
+                const char* version = nullptr;
+                const char* encoding = "";
+
                 ++pos;
                 if (pos + 2 >= length) {
                     ctx->warning(60036, "incorrect XML data: header too short, can't read flags");
@@ -1652,13 +1660,31 @@ namespace OpenLogReplicator {
                 if ((flags2 & XML_HEADER_ENCODING) != 0)
                     encoding = " encoding=\"UTF=8\"";
 
-                if ((flags2 & XML_HEADER_VERSION_1_1) != 0)
-                    version = "\"1.1\"";
+                if ((flags2 & XML_HEADER_VERSION) != 0) {
+                    if ((flags2 & XML_HEADER_VERSION_1_1) != 0)
+                        version = "\"1.1\"";
+                    else
+                        version = "\"1.0\"";
+                }
+
+                if (xmlDecl) {
+                    valueBufferCheck(100, offset);
+
+                    valueBufferAppend("<?xml", 5);
+                    if (version != nullptr) {
+                        valueBufferAppend(" version=", 9);
+                        valueBufferAppend(version, strlen(version));
+                    }
+                    valueBufferAppend(standalone, strlen(standalone));
+                    valueBufferAppend(encoding, strlen(encoding));
+                    valueBufferAppend("?>", 2);
+                }
 
                 continue;
+            }
 
             // Prolog
-            } else if (data[pos] == 159) {
+            if (data[pos] == 0x9F) {
                 ++pos;
                 if (pos + 1 >= length) {
                     ctx->warning(60036, "incorrect XML data: prolog too short, can't read version and flags");
@@ -1700,7 +1726,6 @@ namespace OpenLogReplicator {
                     }
 
                     pos += pathidLength;
-
                     if (pos >= length) {
                         ctx->warning(60036, "incorrect XML data: prolog too short, can't read path length (2)");
                         return false;
@@ -1717,37 +1742,333 @@ namespace OpenLogReplicator {
 
                 //if ((flags0 & XML_PROLOG_BIGINT) != 0)
                 //    bigint = true;
+                continue;
+            }
+
+            // tag/parameter
+            if (data[pos] == 0xC8 || (data[pos] >= 0xC0 && data[pos] <= 0xC3)){
+                uint64_t tagLength;
+                uint64_t code;
+                bool isSingle = false;
+
+                if (data[pos] == 0xC8) {
+                    ++pos;
+                    if (pos + 1 >= length) {
+                        ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC8 data");
+                        return false;
+                    }
+                    tagLength = 0;
+                    code = ctx->read16Big(data + pos);
+                    pos += 2;
+                } else if (data[pos] == 0xC0) {
+                    ++pos;
+                    if (pos + 2 >= length) {
+                        ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC0xx data");
+                        return false;
+                    }
+                    tagLength = data[pos];
+                    if (tagLength == 0x8F)
+                        tagLength = 0;
+                    else
+                        ++tagLength;
+                    ++pos;
+                    code = ctx->read16Big(data + pos);
+                    pos += 2;
+                    isSingle = true;
+                } else if (data[pos] == 0xC1) {
+                    ++pos;
+                    if (pos + 3 >= length) {
+                        ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC1xxxx data");
+                        return false;
+                    }
+                    tagLength = ctx->read16Big(data + pos);
+                    pos += 2;
+                    code = ctx->read16Big(data + pos);
+                    pos += 2;
+                    isSingle = true;
+                } else if (data[pos] == 0xC2) {
+                    ++pos;
+                    if (pos + 4 >= length) {
+                        ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC2xxxxxxxx data");
+                        return false;
+                    }
+                    tagLength = data[pos];
+                    if (tagLength == 0x8F)
+                        tagLength = 0;
+                    else
+                        ++tagLength;
+                    ++pos;
+                    code = ctx->read32Big(data + pos);
+                    pos += 4;
+                    isSingle = true;
+                } else if (data[pos] == 0xC3) {
+                    ++pos;
+                    if (pos + 5 >= length) {
+                        ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC3xxxxxxxx data");
+                        return false;
+                    }
+                    tagLength = ctx->read16Big(data + pos);
+                    pos += 2;
+                    code = ctx->read32Big(data + pos);
+                    pos += 4;
+                    isSingle = true;
+                }
+
+                std::string codeStr;
+                if (code < 0x100)
+                    codeStr = {ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                else if (code < 0x10000)
+                    codeStr = {ctx->map16U[(code >> 12) & 0x0F], ctx->map16U[(code >> 8) & 0x0F],
+                               ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                else if (code < 0x1000000)
+                    codeStr = {ctx->map16U[(code >> 20) & 0x0F], ctx->map16U[(code >> 16) & 0x0F],
+                               ctx->map16U[(code >> 12) & 0x0F], ctx->map16U[(code >> 8) & 0x0F],
+                               ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                else
+                    codeStr = {ctx->map16U[(code >> 28) & 0x0F], ctx->map16U[(code >> 24) & 0x0F],
+                               ctx->map16U[(code >> 20) & 0x0F], ctx->map16U[(code >> 16) & 0x0F],
+                               ctx->map16U[(code >> 12) & 0x0F], ctx->map16U[(code >> 8) & 0x0F],
+                               ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                auto xdbXQnMapIdIt = xmlCtx->xdbXQnMapId.find(codeStr);
+                if (xdbXQnMapIdIt == xmlCtx->xdbXQnMapId.end()) {
+                    ctx->warning(60036, "incorrect XML data: string too short, can't decode qn   " + codeStr);
+                    return false;
+                }
+
+                std::string tag = xdbXQnMapIdIt->second->localName;
+                // not very efficient, but it's not a problem
+                uint64_t flagsLength = xdbXQnMapIdIt->second->flags.length();
+                bool isAttribute = (((xdbXQnMapIdIt->second->flags.at(flagsLength - 1) - '0') & XDB_XQN_FLAG_ISATTRIBUTE) != 0);
+
+                if (isAttribute) {
+                    out = " " + tag + "=\"";
+                    valueBufferCheck(out.length(), offset);
+                    valueBufferAppend(out.c_str(), out.length());
+                } else {
+                    if (tagOpen) {
+                        valueBufferCheck(1, offset);
+                        valueBufferAppend('>');
+                        tagOpen = false;
+                    }
+
+                    // append namespace to tag name
+                    std::string nmSpcId = xdbXQnMapIdIt->second->nmSpcId;
+                    auto nmSpcPrefixMapIt = nmSpcPrefixMap.find(nmSpcId);
+                    if (nmSpcPrefixMapIt != nmSpcPrefixMap.end())
+                        tag = nmSpcPrefixMapIt->second + ":" + tag;
+
+                    if (tagLength == 0 && !isSingle) {
+                        out = "<" + tag;
+                        tagOpen = true;
+                    } else
+                        out = "<" + tag + ">";
+                    valueBufferCheck(out.length(), offset);
+                    valueBufferAppend(out.c_str(), out.length());
+                }
+
+                if (pos + tagLength >= length) {
+                    ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC1xxxx data (2)");
+                    return false;
+                }
+                valueBufferCheck(tagLength, offset);
+                valueBufferAppend(reinterpret_cast<const char*>(data + pos), tagLength);
+
+                if (isAttribute) {
+                    valueBufferCheck(1, offset);
+                    valueBufferAppend('"');
+                } else {
+                    if (isSingle) {
+                        out = "</" + tag + ">";
+                        valueBufferCheck(out.length(), offset);
+                        valueBufferAppend(out.c_str(), out.length());
+                    } else
+                        tags.push_back(tag);
+                }
+
+                pos += tagLength;
+                continue;
+            }
+
+            // namespace set
+            if (data[pos] == 0xB2) {
+                ++pos;
+                if (pos + 7 >= length) {
+                    ctx->warning(60036, "incorrect XML data: string too short, can't read DD");
+                    return false;
+                }
+
+                uint8_t tagLength = data[pos];
+                ++pos;
+                //uint16_t tmp = ctx->read16Big(data + pos);
+                pos += 2;
+                uint16_t nmSpc = ctx->read16Big(data + pos);
+                pos += 2;
+                uint16_t dict = ctx->read16Big(data + pos);
+                pos += 2;
+
+                std::string nmSpcId;
+                if (nmSpc < 256)
+                    nmSpcId = {ctx->map16U[(nmSpc >> 4) & 0x0F], ctx->map16U[nmSpc & 0x0F]};
+                else
+                    nmSpcId = {ctx->map16U[(nmSpc >> 12) & 0x0F], ctx->map16U[(nmSpc >> 8) & 0x0F],
+                               ctx->map16U[(nmSpc >> 4) & 0x0F], ctx->map16U[nmSpc & 0x0F]};
+
+                std::string dictId;
+                if (dict < 256)
+                    dictId = {ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
+                else
+                    dictId = {ctx->map16U[(dict >> 12) & 0x0F], ctx->map16U[(dict >> 8) & 0x0F],
+                              ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
+
+                auto dictNmSpcMapIt = dictNmSpcMap.find(dictId);
+                if (dictNmSpcMapIt != dictNmSpcMap.end()) {
+                    ctx->warning(60036, "incorrect XML data: namespace " + dictId + " duplicated dict");
+                    return false;
+                }
+                dictNmSpcMap.insert_or_assign(dictId, nmSpcId);
+
+                if (tagLength > 0) {
+                    std::string prefix(reinterpret_cast<const char *>(data + pos), tagLength);
+                    pos += tagLength;
+
+                    auto nmSpcPrefixMapIt = nmSpcPrefixMap.find(nmSpcId);
+                    if (nmSpcPrefixMapIt != nmSpcPrefixMap.end()) {
+                        ctx->warning(60036, "incorrect XML data: namespace " + nmSpcId + " duplicated prefix");
+                        return false;
+                    }
+                    nmSpcPrefixMap.insert_or_assign(nmSpcId, prefix);
+                }
 
                 continue;
             }
 
-            ++pos;
-        }
+            // namespace adds to header
+            if (data[pos] == 0xDD) {
+                ++pos;
 
-        if (xmlDecl) {
-            valueBufferCheck(100, offset);
+                if (pos + 2 >= length) {
+                    ctx->warning(60036, "incorrect XML data: string too short, can't read DD");
+                    return false;
+                }
+                uint16_t dict = ctx->read16Big(data + pos);
+                pos += 2;
 
-            valueBufferAppend("<?xml", 5);
-            valueBufferAppend(" version=", 9);
-            valueBufferAppend(version, strlen(version));
-            valueBufferAppend(standalone, strlen(standalone));
-            valueBufferAppend(encoding, strlen(encoding));
-            valueBufferAppend("?>", 2);
+                std::string dictId;
+                if (dict < 256)
+                    dictId = {ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
+                else
+                    dictId = {ctx->map16U[(dict >> 12) & 0x0F], ctx->map16U[(dict >> 8) & 0x0F],
+                              ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
 
-            ctx->info(0, "length: " + std::to_string(valueLengthOld));
-            ctx->info(0, "ptr: " + std::to_string(reinterpret_cast<uint64_t>(valueBufferOld)));
+                auto dictNmSpcMapIt = dictNmSpcMap.find(dictId);
+                if (dictNmSpcMapIt == dictNmSpcMap.end()) {
+                    ctx->warning(60036, "incorrect XML data: namespace " + dictId + " not found for namespace");
+                    return false;
+                }
+                std::string nmSpcId = dictNmSpcMapIt->second;
 
-            // Dump raw data for future development
-            valueBufferCheck(valueLengthOld * 3, offset);
-            for (uint64_t i = 0; i < valueLengthOld; ++i) {
-                char txt[3];
-                txt[0] = ' ';
-                ctx->info(0, "val: " + std::to_string(static_cast<uint64_t>(static_cast<unsigned char>(valueBufferOld[i]))));
-                txt[1] = ctx->map16[((unsigned char)valueBufferOld[i]) >> 4];
-                txt[2] = ctx->map16[valueBufferOld[i] & 0x0F];
+                // search url
+                auto xdbXNmMapIdIt = xmlCtx->xdbXNmMapId.find(nmSpcId);
+                if (xdbXNmMapIdIt == xmlCtx->xdbXNmMapId.end()) {
+                    ctx->warning(60036, "incorrect XML data: namespace " + nmSpcId + " not found");
+                    return false;
+                }
 
-                valueBufferAppend(txt, 3);
+                valueBufferCheck(7, offset);
+                valueBufferAppend(" xmlns", 6);
+
+                auto nmSpcPrefixMapIt = nmSpcPrefixMap.find(nmSpcId);
+                if (nmSpcPrefixMapIt != nmSpcPrefixMap.end()) {
+                    valueBufferCheck(1, offset);
+                    valueBufferAppend(':');
+
+                    valueBufferCheck(nmSpcPrefixMapIt->second.length(), offset);
+                    valueBufferAppend(nmSpcPrefixMapIt->second.c_str(), nmSpcPrefixMapIt->second.length());
+                }
+
+                valueBufferCheck(2, offset);
+                valueBufferAppend("=\"", 2);
+
+                valueBufferCheck(xdbXNmMapIdIt->second->nmSpcUri.length(), offset);
+                valueBufferAppend(xdbXNmMapIdIt->second->nmSpcUri.c_str(), xdbXNmMapIdIt->second->nmSpcUri.length());
+
+                valueBufferCheck(1, offset);
+                valueBufferAppend('"');
+
+                continue;
             }
+
+            // chunk of data 64bit
+            if (data[pos] == 0x8B) {
+                if (tagOpen) {
+                    valueBufferCheck(1, offset);
+                    valueBufferAppend('>');
+                    tagOpen = false;
+                }
+                ++pos;
+
+                if (pos + 8 >= length) {
+                    ctx->warning(60036, "incorrect XML data: string too short, can't read 8B");
+                    return false;
+                }
+
+                uint64_t tagLength = ctx->read64Big(data + pos);
+                pos += 8;
+
+                if (pos + tagLength >= length) {
+                    ctx->warning(60036, "incorrect XML data: string too short, can't read 8B data");
+                    return false;
+                }
+
+                valueBufferCheck(tagLength, offset);
+                valueBufferAppend(reinterpret_cast<const char*>(data + pos), tagLength);
+                pos += tagLength;
+                continue;
+            }
+
+            if (data[pos] < 128) {
+                if (tagOpen) {
+                    valueBufferCheck(1, offset);
+                    valueBufferAppend('>');
+                    tagOpen = false;
+                }
+
+                uint64_t tagLength = data[pos] + 1;
+                ++pos;
+
+                if (pos + tagLength >= length) {
+                    ctx->warning(60036, "incorrect XML data: string too short, can't read value data");
+                    return false;
+                }
+
+                valueBufferCheck(tagLength, offset);
+                valueBufferAppend(reinterpret_cast<const char*>(data + pos), tagLength);
+                pos += tagLength;
+                continue;
+            }
+
+            // end tag
+            if (data[pos] == 0xD9) {
+                if (tags.size() == 0) {
+                    ctx->warning(60036, "incorrect XML data: end tag found, but no tags open");
+                    return false;
+                }
+                std::string tag = tags.back();
+                out = "</" + tag + ">";
+                valueBufferCheck(out.length(), offset);
+                valueBufferAppend(out.c_str(), out.length());
+                ++pos;
+
+                continue;
+            }
+
+            // EOF
+            if (data[pos] == 0xA0)
+                break;
+
+            ctx->warning(60036, "incorrect XML data: string too short, can't decode code: " + std::to_string(data[pos]) + " at pos: " +
+                         std::to_string(pos));
+            return false;
         }
 
         return true;

@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         xidTransactionMap.clear();
     }
 
-    Transaction* TransactionBuffer::findTransaction(typeXid xid, typeConId conId, bool old, bool add, bool rollback) {
+    Transaction* TransactionBuffer::findTransaction(XmlCtx* xmlCtx, typeXid xid, typeConId conId, bool old, bool add, bool rollback) {
         typeXidMap xidMap = (xid.getData() >> 32) | ((static_cast<uint64_t>(conId)) << 32);
         Transaction* transaction;
 
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
             if (!add)
                 return nullptr;
 
-            transaction = new Transaction(xid, &orphanedLobs);
+            transaction = new Transaction(xid, &orphanedLobs, xmlCtx);
             {
                 std::unique_lock<std::mutex> lck(mtx);
                 xidTransactionMap.insert_or_assign(xidMap, transaction);

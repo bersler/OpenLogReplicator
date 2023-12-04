@@ -197,6 +197,7 @@ namespace OpenLogReplicator {
                     // No schema available?
                     if (metadata->schema->scn == ZERO_SCN)
                         createSchema();
+                    metadata->schema->updateXmlCtx();
 
                     if (metadata->sequence == ZERO_SEQ)
                         throw BootException(10028, "starting sequence is unknown");

@@ -58,6 +58,7 @@ DECLARE
     v_PREV BOOLEAN;
     v_VERSION11 BOOLEAN;
     v_SYS_SINGLE NUMBER;
+    v_XDB_SINGLE NUMBER;
     v_USER_SINGLE NUMBER;
     v_OBJECT_SINGLE NUMBER;
     v_USERS NUMBER;
@@ -67,6 +68,26 @@ DECLARE
     v_GROUP NUMBER;
     TYPE T_REF_CUR IS REF CURSOR;
     CV T_REF_CUR;
+    TYPE T_XDB_X_NM IS RECORD (
+        ROWID UROWID,
+        NMSPCURI VARCHAR2(2000),
+        ID RAW(8)
+    );
+    v_XDB_X_NM T_XDB_X_NM;
+    TYPE T_XDB_X_QN IS RECORD (
+        ROWID UROWID,
+        NMSPCID RAW(8),
+        LOCALNAME VARCHAR2(2000),
+        FLAGS RAW(4),
+        ID RAW(8)
+    );
+    v_XDB_X_QN T_XDB_X_QN;
+    TYPE T_XDB_X_PT IS RECORD (
+        ROWID UROWID,
+        PATH RAW(2000),
+        ID RAW(8)
+    );
+    v_XDB_X_PT T_XDB_X_PT;
     TYPE T_SYS_ECOL IS RECORD (
         ROWID UROWID,
         TABOBJ# NUMBER,
@@ -94,15 +115,23 @@ BEGIN
     v_USERS := 0;
 
     v_SYS_SINGLE := 1;
+    v_XDB_SINGLE := 1;
     FOR I IN v_USERNAME_LIST.FIRST .. v_USERNAME_LIST.LAST LOOP
         IF v_USERNAME_LIST(I) = 'SYS' THEN
             v_SYS_SINGLE := 0;
+        END IF;
+        IF v_USERNAME_LIST(I) = 'XDB' THEN
+            v_XDB_SINGLE := 0;
         END IF;
     END LOOP;
 
     IF v_SYS_SINGLE = 1 THEN
         v_USERNAME_LIST.EXTEND;
         v_USERNAME_LIST(v_USERNAME_LIST.LAST) := 'SYS';
+    END IF;
+    IF v_XDB_SINGLE = 1 THEN
+        v_USERNAME_LIST.EXTEND;
+        v_USERNAME_LIST(v_USERNAME_LIST.LAST) := 'XDB';
     END IF;
 
     SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, D.SUPPLEMENTAL_LOG_DATA_PK, D.SUPPLEMENTAL_LOG_DATA_ALL, TP.ENDIAN_FORMAT, D.CURRENT_SCN, D.ACTIVATION#,
@@ -259,7 +288,7 @@ BEGIN
                 END IF;
             END LOOP;
 
-            IF (v_SYS_USER.NAME <> 'SYS' OR v_SYS_SINGLE = 0) THEN
+            IF (v_SYS_USER.NAME <> 'SYS' OR v_SYS_SINGLE = 0) AND (v_SYS_USER.NAME <> 'XDB' OR v_XDB_SINGLE = 0) THEN
                 IF v_PREV = TRUE THEN
                     DBMS_OUTPUT.PUT(',');
                 ELSE
@@ -290,6 +319,8 @@ BEGIN
             WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY L.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -318,6 +349,8 @@ BEGIN
             WHERE O.OBJ# = D.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY D.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -347,6 +380,8 @@ BEGIN
             WHERE O.OBJ# = C.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY C.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -385,6 +420,8 @@ BEGIN
             WHERE O.OBJ# = DS.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY DS.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -412,6 +449,8 @@ BEGIN
                 ' AND (''' || v_USERNAME_LIST(I) || ''' <> ''SYS'' OR ' || TO_CHAR(v_SYS_SINGLE) || ' = 0' ||
                 ' OR O.NAME IN (''CCOL$'', ''CDEF$'', ''COL$'', ''DEFERRED_STG$'', ''ECOL$'', ''LOB$'', ''LOBFRAG$'', ''LOBCOMPPART$'', ''OBJ$'', ' ||
                 '''TAB$'', ''TABCOMPART$'', ''TABPART$'', ''TABSUBPART$'', ''TS$'', ''USER$''))' ||
+                ' AND (''' || v_USERNAME_LIST(I) || ''' <> ''XDB'' OR ' || TO_CHAR(v_XDB_SINGLE) || ' = 0' ||
+                ' OR O.NAME = ''XDB$TTSET'' OR O.NAME LIKE ''X$NM%'' OR O.NAME LIKE ''X$QN%'' OR O.NAME LIKE ''X$PT%'')' ||
                 ' ORDER BY E.ROWID';
         ELSE
             SQLTEXT := 'SELECT E.ROWID, E.TABOBJ#, NVL(E.COLNUM, 0) AS COLNUM, NVL(E.GUARD_ID, -1) as GUARD_ID ' ||
@@ -420,6 +459,8 @@ BEGIN
                 ' AND (''' || v_USERNAME_LIST(I) || ''' <> ''SYS'' OR ' || TO_CHAR(v_SYS_SINGLE) || ' = 0' ||
                 ' OR O.NAME IN (''CCOL$'', ''CDEF$'', ''COL$'', ''DEFERRED_STG$'', ''ECOL$'', ''LOB$'', ''LOBFRAG$'', ''LOBCOMPPART$'', ''OBJ$'', ' ||
                 '''TAB$'', ''TABCOMPART$'', ''TABPART$'', ''TABSUBPART$'', ''TS$'', ''USER$''))' ||
+                ' AND (''' || v_USERNAME_LIST(I) || ''' <> ''XDB'' OR ' || TO_CHAR(v_XDB_SINGLE) || ' = 0' ||
+                ' OR O.NAME = ''XDB$TTSET'' OR O.NAME LIKE ''X$NM%'' OR O.NAME LIKE ''X$QN%'' OR O.NAME LIKE ''X$PT%'')' ||
                 ' ORDER BY E.ROWID';
         END IF;
 
@@ -453,6 +494,8 @@ BEGIN
             WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY L.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -482,6 +525,8 @@ BEGIN
             WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY LCP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -508,12 +553,16 @@ BEGIN
             WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND LCP.PARTOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             UNION ALL
             SELECT LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L, SYS.LOBFRAG$ AS OF SCN v_SCN LF
             WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY 4
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -541,6 +590,8 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O WHERE O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY O.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -549,7 +600,7 @@ BEGIN
                 v_PREV := TRUE;
             END IF;
 
-            IF (v_USERNAME_LIST(I) = 'SYS' AND v_SYS_SINGLE = 1) THEN
+            IF (v_USERNAME_LIST(I) = 'SYS' AND v_SYS_SINGLE = 1) OR (v_USERNAME_LIST(I) = 'XDB' AND v_XDB_SINGLE = 1) THEN
                 v_OBJECT_SINGLE := 1;
             ELSE
                 v_OBJECT_SINGLE := 0;
@@ -580,6 +631,8 @@ BEGIN
             WHERE O.OBJ# = T.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY T.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -610,6 +663,8 @@ BEGIN
             WHERE O.OBJ# = TCP.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY TCP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -637,6 +692,8 @@ BEGIN
             WHERE O.OBJ# = TP.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY TP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -664,6 +721,8 @@ BEGIN
             WHERE O.OBJ# = TSP.OBJ# AND O.OWNER# = v_USER_LIST(I)
                 AND (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$',
                     'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+                AND (v_USERNAME_LIST(I) <> 'XDB' OR v_XDB_SINGLE = 0 OR O.NAME = 'XDB$TTSET' OR O.NAME LIKE 'X$NM%' OR O.NAME LIKE 'X$QN%' OR
+                    O.NAME LIKE 'X$PT%')
             ORDER BY TSP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -720,7 +779,7 @@ BEGIN
                 v_PREV := TRUE;
             END IF;
 
-            IF (v_USERNAME_LIST(I) = 'SYS' AND v_SYS_SINGLE = 1) THEN
+            IF (v_USERNAME_LIST(I) = 'SYS' AND v_SYS_SINGLE = 1) OR (v_USERNAME_LIST(I) = 'XDB' AND v_XDB_SINGLE = 1) THEN
                 v_USER_SINGLE := 1;
             ELSE
                 v_USER_SINGLE := 0;
@@ -736,6 +795,100 @@ BEGIN
     END LOOP;
     DBMS_OUTPUT.PUT(']');
     DBMS_OUTPUT.NEW_LINE();
+
+    v_PREV := FALSE;
+    DBMS_OUTPUT.PUT(',"xdb-ttset":[');
+    FOR v_XDB_TTSET IN (
+        SELECT T.ROWID, T.GUID, T.TOKSUF, T.FLAGS, T.OBJ#
+        FROM XDB.XDB$TTSET AS OF SCN v_SCN T
+        ORDER BY T.ROWID
+    ) LOOP
+        IF v_PREV = TRUE THEN
+            DBMS_OUTPUT.PUT(',');
+        ELSE
+            v_PREV := TRUE;
+        END IF;
+
+        DBMS_OUTPUT.NEW_LINE();
+        DBMS_OUTPUT.PUT('{"row-id":"' || v_XDB_TTSET.ROWID || '"' ||
+            ',"guid":"' || v_XDB_TTSET.GUID || '"' ||
+            ',"toksuf":"' || v_XDB_TTSET.TOKSUF || '"' ||
+            ',"flags":' || v_XDB_TTSET.FLAGS ||
+            ',"obj":' || v_XDB_TTSET.OBJ# || '}');
+    END LOOP;
+    DBMS_OUTPUT.PUT(']');
+    DBMS_OUTPUT.NEW_LINE();
+
+    FOR v_XDB_TTSET IN (
+        SELECT T.ROWID, T.GUID, T.TOKSUF, T.FLAGS, T.OBJ#
+        FROM XDB.XDB$TTSET AS OF SCN v_SCN T
+        ORDER BY T.ROWID
+    ) LOOP
+        v_PREV := FALSE;
+        DBMS_OUTPUT.PUT(',"xdb-xnm' || v_XDB_TTSET.TOKSUF || '":[');
+        OPEN CV FOR 'SELECT ROWID, NMSPCURI, ID FROM XDB.X$NM' || v_XDB_TTSET.TOKSUF || ' AS OF SCN ' || TO_CHAR(v_SCN);
+        LOOP
+            FETCH CV INTO v_XDB_X_NM;
+            EXIT WHEN cv%NOTFOUND;
+
+            IF v_PREV = TRUE THEN
+                DBMS_OUTPUT.PUT(',');
+            ELSE
+                v_PREV := TRUE;
+            END IF;
+
+            DBMS_OUTPUT.NEW_LINE();
+            DBMS_OUTPUT.PUT('{"row-id":"' || v_XDB_X_NM.ROWID || '"' ||
+                ',"nmspcuri":"' || v_XDB_X_NM.NMSPCURI || '"' ||
+                ',"id":"' || v_XDB_X_NM.ID || '"}');
+        END LOOP;
+        DBMS_OUTPUT.PUT(']');
+        DBMS_OUTPUT.NEW_LINE();
+
+        v_PREV := FALSE;
+        DBMS_OUTPUT.PUT(',"xdb-xpt' || v_XDB_TTSET.TOKSUF || '":[');
+        OPEN CV FOR 'SELECT ROWID, PATH, ID FROM XDB.X$PT' || v_XDB_TTSET.TOKSUF || ' AS OF SCN ' || TO_CHAR(v_SCN);
+        LOOP
+            FETCH CV INTO v_XDB_X_PT;
+            EXIT WHEN cv%NOTFOUND;
+
+            IF v_PREV = TRUE THEN
+                DBMS_OUTPUT.PUT(',');
+            ELSE
+                v_PREV := TRUE;
+            END IF;
+
+            DBMS_OUTPUT.NEW_LINE();
+            DBMS_OUTPUT.PUT('{"row-id":"' || v_XDB_X_PT.ROWID || '"' ||
+                ',"path":"' || v_XDB_X_PT.PATH || '"' ||
+                ',"id":"' || v_XDB_X_PT.ID|| '"}');
+        END LOOP;
+        DBMS_OUTPUT.PUT(']');
+        DBMS_OUTPUT.NEW_LINE();
+
+        v_PREV := FALSE;
+        DBMS_OUTPUT.PUT(',"xdb-xqn' || v_XDB_TTSET.TOKSUF || '":[');
+            OPEN CV FOR 'SELECT ROWID, NMSPCID, LOCALNAME, FLAGS, ID FROM XDB.X$QN' || v_XDB_TTSET.TOKSUF || ' AS OF SCN ' || TO_CHAR(v_SCN);
+            LOOP
+            FETCH CV INTO v_XDB_X_QN;
+            EXIT WHEN cv%NOTFOUND;
+
+            IF v_PREV = TRUE THEN
+                DBMS_OUTPUT.PUT(',');
+            ELSE
+                v_PREV := TRUE;
+            END IF;
+
+            DBMS_OUTPUT.NEW_LINE();
+            DBMS_OUTPUT.PUT('{"row-id":"' || v_XDB_X_QN.ROWID || '"' ||
+                ',"nmspcid":"' || v_XDB_X_QN.NMSPCID || '"' ||
+                ',"localname":"' || v_XDB_X_QN.LOCALNAME || '"' ||
+                ',"flags":"' || v_XDB_X_QN.FLAGS || '"' ||
+                ',"id":"' || v_XDB_X_QN.ID || '"}');
+        END LOOP;
+        DBMS_OUTPUT.PUT(']');
+        DBMS_OUTPUT.NEW_LINE();
+    END LOOP;
 
     DBMS_OUTPUT.PUT('}');
     DBMS_OUTPUT.NEW_LINE();

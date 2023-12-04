@@ -72,6 +72,7 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SYS_TABSUBPART_OBJ;
         static const char* SQL_GET_SYS_TS;
         static const char* SQL_GET_SYS_USER;
+        static const char* SQL_GET_XDB_TTSET;
         static const char* SQL_CHECK_CONNECTION;
         bool standby;
 

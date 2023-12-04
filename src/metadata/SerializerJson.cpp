@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Ctx.h"
 #include "../common/OracleIncarnation.h"
 #include "../common/typeRowId.h"
+#include "../common/XmlCtx.h"
 #include "../common/exception/DataException.h"
 #include "../common/table/SysCCol.h"
 #include "../common/table/SysCDef.h"
@@ -36,6 +37,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/table/SysTabSubPart.h"
 #include "../common/table/SysTs.h"
 #include "../common/table/SysUser.h"
+#include "../common/table/XdbTtSet.h"
+#include "../common/table/XdbXNm.h"
+#include "../common/table/XdbXQn.h"
+#include "../common/table/XdbXPt.h"
 #include "RedoLog.h"
 #include "Metadata.h"
 #include "Schema.h"
@@ -424,6 +429,84 @@ namespace OpenLogReplicator {
                     R"(,"single":)" << std::dec << static_cast<uint64_t>(sysUser->single) << "}";
         }
 
+        // XDB.XDB$TTSET
+        ss << "]," SERIALIZER_ENDL << R"("xdb-ttset":[)";
+        hasPrev = false;
+        for (auto xdbTtSetMapRowIdIt : metadata->schema->xdbTtSetMapRowId) {
+            XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss SERIALIZER_ENDL << R"({"row-id":")" << xdbTtSet->rowId <<
+                               R"(","guid":")" << std::dec << xdbTtSet->guid <<
+                               R"(","toksuf":")";
+            Ctx::writeEscapeValue(ss, xdbTtSet->tokSuf);
+            ss << R"(","flags":)" << std::dec << xdbTtSet->flags <<
+                R"(,"obj":)" << std::dec << xdbTtSet->obj << "}";
+        }
+
+        for (auto schemaXmlIt : metadata->schema->schemaXmlMap) {
+            XmlCtx* xmlCtx = schemaXmlIt.second;
+
+            // XDB.X$NMxxx
+            ss << "]," SERIALIZER_ENDL << R"("xdb-xnm)" << xmlCtx->tokSuf << R"(":[)";
+            hasPrev = false;
+            for (auto xdbXNmMapRowIdIt : xmlCtx->xdbXNmMapRowId) {
+                XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
+
+                if (hasPrev)
+                    ss << ",";
+                else
+                    hasPrev = true;
+
+                ss SERIALIZER_ENDL << R"({"row-id":")" << xdbXNm->rowId <<
+                        R"(","nmspcuri":")";
+                Ctx::writeEscapeValue(ss, xdbXNm->nmSpcUri);
+                ss << R"(","id":")" << xdbXNm->id << R"("})";
+            }
+
+            // XDB.X$PTxxx
+            ss << "]," SERIALIZER_ENDL << R"("xdb-xpt)" << xmlCtx->tokSuf << R"(":[)";
+            hasPrev = false;
+            for (auto xdbXPtMapRowIdIt : xmlCtx->xdbXPtMapRowId) {
+                XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
+
+                if (hasPrev)
+                    ss << ",";
+                else
+                    hasPrev = true;
+
+                ss SERIALIZER_ENDL << R"({"row-id":")" << xdbXPt->rowId <<
+                                   R"(","path":")";
+                Ctx::writeEscapeValue(ss, xdbXPt->path);
+                ss << R"(","id":")" << xdbXPt->id << R"("})";
+            }
+
+            // XDB.X$QNxxx
+            ss << "]," SERIALIZER_ENDL << R"("xdb-xqn)" << xmlCtx->tokSuf << R"(":[)";
+            hasPrev = false;
+            for (auto xdbXQnMapRowIdIt : xmlCtx->xdbXQnMapRowId) {
+                XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
+
+                if (hasPrev)
+                    ss << ",";
+                else
+                    hasPrev = true;
+
+                ss SERIALIZER_ENDL << R"({"row-id":")" << xdbXQn->rowId <<
+                                   R"(","nmspcid":")";
+                Ctx::writeEscapeValue(ss, xdbXQn->nmSpcId);
+                ss << R"(","localname":")";
+                Ctx::writeEscapeValue(ss, xdbXQn->localName);
+                ss << R"(","flags":")";
+                Ctx::writeEscapeValue(ss, xdbXQn->flags);
+                ss << R"(","id":")" << xdbXQn->id << R"("})";
+            }
+        }
+
         ss << "]}";
     }
 
@@ -564,6 +647,21 @@ namespace OpenLogReplicator {
                         deserializeSysTabComPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabcompart"));
                         deserializeSysTabSubPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabsubpart"));
                         deserializeSysTs(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ts"));
+                        // allow continuing
+                        if (document.HasMember("xdb-ttset"))
+                            deserializeXdbTtSet(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "xdb-ttset"));
+
+                        for (auto ttSetIt: metadata->schema->xdbTtSetMapRowId) {
+                            XmlCtx *xmlCtx = new XmlCtx(metadata->ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
+                            metadata->schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
+
+                            std::string field = "xdb-xnm" + ttSetIt.second->tokSuf;
+                            deserializeXdbXNm(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
+                            field = "xdb-xpt" + ttSetIt.second->tokSuf;
+                            deserializeXdbXPt(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
+                            field = "xdb-xqn" + ttSetIt.second->tokSuf;
+                            deserializeXdbXQn(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
+                        }
                     }
 
                     for (SchemaElement* element: metadata->schemaElements) {
@@ -806,6 +904,50 @@ namespace OpenLogReplicator {
             uint64_t single = Ctx::getJsonFieldU64(fileName, sysUserJson[i], "single");
 
             metadata->schema->dictSysUserAdd(rowIdStr, user, name_, spare11, spare12, single != 0u);
+        }
+    }
+
+    void SerializerJson::deserializeXdbTtSet(Metadata* metadata, const std::string& fileName, const rapidjson::Value& xdbTtSetJson) {
+        for (rapidjson::SizeType i = 0; i < xdbTtSetJson.Size(); ++i) {
+            const char* rowIdStr = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, xdbTtSetJson[i], "row-id");
+            const char* guid = Ctx::getJsonFieldS(fileName, XDB_TTSET_GUID_LENGTH, xdbTtSetJson[i], "guid");
+            const char* tokSuf = Ctx::getJsonFieldS(fileName, XDB_TTSET_TOKSUF_LENGTH, xdbTtSetJson[i], "toksuf");
+            uint64_t flags = Ctx::getJsonFieldU64(fileName, xdbTtSetJson[i], "flags");
+            uint32_t obj = Ctx::getJsonFieldU32(fileName, xdbTtSetJson[i], "obj");
+
+            metadata->schema->dictXdbTtSetAdd(rowIdStr, guid, tokSuf, flags, obj);
+        }
+    }
+
+    void SerializerJson::deserializeXdbXNm(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXNmJson) {
+        for (rapidjson::SizeType i = 0; i < xdbXNmJson.Size(); ++i) {
+            const char* rowIdStr = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, xdbXNmJson[i], "row-id");
+            const char* nmSpcUri = Ctx::getJsonFieldS(fileName, XDB_XNM_NMSPCURI_LENGTH, xdbXNmJson[i], "nmspcuri");
+            const char* id = Ctx::getJsonFieldS(fileName, XDB_XNM_ID_LENGTH, xdbXNmJson[i], "id");
+
+            metadata->schema->dictXdbXNmAdd(xmlCtx, rowIdStr, nmSpcUri, id);
+        }
+    }
+
+    void SerializerJson::deserializeXdbXPt(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXPtJson) {
+        for (rapidjson::SizeType i = 0; i < xdbXPtJson.Size(); ++i) {
+            const char* rowIdStr = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, xdbXPtJson[i], "row-id");
+            const char* path = Ctx::getJsonFieldS(fileName, XDB_XPT_PATH_LENGTH, xdbXPtJson[i], "path");
+            const char* id = Ctx::getJsonFieldS(fileName, XDB_XPT_ID_LENGTH, xdbXPtJson[i], "id");
+
+            metadata->schema->dictXdbXPtAdd(xmlCtx, rowIdStr, path, id);
+        }
+    }
+
+    void SerializerJson::deserializeXdbXQn(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXQnJson) {
+        for (rapidjson::SizeType i = 0; i < xdbXQnJson.Size(); ++i) {
+            const char* rowIdStr = Ctx::getJsonFieldS(fileName, ROWID_LENGTH, xdbXQnJson[i], "row-id");
+            const char* nmSpcId = Ctx::getJsonFieldS(fileName, XDB_XQN_NMSPCID_LENGTH, xdbXQnJson[i], "nmspcid");
+            const char* localName = Ctx::getJsonFieldS(fileName, XDB_XQN_LOCALNAME_LENGTH, xdbXQnJson[i], "localname");
+            const char* flags = Ctx::getJsonFieldS(fileName, XDB_XQN_FLAGS_LENGTH, xdbXQnJson[i], "flags");
+            const char* id = Ctx::getJsonFieldS(fileName, XDB_XQN_ID_LENGTH, xdbXQnJson[i], "id");
+
+            metadata->schema->dictXdbXQnAdd(xmlCtx, rowIdStr, nmSpcId, localName, flags, id);
         }
     }
 }
