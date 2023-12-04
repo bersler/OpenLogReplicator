@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
         std::unordered_map<typeDataObj, OracleLob*> lobIndexMap;
         std::unordered_map<typeObj, OracleTable*> tableMap;
         std::unordered_map<typeObj, OracleTable*> tablePartitionMap;
-        XmlCtx* xmlCtx;
+        XmlCtx* xmlCtxDefault;
         OracleColumn* columnTmp;
         OracleLob* lobTmp;
         OracleTable* tableTmp;

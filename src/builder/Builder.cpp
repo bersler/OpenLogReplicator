@@ -1629,6 +1629,7 @@ namespace OpenLogReplicator {
         std::map<std::string, std::string> dictNmSpcMap;
         std::map<std::string, std::string> nmSpcPrefixMap;
         bool tagOpen = false;
+        std::string lastTag;
 
         while (pos < length) {
             // Header
@@ -1746,9 +1747,9 @@ namespace OpenLogReplicator {
             }
 
             // tag/parameter
-            if (data[pos] == 0xC8 || (data[pos] >= 0xC0 && data[pos] <= 0xC3)){
-                uint64_t tagLength;
-                uint64_t code;
+            if (data[pos] == 0xC8 || (data[pos] >= 0xC0 && data[pos] <= 0xC3)) {
+                uint64_t tagLength = 0;
+                uint64_t code = 0;
                 bool isSingle = false;
 
                 if (data[pos] == 0xC8) {
@@ -2053,12 +2054,29 @@ namespace OpenLogReplicator {
                     ctx->warning(60036, "incorrect XML data: end tag found, but no tags open");
                     return false;
                 }
-                std::string tag = tags.back();
-                out = "</" + tag + ">";
+                lastTag = tags.back();
+                tags.pop_back();
+                out = "</" + lastTag + ">";
                 valueBufferCheck(out.length(), offset);
                 valueBufferAppend(out.c_str(), out.length());
                 ++pos;
+                continue;
+            }
 
+            // ignore
+            if (data[pos] >= 0xD6 && data[pos] <= 0xD8) {
+                ++pos;
+                continue;
+            }
+
+            // repeat last tag
+            if (data[pos] >= 0xD4 && data[pos] <= 0xD5) {
+                tags.push_back(lastTag);
+                std::string out = "<" + lastTag;
+                tagOpen = true;
+                valueBufferCheck(out.length(), offset);
+                valueBufferAppend(out.c_str(), out.length());
+                ++pos;
                 continue;
             }
 

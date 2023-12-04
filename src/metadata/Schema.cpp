@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
             scn(ZERO_SCN),
             refScn(ZERO_SCN),
             loaded(false),
-            xmlCtx(nullptr),
+            xmlCtxDefault(nullptr),
             columnTmp(nullptr),
             lobTmp(nullptr),
             tableTmp(nullptr) {
@@ -2470,16 +2470,16 @@ namespace OpenLogReplicator {
 
     void Schema::updateXmlCtx() {
         if ((ctx->flags & REDO_FLAGS_EXPERIMENTAL_XMLTYPE) != 0) {
-            xmlCtx = nullptr;
+            xmlCtxDefault = nullptr;
             auto schemaXmlMapIt = schemaXmlMap.begin();
             while (schemaXmlMapIt != schemaXmlMap.end()) {
                 if (schemaXmlMapIt->second->flags == 0) {
-                    xmlCtx = schemaXmlMapIt->second;
+                    xmlCtxDefault = schemaXmlMapIt->second;
                     break;
                 }
                 ++schemaXmlMapIt;
             }
-            if (xmlCtx == nullptr)
+            if (xmlCtxDefault == nullptr)
                 throw DataException(50069, "no active XML context found");
         }
 

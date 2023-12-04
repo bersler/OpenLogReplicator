@@ -557,8 +557,8 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, true,
-                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -625,8 +625,8 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, true,
-                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -651,8 +651,8 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->xid.getData() != 0 && transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, true,
-                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -703,7 +703,8 @@ namespace OpenLogReplicator {
             return;
 
         typeXid xid(redoLogRecord1->usn, redoLogRecord1->slt,  0);
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, xid, redoLogRecord1->conId, true, false, true);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, xid, redoLogRecord1->conId, true, false,
+                                                                      true);
         if (transaction == nullptr) {
             typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
@@ -738,7 +739,8 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->xid.sqn() == 0)
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, false, true, false);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      false, true, false);
         transaction->begin = true;
         transaction->firstSequence = sequence;
         transaction->firstOffset = lwnCheckpointBlock * reader->getBlockSize();
@@ -768,8 +770,8 @@ namespace OpenLogReplicator {
         if (brokenXidMapListIt != transactionBuffer->brokenXidMapList.end())
             transactionBuffer->brokenXidMapList.erase(xidMap);
 
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, true,
-                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
 
@@ -822,8 +824,8 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, true,
-                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -918,7 +920,8 @@ namespace OpenLogReplicator {
             return;
 
         typeXid xid(redoLogRecord2->usn, redoLogRecord2->slt, 0);
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, xid, redoLogRecord2->conId, true, false, true);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, xid, redoLogRecord2->conId, true, false,
+                                                                      true);
         if (transaction == nullptr) {
             typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord2->conId) << 32);
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
@@ -1009,8 +1012,8 @@ namespace OpenLogReplicator {
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, true,
-                                                                      FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -1085,8 +1088,8 @@ namespace OpenLogReplicator {
                     redoLogRecord1->xid = parentXid;
                     redoLogRecord2->xid = parentXid;
 
-                    transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtx, redoLogRecord1->xid, redoLogRecord1->conId, true,
-                                                                     FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                    transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                     true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
                     if (transaction == nullptr) {
                         if (ctx->trace & TRACE_LOB)
                             ctx->logTrace(TRACE_LOB, "parent transaction not found");
