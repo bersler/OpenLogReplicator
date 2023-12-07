@@ -2072,7 +2072,7 @@ namespace OpenLogReplicator {
             // repeat last tag
             if (data[pos] >= 0xD4 && data[pos] <= 0xD5) {
                 tags.push_back(lastTag);
-                std::string out = "<" + lastTag;
+                out = "<" + lastTag;
                 tagOpen = true;
                 valueBufferCheck(out.length(), offset);
                 valueBufferAppend(out.c_str(), out.length());
