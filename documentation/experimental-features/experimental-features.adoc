@@ -1,7 +1,7 @@
 = Experimental Features
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.0
-:revdate: 2023-12-04
+:revdate: 2023-12-09
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :toc: preamble
@@ -54,3 +54,7 @@ This might cause the dictionaries to grow significantly, which may lead to perfo
 IMPORTANT: The feature is in an experimental state, meaning that it may not work correctly in all cases.
 Please report any issues to the project's GitHub page.
 This will help to improve the feature and make it more stable.
+
+=== Limitations
+
+Binary XMLType support is available for all supported database versions except version 23c.

@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.0
-:revdate: 2023-12-04
+:revdate: 2023-12-09
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -557,7 +557,7 @@ List of supported column types (with internal Oracle codes):
 - 2 –- number/float;
 - 12 –- date;
 - 23 –- raw;
-- 58 -- xmltype;
+- 58 -- xmltype (full for clob storage, experimental status for binary storage, not supported for 23c);
 - 96 –- char/nchar (list of supported character sets);
 - 100 –- binary_float;
 - 101 –- binary_double;
@@ -568,7 +568,8 @@ List of supported column types (with internal Oracle codes):
 - 182 -- interval year to month;
 - 183 -- interval day to second;
 - 208 -- urowid;
-- 231 –- timestamp with local time zone.
+- 231 –- timestamp with local time zone;
+- 252 -- boolean.
 
 If a table contains column types which aren't supported –- `“?”` value is presented in output data.
 
