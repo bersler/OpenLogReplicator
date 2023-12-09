@@ -72,12 +72,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_COL_TYPE_DOUBLE                  101
 #define SYS_COL_TYPE_CLOB                    112
 #define SYS_COL_TYPE_BLOB                    113
+#define SYS_COL_TYPE_JSON                    119
 #define SYS_COL_TYPE_TIMESTAMP               180
 #define SYS_COL_TYPE_TIMESTAMP_WITH_TZ       181
 #define SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH  182
 #define SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND  183
 #define SYS_COL_TYPE_UROWID                  208
 #define SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ 231
+#define SYS_COL_TYPE_BOOLEAN                 252
 
 namespace OpenLogReplicator {
     class SysColSeg final {

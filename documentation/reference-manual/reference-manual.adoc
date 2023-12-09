@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.0
-:revdate: 2023-12-04
+:revdate: 2023-12-09
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -212,7 +212,7 @@ Startup would fail because the set of users present in checkpoint files would no
 The schema would update only when the program is reset, (i.e., the checkpoint files are removed and forced recreation).
 
 |`flags` [[flags]]
-|_number_, min: 0, max: 131071, default: 0
+|_number_, min: 0, max: 262143, default: 0
 |A sum of various flags.
 Flags define various options for the program.
 
@@ -282,6 +282,8 @@ This flag overrides this number and leaves the checkpoint file.
 
 * `0x10000` -- Decode binary XMLType data (experimental).
 Refer to details in xref:../experimental-features/experimental-features.adoc#binary-xmltype[binary xmltype] chapter for details.
+
+* `0x20000` -- Pass JSON data values to output in binary format (experimental).
 
 
 |`memory-max-mb`

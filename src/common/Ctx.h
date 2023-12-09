@@ -88,6 +88,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_FLAGS_VERIFY_SCHEMA                0x00004000
 #define REDO_FLAGS_RAW_COLUMN_DATA              0x00008000
 #define REDO_FLAGS_EXPERIMENTAL_XMLTYPE         0x00010000
+#define REDO_FLAGS_EXPERIMENTAL_JSON            0x00020000
 
 #define FLAG(x)                                 ((ctx->flags&(x))!=0)
 

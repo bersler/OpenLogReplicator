@@ -69,9 +69,10 @@ namespace OpenLogReplicator {
                     && typeNo != SYS_COL_TYPE_DATE
                     && typeNo != SYS_COL_TYPE_RAW
                     && typeNo != SYS_COL_TYPE_CHAR
-                    && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
                     && typeNo != SYS_COL_TYPE_FLOAT
                     && typeNo != SYS_COL_TYPE_DOUBLE
+                    && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
+                    && (typeNo != SYS_COL_TYPE_JSON || !after)
                     && (typeNo != SYS_COL_TYPE_CLOB || !after)
                     && (typeNo != SYS_COL_TYPE_BLOB || !after)
                     && typeNo != SYS_COL_TYPE_TIMESTAMP

@@ -193,6 +193,12 @@ namespace OpenLogReplicator {
                 }
                 break;
 
+            case SYS_COL_TYPE_JSON:
+                if (FLAG(REDO_FLAGS_EXPERIMENTAL_JSON))
+                    if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys))
+                        columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength);
+                break;
+
             case SYS_COL_TYPE_CLOB:
                 if (after && table != nullptr) {
                     if (parseLob(lobCtx, data, length, column->charsetId, table->obj, offset, true, table->systemTable > 0))
@@ -570,6 +576,16 @@ namespace OpenLogReplicator {
                             }
                         }
                     }
+                }
+                break;
+
+            case SYS_COL_TYPE_BOOLEAN:
+                if (length == 1 && data[0] <= 1) {
+                    valueLength = 0;
+                    valueBuffer[valueLength++] = '0' + data[0];
+                    columnNumber(column->name, column->precision, column->scale);
+                } else {
+                    columnUnknown(column->name, data, length);
                 }
                 break;
 
