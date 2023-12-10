@@ -77,6 +77,7 @@ namespace OpenLogReplicator {
             memoryChunksReusable(0),
             version12(false),
             version(0),
+            columnLimit(COLUMN_LIMIT),
             dumpRedoLog(0),
             dumpRawData(0),
             readBufferMax(0),

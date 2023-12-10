@@ -71,7 +71,6 @@ typedef uint64_t typeUnicode;
 #define ZERO_BLK                                (static_cast<typeBlk>(0xFFFFFFFF))
 #define MEMORY_ALIGNMENT                        512
 #define MAX_PATH_LENGTH                         2048
-#define MAX_NO_COLUMNS                          1000
 #define MAX_TRANSACTIONS_LIMIT                  1048576
 #define MAX_RECORDS_IN_LWN                      1048576
 

@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.0
-:revdate: 2023-12-09
+:revdate: 2023-12-10
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -29,6 +29,7 @@ This document describes the release notes of OpenLogReplicator.
 - experimental: support for binary xmltype, added document about experimental features
 - enhancement: added support for BOOLEAN data type
 - enhancement: added support for Oracle 23c
+- Oracle 23c: set column limit to 4096
 
 === Version 1.3.0
 
