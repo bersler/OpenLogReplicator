@@ -306,6 +306,8 @@ namespace OpenLogReplicator {
                    reinterpret_cast<const void*>(headerBuffer + blockSize + 28), 8);
             SID[8] = 0;
             ctx->version = version;
+            if (compatVsn >= REDO_VERSION_23_0)
+                ctx->columnLimit = COLUMN_LIMIT_23_0;
             typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
 
             if (compatVsn < REDO_VERSION_18_0) {

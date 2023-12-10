@@ -955,7 +955,7 @@ namespace OpenLogReplicator {
                 } else {
                     colNums = nullptr;
                 }
-                if (colShift >= MAX_NO_COLUMNS)
+                if (colShift >= ctx->columnLimit)
                     throw RedoLogException(50059, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                            std::to_string(redoLogRecord1p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
                                            ", before: " + std::to_string(redoLogRecord1p->suppLogBefore) + ", xid: " + lastXid.toString() + ", offset: " +
@@ -1011,7 +1011,7 @@ namespace OpenLogReplicator {
                             break;
                         }
                     } else {
-                        if (colNum >= MAX_NO_COLUMNS)
+                        if (colNum >= ctx->columnLimit)
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                                    std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
                                                    std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
@@ -1077,7 +1077,7 @@ namespace OpenLogReplicator {
                             break;
                         }
                     } else {
-                        if (colNum >= MAX_NO_COLUMNS)
+                        if (colNum >= ctx->columnLimit)
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                                    std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
                                                    std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
@@ -1137,7 +1137,7 @@ namespace OpenLogReplicator {
                 } else {
                     colNums = nullptr;
                 }
-                if (colShift >= MAX_NO_COLUMNS) {
+                if (colShift >= ctx->columnLimit) {
                     throw RedoLogException(50059, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
                                            std::to_string(redoLogRecord2p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
                                            ", before: " + std::to_string(redoLogRecord2p->suppLogBefore) + ", xid: " + lastXid.toString() + ", offset: " +
@@ -1200,7 +1200,7 @@ namespace OpenLogReplicator {
                             break;
                         }
                     } else {
-                        if (colNum >= MAX_NO_COLUMNS)
+                        if (colNum >= ctx->columnLimit)
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
                                                    std::to_string(redoLogRecord2p->dataObj) + "): referring to invalid column id(" +
                                                    std::to_string(colNum) + "), xid: " + lastXid.toString() + "), offset: " +

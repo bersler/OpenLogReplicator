@@ -37,6 +37,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_VERSION_12_2       0x0C200000
 #define REDO_VERSION_18_0       0x12000000
 #define REDO_VERSION_19_0       0x13000000
+#define REDO_VERSION_23_0       0x17000000
+#define COLUMN_LIMIT            1000
+#define COLUMN_LIMIT_23_0       4096
+
 
 #define MEMORY_CHUNK_SIZE_MB                    1
 #define MEMORY_CHUNK_SIZE                       (MEMORY_CHUNK_SIZE_MB*1024*1024)
@@ -134,6 +138,7 @@ namespace OpenLogReplicator {
 
         bool version12;
         std::atomic<uint64_t> version;                   // Compatibility level of redo logs
+        uint64_t columnLimit;
         std::string versionStr;
         std::atomic<uint64_t> dumpRedoLog;
         std::atomic<uint64_t> dumpRawData;
