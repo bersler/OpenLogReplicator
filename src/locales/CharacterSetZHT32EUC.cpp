@@ -38,9 +38,6 @@ namespace OpenLogReplicator {
 
         // 4 bytes sequence
         if (byte1 == ZHT32EUC_4_b1) {
-            if (length == 0)
-                return badChar(ctx, xid, byte1);
-
             uint64_t byte2 = *str++;
             --length;
 

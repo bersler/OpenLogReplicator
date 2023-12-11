@@ -285,10 +285,8 @@ int main(int argc, char** argv) {
         ctx.error(0, "memory allocation failed: " + std::string(ex.what()));
     }
 
-    if (buffer != nullptr) {
-        delete[] buffer;
-        buffer = nullptr;
-    }
+    delete[] buffer;
+    buffer = nullptr;
 
     if (stream != nullptr) {
         delete stream;

@@ -180,7 +180,7 @@ namespace OpenLogReplicator {
                 break;
 
             case SYS_COL_TYPE_BLOB:
-                if (after && table != nullptr) {
+                if (after) {
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
                         if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
                             if (parseXml(xmlCtx, reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
@@ -200,7 +200,7 @@ namespace OpenLogReplicator {
                 break;
 
             case SYS_COL_TYPE_CLOB:
-                if (after && table != nullptr) {
+                if (after) {
                     if (parseLob(lobCtx, data, length, column->charsetId, table->obj, offset, true, table->systemTable > 0))
                         columnString(column->name);
                 }
@@ -1174,7 +1174,6 @@ namespace OpenLogReplicator {
                                                    std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
                                                    std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +
                                                    std::to_string(redoLogRecord2p->dataOffset));
-                        break;
                     }
 
                     fb = 0;
