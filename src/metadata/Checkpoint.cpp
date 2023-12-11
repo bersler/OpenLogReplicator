@@ -86,8 +86,7 @@ namespace OpenLogReplicator {
 
             updateConfigFile();
 
-            if (configFileBuffer != nullptr)
-                delete[] configFileBuffer;
+            delete[] configFileBuffer;
             configFileBuffer = nullptr;
 
         } catch (ConfigurationException& ex) {
