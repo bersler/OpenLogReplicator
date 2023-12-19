@@ -31,11 +31,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     StreamNetwork::StreamNetwork(Ctx* newCtx, const char* newUri) :
-        Stream(newCtx, newUri),
-        socketFD(-1),
-        serverFD(-1),
-        readBufferLen(0),
-        res(nullptr) {
+            Stream(newCtx, newUri),
+            socketFD(-1),
+            serverFD(-1),
+            readBufferLen(0),
+            res(nullptr) {
     }
 
     StreamNetwork::~StreamNetwork() {
@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
                reinterpret_cast<const void*>(server->h_addr), server->h_length);
         if (connect(socketFD, reinterpret_cast<struct sockaddr*>(&addressC), sizeof(addressC)) < 0)
             throw NetworkException(10062, "connection to " + uri + " failed, errno: " + std::to_string(errno) + ", message: " +
-                                   strerror(errno));
+                                          strerror(errno));
     }
 
     void StreamNetwork::initializeServer() {
@@ -148,14 +148,14 @@ namespace OpenLogReplicator {
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
                 ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
-                   if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                       r = 0;
-                   else {
-                       close(socketFD);
-                       socketFD = -1;
-                       throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                              strerror(errno) + " (11)");
-                   }
+                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+                        r = 0;
+                    else {
+                        close(socketFD);
+                        socketFD = -1;
+                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                                      strerror(errno) + " (11)");
+                    }
                 }
                 sent += r;
             }
@@ -171,14 +171,14 @@ namespace OpenLogReplicator {
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
                 ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
-                   if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                       r = 0;
-                   else {
-                       close(socketFD);
-                       socketFD = -1;
-                       throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                              strerror(errno) + " (12)");
-                   }
+                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+                        r = 0;
+                    else {
+                        close(socketFD);
+                        socketFD = -1;
+                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                                      strerror(errno) + " (12)");
+                    }
                 }
                 sent += r;
             }
@@ -193,14 +193,14 @@ namespace OpenLogReplicator {
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
                 ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length)) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
-                   if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                       r = 0;
-                   else {
-                       close(socketFD);
-                       socketFD = -1;
-                       throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                              strerror(errno) + " (13)");
-                   }
+                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+                        r = 0;
+                    else {
+                        close(socketFD);
+                        socketFD = -1;
+                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                                      strerror(errno) + " (13)");
+                    }
                 }
                 sent += r;
             }
@@ -217,14 +217,14 @@ namespace OpenLogReplicator {
             select(socketFD + 1, nullptr, &w, nullptr, nullptr);
             ssize_t r = write(socketFD, reinterpret_cast<const char*>(msg) + sent, length - sent);
             if (r <= 0) {
-               if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                   r = 0;
-               else {
-                   close(socketFD);
-                   socketFD = -1;
-                   throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                          strerror(errno) + " (14)");
-               }
+                if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+                    r = 0;
+                else {
+                    close(socketFD);
+                    socketFD = -1;
+                    throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                                  strerror(errno) + " (14)");
+                }
             }
             sent += r;
         }
@@ -258,7 +258,7 @@ namespace OpenLogReplicator {
             // 32-bit message length
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
-                                       ", buffer size: " + std::to_string(length) + ")");
+                                              ", buffer size: " + std::to_string(length) + ")");
             length = newLength;
             recvd = 0;
         } else {
@@ -281,14 +281,14 @@ namespace OpenLogReplicator {
                     close(socketFD);
                     socketFD = -1;
                     throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                           strerror(errno) + " (16)");
+                                                  strerror(errno) + " (16)");
                 }
             }
 
             newLength = *(reinterpret_cast<uint32_t*>(msg));
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
-                                       ", buffer size: " + std::to_string(length) + ")");
+                                              ", buffer size: " + std::to_string(length) + ")");
             length = newLength;
             recvd = 0;
         }
@@ -327,8 +327,8 @@ namespace OpenLogReplicator {
 
             if (bytes > 0)
                 recvd += bytes;
-            // Client disconnected
             else if (bytes == 0) {
+                // Client disconnected
                 close(socketFD);
                 socketFD = -1;
                 throw NetworkException(10056, "host disconnected");
@@ -348,7 +348,7 @@ namespace OpenLogReplicator {
             uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
-                                       ", buffer size: " + std::to_string(length) + ")");
+                                              ", buffer size: " + std::to_string(length) + ")");
             length = newLength;
             recvd = 0;
         } else {
@@ -363,8 +363,8 @@ namespace OpenLogReplicator {
 
                 if (bytes > 0)
                     recvd += bytes;
-                // Client disconnected
                 else if (bytes == 0) {
+                    // Client disconnected
                     close(socketFD);
                     socketFD = -1;
                     throw NetworkException(10056, "host disconnected");
@@ -382,7 +382,7 @@ namespace OpenLogReplicator {
             uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
-                                       ", buffer size: " + std::to_string(length) + ")");
+                                              ", buffer size: " + std::to_string(length) + ")");
             length = newLength;
             recvd = 0;
         }
@@ -392,8 +392,8 @@ namespace OpenLogReplicator {
 
             if (bytes > 0)
                 recvd += bytes;
-            // Client disconnected
             else if (bytes == 0) {
+                // Client disconnected
                 close(socketFD);
                 socketFD = -1;
                 throw NetworkException(10056, "host disconnected");

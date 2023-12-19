@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
 
         if (fieldLength < 36)
             throw RedoLogException(50061, "too short field 19.1.1: " + std::to_string(fieldLength) + " offset: " +
-                                   std::to_string(redoLogRecord->dataOffset));
+                                          std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 0);
         redoLogRecord->recordDataObj = redoLogRecord->dataObj;
@@ -50,10 +50,10 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "Long field block dump:\n";
             ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->dataObj << " \n";
             ctx->dumpStream << "LobId: " << redoLogRecord->lobId.narrow() <<
-                    " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " \n";
+                            " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " \n";
             ctx->dumpStream << "Version: 0x" << std::setfill('0') << std::setw(4) << std::hex << v1 <<
-                    "." << std::setfill('0') << std::setw(8) << std::hex << v2 <<
-                    "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
+                            "." << std::setfill('0') << std::setw(8) << std::hex << v2 <<
+                            "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
 
             for (uint64_t j = 0; j < static_cast<uint64_t>(fieldLength - 36); ++j) {
                 ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j + 36]) << " ";

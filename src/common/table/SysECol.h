@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
 }
 
 namespace std {
-    template <>
+    template<>
     struct hash<OpenLogReplicator::SysEColKey> {
         size_t operator()(const OpenLogReplicator::SysEColKey& sysEColKey) const {
             return hash<typeObj>()(sysEColKey.tabObj) ^ hash<typeCol>()(sysEColKey.colNum);

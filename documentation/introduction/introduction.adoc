@@ -1,7 +1,7 @@
 = Introduction to OpenLogReplicator
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.0
-:revdate: 2023-12-04
+:revdate: 2023-12-19
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -57,7 +57,7 @@ image:cdc-architecture.png[CDC Architecture,,,]
 == Oracle database
 
 An Oracle database is a type of computer database made by a company called Oracle.
-It's used to store large amounts of data, provides the data for  simultaneous change and keeps all consistent.
+It's used to store large amounts of data, provides the data for simultaneous change and keeps all consistent.
 It could contain customer information or financial records, and is often used by businesses and organizations.
 
 According to {url-db-engines}[DB Engines] this is the most popular database in the world (as of March 2023).

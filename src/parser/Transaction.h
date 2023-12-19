@@ -81,25 +81,25 @@ namespace OpenLogReplicator {
                 return;
 
             ctx->info(0, std::string(msg) + " xid: " + xid.toString() +
-                      " OP: " + std::to_string(redoLogRecord1->opCode) +
-                      " opc: " + std::to_string(redoLogRecord1->opc) +
-                      " obj: " + std::to_string(redoLogRecord1->obj) +
-                      " dataobj: " + std::to_string(redoLogRecord1->dataObj) +
-                      " bdba: " + std::to_string(redoLogRecord1->bdba) +
-                      " slot: " + std::to_string(redoLogRecord1->slot) +
-                      " fb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) +
-                      " cc: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->cc)) +
-                      " suppbdba: " + std::to_string(redoLogRecord1->suppLogBdba) +
-                      " suppslot: " + std::to_string(redoLogRecord1->suppLogSlot) +
-                      " suppfb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogFb)) +
-                      " suppcc: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogCC)) +
-                      " dba: " + std::to_string(redoLogRecord1->dba) +
-                      " slt: " + std::to_string(redoLogRecord1->slt) +
-                      " rci: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->rci)) +
-                      " seq: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->seq)) +
-                      " flg: " + std::to_string(redoLogRecord1->flg) +
-                      " split: " + std::to_string(lastSplit) +
-                      " offset: " + std::to_string(redoLogRecord1->dataOffset));
+                         " OP: " + std::to_string(redoLogRecord1->opCode) +
+                         " opc: " + std::to_string(redoLogRecord1->opc) +
+                         " obj: " + std::to_string(redoLogRecord1->obj) +
+                         " dataobj: " + std::to_string(redoLogRecord1->dataObj) +
+                         " bdba: " + std::to_string(redoLogRecord1->bdba) +
+                         " slot: " + std::to_string(redoLogRecord1->slot) +
+                         " fb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) +
+                         " cc: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->cc)) +
+                         " suppbdba: " + std::to_string(redoLogRecord1->suppLogBdba) +
+                         " suppslot: " + std::to_string(redoLogRecord1->suppLogSlot) +
+                         " suppfb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogFb)) +
+                         " suppcc: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogCC)) +
+                         " dba: " + std::to_string(redoLogRecord1->dba) +
+                         " slt: " + std::to_string(redoLogRecord1->slt) +
+                         " rci: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->rci)) +
+                         " seq: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->seq)) +
+                         " flg: " + std::to_string(redoLogRecord1->flg) +
+                         " split: " + std::to_string(lastSplit) +
+                         " offset: " + std::to_string(redoLogRecord1->dataOffset));
         }
 
         std::string toString() const;

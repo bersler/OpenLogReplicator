@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
 }
 
 namespace std {
-    template <>
+    template<>
     struct hash<OpenLogReplicator::typeLobId> {
         size_t operator()(const OpenLogReplicator::typeLobId& lobId) const {
             return (static_cast<size_t>(lobId.data[9]) << 56) ^

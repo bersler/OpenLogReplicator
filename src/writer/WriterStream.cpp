@@ -29,8 +29,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     WriterStream::WriterStream(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
                                Stream* newStream) :
-        Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
-        stream(newStream) {
+            Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
+            stream(newStream) {
         metadata->bootFailsafe = true;
     }
 

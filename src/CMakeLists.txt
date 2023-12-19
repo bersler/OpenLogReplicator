@@ -121,34 +121,34 @@ list(APPEND ListWriter
         writer/WriterFile.cpp)
 
 if (WITH_OCI)
-        list(APPEND ListReplicator
-                replicator/DatabaseConnection.cpp
-                replicator/DatabaseEnvironment.cpp
-                replicator/DatabaseStatement.cpp
-                replicator/ReplicatorOnline.cpp)
-endif()
+    list(APPEND ListReplicator
+            replicator/DatabaseConnection.cpp
+            replicator/DatabaseEnvironment.cpp
+            replicator/DatabaseStatement.cpp
+            replicator/ReplicatorOnline.cpp)
+endif ()
 
 if (WITH_RDKAFKA)
-        list(APPEND ListWriter
-                writer/WriterKafka.cpp)
-endif()
+    list(APPEND ListWriter
+            writer/WriterKafka.cpp)
+endif ()
 
 if (WITH_PROTOBUF)
-        list(APPEND ListCommon
-                common/OraProtoBuf.pb.cpp)
-        list(APPEND ListBuilder
-                builder/BuilderProtobuf.cpp)
-        list(APPEND ListStream
-                stream/Stream.cpp
-                stream/StreamNetwork.cpp)
-        list(APPEND ListWriter
-                writer/WriterStream.cpp)
+    list(APPEND ListCommon
+            common/OraProtoBuf.pb.cpp)
+    list(APPEND ListBuilder
+            builder/BuilderProtobuf.cpp)
+    list(APPEND ListStream
+            stream/Stream.cpp
+            stream/StreamNetwork.cpp)
+    list(APPEND ListWriter
+            writer/WriterStream.cpp)
 
-        if (WITH_ZEROMQ)
-                list(APPEND ListStream
-                        stream/StreamZeroMQ.cpp)
-        endif()
-endif()
+    if (WITH_ZEROMQ)
+        list(APPEND ListStream
+                stream/StreamZeroMQ.cpp)
+    endif ()
+endif ()
 
 add_library(LibCommon OBJECT ${ListCommon})
 add_library(LibReplicator OBJECT ${ListReplicator})
@@ -172,10 +172,10 @@ target_link_libraries(OpenLogReplicator LibState)
 target_link_libraries(OpenLogReplicator LibWriter)
 
 if (WITH_PROTOBUF)
-        add_library(LibStream ${ListStream})
-        target_link_libraries(OpenLogReplicator LibStream)
+    add_library(LibStream ${ListStream})
+    target_link_libraries(OpenLogReplicator LibStream)
 
-        target_sources(StreamClient PUBLIC StreamClient.cpp)
-        target_link_libraries(StreamClient LibCommon)
-        target_link_libraries(StreamClient LibStream)
-endif()
+    target_sources(StreamClient PUBLIC StreamClient.cpp)
+    target_link_libraries(StreamClient LibCommon)
+    target_link_libraries(StreamClient LibStream)
+endif ()

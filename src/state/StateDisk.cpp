@@ -30,8 +30,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     StateDisk::StateDisk(Ctx* newCtx, const char* newPath) :
-        State(newCtx),
-        path(newPath) {
+            State(newCtx),
+            path(newPath) {
     }
 
     StateDisk::~StateDisk() {
@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
         outputStream << out.str();
         if (outputStream.bad() || outputStream.fail())
             throw RuntimeException(10007, "file: " + fileName + " - 0 bytes written instead of " +
-                                   std::to_string(out.str().length()) + ", code returned: " + strerror(errno));
+                                          std::to_string(out.str().length()) + ", code returned: " + strerror(errno));
 
         outputStream.close();
     }

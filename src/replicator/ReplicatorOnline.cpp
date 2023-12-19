@@ -521,7 +521,7 @@ namespace OpenLogReplicator {
     const char* ReplicatorOnline::SQL_CHECK_CONNECTION(
             "SELECT 1 FROM DUAL");
 
-    ReplicatorOnline::ReplicatorOnline(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+    ReplicatorOnline::ReplicatorOnline(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
                                        TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase, const char* newUser,
                                        const char* newPassword, const char* newConnectString, bool newKeepConnection) :
             Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, newAlias, newDatabase),
@@ -568,13 +568,20 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SQL)
                 ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_INFORMATION);
             stmt.createStatement(SQL_GET_DATABASE_INFORMATION);
-            uint64_t logMode; stmt.defineUInt64(1, logMode);
-            uint64_t supplementalLogMin; stmt.defineUInt64(2, supplementalLogMin);
-            uint64_t suppLogDbPrimary; stmt.defineUInt64(3, suppLogDbPrimary);
-            uint64_t suppLogDbAll; stmt.defineUInt64(4, suppLogDbAll);
-            uint64_t bigEndian; stmt.defineUInt64(5, bigEndian);
-            char banner[81]; stmt.defineString(6, banner, sizeof(banner));
-            char context[81]; stmt.defineString(7, context, sizeof(context));
+            uint64_t logMode;
+            stmt.defineUInt64(1, logMode);
+            uint64_t supplementalLogMin;
+            stmt.defineUInt64(2, supplementalLogMin);
+            uint64_t suppLogDbPrimary;
+            stmt.defineUInt64(3, suppLogDbPrimary);
+            uint64_t suppLogDbAll;
+            stmt.defineUInt64(4, suppLogDbAll);
+            uint64_t bigEndian;
+            stmt.defineUInt64(5, bigEndian);
+            char banner[81];
+            stmt.defineString(6, banner, sizeof(banner));
+            char context[81];
+            stmt.defineString(7, context, sizeof(context));
             stmt.defineUInt64(8, currentScn);
 
             if (stmt.executeQuery()) {
@@ -607,9 +614,12 @@ namespace OpenLogReplicator {
                     if (ctx->trace & TRACE_SQL)
                         ctx->logTrace(TRACE_SQL, SQL_GET_CON_INFO);
                     stmt2.createStatement(SQL_GET_CON_INFO);
-                    typeConId conId; stmt2.defineInt16(1, conId);
-                    char conNameChar[81]; stmt2.defineString(2, conNameChar, sizeof(conNameChar));
-                    char conContext[81]; stmt2.defineString(3, context, sizeof(conContext));
+                    typeConId conId;
+                    stmt2.defineInt16(1, conId);
+                    char conNameChar[81];
+                    stmt2.defineString(2, conNameChar, sizeof(conNameChar));
+                    char conContext[81];
+                    stmt2.defineString(3, context, sizeof(conContext));
 
                     if (stmt2.executeQuery()) {
                         metadata->conId = conId;
@@ -619,8 +629,8 @@ namespace OpenLogReplicator {
                 }
 
                 ctx->info(0, "version: " + std::string(banner) + ", context: " + metadata->context + ", resetlogs: " +
-                          std::to_string(metadata->resetlogs) + ", activation: " + std::to_string(metadata->activation) + ", con_id: " +
-                          std::to_string(metadata->conId) + ", con_name: " + metadata->conName);
+                             std::to_string(metadata->resetlogs) + ", activation: " + std::to_string(metadata->activation) + ", con_id: " +
+                             std::to_string(metadata->conId) + ", con_name: " + metadata->conName);
             } else {
                 throw RuntimeException(10023, "no data in SYS.V_$DATABASE");
             }
@@ -684,7 +694,8 @@ namespace OpenLogReplicator {
 
             std::ostringstream ss;
             stmt.bindString(1, metadata->startTime);
-            typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
+            typeScn firstDataScn;
+            stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
                 throw BootException(10025, "can't find scn for: " + metadata->startTime);
@@ -701,19 +712,21 @@ namespace OpenLogReplicator {
             }
             stmt.createStatement(SQL_GET_SCN_FROM_TIME_RELATIVE);
             stmt.bindUInt64(1, metadata->startTimeRel);
-            typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
+            typeScn firstDataScn;
+            stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
                 throw BootException(10025, "can't find scn for " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
-        // NOW
         } else if (metadata->firstDataScn == ZERO_SCN || metadata->firstDataScn == 0) {
+            // NOW
             DatabaseStatement stmt(conn);
             if (ctx->trace & TRACE_SQL)
                 ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_SCN);
             stmt.createStatement(SQL_GET_DATABASE_SCN);
-            typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
+            typeScn firstDataScn;
+            stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())
                 throw BootException(10029, "can't find database current scn");
@@ -750,7 +763,8 @@ namespace OpenLogReplicator {
                 stmt.bindUInt64(2, metadata->firstDataScn);
                 stmt.bindUInt32(3, metadata->resetlogs);
             }
-            typeSeq sequence; stmt.defineUInt32(1, sequence);
+            typeSeq sequence;
+            stmt.defineUInt32(1, sequence);
 
             if (!stmt.executeQuery())
                 throw BootException(10030, "getting database sequence for scn: " + std::to_string(metadata->firstDataScn));
@@ -783,7 +797,8 @@ namespace OpenLogReplicator {
                     if (ctx->trace & TRACE_SQL)
                         ctx->logTrace(TRACE_SQL, SQL_CHECK_CONNECTION);
                     stmt.createStatement(SQL_CHECK_CONNECTION);
-                    uint64_t dummy; stmt.defineUInt64(1, dummy);
+                    uint64_t dummy;
+                    stmt.defineUInt64(1, dummy);
 
                     stmt.executeQuery();
                 } catch (RuntimeException& ex) {
@@ -852,7 +867,8 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SQL)
                 ctx->logTrace(TRACE_SQL, query);
             stmt.createStatement(query.c_str());
-            uint64_t dummy; stmt.defineUInt64(1, dummy);
+            uint64_t dummy;
+            stmt.defineUInt64(1, dummy);
 
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
@@ -873,7 +889,8 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SQL)
                 ctx->logTrace(TRACE_SQL, query);
             stmt.createStatement(query.c_str());
-            uint64_t dummy; stmt.defineUInt64(1, dummy);
+            uint64_t dummy;
+            stmt.defineUInt64(1, dummy);
 
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
@@ -898,7 +915,7 @@ namespace OpenLogReplicator {
         Schema otherSchema(ctx, metadata->locales);
         try {
             readSystemDictionariesMetadata(&otherSchema, currentScn);
-            for (SchemaElement* element : metadata->schemaElements)
+            for (SchemaElement* element: metadata->schemaElements)
                 readSystemDictionaries(&otherSchema, currentScn, element->owner, element->table, element->options);
             std::string errMsg;
             bool result = metadata->schema->compare(&otherSchema, errMsg);
@@ -928,7 +945,7 @@ namespace OpenLogReplicator {
             metadata->firstSchemaScn = metadata->firstDataScn;
             readSystemDictionariesMetadata(metadata->schema, metadata->firstDataScn);
 
-            for (SchemaElement* element : metadata->schemaElements)
+            for (SchemaElement* element: metadata->schemaElements)
                 createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keys, element->keysStr, element->conditionStr,
                                      element->options, msgs);
             metadata->schema->resetTouched();
@@ -956,10 +973,14 @@ namespace OpenLogReplicator {
             }
             sysTsStmt.createStatement(SQL_GET_SYS_TS);
             sysTsStmt.bindUInt64(1, targetScn);
-            char sysTsRowid[19]; sysTsStmt.defineString(1, sysTsRowid, sizeof(sysTsRowid));
-            typeTs sysTsTs; sysTsStmt.defineUInt32(2, sysTsTs);
-            char sysTsName[129]; sysTsStmt.defineString(3, sysTsName, sizeof(sysTsName));
-            uint32_t sysTsBlockSize; sysTsStmt.defineUInt32(4, sysTsBlockSize);
+            char sysTsRowid[19];
+            sysTsStmt.defineString(1, sysTsRowid, sizeof(sysTsRowid));
+            typeTs sysTsTs;
+            sysTsStmt.defineUInt32(2, sysTsTs);
+            char sysTsName[129];
+            sysTsStmt.defineString(3, sysTsName, sizeof(sysTsName));
+            uint32_t sysTsBlockSize;
+            sysTsStmt.defineUInt32(4, sysTsBlockSize);
 
             int64_t sysTsRet = sysTsStmt.executeQuery();
             while (sysTsRet) {
@@ -975,11 +996,16 @@ namespace OpenLogReplicator {
             }
             xdbTtSetStmt.createStatement(SQL_GET_XDB_TTSET);
             xdbTtSetStmt.bindUInt64(1, targetScn);
-            char xdbTtSetRowid[19]; xdbTtSetStmt.defineString(1, xdbTtSetRowid, sizeof(xdbTtSetRowid));
-            char xdbTtSetGuid[XDB_TTSET_GUID_LENGTH + 1]; xdbTtSetStmt.defineString(2, xdbTtSetGuid, sizeof(xdbTtSetGuid));
-            char xdbTtSetTokSuf[XDB_TTSET_TOKSUF_LENGTH + 1]; xdbTtSetStmt.defineString(3, xdbTtSetTokSuf, sizeof(xdbTtSetTokSuf));
-            uint64_t xdbTtSetFlags; xdbTtSetStmt.defineUInt64(4, xdbTtSetFlags);
-            uint32_t xdbTtSetObj; xdbTtSetStmt.defineUInt32(5, xdbTtSetObj);
+            char xdbTtSetRowid[19];
+            xdbTtSetStmt.defineString(1, xdbTtSetRowid, sizeof(xdbTtSetRowid));
+            char xdbTtSetGuid[XDB_TTSET_GUID_LENGTH + 1];
+            xdbTtSetStmt.defineString(2, xdbTtSetGuid, sizeof(xdbTtSetGuid));
+            char xdbTtSetTokSuf[XDB_TTSET_TOKSUF_LENGTH + 1];
+            xdbTtSetStmt.defineString(3, xdbTtSetTokSuf, sizeof(xdbTtSetTokSuf));
+            uint64_t xdbTtSetFlags;
+            xdbTtSetStmt.defineUInt64(4, xdbTtSetFlags);
+            uint32_t xdbTtSetObj;
+            xdbTtSetStmt.defineUInt32(5, xdbTtSetObj);
 
             int64_t xdbTtSetRet = xdbTtSetStmt.executeQuery();
             while (xdbTtSetRet) {
@@ -1028,9 +1054,12 @@ namespace OpenLogReplicator {
                 }
                 xdbXPtStmt.createStatement(SQL_GET_XDB_XPT.c_str());
                 xdbXPtStmt.bindUInt64(1, targetScn);
-                char xdbXPtRowid[19]; xdbXPtStmt.defineString(1, xdbXPtRowid, sizeof(xdbXPtRowid));
-                char xdbPtPath[XDB_XPT_PATH_LENGTH + 1]; xdbXPtStmt.defineString(2, xdbPtPath, sizeof(xdbPtPath));
-                char xdbPtId[XDB_XPT_ID_LENGTH + 1]; xdbXPtStmt.defineString(3, xdbPtId, sizeof(xdbPtId));
+                char xdbXPtRowid[19];
+                xdbXPtStmt.defineString(1, xdbXPtRowid, sizeof(xdbXPtRowid));
+                char xdbPtPath[XDB_XPT_PATH_LENGTH + 1];
+                xdbXPtStmt.defineString(2, xdbPtPath, sizeof(xdbPtPath));
+                char xdbPtId[XDB_XPT_ID_LENGTH + 1];
+                xdbXPtStmt.defineString(3, xdbPtId, sizeof(xdbPtId));
 
                 int64_t xdbXPtRet = xdbXPtStmt.executeQuery();
                 while (xdbXPtRet) {
@@ -1050,11 +1079,16 @@ namespace OpenLogReplicator {
                 }
                 xdbXQnStmt.createStatement(SQL_GET_XDB_XQN.c_str());
                 xdbXQnStmt.bindUInt64(1, targetScn);
-                char xdbXQnRowid[19]; xdbXQnStmt.defineString(1, xdbXQnRowid, sizeof(xdbXQnRowid));
-                char xdbXQnNmSpcId[XDB_XQN_NMSPCID_LENGTH + 1]; xdbXQnStmt.defineString(2, xdbXQnNmSpcId, sizeof(xdbXQnNmSpcId));
-                char xdbXQnLocalName[XDB_XQN_LOCALNAME_LENGTH + 1]; xdbXQnStmt.defineString(3, xdbXQnLocalName, sizeof(xdbXQnLocalName));
-                char xdbXQnFlags[XDB_XQN_FLAGS_LENGTH + 1]; xdbXQnStmt.defineString(4, xdbXQnFlags, sizeof(xdbXQnFlags));
-                char xdbXQnId[XDB_XQN_ID_LENGTH + 1]; xdbXQnStmt.defineString(5, xdbXQnId, sizeof(xdbXQnId));
+                char xdbXQnRowid[19];
+                xdbXQnStmt.defineString(1, xdbXQnRowid, sizeof(xdbXQnRowid));
+                char xdbXQnNmSpcId[XDB_XQN_NMSPCID_LENGTH + 1];
+                xdbXQnStmt.defineString(2, xdbXQnNmSpcId, sizeof(xdbXQnNmSpcId));
+                char xdbXQnLocalName[XDB_XQN_LOCALNAME_LENGTH + 1];
+                xdbXQnStmt.defineString(3, xdbXQnLocalName, sizeof(xdbXQnLocalName));
+                char xdbXQnFlags[XDB_XQN_FLAGS_LENGTH + 1];
+                xdbXQnStmt.defineString(4, xdbXQnFlags, sizeof(xdbXQnFlags));
+                char xdbXQnId[XDB_XQN_ID_LENGTH + 1];
+                xdbXQnStmt.defineString(5, xdbXQnId, sizeof(xdbXQnId));
 
                 int64_t xdbXQnRet = xdbXQnStmt.executeQuery();
                 while (xdbXQnRet) {
@@ -1096,12 +1130,18 @@ namespace OpenLogReplicator {
             sysCColStmt.bindUInt32(3, user);
         }
 
-        char sysCColRowid[19]; sysCColStmt.defineString(1, sysCColRowid, sizeof(sysCColRowid));
-        typeCon sysCColCon; sysCColStmt.defineUInt32(2, sysCColCon);
-        typeCol sysCColIntCol; sysCColStmt.defineInt16(3, sysCColIntCol);
-        typeObj sysCColObj; sysCColStmt.defineUInt32(4, sysCColObj);
-        uint64_t sysCColSpare11 = 0; sysCColStmt.defineUInt64(5, sysCColSpare11);
-        uint64_t sysCColSpare12 = 0; sysCColStmt.defineUInt64(6, sysCColSpare12);
+        char sysCColRowid[19];
+        sysCColStmt.defineString(1, sysCColRowid, sizeof(sysCColRowid));
+        typeCon sysCColCon;
+        sysCColStmt.defineUInt32(2, sysCColCon);
+        typeCol sysCColIntCol;
+        sysCColStmt.defineInt16(3, sysCColIntCol);
+        typeObj sysCColObj;
+        sysCColStmt.defineUInt32(4, sysCColObj);
+        uint64_t sysCColSpare11 = 0;
+        sysCColStmt.defineUInt64(5, sysCColSpare11);
+        uint64_t sysCColSpare12 = 0;
+        sysCColStmt.defineUInt64(6, sysCColSpare12);
 
         int64_t sysCColRet = sysCColStmt.executeQuery();
         while (sysCColRet) {
@@ -1135,10 +1175,14 @@ namespace OpenLogReplicator {
             sysCDefStmt.bindUInt32(3, user);
         }
 
-        char sysCDefRowid[19]; sysCDefStmt.defineString(1, sysCDefRowid, sizeof(sysCDefRowid));
-        typeCon sysCDefCon; sysCDefStmt.defineUInt32(2, sysCDefCon);
-        typeObj sysCDefObj; sysCDefStmt.defineUInt32(3, sysCDefObj);
-        uint64_t sysCDefType; sysCDefStmt.defineUInt64(4, sysCDefType);
+        char sysCDefRowid[19];
+        sysCDefStmt.defineString(1, sysCDefRowid, sizeof(sysCDefRowid));
+        typeCon sysCDefCon;
+        sysCDefStmt.defineUInt32(2, sysCDefCon);
+        typeObj sysCDefObj;
+        sysCDefStmt.defineUInt32(3, sysCDefObj);
+        uint64_t sysCDefType;
+        sysCDefStmt.defineUInt64(4, sysCDefType);
 
         int64_t sysCDefRet = sysCDefStmt.executeQuery();
         while (sysCDefRet) {
@@ -1170,21 +1214,36 @@ namespace OpenLogReplicator {
             sysColStmt.bindUInt32(3, user);
         }
 
-        char sysColRowid[19]; sysColStmt.defineString(1, sysColRowid, sizeof(sysColRowid));
-        typeObj sysColObj; sysColStmt.defineUInt32(2, sysColObj);
-        typeCol sysColCol; sysColStmt.defineInt16(3, sysColCol);
-        typeCol sysColSegCol; sysColStmt.defineInt16(4, sysColSegCol);
-        typeCol sysColIntCol; sysColStmt.defineInt16(5, sysColIntCol);
-        char sysColName[129]; sysColStmt.defineString(6, sysColName, sizeof(sysColName));
-        uint64_t sysColType; sysColStmt.defineUInt64(7, sysColType);
-        uint64_t sysColLength; sysColStmt.defineUInt64(8, sysColLength);
-        int64_t sysColPrecision = -1; sysColStmt.defineInt64(9, sysColPrecision);
-        int64_t sysColScale = -1; sysColStmt.defineInt64(10, sysColScale);
-        uint64_t sycColCharsetForm = 0; sysColStmt.defineUInt64(11, sycColCharsetForm);
-        uint64_t sysColCharsetId = 0; sysColStmt.defineUInt64(12, sysColCharsetId);
-        int64_t sysColNull; sysColStmt.defineInt64(13, sysColNull);
-        uint64_t sysColProperty1; sysColStmt.defineUInt64(14, sysColProperty1);
-        uint64_t sysColProperty2; sysColStmt.defineUInt64(15, sysColProperty2);
+        char sysColRowid[19];
+        sysColStmt.defineString(1, sysColRowid, sizeof(sysColRowid));
+        typeObj sysColObj;
+        sysColStmt.defineUInt32(2, sysColObj);
+        typeCol sysColCol;
+        sysColStmt.defineInt16(3, sysColCol);
+        typeCol sysColSegCol;
+        sysColStmt.defineInt16(4, sysColSegCol);
+        typeCol sysColIntCol;
+        sysColStmt.defineInt16(5, sysColIntCol);
+        char sysColName[129];
+        sysColStmt.defineString(6, sysColName, sizeof(sysColName));
+        uint64_t sysColType;
+        sysColStmt.defineUInt64(7, sysColType);
+        uint64_t sysColLength;
+        sysColStmt.defineUInt64(8, sysColLength);
+        int64_t sysColPrecision = -1;
+        sysColStmt.defineInt64(9, sysColPrecision);
+        int64_t sysColScale = -1;
+        sysColStmt.defineInt64(10, sysColScale);
+        uint64_t sycColCharsetForm = 0;
+        sysColStmt.defineUInt64(11, sycColCharsetForm);
+        uint64_t sysColCharsetId = 0;
+        sysColStmt.defineUInt64(12, sysColCharsetId);
+        int64_t sysColNull;
+        sysColStmt.defineInt64(13, sysColNull);
+        uint64_t sysColProperty1;
+        sysColStmt.defineUInt64(14, sysColProperty1);
+        uint64_t sysColProperty2;
+        sysColStmt.defineUInt64(15, sysColProperty2);
 
         int64_t sysColRet = sysColStmt.executeQuery();
         while (sysColRet) {
@@ -1222,10 +1281,14 @@ namespace OpenLogReplicator {
             sysDeferredStgStmt.bindUInt32(3, user);
         }
 
-        char sysDeferredStgRowid[19]; sysDeferredStgStmt.defineString(1, sysDeferredStgRowid, sizeof(sysDeferredStgRowid));
-        typeObj sysDeferredStgObj; sysDeferredStgStmt.defineUInt32(2, sysDeferredStgObj);
-        uint64_t sysDeferredStgFlagsStg1 = 0; sysDeferredStgStmt.defineUInt64(3, sysDeferredStgFlagsStg1);
-        uint64_t sysDeferredStgFlagsStg2 = 0; sysDeferredStgStmt.defineUInt64(4, sysDeferredStgFlagsStg2);
+        char sysDeferredStgRowid[19];
+        sysDeferredStgStmt.defineString(1, sysDeferredStgRowid, sizeof(sysDeferredStgRowid));
+        typeObj sysDeferredStgObj;
+        sysDeferredStgStmt.defineUInt32(2, sysDeferredStgObj);
+        uint64_t sysDeferredStgFlagsStg1 = 0;
+        sysDeferredStgStmt.defineUInt64(3, sysDeferredStgFlagsStg1);
+        uint64_t sysDeferredStgFlagsStg2 = 0;
+        sysDeferredStgStmt.defineUInt64(4, sysDeferredStgFlagsStg2);
 
         int64_t sysDeferredStgRet = sysDeferredStgStmt.executeQuery();
         while (sysDeferredStgRet) {
@@ -1284,10 +1347,14 @@ namespace OpenLogReplicator {
             }
         }
 
-        char sysEColRowid[19]; sysEColStmt.defineString(1, sysEColRowid, sizeof(sysEColRowid));
-        typeObj sysEColTabObj; sysEColStmt.defineUInt32(2, sysEColTabObj);
-        typeCol sysEColColNum = 0; sysEColStmt.defineInt16(3, sysEColColNum);
-        typeCol sysEColGuardId = -1; sysEColStmt.defineInt16(4, sysEColGuardId);
+        char sysEColRowid[19];
+        sysEColStmt.defineString(1, sysEColRowid, sizeof(sysEColRowid));
+        typeObj sysEColTabObj;
+        sysEColStmt.defineUInt32(2, sysEColTabObj);
+        typeCol sysEColColNum = 0;
+        sysEColStmt.defineInt16(3, sysEColColNum);
+        typeCol sysEColGuardId = -1;
+        sysEColStmt.defineInt16(4, sysEColGuardId);
 
         int64_t sysEColRet = sysEColStmt.executeQuery();
         while (sysEColRet) {
@@ -1321,12 +1388,18 @@ namespace OpenLogReplicator {
             sysLobStmt.bindUInt32(3, user);
         }
 
-        char sysLobRowid[19]; sysLobStmt.defineString(1, sysLobRowid, sizeof(sysLobRowid));
-        typeObj sysLobObj; sysLobStmt.defineUInt32(2, sysLobObj);
-        typeCol sysLobCol = 0; sysLobStmt.defineInt16(3, sysLobCol);
-        typeCol sysLobIntCol = 0; sysLobStmt.defineInt16(4, sysLobIntCol);
-        typeObj sysLobLObj; sysLobStmt.defineUInt32(5, sysLobLObj);
-        typeTs sysLobTs; sysLobStmt.defineUInt32(6, sysLobTs);
+        char sysLobRowid[19];
+        sysLobStmt.defineString(1, sysLobRowid, sizeof(sysLobRowid));
+        typeObj sysLobObj;
+        sysLobStmt.defineUInt32(2, sysLobObj);
+        typeCol sysLobCol = 0;
+        sysLobStmt.defineInt16(3, sysLobCol);
+        typeCol sysLobIntCol = 0;
+        sysLobStmt.defineInt16(4, sysLobIntCol);
+        typeObj sysLobLObj;
+        sysLobStmt.defineUInt32(5, sysLobLObj);
+        typeTs sysLobTs;
+        sysLobStmt.defineUInt32(6, sysLobTs);
 
         int64_t sysLobRet = sysLobStmt.executeQuery();
         while (sysLobRet) {
@@ -1362,9 +1435,12 @@ namespace OpenLogReplicator {
             sysLobCompPartStmt.bindUInt32(4, user);
         }
 
-        char sysLobCompPartRowid[19]; sysLobCompPartStmt.defineString(1, sysLobCompPartRowid, sizeof(sysLobCompPartRowid));
-        typeObj sysLobCompPartPartObj; sysLobCompPartStmt.defineUInt32(2, sysLobCompPartPartObj);
-        typeObj sysLobCompPartLObj; sysLobCompPartStmt.defineUInt32(3, sysLobCompPartLObj);
+        char sysLobCompPartRowid[19];
+        sysLobCompPartStmt.defineString(1, sysLobCompPartRowid, sizeof(sysLobCompPartRowid));
+        typeObj sysLobCompPartPartObj;
+        sysLobCompPartStmt.defineUInt32(2, sysLobCompPartPartObj);
+        typeObj sysLobCompPartLObj;
+        sysLobCompPartStmt.defineUInt32(3, sysLobCompPartLObj);
 
         int64_t sysLobCompPartRet = sysLobCompPartStmt.executeQuery();
         while (sysLobCompPartRet) {
@@ -1418,10 +1494,14 @@ namespace OpenLogReplicator {
             sysLobFragStmt.bindUInt32(9, user);
         }
 
-        char sysLobFragRowid[19]; sysLobFragStmt.defineString(1, sysLobFragRowid, sizeof(sysLobFragRowid));
-        typeObj sysLobFragFragObj; sysLobFragStmt.defineUInt32(2, sysLobFragFragObj);
-        typeObj sysLobFragParentObj; sysLobFragStmt.defineUInt32(3, sysLobFragParentObj);
-        typeTs sysLobFragTs; sysLobFragStmt.defineUInt32(4, sysLobFragTs);
+        char sysLobFragRowid[19];
+        sysLobFragStmt.defineString(1, sysLobFragRowid, sizeof(sysLobFragRowid));
+        typeObj sysLobFragFragObj;
+        sysLobFragStmt.defineUInt32(2, sysLobFragFragObj);
+        typeObj sysLobFragParentObj;
+        sysLobFragStmt.defineUInt32(3, sysLobFragParentObj);
+        typeTs sysLobFragTs;
+        sysLobFragStmt.defineUInt32(4, sysLobFragTs);
 
         int64_t sysLobFragRet = sysLobFragStmt.executeQuery();
         while (sysLobFragRet) {
@@ -1453,15 +1533,24 @@ namespace OpenLogReplicator {
             sysTabStmt.bindUInt32(3, user);
         }
 
-        char sysTabRowid[19]; sysTabStmt.defineString(1, sysTabRowid, sizeof(sysTabRowid));
-        typeObj sysTabObj; sysTabStmt.defineUInt32(2, sysTabObj);
-        typeDataObj sysTabDataObj = 0; sysTabStmt.defineUInt32(3, sysTabDataObj);
-        typeTs sysTabTs; sysTabStmt.defineUInt32(4, sysTabTs);
-        typeCol sysTabCluCols = 0; sysTabStmt.defineInt16(5, sysTabCluCols);
-        uint64_t sysTabFlags1; sysTabStmt.defineUInt64(6, sysTabFlags1);
-        uint64_t sysTabFlags2; sysTabStmt.defineUInt64(7, sysTabFlags2);
-        uint64_t sysTabProperty1; sysTabStmt.defineUInt64(8, sysTabProperty1);
-        uint64_t sysTabProperty2; sysTabStmt.defineUInt64(9, sysTabProperty2);
+        char sysTabRowid[19];
+        sysTabStmt.defineString(1, sysTabRowid, sizeof(sysTabRowid));
+        typeObj sysTabObj;
+        sysTabStmt.defineUInt32(2, sysTabObj);
+        typeDataObj sysTabDataObj = 0;
+        sysTabStmt.defineUInt32(3, sysTabDataObj);
+        typeTs sysTabTs;
+        sysTabStmt.defineUInt32(4, sysTabTs);
+        typeCol sysTabCluCols = 0;
+        sysTabStmt.defineInt16(5, sysTabCluCols);
+        uint64_t sysTabFlags1;
+        sysTabStmt.defineUInt64(6, sysTabFlags1);
+        uint64_t sysTabFlags2;
+        sysTabStmt.defineUInt64(7, sysTabFlags2);
+        uint64_t sysTabProperty1;
+        sysTabStmt.defineUInt64(8, sysTabProperty1);
+        uint64_t sysTabProperty2;
+        sysTabStmt.defineUInt64(9, sysTabProperty2);
 
         int64_t sysTabRet = sysTabStmt.executeQuery();
         while (sysTabRet) {
@@ -1496,10 +1585,14 @@ namespace OpenLogReplicator {
             sysTabComPartStmt.bindUInt32(3, user);
         }
 
-        char sysTabComPartRowid[19]; sysTabComPartStmt.defineString(1, sysTabComPartRowid, sizeof(sysTabComPartRowid));
-        typeObj sysTabComPartObj; sysTabComPartStmt.defineUInt32(2, sysTabComPartObj);
-        typeDataObj sysTabComPartDataObj = 0; sysTabComPartStmt.defineUInt32(3, sysTabComPartDataObj);
-        typeObj sysTabComPartBo; sysTabComPartStmt.defineUInt32(4, sysTabComPartBo);
+        char sysTabComPartRowid[19];
+        sysTabComPartStmt.defineString(1, sysTabComPartRowid, sizeof(sysTabComPartRowid));
+        typeObj sysTabComPartObj;
+        sysTabComPartStmt.defineUInt32(2, sysTabComPartObj);
+        typeDataObj sysTabComPartDataObj = 0;
+        sysTabComPartStmt.defineUInt32(3, sysTabComPartDataObj);
+        typeObj sysTabComPartBo;
+        sysTabComPartStmt.defineUInt32(4, sysTabComPartBo);
 
         int64_t sysTabComPartRet = sysTabComPartStmt.executeQuery();
         while (sysTabComPartRet) {
@@ -1532,10 +1625,14 @@ namespace OpenLogReplicator {
             sysTabPartStmt.bindUInt32(3, user);
         }
 
-        char sysTabPartRowid[19]; sysTabPartStmt.defineString(1, sysTabPartRowid, sizeof(sysTabPartRowid));
-        typeObj sysTabPartObj; sysTabPartStmt.defineUInt32(2, sysTabPartObj);
-        typeDataObj sysTabPartDataObj = 0; sysTabPartStmt.defineUInt32(3, sysTabPartDataObj);
-        typeObj sysTabPartBo; sysTabPartStmt.defineUInt32(4, sysTabPartBo);
+        char sysTabPartRowid[19];
+        sysTabPartStmt.defineString(1, sysTabPartRowid, sizeof(sysTabPartRowid));
+        typeObj sysTabPartObj;
+        sysTabPartStmt.defineUInt32(2, sysTabPartObj);
+        typeDataObj sysTabPartDataObj = 0;
+        sysTabPartStmt.defineUInt32(3, sysTabPartDataObj);
+        typeObj sysTabPartBo;
+        sysTabPartStmt.defineUInt32(4, sysTabPartBo);
 
         int64_t sysTabPartRet = sysTabPartStmt.executeQuery();
         while (sysTabPartRet) {
@@ -1568,10 +1665,14 @@ namespace OpenLogReplicator {
             sysTabSubPartStmt.bindUInt32(3, user);
         }
 
-        char sysTabSubPartRowid[19]; sysTabSubPartStmt.defineString(1, sysTabSubPartRowid, sizeof(sysTabSubPartRowid));
-        typeObj sysTabSubPartObj; sysTabSubPartStmt.defineUInt32(2, sysTabSubPartObj);
-        typeDataObj sysTabSubPartDataObj = 0; sysTabSubPartStmt.defineUInt32(3, sysTabSubPartDataObj);
-        typeObj sysTabSubPartPobj; sysTabSubPartStmt.defineUInt32(4, sysTabSubPartPobj);
+        char sysTabSubPartRowid[19];
+        sysTabSubPartStmt.defineString(1, sysTabSubPartRowid, sizeof(sysTabSubPartRowid));
+        typeObj sysTabSubPartObj;
+        sysTabSubPartStmt.defineUInt32(2, sysTabSubPartObj);
+        typeDataObj sysTabSubPartDataObj = 0;
+        sysTabSubPartStmt.defineUInt32(3, sysTabSubPartDataObj);
+        typeObj sysTabSubPartPobj;
+        sysTabSubPartStmt.defineUInt32(4, sysTabSubPartPobj);
 
         int64_t sysTabSubPartRet = sysTabSubPartStmt.executeQuery();
         while (sysTabSubPartRet) {
@@ -1587,7 +1688,7 @@ namespace OpenLogReplicator {
         bool single = ((options & OPTIONS_SYSTEM_TABLE) != 0);
         if (ctx->trace & TRACE_REDO)
             ctx->logTrace(TRACE_REDO, "read dictionaries for owner: " + owner + ", table: " + table + ", options: " +
-                          std::to_string(static_cast<uint64_t>(options)));
+                                      std::to_string(static_cast<uint64_t>(options)));
 
         try {
             DatabaseStatement sysUserStmt(conn);
@@ -1601,16 +1702,21 @@ namespace OpenLogReplicator {
             sysUserStmt.createStatement(SQL_GET_SYS_USER);
             sysUserStmt.bindUInt64(1, targetScn);
             sysUserStmt.bindString(2, ownerRegexp);
-            char sysUserRowid[19]; sysUserStmt.defineString(1, sysUserRowid, sizeof(sysUserRowid));
-            typeUser sysUserUser; sysUserStmt.defineUInt32(2, sysUserUser);
-            char sysUserName[129]; sysUserStmt.defineString(3, sysUserName, sizeof(sysUserName));
-            uint64_t sysUserSpare11 = 0; sysUserStmt.defineUInt64(4, sysUserSpare11);
-            uint64_t sysUserSpare12 = 0; sysUserStmt.defineUInt64(5, sysUserSpare12);
+            char sysUserRowid[19];
+            sysUserStmt.defineString(1, sysUserRowid, sizeof(sysUserRowid));
+            typeUser sysUserUser;
+            sysUserStmt.defineUInt32(2, sysUserUser);
+            char sysUserName[129];
+            sysUserStmt.defineString(3, sysUserName, sizeof(sysUserName));
+            uint64_t sysUserSpare11 = 0;
+            sysUserStmt.defineUInt64(4, sysUserSpare11);
+            uint64_t sysUserSpare12 = 0;
+            sysUserStmt.defineUInt64(5, sysUserSpare12);
 
             int64_t sysUserRet = sysUserStmt.executeQuery();
             while (sysUserRet) {
                 if (!schema->dictSysUserAdd(sysUserRowid, sysUserUser, sysUserName, sysUserSpare11, sysUserSpare12,
-                        (options & OPTIONS_SYSTEM_TABLE) != 0)) {
+                                            (options & OPTIONS_SYSTEM_TABLE) != 0)) {
                     sysUserSpare11 = 0;
                     sysUserSpare12 = 0;
                     sysUserRet = sysUserStmt.next();
@@ -1641,14 +1747,22 @@ namespace OpenLogReplicator {
                     sysObjStmt.bindString(3, tableRegexp);
                 }
 
-                char sysObjRowid[19]; sysObjStmt.defineString(1, sysObjRowid, sizeof(sysObjRowid));
-                typeUser sysObjOwner; sysObjStmt.defineUInt32(2, sysObjOwner);
-                typeObj sysObjObj; sysObjStmt.defineUInt32(3, sysObjObj);
-                typeDataObj sysObjDataObj = 0; sysObjStmt.defineUInt32(4, sysObjDataObj);
-                char sysObjName[129]; sysObjStmt.defineString(5, sysObjName, sizeof(sysObjName));
-                uint64_t sysObjType = 0; sysObjStmt.defineUInt64(6, sysObjType);
-                uint64_t sysObjFlags1; sysObjStmt.defineUInt64(7, sysObjFlags1);
-                uint64_t sysObjFlags2; sysObjStmt.defineUInt64(8, sysObjFlags2);
+                char sysObjRowid[19];
+                sysObjStmt.defineString(1, sysObjRowid, sizeof(sysObjRowid));
+                typeUser sysObjOwner;
+                sysObjStmt.defineUInt32(2, sysObjOwner);
+                typeObj sysObjObj;
+                sysObjStmt.defineUInt32(3, sysObjObj);
+                typeDataObj sysObjDataObj = 0;
+                sysObjStmt.defineUInt32(4, sysObjDataObj);
+                char sysObjName[129];
+                sysObjStmt.defineString(5, sysObjName, sizeof(sysObjName));
+                uint64_t sysObjType = 0;
+                sysObjStmt.defineUInt64(6, sysObjType);
+                uint64_t sysObjFlags1;
+                sysObjStmt.defineUInt64(7, sysObjFlags1);
+                uint64_t sysObjFlags2;
+                sysObjStmt.defineUInt64(8, sysObjFlags2);
 
                 int64_t sysObjRet = sysObjStmt.executeQuery();
                 while (sysObjRet) {
@@ -1680,10 +1794,11 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keys,
-                                                const std::string& keysStr, const std::string& conditionStr, typeOptions options, std::list<std::string> &msgs) {
+                                                const std::string& keysStr, const std::string& conditionStr, typeOptions options,
+                                                std::list<std::string>& msgs) {
         if (ctx->trace & TRACE_REDO)
             ctx->logTrace(TRACE_REDO, "creating table schema for owner: " + owner + " table: " + table + " options: " +
-                          std::to_string(static_cast<uint64_t>(options)));
+                                      std::to_string(static_cast<uint64_t>(options)));
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);
 
@@ -1700,7 +1815,7 @@ namespace OpenLogReplicator {
 
         // Reload incarnation ctx
         typeResetlogs oldResetlogs = metadata->resetlogs;
-        for (OracleIncarnation* oi : metadata->oracleIncarnations)
+        for (OracleIncarnation* oi: metadata->oracleIncarnations)
             delete oi;
         metadata->oracleIncarnations.clear();
         metadata->oracleIncarnationCurrent = nullptr;
@@ -1710,7 +1825,8 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SQL)
                 ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_ROLE);
             stmt.createStatement(SQL_GET_DATABASE_ROLE);
-            char databaseRole[129]; stmt.defineString(1, databaseRole, sizeof(databaseRole));
+            char databaseRole[129];
+            stmt.defineString(1, databaseRole, sizeof(databaseRole));
 
             if (stmt.executeQuery()) {
                 std::string roleStr(databaseRole);
@@ -1735,12 +1851,18 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SQL)
                 ctx->logTrace(TRACE_SQL, SQL_GET_DATABASE_INCARNATION);
             stmt.createStatement(SQL_GET_DATABASE_INCARNATION);
-            uint32_t incarnation; stmt.defineUInt32(1, incarnation);
-            typeScn resetlogsScn; stmt.defineUInt64(2, resetlogsScn);
-            typeScn priorResetlogsScn; stmt.defineUInt64(3, priorResetlogsScn);
-            char status[129]; stmt.defineString(4, status, sizeof(status));
-            typeResetlogs resetlogs; stmt.defineUInt32(5, resetlogs);
-            uint32_t priorIncarnation; stmt.defineUInt32(6, priorIncarnation);
+            uint32_t incarnation;
+            stmt.defineUInt32(1, incarnation);
+            typeScn resetlogsScn;
+            stmt.defineUInt64(2, resetlogsScn);
+            typeScn priorResetlogsScn;
+            stmt.defineUInt64(3, priorResetlogsScn);
+            char status[129];
+            stmt.defineString(4, status, sizeof(status));
+            typeResetlogs resetlogs;
+            stmt.defineUInt32(5, resetlogs);
+            uint32_t priorIncarnation;
+            stmt.defineUInt32(6, priorIncarnation);
 
             int64_t ret = stmt.executeQuery();
             while (ret) {
@@ -1751,8 +1873,7 @@ namespace OpenLogReplicator {
                 // Search prev value
                 if (oldResetlogs != 0 && oi->resetlogs == oldResetlogs) {
                     metadata->oracleIncarnationCurrent = oi;
-                } else
-                if (oi->current && metadata->oracleIncarnationCurrent == nullptr) {
+                } else if (oi->current && metadata->oracleIncarnationCurrent == nullptr) {
                     metadata->oracleIncarnationCurrent = oi;
                     metadata->setResetlogs(oi->resetlogs);
                 }
@@ -1774,8 +1895,10 @@ namespace OpenLogReplicator {
             else
                 stmt.bindString(1, "ONLINE");
 
-            int64_t group = -1; stmt.defineInt64(1, group);
-            char pathStr[514]; stmt.defineString(2, pathStr, sizeof(pathStr));
+            int64_t group = -1;
+            stmt.defineInt64(1, group);
+            char pathStr[514];
+            stmt.defineString(2, pathStr, sizeof(pathStr));
             Reader* onlineReader = nullptr;
             int64_t lastGroup = -1;
             std::string path;
@@ -1798,7 +1921,7 @@ namespace OpenLogReplicator {
             if (readers.empty()) {
                 if (standby)
                     throw RuntimeException(10036, "failed to find standby redo log files");
-                 else
+                else
                     throw RuntimeException(10037, "failed to find online redo log files");
             }
         }
@@ -1814,7 +1937,7 @@ namespace OpenLogReplicator {
             if (replicator->ctx->trace & TRACE_SQL) {
                 replicator->ctx->logTrace(TRACE_SQL, SQL_GET_ARCHIVE_LOG_LIST);
                 replicator->ctx->logTrace(TRACE_SQL, "PARAM1: " +
-                                          std::to_string((reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence));
+                                                     std::to_string((reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence));
                 replicator->ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(replicator->metadata->resetlogs));
             }
 
@@ -1822,10 +1945,14 @@ namespace OpenLogReplicator {
             stmt.bindUInt32(1, (reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence);
             stmt.bindUInt32(2, replicator->metadata->resetlogs);
 
-            char path[513]; stmt.defineString(1, path, sizeof(path));
-            typeSeq sequence; stmt.defineUInt32(2, sequence);
-            typeScn firstScn; stmt.defineUInt64(3, firstScn);
-            typeScn nextScn; stmt.defineUInt64(4, nextScn);
+            char path[513];
+            stmt.defineString(1, path, sizeof(path));
+            typeSeq sequence;
+            stmt.defineUInt32(2, sequence);
+            typeScn firstScn;
+            stmt.defineUInt64(3, firstScn);
+            typeScn nextScn;
+            stmt.defineUInt64(4, nextScn);
 
             int64_t ret = stmt.executeQuery();
             while (ret) {

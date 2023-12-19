@@ -27,9 +27,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     StreamZeroMQ::StreamZeroMQ(Ctx* newCtx, const char* newUri) :
-        Stream(newCtx, newUri),
-        socket(nullptr),
-        context(nullptr) {
+            Stream(newCtx, newUri),
+            socket(nullptr),
+            context(nullptr) {
     }
 
     StreamZeroMQ::~StreamZeroMQ() {

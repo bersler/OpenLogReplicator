@@ -132,7 +132,7 @@ namespace OpenLogReplicator {
         OracleLob* lobTmp;
         OracleTable* tableTmp;
         std::set<OracleTable*> tablesTouched;
-        std::set<typeObj>identifiersTouched;
+        std::set<typeObj> identifiersTouched;
         bool touched;
 
         // SYS.CCOL$
@@ -312,7 +312,7 @@ namespace OpenLogReplicator {
 
         void touchTable(typeObj obj);
         [[nodiscard]] OracleTable* checkTableDict(typeObj obj);
-        [[nodiscard]] bool checkTableDictUncommitted(typeObj obj, std::string &owner, std::string &table);
+        [[nodiscard]] bool checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table);
         [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj);
         [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj);
         void dropUnusedMetadata(const std::set<std::string>& users, std::vector<SchemaElement*> schemaElements, std::list<std::string>& msgs);

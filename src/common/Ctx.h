@@ -186,17 +186,17 @@ namespace OpenLogReplicator {
         Ctx();
         virtual ~Ctx();
 
-        uint16_t (*read16)(const uint8_t* buf);
-        uint32_t (*read32)(const uint8_t* buf);
-        uint64_t (*read56)(const uint8_t* buf);
-        uint64_t (*read64)(const uint8_t* buf);
-        typeScn (*readScn)(const uint8_t* buf);
-        typeScn (*readScnR)(const uint8_t* buf);
-        void (*write16)(uint8_t* buf, uint16_t val);
-        void (*write32)(uint8_t* buf, uint32_t val);
-        void (*write56)(uint8_t* buf, uint64_t val);
-        void (*write64)(uint8_t* buf, uint64_t val);
-        void (*writeScn)(uint8_t* buf, typeScn val);
+        uint16_t (* read16)(const uint8_t* buf);
+        uint32_t (* read32)(const uint8_t* buf);
+        uint64_t (* read56)(const uint8_t* buf);
+        uint64_t (* read64)(const uint8_t* buf);
+        typeScn (* readScn)(const uint8_t* buf);
+        typeScn (* readScnR)(const uint8_t* buf);
+        void (* write16)(uint8_t* buf, uint16_t val);
+        void (* write32)(uint8_t* buf, uint32_t val);
+        void (* write56)(uint8_t* buf, uint64_t val);
+        void (* write64)(uint8_t* buf, uint64_t val);
+        void (* writeScn)(uint8_t* buf, typeScn val);
 
         static uint16_t read16Little(const uint8_t* buf);
         static uint16_t read16Big(const uint8_t* buf);

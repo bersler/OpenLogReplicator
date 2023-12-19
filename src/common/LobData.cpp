@@ -33,6 +33,7 @@ namespace OpenLogReplicator {
     LobDataElement::~LobDataElement() {
 
     }
+
     bool LobDataElement::operator<(const LobDataElement& other) const {
         if (dba < other.dba)
             return true;
@@ -53,7 +54,7 @@ namespace OpenLogReplicator {
             sizeRest(0) {
     }
 
-    LobData::~LobData()  {
+    LobData::~LobData() {
         for (auto dataMapIt: dataMap) {
             uint8_t* ptr = dataMapIt.second;
             delete[] ptr;

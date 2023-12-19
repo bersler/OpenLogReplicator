@@ -30,7 +30,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "stream/StreamNetwork.h"
 
 #ifdef LINK_LIBRARY_ZEROMQ
+
 #include "stream/StreamZeroMQ.h"
+
 #endif /* LINK_LIBRARY_ZEROMQ */
 
 #define MAX_CLIENT_MESSAGE_SIZE (2*1024*1024*1024ul - 1)
@@ -116,8 +118,7 @@ int main(int argc, char** argv) {
 
         if (strcmp(argv[4], "protobuf") == 0)
             formatProtobuf = true;
-        else
-        if (strcmp(argv[4], "json") == 0)
+        else if (strcmp(argv[4], "json") == 0)
             formatProtobuf = false;
         else
             throw OpenLogReplicator::RuntimeException(1, "incorrect format, expected: [protobuf|json]");
@@ -128,7 +129,7 @@ int main(int argc, char** argv) {
         send(request, stream, &ctx);
         receive(response, stream, &ctx, buffer, true);
         ctx.info(0, "- code: " + std::to_string(static_cast<uint64_t>(response.code())) + ", scn: " + std::to_string(response.scn()) +
-                 ", confirmed: " + std::to_string(response.c_scn()) + "," + std::to_string(response.c_idx()));
+                    ", confirmed: " + std::to_string(response.c_scn()) + "," + std::to_string(response.c_idx()));
 
         typeScn confirmedScn = 0;
         typeIdx confirmedIdx = 0;
@@ -175,11 +176,11 @@ int main(int argc, char** argv) {
                 request.set_tm_rel(atoi(argv[5] + 7));
                 ctx.info(0, "START tm_rel: " + std::to_string(request.tm_rel()) + paramSeq);
             } else
-                throw OpenLogReplicator::RuntimeException(1,"server is waiting to define position to start, expected: [now{,<seq>}|"
-                                                          "scn:<scn>{,<seq>}|tm_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
+                throw OpenLogReplicator::RuntimeException(1, "server is waiting to define position to start, expected: [now{,<seq>}|"
+                                                             "scn:<scn>{,<seq>}|tm_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
         } else
             throw OpenLogReplicator::RuntimeException(1, "server returned code: " + std::to_string(response.code()) +
-                                                      " for request code: " + std::to_string(request.code()));
+                                                         " for request code: " + std::to_string(request.code()));
 
         // Index to count messages, to confirm after 1000th
         uint64_t num = 0;
@@ -192,7 +193,7 @@ int main(int argc, char** argv) {
         // Either after start or after continue, the server is expected to start streaming
         if (response.code() != OpenLogReplicator::pb::ResponseCode::REPLICATE)
             throw OpenLogReplicator::RuntimeException(1, "server returned code: " + std::to_string(response.code()) +
-                                                      " for request code: " + std::to_string(request.code()));
+                                                         " for request code: " + std::to_string(request.code()));
 
         for (;;) {
             uint64_t length = receive(response, stream, &ctx, buffer, formatProtobuf);
@@ -248,7 +249,7 @@ int main(int argc, char** argv) {
                 rapidjson::Document document;
                 if (document.Parse(reinterpret_cast<const char*>(buffer)).HasParseError())
                     throw OpenLogReplicator::RuntimeException(20001, "offset: " + std::to_string(document.GetErrorOffset()) +
-                                                              " - parse error: " + GetParseError_En(document.GetParseError()));
+                                                                     " - parse error: " + GetParseError_En(document.GetParseError()));
 
                 cScn = OpenLogReplicator::Ctx::getJsonFieldU64("network", document, "c_scn");
                 cIdx = OpenLogReplicator::Ctx::getJsonFieldU64("network", document, "c_idx");
@@ -256,7 +257,7 @@ int main(int argc, char** argv) {
 
             ++num;
             time_t now = OpenLogReplicator::Timer::getTime();
-            double timeDelta = (double)(now - last) / 1000000.0;
+            double timeDelta = static_cast<double>(now - last) / 1000000.0;
 
             // Confirm every 1000 messages or every 10 seconds
             if (num > 1000 || timeDelta > 10) {
@@ -266,7 +267,7 @@ int main(int argc, char** argv) {
                 request.set_c_idx(cIdx);
                 request.set_database_name(argv[3]);
                 ctx.info(0, "CONFIRM scn: " + std::to_string(request.c_scn()) + ", idx: " + std::to_string(request.c_idx()) +
-                         ", database: " + request.database_name());
+                            ", database: " + request.database_name());
                 send(request, stream, &ctx);
                 num = 0;
                 last = now;
@@ -285,8 +286,10 @@ int main(int argc, char** argv) {
         ctx.error(0, "memory allocation failed: " + std::string(ex.what()));
     }
 
-    delete[] buffer;
-    buffer = nullptr;
+    if (buffer != nullptr) {
+        delete[] buffer;
+        buffer = nullptr;
+    }
 
     if (stream != nullptr) {
         delete stream;

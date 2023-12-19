@@ -26,11 +26,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     WriterKafka::WriterKafka(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
                              const char* newTopic) :
-        Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
-        topic(newTopic),
-        rk(nullptr),
-        rkt(nullptr),
-        conf(nullptr) {
+            Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
+            topic(newTopic),
+            rk(nullptr),
+            rkt(nullptr),
+            conf(nullptr) {
     }
 
     WriterKafka::~WriterKafka() {
@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
         if (properties.find("group.id") != properties.end())
             properties.insert_or_assign("group.id", "OpenLogReplicator");
 
-        for (auto& property : properties)
+        for (auto& property: properties)
             if (rd_kafka_conf_set(conf, property.first.c_str(), property.second.c_str(), errStr, sizeof(errStr)) != RD_KAFKA_CONF_OK)
                 throw RuntimeException(10059, "Kafka message: " + std::string(errStr));
 
@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
     void WriterKafka::error_cb(rd_kafka_t* rkCb, int err, const char* reason, void* opaque) {
         auto writer = reinterpret_cast<Writer*>(opaque);
 
-        writer->ctx->warning(70009, "Kafka: " + std::string(rd_kafka_err2name((rd_kafka_resp_err_t)err)) + ", reason: " + reason);
+        writer->ctx->warning(70009, "Kafka: " + std::string(rd_kafka_err2name((rd_kafka_resp_err_t) err)) + ", reason: " + reason);
 
         if (err != RD_KAFKA_RESP_ERR__FATAL)
             return;
@@ -119,14 +119,14 @@ namespace OpenLogReplicator {
         WriterKafka* writer = reinterpret_cast<WriterKafka*>(rd_kafka_opaque(rkCb));
         if (writer->ctx->trace & TRACE_WRITER)
             writer->ctx->logTrace(TRACE_WRITER, std::to_string(level) + ", rk: " + (rkCb ? rd_kafka_name(rkCb) : nullptr) +
-                                  ", fac: " + fac + ", err: " + buf);
+                                                ", fac: " + fac + ", err: " + buf);
     }
 
     void WriterKafka::sendMessage(BuilderMsg* msg) {
         msg->ptr = reinterpret_cast<void*>(this);
         for (;;) {
             rd_kafka_resp_err_t err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic.c_str()), RD_KAFKA_V_VALUE(msg->data, msg->length),
-                    RD_KAFKA_V_OPAQUE(msg), RD_KAFKA_V_END);
+                                                        RD_KAFKA_V_OPAQUE(msg), RD_KAFKA_V_END);
             // rd_kafka_resp_err_t err = (rd_kafka_resp_err_t)rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, 0, msg->decoder, msg->length, nullptr, 0, msg);
 
             if (err) {

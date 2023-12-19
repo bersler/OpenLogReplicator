@@ -203,7 +203,7 @@ namespace OpenLogReplicator {
 }
 
 namespace std {
-    template <>
+    template<>
     struct hash<OpenLogReplicator::typeRowId> {
         size_t operator()(const OpenLogReplicator::typeRowId& other) const {
             return hash<typeDataObj>()(other.dataObj) ^

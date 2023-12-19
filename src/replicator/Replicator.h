@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     class Replicator : public Thread {
     protected:
-        void (*archGetLog)(Replicator* replicator);
+        void (* archGetLog)(Replicator* replicator);
         Builder* builder;
         Metadata* metadata;
         TransactionBuffer* transactionBuffer;
@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
         virtual void updateOnlineRedoLogData();
 
     public:
-        Replicator(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+        Replicator(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
                    TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase);
         ~Replicator() override;
 

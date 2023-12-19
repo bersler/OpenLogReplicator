@@ -119,17 +119,17 @@ namespace OpenLogReplicator {
 
         purgeRedoLogs();
 
-        for (SchemaElement* element : schemaElements)
+        for (SchemaElement* element: schemaElements)
             delete element;
         schemaElements.clear();
 
-        for (SchemaElement* element : newSchemaElements)
+        for (SchemaElement* element: newSchemaElements)
             delete element;
         newSchemaElements.clear();
 
         users.clear();
 
-        for (OracleIncarnation* oi : oracleIncarnations)
+        for (OracleIncarnation* oi: oracleIncarnations)
             delete oi;
         oracleIncarnations.clear();
         oracleIncarnationCurrent = nullptr;
@@ -158,7 +158,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::purgeRedoLogs() {
-        for (RedoLog* redoLog : redoLogs)
+        for (RedoLog* redoLog: redoLogs)
             delete redoLog;
         redoLogs.clear();
     }
@@ -190,7 +190,7 @@ namespace OpenLogReplicator {
     void Metadata::setSeqOffset(typeSeq newSequence, uint64_t newOffset) {
         if (ctx->trace & TRACE_CHECKPOINT)
             ctx->logTrace(TRACE_CHECKPOINT, "setting sequence to: " + std::to_string(newSequence) + ", offset: " +
-                          std::to_string(newOffset));
+                                            std::to_string(newOffset));
 
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
@@ -239,17 +239,17 @@ namespace OpenLogReplicator {
     SchemaElement* Metadata::addElement(const char* owner, const char* table, typeOptions options) {
         if (!Ctx::checkNameCase(owner))
             throw ConfigurationException(30003, "owner '" + std::string(owner) +
-                                         "' contains lower case characters, value must be upper case");
+                                                "' contains lower case characters, value must be upper case");
         if (!Ctx::checkNameCase(table))
             throw ConfigurationException(30004, "table '" + std::string(table) +
-                                         "' contains lower case characters, value must be upper case");
+                                                "' contains lower case characters, value must be upper case");
         auto element = new SchemaElement(owner, table, options);
         newSchemaElements.push_back(element);
         return element;
     }
 
     void Metadata::resetElements() {
-        for (SchemaElement* element : newSchemaElements)
+        for (SchemaElement* element: newSchemaElements)
             delete element;
         newSchemaElements.clear();
 
@@ -277,11 +277,11 @@ namespace OpenLogReplicator {
     void Metadata::commitElements() {
         std::unique_lock<std::mutex> lck(mtxSchema);
 
-        for (SchemaElement* element : schemaElements)
+        for (SchemaElement* element: schemaElements)
             delete element;
         schemaElements.clear();
 
-        for (SchemaElement* element : newSchemaElements)
+        for (SchemaElement* element: newSchemaElements)
             schemaElements.push_back(element);
         newSchemaElements.clear();
     }
@@ -367,7 +367,7 @@ namespace OpenLogReplicator {
 
             if (lastSequence == sequence && !force &&
                 (checkpointTime.getVal() - lastCheckpointTime.getVal() < ctx->checkpointIntervalS) &&
-                (checkpointBytes - lastCheckpointBytes) / 1024 / 1024 < ctx->checkpointIntervalMb )
+                (checkpointBytes - lastCheckpointBytes) / 1024 / 1024 < ctx->checkpointIntervalMb)
                 return;
 
             // Schema did not change
@@ -397,8 +397,8 @@ namespace OpenLogReplicator {
 
         if (ctx->trace & TRACE_CHECKPOINT)
             ctx->logTrace(TRACE_CHECKPOINT, "write scn: " + std::to_string(lastCheckpointScn) + " time: " +
-                          std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
-                          std::to_string(lastCheckpointOffset) + " name: " + checkpointName);
+                                            std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
+                                            std::to_string(lastCheckpointOffset) + " name: " + checkpointName);
 
         if (!stateWrite(checkpointName, lastCheckpointScn, ss))
             ctx->warning(60018, "file: " + checkpointName + " - couldn't write checkpoint");
@@ -411,7 +411,7 @@ namespace OpenLogReplicator {
         std::set<std::string> namesList;
         state->list(namesList);
 
-        for (const std::string& name : namesList) {
+        for (const std::string& name: namesList) {
             std::string prefix(database + "-chkpt-");
             if (name.length() < prefix.length() || name.substr(0, prefix.length()).compare(prefix) != 0)
                 continue;
@@ -465,13 +465,13 @@ namespace OpenLogReplicator {
             return;
         }
         if (!serializer->deserialize(this, ss, name1, msgs, true, true)) {
-            for (const auto& msg : msgs) {
+            for (const auto& msg: msgs) {
                 ctx->info(0, msg);
             }
             return;
         }
 
-        for (const auto& msg : msgs) {
+        for (const auto& msg: msgs) {
             ctx->info(0, "- found: " + msg);
         }
         msgs.clear();
@@ -541,7 +541,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto scn : scnToDrop) {
+        for (auto scn: scnToDrop) {
             std::string checkpointName = database + "-chkpt-" + std::to_string(scn);
             if (!stateDrop(checkpointName))
                 break;

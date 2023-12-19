@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
     }
 
     std::string BoolValue::evaluateToString(char op __attribute__((unused)), const std::unordered_map<std::string,
-                                            std::string>* attributes __attribute__((unused))) {
+            std::string>* attributes __attribute__((unused))) {
         throw RuntimeException(50066, "invalid expression evaluation: bool to string");
     }
 }

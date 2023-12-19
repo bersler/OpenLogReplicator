@@ -188,9 +188,9 @@ namespace OpenLogReplicator {
 
     uint64_t Ctx::read56Big(const uint8_t* buf) {
         return (static_cast<uint64_t>(buf[0]) << 24) | (static_cast<uint64_t>(buf[1]) << 16) |
-                (static_cast<uint64_t>(buf[2]) << 8) | (static_cast<uint64_t>(buf[3])) |
-                (static_cast<uint64_t>(buf[4]) << 40) | (static_cast<uint64_t>(buf[5]) << 32) |
-                (static_cast<uint64_t>(buf[6]) << 48);
+               (static_cast<uint64_t>(buf[2]) << 8) | (static_cast<uint64_t>(buf[3])) |
+               (static_cast<uint64_t>(buf[4]) << 40) | (static_cast<uint64_t>(buf[5]) << 32) |
+               (static_cast<uint64_t>(buf[6]) << 48);
     }
 
     uint64_t Ctx::read64Little(const uint8_t* buf) {
@@ -399,7 +399,7 @@ namespace OpenLogReplicator {
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
-        return (int16_t)val;
+        return static_cast<int16_t>(val);
     }
 
     uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
@@ -461,7 +461,7 @@ namespace OpenLogReplicator {
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a string");
         if (ret.GetStringLength() > maxLength)
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too long (" +
-                                std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
+                                       std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return ret.GetString();
     }
 
@@ -469,7 +469,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsArray())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not an array");
+                                       "] is not an array");
         return ret;
     }
 
@@ -477,11 +477,11 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not an unsigned 64-bit number");
+                                       "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFF)
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is too big (" + std::to_string(val) + ")");
+                                       "] is too big (" + std::to_string(val) + ")");
         return val;
     }
 
@@ -489,23 +489,23 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not a signed 64-bit number");
+                                       "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is too big (" + std::to_string(val) + ")");
-        return (int16_t)val;
+                                       "] is too big (" + std::to_string(val) + ")");
+        return static_cast<int16_t>(val);
     }
 
     uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not an unsigned 64-bit number");
+                                       "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF)
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is too big (" + std::to_string(val) + ")");
+                                       "] is too big (" + std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
     }
 
@@ -513,11 +513,11 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not a signed 64-bit number");
+                                       "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is too big (" + std::to_string(val) + ")");
+                                       "] is too big (" + std::to_string(val) + ")");
         return static_cast<int32_t>(val);
     }
 
@@ -525,7 +525,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not an unsigned 64-bit number");
+                                       "] is not an unsigned 64-bit number");
         return ret.GetUint64();
     }
 
@@ -533,7 +533,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not a signed 64-bit number");
+                                       "] is not a signed 64-bit number");
         return ret.GetInt64();
     }
 
@@ -541,7 +541,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsObject())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not an object");
+                                       "] is not an object");
         return ret;
     }
 
@@ -549,11 +549,10 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsString())
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is not a string");
+                                       "] is not a string");
         if (ret.GetStringLength() > maxLength)
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                "] is too long (" +
-                    std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
+                                       "] is too long (" + std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return ret.GetString();
     }
 
@@ -566,12 +565,12 @@ namespace OpenLogReplicator {
         buffersFree = newReadBufferMax;
         bufferSizeMax = readBufferMax * MEMORY_CHUNK_SIZE;
 
-        memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
+        memoryChunks = new uint8_t* [memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
         for (uint64_t i = 0; i < memoryChunksMin; ++i) {
             memoryChunks[i] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
             if (memoryChunks[i] == nullptr)
                 throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                       " bytes memory for: memory chunks#2");
+                                              " bytes memory for: memory chunks#2");
             ++memoryChunksAllocated;
             ++memoryChunksFree;
         }
@@ -617,7 +616,7 @@ namespace OpenLogReplicator {
                 memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
                 if (memoryChunks[0] == nullptr) {
                     throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                           " bytes memory for: " + module);
+                                                  " bytes memory for: " + module);
                 }
                 ++memoryChunksFree;
                 ++memoryChunksAllocated;
@@ -805,7 +804,7 @@ namespace OpenLogReplicator {
     bool Ctx::checkNameCase(const char* name) {
         uint64_t num = 0;
         while (*(name + num) != 0) {
-            if (islower((unsigned char)*(name + num)))
+            if (islower(static_cast<unsigned char>(*(name + num))))
                 return false;
 
             if (num == 1024)
@@ -831,7 +830,7 @@ namespace OpenLogReplicator {
     void Ctx::signalDump() {
         if (mainThread == pthread_self()) {
             std::unique_lock<std::mutex> lck(mtx);
-            for (Thread* thread : threads)
+            for (Thread* thread: threads)
                 pthread_kill(thread->pthread, SIGUSR1);
         }
     }

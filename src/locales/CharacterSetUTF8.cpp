@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     CharacterSetUTF8::CharacterSetUTF8() :
-        CharacterSet("UTF8") {
+            CharacterSet("UTF8") {
     }
 
     CharacterSetUTF8::~CharacterSetUTF8() = default;

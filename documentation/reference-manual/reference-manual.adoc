@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.0
-:revdate: 2023-12-09
+:revdate: 2023-12-19
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -979,7 +979,7 @@ The following tokens can be used:
 
 * \|\| -- logical OR,
 
-* ! -- logical NOT,
+*  ! -- logical NOT,
 
 * && -- logical AND,
 

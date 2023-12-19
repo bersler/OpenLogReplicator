@@ -38,8 +38,11 @@ namespace OpenLogReplicator {
         virtual ~Expression();
 
         virtual bool isBool() { return false; }
+
         virtual bool isString() { return false; }
+
         virtual bool isToken() { return false; }
+
         virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) = 0;
         virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) = 0;
     };

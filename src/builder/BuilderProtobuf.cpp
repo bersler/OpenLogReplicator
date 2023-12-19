@@ -65,21 +65,21 @@ namespace OpenLogReplicator {
 
             uint64_t typeNo = table->columns[col]->type;
             if (typeNo != SYS_COL_TYPE_VARCHAR
-                    && typeNo != SYS_COL_TYPE_NUMBER
-                    && typeNo != SYS_COL_TYPE_DATE
-                    && typeNo != SYS_COL_TYPE_RAW
-                    && typeNo != SYS_COL_TYPE_CHAR
-                    && typeNo != SYS_COL_TYPE_FLOAT
-                    && typeNo != SYS_COL_TYPE_DOUBLE
-                    && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
-                    && (typeNo != SYS_COL_TYPE_JSON || !after)
-                    && (typeNo != SYS_COL_TYPE_CLOB || !after)
-                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP
-                    && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
-                    && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
-                    && typeNo != SYS_COL_TYPE_UROWID
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ)
+                && typeNo != SYS_COL_TYPE_NUMBER
+                && typeNo != SYS_COL_TYPE_DATE
+                && typeNo != SYS_COL_TYPE_RAW
+                && typeNo != SYS_COL_TYPE_CHAR
+                && typeNo != SYS_COL_TYPE_FLOAT
+                && typeNo != SYS_COL_TYPE_DOUBLE
+                && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
+                && (typeNo != SYS_COL_TYPE_JSON || !after)
+                && (typeNo != SYS_COL_TYPE_CLOB || !after)
+                && (typeNo != SYS_COL_TYPE_BLOB || !after)
+                && typeNo != SYS_COL_TYPE_TIMESTAMP
+                && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
+                && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
+                && typeNo != SYS_COL_TYPE_UROWID
+                && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ)
                 return;
         }
 
@@ -139,13 +139,14 @@ namespace OpenLogReplicator {
         // TODO: implement
     }
 
-    void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& epochTime __attribute__((unused)), uint64_t fraction __attribute__((unused))) {
+    void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& epochTime __attribute__((unused)),
+                                          uint64_t fraction __attribute__((unused))) {
         valuePB->set_name(columnName);
         // TODO: implement
     }
 
-    void BuilderProtobuf::columnTimestampTz(const std::string& columnName, struct tm& epochTime __attribute__((unused)), uint64_t fraction __attribute__((unused)),
-                                          const char* tz __attribute__((unused))) {
+    void BuilderProtobuf::columnTimestampTz(const std::string& columnName, struct tm& epochTime __attribute__((unused)),
+                                            uint64_t fraction __attribute__((unused)), const char* tz __attribute__((unused))) {
         valuePB->set_name(columnName);
         // TODO: implement
     }
@@ -307,8 +308,8 @@ namespace OpenLogReplicator {
                         columnPB->set_scale(static_cast<int32_t>(table->columns[column]->scale));
                         break;
 
-                    // Long, not supported
                     case SYS_COL_TYPE_LONG:
+                        // Long, not supported
                         columnPB->set_type(pb::LONG);
                         break;
 

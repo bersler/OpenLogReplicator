@@ -32,9 +32,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
-        Reader(newCtx, newAlias, newDatabase, newGroup, newConfiguredBlockSum),
-        fileDes(-1),
-        flags(0) {
+            Reader(newCtx, newAlias, newDatabase, newGroup, newConfiguredBlockSum),
+            fileDes(-1),
+            flags(0) {
     }
 
     ReaderFilesystem::~ReaderFilesystem() {
@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
             bytes = pread(fileDes, buf, size, static_cast<int64_t>(offset));
             if (ctx->trace & TRACE_FILE)
                 ctx->logTrace(TRACE_FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
-                              " returns " + std::to_string(bytes));
+                                          " returns " + std::to_string(bytes));
 
             if (bytes > 0)
                 break;

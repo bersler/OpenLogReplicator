@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
 
         auto outputIt = this->output.find_last_of('/');
         if (outputIt != std::string::npos) {
-            pathName =  this->output.substr(0, outputIt);
+            pathName = this->output.substr(0, outputIt);
             fileNameMask = this->output.substr(outputIt + 1);
         } else {
             pathName = ".";
@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
 
         if ((mode == WRITER_FILE_MODE_TIMESTAMP || mode == WRITER_FILE_MODE_NUM) && maxFileSize == 0)
             throw ConfigurationException(30007, "output file is with no max file size: " + this->output +
-                                         " - 'max-file-size' must be defined for output with rotation");
+                                                " - 'max-file-size' must be defined for output with rotation");
 
         // Search for last used number
         if (mode == WRITER_FILE_MODE_NUM) {
@@ -213,7 +213,7 @@ namespace OpenLogReplicator {
             }
             if (length > maxFileSize)
                 ctx->warning(60029, "message size (" + std::to_string(length) + ") will exceed 'max-file' size (" +
-                             std::to_string(maxFileSize) + ")");
+                                    std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1) {
                 std::string outputFileNumStr(std::to_string(fileNameNum));
@@ -230,7 +230,7 @@ namespace OpenLogReplicator {
 
             if (length > maxFileSize)
                 ctx->warning(60029, "message size (" + std::to_string(length) + ") will exceed 'max-file' size (" +
-                             std::to_string(maxFileSize) + ")");
+                                    std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1 || shouldSwitch) {
                 time_t now = time(nullptr);
@@ -241,7 +241,7 @@ namespace OpenLogReplicator {
                 if (fullFileName == newOutputFile) {
                     if (!warningDisplayed) {
                         ctx->warning(60030, "rotation size is set too low (" + std::to_string(maxFileSize) +
-                                     "), increase it, should rotate but too early (" + fullFileName + ")");
+                                            "), increase it, should rotate but too early (" + fullFileName + ")");
                         warningDisplayed = true;
                     }
                     shouldSwitch = false;
@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
         int64_t bytesWritten = write(outputDes, reinterpret_cast<const char*>(msg->data), msg->length);
         if (static_cast<uint64_t>(bytesWritten) != msg->length)
             throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                   std::to_string(msg->length) + ", code returned: " + strerror(errno));
+                                          std::to_string(msg->length) + ", code returned: " + strerror(errno));
 
         fileSize += bytesWritten;
 
@@ -304,7 +304,7 @@ namespace OpenLogReplicator {
             bytesWritten = write(outputDes, newLineMsg, newLine);
             if (static_cast<uint64_t>(bytesWritten) != newLine)
                 throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                       std::to_string(msg->length) + ", code returned: " + strerror(errno));
+                                              std::to_string(msg->length) + ", code returned: " + strerror(errno));
             fileSize += bytesWritten;
         }
 

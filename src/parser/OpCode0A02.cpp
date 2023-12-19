@@ -49,8 +49,8 @@ namespace OpenLogReplicator {
 
             ctx->dumpStream << "REDO: SINGLE / -- / -- " << '\n';
             ctx->dumpStream << "itl: " << std::dec << static_cast<uint64_t>(itl) <<
-                    ", sno: " << std::dec << sno <<
-                    ", row size " << std::dec << rowSize << '\n';
+                            ", sno: " << std::dec << sno <<
+                            ", row size " << std::dec << rowSize << '\n';
         }
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0202))

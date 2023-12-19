@@ -24,38 +24,38 @@ namespace OpenLogReplicator {
     std::ostream& operator<<(std::ostream& os, const RedoLogRecord& redo) {
         std::ostringstream ss;
         ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
-                " scn: " << std::dec << redo.scn <<
-                " subScn: " << std::dec << redo.subScn <<
-                " xid: " << redo.xid.toString() <<
-                " op: " << std::setfill('0') << std::setw(4) << std::hex << redo.opCode <<
-                " cls: " << std::dec << redo.cls <<
-                " rbl: " << std::dec << redo.rbl <<
-                " seq: " << std::dec << static_cast<uint64_t>(redo.seq) <<
-                " typ: " << std::dec << static_cast<uint64_t>(redo.typ) <<
-                " conId: " << std::dec << redo.conId <<
-                " flgRecord: " << std::dec << redo.flgRecord <<
-                " robj: " << std::dec << redo.recordObj <<
-                " rdataObj: " << std::dec << redo.recordDataObj <<
-                " nrow: " << std::dec << static_cast<uint64_t>(redo.nRow) <<
-                " afn: " << std::dec << redo.afn <<
-                " length: " << std::dec << redo.length <<
-                " dba: 0x" << std::hex << redo.dba <<
-                " bdba: 0x" << std::hex << redo.bdba <<
-                " obj: " << std::dec << redo.obj <<
-                " dataobj: " << std::dec << redo.dataObj <<
-                " tsn: " << std::dec << redo.tsn <<
-                " undo: " << std::dec << redo.undo <<
-                " usn: " << std::dec << redo.usn <<
-                " uba: " << PRINTUBA(redo.uba) <<
-                " slt: " << std::dec << static_cast<uint64_t>(redo.slt) <<
-                " rci: " << std::dec << static_cast<uint64_t>(redo.rci) <<
-                " flg: " << std::dec << static_cast<uint64_t>(redo.flg) <<
-                " opc: 0x" << std::hex << redo.opc <<
-                " op: " << std::dec << static_cast<uint64_t>(redo.op) <<
-                " cc: " << std::dec << static_cast<uint64_t>(redo.cc) <<
-                " slot: " << std::dec << redo.slot <<
-                " flags: 0x" << std::hex << static_cast<uint64_t>(redo.flags) <<
-                " fb: 0x" << std::hex << static_cast<uint64_t>(redo.fb);
+           " scn: " << std::dec << redo.scn <<
+           " subScn: " << std::dec << redo.subScn <<
+           " xid: " << redo.xid.toString() <<
+           " op: " << std::setfill('0') << std::setw(4) << std::hex << redo.opCode <<
+           " cls: " << std::dec << redo.cls <<
+           " rbl: " << std::dec << redo.rbl <<
+           " seq: " << std::dec << static_cast<uint64_t>(redo.seq) <<
+           " typ: " << std::dec << static_cast<uint64_t>(redo.typ) <<
+           " conId: " << std::dec << redo.conId <<
+           " flgRecord: " << std::dec << redo.flgRecord <<
+           " robj: " << std::dec << redo.recordObj <<
+           " rdataObj: " << std::dec << redo.recordDataObj <<
+           " nrow: " << std::dec << static_cast<uint64_t>(redo.nRow) <<
+           " afn: " << std::dec << redo.afn <<
+           " length: " << std::dec << redo.length <<
+           " dba: 0x" << std::hex << redo.dba <<
+           " bdba: 0x" << std::hex << redo.bdba <<
+           " obj: " << std::dec << redo.obj <<
+           " dataobj: " << std::dec << redo.dataObj <<
+           " tsn: " << std::dec << redo.tsn <<
+           " undo: " << std::dec << redo.undo <<
+           " usn: " << std::dec << redo.usn <<
+           " uba: " << PRINTUBA(redo.uba) <<
+           " slt: " << std::dec << static_cast<uint64_t>(redo.slt) <<
+           " rci: " << std::dec << static_cast<uint64_t>(redo.rci) <<
+           " flg: " << std::dec << static_cast<uint64_t>(redo.flg) <<
+           " opc: 0x" << std::hex << redo.opc <<
+           " op: " << std::dec << static_cast<uint64_t>(redo.op) <<
+           " cc: " << std::dec << static_cast<uint64_t>(redo.cc) <<
+           " slot: " << std::dec << redo.slot <<
+           " flags: 0x" << std::hex << static_cast<uint64_t>(redo.flags) <<
+           " fb: 0x" << std::hex << static_cast<uint64_t>(redo.fb);
         os << ss.str();
         return os;
     }

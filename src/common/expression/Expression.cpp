@@ -91,8 +91,7 @@ namespace OpenLogReplicator {
                             ++i;
                             continue;
                         }
-                    } else
-                    if (conditionStr[i] == '|' || conditionStr[i] == '&' || conditionStr[i] == '!' || conditionStr[i] == '=') {
+                    } else if (conditionStr[i] == '|' || conditionStr[i] == '&' || conditionStr[i] == '!' || conditionStr[i] == '=') {
                         ++i;
                         continue;
                     }
@@ -254,7 +253,7 @@ namespace OpenLogReplicator {
 
         BoolValue* root = nullptr;
         if (stack.size() == 1)
-            root = dynamic_cast<BoolValue *>(stack[0]);
+            root = dynamic_cast<BoolValue*>(stack[0]);
 
         for (Expression* expression: stack) {
             if (!expression->isToken() && expression != root)
@@ -265,7 +264,7 @@ namespace OpenLogReplicator {
         if (root == nullptr || !root->isBool())
             throw RuntimeException(50067, "invalid condition: " + conditionStr + " is not evaluated to bool");
 
-        for (Token *token: tokens)
+        for (Token* token: tokens)
             delete token;
         tokens.clear();
 

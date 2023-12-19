@@ -179,15 +179,15 @@ namespace OpenLogReplicator {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
-                                       std::to_string(offset));
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
 
             builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
-            auto newVal = (int16_t)strtol(builder->valueBuffer, &retPtr, 10);
+            auto newVal = static_cast<int16_t>(strtol(builder->valueBuffer, &retPtr, 10));
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                              std::to_string(newVal) + ")");
+                                            std::to_string(newVal) + ")");
             val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
@@ -201,19 +201,19 @@ namespace OpenLogReplicator {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
-                                       std::to_string(offset));
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
 
             builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
+                                              table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             uint16_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                              std::to_string(newVal) + ")");
+                                            std::to_string(newVal) + ")");
             val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
@@ -227,19 +227,19 @@ namespace OpenLogReplicator {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
-                                       std::to_string(offset));
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
 
             builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
+                                              table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             uint32_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                              std::to_string(newVal) + ")");
+                                            std::to_string(newVal) + ")");
             val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
@@ -253,19 +253,19 @@ namespace OpenLogReplicator {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
-                                       std::to_string(offset));
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
 
             builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0)
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
+                                              table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             int64_t newVal = strtol(builder->valueBuffer, &retPtr, 10);
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                              std::to_string(newVal) + ")");
+                                            std::to_string(newVal) + ")");
             val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
@@ -279,19 +279,19 @@ namespace OpenLogReplicator {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
-                                       std::to_string(offset));
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
 
             builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
+                                              table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             uint64_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                              std::to_string(newVal) + ")");
+                                            std::to_string(newVal) + ")");
             val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
@@ -304,14 +304,14 @@ namespace OpenLogReplicator {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
-                                       std::to_string(offset));
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
 
             builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
+                                              table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             typeIntX newVal(0);
             std::string err;
@@ -340,7 +340,8 @@ namespace OpenLogReplicator {
             std::string newVal(builder->valueBuffer, builder->valueLength);
             if (builder->valueLength > maxLength)
                 throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
-                                              table->columns[column]->name + ", length " + std::to_string(builder->valueLength) + " offset: " + std::to_string(offset));
+                                              table->columns[column]->name + ", length " + std::to_string(builder->valueLength) + " offset: " +
+                                              std::to_string(offset));
 
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
@@ -356,15 +357,16 @@ namespace OpenLogReplicator {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             if (table->columns[column]->type != SYS_COL_TYPE_VARCHAR && table->columns[column]->type != SYS_COL_TYPE_CHAR)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
-                                       std::to_string(offset));
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
 
             builder->parseString(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER],
                                  table->columns[column]->charsetId, offset, false, false, false, true);
             std::string newVal(builder->valueBuffer, builder->valueLength);
             if (builder->valueLength > maxLength)
                 throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
-                                       table->columns[column]->name + ", length " + std::to_string(builder->valueLength) + " offset: " + std::to_string(offset));
+                                              table->columns[column]->name + ", length " + std::to_string(builder->valueLength) + " offset: " +
+                                              std::to_string(offset));
 
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
@@ -381,7 +383,7 @@ namespace OpenLogReplicator {
         if (sysCCol != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.CCOL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysCColDrop(sysCCol);
             delete sysCCol;
         }
@@ -417,7 +419,7 @@ namespace OpenLogReplicator {
         if (sysCDef != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.CDEF$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysCDefDrop(sysCDef);
             delete sysCDef;
         }
@@ -451,7 +453,7 @@ namespace OpenLogReplicator {
         if (sysCol != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.COL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysColDrop(sysCol);
             delete sysCol;
         }
@@ -506,7 +508,7 @@ namespace OpenLogReplicator {
         if (sysDeferredStg != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
             delete sysDeferredStg;
         }
@@ -538,7 +540,7 @@ namespace OpenLogReplicator {
         if (sysECol != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.ECOL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysEColDrop(sysECol);
             delete sysECol;
         }
@@ -572,7 +574,7 @@ namespace OpenLogReplicator {
         if (sysLob != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOB$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysLobDrop(sysLob);
             delete sysLob;
         }
@@ -610,7 +612,7 @@ namespace OpenLogReplicator {
         if (sysLobCompPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
             delete sysLobCompPart;
         }
@@ -642,7 +644,7 @@ namespace OpenLogReplicator {
         if (sysLobFrag != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysLobFragDrop(sysLobFrag);
             delete sysLobFrag;
         }
@@ -676,7 +678,7 @@ namespace OpenLogReplicator {
         if (sysObj != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.OBJ$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysObjDrop(sysObj);
             delete sysObj;
         }
@@ -716,7 +718,7 @@ namespace OpenLogReplicator {
         if (sysTab != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TAB$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysTabDrop(sysTab);
             delete sysTab;
         }
@@ -756,7 +758,7 @@ namespace OpenLogReplicator {
         if (sysTabComPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysTabComPartDrop(sysTabComPart);
             delete sysTabComPart;
         }
@@ -790,7 +792,7 @@ namespace OpenLogReplicator {
         if (sysTabPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysTabPartDrop(sysTabPart);
             delete sysTabPart;
         }
@@ -824,7 +826,7 @@ namespace OpenLogReplicator {
         if (sysTabSubPart != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
             delete sysTabSubPart;
         }
@@ -858,7 +860,7 @@ namespace OpenLogReplicator {
         if (sysTs != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TS$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysTsDrop(sysTs);
             delete sysTs;
         }
@@ -892,7 +894,7 @@ namespace OpenLogReplicator {
         if (sysUser != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate SYS.USER$: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictSysUserDrop(sysUser);
             delete sysUser;
         }
@@ -926,7 +928,7 @@ namespace OpenLogReplicator {
         if (xdbTtSet != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for insert at offset: " +
-                                       std::to_string(offset));
+                                              std::to_string(offset));
             metadata->schema->dictXdbTtSetDrop(xdbTtSet);
             delete xdbTtSet;
         }
@@ -962,7 +964,7 @@ namespace OpenLogReplicator {
         if (xdbXNm != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() +
-                                       ") for insert at offset: " + std::to_string(offset));
+                                              ") for insert at offset: " + std::to_string(offset));
             metadata->schema->dictXdbXNmDrop(table->tokSuf, xdbXNm);
             delete xdbXNm;
         }
@@ -994,7 +996,7 @@ namespace OpenLogReplicator {
         if (xdbXPt != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() +
-                                       ") for insert at offset: " + std::to_string(offset));
+                                              ") for insert at offset: " + std::to_string(offset));
             metadata->schema->dictXdbXPtDrop(table->tokSuf, xdbXPt);
             delete xdbXPt;
         }
@@ -1026,7 +1028,7 @@ namespace OpenLogReplicator {
         if (xdbXQn != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(50022, "ddl: duplicate XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() +
-                                       ") for insert at offset: " + std::to_string(offset));
+                                              ") for insert at offset: " + std::to_string(offset));
             metadata->schema->dictXdbXQnDrop(table->tokSuf, xdbXQn);
             delete xdbXQn;
         }
@@ -2246,7 +2248,7 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processDelete(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
-            typeRowId rowId(dataObj, bdba, slot);
+        typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
         if (ctx->trace & TRACE_SYSTEM)

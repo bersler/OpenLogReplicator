@@ -31,41 +31,41 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-class XmlCtx final {
-public:
-    // XDB.X$NMxxx
-    std::map<typeRowId, XdbXNm*> xdbXNmMapRowId;
-    std::unordered_map<std::string, XdbXNm*> xdbXNmMapId;
+    class XmlCtx final {
+    public:
+        // XDB.X$NMxxx
+        std::map<typeRowId, XdbXNm*> xdbXNmMapRowId;
+        std::unordered_map<std::string, XdbXNm*> xdbXNmMapId;
 
-    // XDB.X$QNxxx
-    std::map<typeRowId, XdbXQn*> xdbXQnMapRowId;
-    std::unordered_map<std::string, XdbXQn*> xdbXQnMapId;
+        // XDB.X$QNxxx
+        std::map<typeRowId, XdbXQn*> xdbXQnMapRowId;
+        std::unordered_map<std::string, XdbXQn*> xdbXQnMapId;
 
-    // XDB.X$PTxxx
-    std::map<typeRowId, XdbXPt*> xdbXPtMapRowId;
-    std::unordered_map<std::string, XdbXPt*> xdbXPtMapId;
+        // XDB.X$PTxxx
+        std::map<typeRowId, XdbXPt*> xdbXPtMapRowId;
+        std::unordered_map<std::string, XdbXPt*> xdbXPtMapId;
 
-    Ctx* ctx;
-    std::string tokSuf;
-    uint64_t flags;
+        Ctx* ctx;
+        std::string tokSuf;
+        uint64_t flags;
 
-    XmlCtx(Ctx* newCtx, const std::string& newTokSuf, uint64_t newFlags);
-    virtual ~XmlCtx();
+        XmlCtx(Ctx* newCtx, const std::string& newTokSuf, uint64_t newFlags);
+        virtual ~XmlCtx();
 
-    void purgeDicts();
+        void purgeDicts();
 
-    XdbXNm* dictXdbXNmFind(typeRowId rowId);
-    XdbXPt* dictXdbXPtFind(typeRowId rowId);
-    XdbXQn* dictXdbXQnFind(typeRowId rowId);
+        XdbXNm* dictXdbXNmFind(typeRowId rowId);
+        XdbXPt* dictXdbXPtFind(typeRowId rowId);
+        XdbXQn* dictXdbXQnFind(typeRowId rowId);
 
-    void dictXdbXNmAdd(XdbXNm* xdbXNm);
-    void dictXdbXPtAdd(XdbXPt* xdbXPt);
-    void dictXdbXQnAdd(XdbXQn* xdbXQn);
+        void dictXdbXNmAdd(XdbXNm* xdbXNm);
+        void dictXdbXPtAdd(XdbXPt* xdbXPt);
+        void dictXdbXQnAdd(XdbXQn* xdbXQn);
 
-    void dictXdbXNmDrop(XdbXNm* xdbXNm);
-    void dictXdbXPtDrop(XdbXPt* xdbXPt);
-    void dictXdbXQnDrop(XdbXQn* xdbXQn);
-};
+        void dictXdbXNmDrop(XdbXNm* xdbXNm);
+        void dictXdbXPtDrop(XdbXPt* xdbXPt);
+        void dictXdbXQnDrop(XdbXQn* xdbXQn);
+    };
 
 }
 #endif

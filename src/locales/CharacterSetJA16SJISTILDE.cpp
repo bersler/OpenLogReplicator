@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     CharacterSetJA16SJISTILDE::CharacterSetJA16SJISTILDE() :
-        CharacterSetJA16SJIS("JA16SJISTILDE") {
+            CharacterSetJA16SJIS("JA16SJISTILDE") {
     }
 
     CharacterSetJA16SJISTILDE::~CharacterSetJA16SJISTILDE() = default;

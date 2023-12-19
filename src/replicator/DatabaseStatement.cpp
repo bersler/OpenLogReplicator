@@ -148,7 +148,7 @@ namespace OpenLogReplicator {
     void DatabaseStatement::bindBinary(uint64_t col, uint8_t* buf, uint64_t size) {
         OCIBind* bindp = nullptr;
         sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, reinterpret_cast<void*>(buf), size, SQLT_BIN,
-                        nullptr, nullptr, nullptr, 0, nullptr, OCI_DEFAULT);
+                                 nullptr, nullptr, nullptr, 0, nullptr, OCI_DEFAULT);
         if (bindp != nullptr)
             binds.push_back(bindp);
         conn->env->checkErr(conn->errhp, ret);
