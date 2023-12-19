@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SystemTransaction.h"
 
 namespace OpenLogReplicator {
-    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat,  uint64_t newAttributesFormat,
+    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newAttributesFormat,
                      uint64_t newIntervalDtsFormat, uint64_t newIntervalYtmFormat, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
                      uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
                      uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
@@ -156,15 +156,16 @@ namespace OpenLogReplicator {
 
         if (length == 0)
             throw RedoLogException(50013, "trying to output null data for column: " + column->name + ", offset: " +
-                                   std::to_string(offset));
+                                          std::to_string(offset));
 
         if (column->storedAsLob) {
-            // VARCHAR2 stored as CLOB
-            if (column->type == SYS_COL_TYPE_VARCHAR)
+            if (column->type == SYS_COL_TYPE_VARCHAR) {
+                // VARCHAR2 stored as CLOB
                 column->type = SYS_COL_TYPE_CLOB;
-            // RAW stored as BLOB
-            else if (column->type == SYS_COL_TYPE_RAW)
+            } else if (column->type == SYS_COL_TYPE_RAW) {
+                // RAW stored as BLOB
                 column->type = SYS_COL_TYPE_BLOB;
+            }
         }
 
         switch (column->type) {
@@ -180,15 +181,15 @@ namespace OpenLogReplicator {
                 break;
 
             case SYS_COL_TYPE_BLOB:
-                if (after) {
+                if (after && table != nullptr) {
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
                         if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
-                            if (parseXml(xmlCtx, reinterpret_cast<uint8_t *>(valueBuffer), valueLength, offset))
+                            if (parseXml(xmlCtx, reinterpret_cast<uint8_t*>(valueBuffer), valueLength, offset))
                                 columnString(column->name);
                             else
-                                columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBufferOld), valueLengthOld);
+                                columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBufferOld), valueLengthOld);
                         } else
-                            columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength);
+                            columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
                     }
                 }
                 break;
@@ -196,11 +197,11 @@ namespace OpenLogReplicator {
             case SYS_COL_TYPE_JSON:
                 if (FLAG(REDO_FLAGS_EXPERIMENTAL_JSON))
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys))
-                        columnRaw(column->name, reinterpret_cast<uint8_t *>(valueBuffer), valueLength);
+                        columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
                 break;
 
             case SYS_COL_TYPE_CLOB:
-                if (after) {
+                if (after && table != nullptr) {
                     if (parseLob(lobCtx, data, length, column->charsetId, table->obj, offset, true, table->systemTable > 0))
                         columnString(column->name);
                 }
@@ -212,8 +213,7 @@ namespace OpenLogReplicator {
                 if (length != 7 && length != 11)
                     columnUnknown(column->name, data, length);
                 else {
-                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            nullptr};
+                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
                     epochTime.tm_sec = data[6] - 1;  // 0..59
                     epochTime.tm_min = data[5] - 1;  // 0..59
                     epochTime.tm_hour = data[4] - 1; // 0..23
@@ -231,7 +231,7 @@ namespace OpenLogReplicator {
                     } else {
                         val1 = 100 - val1;
                         val2 = 100 - val2;
-                        epochTime.tm_year = - (val1 * 100 + val2);
+                        epochTime.tm_year = -(val1 * 100 + val2);
                     }
 
                     uint64_t fraction = 0;
@@ -272,8 +272,7 @@ namespace OpenLogReplicator {
                 if (length != 9 && length != 13) {
                     columnUnknown(column->name, data, length);
                 } else {
-                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            nullptr};
+                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
                     epochTime.tm_sec = data[6] - 1;  // 0..59
                     epochTime.tm_min = data[5] - 1;  // 0..59
                     epochTime.tm_hour = data[4] - 1; // 0..23
@@ -291,7 +290,7 @@ namespace OpenLogReplicator {
                     } else {
                         val1 = 100 - val1;
                         val2 = 100 - val2;
-                        epochTime.tm_year = - (val1 * 100 + val2);
+                        epochTime.tm_year = -(val1 * 100 + val2);
                     }
 
                     uint64_t fraction = 0;
@@ -302,8 +301,7 @@ namespace OpenLogReplicator {
                     char tz2[7];
 
                     if (data[11] >= 5 && data[11] <= 36) {
-                        if (data[11] < 20 ||
-                                (data[11] == 20 && data[12] < 60))
+                        if (data[11] < 20 || (data[11] == 20 && data[12] < 60))
                             tz2[0] = '-';
                         else
                             tz2[0] = '+';
@@ -490,7 +488,8 @@ namespace OpenLogReplicator {
                             valueBuffer[valueLength++] = '-';
 
                         if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_SPACE || intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_COMMA ||
-                                intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH) {
+                            intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH) {
+
                             val = day;
                             if (day == 0) {
                                 valueBuffer[valueLength++] = '0';
@@ -622,7 +621,7 @@ namespace OpenLogReplicator {
             if (exponent > 0)
                 significand += 0x800000;
             exponent -= 0x7F;
-            return ldexp(((double) significand) / ((double) 0x800000), exponent);
+            return ldexp((static_cast<double>(significand)) / (static_cast<double>(0x800000)), exponent);
         } else {
             if (exponent == 0 && significand == 0x7FFFFF)
                 return -INFINITY;
@@ -631,7 +630,7 @@ namespace OpenLogReplicator {
             if (exponent < 0xFF)
                 significand += 0x800000;
             exponent = 0x80 - exponent;
-            return -ldexp((((double) significand / (double) 0x800000)), exponent);
+            return -ldexp(((static_cast<double>(significand) / static_cast<double>(0x800000))), exponent);
         }
     }
 
@@ -639,8 +638,8 @@ namespace OpenLogReplicator {
         uint8_t sign = data[0] & 0x80;
         int64_t exponent = (static_cast<uint64_t>(data[0] & 0x7F) << 4) | (static_cast<uint64_t>(data[1]) >> 4);
         uint64_t significand = (static_cast<uint64_t>(data[1] & 0x0F) << 48) | (static_cast<uint64_t>(data[2]) << 40) |
-                (static_cast<uint64_t>(data[3]) << 32) | (static_cast<uint64_t>(data[4]) << 24) | (static_cast<uint64_t>(data[5]) << 16) |
-                (static_cast<uint64_t>(data[6]) << 8) | static_cast<uint64_t>(data[7]);
+                               (static_cast<uint64_t>(data[3]) << 32) | (static_cast<uint64_t>(data[4]) << 24) | (static_cast<uint64_t>(data[5]) << 16) |
+                               (static_cast<uint64_t>(data[6]) << 8) | static_cast<uint64_t>(data[7]);
 
         if (sign) {
             if (significand == 0) {
@@ -782,7 +781,7 @@ namespace OpenLogReplicator {
                                                  ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2),
                                                  redoLogRecord1->dataOffset);
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                    table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
                 processInsert(scn, sequence, time_, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
@@ -855,7 +854,7 @@ namespace OpenLogReplicator {
                                                  redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                    table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
                 processDelete(scn, sequence, time_, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
@@ -889,7 +888,7 @@ namespace OpenLogReplicator {
 
             if (redoLogRecord2p == nullptr) {
                 ctx->warning(60001, "incomplete row for table (obj: " + std::to_string(redoLogRecord1->obj) + "), probably IOT, offset: " +
-                             std::to_string(redoLogRecord1->dataOffset) + ", xid: " + lastXid.toString());
+                                    std::to_string(redoLogRecord1->dataOffset) + ", xid: " + lastXid.toString());
                 obj = 0;
                 dataObj = 0;
                 bdba = 0;
@@ -957,9 +956,9 @@ namespace OpenLogReplicator {
                 }
                 if (colShift >= ctx->columnLimit)
                     throw RedoLogException(50059, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
-                                           std::to_string(redoLogRecord1p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
-                                           ", before: " + std::to_string(redoLogRecord1p->suppLogBefore) + ", xid: " + lastXid.toString() + ", offset: " +
-                                           std::to_string(redoLogRecord1p->dataOffset));
+                                                  std::to_string(redoLogRecord1p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
+                                                  ", before: " + std::to_string(redoLogRecord1p->suppLogBefore) + ", xid: " + lastXid.toString() +
+                                                  ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
 
                 while (fieldNum < redoLogRecord1p->rowData - 1)
                     RedoLogRecord::nextField(ctx, redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000003);
@@ -983,17 +982,17 @@ namespace OpenLogReplicator {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Undo): " +
-                                                   std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
-                                                   std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
-                                                   std::to_string(redoLogRecord1p->rowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
-                                                   ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
+                                                          std::to_string(redoLogRecord1p->rowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
+                                                          ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                         else
                             throw RedoLogException(50014, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
-                                                   std::to_string(redoLogRecord1p->dataObj) + "): out of columns (Undo): " + std::to_string(colNum) +
-                                                   "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
-                                                   std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
-                                                   std::to_string(redoLogRecord1p->rowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
-                                                   ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
+                                                          std::to_string(redoLogRecord1p->dataObj) + "): out of columns (Undo): " + std::to_string(colNum) +
+                                                          "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
+                                                          std::to_string(redoLogRecord1p->rowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
+                                                          ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                     }
 
                     fb = 0;
@@ -1006,16 +1005,16 @@ namespace OpenLogReplicator {
                         if (colNum >= table->maxSegCol) {
                             if (!schema)
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
-                                                       ": referring to invalid column id(" + std::to_string(colNum) +  ", xid: " + lastXid.toString() +
-                                                       "), offset: " + std::to_string(redoLogRecord1p->dataOffset));
+                                                              ": referring to invalid column id(" + std::to_string(colNum) + ", xid: " + lastXid.toString() +
+                                                              "), offset: " + std::to_string(redoLogRecord1p->dataOffset));
                             break;
                         }
                     } else {
                         if (colNum >= ctx->columnLimit)
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
-                                                   std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
-                                                   std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
-                                                   std::to_string(redoLogRecord1p->dataOffset));
+                                                          std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
+                                                          std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
+                                                          std::to_string(redoLogRecord1p->dataOffset));
                     }
 
                     if ((*nulls & bits) != 0)
@@ -1053,17 +1052,17 @@ namespace OpenLogReplicator {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (supp): " +
-                                                   std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
-                                                   std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
-                                                   std::to_string(redoLogRecord1p->suppLogRowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
-                                                   ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
+                                                          std::to_string(redoLogRecord1p->suppLogRowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
+                                                          ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                         else
                             throw RedoLogException(50014, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
-                                                   std::to_string(redoLogRecord1p->dataObj) + "): out of columns (Supp): " + std::to_string(colNum) +
-                                                   "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
-                                                   std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
-                                                   std::to_string(redoLogRecord1p->suppLogRowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
-                                                   ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
+                                                          std::to_string(redoLogRecord1p->dataObj) + "): out of columns (Supp): " + std::to_string(colNum) +
+                                                          "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
+                                                          std::to_string(redoLogRecord1p->suppLogRowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
+                                                          ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                     }
 
                     RedoLogRecord::nextField(ctx, redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000006);
@@ -1072,16 +1071,16 @@ namespace OpenLogReplicator {
                         if (colNum >= table->maxSegCol) {
                             if (!schema)
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
-                                                       ": referring to invalid column id(" + std::to_string(colNum) + "), xid: " + lastXid.toString() +
-                                                       ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
+                                                              ": referring to invalid column id(" + std::to_string(colNum) + "), xid: " + lastXid.toString() +
+                                                              ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                             break;
                         }
                     } else {
                         if (colNum >= ctx->columnLimit)
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
-                                                   std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
-                                                   std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
-                                                   std::to_string(redoLogRecord1p->dataOffset));
+                                                          std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
+                                                          std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
+                                                          std::to_string(redoLogRecord1p->dataOffset));
                     }
 
                     colNums += 2;
@@ -1102,12 +1101,12 @@ namespace OpenLogReplicator {
 
                     // Insert, lock, update, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 ||
-                            redoLogRecord2p->opCode == 0x0B10)
+                        redoLogRecord2p->opCode == 0x0B10)
                         valueSet(VALUE_AFTER_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb, dump);
 
                     // Delete, update, overwrite, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 ||
-                            redoLogRecord2p->opCode == 0x0B10)
+                        redoLogRecord2p->opCode == 0x0B10)
                         valueSet(VALUE_BEFORE_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb, dump);
 
                     colSizes += 2;
@@ -1139,9 +1138,9 @@ namespace OpenLogReplicator {
                 }
                 if (colShift >= ctx->columnLimit) {
                     throw RedoLogException(50059, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
-                                           std::to_string(redoLogRecord2p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
-                                           ", before: " + std::to_string(redoLogRecord2p->suppLogBefore) + ", xid: " + lastXid.toString() + ", offset: " +
-                                           std::to_string(redoLogRecord2p->dataOffset));
+                                                  std::to_string(redoLogRecord2p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
+                                                  ", before: " + std::to_string(redoLogRecord2p->suppLogBefore) + ", xid: " + lastXid.toString() +
+                                                  ", offset: " + std::to_string(redoLogRecord2p->dataOffset));
                 }
 
                 while (fieldNum < redoLogRecord2p->rowData - 1)
@@ -1161,19 +1160,20 @@ namespace OpenLogReplicator {
                     if (fieldNum + 1 > redoLogRecord2p->fieldCnt) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Redo): " +
-                                                   std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord2p->cc)) + ", " +
-                                                   std::to_string(redoLogRecord2p->sizeDelt) + ", " + std::to_string(fieldNum) + ", " +
-                                                   std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
-                                                   std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +
-                                                   std::to_string(redoLogRecord2p->dataOffset));
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord2p->cc)) + ", " +
+                                                          std::to_string(redoLogRecord2p->sizeDelt) + ", " + std::to_string(fieldNum) + ", " +
+                                                          std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
+                                                          std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +
+                                                          std::to_string(redoLogRecord2p->dataOffset));
                         else
                             throw RedoLogException(50014, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
-                                                   std::to_string(redoLogRecord2p->dataObj) + "): out of columns (Redo): " +
-                                                   std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord2p->cc)) + ", " +
-                                                   std::to_string(redoLogRecord2p->sizeDelt) + ", " +  std::to_string(fieldNum) + ", " +
-                                                   std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
-                                                   std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +
-                                                   std::to_string(redoLogRecord2p->dataOffset));
+                                                          std::to_string(redoLogRecord2p->dataObj) + "): out of columns (Redo): " +
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord2p->cc)) + ", " +
+                                                          std::to_string(redoLogRecord2p->sizeDelt) + ", " + std::to_string(fieldNum) + ", " +
+                                                          std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
+                                                          std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +
+                                                          std::to_string(redoLogRecord2p->dataOffset));
+                        break;
                     }
 
                     fb = 0;
@@ -1194,16 +1194,16 @@ namespace OpenLogReplicator {
                         if (colNum >= table->maxSegCol) {
                             if (!schema)
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
-                                                       ": referring to invalid column id(" + std::to_string(colNum) +
-                                                       "), xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord2p->dataOffset));
+                                                              ": referring to invalid column id(" + std::to_string(colNum) +
+                                                              "), xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord2p->dataOffset));
                             break;
                         }
                     } else {
                         if (colNum >= ctx->columnLimit)
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
-                                                   std::to_string(redoLogRecord2p->dataObj) + "): referring to invalid column id(" +
-                                                   std::to_string(colNum) + "), xid: " + lastXid.toString() + "), offset: " +
-                                                   std::to_string(redoLogRecord2p->dataOffset));
+                                                          std::to_string(redoLogRecord2p->dataObj) + "): referring to invalid column id(" +
+                                                          std::to_string(colNum) + "), xid: " + lastXid.toString() + "), offset: " +
+                                                          std::to_string(redoLogRecord2p->dataOffset));
                     }
 
                     if ((*nulls & bits) != 0)
@@ -1256,8 +1256,8 @@ namespace OpenLogReplicator {
 
                         if (values[column][j] != nullptr)
                             throw RedoLogException(50015, "value for " + std::to_string(column) + "/" + std::to_string(j) +
-                                                   " is already set when merging, xid: " + lastXid.toString() + ", offset: " +
-                                                   std::to_string(redoLogRecord1->dataOffset));
+                                                          " is already set when merging, xid: " + lastXid.toString() + ", offset: " +
+                                                          std::to_string(redoLogRecord1->dataOffset));
 
                         auto buffer = new uint8_t[length];
                         merges[mergesMax++] = buffer;
@@ -1329,7 +1329,7 @@ namespace OpenLogReplicator {
         if ((ctx->trace & TRACE_DML) != 0 || dump) {
             if (table != nullptr) {
                 ctx->logTrace(TRACE_DML, "tab: " + table->owner + "." + table->name + " type: " + std::to_string(type) + " columns: " +
-                              std::to_string(valuesMax));
+                                         std::to_string(valuesMax));
 
                 baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1341,16 +1341,17 @@ namespace OpenLogReplicator {
                             continue;
 
                         ctx->logTrace(TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
-                                      std::to_string(values[column][VALUE_BEFORE] != nullptr ? lengths[column][VALUE_BEFORE] : -1) + ") A(" +
-                                      std::to_string(values[column][VALUE_AFTER] != nullptr ? lengths[column][VALUE_AFTER] : -1) + ") BS(" +
-                                      std::to_string(values[column][VALUE_BEFORE_SUPP] != nullptr ? lengths[column][VALUE_BEFORE_SUPP] : -1) + ")" +
-                                      " AS(" + std::to_string(values[column][VALUE_AFTER_SUPP] != nullptr ? lengths[column][VALUE_AFTER_SUPP] : -1) +
-                                      ") pk: " + std::to_string(table->columns[column]->numPk));
+                                                 std::to_string(values[column][VALUE_BEFORE] != nullptr ? lengths[column][VALUE_BEFORE] : -1) + ") A(" +
+                                                 std::to_string(values[column][VALUE_AFTER] != nullptr ? lengths[column][VALUE_AFTER] : -1) + ") BS(" +
+                                                 std::to_string(values[column][VALUE_BEFORE_SUPP] != nullptr ? lengths[column][VALUE_BEFORE_SUPP] : -1) + ")" +
+                                                 " AS(" + std::to_string(values[column][VALUE_AFTER_SUPP] != nullptr ? lengths[column][VALUE_AFTER_SUPP] : -1) +
+                                                 ") pk: " + std::to_string(table->columns[column]->numPk));
                     }
                 }
             } else {
                 ctx->logTrace(TRACE_DML, "tab: (obj: " + std::to_string(redoLogRecord1->obj) + ", dataobj: " +
-                        std::to_string(redoLogRecord1->dataObj) + ") type: " + std::to_string(type) + " columns: " + std::to_string(valuesMax));
+                                         std::to_string(redoLogRecord1->dataObj) + ") type: " + std::to_string(type) + " columns: " +
+                                         std::to_string(valuesMax));
 
                 baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1362,9 +1363,9 @@ namespace OpenLogReplicator {
                             continue;
 
                         ctx->logTrace(TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
-                                      std::to_string(lengths[column][VALUE_BEFORE]) + ") A(" + std::to_string(lengths[column][VALUE_AFTER]) +
-                                      ") BS(" + std::to_string(lengths[column][VALUE_BEFORE_SUPP]) + ") AS(" +
-                                      std::to_string(lengths[column][VALUE_AFTER_SUPP]) + ")");
+                                                 std::to_string(lengths[column][VALUE_BEFORE]) + ") A(" + std::to_string(lengths[column][VALUE_AFTER]) +
+                                                 ") BS(" + std::to_string(lengths[column][VALUE_BEFORE_SUPP]) + ") AS(" +
+                                                 std::to_string(lengths[column][VALUE_AFTER_SUPP]) + ")");
                     }
                 }
             }
@@ -1385,9 +1386,9 @@ namespace OpenLogReplicator {
                             if (table->columns[column]->numPk == 0) {
                                 // Remove unchanged column values - only for tables with a defined primary key
                                 if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
-                                        values[column][VALUE_AFTER] != nullptr) {
+                                    values[column][VALUE_AFTER] != nullptr) {
                                     if (lengths[column][VALUE_BEFORE] == 0 ||
-                                            memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
+                                        memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
                                         valuesSet[base] &= ~mask;
                                         values[column][VALUE_BEFORE] = nullptr;
                                         values[column][VALUE_BEFORE_SUPP] = nullptr;
@@ -1446,7 +1447,7 @@ namespace OpenLogReplicator {
                 systemTransaction->processUpdate(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                    table->matchesCondition(ctx, 'u', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'u', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
                 processUpdate(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_INSERT) {
@@ -1501,7 +1502,7 @@ namespace OpenLogReplicator {
                 systemTransaction->processInsert(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                    table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
                 processInsert(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_DELETE) {
@@ -1556,7 +1557,7 @@ namespace OpenLogReplicator {
                 systemTransaction->processDelete(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                    table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
                 processDelete(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
         }
 
@@ -1641,8 +1642,8 @@ namespace OpenLogReplicator {
         std::string out;
         uint64_t pos = 0;
         std::vector<std::string> tags;
-        std::map<std::string, std::string> dictNmSpcMap;
-        std::map<std::string, std::string> nmSpcPrefixMap;
+        std::map < std::string, std::string > dictNmSpcMap;
+        std::map < std::string, std::string > nmSpcPrefixMap;
         bool tagOpen = false;
         std::string lastTag;
 
@@ -1709,7 +1710,7 @@ namespace OpenLogReplicator {
                 uint8_t binaryXmlVersion = data[pos++];
                 if (binaryXmlVersion != 1) {
                     ctx->warning(60036, "incorrect XML data: prolog contains incorrect version, expected: 1, found: " +
-                                 std::to_string(static_cast<int>(data[pos + 1])));
+                                        std::to_string(static_cast<int>(data[pos + 1])));
                     return false;
                 }
                 uint8_t flags0 = data[pos++];
@@ -1944,7 +1945,7 @@ namespace OpenLogReplicator {
                 dictNmSpcMap.insert_or_assign(dictId, nmSpcId);
 
                 if (tagLength > 0) {
-                    std::string prefix(reinterpret_cast<const char *>(data + pos), tagLength);
+                    std::string prefix(reinterpret_cast<const char*>(data + pos), tagLength);
                     pos += tagLength;
 
                     auto nmSpcPrefixMapIt = nmSpcPrefixMap.find(nmSpcId);
@@ -2100,7 +2101,7 @@ namespace OpenLogReplicator {
                 break;
 
             ctx->warning(60036, "incorrect XML data: string too short, can't decode code: " + std::to_string(data[pos]) + " at pos: " +
-                         std::to_string(pos));
+                                std::to_string(pos));
             return false;
         }
 

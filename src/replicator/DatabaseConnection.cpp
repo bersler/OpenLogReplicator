@@ -23,16 +23,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     DatabaseConnection::DatabaseConnection(DatabaseEnvironment* newEnv, const char* newUser, const char* newPassword, const char* newConnectString,
                                            bool newSysAsm) :
-        user(newUser),
-        password(newPassword),
-        connectString(newConnectString),
-        sysAsm(newSysAsm),
-        connected(false),
-        env(newEnv),
-        errhp(nullptr),
-        srvhp(nullptr),
-        svchp(nullptr),
-        authp(nullptr) {
+            user(newUser),
+            password(newPassword),
+            connectString(newConnectString),
+            sysAsm(newSysAsm),
+            connected(false),
+            env(newEnv),
+            errhp(nullptr),
+            srvhp(nullptr),
+            svchp(nullptr),
+            authp(nullptr) {
     }
 
     void DatabaseConnection::connect() {
@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
                        0, nullptr);
 
         env->checkErr(errhp, OCIServerAttach(srvhp, errhp, reinterpret_cast<const OraText*>(connectString.c_str()),
-                                                    connectString.length(), OCI_DEFAULT));
+                                             connectString.length(), OCI_DEFAULT));
         env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX, srvhp, 0,
                                         OCI_ATTR_SERVER, reinterpret_cast<OCIError*>(errhp)));
         env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION,

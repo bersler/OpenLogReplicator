@@ -39,18 +39,17 @@ namespace OpenLogReplicator {
             return this->data;
         }
 
-        bool operator== (const typeTime& other) const {
+        bool operator==(const typeTime& other) const {
             return data == other.data;
         }
 
-        typeTime& operator= (uint32_t newData) {
+        typeTime& operator=(uint32_t newData) {
             data = newData;
             return *this;
         }
 
         [[nodiscard]] time_t toTime() const {
-            struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    nullptr};
+            struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
             memset(reinterpret_cast<void*>(&epochTime), 0, sizeof(epochTime));
             uint64_t rest = data;
             epochTime.tm_sec = static_cast<int>(rest % 60);
@@ -80,33 +79,33 @@ namespace OpenLogReplicator {
             uint64_t mm = (rest % 12) + 1;
             rest /= 12;
             uint64_t yy = rest + 1988;
-            buffer[3] = '0' + (char)(yy % 10);
+            buffer[3] = '0' + static_cast<char>(yy % 10);
             yy /= 10;
-            buffer[2] = '0' + (char)(yy % 10);
+            buffer[2] = '0' + static_cast<char>(yy % 10);
             yy /= 10;
-            buffer[1] = '0' + (char)(yy % 10);
+            buffer[1] = '0' + static_cast<char>(yy % 10);
             yy /= 10;
-            buffer[0] = '0' + (char)yy;
+            buffer[0] = '0' + static_cast<char>(yy);
             buffer[4] = '-';
-            buffer[6] = '0' + (char)(mm % 10);
+            buffer[6] = '0' + static_cast<char>(mm % 10);
             mm /= 10;
-            buffer[5] = '0' + (char)mm;
+            buffer[5] = '0' + static_cast<char>(mm);
             buffer[7] = '-';
-            buffer[9] = '0' + (char)(dd % 10);
+            buffer[9] = '0' + static_cast<char>(dd % 10);
             dd /= 10;
-            buffer[8] = '0' + (char)dd;
+            buffer[8] = '0' + static_cast<char>(dd);
             buffer[10] = 'T';
-            buffer[12] = '0' + (char)(hh % 10);
+            buffer[12] = '0' + static_cast<char>(hh % 10);
             hh /= 10;
-            buffer[11] = '0' + (char)hh;
+            buffer[11] = '0' + static_cast<char>(hh);
             buffer[13] = ':';
-            buffer[15] = '0' + (char)(mi % 10);
+            buffer[15] = '0' + static_cast<char>(mi % 10);
             mi /= 10;
-            buffer[14] = '0' + (char)mi;
+            buffer[14] = '0' + static_cast<char>(mi);
             buffer[16] = ':';
-            buffer[18] = '0' + (char)(ss % 10);
+            buffer[18] = '0' + static_cast<char>(ss % 10);
             ss /= 10;
-            buffer[17] = '0' + (char)ss;
+            buffer[17] = '0' + static_cast<char>(ss);
             buffer[19] = 'Z';
             buffer[20] = 0;
             // 01234567890123456789
@@ -115,11 +114,16 @@ namespace OpenLogReplicator {
 
         friend std::ostream& operator<<(std::ostream& os, const typeTime& other) {
             uint64_t rest = other.data;
-            uint64_t ss = rest % 60; rest /= 60;
-            uint64_t mi = rest % 60; rest /= 60;
-            uint64_t hh = rest % 24; rest /= 24;
-            uint64_t dd = (rest % 31) + 1; rest /= 31;
-            uint64_t mm = (rest % 12) + 1; rest /= 12;
+            uint64_t ss = rest % 60;
+            rest /= 60;
+            uint64_t mi = rest % 60;
+            rest /= 60;
+            uint64_t hh = rest % 24;
+            rest /= 24;
+            uint64_t dd = (rest % 31) + 1;
+            rest /= 31;
+            uint64_t mm = (rest % 12) + 1;
+            rest /= 12;
             uint64_t yy = rest + 1988;
             os << std::setfill('0') << std::setw(2) << std::dec << mm << "/" <<
                std::setfill('0') << std::setw(2) << std::dec << dd << "/" <<

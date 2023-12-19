@@ -104,12 +104,12 @@ namespace OpenLogReplicator {
             delete lob;
         lobs.clear();
 
-        for (Expression *expression: stack)
+        for (Expression* expression: stack)
             if (!expression->isToken())
                 delete expression;
         stack.clear();
 
-        for (Token *token: tokens)
+        for (Token* token: tokens)
             delete token;
         tokens.clear();
 
@@ -121,8 +121,8 @@ namespace OpenLogReplicator {
     void OracleTable::addColumn(OracleColumn* column) {
         if (column->segCol != static_cast<typeCol>(columns.size() + 1))
             throw RuntimeException(50002, "trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) +
-                                   ", dataobj: " + std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) +
-                                   ", segcol#: " + std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
+                                          ", dataobj: " + std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) +
+                                          ", segcol#: " + std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
 
         if (column->guard)
             guardSegNo = column->segCol - static_cast<typeCol>(1);
@@ -169,8 +169,8 @@ namespace OpenLogReplicator {
 
     std::ostream& operator<<(std::ostream& os, const OracleTable& table) {
         os << "('" << table.owner << "'.'" << table.name << "', " << std::dec << table.obj << ", " << table.dataObj << ", " << table.cluCols << ", " <<
-                table.maxSegCol << ")\n";
-        for (OracleColumn* column : table.columns)
+           table.maxSegCol << ")\n";
+        for (OracleColumn* column: table.columns)
             os << "     - " << *column << '\n';
         return os;
     }

@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
     void OpCode0504::ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (fieldLength < 20)
             throw RedoLogException(50061, "too short field ktucm: " + std::to_string(fieldLength) + " offset: " +
-                                   std::to_string(redoLogRecord->dataOffset));
+                                          std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->xid = typeXid(redoLogRecord->usn,
                                      ctx->read16(redoLogRecord->data + fieldPos + 0),
@@ -59,18 +59,18 @@ namespace OpenLogReplicator {
             uint32_t sta = ctx->read32(redoLogRecord->data + fieldPos + 12);
 
             ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex <<
-                    static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
-                    " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
-                    " srt: " << std::dec << srt <<
-                    " sta: " << std::dec << sta <<
-                    " flg: 0x" << std::hex << redoLogRecord->flg << " ";
+                            static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
+                            " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
+                            " srt: " << std::dec << srt <<
+                            " sta: " << std::dec << sta <<
+                            " flg: 0x" << std::hex << redoLogRecord->flg << " ";
         }
     }
 
     void OpCode0504::ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (fieldLength < 16)
             throw RedoLogException(50061, "too short field ktucf: " + std::to_string(fieldLength) + " offset: " +
-                                   std::to_string(redoLogRecord->dataOffset));
+                                          std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 0);
 
@@ -80,11 +80,11 @@ namespace OpenLogReplicator {
             uint8_t fbi = redoLogRecord->data[fieldPos + 12];
 
             ctx->dumpStream << "ktucf redo:" <<
-                    " uba: " << PRINTUBA(redoLogRecord->uba) <<
-                    " ext: " << std::dec << ext <<
-                    " spc: " << std::dec << spc <<
-                    " fbi: " << std::dec << static_cast<uint64_t>(fbi) <<
-                    " ";
+                            " uba: " << PRINTUBA(redoLogRecord->uba) <<
+                            " ext: " << std::dec << ext <<
+                            " spc: " << std::dec << spc <<
+                            " fbi: " << std::dec << static_cast<uint64_t>(fbi) <<
+                            " ";
         }
     }
 }

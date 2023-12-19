@@ -55,7 +55,7 @@ typedef uint16_t typeType;
 typedef uint32_t typeCon;
 typedef uint32_t typeTs;
 typedef uint32_t typeUser;
-typedef uint8_t  typeOptions;
+typedef uint8_t typeOptions;
 typedef uint16_t typeField;
 
 typedef uint16_t typeUnicode16;
@@ -201,7 +201,7 @@ typedef uint64_t typeUnicode;
 #define RECORD(__uba)                           (static_cast<uint8_t>(((static_cast<uint64_t>(__uba))>>48)&0xFF))
 #define PRINTUBA(__uba)                         "0x"<<std::setfill('0')<<std::setw(8)<<std::hex<<BLOCK(__uba)<<"."<<std::setfill('0')<<std::setw(4)<<std::hex<<SEQUENCE(__uba)<<"."<<std::setfill('0')<<std::setw(2)<<std::hex<<static_cast<uint32_t>RECORD(__uba)
 
-#define SCN(__scn1,__scn2)                      (((static_cast<uint64_t>(__scn1))<<32)|(__scn2))
+#define SCN(__scn1, __scn2)                      (((static_cast<uint64_t>(__scn1))<<32)|(__scn2))
 #define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<(static_cast<uint32_t>((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
 #define PRINTSCN64D(__scn)                      "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<(static_cast<uint32_t>((__scn)>>48)&0xFFFF)<<"."<<std::setw(4)<<(static_cast<uint32_t>((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)

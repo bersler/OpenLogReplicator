@@ -31,12 +31,12 @@ namespace OpenLogReplicator {
                              uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll,
                              uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
                              uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
-        Builder(newCtx, newLocales, newMetadata, newDbFormat, newAttributesFormat, newIntervalDtsFormat, newIntervalYtmFormat, newMessageFormat, newRidFormat,
-                newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll, newCharFormat, newScnFormat, newScnAll, newUnknownFormat,
-                newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
-                hasPreviousValue(false),
-                hasPreviousRedo(false),
-                hasPreviousColumn(false) {
+            Builder(newCtx, newLocales, newMetadata, newDbFormat, newAttributesFormat, newIntervalDtsFormat, newIntervalYtmFormat, newMessageFormat,
+                    newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll, newCharFormat, newScnFormat, newScnAll,
+                    newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+            hasPreviousValue(false),
+            hasPreviousRedo(false),
+            hasPreviousColumn(false) {
     }
 
     void BuilderJson::columnNull(OracleTable* table, typeCol col, bool after) {
@@ -53,21 +53,21 @@ namespace OpenLogReplicator {
 
             uint64_t typeNo = table->columns[col]->type;
             if (typeNo != SYS_COL_TYPE_VARCHAR
-                    && typeNo != SYS_COL_TYPE_NUMBER
-                    && typeNo != SYS_COL_TYPE_DATE
-                    && typeNo != SYS_COL_TYPE_RAW
-                    && typeNo != SYS_COL_TYPE_CHAR
-                    && typeNo != SYS_COL_TYPE_FLOAT
-                    && typeNo != SYS_COL_TYPE_DOUBLE
-                    && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
-                    && (typeNo != SYS_COL_TYPE_JSON || !after)
-                    && (typeNo != SYS_COL_TYPE_CLOB || !after)
-                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP
-                    && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
-                    && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
-                    && typeNo != SYS_COL_TYPE_UROWID
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ)
+                && typeNo != SYS_COL_TYPE_NUMBER
+                && typeNo != SYS_COL_TYPE_DATE
+                && typeNo != SYS_COL_TYPE_RAW
+                && typeNo != SYS_COL_TYPE_CHAR
+                && typeNo != SYS_COL_TYPE_FLOAT
+                && typeNo != SYS_COL_TYPE_DOUBLE
+                && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
+                && (typeNo != SYS_COL_TYPE_JSON || !after)
+                && (typeNo != SYS_COL_TYPE_CLOB || !after)
+                && (typeNo != SYS_COL_TYPE_BLOB || !after)
+                && typeNo != SYS_COL_TYPE_TIMESTAMP
+                && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
+                && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
+                && typeNo != SYS_COL_TYPE_UROWID
+                && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ)
                 return;
         }
 
@@ -170,7 +170,7 @@ namespace OpenLogReplicator {
         append('"');
     }
 
-    void BuilderJson::columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction) {
+    void BuilderJson::columnTimestamp(const std::string& columnName, struct tm& epochTime, uint64_t fraction) {
         int64_t val;
         if (hasPreviousColumn)
             append(',');
@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::columnTimestampTz(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
+    void BuilderJson::columnTimestampTz(const std::string& columnName, struct tm& epochTime, uint64_t fraction, const char* tz) {
         int64_t val;
         if (hasPreviousColumn)
             append(',');
@@ -557,7 +557,7 @@ namespace OpenLogReplicator {
     void BuilderJson::appendAttributes() {
         append(R"("attributes":{)", sizeof(R"("attributes":[)") - 1);
         bool hasPreviousAttribute = false;
-        for (const auto &attributeIt: *attributes) {
+        for (const auto& attributeIt: *attributes) {
             if (hasPreviousAttribute)
                 append(',');
             else
@@ -646,8 +646,8 @@ namespace OpenLogReplicator {
                         appendSDec(table->columns[column]->scale);
                         break;
 
-                    // Long, not supported
                     case SYS_COL_TYPE_LONG:
+                        // Long, not supported
                         append(R"("long")", sizeof(R"("long")") - 1);
                         break;
 
@@ -735,7 +735,7 @@ namespace OpenLogReplicator {
     }
 
     time_t BuilderJson::tmToEpoch(struct tm* epoch) {
-        static const int cumDays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+        static const int cumDays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
         long year;
         time_t result;
 
@@ -916,8 +916,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                                    typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
+    void BuilderJson::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
 

@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     TransactionBuffer::TransactionBuffer(Ctx* newCtx) :
-        ctx(newCtx) {
+            ctx(newCtx) {
     }
 
     TransactionBuffer::~TransactionBuffer() {
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::purge() {
-        for (auto xidTransactionMapIt : xidTransactionMap) {
+        for (auto xidTransactionMapIt: xidTransactionMap) {
             Transaction* transaction = xidTransactionMapIt.second;
             transaction->purge(this);
             delete transaction;
@@ -146,12 +146,12 @@ namespace OpenLogReplicator {
 
         if (length > DATA_BUFFER_SIZE)
             throw RedoLogException(50040, "block size (" + std::to_string(length) + ") exceeding max block size (" +
-                                   std::to_string(FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
+                                          std::to_string(FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
         if (transaction->lastSplit) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOMID) == 0)
                 throw RedoLogException(50041, "bad split offset: " + std::to_string(redoLogRecord->dataOffset) + " xid: " +
-                                       transaction->xid.toString());
+                                              transaction->xid.toString());
 
             uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(transaction->lastTc->buffer + transaction->lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
             RedoLogRecord* last501 = reinterpret_cast<RedoLogRecord*>(transaction->lastTc->buffer + transaction->lastTc->size - lengthLast + ROW_HEADER_REDO1);
@@ -206,8 +206,8 @@ namespace OpenLogReplicator {
         uint64_t length = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
         if (length > DATA_BUFFER_SIZE)
-            throw RedoLogException(50040, "block size (" + std::to_string(length) +  ") exceeding max block size (" +
-                                   std::to_string(FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
+            throw RedoLogException(50040, "block size (" + std::to_string(length) + ") exceeding max block size (" +
+                                          std::to_string(FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
         if (transaction->lastSplit) {
             if ((redoLogRecord1->opCode) != 0x0501)
@@ -215,7 +215,7 @@ namespace OpenLogReplicator {
 
             if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) == 0)
                 throw RedoLogException(50043, "bad split offset: " + std::to_string(redoLogRecord1->dataOffset) + " xid: " +
-                                       transaction->xid.toString() + " second position");
+                                              transaction->xid.toString() + " second position");
 
             uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(transaction->lastTc->buffer + transaction->lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
             RedoLogRecord* last501 = reinterpret_cast<RedoLogRecord*>(transaction->lastTc->buffer + transaction->lastTc->size - lengthLast + ROW_HEADER_REDO1);
@@ -278,7 +278,7 @@ namespace OpenLogReplicator {
     void TransactionBuffer::rollbackTransactionChunk(Transaction* transaction) {
         if (transaction->lastTc == nullptr || transaction->lastTc->size < ROW_HEADER_TOTAL || transaction->lastTc->elements == 0)
             throw RedoLogException(50044, "trying to remove from empty buffer size: " + std::to_string(transaction->lastTc->size) +
-                                   " elements: " + std::to_string(transaction->lastTc->elements));
+                                          " elements: " + std::to_string(transaction->lastTc->elements));
 
         uint64_t length = *(reinterpret_cast<uint64_t*>(transaction->lastTc->buffer + transaction->lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
         transaction->lastTc->size -= length;
@@ -345,7 +345,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid) {
-        for (auto xidTransactionMapIt : xidTransactionMap) {
+        for (auto xidTransactionMapIt: xidTransactionMap) {
             Transaction* transaction = xidTransactionMapIt.second;
             if (transaction->firstSequence < minSequence) {
                 minSequence = transaction->firstSequence;
@@ -361,13 +361,13 @@ namespace OpenLogReplicator {
     void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
         if (ctx->trace & TRACE_LOB)
             ctx->logTrace(TRACE_LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
-                          " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
+                                     " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
 
         LobKey lobKey(redoLogRecord1->lobId, redoLogRecord1->dba);
 
         if (orphanedLobs.find(lobKey) != orphanedLobs.end()) {
             ctx->warning(60009, "duplicate orphaned lob: " + redoLogRecord1->lobId.lower() + ", page: " +
-                         std::to_string(redoLogRecord1->dba));
+                                std::to_string(redoLogRecord1->dba));
             return;
         }
 

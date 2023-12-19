@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
     void OpCode0513::attributeFlags(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction) {
         if (fieldLength < 2)
             throw RedoLogException(50061, "too short field 5.13.11: " + std::to_string(fieldLength) + " offset: " +
-                                   std::to_string(redoLogRecord->dataOffset));
+                                          std::to_string(redoLogRecord->dataOffset));
 
         std::string value("true");
 
@@ -262,8 +262,8 @@ namespace OpenLogReplicator {
 
     void OpCode0513::attributeSessionSerial(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction) {
         if (fieldLength < 4) {
-            ctx->warning(70001,"too short field session serial: " + std::to_string(fieldLength) + " offset: " +
-                         std::to_string(redoLogRecord->dataOffset));
+            ctx->warning(70001, "too short field session serial: " + std::to_string(fieldLength) + " offset: " +
+                                std::to_string(redoLogRecord->dataOffset));
             return;
         }
 
@@ -273,8 +273,8 @@ namespace OpenLogReplicator {
             sessionNumber = ctx->read16(redoLogRecord->data + fieldPos + 0);
         else {
             if (fieldLength < 8) {
-                ctx->warning(70001,"too short field session number: " + std::to_string(fieldLength) + " offset: " +
-                             std::to_string(redoLogRecord->dataOffset));
+                ctx->warning(70001, "too short field session number: " + std::to_string(fieldLength) + " offset: " +
+                                    std::to_string(redoLogRecord->dataOffset));
                 return;
             }
             sessionNumber = ctx->read32(redoLogRecord->data + fieldPos + 4);
@@ -290,15 +290,15 @@ namespace OpenLogReplicator {
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream <<
-                    "session number   = " << std::dec << sessionNumber << '\n' <<
-                    "serial  number   = " << std::dec << serialNumber << '\n';
+                            "session number   = " << std::dec << sessionNumber << '\n' <<
+                            "serial  number   = " << std::dec << serialNumber << '\n';
         }
     }
 
     void OpCode0513::attributeVersion(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction) {
         if (fieldLength < 4)
             throw RedoLogException(50061, "too short field 5.13.12: " + std::to_string(fieldLength) + " offset: " +
-                                   std::to_string(redoLogRecord->dataOffset));
+                                          std::to_string(redoLogRecord->dataOffset));
 
         uint32_t version = ctx->read32(redoLogRecord->data + fieldPos + 0);
         std::string value = std::to_string(version);
@@ -313,7 +313,7 @@ namespace OpenLogReplicator {
     void OpCode0513::attributeAuditSessionId(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, Transaction* transaction) {
         if (fieldLength < 4)
             throw RedoLogException(50061, "too short field 5.13.13: " + std::to_string(fieldLength) + " offset: " +
-                                   std::to_string(redoLogRecord->dataOffset));
+                                          std::to_string(redoLogRecord->dataOffset));
 
         uint32_t auditSessionid = ctx->read32(redoLogRecord->data + fieldPos + 0);
         std::string value = std::to_string(auditSessionid);

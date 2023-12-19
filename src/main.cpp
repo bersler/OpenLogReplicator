@@ -85,7 +85,10 @@ namespace OpenLogReplicator {
                          std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
                          " (C) 2018-2023 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information, arch: " + name.machine +
                          ", system: " + name.sysname + ", release: " + name.release + ", build: " + OpenLogReplicator_CMAKE_BUILD_TYPE + ", modules:"
-                         HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ);
+                                                                                                                                         HAS_KAFKA
+                                                                                                                                         HAS_OCI
+                                                                                                                                         HAS_PROTOBUF
+                                                                                                                                         HAS_ZEROMQ);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {
@@ -106,7 +109,7 @@ namespace OpenLogReplicator {
                 fileName = argv[2];
             } else if (argc > 1)
                 throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
-                                             " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+                                                    " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
         } catch (ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             return 1;

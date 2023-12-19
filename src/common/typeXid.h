@@ -55,8 +55,8 @@ namespace OpenLogReplicator {
                 usn.assign(str, 4);
                 slt.assign(str + 4, 4);
                 sqn.assign(str + 8, 8);
-            // UUUU.SSS.QQQQQQQQ
             } else if (length == 17) {
+                // UUUU.SSS.QQQQQQQQ
                 for (uint64_t i = 0; i < 17; ++i)
                     if (!iswxdigit(str[i]) && i != 4 && i != 8)
                         throw DataException(20002, "bad XID value: " + std::string(str));
@@ -65,8 +65,8 @@ namespace OpenLogReplicator {
                 usn.assign(str, 4);
                 slt.assign(str + 5, 3);
                 sqn.assign(str + 9, 8);
-            // UUUU.SSSS.QQQQQQQQ
             } else if (length == 18) {
+                // UUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 0; i < 18; ++i)
                     if (!iswxdigit(str[i]) && i != 4 && i != 9)
                         throw DataException(20002, "bad XID value: " + std::string(str));
@@ -75,8 +75,8 @@ namespace OpenLogReplicator {
                 usn.assign(str, 4);
                 slt.assign(str + 5, 4);
                 sqn.assign(str + 10, 8);
-            // 0xUUUU.SSS.QQQQQQQQ
             } else if (length == 19) {
+                // 0xUUUU.SSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 19; ++i)
                     if (!iswxdigit(str[i]) && i != 6 && i != 10)
                         throw DataException(20002, "bad XID value: " + std::string(str));
@@ -85,8 +85,8 @@ namespace OpenLogReplicator {
                 usn.assign(str + 2, 4);
                 slt.assign(str + 7, 3);
                 sqn.assign(str + 11, 8);
-            // 0xUUUU.SSSS.QQQQQQQQ
             } else if (length == 20) {
+                // 0xUUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 20; ++i)
                     if (!iswxdigit(str[i]) && i != 6 && i != 11)
                         throw DataException(20002, "bad XID value: " + std::string(str));
@@ -99,8 +99,8 @@ namespace OpenLogReplicator {
                 throw DataException(20002, "bad XID value: " + std::string(str));
 
             data = (static_cast<uint64_t>(stoul(usn, nullptr, 16)) << 48) |
-                    (static_cast<uint64_t>(stoul(slt, nullptr, 16)) << 32) |
-                    static_cast<uint64_t>(stoul(sqn, nullptr, 16));
+                   (static_cast<uint64_t>(stoul(slt, nullptr, 16)) << 32) |
+                   static_cast<uint64_t>(stoul(sqn, nullptr, 16));
         }
 
         uint64_t getData() const {
@@ -131,7 +131,7 @@ namespace OpenLogReplicator {
             return data < other.data;
         }
 
-        bool operator== (const typeXid& other) const {
+        bool operator==(const typeXid& other) const {
             return data == other.data;
         }
 
@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
         std::string toString() const {
             std::ostringstream ss;
             ss << "0x" << std::setfill('0') << std::setw(4) << std::hex << (data >> 48) << "." << std::setw(3) <<
-                    ((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);
+               ((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);
             return ss.str();
         }
     };

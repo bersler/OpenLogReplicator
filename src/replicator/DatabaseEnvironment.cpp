@@ -25,8 +25,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     DatabaseEnvironment::DatabaseEnvironment(Ctx* newCtx) :
-        ctx(newCtx),
-        envhp(nullptr) {
+            ctx(newCtx),
+            envhp(nullptr) {
     }
 
     DatabaseEnvironment::~DatabaseEnvironment() {

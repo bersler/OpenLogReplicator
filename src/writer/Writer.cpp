@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
     void Writer::initialize() {
         if (queue != nullptr)
             return;
-        queue = new BuilderMsg*[ctx->queueSize];
+        queue = new BuilderMsg* [ctx->queueSize];
     }
 
     void Writer::createMessage(BuilderMsg* msg) {
@@ -75,10 +75,10 @@ namespace OpenLogReplicator {
             return;
 
         BuilderMsg** oldQueue = queue;
-        queue = new BuilderMsg*[ctx->queueSize];
+        queue = new BuilderMsg* [ctx->queueSize];
         uint64_t oldQueueSize = currentQueueSize;
 
-        for (uint64_t newId = 0 ; newId < currentQueueSize; ++newId) {
+        for (uint64_t newId = 0; newId < currentQueueSize; ++newId) {
             queue[newId] = oldQueue[0];
             uint64_t i = 0;
             --oldQueueSize;
@@ -189,7 +189,7 @@ namespace OpenLogReplicator {
                 try {
                     mainLoop();
 
-                // Client disconnected
+                    // Client disconnected
                 } catch (NetworkException& ex) {
                     ctx->warning(ex.code, ex.msg);
                     streaming = false;
@@ -271,7 +271,7 @@ namespace OpenLogReplicator {
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
                     if (ctx->trace & TRACE_WRITER)
                         ctx->logTrace(TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
-                                      " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
+                                                    " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     usleep(ctx->pollIntervalUs);
                     pollQueue();
                 }
@@ -288,18 +288,18 @@ namespace OpenLogReplicator {
                     createMessage(msg);
                     // Send the message to the client in one part
                     if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
-                            !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
+                        !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
                     oldLength += length8;
 
-                // The message is split to many parts - merge & copy
                 } else {
+                    // The message is split to many parts - merge & copy
                     msg->data = new uint8_t[msg->length];
                     if (msg->data == nullptr)
                         throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->length) +
-                                               " bytes memory for: temporary buffer for JSON message");
+                                                      " bytes memory for: temporary buffer for JSON message");
                     msg->flags |= OUTPUT_BUFFER_MESSAGE_ALLOCATED;
 
                     uint64_t copied = 0;
@@ -323,7 +323,7 @@ namespace OpenLogReplicator {
                     createMessage(msg);
                     // Send only new messages to the client
                     if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
-                            !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
+                        !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else
                         sendMessage(msg);
@@ -361,19 +361,19 @@ namespace OpenLogReplicator {
         if (ctx->trace & TRACE_CHECKPOINT) {
             if (checkpointScn == ZERO_SCN)
                 ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
-                        std::to_string(confirmedIdx));
+                                                std::to_string(confirmedIdx));
             else
                 ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
-                        std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
-                        std::to_string(checkpointIdx));
+                                                std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
+                                                std::to_string(checkpointIdx));
         }
         std::string name(database + "-chkpt");
         std::ostringstream ss;
         ss << R"({"database":")" << database
-                << R"(","scn":)" << std::dec << confirmedScn
-                << R"(,"idx":)" << std::dec << confirmedIdx
-                << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
-                << R"(,"activation":)" << std::dec << metadata->activation << "}";
+           << R"(","scn":)" << std::dec << confirmedScn
+           << R"(,"idx":)" << std::dec << confirmedIdx
+           << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
+           << R"(,"activation":)" << std::dec << metadata->activation << "}";
 
         if (metadata->stateWrite(name, confirmedScn, ss)) {
             checkpointScn = confirmedScn;
@@ -394,7 +394,7 @@ namespace OpenLogReplicator {
 
         if (checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError())
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                " - parse error: " + GetParseError_En(document.GetParseError()));
+                                       " - parse error: " + GetParseError_En(document.GetParseError()));
 
         const char* databaseJson = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
         if (database != databaseJson)
@@ -417,7 +417,7 @@ namespace OpenLogReplicator {
         metadata->startTimeRel = 0;
 
         ctx->info(0, "checkpoint - all confirmed till scn: " + std::to_string(checkpointScn) + ", idx: " +
-                std::to_string(checkpointIdx));
+                     std::to_string(checkpointIdx));
         metadata->setStatusReplicate();
     }
 

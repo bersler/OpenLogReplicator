@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     SchemaElement::SchemaElement(const char* newOwner, const char* newTable, typeOptions newOptions) :
-        owner(newOwner),
-        table(newTable),
-        options(newOptions) {
+            owner(newOwner),
+            table(newTable),
+            options(newOptions) {
     }
 }

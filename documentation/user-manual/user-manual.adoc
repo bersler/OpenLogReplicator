@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.0
-:revdate: 2023-12-09
+:revdate: 2023-12-19
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -78,7 +78,6 @@ This means that when the redo log stream contains transactions with many large L
 
 .Memory management big picture
 image:memory-management.png[Memory management big picture,,,]
-
 
 === Database redo logs
 
@@ -360,7 +359,6 @@ The field contains a consecutive number of the payload data.
 
 See: xref:../reference-manual/reference-manual.adoc#message[message] parameter for configuration details.
 
-
 === Protocol buffer format
 
 The Protocol buffer format is the second implemented format.
@@ -424,8 +422,7 @@ Those entities are files by default, but future versions might use other storing
 
 There are 2 types of checkpoints:
 
-- SCN checkpoint -- the SCN number defines the position in the redo log;
-The file contains the SCN number of the last transaction sent to output.
+- SCN checkpoint -- the SCN number defines the position in the redo log; The file contains the SCN number of the last transaction sent to output.
 
 - Schema checkpoints -- represented in the checkpoint directory as files with SCN number in the name.
 Every file represents schema of the database which was active at the time of the SCN number in the file name.
@@ -473,14 +470,11 @@ OpenLogReplicator keeps a local repository about schema changes and is able to r
 .Network target architecture
 image:network-target-architecture.png[Network target architecture,,,]
 
-On the image above notice a distinctiobn between:
-- checkpoint files with schema -- are files containing image of the database schema which was present at the time of the SCN number in the file name;
-those files are created periodically and are not created for every transaction;
-they are needed during the restart of OpenLogReplicator to be able to resume replication from any SCN;
-the client is not controlling the process of creating those files;
-the files are periodically deleted -- when the program decides they are not needed anymore;
-- checkpoint SCN position -- is an SCN value controlled by the client and is used to inform OpenLogReplicator about the last processed SCN;
-this value has to be maintained by the client, every time the client reconnects, OpenLogReplicator is expecting the last processed SCN value, so that it is able to resume replication from the last processed SCN;
+On the image above notice a distinction between:
+
+- checkpoint files with schema -- are files containing image of the database schema which was present at the time of the SCN number in the file name; those files are created periodically and are not created for every transaction; they are needed during the restart of OpenLogReplicator to be able to resume replication from any SCN; the client is not controlling the process of creating those files; the files are periodically deleted -- when the program decides they are not needed anymore;
+
+- checkpoint SCN position -- is an SCN value controlled by the client and is used to inform OpenLogReplicator about the last processed SCN; this value has to be maintained by the client, every time the client reconnects, OpenLogReplicator is expecting the last processed SCN value, so that it is able to resume replication from the last processed SCN;
 
 CAUTION: It is up to the target to decide how often to confirm the SCN to OpenLogReplicator.
 If the target confirms the SCN too seldom, memory usage of OpenLogReplicator might increase since all transactions are cached in memory.
@@ -515,7 +509,6 @@ If this fails, the server sends an error message and waits for further commands.
 
 4. After receiving the REDO command, the server starts sending the redo log records to the client.
 Once the redo stream is started, it is not possible to change the position in the redo log.
-
 
 == Supported features
 
@@ -581,7 +574,9 @@ OpenLogReplicator treats DDL operations as DML operations being executed on syst
 Some system tables are also tracked for changes.
 
 Whenever a DDL command appears in the redo log, the transaction contained 2 elements:
+
 - the SQL text of the DDL command (which can be sent to output);
+
 - a sequence of DML commands on system tables (which can be sent to output as well) -- which is processed and the internal copy of system tables is updated.
 
 The DML commands are parsed, and particular columns are extracted from the system tables and updated in the internal dictionaries.
@@ -594,7 +589,6 @@ This would mean that the table for some time existed without indexes.
 Or primary key.
 This could lead to warnings in the OpenLogReplicator log file informing that the table is missing a primary key defined in the configuration files.
 In such cases -- ignore the warnings.
-
 
 === Supported character sets [[supported-character-sets]]
 
@@ -743,8 +737,7 @@ Once started, the schema file contains a list of schemas for which the metadata 
 
 It is not possible to add new schemas.
 
-But it is possible to change the list of tables that are replicated, as long as the list
-of schemas does not change.
+But it is possible to change the list of tables that are replicated, as long as the list of schemas does not change.
 
 The change can be done offline, while OpenLogReplicator is not running, but also online - when OpenLogReplicator is running.
 To allow online configuration updates, the configuration file is monitored for changes.
@@ -770,8 +763,7 @@ This includes only the tags `table` and `owner` both in `debug` and `filter` sec
 
 === Offline reader
 
-For cases where there is no physical way to connect the database, OpenLogReplicator offers
-an offline reader mode.
+For cases where there is no physical way to connect the database, OpenLogReplicator offers an offline reader mode.
 
 In such a scenario, a replication may be fully functional, even though there is no network connection to the database.
 This also implies that there is no need to create a user in the database.
