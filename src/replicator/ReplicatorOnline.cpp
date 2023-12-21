@@ -652,6 +652,7 @@ namespace OpenLogReplicator {
             checkTableForGrantsFlashback("SYS.TABSUBPART$", currentScn);
             checkTableForGrantsFlashback("SYS.TS$", currentScn);
             checkTableForGrantsFlashback("SYS.USER$", currentScn);
+            checkTableForGrantsFlashback("XDB.XDB$TTSET", currentScn);
         }
 
         metadata->dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
@@ -1016,6 +1017,14 @@ namespace OpenLogReplicator {
             for (auto ttSetIt: schema->xdbTtSetMapRowId) {
                 XmlCtx* xmlCtx = new XmlCtx(ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
                 schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
+
+                // Check permissions before reading data
+                std::string tableName = "XDB.X$NM" + ttSetIt.second->tokSuf;
+                checkTableForGrantsFlashback(tableName.c_str(), targetScn);
+                tableName = "XDB.X$PT" + ttSetIt.second->tokSuf;
+                checkTableForGrantsFlashback(tableName.c_str(), targetScn);
+                tableName = "XDB.X$QN" + ttSetIt.second->tokSuf;
+                checkTableForGrantsFlashback(tableName.c_str(), targetScn);
 
                 // Reading XDB.X$NMxxxx
                 DatabaseStatement xdbXNmStmt(conn);
