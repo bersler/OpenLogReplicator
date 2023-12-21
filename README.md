@@ -22,7 +22,6 @@ Refer to [OpenLogReplicator tutorials repository](https://github.com/bersler/Ope
 6. [Troubleshooting Guide](documentation/troubleshooting/troubleshooting.adoc)
 7. [Log Message Guide](documentation/log-messages/log-messages.adoc)
 8. [Experimental Features](documentation/experimental-features/experimental-features.adoc)
-8. [Experimental Features](documentation/experimental-features/experimental-features.adoc)
 
 Additionally:
 
