@@ -32,6 +32,17 @@ Additionally:
 
 Use also [Gitter chat](https://gitter.im/bersler/OpenLogReplicator).
 
+## Debezium
+
+OpenLogReplicator can work in cooperation with [Debezium](https://debezium.io/) CDC as a replacement for LogMiner reader. 
+Use the following table to find out which version of OpenLogReplicator is compatible with which version of Debezium.
+
+| Debezium | OLR minimal version | OLR recommended  version |
+|:--------:|:-------------------:|:------------------------:|
+|  2.4.0   |        1.3.0        |          1.4.0           |
+|  2.5.0   |        1.3.0        |          1.4.0           |
+
+
 ## Sponsoring the Project
 
 If you (or your company) are benefiting from the project and would like to support the contributor, kindly support the project.
