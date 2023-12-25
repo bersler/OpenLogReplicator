@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.4.0
-:revdate: 2023-12-04
+:revnumber: 1.4.1
+:revdate: 2023-12-26
 :imagesdir: ./images
 :toc: preamble
 
