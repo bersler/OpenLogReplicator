@@ -48,36 +48,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #ifdef LINK_LIBRARY_OCI
 #include "replicator/ReplicatorOnline.h"
-#define HAS_OCI " OCI"
-#else
-#define HAS_OCI ""
 #endif /* LINK_LIBRARY_OCI */
 
 #ifdef LINK_LIBRARY_PROTOBUF
-
 #include "builder/BuilderProtobuf.h"
 #include "stream/StreamNetwork.h"
 #include "writer/WriterStream.h"
-
-#define HAS_PROTOBUF " Probobuf"
 #ifdef LINK_LIBRARY_ZEROMQ
-
 #include "stream/StreamZeroMQ.h"
-
-#define HAS_ZEROMQ " ZeroMQ"
-#else
-#define HAS_ZEROMQ ""
 #endif /* LINK_LIBRARY_ZEROMQ */
-#else
-#define HAS_PROTOBUF ""
-#define HAS_ZEROMQ ""
 #endif /* LINK_LIBRARY_PROTOBUF */
 
 #ifdef LINK_LIBRARY_RDKAFKA
-
 #include "writer/WriterKafka.h"
-
-#else
 #endif /* LINK_LIBRARY_RDKAFKA */
 
 namespace OpenLogReplicator {

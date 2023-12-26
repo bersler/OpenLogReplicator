@@ -957,8 +957,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
-                                 uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)),
-                                 const char* sql, uint64_t sqlLength) {
+                                 uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
 
