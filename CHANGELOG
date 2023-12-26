@@ -1,4 +1,5 @@
 1.4.1
+- code style cleanup
 
 1.4.0
 - fix: date and timestamp with year before 1900 or after 2262 produce incorrect values
