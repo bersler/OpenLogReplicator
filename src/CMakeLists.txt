@@ -118,6 +118,7 @@ list(APPEND ListState
 
 list(APPEND ListWriter
         writer/Writer.cpp
+        writer/WriterDiscard.cpp
         writer/WriterFile.cpp)
 
 if (WITH_OCI)

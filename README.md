@@ -7,6 +7,7 @@ The following targets are supported:
 - Kafka
 - flat file
 - network stream (plain TCP/IP or ZeroMQ)
+- discard (for testing purposes)
 
 ## Getting started
 
