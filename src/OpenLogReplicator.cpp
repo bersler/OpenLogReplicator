@@ -43,6 +43,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "replicator/Replicator.h"
 #include "replicator/ReplicatorBatch.h"
 #include "state/StateDisk.h"
+#include "writer/WriterDiscard.h"
 #include "writer/WriterFile.h"
 #include "OpenLogReplicator.h"
 
@@ -805,6 +806,9 @@ namespace OpenLogReplicator {
                 writer = new WriterFile(ctx, std::string(alias) + "-writer", replicator2->database,
                                         replicator2->builder, replicator2->metadata, output, timestampFormat,
                                         maxFileSize, newLine, append);
+            } else if (strcmp(writerType, "discard") == 0) {
+                    writer = new WriterDiscard(ctx, std::string(alias) + "-writer", replicator2->database,
+                                            replicator2->builder, replicator2->metadata);
             } else if (strcmp(writerType, "kafka") == 0) {
 #ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;

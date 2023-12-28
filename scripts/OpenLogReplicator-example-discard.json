@@ -1,0 +1,36 @@
+{
+  "version": "1.4.1",
+  "source": [
+    {
+      "alias": "S1",
+      "name": "O112A",
+      "reader": {
+        "type": "online",
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
+      },
+      "format": {
+        "type": "json"
+      },
+      "memory-min-mb": 64,
+      "memory-max-mb": 1024,
+      "filter": {
+        "table": [
+          {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
+          {"owner": "OWNER1", "table": "TABLENAME2"},
+          {"owner": "OWNER2", "table": "TAB.*"}
+        ]
+      }
+    }
+  ],
+  "target": [
+    {
+      "alias": "K1",
+      "source": "S1",
+      "writer": {
+        "type": "discard"
+      }
+    }
+  ]
+}

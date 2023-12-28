@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2023-12-26
+:revdate: 2023-12-28
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -1063,9 +1063,16 @@ _NOTE:_ This field is valid only for `kafka` type.
 |_string_, max length: 256, mandatory
 |Possible values are:
 
-* `kafka` -- Connect directly to a Kafka message system and send transactions.
+* `discard` -- No-op writer.
+
+Perform all actions like parsing redo log, producing messages, but messages are discarded and not sent to any target.
+
+_TIP:_ This target is useful for testing purposes, to verify if redo log parsing works correctly.
+This writer does not accept any parameters.
 
 * `file` -- Write output messages directly to a file.
+
+* `kafka` -- Connect directly to a Kafka message system and send transactions.
 
 * `network` -- Stream using plain TCP/IP transmission.
 
@@ -1073,7 +1080,7 @@ This mode assumes that OpenLogReplicator acts as a server.
 A client connects to the server and receives the messages.
 If the client disconnects, the server will wait for a new client to connect and buffer transactions while no client connection is present.
 
-`zeromq` -- Stream using ZeroMQ messaging.
+* `zeromq` -- Stream using ZeroMQ messaging.
 
 _TIP:_ Technically this is the same as `network` but instead of using plain TCP/IP connection it uses ZeroMQ messaging.
 
