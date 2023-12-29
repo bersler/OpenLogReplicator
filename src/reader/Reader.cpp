@@ -197,8 +197,8 @@ namespace OpenLogReplicator {
         if (ctx->softShutdown)
             return REDO_ERROR;
 
-        int64_t bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : REDO_PAGE_SIZE_MAX * 2);
-        if (bytes < 512)
+        int64_t actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : REDO_PAGE_SIZE_MAX * 2);
+        if (actualRead < 512)
             return REDO_ERROR_READ;
 
         // Check file header
@@ -229,14 +229,14 @@ namespace OpenLogReplicator {
             return REDO_ERROR_BAD_DATA;
         }
 
-        if (bytes < static_cast<int64_t>(blockSize * 2)) {
+        if (actualRead < static_cast<int64_t>(blockSize * 2)) {
             ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
             return REDO_ERROR_READ;
         }
 
-        if (bytes > 0 && ctx->redoCopyPath.length() > 0) {
-            if (static_cast<uint64_t>(bytes) > blockSize * 2)
-                bytes = static_cast<int64_t>(blockSize * 2);
+        if (actualRead > 0 && ctx->redoCopyPath.length() > 0) {
+            if (static_cast<uint64_t>(actualRead) > blockSize * 2)
+                actualRead = static_cast<int64_t>(blockSize * 2);
 
             typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
             if (fileCopySequence != sequenceHeader) {
@@ -255,10 +255,10 @@ namespace OpenLogReplicator {
                 fileCopySequence = sequenceHeader;
             }
 
-            int64_t bytesWritten = pwrite(fileCopyDes, headerBuffer, bytes, 0);
-            if (bytesWritten != bytes) {
+            int64_t bytesWritten = pwrite(fileCopyDes, headerBuffer, actualRead, 0);
+            if (bytesWritten != actualRead) {
                 ctx->error(10007, "file: " + fileNameWrite + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                  std::to_string(bytes) + ", code returned: " + strerror(errno));
+                                  std::to_string(actualRead) + ", code returned: " + strerror(errno));
                 return REDO_ERROR_WRITE;
             }
         }
@@ -512,8 +512,8 @@ namespace OpenLogReplicator {
             uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
             uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
 
-            auto readTimeP = reinterpret_cast<time_t*>(redoBufferList[redoBufferNum] + redoBufferPos);
-            if (*readTimeP + static_cast<time_t>(ctx->redoVerifyDelayUs) < loopTime) {
+            auto readTimeP = reinterpret_cast<time_ut*>(redoBufferList[redoBufferNum] + redoBufferPos);
+            if (*readTimeP + static_cast<time_ut>(ctx->redoVerifyDelayUs) < loopTime) {
                 ++goodBlocks;
             } else {
                 readTime = *readTimeP + static_cast<time_t>(ctx->redoVerifyDelayUs);
@@ -724,7 +724,7 @@ namespace OpenLogReplicator {
                         } else {
                             time_ut nowTime = Timer::getTimeUt();
                             if (readTime > nowTime) {
-                                if (static_cast<time_t>(ctx->redoReadSleepUs) < readTime - nowTime)
+                                if (static_cast<time_ut>(ctx->redoReadSleepUs) < readTime - nowTime)
                                     usleep(ctx->redoReadSleepUs);
                                 else
                                     usleep(readTime - nowTime);
