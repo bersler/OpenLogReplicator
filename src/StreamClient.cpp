@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
 
         // Index to count messages, to confirm after 1000th
         uint64_t num = 0;
-        time_t last = OpenLogReplicator::Timer::getTime();
+        uint64_t last = OpenLogReplicator::Timer::getTimeUt();
 
         send(request, stream, &ctx);
         receive(response, stream, &ctx, buffer, true);
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
             }
 
             ++num;
-            time_t now = OpenLogReplicator::Timer::getTime();
+            time_ut now = OpenLogReplicator::Timer::getTimeUt();
             double timeDelta = static_cast<double>(now - last) / 1000000.0;
 
             // Confirm every 1000 messages or every 10 seconds

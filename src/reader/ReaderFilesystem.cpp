@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
     int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
         if (ctx->trace & TRACE_PERFORMANCE)
-            startTime = Timer::getTime();
+            startTime = Timer::getTimeUt();
         int64_t bytes = 0;
         uint64_t tries = ctx->archReadTries;
 
@@ -121,7 +121,7 @@ namespace OpenLogReplicator {
         if (ctx->trace & TRACE_PERFORMANCE) {
             if (bytes > 0)
                 sumRead += bytes;
-            sumTime += Timer::getTime() - startTime;
+            sumTime += Timer::getTimeUt() - startTime;
         }
 
         return bytes;

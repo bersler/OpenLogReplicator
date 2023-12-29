@@ -61,6 +61,7 @@ typedef uint16_t typeField;
 typedef uint16_t typeUnicode16;
 typedef uint32_t typeUnicode32;
 typedef uint64_t typeUnicode;
+typedef uint64_t time_ut;
 
 #define CONFIG_SCHEMA_VERSION                   "1.4.1"
 #define CHECKPOINT_FILE_MAX_SIZE                1024

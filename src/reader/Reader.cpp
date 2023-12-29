@@ -59,6 +59,7 @@ namespace OpenLogReplicator {
             firstScnHeader(ZERO_SCN),
             nextScn(ZERO_SCN),
             nextScnHeader(ZERO_SCN),
+            nextTime(0),
             blockSize(0),
             sumRead(0),
             sumTime(0),
@@ -294,6 +295,7 @@ namespace OpenLogReplicator {
         firstScnHeader = ctx->readScn(headerBuffer + blockSize + 180);
         firstTimeHeader = ctx->read32(headerBuffer + blockSize + 188);
         nextScnHeader = ctx->readScn(headerBuffer + blockSize + 192);
+        nextTime = ctx->read32(headerBuffer + blockSize + 200);
 
         if (numBlocksHeader != ZERO_BLK && fileSize > static_cast<uint64_t>(numBlocksHeader) * blockSize && group == 0) {
             fileSize = static_cast<uint64_t>(numBlocksHeader) * blockSize;
@@ -468,7 +470,7 @@ namespace OpenLogReplicator {
         }
 
         lastRead = goodBlocks * blockSize;
-        lastReadTime = Timer::getTime();
+        lastReadTime = Timer::getTimeUt();
         if (goodBlocks > 0) {
             if (ctx->redoVerifyDelayUs > 0 && group != 0) {
                 bufferScan += goodBlocks * blockSize;
@@ -666,7 +668,7 @@ namespace OpenLogReplicator {
                 reachedZero = false;
 
                 while (!ctx->softShutdown && status == READER_STATUS_READ) {
-                    loopTime = Timer::getTime();
+                    loopTime = Timer::getTimeUt();
                     readBlocks = false;
                     readTime = 0;
 
@@ -720,7 +722,7 @@ namespace OpenLogReplicator {
                         if (readTime == 0) {
                             usleep(ctx->redoReadSleepUs);
                         } else {
-                            time_t nowTime = Timer::getTime();
+                            time_ut nowTime = Timer::getTimeUt();
                             if (readTime > nowTime) {
                                 if (static_cast<time_t>(ctx->redoReadSleepUs) < readTime - nowTime)
                                     usleep(ctx->redoReadSleepUs);
@@ -855,7 +857,6 @@ namespace OpenLogReplicator {
         typeScn resetlogsScn = ctx->readScn(headerBuffer + blockSize + 164);
         typeResetlogs prevResetlogsCnt = ctx->read32(headerBuffer + blockSize + 292);
         typeScn prevResetlogsScn = ctx->readScn(headerBuffer + blockSize + 284);
-        typeTime nextTime(ctx->read32(headerBuffer + blockSize + 200));
         typeScn enabledScn = ctx->readScn(headerBuffer + blockSize + 208);
         typeTime enabledTime(ctx->read32(headerBuffer + blockSize + 216));
         typeScn threadClosedScn = ctx->readScn(headerBuffer + blockSize + 220);
@@ -997,6 +998,10 @@ namespace OpenLogReplicator {
 
     typeScn Reader::getNextScn() {
         return nextScn;
+    }
+
+    typeTime Reader::getNextTime() {
+        return nextTime;
     }
 
     typeBlk Reader::getNumBlocks() {

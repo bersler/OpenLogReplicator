@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
             epochTime.tm_mon = static_cast<int>(rest % 12);
             rest /= 12;
             epochTime.tm_year = static_cast<int>(rest + 88);
-            return mktime(&epochTime);
+            return mktime(&epochTime) - timezone;
         }
 
         void toIso8601(char* buffer) const {

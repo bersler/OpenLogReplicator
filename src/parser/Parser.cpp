@@ -1249,7 +1249,7 @@ namespace OpenLogReplicator {
             metadata->setActivation(reader->getActivation());
         }
 
-        time_t cStart = Timer::getTime();
+        time_ut cStart = Timer::getTimeUt();
         reader->setStatusRead();
         LwnMember* lwnMember;
         uint64_t currentBlock = lwnConfirmedBlock;
@@ -1481,12 +1481,12 @@ namespace OpenLogReplicator {
 
         // Print performance information
         if ((ctx->trace & TRACE_PERFORMANCE) != 0) {
+            time_ut cEnd = Timer::getTimeUt();
             double suppLogPercent = 0.0;
             if (currentBlock != startBlock)
                 suppLogPercent = 100.0 * ctx->suppLogSize / ((currentBlock - startBlock) * reader->getBlockSize());
 
             if (group == 0) {
-                time_t cEnd = Timer::getTime();
                 double mySpeed = 0;
                 double myTime = static_cast<double>(cEnd - cStart) / 1000.0;
                 if (myTime > 0)
