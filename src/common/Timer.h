@@ -17,7 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <stdint.h>
 #include <sys/time.h>
+
+#include "types.h"
 
 #ifndef TIMER_H_
 #define TIMER_H_
@@ -26,7 +29,8 @@ namespace OpenLogReplicator {
     class Timer {
 
     public:
-        static time_t getTime();
+        static time_ut getTimeUt();
+        static time_t getTimeT();
     };
 }
 

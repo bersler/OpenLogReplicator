@@ -82,14 +82,15 @@ namespace OpenLogReplicator {
         typeScn firstScnHeader;
         typeScn nextScn;
         typeScn nextScnHeader;
+        typeTime nextTime;
         uint64_t blockSize;
         uint64_t sumRead;
         uint64_t sumTime;
         uint64_t bufferScan;
         uint64_t lastRead;
-        time_t lastReadTime;
-        time_t readTime;
-        time_t loopTime;
+        time_ut lastReadTime;
+        time_ut readTime;
+        time_ut loopTime;
 
         std::mutex mtx;
         std::atomic<uint64_t> bufferStart;
@@ -134,6 +135,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] typeScn getFirstScn();
         [[nodiscard]] typeScn getFirstScnHeader();
         [[nodiscard]] typeScn getNextScn();
+        [[nodiscard]] typeTime getNextTime();
         [[nodiscard]] typeBlk getNumBlocks();
         [[nodiscard]] int64_t getGroup();
         [[nodiscard]] typeSeq getSequence();

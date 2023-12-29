@@ -20,9 +20,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Timer.h"
 
 namespace OpenLogReplicator {
-    time_t Timer::getTime() {
+    time_ut Timer::getTimeUt() {
         struct timeval tv = {0, 0};
         gettimeofday(&tv, nullptr);
         return (1000000 * tv.tv_sec) + tv.tv_usec;
+    }
+
+    time_t Timer::getTimeT() {
+        struct timeval tv = {0, 0};
+        gettimeofday(&tv, nullptr);
+        return tv.tv_sec;
     }
 }

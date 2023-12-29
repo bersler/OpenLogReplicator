@@ -811,7 +811,7 @@ namespace OpenLogReplicator {
 
             // Keep reading online redo logs while it is possible
             bool higher = false;
-            clock_t beginTime = Timer::getTime();
+            time_ut beginTime = Timer::getTimeUt();
 
             while (!ctx->softShutdown) {
                 for (Parser* onlineRedo: onlineRedoSet) {
@@ -839,8 +839,8 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     break;
 
-                clock_t endTime = Timer::getTime();
-                if (beginTime + static_cast<clock_t>(ctx->refreshIntervalUs) < endTime) {
+                time_ut endTime = Timer::getTimeUt();
+                if (beginTime + static_cast<time_ut>(ctx->refreshIntervalUs) < endTime) {
                     if (ctx->trace & TRACE_REDO)
                         ctx->logTrace(TRACE_REDO, "refresh interval reached, checking online redo logs again");
 
