@@ -316,7 +316,7 @@ namespace OpenLogReplicator {
             }
 
             if (!foundPath) {
-                uint64_t badGroup = reader->getGroup();
+                int64_t badGroup = reader->getGroup();
                 for (std::string& path: reader->paths) {
                     std::string pathMapped(path);
                     applyMapping(pathMapped);

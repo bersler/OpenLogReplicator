@@ -35,6 +35,7 @@ namespace OpenLogReplicator {
     }
 
     std::string WriterDiscard::getName() const {
+        return "discard";
     }
 
     void WriterDiscard::pollQueue() {

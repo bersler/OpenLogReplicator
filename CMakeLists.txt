@@ -26,8 +26,8 @@ if (OSX_ARCH)
     set(CMAKE_OSX_ARCHITECTURES ${OSX_ARCH})
 endif ()
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Wextra -Wshadow -pedantic -O3 -g")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Wshadow -pedantic -Wno-gnu-statement-expression -pedantic-errors -O0 -g -w -fmessage-length=0 -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -O3 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -pedantic -fsanitize=address")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 configure_file(config.h.in ../config.h)
 

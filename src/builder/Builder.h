@@ -498,7 +498,7 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        void addLobToOutput(const uint8_t* data, uint32_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool isClob, bool hasPrev,
+        void addLobToOutput(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool isClob, bool hasPrev,
                             bool hasNext, bool isSystem) {
             if (isClob) {
                 parseString(data, length, charsetId, offset, appendData, hasPrev, hasNext, isSystem);
@@ -555,7 +555,7 @@ namespace OpenLogReplicator {
                             ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
                         return false;
                     }
-                    uint32_t chunkLength = lobData->pageSize;
+                    uint64_t chunkLength = lobData->pageSize;
 
                     // Last
                     if (pageNo == lobData->sizePages) {
@@ -589,8 +589,8 @@ namespace OpenLogReplicator {
                 }
                 uint16_t flg2 = ctx->read16Big(data + 22);
 
-                uint32_t totalLobLength = 0;
-                uint16_t chunkLength;
+                uint64_t totalLobLength = 0;
+                uint64_t chunkLength;
                 uint64_t dataOffset;
 
                 // In-index
