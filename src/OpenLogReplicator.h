@@ -36,13 +36,13 @@ namespace OpenLogReplicator {
 
     class OpenLogReplicator final {
     protected:
-        std::list<Replicator*> replicators;
-        std::list<Checkpoint*> checkpoints;
-        std::list<Locales*> localess;
-        std::list<Builder*> builders;
-        std::list<Metadata*> metadatas;
-        std::list<TransactionBuffer*> transactionBuffers;
-        std::list<Writer*> writers;
+        std::vector<Replicator*> replicators;
+        std::vector<Checkpoint*> checkpoints;
+        std::vector<Locales*> localess;
+        std::vector<Builder*> builders;
+        std::vector<Metadata*> metadatas;
+        std::vector<TransactionBuffer*> transactionBuffers;
+        std::vector<Writer*> writers;
         Replicator* replicator;
         int fid;
         char* configFileBuffer;

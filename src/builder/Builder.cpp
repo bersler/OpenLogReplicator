@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cmath>
 #include <vector>
 
 #include "../common/OracleColumn.h"
@@ -614,9 +615,9 @@ namespace OpenLogReplicator {
                 if (exponent == 0)
                     return 0.0;
                 if (exponent == 0xFF)
-                    return INFINITY;
+                    return std::numeric_limits<double>::infinity();
             } else if (significand == 0x400000 && exponent == 0xFF)
-                return NAN;
+                return std::numeric_limits<double>::quiet_NaN();
 
             if (exponent > 0)
                 significand += 0x800000;
@@ -624,7 +625,7 @@ namespace OpenLogReplicator {
             return ldexp((static_cast<double>(significand)) / (static_cast<double>(0x800000)), exponent);
         } else {
             if (exponent == 0 && significand == 0x7FFFFF)
-                return -INFINITY;
+                return -std::numeric_limits<double>::infinity();
 
             significand = 0x7FFFFF - significand;
             if (exponent < 0xFF)
@@ -646,9 +647,9 @@ namespace OpenLogReplicator {
                 if (exponent == 0)
                     return 0.0;
                 if (exponent == 0x7FF)
-                    return INFINITY;
+                    return std::numeric_limits<double>::infinity();
             } else if (significand == 0x8000000000000 && exponent == 0x7FF)
-                return NAN;
+                return std::numeric_limits<double>::quiet_NaN();
 
             if (exponent > 0)
                 significand += 0x10000000000000;
@@ -656,7 +657,7 @@ namespace OpenLogReplicator {
             return ldexpl(static_cast<long double>(significand) / static_cast<long double>(0x10000000000000), exponent);
         } else {
             if (exponent == 0 && significand == 0xFFFFFFFFFFFFF)
-                return -INFINITY;
+                return -std::numeric_limits<double>::infinity();
 
             significand = 0xFFFFFFFFFFFFF - significand;
             if (exponent < 0x7FF)
@@ -730,7 +731,7 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+        if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
 
         while (fieldNum < redoLogRecord2->rowData)
@@ -802,7 +803,7 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+        if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
 
         while (fieldNum < redoLogRecord1->rowData)
@@ -875,7 +876,7 @@ namespace OpenLogReplicator {
         RedoLogRecord* redoLogRecord1p;
         RedoLogRecord* redoLogRecord2p = nullptr;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+        if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
 
         if (type == TRANSACTION_INSERT) {
@@ -1575,7 +1576,7 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         char* sqlText = nullptr;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+        if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
 
         RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000009);

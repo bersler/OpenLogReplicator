@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <list>
+#include <vector>
 
 #include "../common/Ctx.h"
 #include "../common/OracleIncarnation.h"
@@ -452,7 +452,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::readCheckpoint(typeScn scn) {
-        std::list<std::string> msgs;
+        std::vector<std::string> msgs;
         ctx->info(0, "reading metadata for " + database + " for scn: " + std::to_string(scn));
         std::string ss;
 
@@ -559,7 +559,7 @@ namespace OpenLogReplicator {
 
     void Metadata::loadAdaptiveSchema() {
         std::string ss;
-        std::list<std::string> msgs;
+        std::vector<std::string> msgs;
         std::string name("base-" + ctx->versionStr);
 
         ctx->info(0, "reading adaptive schema from: " + name + ".json");

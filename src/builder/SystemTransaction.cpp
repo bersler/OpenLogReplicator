@@ -2340,8 +2340,8 @@ namespace OpenLogReplicator {
         if (!metadata->schema->touched)
             return;
 
-        std::list<std::string> msgsDropped;
-        std::list<std::string> msgsUpdated;
+        std::vector<std::string> msgsDropped;
+        std::vector<std::string> msgsUpdated;
         metadata->schema->scn = scn;
         metadata->schema->dropUnusedMetadata(metadata->users, metadata->schemaElements, msgsDropped);
 

@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
             for (auto& it: metadata->schema->sysObjMapRowId)
                 metadata->schema->touchTable(it.second->obj);
 
-            std::list<std::string> msgs;
+            std::vector<std::string> msgs;
             for (SchemaElement* element: metadata->schemaElements) {
                 if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
                     msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +

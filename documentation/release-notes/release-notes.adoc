@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2023-12-28
+:revdate: 2023-12-31
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -19,6 +19,7 @@ This document describes the release notes of OpenLogReplicator.
 === Version 1.4.1
 - code style cleanup
 - enhancement: new writer type: discard
+- minor code optimizations
 
 === Version 1.4.0
 

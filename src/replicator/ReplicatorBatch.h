@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         bool continueWithOnline() override;
         void positionReader() override;
         void createSchema() override;
-        virtual void updateOnlineRedoLogData();
+        virtual void updateOnlineRedoLogData() override;
 
     public:
         ReplicatorBatch(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,

@@ -510,7 +510,7 @@ namespace OpenLogReplicator {
         ss << "]}";
     }
 
-    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::list<std::string>& msgs, bool loadMetadata,
+    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::vector<std::string>& msgs, bool loadMetadata,
                                      bool loadSchema) {
         try {
             rapidjson::Document document;

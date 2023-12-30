@@ -731,7 +731,7 @@ namespace OpenLogReplicator {
 
     void Ctx::signalHandler(int s) {
         if (!hardShutdown) {
-            error(10015, "caught signal: " + s);
+            error(10015, "caught signal: " + std::to_string(s));
             stopHard();
         }
     }

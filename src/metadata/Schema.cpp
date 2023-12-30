@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <cstring>
-#include <list>
+#include <vector>
 #include <regex>
 
 #include "../common/Ctx.h"
@@ -2287,7 +2287,7 @@ namespace OpenLogReplicator {
                                        std::to_string(table->dataObj) + ")");
     }
 
-    void Schema::dropUnusedMetadata(const std::set<std::string>& users, std::vector<SchemaElement*> schemaElements, std::list<std::string>& msgs) {
+    void Schema::dropUnusedMetadata(const std::set<std::string>& users, std::vector<SchemaElement*> schemaElements, std::vector<std::string>& msgs) {
         for (OracleTable* table: tablesTouched) {
             msgs.push_back(table->owner + "." + table->name + " (dataobj: " + std::to_string(table->dataObj) + ", obj: " +
                            std::to_string(table->obj) + ") ");
@@ -2486,9 +2486,8 @@ namespace OpenLogReplicator {
     }
 
     void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
-                           const std::string& conditionStr, typeOptions options, std::list<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
+                           const std::string& conditionStr, typeOptions options, std::vector<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
                            uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
-        uint64_t tabCnt = 0;
         std::regex regexOwner(owner);
         std::regex regexTable(table);
         char sysLobConstraintName[26] = "SYS_LOB0000000000C00000$$";
@@ -2582,7 +2581,6 @@ namespace OpenLogReplicator {
 
             tableTmp = new OracleTable(sysObj->obj, sysTab->dataObj, sysObj->owner, sysTab->cluCols,
                                        options, sysUser->name, sysObj->name);
-            ++tabCnt;
 
             uint64_t lobPartitions = 0;
             uint64_t lobIndexes = 0;
