@@ -103,7 +103,8 @@ namespace OpenLogReplicator {
     void WriterKafka::error_cb(rd_kafka_t* rkCb, int err, const char* reason, void* opaque) {
         auto writer = reinterpret_cast<Writer*>(opaque);
 
-        writer->ctx->warning(70009, "Kafka: " + std::string(rd_kafka_err2name((rd_kafka_resp_err_t) err)) + ", reason: " + reason);
+        writer->ctx->warning(70009, "Kafka: " + std::string(rd_kafka_err2name(static_cast<rd_kafka_resp_err_t>(err))) +
+                                    ", reason: " + reason);
 
         if (err != RD_KAFKA_RESP_ERR__FATAL)
             return;

@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
 
         void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, uint16_t flags) {
             messageLength = 0;
-            if ((scnFormat && SCN_ALL_COMMIT_VALUE) != 0)
+            if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
                 scn = commitScn;
 
             if (lastBuilderQueue->length + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)

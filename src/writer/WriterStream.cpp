@@ -219,7 +219,7 @@ namespace OpenLogReplicator {
                             break;
 
                         default:
-                            ctx->warning(60032, "unknown request code: " + request.code());
+                            ctx->warning(60032, "unknown request code: " + std::to_string(request.code()));
                             response.Clear();
                             response.set_code(pb::ResponseCode::INVALID_COMMAND);
                             response.SerializeToString(&msgS);
@@ -247,7 +247,7 @@ namespace OpenLogReplicator {
                             break;
 
                         default:
-                            ctx->warning(60032, "unknown request code: " + request.code());
+                            ctx->warning(60032, "unknown request code: " + std::to_string(request.code()));
                             response.Clear();
                             response.set_code(pb::ResponseCode::INVALID_COMMAND);
                             response.SerializeToString(&msgS);

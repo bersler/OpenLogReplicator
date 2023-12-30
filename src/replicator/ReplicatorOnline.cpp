@@ -937,7 +937,7 @@ namespace OpenLogReplicator {
 
         ctx->info(0, "reading dictionaries for scn: " + std::to_string(metadata->firstDataScn));
 
-        std::list<std::string> msgs;
+        std::vector<std::string> msgs;
         {
             std::unique_lock<std::mutex> lck(metadata->mtxSchema);
             metadata->schema->purgeMetadata();
@@ -1804,7 +1804,7 @@ namespace OpenLogReplicator {
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keys,
                                                 const std::string& keysStr, const std::string& conditionStr, typeOptions options,
-                                                std::list<std::string>& msgs) {
+                                                std::vector<std::string>& msgs) {
         if (ctx->trace & TRACE_REDO)
             ctx->logTrace(TRACE_REDO, "creating table schema for owner: " + owner + " table: " + table + " options: " +
                                       std::to_string(static_cast<uint64_t>(options)));
