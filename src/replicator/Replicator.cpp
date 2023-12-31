@@ -1,5 +1,5 @@
 /* Thread reading Oracle Redo Logs using offline mode
-   Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
