@@ -563,10 +563,10 @@ namespace OpenLogReplicator {
                         hasNext = false;
                     }
 
-                    valueBufferCheck(chunkLength * 4, offset);
                     RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                     redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
 
+                    valueBufferCheck(chunkLength * 4, offset);
                     addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData, isClob,
                                    hasPrev, hasNext, isSystem);
                     appendData = true;
@@ -652,7 +652,6 @@ namespace OpenLogReplicator {
                             return false;
                         }
 
-                        valueBufferCheck(lobData->pageSize * 4, offset);
                         while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
                             RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                             redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
@@ -663,6 +662,7 @@ namespace OpenLogReplicator {
                             if (j == jMax - 1)
                                 hasNext = false;
 
+                            valueBufferCheck(chunkLength * 4, offset);
                             addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData, isClob,
                                            hasPrev, hasNext, isSystem);
                             appendData = true;
@@ -703,6 +703,7 @@ namespace OpenLogReplicator {
                             return false;
                         }
 
+                        valueBufferCheck(chunkLength * 4, offset);
                         addLobToOutput(data + 36, chunkLength, charsetId, offset, false, isClob, false, false, isSystem);
                     }
                 } else {
@@ -780,6 +781,7 @@ namespace OpenLogReplicator {
                                 return false;
                             }
 
+                            valueBufferCheck(chunkLength * 4, offset);
                             addLobToOutput(data + dataOffset, chunkLength, charsetId, offset, false, isClob, false, false,
                                            isSystem);
                             totalLobLength -= chunkLength;
@@ -834,13 +836,13 @@ namespace OpenLogReplicator {
                                     }
 
                                     while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
-                                        valueBufferCheck(lobData->pageSize * 4, offset);
                                         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                         redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkLength = redoLogRecordLob->lobDataLength;
                                         if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                             hasNext = false;
 
+                                        valueBufferCheck(chunkLength * 4, offset);
                                         addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset,
                                                        appendData, isClob, hasPrev, hasNext, isSystem);
                                         appendData = true;
@@ -891,13 +893,13 @@ namespace OpenLogReplicator {
                                             return false;
                                         }
 
-                                        valueBufferCheck(lobData->pageSize * 4, offset);
                                         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                         redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkLength = redoLogRecordLob->lobDataLength;
                                         if (listPage == 0 && i == static_cast<uint64_t>(aSiz - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                             hasNext = false;
 
+                                        valueBufferCheck(chunkLength * 4, offset);
                                         addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset,
                                                        appendData, isClob, hasPrev, hasNext, isSystem);
                                         appendData = true;
@@ -977,13 +979,13 @@ namespace OpenLogReplicator {
                                     return false;
                                 }
 
-                                valueBufferCheck(lobData->pageSize * 4, offset);
                                 RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                 redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                 chunkLength = redoLogRecordLob->lobDataLength;
                                 if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                     hasNext = false;
 
+                                valueBufferCheck(chunkLength * 4, offset);
                                 addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, offset, appendData,
                                                isClob, hasPrev, hasNext, isSystem);
                                 appendData = true;

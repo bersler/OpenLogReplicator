@@ -1637,6 +1637,7 @@ namespace OpenLogReplicator {
         std::map < std::string, std::string > dictNmSpcMap;
         std::map < std::string, std::string > nmSpcPrefixMap;
         bool tagOpen = false;
+        bool attributeOpen = false;
         std::string lastTag;
 
         while (pos < length) {
@@ -1854,7 +1855,11 @@ namespace OpenLogReplicator {
                     valueBufferCheck(out.length(), offset);
                     valueBufferAppend(out.c_str(), out.length());
                 } else {
-                    if (tagOpen) {
+                    if (attributeOpen) {
+                        valueBufferCheck(2, offset);
+                        valueBufferAppend("\">", 2);
+                        attributeOpen = false;
+                    } else if (tagOpen) {
                         valueBufferCheck(1, offset);
                         valueBufferAppend('>');
                         tagOpen = false;
@@ -1875,16 +1880,22 @@ namespace OpenLogReplicator {
                     valueBufferAppend(out.c_str(), out.length());
                 }
 
-                if (pos + tagLength >= length) {
-                    ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC1xxxx data (2)");
-                    return false;
+                if (tagLength > 0) {
+                    if (pos + tagLength >= length) {
+                        ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC1xxxx data (2)");
+                        return false;
+                    }
+                    valueBufferCheck(tagLength, offset);
+                    valueBufferAppend(reinterpret_cast<const char*>(data + pos), tagLength);
+                    pos += tagLength;
                 }
-                valueBufferCheck(tagLength, offset);
-                valueBufferAppend(reinterpret_cast<const char*>(data + pos), tagLength);
 
                 if (isAttribute) {
-                    valueBufferCheck(1, offset);
-                    valueBufferAppend('"');
+                    if (isSingle) {
+                        valueBufferCheck(1, offset);
+                        valueBufferAppend('"');
+                    } else
+                        attributeOpen = true;
                 } else {
                     if (isSingle) {
                         out = "</" + tag + ">";
@@ -1894,7 +1905,6 @@ namespace OpenLogReplicator {
                         tags.push_back(tag);
                 }
 
-                pos += tagLength;
                 continue;
             }
 
@@ -2009,7 +2019,7 @@ namespace OpenLogReplicator {
 
             // chunk of data 64bit
             if (data[pos] == 0x8B) {
-                if (tagOpen) {
+                if (tagOpen && !attributeOpen) {
                     valueBufferCheck(1, offset);
                     valueBufferAppend('>');
                     tagOpen = false;
@@ -2036,7 +2046,7 @@ namespace OpenLogReplicator {
             }
 
             if (data[pos] < 128) {
-                if (tagOpen) {
+                if (tagOpen && !attributeOpen) {
                     valueBufferCheck(1, offset);
                     valueBufferAppend('>');
                     tagOpen = false;
@@ -2058,13 +2068,20 @@ namespace OpenLogReplicator {
 
             // end tag
             if (data[pos] == 0xD9) {
-                if (tags.size() == 0) {
-                    ctx->warning(60036, "incorrect XML data: end tag found, but no tags open");
-                    return false;
+                if (attributeOpen) {
+                    out = "\"";
+                    attributeOpen = false;
+                    tagOpen = true;
+                } else {
+                    if (tags.size() == 0) {
+                        ctx->warning(60036, "incorrect XML data: end tag found, but no tags open");
+                        return false;
+                    }
+                    lastTag = tags.back();
+                    tags.pop_back();
+                    out = "</" + lastTag + ">";
                 }
-                lastTag = tags.back();
-                tags.pop_back();
-                out = "</" + lastTag + ">";
+
                 valueBufferCheck(out.length(), offset);
                 valueBufferAppend(out.c_str(), out.length());
                 ++pos;
