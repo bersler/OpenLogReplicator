@@ -1938,15 +1938,19 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::archGetLogOnline(Replicator* replicator) {
-        if (!(reinterpret_cast<ReplicatorOnline*>(replicator))->checkConnection())
+        ReplicatorOnline *replicatorOnline = dynamic_cast<ReplicatorOnline*>(replicator);
+        if (replicatorOnline == nullptr)
+            return;
+
+        if (!replicatorOnline->checkConnection())
             return;
 
         {
-            DatabaseStatement stmt((dynamic_cast<ReplicatorOnline*>(replicator))->conn);
+            DatabaseStatement stmt(replicatorOnline->conn);
             if (replicator->ctx->trace & TRACE_SQL) {
                 replicator->ctx->logTrace(TRACE_SQL, SQL_GET_ARCHIVE_LOG_LIST);
                 replicator->ctx->logTrace(TRACE_SQL, "PARAM1: " +
-                                                     std::to_string((reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence));
+                                                     std::to_string(replicatorOnline->metadata->sequence));
                 replicator->ctx->logTrace(TRACE_SQL, "PARAM2: " + std::to_string(replicator->metadata->resetlogs));
             }
 
