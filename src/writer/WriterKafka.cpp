@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
 
         conf = rd_kafka_conf_new();
         if (conf == nullptr)
-            throw RuntimeException(10058, "Kafka failed to create configuration, message: " + std::string(errStr));
+            throw RuntimeException(10058, "Kafka failed to create configuration");
 
         std::string maxMessageMbStr(std::to_string(builder->getMaxMessageMb() * 1024 * 1024));
         properties.insert_or_assign("message.max.bytes", maxMessageMbStr);

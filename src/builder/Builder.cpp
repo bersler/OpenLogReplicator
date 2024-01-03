@@ -1756,7 +1756,7 @@ namespace OpenLogReplicator {
             }
 
             // tag/parameter
-            if (data[pos] == 0xC8 || (data[pos] >= 0xC0 && data[pos] <= 0xC3)) {
+            if (data[pos] == 0xC8 || data[pos] == 0xC9 || (data[pos] >= 0xC0 && data[pos] <= 0xC3)) {
                 uint64_t tagLength = 0;
                 uint64_t code = 0;
                 bool isSingle = false;
@@ -1770,6 +1770,15 @@ namespace OpenLogReplicator {
                     tagLength = 0;
                     code = ctx->read16Big(data + pos);
                     pos += 2;
+                } else if (data[pos] == 0xC9) {
+                    ++pos;
+                    if (pos + 3 >= length) {
+                        ctx->warning(60036, "incorrect XML data: string too short, can't read 0xC9 data");
+                        return false;
+                    }
+                    tagLength = 0;
+                    code = ctx->read32Big(data + pos);
+                    pos += 4;
                 } else if (data[pos] == 0xC0) {
                     ++pos;
                     if (pos + 2 >= length) {
