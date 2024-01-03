@@ -43,7 +43,8 @@ namespace OpenLogReplicator {
     }
 
     void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) {
-        sb4 errcode = 0;
+        sb4 errcode1 = 0;
+        sb4 errcode2 = 0;
         uint64_t len;
         text errbuf1[512];
         text errbuf2[512];
@@ -53,11 +54,11 @@ namespace OpenLogReplicator {
                 break;
 
             case OCI_SUCCESS_WITH_INFO:
-                OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
-                if (errcode != 100)
+                OCIErrorGet(errhp, 1, nullptr, &errcode1, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
+                if (errcode1 != 100)
                     ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)));
-                OCIErrorGet(errhp, 2, nullptr, &errcode, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
-                if (errcode != 100)
+                OCIErrorGet(errhp, 2, nullptr, &errcode2, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
+                if (errcode2 != 100)
                     ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)));
                 break;
 
@@ -68,22 +69,22 @@ namespace OpenLogReplicator {
                 throw RuntimeException(10051, "OCI ERROR: OCI_NODATA");
 
             case OCI_ERROR:
-                OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
+                OCIErrorGet(errhp, 1, nullptr, &errcode1, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
                 // Fetched column value is NULL
-                if (errcode == 1405)
+                if (errcode1 == 1405)
                     return;
                 len = strlen(reinterpret_cast<char*>(errbuf1));
                 if (len > 0 && errbuf1[len - 1] == '\n')
                     errbuf1[len - 1] = 0;
 
-                OCIErrorGet(errhp, 2, nullptr, &errcode, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
+                OCIErrorGet(errhp, 2, nullptr, &errcode2, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
                 len = strlen(reinterpret_cast<char*>(errbuf2));
                 if (len > 0 && errbuf2[len - 1] == '\n')
                     errbuf2[len - 1] = 0;
 
-                if (errcode != 100)
+                if (errcode2 != 100)
                     ctx->error(10051, "OCI: [" + std::string(reinterpret_cast<char*>(errbuf2)) + "]");
-                throw RuntimeException(10051, "OCI: [" + std::string(reinterpret_cast<char*>(errbuf1)) + "]");
+                throw RuntimeException(10051, "OCI: [" + std::string(reinterpret_cast<char*>(errbuf1)) + "]", errcode1);
 
             case OCI_INVALID_HANDLE:
                 throw RuntimeException(10051, "OCI: OCI_INVALID_HANDLE");

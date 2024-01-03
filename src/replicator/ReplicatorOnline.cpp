@@ -873,13 +873,17 @@ namespace OpenLogReplicator {
 
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
-            if (metadata->conId > 0) {
-                ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
-                ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
+            if (ex.supCode == 1031) {
+                if (metadata->conId > 0) {
+                    ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
+                    ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
+                } else {
+                    ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
+                }
+                throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
             } else {
-                ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
+                throw RuntimeException(ex.code, ex.msg);
             }
-            throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
         }
     }
 
@@ -895,13 +899,19 @@ namespace OpenLogReplicator {
 
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
-            if (metadata->conId > 0) {
-                ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
-                ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
-            } else {
-                ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
+            if (ex.supCode == 1031) {
+                if (metadata->conId > 0) {
+                    ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
+                    ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
+                } else {
+                    ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
+                }
+                throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
+            } else if (ex.supCode == 8181)
+                throw RuntimeException(10035, "specified SCN number is not a valid system change number");
+            else {
+                throw RuntimeException(ex.code, ex.msg);
             }
-            throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
         }
     }
 
@@ -1106,8 +1116,11 @@ namespace OpenLogReplicator {
                 }
             }
         } catch (RuntimeException& ex) {
-            ctx->error(ex.code, ex.msg);
-            throw BootException(10035, "can't read metadata from flashback, try some later scn for start");
+            if (ex.supCode == 8181) {
+                throw BootException(10035, "can't read metadata from flashback, provide a valid starting SCN value");
+            } else {
+                throw BootException(ex.code, ex.msg);
+            }
         }
     }
 
@@ -1795,10 +1808,13 @@ namespace OpenLogReplicator {
             }
         } catch (DataException& ex) {
             ctx->error(ex.code, ex.msg);
-            throw BootException(10035, "can't read schema from flashback, try some later scn for start");
+            throw BootException(10035, "can't read schema from flashback, provide a valid starting SCN value");
         } catch (RuntimeException& ex) {
-            ctx->error(ex.code, ex.msg);
-            throw BootException(10035, "can't read schema from flashback, try some later scn for start");
+            if (ex.supCode == 8181) {
+                throw BootException(10035, "can't read schema from flashback, provide a valid starting SCN value");
+            } else {
+                throw BootException(ex.code, ex.msg);
+            }
         }
     }
 

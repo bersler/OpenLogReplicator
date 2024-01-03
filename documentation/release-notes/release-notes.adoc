@@ -21,6 +21,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: new writer type: discard
 - minor code optimizations
 - fix: minor bug related to binary xmltype
+- fix: correctly display Oracle error codes
 
 === Version 1.4.0
 
