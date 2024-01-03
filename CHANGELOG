@@ -3,6 +3,7 @@
 - enhancement: new writer type: discard
 - minor code optimizations
 - fix: minor bug related to binary xmltype
+- fix: correctly display Oracle error codes
 
 1.4.0
 - fix: date and timestamp with year before 1900 or after 2262 produce incorrect values

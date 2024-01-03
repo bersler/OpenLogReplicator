@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2023-12-26
+:revdate: 2024-01-03
 :imagesdir: ./images
 :toc: preamble
 
@@ -258,7 +258,7 @@ Refer to database documentation for more information.
 
 TIP: Verify if the grant script was executed successfully.
 
-==== code 10035: "can't read <table> from flashback, try some later scn for start"
+==== code 10035: "can't read <information> from flashback, provide a valid starting SCN value"
 
 During startup when `online` reader is chosen the full schema must be read from the database.
 To achieve full consistency, all database queries use flashback to read the contents of system tables for the provided SCN number.
