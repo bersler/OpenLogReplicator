@@ -25,15 +25,15 @@ namespace OpenLogReplicator {
     RuntimeException::RuntimeException(int newCode, const std::string newMsg, int newSupCode) :
             exception(),
             code(newCode),
-            msg(std::move(newMsg)),
-            supCode(newSupCode) {
+            supCode(newSupCode),
+            msg(std::move(newMsg)) {
     }
 
     RuntimeException::RuntimeException(int newCode, const char* newMsg, int newSupCode) :
             exception(),
             code(newCode),
-            msg(newMsg),
-            supCode(newSupCode)  {
+            supCode(newSupCode),
+            msg(newMsg)  {
     }
 
     RuntimeException::~RuntimeException() = default;

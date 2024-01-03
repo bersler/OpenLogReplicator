@@ -48,9 +48,6 @@ namespace OpenLogReplicator {
                    reinterpret_cast<const void*>(newData), TYPE_LOBID_LENGTH);
         }
 
-        virtual ~typeLobId() {
-        }
-
         bool operator!=(const typeLobId& other) const {
             int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
             return ret != 0;
