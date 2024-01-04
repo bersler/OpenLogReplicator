@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         explicit CharacterSet(const char* newName);
         virtual ~CharacterSet();
 
-        virtual uint64_t decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const = 0;
+        virtual typeUnicode decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const = 0;
     };
 }
 

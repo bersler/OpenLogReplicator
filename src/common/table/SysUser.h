@@ -31,7 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysUser final {
     public:
-        SysUser(typeRowId& newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
+        SysUser(typeRowId newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),
                 user(newUser),
                 name(newName),

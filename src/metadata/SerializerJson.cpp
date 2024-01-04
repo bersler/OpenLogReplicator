@@ -94,7 +94,7 @@ namespace OpenLogReplicator {
            R"(,)" SERIALIZER_ENDL << R"("online-redo":[)";
 
         int64_t prevGroup = -2;
-        for (RedoLog* redoLog: metadata->redoLogs) {
+        for (const RedoLog* redoLog: metadata->redoLogs) {
             if (redoLog->group == 0)
                 continue;
 
@@ -116,7 +116,7 @@ namespace OpenLogReplicator {
 
         ss << "]," SERIALIZER_ENDL << R"("incarnations":[)";
         bool hasPrev = false;
-        for (OracleIncarnation* oi: metadata->oracleIncarnations) {
+        for (const OracleIncarnation* oi: metadata->oracleIncarnations) {
             if (hasPrev)
                 ss << ",";
             else
@@ -173,7 +173,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-cdef":[)";
         hasPrev = false;
         for (auto sysCDefMapRowIdIt: metadata->schema->sysCDefMapRowId) {
-            SysCDef* sysCDef = sysCDefMapRowIdIt.second;
+            const SysCDef* sysCDef = sysCDefMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -234,7 +234,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-ecol":[)";
         hasPrev = false;
         for (auto sysEColMapRowIdIt: metadata->schema->sysEColMapRowId) {
-            SysECol* sysECol = sysEColMapRowIdIt.second;
+            const SysECol* sysECol = sysEColMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -251,7 +251,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-lob":[)";
         hasPrev = false;
         for (auto sysLobMapRowIdIt: metadata->schema->sysLobMapRowId) {
-            SysLob* sysLob = sysLobMapRowIdIt.second;
+            const SysLob* sysLob = sysLobMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -270,7 +270,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-lob-comp-part":[)";
         hasPrev = false;
         for (auto sysLobCompPartMapRowIdIt: metadata->schema->sysLobCompPartMapRowId) {
-            SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
+            const SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -286,7 +286,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-lob-frag":[)";
         hasPrev = false;
         for (auto sysLobFragMapRowIdIt: metadata->schema->sysLobFragMapRowId) {
-            SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
+            const SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -345,7 +345,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-tabcompart":[)";
         hasPrev = false;
         for (auto sysTabComPartMapRowIdIt: metadata->schema->sysTabComPartMapRowId) {
-            SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
+            const SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -362,7 +362,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-tabpart":[)";
         hasPrev = false;
         for (auto sysTabPartMapRowIdIt: metadata->schema->sysTabPartMapRowId) {
-            SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
+            const SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -379,7 +379,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-tabsubpart":[)";
         hasPrev = false;
         for (auto sysTabSubPartMapRowIdIt: metadata->schema->sysTabSubPartMapRowId) {
-            SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
+            const SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -396,7 +396,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("sys-ts":[)";
         hasPrev = false;
         for (auto sysTsMapRowIdIt: metadata->schema->sysTsMapRowId) {
-            SysTs* sysTs = sysTsMapRowIdIt.second;
+            const SysTs* sysTs = sysTsMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -433,7 +433,7 @@ namespace OpenLogReplicator {
         ss << "]," SERIALIZER_ENDL << R"("xdb-ttset":[)";
         hasPrev = false;
         for (auto xdbTtSetMapRowIdIt: metadata->schema->xdbTtSetMapRowId) {
-            XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
+            const XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -449,13 +449,13 @@ namespace OpenLogReplicator {
         }
 
         for (auto schemaXmlIt: metadata->schema->schemaXmlMap) {
-            XmlCtx* xmlCtx = schemaXmlIt.second;
+            const XmlCtx* xmlCtx = schemaXmlIt.second;
 
             // XDB.X$NMxxx
             ss << "]," SERIALIZER_ENDL << R"("xdb-xnm)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
             for (auto xdbXNmMapRowIdIt: xmlCtx->xdbXNmMapRowId) {
-                XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
+                const XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
 
                 if (hasPrev)
                     ss << ",";
@@ -472,7 +472,7 @@ namespace OpenLogReplicator {
             ss << "]," SERIALIZER_ENDL << R"("xdb-xpt)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
             for (auto xdbXPtMapRowIdIt: xmlCtx->xdbXPtMapRowId) {
-                XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
+                const XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
 
                 if (hasPrev)
                     ss << ",";
@@ -489,7 +489,7 @@ namespace OpenLogReplicator {
             ss << "]," SERIALIZER_ENDL << R"("xdb-xqn)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
             for (auto xdbXQnMapRowIdIt: xmlCtx->xdbXQnMapRowId) {
-                XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
+                const XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
 
                 if (hasPrev)
                     ss << ",";
@@ -602,8 +602,8 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    std::set < std::string > users;
                     if ((metadata->ctx->flags & REDO_FLAGS_ADAPTIVE_SCHEMA) == 0) {
+                        std::set<std::string> users;
                         const rapidjson::Value& usersJson = Ctx::getJsonFieldA(fileName, document, "users");
                         for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
                             const rapidjson::Value& userJson = usersJson[i];;
@@ -664,7 +664,7 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    for (SchemaElement* element: metadata->schemaElements) {
+                    for (const SchemaElement* element: metadata->schemaElements) {
                         if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
                             msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                            std::to_string(element->options));

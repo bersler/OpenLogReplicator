@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
                 slot(newSlot) {
         }
 
-        bool operator<(const typeRowId& other) const {
+        bool operator<(const typeRowId other) const {
             if (dataObj < other.dataObj)
                 return true;
             if (other.dataObj == dataObj) {
@@ -107,13 +107,13 @@ namespace OpenLogReplicator {
                   (static_cast<typeDba>(afn) << 22);
         }
 
-        bool operator!=(const typeRowId& other) const {
+        bool operator!=(const typeRowId other) const {
             return (other.dataObj != dataObj) ||
                    (other.dba != dba) ||
                    (other.slot != slot);
         }
 
-        bool operator==(const typeRowId& other) const {
+        bool operator==(const typeRowId other) const {
             return (other.dataObj == dataObj) &&
                    (other.dba == dba) &&
                    (other.slot == slot);
@@ -193,7 +193,7 @@ namespace OpenLogReplicator {
             return std::string(str);
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const typeRowId& other) {
+        friend std::ostream& operator<<(std::ostream& os, const typeRowId other) {
             char str[19];
             other.toString(str);
             os << str;
@@ -205,7 +205,7 @@ namespace OpenLogReplicator {
 namespace std {
     template<>
     struct hash<OpenLogReplicator::typeRowId> {
-        size_t operator()(const OpenLogReplicator::typeRowId& other) const {
+        size_t operator()(const OpenLogReplicator::typeRowId other) const {
             return hash<typeDataObj>()(other.dataObj) ^
                    hash<typeDba>()(other.dba) ^
                    hash<typeSlot>()(other.slot);

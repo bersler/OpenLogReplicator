@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
         }
 
         // 2 bytes sequence
-        if (byte1 < ZHT32EUC_2_b1_min || byte1 > ZHT32EUC_2_b1_max || length == 0)
+        if (byte1 < ZHT32EUC_2_b1_min || byte1 > ZHT32EUC_2_b1_max)
             return badChar(ctx, xid, byte1);
 
         uint64_t byte2 = *str++;

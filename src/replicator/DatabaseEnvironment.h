@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
         OCIEnv* envhp;
 
         explicit DatabaseEnvironment(Ctx* newCtx);
-        virtual ~DatabaseEnvironment();
+        ~DatabaseEnvironment();
 
         void initialize();
         void checkErr(OCIError* errhp, sword status);

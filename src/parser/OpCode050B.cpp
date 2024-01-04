@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode050B::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode050B::process050B(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         init(ctx, redoLogRecord);
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;

@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
         int code;
         std::string msg;
 
-        explicit BootException(int newCode, const std::string newMsg);
+        explicit BootException(int newCode, const std::string& newMsg);
         explicit BootException(int newCode, const char* newMsg);
         virtual ~BootException();
 

@@ -38,12 +38,15 @@ namespace OpenLogReplicator {
             memset(reinterpret_cast<void*>(data), 0, TYPE_LOBID_LENGTH);
         }
 
+        ~typeLobId() {
+        }
+
         typeLobId(const typeLobId& other) {
             memcpy(reinterpret_cast<void*>(data),
                    reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
         }
 
-        typeLobId(const uint8_t* newData) {
+        explicit typeLobId(const uint8_t* newData) {
             memcpy(reinterpret_cast<void*>(data),
                    reinterpret_cast<const void*>(newData), TYPE_LOBID_LENGTH);
         }

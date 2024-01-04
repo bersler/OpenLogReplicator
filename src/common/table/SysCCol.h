@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
 
     class SysCCol final {
     public:
-        SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
+        SysCCol(typeRowId newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
                 rowId(newRowId),
                 con(newCon),
                 intCol(newIntCol),

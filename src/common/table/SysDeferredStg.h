@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysDeferredStg final {
     public:
-        SysDeferredStg(typeRowId& newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
+        SysDeferredStg(typeRowId newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
                 rowId(newRowId),
                 obj(newObj),
                 flagsStg(newFlagsStg1, newFlagsStg2) {

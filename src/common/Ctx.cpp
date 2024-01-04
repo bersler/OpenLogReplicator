@@ -75,6 +75,7 @@ namespace OpenLogReplicator {
             memoryChunksMax(0),
             memoryChunksHWM(0),
             memoryChunksReusable(0),
+            mainThread(pthread_self()),
             version12(false),
             version(0),
             columnLimit(COLUMN_LIMIT),
@@ -119,7 +120,6 @@ namespace OpenLogReplicator {
             write56(write56Little),
             write64(write64Little),
             writeScn(writeScnLittle) {
-        mainThread = pthread_self();
     }
 
     Ctx::~Ctx() {

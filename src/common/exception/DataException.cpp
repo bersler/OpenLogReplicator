@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DataException.h"
 
 namespace OpenLogReplicator {
-    DataException::DataException(int newCode, const std::string newMsg) :
+    DataException::DataException(int newCode, const std::string& newMsg) :
             exception(),
             code(newCode),
             msg(std::move(newMsg)) {

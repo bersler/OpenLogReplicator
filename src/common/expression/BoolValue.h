@@ -41,10 +41,9 @@ namespace OpenLogReplicator {
         BoolValue(uint64_t newBoolType, Expression* newLeft, Expression* newRight);
         virtual ~BoolValue();
 
-        virtual bool isBool() { return true; }
-
-        virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes);
-        virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes);
+        virtual bool isBool() override { return true; }
+        virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
     };
 }
 

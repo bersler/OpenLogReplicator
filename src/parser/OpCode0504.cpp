@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0504.h"
 
 namespace OpenLogReplicator {
-    void OpCode0504::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0504::process0504(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;
@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0504::ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0504::ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength) {
         if (fieldLength < 20)
             throw RedoLogException(50061, "too short field ktucm: " + std::to_string(fieldLength) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0504::ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0504::ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength) {
         if (fieldLength < 16)
             throw RedoLogException(50061, "too short field ktucf: " + std::to_string(fieldLength) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));

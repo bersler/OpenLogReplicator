@@ -31,6 +31,7 @@ namespace OpenLogReplicator {
             rk(nullptr),
             rkt(nullptr),
             conf(nullptr) {
+        errStr[0] = 0;
     }
 
     WriterKafka::~WriterKafka() {

@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     class SysLobFrag final {
     public:
-        SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
+        SysLobFrag(typeRowId newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
                 rowId(newRowId),
                 fragObj(newFragObj),
                 parentObj(newParentObj),

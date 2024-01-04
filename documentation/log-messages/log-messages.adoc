@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2024-01-03
+:revdate: 2024-01-04
 :imagesdir: ./images
 :toc: preamble
 
@@ -390,7 +390,7 @@ Verify if the network is available and if the network is not overloaded.
 Kafka library returned a fatal error.
 Verify if the Kafka server is available and if the network is not overloaded.
 
-==== code 10058: "Kafka failed to create configuration, message: <message>"
+==== code 10058: "Kafka failed to create configuration"
 
 Kafka configuration can't be created.
 Check if the configuration file contains valid content.

@@ -33,11 +33,17 @@ namespace OpenLogReplicator {
     private:
         uint64_t data[TYPE_INTX_LENGTH];
         static typeIntX BASE10[TYPE_INTX_DIGITS][10];
+
     public:
         explicit typeIntX(uint64_t other) {
             data[0] = other;
             for (uint64_t i = 1; i < TYPE_INTX_LENGTH; ++i)
                 data[i] = 0;
+        }
+
+        explicit typeIntX(const typeIntX &other) {
+            for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
+                data[i] = other.data[i];
         }
 
         typeIntX(uint64_t other1, uint64_t other2) {
@@ -50,6 +56,9 @@ namespace OpenLogReplicator {
         typeIntX() {
             for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
                 data[i] = 0;
+        }
+
+        ~typeIntX() {
         }
 
         static void initializeBASE10() {

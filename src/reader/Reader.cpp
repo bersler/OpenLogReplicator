@@ -38,7 +38,6 @@ namespace OpenLogReplicator {
 
     Reader::Reader(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
             Thread(newCtx, newAlias),
-            ctx(newCtx),
             database(newDatabase),
             fileCopyDes(-1),
             fileSize(0),
@@ -512,7 +511,7 @@ namespace OpenLogReplicator {
             uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
             uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
 
-            auto readTimeP = reinterpret_cast<time_ut*>(redoBufferList[redoBufferNum] + redoBufferPos);
+            const auto readTimeP = reinterpret_cast<const time_ut*>(redoBufferList[redoBufferNum] + redoBufferPos);
             if (*readTimeP + static_cast<time_ut>(ctx->redoVerifyDelayUs) < loopTime) {
                 ++goodBlocks;
             } else {

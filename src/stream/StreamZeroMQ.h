@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
 
     public:
         StreamZeroMQ(Ctx* newCtx, const char* newUri);
-        ~StreamZeroMQ() override;
+        virtual ~StreamZeroMQ() override;
 
         void initialize() override;
         [[nodiscard]] std::string getName() const override;

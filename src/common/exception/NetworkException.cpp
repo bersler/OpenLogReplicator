@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "NetworkException.h"
 
 namespace OpenLogReplicator {
-    NetworkException::NetworkException(int newCode, const std::string newMsg) :
+    NetworkException::NetworkException(int newCode, const std::string& newMsg) :
             exception(),
             code(newCode),
             msg(std::move(newMsg)) {

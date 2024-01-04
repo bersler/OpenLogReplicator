@@ -93,9 +93,8 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::readerDropAll(void) {
-        bool wakingUp;
         for (;;) {
-            wakingUp = false;
+            bool wakingUp = false;
             for (Reader* reader: readers) {
                 if (!reader->finished) {
                     reader->wakeUp();
@@ -300,7 +299,7 @@ namespace OpenLogReplicator {
                 continue;
 
             bool foundPath = false;
-            for (std::string& path: reader->paths) {
+            for (const std::string& path: reader->paths) {
                 reader->fileName = path;
                 applyMapping(reader->fileName);
                 if (reader->checkRedoLog()) {
@@ -414,14 +413,12 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::applyMapping(std::string& path) {
-        uint64_t sourceLength;
-        uint64_t targetLength;
         uint64_t newPathLength = path.length();
         char pathBuffer[MAX_PATH_LENGTH];
 
         for (uint64_t i = 0; i < pathMapping.size() / 2; ++i) {
-            sourceLength = pathMapping[i * 2].length();
-            targetLength = pathMapping[i * 2 + 1].length();
+            uint64_t sourceLength = pathMapping[i * 2].length();
+            uint64_t targetLength = pathMapping[i * 2 + 1].length();
 
             if (sourceLength <= newPathLength &&
                 newPathLength - sourceLength + targetLength < MAX_PATH_LENGTH - 1 &&
@@ -470,7 +467,7 @@ namespace OpenLogReplicator {
             throw RuntimeException(10012, "directory: " + mappedPath + " - can't read");
 
         std::string newLastCheckedDay;
-        struct dirent* ent;
+        const struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                 continue;
@@ -499,7 +496,7 @@ namespace OpenLogReplicator {
                 throw RuntimeException(10012, "directory: " + mappedPathWithFile + " - can't read");
             }
 
-            struct dirent* ent2;
+            const struct dirent* ent2;
             while ((ent2 = readdir(dir2)) != nullptr) {
                 if (strcmp(ent2->d_name, ".") == 0 || strcmp(ent2->d_name, "..") == 0)
                     continue;
@@ -531,8 +528,7 @@ namespace OpenLogReplicator {
         }
         closedir(dir);
 
-        if (newLastCheckedDay.length() != 0 && (replicator->lastCheckedDay.length() == 0 || (replicator->lastCheckedDay.length() > 0 &&
-                                                                                             replicator->lastCheckedDay.compare(newLastCheckedDay) < 0))) {
+        if (newLastCheckedDay.length() != 0 || (replicator->lastCheckedDay.length() > 0 && replicator->lastCheckedDay.compare(newLastCheckedDay) < 0)) {
             if (replicator->ctx->trace & TRACE_ARCHIVE_LIST)
                 replicator->ctx->logTrace(TRACE_ARCHIVE_LIST, "updating last checked day to: " + newLastCheckedDay);
             replicator->lastCheckedDay = newLastCheckedDay;
@@ -541,7 +537,7 @@ namespace OpenLogReplicator {
 
     void Replicator::archGetLogList(Replicator* replicator) {
         uint64_t sequenceStart = ZERO_SEQ;
-        for (std::string& mappedPath: replicator->redoLogsBatch) {
+        for (const std::string& mappedPath: replicator->redoLogsBatch) {
             if (replicator->ctx->trace & TRACE_ARCHIVE_LIST)
                 replicator->ctx->logTrace(TRACE_ARCHIVE_LIST, "checking path: " + mappedPath);
 
@@ -587,7 +583,7 @@ namespace OpenLogReplicator {
                 if ((dir = opendir(mappedPath.c_str())) == nullptr)
                     throw RuntimeException(10012, "directory: " + mappedPath + " - can't read");
 
-                struct dirent* ent;
+                const struct dirent* ent;
                 while ((ent = readdir(dir)) != nullptr) {
                     if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                         continue;
@@ -620,7 +616,7 @@ namespace OpenLogReplicator {
         replicator->redoLogsBatch.clear();
     }
 
-    bool parserCompare::operator()(Parser* const& p1, Parser* const& p2) {
+    bool parserCompare::operator()(const Parser* const p1, const Parser* const p2) {
         return p1->sequence > p2->sequence;
     }
 
@@ -635,7 +631,7 @@ namespace OpenLogReplicator {
         }
 
         // Resetlogs is changed
-        for (OracleIncarnation* oi: metadata->oracleIncarnations) {
+        for (const OracleIncarnation* oi: metadata->oracleIncarnations) {
             if (oi->resetlogsScn == metadata->nextScn &&
                 metadata->oracleIncarnationCurrent->resetlogs == metadata->resetlogs &&
                 oi->priorIncarnation == metadata->oracleIncarnationCurrent->incarnation) {
@@ -795,7 +791,6 @@ namespace OpenLogReplicator {
     }
 
     bool Replicator::processOnlineRedoLogs() {
-        uint64_t ret = REDO_OK;
         Parser* parser;
         bool logsProcessed = false;
 
@@ -861,7 +856,7 @@ namespace OpenLogReplicator {
                 break;
             logsProcessed = true;
 
-            ret = parser->parse();
+            uint64_t ret = parser->parse();
             metadata->setFirstNextScn(parser->firstScn, parser->nextScn);
 
             if (ctx->softShutdown)

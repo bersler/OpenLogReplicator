@@ -170,7 +170,7 @@ namespace OpenLogReplicator {
     std::ostream& operator<<(std::ostream& os, const OracleTable& table) {
         os << "('" << table.owner << "'.'" << table.name << "', " << std::dec << table.obj << ", " << table.dataObj << ", " << table.cluCols << ", " <<
            table.maxSegCol << ")\n";
-        for (OracleColumn* column: table.columns)
+        for (const OracleColumn* column: table.columns)
             os << "     - " << *column << '\n';
         return os;
     }

@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
     class TransactionBuffer;
 
     struct parserCompare {
-        bool operator()(Parser* const& p1, Parser* const& p2);
+        bool operator()(const Parser* const p1, const Parser* const p2);
     };
 
     class Replicator : public Thread {

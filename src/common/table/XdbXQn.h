@@ -33,7 +33,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class XdbXQn final {
     public:
-        XdbXQn(typeRowId& newRowId, const char* newNmSpcId, const char* newLocalName, const char* newFlags, const char* newId) :
+        XdbXQn(typeRowId newRowId, const char* newNmSpcId, const char* newLocalName, const char* newFlags, const char* newId) :
                 rowId(newRowId),
                 nmSpcId(newNmSpcId),
                 localName(newLocalName),

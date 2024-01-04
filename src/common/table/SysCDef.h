@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
 
     class SysCDef final {
     public:
-        SysCDef(typeRowId& newRowId, typeCon newCon, typeObj newObj, typeType newType) :
+        SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, typeType newType) :
                 rowId(newRowId),
                 con(newCon),
                 obj(newObj),

@@ -29,6 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     TransactionBuffer::TransactionBuffer(Ctx* newCtx) :
             ctx(newCtx) {
+        buffer[0] = 0;
     }
 
     TransactionBuffer::~TransactionBuffer() {
@@ -202,7 +203,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+    void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2) {
         uint64_t length = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
         if (length > DATA_BUFFER_SIZE)
@@ -230,7 +231,7 @@ namespace OpenLogReplicator {
             fieldPos += (fieldLength + 3) & 0xFFFC;
 
             ctx->write16(redoLogRecord1->data + fieldPos + 20, redoLogRecord1->flg);
-            OpCode0501::process(ctx, redoLogRecord1);
+            OpCode0501::process0501(ctx, redoLogRecord1);
             length = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
             rollbackTransactionChunk(transaction);
@@ -298,7 +299,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void TransactionBuffer::mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+    void TransactionBuffer::mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2) {
         memcpy(reinterpret_cast<void*>(mergeBuffer),
                reinterpret_cast<const void*>(redoLogRecord1->data), redoLogRecord1->fieldLengthsDelta);
         uint64_t pos = redoLogRecord1->fieldLengthsDelta;
@@ -346,7 +347,7 @@ namespace OpenLogReplicator {
 
     void TransactionBuffer::checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid) {
         for (auto xidTransactionMapIt: xidTransactionMap) {
-            Transaction* transaction = xidTransactionMapIt.second;
+            const Transaction* transaction = xidTransactionMapIt.second;
             if (transaction->firstSequence < minSequence) {
                 minSequence = transaction->firstSequence;
                 minOffset = transaction->firstOffset;

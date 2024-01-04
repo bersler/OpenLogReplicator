@@ -25,11 +25,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class OpCode0504 final : public OpCode {
     protected:
-        static void ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
 
     public:
-        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process0504(Ctx* ctx, RedoLogRecord* redoLogRecord);
     };
 }
 

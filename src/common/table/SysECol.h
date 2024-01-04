@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
 
     class SysECol final {
     public:
-        SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId) :
+        SysECol(typeRowId newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId) :
                 rowId(newRowId),
                 tabObj(newTabObj),
                 colNum(newColNum),

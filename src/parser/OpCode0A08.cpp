@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0A08.h"
 
 namespace OpenLogReplicator {
-    void OpCode0A08::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0A08::process0A08(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
         dumpMemory(ctx, redoLogRecord, fieldPos, fieldLength);
     }
 
-    void OpCode0A08::kdxln(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0A08::kdxln(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength) {
         if (fieldLength < 16) {
             ctx->warning(70001, "too short field kdxln: " + std::to_string(fieldLength) + " offset: " +
                                 std::to_string(redoLogRecord->dataOffset));

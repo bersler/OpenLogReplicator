@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         int code;
         std::string msg;
 
-        explicit DataException(int newCode, const std::string newMsg);
+        explicit DataException(int newCode, const std::string& newMsg);
         explicit DataException(int newCode, const char* newMsg);
         ~DataException() override;
 

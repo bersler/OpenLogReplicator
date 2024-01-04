@@ -36,6 +36,7 @@ namespace OpenLogReplicator {
             serverFD(-1),
             readBufferLen(0),
             res(nullptr) {
+        readBuffer[0] = 0;
     }
 
     StreamNetwork::~StreamNetwork() {
@@ -78,7 +79,7 @@ namespace OpenLogReplicator {
         if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) == 0)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (1)");
 
-        struct hostent* server = gethostbyname(host.c_str());
+        const struct hostent* server = gethostbyname(host.c_str());
         if (server == nullptr)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (2)");
 

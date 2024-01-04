@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
                 intCol(newIntCol) {
         }
 
-        bool operator<(const SysLobKey& other) const {
+        bool operator<(const SysLobKey other) const {
             if (obj < other.obj)
                 return true;
             if (other.obj < obj)
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     class SysLob final {
     public:
-        SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs) :
+        SysLob(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs) :
                 rowId(newRowId),
                 obj(newObj),
                 col(newCol),

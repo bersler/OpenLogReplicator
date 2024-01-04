@@ -675,8 +675,7 @@ namespace OpenLogReplicator {
                         const char* table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, 0);
 
-                        if (metadata->users.find(owner) == metadata->users.end())
-                            metadata->users.insert(owner);
+                        metadata->users.insert(owner);
 
                         if (tableElementJson.HasMember("key")) {
                             element->keysStr = Ctx::getJsonFieldS(configFileName, JSON_KEY_LENGTH, tableElementJson, "key");
@@ -684,7 +683,6 @@ namespace OpenLogReplicator {
 
                             while (keyStream.good()) {
                                 std::string keyCol;
-                                std::string keyCol2;
                                 getline(keyStream, keyCol, ',');
                                 keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
                                 transform(keyCol.begin(), keyCol.end(), keyCol.begin(), ::toupper);
