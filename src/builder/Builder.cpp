@@ -129,8 +129,8 @@ namespace OpenLogReplicator {
         valueBufferLength = VALUE_BUFFER_MIN;
     }
 
-    void Builder::processValue(LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, uint64_t offset,
-                               bool after, bool compressed) {
+    void Builder::processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeCol col, const uint8_t* data, uint64_t length,
+                               uint64_t offset, bool after, bool compressed) {
         if (compressed) {
             std::string columnName("COMPRESSED");
             columnRaw(columnName, data, length);
@@ -182,7 +182,7 @@ namespace OpenLogReplicator {
                 break;
 
             case SYS_COL_TYPE_BLOB:
-                if (after && table != nullptr) {
+                if (after) {
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
                         if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
                             if (parseXml(xmlCtx, reinterpret_cast<uint8_t*>(valueBuffer), valueLength, offset))
@@ -202,7 +202,7 @@ namespace OpenLogReplicator {
                 break;
 
             case SYS_COL_TYPE_CLOB:
-                if (after && table != nullptr) {
+                if (after) {
                     if (parseLob(lobCtx, data, length, column->charsetId, table->obj, offset, true, table->systemTable > 0))
                         columnString(column->name);
                 }
@@ -722,14 +722,13 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0B
-    void Builder::processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
-                                        RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
-        uint64_t pos = 0;
+    void Builder::processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx,
+                                        const RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
         typeField fieldNum = 0;
         uint16_t fieldLength = 0;
-        uint16_t colLength = 0;
+        uint16_t colLength;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
@@ -740,7 +739,7 @@ namespace OpenLogReplicator {
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord2->nRow; ++r) {
-            pos = 0;
+            uint64_t pos = 0;
             fieldPos = fieldPosStart;
             uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
             pos = 3;
@@ -794,14 +793,13 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0C
-    void Builder::processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
-                                        RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
-        uint64_t pos = 0;
+    void Builder::processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx,
+                                        const RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
         typeField fieldNum = 0;
         uint16_t fieldLength = 0;
-        uint16_t colLength = 0;
+        uint16_t colLength;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
@@ -812,7 +810,7 @@ namespace OpenLogReplicator {
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord1->nRow; ++r) {
-            pos = 0;
+            uint64_t pos = 0;
             fieldPos = fieldPosStart;
             uint8_t jcc = redoLogRecord1->data[fieldPos + pos + 2];
             pos = 3;
@@ -866,15 +864,15 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Builder::processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, RedoLogRecord* redoLogRecord1,
-                             RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema, bool dump) {
+    void Builder::processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
+                             const RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema, bool dump) {
         uint8_t fb;
         typeObj obj;
         typeDataObj dataObj;
         typeDba bdba;
         typeSlot slot;
-        RedoLogRecord* redoLogRecord1p;
-        RedoLogRecord* redoLogRecord2p = nullptr;
+        const RedoLogRecord* redoLogRecord1p;
+        const RedoLogRecord* redoLogRecord2p = nullptr;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
@@ -914,9 +912,6 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint64_t fieldPos;
-        typeField fieldNum;
-        uint16_t fieldLength;
         uint16_t colLength;
         uint16_t colNum = 0;
         uint16_t colShift;
@@ -931,9 +926,9 @@ namespace OpenLogReplicator {
         colNums = nullptr;
 
         while (redoLogRecord1p != nullptr) {
-            fieldPos = 0;
-            fieldNum = 0;
-            fieldLength = 0;
+            uint64_t fieldPos = 0;
+            typeField fieldNum = 0;
+            uint16_t fieldLength = 0;
 
             // UNDO
             if (redoLogRecord1p->rowData > 0) {
@@ -1174,7 +1169,6 @@ namespace OpenLogReplicator {
                                                           std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
                                                           std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +
                                                           std::to_string(redoLogRecord2p->dataOffset));
-                        break;
                     }
 
                     fb = 0;
@@ -1289,7 +1283,7 @@ namespace OpenLogReplicator {
                     bool guardPresent = false;
                     if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][VALUE_BEFORE] != nullptr) {
                         typeCol column2 = table->columns[column]->guardSeg;
-                        uint8_t* guardData = values[guardPos][VALUE_BEFORE];
+                        const uint8_t* guardData = values[guardPos][VALUE_BEFORE];
                         if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < lengths[guardPos][VALUE_BEFORE]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_BEFORE][column2 / 8] & (1 << (column2 & 7))) != 0) {
@@ -1309,7 +1303,7 @@ namespace OpenLogReplicator {
                     bool guardPresent = false;
                     if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][VALUE_AFTER] != nullptr) {
                         typeCol column2 = table->columns[column]->guardSeg;
-                        uint8_t* guardData = values[guardPos][VALUE_AFTER];
+                        const uint8_t* guardData = values[guardPos][VALUE_AFTER];
                         if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < lengths[guardPos][VALUE_AFTER]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_AFTER][column2 / 8] & (1 << (column2 & 7))) != 0) {
@@ -1566,7 +1560,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x18010000
-    void Builder::processDdlHeader(typeScn scn, typeSeq sequence, typeTime time_, RedoLogRecord* redoLogRecord1) {
+    void Builder::processDdlHeader(typeScn scn, typeSeq sequence, typeTime time_, const RedoLogRecord* redoLogRecord1) {
         uint64_t fieldPos = 0;
         uint64_t sqlLength;
         typeField fieldNum = 0;
@@ -1574,8 +1568,8 @@ namespace OpenLogReplicator {
         // uint16_t cnt = 0;
         uint16_t type = 0;
         uint16_t fieldLength = 0;
-        char* sqlText = nullptr;
-        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        const char* sqlText = nullptr;
+        const OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
 
@@ -1618,7 +1612,7 @@ namespace OpenLogReplicator {
     }
 
     // Parse binary XML format
-    bool Builder::parseXml(XmlCtx* xmlCtx, const uint8_t* data, uint64_t length, uint64_t offset) {
+    bool Builder::parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t length, uint64_t offset) {
         if (valueBufferOld != nullptr) {
             delete[] valueBufferOld;
             valueBufferOld = nullptr;
@@ -1634,8 +1628,8 @@ namespace OpenLogReplicator {
         std::string out;
         uint64_t pos = 0;
         std::vector<std::string> tags;
-        std::map < std::string, std::string > dictNmSpcMap;
-        std::map < std::string, std::string > nmSpcPrefixMap;
+        std::map<std::string, std::string> dictNmSpcMap;
+        std::map<std::string, std::string> nmSpcPrefixMap;
         bool tagOpen = false;
         bool attributeOpen = false;
         std::string lastTag;
@@ -2127,7 +2121,7 @@ namespace OpenLogReplicator {
     }
 
     void Builder::releaseBuffers(uint64_t maxId) {
-        BuilderQueue* builderQueue = nullptr;
+        BuilderQueue* builderQueue;
         {
             std::unique_lock<std::mutex> lck(mtx);
             builderQueue = firstBuilderQueue;

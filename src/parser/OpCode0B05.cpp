@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B05.h"
 
 namespace OpenLogReplicator {
-    void OpCode0B05::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0B05::process0B05(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;
@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
             redoLogRecord->rowData = fieldNum;
             if (ctx->dumpRedoLog >= 1)
                 dumpColVector(ctx, redoLogRecord, redoLogRecord->data + fieldPos, ctx->read16(colNums));
-        } else {
+        } else if (colNums != nullptr) {
             redoLogRecord->rowData = fieldNum + 1;
             uint8_t bits = 1;
 

@@ -61,7 +61,8 @@ namespace OpenLogReplicator {
             xmlCtxDefault(nullptr),
             columnTmp(nullptr),
             lobTmp(nullptr),
-            tableTmp(nullptr) {
+            tableTmp(nullptr),
+            touched(false) {
     }
 
     Schema::~Schema() {
@@ -1205,7 +1206,7 @@ namespace OpenLogReplicator {
         SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
         auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
         if (sysColMapSegIt != sysColMapSeg.end())
-            DataException(50024, "duplicate SYS.COL$ value for unique (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
+            throw DataException(50024, "duplicate SYS.COL$ value for unique (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
                                  std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
 
         sysColMapRowId.insert_or_assign(sysCol->rowId, sysCol);
@@ -2182,7 +2183,7 @@ namespace OpenLogReplicator {
         auto userIt = sysUserMapUser.find(sysObj->owner);
         if (userIt == sysUserMapUser.end())
             return false;
-        SysUser* sysUser = userIt->second;
+        const SysUser* sysUser = userIt->second;
 
         table = sysObj->name;
         owner = sysUser->name;
@@ -2263,7 +2264,7 @@ namespace OpenLogReplicator {
                                            std::to_string(dataObj) + ")");
         }
 
-        for (auto lob: table->lobs) {
+        for (const auto lob: table->lobs) {
             for (auto dataObj: lob->lobIndexes) {
                 auto lobIndexMapIt = lobIndexMap.find(dataObj);
                 if (lobIndexMapIt != lobIndexMap.end())
@@ -2287,7 +2288,7 @@ namespace OpenLogReplicator {
                                        std::to_string(table->dataObj) + ")");
     }
 
-    void Schema::dropUnusedMetadata(const std::set<std::string>& users, std::vector<SchemaElement*> schemaElements, std::vector<std::string>& msgs) {
+    void Schema::dropUnusedMetadata(const std::set<std::string>& users, const std::vector<SchemaElement*>& schemaElements, std::vector<std::string>& msgs) {
         for (OracleTable* table: tablesTouched) {
             msgs.push_back(table->owner + "." + table->name + " (dataobj: " + std::to_string(table->dataObj) + ", obj: " +
                            std::to_string(table->obj) + ") ");
@@ -2593,7 +2594,7 @@ namespace OpenLogReplicator {
                 for (auto sysTabPartMapKeyIt = sysTabPartMapKey.upper_bound(sysTabPartKey);
                      sysTabPartMapKeyIt != sysTabPartMapKey.end() && sysTabPartMapKeyIt->first.bo == sysObj->obj; ++sysTabPartMapKeyIt) {
 
-                    SysTabPart* sysTabPart = sysTabPartMapKeyIt->second;
+                    const SysTabPart* sysTabPart = sysTabPartMapKeyIt->second;
                     tableTmp->addTablePartition(sysTabPart->obj, sysTabPart->dataObj);
                     ++tablePartitions;
                 }
@@ -2607,7 +2608,7 @@ namespace OpenLogReplicator {
                          sysTabSubPartMapKeyIt != sysTabSubPartMapKey.end() && sysTabSubPartMapKeyIt->first.pObj == sysTabComPartMapKeyIt->second->obj;
                          ++sysTabSubPartMapKeyIt) {
 
-                        SysTabSubPart* sysTabSubPart = sysTabSubPartMapKeyIt->second;
+                        const SysTabSubPart* sysTabSubPart = sysTabSubPartMapKeyIt->second;
                         tableTmp->addTablePartition(sysTabSubPart->obj, sysTabSubPart->dataObj);
                         ++tablePartitions;
                     }
@@ -2621,7 +2622,7 @@ namespace OpenLogReplicator {
                 for (auto sysCDefMapKeyIt = sysCDefMapKey.upper_bound(sysCDefKeyFirst);
                      sysCDefMapKeyIt != sysCDefMapKey.end() && sysCDefMapKeyIt->first.obj == sysObj->obj;
                      ++sysCDefMapKeyIt) {
-                    SysCDef* sysCDef = sysCDefMapKeyIt->second;
+                    const SysCDef* sysCDef = sysCDefMapKeyIt->second;
                     if (sysCDef->isSupplementalLogPK())
                         suppLogTablePrimary = true;
                     else if (sysCDef->isSupplementalLogAll())
@@ -2678,7 +2679,7 @@ namespace OpenLogReplicator {
                         ctx->warning(70005, "data in SYS.CDEF$ missing for CON#: " + std::to_string(sysCCol->con));
                         continue;
                     }
-                    SysCDef* sysCDef = sysCDefMapConIt->second;
+                    const SysCDef* sysCDef = sysCDefMapConIt->second;
                     if (sysCDef->isPK())
                         ++numPk;
 
@@ -2715,11 +2716,11 @@ namespace OpenLogReplicator {
                 // For system-generated columns, check column name from base column
                 std::string columnName = sysCol->name;
                 if (sysCol->isSystemGenerated()) {
-                    typeRowId rid2(0, 0, 0);
-                    SysColSeg sysColSegFirst2(sysObj->obj - 1, 0, rid2);
+                    //typeRowId rid2(0, 0, 0);
+                    //SysColSeg sysColSegFirst2(sysObj->obj - 1, 0, rid2);
                     for (auto sysColMapSegIt2 = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt2 != sysColMapSeg.end() &&
                                                                                           sysColMapSegIt2->first.obj <= sysObj->obj; ++sysColMapSegIt2) {
-                        SysCol* sysCol2 = sysColMapSegIt2->second;
+                        const SysCol* sysCol2 = sysColMapSegIt2->second;
                         if (sysCol->col == sysCol2->col && sysCol2->segCol == 0) {
                             columnName = sysCol2->name;
                             xmlType = true;
@@ -2810,7 +2811,7 @@ namespace OpenLogReplicator {
                              sysLobCompPartMapKeyIt != sysLobCompPartMapKey.end() &&
                              sysLobCompPartMapKeyIt->first.lObj == sysLob->lObj; ++sysLobCompPartMapKeyIt) {
 
-                            SysLobCompPart* sysLobCompPart = sysLobCompPartMapKeyIt->second;
+                            const SysLobCompPart* sysLobCompPart = sysLobCompPartMapKeyIt->second;
 
                             SysLobFragKey sysLobFragKey2(sysLobCompPart->partObj, 0);
                             for (auto sysLobFragMapKeyIt = sysLobFragMapKey.upper_bound(sysLobFragKey2);

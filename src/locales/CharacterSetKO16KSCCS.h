@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
     public:
         CharacterSetKO16KSCCS();
-        ~CharacterSetKO16KSCCS() override;
+        virtual ~CharacterSetKO16KSCCS() override;
     };
 }
 

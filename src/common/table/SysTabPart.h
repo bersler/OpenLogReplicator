@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
                 obj(newObj) {
         }
 
-        bool operator<(const SysTabPartKey& other) const {
+        bool operator<(const SysTabPartKey other) const {
             if (bo < other.bo)
                 return true;
             if (other.bo < bo)
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     class SysTabPart final {
     public:
-        SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
+        SysTabPart(typeRowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
                 rowId(newRowId),
                 obj(newObj),
                 dataObj(newDataObj),

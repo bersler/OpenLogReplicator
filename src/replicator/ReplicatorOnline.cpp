@@ -693,7 +693,6 @@ namespace OpenLogReplicator {
             }
             stmt.createStatement(SQL_GET_SCN_FROM_TIME);
 
-            std::ostringstream ss;
             stmt.bindString(1, metadata->startTime);
             typeScn firstDataScn;
             stmt.defineUInt64(1, firstDataScn);
@@ -926,7 +925,7 @@ namespace OpenLogReplicator {
         Schema otherSchema(ctx, metadata->locales);
         try {
             readSystemDictionariesMetadata(&otherSchema, currentScn);
-            for (SchemaElement* element: metadata->schemaElements)
+            for (const SchemaElement* element: metadata->schemaElements)
                 readSystemDictionaries(&otherSchema, currentScn, element->owner, element->table, element->options);
             std::string errMsg;
             bool result = metadata->schema->compare(&otherSchema, errMsg);
@@ -956,7 +955,7 @@ namespace OpenLogReplicator {
             metadata->firstSchemaScn = metadata->firstDataScn;
             readSystemDictionariesMetadata(metadata->schema, metadata->firstDataScn);
 
-            for (SchemaElement* element: metadata->schemaElements)
+            for (const SchemaElement* element: metadata->schemaElements)
                 createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keys, element->keysStr, element->conditionStr,
                                      element->options, msgs);
             metadata->schema->resetTouched();
@@ -1926,7 +1925,6 @@ namespace OpenLogReplicator {
             stmt.defineString(2, pathStr, sizeof(pathStr));
             Reader* onlineReader = nullptr;
             int64_t lastGroup = -1;
-            std::string path;
 
             int64_t ret = stmt.executeQuery();
             while (ret) {
@@ -1935,7 +1933,7 @@ namespace OpenLogReplicator {
                     onlineReader->paths.clear();
                     lastGroup = group;
                 }
-                path = pathStr;
+                std::string path = pathStr;
                 onlineReader->paths.push_back(path);
                 auto redoLog = new RedoLog(group, pathStr);
                 metadata->redoLogs.insert(redoLog);

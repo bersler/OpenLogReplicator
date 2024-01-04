@@ -32,20 +32,20 @@ namespace OpenLogReplicator {
         pb::Payload* payloadPB;
         pb::Schema* schemaPB;
 
-        void columnNull(OracleTable* table, typeCol col, bool after);
-        void columnFloat(const std::string& columnName, double value) override;
-        void columnDouble(const std::string& columnName, long double value) override;
-        void columnString(const std::string& columnName) override;
-        void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) override;
-        void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) override;
+        void columnNull(const OracleTable* table, typeCol col, bool after);
+        virtual void columnFloat(const std::string& columnName, double value) override;
+        virtual void columnDouble(const std::string& columnName, long double value) override;
+        virtual void columnString(const std::string& columnName) override;
+        virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) override;
+        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) override;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) override;
-        void columnTimestamp(const std::string& columnName, struct tm& epochTime, uint64_t fraction) override;
-        void columnTimestampTz(const std::string& columnName, struct tm& epochTime, uint64_t fraction, const char* tz) override;
+        virtual void columnTimestamp(const std::string& columnName, struct tm& epochTime, uint64_t fraction) override;
+        virtual void columnTimestampTz(const std::string& columnName, struct tm& epochTime, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void appendHeader(typeScn scn, typeTime time_, bool first, bool showDb, bool showXid);
-        void appendSchema(OracleTable* table, typeObj obj);
+        void appendSchema(const OracleTable* table, typeObj obj);
 
-        void appendAfter(LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, uint64_t offset) {
+        void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, uint64_t offset) {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
@@ -88,7 +88,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        void appendBefore(LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, uint64_t offset) {
+        void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, uint64_t offset) {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
@@ -138,14 +138,14 @@ namespace OpenLogReplicator {
         }
 
         void numToString(uint64_t value, char* buf, uint64_t length);
-        void processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                           typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        void processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                           typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        void processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj, typeDataObj dataObj,
-                           typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        void processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type, uint16_t seq,
-                        const char* sql, uint64_t sqlLength) override;
+        virtual void processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        virtual void processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        virtual void processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        virtual void processDdl(typeScn scn, typeSeq sequence, typeTime time_, const OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
+                                uint16_t seq, const char* sql, uint64_t sqlLength) override;
         void processBeginMessage(typeScn scn, typeSeq sequence, typeTime time) override;
 
     public:
@@ -154,11 +154,11 @@ namespace OpenLogReplicator {
                         uint64_t newTimestampFormat, uint64_t newTimestampTzFormat, uint64_t newTimestampAll, uint64_t newCharFormat, uint64_t newScnFormat,
                         uint64_t newScnAll, uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
                         uint64_t newFlushBuffer);
-        ~BuilderProtobuf() override;
+        virtual ~BuilderProtobuf() override;
 
-        void initialize() override;
-        void processCommit(typeScn scn, typeSeq sequence, typeTime time) override;
-        void processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) override;
+        virtual void initialize() override;
+        virtual void processCommit(typeScn scn, typeSeq sequence, typeTime time) override;
+        virtual void processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) override;
     };
 }
 

@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class XdbXPt final {
     public:
-        XdbXPt(typeRowId& newRowId, const char* newPath, const char* newId) :
+        XdbXPt(typeRowId newRowId, const char* newPath, const char* newId) :
                 rowId(newRowId),
                 path(newPath),
                 id(newId) {

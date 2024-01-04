@@ -19,7 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <algorithm>
 #include <fcntl.h>
-#include <list>
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
@@ -86,8 +85,7 @@ namespace OpenLogReplicator {
 
             updateConfigFile();
 
-            if (configFileBuffer != nullptr)
-                delete[] configFileBuffer;
+            delete[] configFileBuffer;
             configFileBuffer = nullptr;
 
         } catch (ConfigurationException& ex) {
@@ -121,7 +119,7 @@ namespace OpenLogReplicator {
             metadata->resetElements();
 
             const char* debugOwner = nullptr;
-            const char* debugTable = nullptr;
+            const char* debugTable;
 
             if (sourceJson.HasMember("debug")) {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
@@ -154,8 +152,7 @@ namespace OpenLogReplicator {
                         const char* table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, 0);
 
-                        if (users.find(owner) == users.end())
-                            users.insert(owner);
+                        users.insert(owner);
 
                         if (tableElementJson.HasMember("key")) {
                             element->keysStr = Ctx::getJsonFieldS(configFileName, JSON_KEY_LENGTH, tableElementJson, "key");
@@ -163,7 +160,6 @@ namespace OpenLogReplicator {
 
                             while (keyStream.good()) {
                                 std::string keyCol;
-                                std::string keyCol2;
                                 getline(keyStream, keyCol, ',');
                                 keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
                                 transform(keyCol.begin(), keyCol.end(), keyCol.begin(), ::toupper);
@@ -195,11 +191,11 @@ namespace OpenLogReplicator {
             metadata->schema->purgeMetadata();
 
             // Mark all tables as touched to force a schema update
-            for (auto& it: metadata->schema->sysObjMapRowId)
+            for (const auto& it: metadata->schema->sysObjMapRowId)
                 metadata->schema->touchTable(it.second->obj);
 
             std::vector<std::string> msgs;
-            for (SchemaElement* element: metadata->schemaElements) {
+            for (const SchemaElement* element: metadata->schemaElements) {
                 if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
                     msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                    std::to_string(element->options));

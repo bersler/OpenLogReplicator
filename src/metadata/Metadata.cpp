@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool Metadata::stateWrite(const std::string& name, typeScn scn, std::ostringstream& out) {
+    bool Metadata::stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out) {
         try {
             state->write(name, scn, out);
             return true;
@@ -420,7 +420,7 @@ namespace OpenLogReplicator {
             typeScn scn;
             try {
                 scn = strtoull(scnStr.c_str(), nullptr, 10);
-            } catch (std::exception& e) {
+            } catch (const std::exception& e) {
                 // Ignore other files
                 continue;
             }

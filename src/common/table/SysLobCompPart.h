@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
                 partObj(newPartObj) {
         }
 
-        bool operator<(const SysLobCompPartKey& other) const {
+        bool operator<(SysLobCompPartKey other) const {
             if (lObj < other.lObj)
                 return true;
             if (other.lObj < lObj)
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     class SysLobCompPart final {
     public:
-        SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj) :
+        SysLobCompPart(typeRowId newRowId, typeObj newPartObj, typeObj newLObj) :
                 rowId(newRowId),
                 partObj(newPartObj),
                 lObj(newLObj) {

@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
 
         lobData->dataMap.insert_or_assign(element, data);
 
-        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t));
+        const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(data + sizeof(uint64_t));
         if (redoLogRecordLob->lobPageSize != 0) {
             if (lobData->pageSize == 0) {
                 lobData->pageSize = redoLogRecordLob->lobPageSize;
@@ -101,12 +101,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    void LobCtx::setList(typeDba page, uint8_t* data, uint16_t length) {
+    void LobCtx::setList(typeDba page, const uint8_t* data, uint16_t length) {
         typeDba nextPage = 0;
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
-            uint8_t* oldData = listMapIt->second;
-            typeDba* oldPage = reinterpret_cast<typeDba*>(oldData);
+            const uint8_t* oldData = listMapIt->second;
+            const typeDba* oldPage = reinterpret_cast<const typeDba*>(oldData);
             nextPage = *oldPage;
             delete[] oldData;
         }

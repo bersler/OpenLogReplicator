@@ -174,7 +174,7 @@ namespace OpenLogReplicator {
                 typeScn fileNum;
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
-                } catch (std::exception& e) {
+                } catch (const std::exception& e) {
                     // Ignore other files
                     continue;
                 }

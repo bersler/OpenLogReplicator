@@ -80,12 +80,12 @@ namespace OpenLogReplicator {
         [[nodiscard]] Transaction* findTransaction(XmlCtx* xmlCtx, typeXid xid, typeConId conId, bool old, bool add, bool rollback);
         void dropTransaction(typeXid xid, typeConId conId);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord);
-        void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void rollbackTransactionChunk(Transaction* transaction);
         [[nodiscard]] TransactionChunk* newTransactionChunk();
         void deleteTransactionChunk(TransactionChunk* tc);
         void deleteTransactionChunks(TransactionChunk* tc);
-        void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
         void addOrphanedLob(RedoLogRecord* redoLogRecord1);
         uint8_t* allocateLob(RedoLogRecord* redoLogRecord1);

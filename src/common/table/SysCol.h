@@ -84,7 +84,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysColSeg final {
     public:
-        SysColSeg(typeObj newObj, typeCol newSegCol, typeRowId& newRowId) :
+        SysColSeg(typeObj newObj, typeCol newSegCol, typeRowId newRowId) :
                 obj(newObj),
                 segCol(newSegCol),
                 rowId(newRowId) {
@@ -132,7 +132,7 @@ namespace OpenLogReplicator {
 
     class SysCol final {
     public:
-        SysCol(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
+        SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
                uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
                uint64_t newProperty1, uint64_t newProperty2) :
                 rowId(newRowId),

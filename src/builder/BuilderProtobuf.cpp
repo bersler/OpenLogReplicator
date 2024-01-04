@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         google::protobuf::ShutdownProtobufLibrary();
     }
 
-    void BuilderProtobuf::columnNull(OracleTable* table, typeCol col, bool after) {
+    void BuilderProtobuf::columnNull(const OracleTable* table, typeCol col, bool after) {
         if (table != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
             OracleColumn* column = table->columns[col];
             if (column->storedAsLob)
@@ -254,7 +254,7 @@ namespace OpenLogReplicator {
             redoResponsePB->set_db(metadata->conName);
     }
 
-    void BuilderProtobuf::appendSchema(OracleTable* table, typeObj obj) {
+    void BuilderProtobuf::appendSchema(const OracleTable* table, typeObj obj) {
         if (table == nullptr) {
             std::string ownerName;
             std::string tableName;
@@ -419,8 +419,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
-                                        typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
+    void BuilderProtobuf::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table,
+                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
 
@@ -456,7 +456,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table,
+    void BuilderProtobuf::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table,
                                         typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
@@ -494,7 +494,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+    void BuilderProtobuf::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                         typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
@@ -531,7 +531,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table __attribute__((unused)), typeObj obj,
+    void BuilderProtobuf::processDdl(typeScn scn, typeSeq sequence, typeTime time_, const OracleTable* table __attribute__((unused)), typeObj obj,
                                      typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)),
                                      const char* sql, uint64_t sqlLength) {
         if (newTran)

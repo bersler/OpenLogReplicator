@@ -41,10 +41,10 @@ namespace OpenLogReplicator {
             data = (static_cast<uint64_t>(usn) << 48) | (static_cast<uint64_t>(slt) << 32) | static_cast<uint64_t>(sqn);
         }
 
-        typeXid(const char* str) {
-            std::string usn;
-            std::string slt;
-            std::string sqn;
+        explicit typeXid(const char* str) {
+            std::string usn_;
+            std::string slt_;
+            std::string sqn_;
 
             uint64_t length = strnlen(str, 25);
             // UUUUSSSSQQQQQQQQ
@@ -52,9 +52,9 @@ namespace OpenLogReplicator {
                 for (uint64_t i = 0; i < 16; ++i)
                     if (!isxdigit(str[i]))
                         throw DataException(20002, "bad XID value: " + std::string(str));
-                usn.assign(str, 4);
-                slt.assign(str + 4, 4);
-                sqn.assign(str + 8, 8);
+                usn_.assign(str, 4);
+                slt_.assign(str + 4, 4);
+                sqn_.assign(str + 8, 8);
             } else if (length == 17) {
                 // UUUU.SSS.QQQQQQQQ
                 for (uint64_t i = 0; i < 17; ++i)
@@ -62,9 +62,9 @@ namespace OpenLogReplicator {
                         throw DataException(20002, "bad XID value: " + std::string(str));
                 if (str[4] != '.' || str[8] != '.')
                     throw DataException(20002, "bad XID value: " + std::string(str));
-                usn.assign(str, 4);
-                slt.assign(str + 5, 3);
-                sqn.assign(str + 9, 8);
+                usn_.assign(str, 4);
+                slt_.assign(str + 5, 3);
+                sqn_.assign(str + 9, 8);
             } else if (length == 18) {
                 // UUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 0; i < 18; ++i)
@@ -72,9 +72,9 @@ namespace OpenLogReplicator {
                         throw DataException(20002, "bad XID value: " + std::string(str));
                 if (str[4] != '.' || str[9] != '.')
                     throw DataException(20002, "bad XID value: " + std::string(str));
-                usn.assign(str, 4);
-                slt.assign(str + 5, 4);
-                sqn.assign(str + 10, 8);
+                usn_.assign(str, 4);
+                slt_.assign(str + 5, 4);
+                sqn_.assign(str + 10, 8);
             } else if (length == 19) {
                 // 0xUUUU.SSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 19; ++i)
@@ -82,9 +82,9 @@ namespace OpenLogReplicator {
                         throw DataException(20002, "bad XID value: " + std::string(str));
                 if (str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[10] != '.')
                     throw DataException(20002, "bad XID value: " + std::string(str));
-                usn.assign(str + 2, 4);
-                slt.assign(str + 7, 3);
-                sqn.assign(str + 11, 8);
+                usn_.assign(str + 2, 4);
+                slt_.assign(str + 7, 3);
+                sqn_.assign(str + 11, 8);
             } else if (length == 20) {
                 // 0xUUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 20; ++i)
@@ -92,15 +92,15 @@ namespace OpenLogReplicator {
                         throw DataException(20002, "bad XID value: " + std::string(str));
                 if (str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[11] != '.')
                     throw DataException(20002, "bad XID value: " + std::string(str));
-                usn.assign(str + 2, 4);
-                slt.assign(str + 7, 4);
-                sqn.assign(str + 12, 8);
+                usn_.assign(str + 2, 4);
+                slt_.assign(str + 7, 4);
+                sqn_.assign(str + 12, 8);
             } else
                 throw DataException(20002, "bad XID value: " + std::string(str));
 
-            data = (static_cast<uint64_t>(stoul(usn, nullptr, 16)) << 48) |
-                   (static_cast<uint64_t>(stoul(slt, nullptr, 16)) << 32) |
-                   static_cast<uint64_t>(stoul(sqn, nullptr, 16));
+            data = (static_cast<uint64_t>(stoul(usn_, nullptr, 16)) << 48) |
+                   (static_cast<uint64_t>(stoul(slt_, nullptr, 16)) << 32) |
+                   static_cast<uint64_t>(stoul(sqn_, nullptr, 16));
         }
 
         uint64_t getData() const {
@@ -123,15 +123,15 @@ namespace OpenLogReplicator {
             return static_cast<typeSqn>(data & 0xFFFFFFFF);
         }
 
-        bool operator!=(const typeXid& other) const {
+        bool operator!=(typeXid other) const {
             return data != other.data;
         }
 
-        bool operator<(const typeXid& other) const {
+        bool operator<(typeXid other) const {
             return data < other.data;
         }
 
-        bool operator==(const typeXid& other) const {
+        bool operator==(typeXid other) const {
             return data == other.data;
         }
 

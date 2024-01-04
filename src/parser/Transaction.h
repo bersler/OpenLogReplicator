@@ -70,13 +70,13 @@ namespace OpenLogReplicator {
         explicit Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx);
 
         void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
-        void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
-        void rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
-        void rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
+        void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
+        void rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
+        void rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1);
         void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn);
         void purge(TransactionBuffer* transactionBuffer);
 
-        void log(Ctx* ctx, const char* msg, RedoLogRecord* redoLogRecord1) {
+        void log(Ctx* ctx, const char* msg, const RedoLogRecord* redoLogRecord1) {
             if (!dump || (ctx->trace & TRACE_DUMP) != 0)
                 return;
 

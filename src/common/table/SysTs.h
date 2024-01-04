@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTs final {
     public:
-        SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
+        SysTs(typeRowId newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
                 rowId(newRowId),
                 ts(newTs),
                 name(newName),

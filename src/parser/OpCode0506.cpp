@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 4);
     }
 
-    void OpCode0506::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0506::process0506(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         init(ctx, redoLogRecord);
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         ktuxvoff(ctx, redoLogRecord, fieldPos, fieldLength);
     }
 
-    void OpCode0506::ktuxvoff(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0506::ktuxvoff(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength) {
         if (fieldLength < 8)
             throw RedoLogException(50061, "too short field ktuxvoff: " + std::to_string(fieldLength) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));

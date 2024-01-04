@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    bool formatProtobuf = false;
+    bool formatProtobuf;
     OpenLogReplicator::pb::RedoRequest request;
     OpenLogReplicator::pb::RedoResponse response;
     OpenLogReplicator::Stream* stream = nullptr;
@@ -131,8 +131,6 @@ int main(int argc, char** argv) {
         ctx.info(0, "- code: " + std::to_string(static_cast<uint64_t>(response.code())) + ", scn: " + std::to_string(response.scn()) +
                     ", confirmed: " + std::to_string(response.c_scn()) + "," + std::to_string(response.c_idx()));
 
-        typeScn confirmedScn = 0;
-        typeIdx confirmedIdx = 0;
         request.Clear();
         request.set_database_name(argv[3]);
 
@@ -146,8 +144,8 @@ int main(int argc, char** argv) {
                 if (strncmp(argv[5], "c:", 2) != 0 || strlen(argv[5]) <= 4 || (idxPtr = strchr(argv[5] + 2, ',')) == nullptr)
                     throw OpenLogReplicator::RuntimeException(1, "server already stared, expected: [c:<scn>,<idx>]");
                 *idxPtr = 0;
-                confirmedScn = atoi(argv[5] + 2);
-                confirmedIdx = atoi(idxPtr + 1);
+                typeScn confirmedScn = atoi(argv[5] + 2);
+                typeIdx confirmedIdx = atoi(idxPtr + 1);
 
                 request.set_c_scn(confirmedScn);
                 request.set_c_idx(confirmedIdx);
@@ -286,15 +284,10 @@ int main(int argc, char** argv) {
         ctx.error(0, "memory allocation failed: " + std::string(ex.what()));
     }
 
-    if (buffer != nullptr) {
-        delete[] buffer;
-        buffer = nullptr;
-    }
+    delete[] buffer;
 
-    if (stream != nullptr) {
+    if (stream != nullptr)
         delete stream;
-        stream = nullptr;
-    }
 
     return 0;
 }

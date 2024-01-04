@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class XdbTtSet final {
     public:
-        XdbTtSet(typeRowId& newRowId, const char* newGuid, const char* newTokSuf, uint64_t newFlags, typeObj newObj) :
+        XdbTtSet(typeRowId newRowId, const char* newGuid, const char* newTokSuf, uint64_t newFlags, typeObj newObj) :
                 rowId(newRowId),
                 guid(newGuid),
                 tokSuf(newTokSuf),

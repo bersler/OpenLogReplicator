@@ -82,6 +82,7 @@ namespace OpenLogReplicator {
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
         lwnAllocatedMax = 1;
+        lwnMembers[0] = 0;
     }
 
     Parser::~Parser() {
@@ -108,7 +109,6 @@ namespace OpenLogReplicator {
         uint8_t* data = reinterpret_cast<uint8_t*>(lwnMember) + sizeof(struct LwnMember);
         RedoLogRecord redoLogRecord[2];
         int64_t vectorCur = -1;
-        int64_t vectorPrev = -1;
         if (ctx->trace & TRACE_LWN)
             ctx->logTrace(TRACE_LWN, "analyze length: " + std::to_string(lwnMember->length) + " scn: " + std::to_string(lwnMember->scn) +
                                      " subscn: " + std::to_string(lwnMember->subScn));
@@ -197,7 +197,7 @@ namespace OpenLogReplicator {
         uint64_t vectors = 0;
 
         while (offset < recordLength) {
-            vectorPrev = vectorCur;
+            int64_t vectorPrev = vectorCur;
             if (vectorPrev == -1)
                 vectorCur = 0;
             else
@@ -289,36 +289,36 @@ namespace OpenLogReplicator {
             switch (redoLogRecord[vectorCur].opCode) {
                 case 0x0501:
                     // Undo
-                    OpCode0501::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0501::process0501(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0502:
                     // Begin transaction
-                    OpCode0502::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0502::process0502(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0504:
                     // Commit/rollback transaction
-                    OpCode0504::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0504::process0504(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0506:
                     // Partial rollback
-                    OpCode0506::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0506::process0506(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x050B:
-                    OpCode050B::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode050B::process050B(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0513:
                     // Session information
-                    OpCode0513::process(ctx, &redoLogRecord[vectorCur], lastTransaction);
+                    OpCode0513::process0513(ctx, &redoLogRecord[vectorCur], lastTransaction);
                     break;
 
                     // Session information
                 case 0x0514:
-                    OpCode0514::process(ctx, &redoLogRecord[vectorCur], lastTransaction);
+                    OpCode0514::process0514(ctx, &redoLogRecord[vectorCur], lastTransaction);
                     break;
 
                 case 0x0A02:
@@ -327,7 +327,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0A02::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0A02::process0A02(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0A08:
@@ -336,7 +336,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0A08::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0A08::process0A08(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0A12:
@@ -345,7 +345,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0A12::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0A12::process0A12(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B02:
@@ -354,7 +354,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B02::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B02::process0B02(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B03:
@@ -363,7 +363,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B03::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B03::process0B03(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B04:
@@ -372,7 +372,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B04::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B04::process0B04(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B05:
@@ -381,7 +381,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B05::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B05::process0B05(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B06:
@@ -390,7 +390,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B06::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B06::process0B06(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B08:
@@ -399,7 +399,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B08::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B08::process0B08(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B0B:
@@ -408,7 +408,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B0B::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B0B::process0B0B(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B0C:
@@ -417,7 +417,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B0C::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B0C::process0B0C(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B10:
@@ -426,7 +426,7 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B10::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B10::process0B10(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x0B16:
@@ -435,12 +435,12 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode0B16::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode0B16::process0B16(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x1301:
                     // LOB
-                    OpCode1301::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode1301::process1301(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x1A02:
@@ -449,16 +449,16 @@ namespace OpenLogReplicator {
                         redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                         redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
-                    OpCode1A02::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode1A02::process1A02(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x1A06:
-                    OpCode1A06::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode1A06::process1A06(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x1801:
                     // DDL
-                    OpCode1801::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode1801::process1801(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 default:
@@ -563,7 +563,7 @@ namespace OpenLogReplicator {
             return;
         lastTransaction = transaction;
 
-        OracleTable* table = nullptr;
+        const OracleTable* table;
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
@@ -597,7 +597,7 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionLob(RedoLogRecord* redoLogRecord1) {
-        OracleLob* lob = nullptr;
+        OracleLob* lob;
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
@@ -662,7 +662,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        OracleTable* table = nullptr;
+        const OracleTable* table;
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
@@ -718,7 +718,7 @@ namespace OpenLogReplicator {
         }
         lastTransaction = transaction;
 
-        OracleTable* table = nullptr;
+        const OracleTable* table;
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
@@ -868,7 +868,7 @@ namespace OpenLogReplicator {
                 // Supp log for update
             case 0x0B16: {
                 // Logminer support - KDOCMP
-                OracleTable* table = nullptr;
+                const OracleTable* table;
                 {
                     std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
                     table = metadata->schema->checkTableDict(obj);
@@ -953,7 +953,7 @@ namespace OpenLogReplicator {
             throw RedoLogException(50045, "bdba does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                                           std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
 
-        OracleTable* table = nullptr;
+        const OracleTable* table;
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(obj);
@@ -1031,7 +1031,7 @@ namespace OpenLogReplicator {
             throw RedoLogException(50045, "bdba does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                                           std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
 
-        OracleLob* lob = nullptr;
+        const OracleLob* lob;
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobIndexDict(dataObj);
@@ -1253,17 +1253,14 @@ namespace OpenLogReplicator {
         reader->setStatusRead();
         LwnMember* lwnMember;
         uint64_t currentBlock = lwnConfirmedBlock;
-        uint64_t blockOffset = 16;
+        uint64_t blockOffset;
         uint64_t startBlock = lwnConfirmedBlock;
         uint64_t confirmedBufferStart = reader->getBufferStart();
-        uint64_t recordLength4 = 0;
+        uint64_t recordLength4;
         uint64_t recordPos = 0;
         uint64_t recordLeftToCopy = 0;
         uint64_t lwnEndBlock = lwnConfirmedBlock;
-        uint64_t lwnStartBlock = lwnConfirmedBlock;
-        uint16_t lwnNum = 0;
         uint16_t lwnNumMax = 0;
-        uint16_t lwnNumCur = 0;
         uint16_t lwnNumCnt = 0;
         lwnCheckpointBlock = lwnConfirmedBlock;
         bool switchRedo = false;
@@ -1281,9 +1278,8 @@ namespace OpenLogReplicator {
                     uint8_t vld = redoBlock[blockOffset + 4];
 
                     if ((vld & 0x04) != 0) {
-                        lwnNum = ctx->read16(redoBlock + blockOffset + 24);
+                        uint16_t lwnNum = ctx->read16(redoBlock + blockOffset + 24);
                         uint32_t lwnLength = ctx->read32(redoBlock + blockOffset + 28);
-                        lwnStartBlock = currentBlock;
                         lwnEndBlock = currentBlock + lwnLength;
                         lwnScn = ctx->readScn(redoBlock + blockOffset + 40);
                         lwnTimestamp = ctx->read32(redoBlock + blockOffset + 64);
@@ -1295,17 +1291,18 @@ namespace OpenLogReplicator {
                             if (lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != ZERO_SCN))
                                 throw RedoLogException(50049, "invalid lwn scn: " + std::to_string(lwnScn));
                         } else {
-                            lwnNumCur = ctx->read16(redoBlock + blockOffset + 26);
+                            uint16_t lwnNumCur = ctx->read16(redoBlock + blockOffset + 26);
                             if (lwnNumCur != lwnNumMax)
                                 throw RedoLogException(50050, "invalid lwn max: " + std::to_string(lwnNum) + "/" +
                                                               std::to_string(lwnNumCur) + "/" + std::to_string(lwnNumMax));
                         }
                         ++lwnNumCnt;
 
-                        if (ctx->trace & TRACE_LWN)
+                        if (ctx->trace & TRACE_LWN) {
+                            uint64_t lwnStartBlock = currentBlock;
                             ctx->logTrace(TRACE_LWN, "at: " + std::to_string(lwnStartBlock) + " length: " + std::to_string(lwnLength) +
                                                      " chk: " + std::to_string(lwnNum) + " max: " + std::to_string(lwnNumMax));
-
+                        }
                     } else
                         throw RedoLogException(50051, "did not find lwn at offset: " + std::to_string(confirmedBufferStart));
                 }
@@ -1445,10 +1442,7 @@ namespace OpenLogReplicator {
 
                 // Free memory
                 if (redoBufferPos == MEMORY_CHUNK_SIZE) {
-                    redoBufferPos = 0;
                     reader->bufferFree(redoBufferNum);
-                    if (++redoBufferNum == ctx->readBufferMax)
-                        redoBufferNum = 0;
                     reader->confirmReadData(confirmedBufferStart);
                 }
             }

@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         static void init(Ctx* ctx, RedoLogRecord* redoLogRecord);
 
     public:
-        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process050B(Ctx* ctx, RedoLogRecord* redoLogRecord);
     };
 }
 

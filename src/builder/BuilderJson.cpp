@@ -39,9 +39,9 @@ namespace OpenLogReplicator {
             hasPreviousColumn(false) {
     }
 
-    void BuilderJson::columnNull(OracleTable* table, typeCol col, bool after) {
+    void BuilderJson::columnNull(const OracleTable* table, typeCol col, bool after) {
         if (table != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
-            OracleColumn* column = table->columns[col];
+            const OracleColumn* column = table->columns[col];
             if (column->guard && !FLAG(REDO_FLAGS_SHOW_GUARD_COLUMNS))
                 return;
             if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
@@ -572,7 +572,7 @@ namespace OpenLogReplicator {
         append("},", 2);
     }
 
-    void BuilderJson::appendSchema(OracleTable* table, typeObj obj) {
+    void BuilderJson::appendSchema(const OracleTable* table, typeObj obj) {
         if (table == nullptr) {
             std::string ownerName;
             std::string tableName;
@@ -734,7 +734,7 @@ namespace OpenLogReplicator {
         append('}');
     }
 
-    time_t BuilderJson::tmToEpoch(struct tm* epoch) {
+    time_t BuilderJson::tmToEpoch(const struct tm* epoch) {
         static const int cumDays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
         long year;
         time_t result;
@@ -835,7 +835,7 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderJson::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+    void BuilderJson::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                     typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
@@ -875,7 +875,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+    void BuilderJson::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                     typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
@@ -916,7 +916,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, XmlCtx* xmlCtx, OracleTable* table, typeObj obj,
+    void BuilderJson::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                     typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);
@@ -956,7 +956,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDdl(typeScn scn, typeSeq sequence, typeTime time_, OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
+    void BuilderJson::processDdl(typeScn scn, typeSeq sequence, typeTime time_, const OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
                                  uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
             processBeginMessage(scn, sequence, time_);

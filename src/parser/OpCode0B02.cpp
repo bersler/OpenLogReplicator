@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B02.h"
 
 namespace OpenLogReplicator {
-    void OpCode0B02::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0B02::process0B02(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
             if (ctx->dumpRedoLog >= 1)
                 dumpCompressed(ctx, redoLogRecord, redoLogRecord->data + fieldPos, fieldLength);
         } else {
-            // Fields: 3 .. to 3 + cc - 1
+            // Fields: 3 to 3 + cc - 1
             for (uint64_t i = 0; i < static_cast<uint64_t>(redoLogRecord->cc); ++i) {
                 if (fieldLength > 0 && (*nulls & bits) != 0)
                     throw RedoLogException(50061, "too short field 11.2." + std::to_string(fieldNum) + ": " +

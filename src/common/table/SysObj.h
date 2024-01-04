@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
 
     class SysObj final {
     public:
-        SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
+        SysObj(typeRowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
                uint64_t newFlags2, bool newSingle) :
                 rowId(newRowId),
                 owner(newOwner),

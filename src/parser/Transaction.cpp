@@ -62,14 +62,15 @@ namespace OpenLogReplicator {
         ++opCodes;
     }
 
-    void Transaction::add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+    void Transaction::add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2) {
         log(metadata->ctx, "add1", redoLogRecord1);
         log(metadata->ctx, "add2", redoLogRecord2);
         transactionBuffer->addTransactionChunk(this, redoLogRecord1, redoLogRecord2);
         ++opCodes;
     }
 
-    void Transaction::rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+    void Transaction::rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1,
+                                     const RedoLogRecord* redoLogRecord2) {
         Ctx* ctx = metadata->ctx;
         log(ctx, "rlb1", redoLogRecord1);
         log(ctx, "rlb2", redoLogRecord2);
@@ -77,7 +78,7 @@ namespace OpenLogReplicator {
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
             uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
             // auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-            auto lastRedoLogRecord2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -142,13 +143,13 @@ namespace OpenLogReplicator {
                             " empty buffer, offset: " + std::to_string(redoLogRecord1->dataOffset) + ", xid: " + xid.toString() + ", pos: 2");
     }
 
-    void Transaction::rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1) {
+    void Transaction::rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1) {
         log(metadata->ctx, "rlb ", redoLogRecord1);
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-            auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-            auto lastRedoLogRecord2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            uint64_t lengthLast = *(reinterpret_cast<const uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+            const auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -188,7 +189,7 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn) {
-        bool opFlush = false;
+        bool opFlush;
         deallocTc = nullptr;
         uint64_t maxMessageMb = builder->getMaxMessageMb();
         std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
@@ -209,7 +210,6 @@ namespace OpenLogReplicator {
         }
         builder->processBegin(xid, commitScn, lwnScn, &attributes);
 
-        uint64_t pos;
         uint64_t type = 0;
         RedoLogRecord* first1 = nullptr;
         RedoLogRecord* first2 = nullptr;
@@ -218,7 +218,7 @@ namespace OpenLogReplicator {
 
         TransactionChunk* tc = firstTc;
         while (tc != nullptr) {
-            pos = 0;
+            uint64_t pos = 0;
             for (uint64_t i = 0; i < tc->elements; ++i) {
                 typeOp2 op = *(reinterpret_cast<typeOp2*>(tc->buffer + pos));
 
@@ -275,7 +275,7 @@ namespace OpenLogReplicator {
 
                     case 0x1A020000: {
                         // LOB idx
-                        OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
+                        const OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
                             if (metadata->ctx->trace & TRACE_LOB)
                                 metadata->ctx->logTrace(TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() +
@@ -290,7 +290,7 @@ namespace OpenLogReplicator {
                     case 0x13010000:
                     case 0x1A060000: {
                         // LOB data
-                        OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
+                        const OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
                             if (metadata->ctx->trace & TRACE_LOB)
                                 metadata->ctx->logTrace(TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() + " obj: " +
@@ -364,7 +364,7 @@ namespace OpenLogReplicator {
                         // Init header
                     case 0x05010A12: {
                         // Update key data in row
-                        OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord2->dataObj);
+                        const OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord2->dataObj);
                         if (lob == nullptr) {
                             metadata->ctx->warning(60016, "LOB is null for (obj: " + std::to_string(redoLogRecord2->obj) +
                                                           ", dataobj: " + std::to_string(redoLogRecord2->dataObj) + ", offset: " +

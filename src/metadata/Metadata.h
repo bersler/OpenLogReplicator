@@ -150,7 +150,7 @@ namespace OpenLogReplicator {
         void setNextSequence();
         [[nodiscard]] bool stateRead(const std::string& name, uint64_t maxSize, std::string& in);
         [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in);
-        [[nodiscard]] bool stateWrite(const std::string& name, typeScn scn, std::ostringstream& out);
+        [[nodiscard]] bool stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out);
         [[nodiscard]] bool stateDrop(const std::string& name);
         SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
         void resetElements();

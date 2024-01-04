@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         OCISession* authp;
 
         DatabaseConnection(DatabaseEnvironment* newEnv, const char* newUser, const char* newPassword, const char* newConnectString, bool newSysAsm);
-        virtual ~DatabaseConnection();
+        ~DatabaseConnection();
 
         void connect();
         void disconnect();

@@ -142,7 +142,7 @@ namespace OpenLogReplicator {
 
                 // TOKEN x
                 if (first->isToken() && !second->isToken() && second->isBool()) {
-                    Token* firstToken = dynamic_cast<Token*>(first);
+                    const Token* firstToken = dynamic_cast<Token*>(first);
 
                     // ! x
                     if (firstToken->tokenType == TOKEN_TYPE_OPERATOR && firstToken->stringValue == "!") {
@@ -161,8 +161,8 @@ namespace OpenLogReplicator {
 
                 // TOKEN x TOKEN
                 if (left->isToken() && right->isToken()) {
-                    Token* leftToken = dynamic_cast<Token*>(left);
-                    Token* rightToken = dynamic_cast<Token*>(right);
+                    const Token* leftToken = dynamic_cast<Token*>(left);
+                    const Token* rightToken = dynamic_cast<Token*>(right);
 
                     // ( x )
                     if (leftToken->tokenType == TOKEN_TYPE_LEFT_PARENTHESIS && rightToken->tokenType == TOKEN_TYPE_RIGHT_PARENTHESIS) {
@@ -176,7 +176,7 @@ namespace OpenLogReplicator {
 
                 // STRING TOKEN STRING
                 if (left->isString() && middle->isToken() && right->isString()) {
-                    Token* middleToken = dynamic_cast<Token*>(middle);
+                    const Token* middleToken = dynamic_cast<Token*>(middle);
 
                     // A == B
                     if (middleToken->stringValue == "==") {
@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (left->isBool() && middle->isToken() && right->isBool()) {
-                    Token* middleToken = dynamic_cast<Token*>(middle);
+                    const Token* middleToken = dynamic_cast<Token*>(middle);
 
                     // A && B
                     if (middleToken->stringValue == "&&") {

@@ -67,7 +67,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTab final {
     public:
-        SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeTs newTs, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
+        SysTab(typeRowId newRowId, typeObj newObj, typeDataObj newDataObj, typeTs newTs, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
                uint64_t newProperty1, uint64_t newProperty2) :
                 rowId(newRowId),
                 obj(newObj),

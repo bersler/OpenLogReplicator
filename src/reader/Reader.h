@@ -60,7 +60,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Reader : public Thread {
     protected:
-        Ctx* ctx;
         std::string database;
         int fileCopyDes;
         uint64_t fileSize;
