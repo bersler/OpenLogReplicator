@@ -5,6 +5,7 @@
 - fix: minor bug related to binary xmltype
 - fix: correctly display Oracle error codes
 - fix: static code analyzer warnings
+- fix: checkpointing is not working for online mode after restart
 
 1.4.0
 - fix: date and timestamp with year before 1900 or after 2262 produce incorrect values

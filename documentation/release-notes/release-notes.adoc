@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2024-01-04
+:revdate: 2024-01-07
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -23,6 +23,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: minor bug related to binary xmltype
 - fix: correctly display Oracle error codes
 - fix: static code analyzer warnings
+- fix: checkpointing is not working for online mode after restart
 
 === Version 1.4.0
 
