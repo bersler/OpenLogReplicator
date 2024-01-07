@@ -196,6 +196,8 @@ namespace OpenLogReplicator {
                     // No schema available?
                     if (metadata->schema->scn == ZERO_SCN)
                         createSchema();
+                    else
+                        metadata->allowCheckpoints();
                     metadata->schema->updateXmlCtx();
 
                     if (metadata->sequence == ZERO_SEQ)
