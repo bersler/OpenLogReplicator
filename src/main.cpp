@@ -55,6 +55,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define HAS_KAFKA ""
 #endif /* LINK_LIBRARY_RDKAFKA */
 
+#ifdef LINK_STATIC
+#define HAS_STATIC " static"
+#else
+#define HAS_STATIC ""
+#endif /* LINK_LIBRARY_OCI */
+
 namespace OpenLogReplicator {
     Ctx* mainCtx = nullptr;
 
@@ -88,7 +94,8 @@ namespace OpenLogReplicator {
                                                                                                                                          HAS_KAFKA
                                                                                                                                          HAS_OCI
                                                                                                                                          HAS_PROTOBUF
-                                                                                                                                         HAS_ZEROMQ);
+                                                                                                                                         HAS_ZEROMQ
+                                                                                                                                         HAS_STATIC);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {
