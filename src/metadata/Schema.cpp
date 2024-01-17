@@ -2731,10 +2731,10 @@ namespace OpenLogReplicator {
 
                 columnTmp = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, columnName,
                                              sysCol->type, sysCol->length, sysCol->precision, sysCol->scale,
-                                             numPk, charmapId, sysCol->isNullable(), sysCol->isHidden(),
-                                             sysCol->isStoredAsLob(), sysCol->isSystemGenerated(),
-                                             sysCol->isNested(), sysCol->isUnused(), sysCol->isAdded(),
-                                             sysCol->isGuard(), xmlType);
+                                             numPk, charmapId, sysCol->isNullable(), sysCol->isHidden() &&
+                                             !(xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)), sysCol->isStoredAsLob(),
+                                             sysCol->isSystemGenerated(), sysCol->isNested(), sysCol->isUnused(),
+                                             sysCol->isAdded(), sysCol->isGuard(), xmlType);
 
                 tableTmp->addColumn(columnTmp);
                 columnTmp = nullptr;
