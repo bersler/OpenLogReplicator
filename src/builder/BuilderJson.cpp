@@ -453,8 +453,10 @@ namespace OpenLogReplicator {
 
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
-                    append("000", 3);
+                    val = time_.toTime();
+                    appendDec(val);
+                    if (val != 0)
+                       append("000", 3);
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX:
@@ -463,7 +465,7 @@ namespace OpenLogReplicator {
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
-                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
                     val = time_.toTime();
                     appendDec(val);
                     if (val != 0)
@@ -472,7 +474,7 @@ namespace OpenLogReplicator {
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
-                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
                     val = time_.toTime();
                     appendDec(val);
                     if (val != 0)

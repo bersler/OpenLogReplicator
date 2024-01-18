@@ -86,10 +86,10 @@ namespace OpenLogReplicator {
         uint64_t queueId;
         uint64_t length;
         typeScn scn;
-        typeSeq sequence;
         typeScn lwnScn;
         typeIdx lwnIdx;
         uint8_t* data;
+        typeSeq sequence;
         typeObj obj;
         uint16_t pos;
         uint16_t flags;

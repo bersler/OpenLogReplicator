@@ -298,7 +298,7 @@ namespace OpenLogReplicator {
                     if (length == 13)
                         fraction = Ctx::read32Big(data + 7);
 
-                    const char* tz = nullptr;
+                    const char* tz;
                     char tz2[7];
 
                     if (data[11] >= 5 && data[11] <= 36) {
@@ -356,7 +356,7 @@ namespace OpenLogReplicator {
                     columnUnknown(column->name, data, length);
                 else {
                     bool minus = false;
-                    uint64_t year = 0;
+                    uint64_t year;
                     if ((data[0] & 0x80) != 0)
                         year = Ctx::read32Big(data) - 0x80000000;
                     else {
@@ -367,7 +367,7 @@ namespace OpenLogReplicator {
                     if (year > 999999999)
                         columnUnknown(column->name, data, length);
                     else {
-                        uint64_t month = 0;
+                        uint64_t month;
                         if (data[4] >= 60)
                             month = data[4] - 60;
                         else {
@@ -376,7 +376,6 @@ namespace OpenLogReplicator {
                         }
 
                         char buffer[12];
-                        uint64_t val = 0;
                         uint64_t len = 0;
                         valueLength = 0;
 
@@ -384,7 +383,7 @@ namespace OpenLogReplicator {
                             valueBuffer[valueLength++] = '-';
 
                         if (intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS || intervalYtmFormat == INTERVAL_YTM_FORMAT_MONTHS_STRING) {
-                            val = year * 12 + month;
+                            uint64_t val = year * 12 + month;
                             if (val == 0) {
                                 valueBuffer[valueLength++] = '0';
                             } else {
@@ -401,7 +400,7 @@ namespace OpenLogReplicator {
                             else
                                 columnString(column->name);
                         } else {
-                            val = year;
+                            uint64_t val = year;
                             if (val == 0) {
                                 valueBuffer[valueLength++] = '0';
                             } else {
@@ -437,7 +436,7 @@ namespace OpenLogReplicator {
                     columnUnknown(column->name, data, length);
                 else {
                     bool minus = false;
-                    uint64_t day = 0;
+                    uint64_t day;
                     if ((data[0] & 0x80) != 0)
                         day = Ctx::read32Big(data) - 0x80000000;
                     else {
@@ -445,7 +444,7 @@ namespace OpenLogReplicator {
                         minus = true;
                     }
 
-                    int32_t us = 0;
+                    int32_t us;
                     if ((data[7] & 0x80) != 0)
                         us = Ctx::read32Big(data + 7) - 0x80000000;
                     else {
@@ -456,7 +455,7 @@ namespace OpenLogReplicator {
                     if (day > 999999999 || us > 999999999)
                         columnUnknown(column->name, data, length);
                     else {
-                        uint64_t hour = 0;
+                        uint64_t hour;
                         if (data[4] >= 60)
                             hour = data[4] - 60;
                         else {
@@ -464,7 +463,7 @@ namespace OpenLogReplicator {
                             minus = true;
                         }
 
-                        uint64_t minute = 0;
+                        uint64_t minute;
                         if (data[5] >= 60)
                             minute = data[5] - 60;
                         else {
@@ -472,7 +471,7 @@ namespace OpenLogReplicator {
                             minus = true;
                         }
 
-                        uint64_t second = 0;
+                        uint64_t second;
                         if (data[6] >= 60)
                             second = data[6] - 60;
                         else {
@@ -645,11 +644,11 @@ namespace OpenLogReplicator {
         if (sign) {
             if (significand == 0) {
                 if (exponent == 0)
-                    return 0.0;
+                    return static_cast<long double>(0.0);
                 if (exponent == 0x7FF)
-                    return std::numeric_limits<double>::infinity();
+                    return std::numeric_limits<long double>::infinity();
             } else if (significand == 0x8000000000000 && exponent == 0x7FF)
-                return std::numeric_limits<double>::quiet_NaN();
+                return std::numeric_limits<long double>::quiet_NaN();
 
             if (exponent > 0)
                 significand += 0x10000000000000;
@@ -657,7 +656,7 @@ namespace OpenLogReplicator {
             return ldexpl(static_cast<long double>(significand) / static_cast<long double>(0x10000000000000), exponent);
         } else {
             if (exponent == 0 && significand == 0xFFFFFFFFFFFFF)
-                return -std::numeric_limits<double>::infinity();
+                return -std::numeric_limits<long double>::infinity();
 
             significand = 0xFFFFFFFFFFFFF - significand;
             if (exponent < 0x7FF)
@@ -872,7 +871,7 @@ namespace OpenLogReplicator {
         typeDba bdba;
         typeSlot slot;
         const RedoLogRecord* redoLogRecord1p;
-        const RedoLogRecord* redoLogRecord2p = nullptr;
+        const RedoLogRecord* redoLogRecord2p;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
