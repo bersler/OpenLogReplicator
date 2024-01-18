@@ -1,4 +1,4 @@
-/* Context of little/big-endian data
+/* Context of program
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.

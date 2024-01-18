@@ -390,8 +390,8 @@ namespace OpenLogReplicator {
         resetTouched();
     }
 
-    bool Schema::compareSysCCol(Schema* otherSchema, std::string& msgs) {
-        for (auto sysCColMapRowIdIt: sysCColMapRowId) {
+    bool Schema::compareSysCCol(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysCColMapRowIdIt: sysCColMapRowId) {
             SysCCol* sysCCol = sysCColMapRowIdIt.second;
             auto sysCColMapRowIdIt2 = otherSchema->sysCColMapRowId.find(sysCCol->rowId);
             if (sysCColMapRowIdIt2 == otherSchema->sysCColMapRowId.end()) {
@@ -403,7 +403,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysCColMapRowIdIt: otherSchema->sysCColMapRowId) {
+        for (const auto sysCColMapRowIdIt: otherSchema->sysCColMapRowId) {
             SysCCol* sysCCol = sysCColMapRowIdIt.second;
             auto sysCColMapRowIdIt2 = sysCColMapRowId.find(sysCCol->rowId);
             if (sysCColMapRowIdIt2 == sysCColMapRowId.end()) {
@@ -414,8 +414,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysCDef(Schema* otherSchema, std::string& msgs) {
-        for (auto sysCDefMapRowIdIt: sysCDefMapRowId) {
+    bool Schema::compareSysCDef(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysCDefMapRowIdIt: sysCDefMapRowId) {
             SysCDef* sysCDef = sysCDefMapRowIdIt.second;
             auto sysCDefMapRowIdIt2 = otherSchema->sysCDefMapRowId.find(sysCDef->rowId);
             if (sysCDefMapRowIdIt2 == otherSchema->sysCDefMapRowId.end()) {
@@ -427,7 +427,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysCDefMapRowIdIt: otherSchema->sysCDefMapRowId) {
+        for (const auto sysCDefMapRowIdIt: otherSchema->sysCDefMapRowId) {
             SysCDef* sysCDef = sysCDefMapRowIdIt.second;
             auto sysCDefMapRowIdIt2 = sysCDefMapRowId.find(sysCDef->rowId);
             if (sysCDefMapRowIdIt2 == sysCDefMapRowId.end()) {
@@ -438,8 +438,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysCol(Schema* otherSchema, std::string& msgs) {
-        for (auto sysColMapRowIdIt: sysColMapRowId) {
+    bool Schema::compareSysCol(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysColMapRowIdIt: sysColMapRowId) {
             SysCol* sysCol = sysColMapRowIdIt.second;
             auto sysColMapRowIdIt2 = otherSchema->sysColMapRowId.find(sysCol->rowId);
             if (sysColMapRowIdIt2 == otherSchema->sysColMapRowId.end()) {
@@ -451,7 +451,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysColMapRowIdIt: otherSchema->sysColMapRowId) {
+        for (const auto sysColMapRowIdIt: otherSchema->sysColMapRowId) {
             SysCol* sysCol = sysColMapRowIdIt.second;
             auto sysColMapRowIdIt2 = sysColMapRowId.find(sysCol->rowId);
             if (sysColMapRowIdIt2 == sysColMapRowId.end()) {
@@ -462,8 +462,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysDeferredStg(Schema* otherSchema, std::string& msgs) {
-        for (auto sysDeferredStgMapRowIdIt: sysDeferredStgMapRowId) {
+    bool Schema::compareSysDeferredStg(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysDeferredStgMapRowIdIt: sysDeferredStgMapRowId) {
             SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt.second;
             auto sysDeferredStgMapRowIdIt2 = otherSchema->sysDeferredStgMapRowId.find(sysDeferredStg->rowId);
             if (sysDeferredStgMapRowIdIt2 == otherSchema->sysDeferredStgMapRowId.end()) {
@@ -475,7 +475,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysDeferredStgMapRowIdIt: otherSchema->sysDeferredStgMapRowId) {
+        for (const auto sysDeferredStgMapRowIdIt: otherSchema->sysDeferredStgMapRowId) {
             SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt.second;
             auto sysDeferredStgMapRowIdIt2 = sysDeferredStgMapRowId.find(sysDeferredStg->rowId);
             if (sysDeferredStgMapRowIdIt2 == sysDeferredStgMapRowId.end()) {
@@ -486,8 +486,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysECol(Schema* otherSchema, std::string& msgs) {
-        for (auto sysEColMapRowIdIt: sysEColMapRowId) {
+    bool Schema::compareSysECol(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysEColMapRowIdIt: sysEColMapRowId) {
             SysECol* sysECol = sysEColMapRowIdIt.second;
             auto sysEColMapRowIdIt2 = otherSchema->sysEColMapRowId.find(sysECol->rowId);
             if (sysEColMapRowIdIt2 == otherSchema->sysEColMapRowId.end()) {
@@ -499,7 +499,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysEColMapRowIdIt: otherSchema->sysEColMapRowId) {
+        for (const auto sysEColMapRowIdIt: otherSchema->sysEColMapRowId) {
             SysECol* sysECol = sysEColMapRowIdIt.second;
             auto sysEColMapRowIdIt2 = sysEColMapRowId.find(sysECol->rowId);
             if (sysEColMapRowIdIt2 == sysEColMapRowId.end()) {
@@ -510,8 +510,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysLob(Schema* otherSchema, std::string& msgs) {
-        for (auto sysLobMapRowIdIt: sysLobMapRowId) {
+    bool Schema::compareSysLob(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysLobMapRowIdIt: sysLobMapRowId) {
             SysLob* sysLob = sysLobMapRowIdIt.second;
             auto sysLobMapRowIdIt2 = otherSchema->sysLobMapRowId.find(sysLob->rowId);
             if (sysLobMapRowIdIt2 == otherSchema->sysLobMapRowId.end()) {
@@ -523,7 +523,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysLobMapRowIdIt: otherSchema->sysLobMapRowId) {
+        for (const auto sysLobMapRowIdIt: otherSchema->sysLobMapRowId) {
             SysLob* sysLob = sysLobMapRowIdIt.second;
             auto sysLobMapRowIdIt2 = sysLobMapRowId.find(sysLob->rowId);
             if (sysLobMapRowIdIt2 == sysLobMapRowId.end()) {
@@ -534,8 +534,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysLobCompPart(Schema* otherSchema, std::string& msgs) {
-        for (auto sysLobCompPartMapRowIdIt: sysLobCompPartMapRowId) {
+    bool Schema::compareSysLobCompPart(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysLobCompPartMapRowIdIt: sysLobCompPartMapRowId) {
             SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
             auto sysLobCompPartMapRowIdIt2 = otherSchema->sysLobCompPartMapRowId.find(sysLobCompPart->rowId);
             if (sysLobCompPartMapRowIdIt2 == otherSchema->sysLobCompPartMapRowId.end()) {
@@ -547,7 +547,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysLobCompPartMapRowIdIt: otherSchema->sysLobCompPartMapRowId) {
+        for (const auto sysLobCompPartMapRowIdIt: otherSchema->sysLobCompPartMapRowId) {
             SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
             auto sysLobCompPartMapRowIdIt2 = sysLobCompPartMapRowId.find(sysLobCompPart->rowId);
             if (sysLobCompPartMapRowIdIt2 == sysLobCompPartMapRowId.end()) {
@@ -558,8 +558,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysLobFrag(Schema* otherSchema, std::string& msgs) {
-        for (auto sysLobFragMapRowIdIt: sysLobFragMapRowId) {
+    bool Schema::compareSysLobFrag(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysLobFragMapRowIdIt: sysLobFragMapRowId) {
             SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
             auto sysLobFragMapRowIdIt2 = otherSchema->sysLobFragMapRowId.find(sysLobFrag->rowId);
             if (sysLobFragMapRowIdIt2 == otherSchema->sysLobFragMapRowId.end()) {
@@ -571,7 +571,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysLobFragMapRowIdIt: otherSchema->sysLobFragMapRowId) {
+        for (const auto sysLobFragMapRowIdIt: otherSchema->sysLobFragMapRowId) {
             SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
             auto sysLobFragMapRowIdIt2 = sysLobFragMapRowId.find(sysLobFrag->rowId);
             if (sysLobFragMapRowIdIt2 == sysLobFragMapRowId.end()) {
@@ -582,8 +582,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysObj(Schema* otherSchema, std::string& msgs) {
-        for (auto sysObjMapRowIdIt: sysObjMapRowId) {
+    bool Schema::compareSysObj(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysObjMapRowIdIt: sysObjMapRowId) {
             SysObj* sysObj = sysObjMapRowIdIt.second;
             auto sysObjMapRowIdIt2 = otherSchema->sysObjMapRowId.find(sysObj->rowId);
             if (sysObjMapRowIdIt2 == otherSchema->sysObjMapRowId.end()) {
@@ -595,7 +595,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysObjMapRowIdIt: otherSchema->sysObjMapRowId) {
+        for (const auto sysObjMapRowIdIt: otherSchema->sysObjMapRowId) {
             SysObj* sysObj = sysObjMapRowIdIt.second;
             auto sysObjMapRowIdIt2 = sysObjMapRowId.find(sysObj->rowId);
             if (sysObjMapRowIdIt2 == sysObjMapRowId.end()) {
@@ -606,8 +606,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysTab(Schema* otherSchema, std::string& msgs) {
-        for (auto sysTabMapRowIdIt: sysTabMapRowId) {
+    bool Schema::compareSysTab(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysTabMapRowIdIt: sysTabMapRowId) {
             SysTab* sysTab = sysTabMapRowIdIt.second;
             auto sysTabMapRowIdIt2 = otherSchema->sysTabMapRowId.find(sysTab->rowId);
             if (sysTabMapRowIdIt2 == otherSchema->sysTabMapRowId.end()) {
@@ -619,7 +619,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysTabMapRowIdIt: otherSchema->sysTabMapRowId) {
+        for (const auto sysTabMapRowIdIt: otherSchema->sysTabMapRowId) {
             SysTab* sysTab = sysTabMapRowIdIt.second;
             auto sysTabMapRowIdIt2 = sysTabMapRowId.find(sysTab->rowId);
             if (sysTabMapRowIdIt2 == sysTabMapRowId.end()) {
@@ -630,8 +630,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysTabComPart(Schema* otherSchema, std::string& msgs) {
-        for (auto sysTabComPartMapRowIdIt: sysTabComPartMapRowId) {
+    bool Schema::compareSysTabComPart(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysTabComPartMapRowIdIt: sysTabComPartMapRowId) {
             SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
             auto sysTabComPartMapRowIdIt2 = otherSchema->sysTabComPartMapRowId.find(sysTabComPart->rowId);
             if (sysTabComPartMapRowIdIt2 == otherSchema->sysTabComPartMapRowId.end()) {
@@ -643,7 +643,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysTabComPartMapRowIdIt: otherSchema->sysTabComPartMapRowId) {
+        for (const auto sysTabComPartMapRowIdIt: otherSchema->sysTabComPartMapRowId) {
             SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
             auto sysTabComPartMapRowIdIt2 = sysTabComPartMapRowId.find(sysTabComPart->rowId);
             if (sysTabComPartMapRowIdIt2 == sysTabComPartMapRowId.end()) {
@@ -654,8 +654,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysTabPart(Schema* otherSchema, std::string& msgs) {
-        for (auto sysTabPartMapRowIdIt: sysTabPartMapRowId) {
+    bool Schema::compareSysTabPart(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysTabPartMapRowIdIt: sysTabPartMapRowId) {
             SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
             auto sysTabPartMapRowIdIt2 = otherSchema->sysTabPartMapRowId.find(sysTabPart->rowId);
             if (sysTabPartMapRowIdIt2 == otherSchema->sysTabPartMapRowId.end()) {
@@ -667,7 +667,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysTabPartMapRowIdIt: otherSchema->sysTabPartMapRowId) {
+        for (const auto sysTabPartMapRowIdIt: otherSchema->sysTabPartMapRowId) {
             SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
             auto sysTabPartMapRowIdIt2 = sysTabPartMapRowId.find(sysTabPart->rowId);
             if (sysTabPartMapRowIdIt2 == sysTabPartMapRowId.end()) {
@@ -678,8 +678,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysTabSubPart(Schema* otherSchema, std::string& msgs) {
-        for (auto sysTabSubPartMapRowIdIt: sysTabSubPartMapRowId) {
+    bool Schema::compareSysTabSubPart(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysTabSubPartMapRowIdIt: sysTabSubPartMapRowId) {
             SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
             auto sysTabSubPartMapRowIdIt2 = otherSchema->sysTabSubPartMapRowId.find(sysTabSubPart->rowId);
             if (sysTabSubPartMapRowIdIt2 == otherSchema->sysTabSubPartMapRowId.end()) {
@@ -691,7 +691,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysTabSubPartMapRowIdIt: otherSchema->sysTabSubPartMapRowId) {
+        for (const auto sysTabSubPartMapRowIdIt: otherSchema->sysTabSubPartMapRowId) {
             SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
             auto sysTabSubPartMapRowIdIt2 = sysTabSubPartMapRowId.find(sysTabSubPart->rowId);
             if (sysTabSubPartMapRowIdIt2 == sysTabSubPartMapRowId.end()) {
@@ -702,8 +702,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysTs(Schema* otherSchema, std::string& msgs) {
-        for (auto sysTsMapRowIdIt: sysTsMapRowId) {
+    bool Schema::compareSysTs(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysTsMapRowIdIt: sysTsMapRowId) {
             SysTs* sysTs = sysTsMapRowIdIt.second;
             auto sysTsMapRowIdIt2 = otherSchema->sysTsMapRowId.find(sysTs->rowId);
             if (sysTsMapRowIdIt2 == otherSchema->sysTsMapRowId.end()) {
@@ -715,7 +715,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysTsMapRowIdIt: otherSchema->sysTsMapRowId) {
+        for (const auto sysTsMapRowIdIt: otherSchema->sysTsMapRowId) {
             SysTs* sysTs = sysTsMapRowIdIt.second;
             auto sysTsMapRowIdIt2 = sysTsMapRowId.find(sysTs->rowId);
             if (sysTsMapRowIdIt2 == sysTsMapRowId.end()) {
@@ -726,8 +726,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareSysUser(Schema* otherSchema, std::string& msgs) {
-        for (auto sysUserMapRowIdIt: sysUserMapRowId) {
+    bool Schema::compareSysUser(Schema* otherSchema, std::string& msgs) const {
+        for (const auto sysUserMapRowIdIt: sysUserMapRowId) {
             SysUser* sysUser = sysUserMapRowIdIt.second;
             auto sysUserMapRowIdIt2 = otherSchema->sysUserMapRowId.find(sysUser->rowId);
             if (sysUserMapRowIdIt2 == otherSchema->sysUserMapRowId.end()) {
@@ -739,7 +739,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto sysUserMapRowIdIt: otherSchema->sysUserMapRowId) {
+        for (const auto sysUserMapRowIdIt: otherSchema->sysUserMapRowId) {
             SysUser* sysUser = sysUserMapRowIdIt.second;
             auto sysUserMapRowIdIt2 = sysUserMapRowId.find(sysUser->rowId);
             if (sysUserMapRowIdIt2 == sysUserMapRowId.end()) {
@@ -750,8 +750,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareXdbTtSet(Schema* otherSchema, std::string& msgs) {
-        for (auto xdbTtSetMapRowIdIt: xdbTtSetMapRowId) {
+    bool Schema::compareXdbTtSet(Schema* otherSchema, std::string& msgs) const {
+        for (const auto xdbTtSetMapRowIdIt: xdbTtSetMapRowId) {
             XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
             auto xdbTtSetMapRowIdIt2 = otherSchema->xdbTtSetMapRowId.find(xdbTtSet->rowId);
             if (xdbTtSetMapRowIdIt2 == otherSchema->xdbTtSetMapRowId.end()) {
@@ -763,7 +763,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (auto xdbTtSetMapRowIdIt: otherSchema->xdbTtSetMapRowId) {
+        for (const auto xdbTtSetMapRowIdIt: otherSchema->xdbTtSetMapRowId) {
             XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
             auto xdbTtSetMapRowIdIt2 = xdbTtSetMapRowId.find(xdbTtSet->rowId);
             if (xdbTtSetMapRowIdIt2 == xdbTtSetMapRowId.end()) {
@@ -774,8 +774,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareXdbXNm(Schema* otherSchema, std::string& msgs) {
-        for (auto schemaXmlMapIter: schemaXmlMap) {
+    bool Schema::compareXdbXNm(Schema* otherSchema, std::string& msgs) const {
+        for (const auto& schemaXmlMapIter: schemaXmlMap) {
             XmlCtx* xmlCtx = schemaXmlMapIter.second;
             auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
             if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
@@ -794,7 +794,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            for (auto xdbXNmMapRowIdIt: otherXmlCtx->xdbXNmMapRowId) {
+            for (const auto xdbXNmMapRowIdIt: otherXmlCtx->xdbXNmMapRowId) {
                 XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
                 auto xdbXNmMapRowIdIt2 = xmlCtx->xdbXNmMapRowId.find(xdbXNm->rowId);
                 if (xdbXNmMapRowIdIt2 == xmlCtx->xdbXNmMapRowId.end()) {
@@ -806,8 +806,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareXdbXQn(Schema* otherSchema, std::string& msgs) {
-        for (auto schemaXmlMapIter: schemaXmlMap) {
+    bool Schema::compareXdbXQn(Schema* otherSchema, std::string& msgs) const {
+        for (const auto& schemaXmlMapIter: schemaXmlMap) {
             XmlCtx* xmlCtx = schemaXmlMapIter.second;
             auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
             if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
@@ -826,7 +826,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            for (auto xdbXQnMapRowIdIt: otherXmlCtx->xdbXQnMapRowId) {
+            for (const auto xdbXQnMapRowIdIt: otherXmlCtx->xdbXQnMapRowId) {
                 XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
                 auto xdbXQnMapRowIdIt2 = xmlCtx->xdbXQnMapRowId.find(xdbXQn->rowId);
                 if (xdbXQnMapRowIdIt2 == xmlCtx->xdbXQnMapRowId.end()) {
@@ -838,8 +838,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compareXdbXPt(Schema* otherSchema, std::string& msgs) {
-        for (auto schemaXmlMapIter: schemaXmlMap) {
+    bool Schema::compareXdbXPt(Schema* otherSchema, std::string& msgs) const {
+        for (const auto& schemaXmlMapIter: schemaXmlMap) {
             XmlCtx* xmlCtx = schemaXmlMapIter.second;
             auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
             if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
@@ -858,7 +858,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            for (auto xdbXPtMapRowIdIt: otherXmlCtx->xdbXPtMapRowId) {
+            for (const auto xdbXPtMapRowIdIt: otherXmlCtx->xdbXPtMapRowId) {
                 XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
                 auto xdbXPtMapRowIdIt2 = xmlCtx->xdbXPtMapRowId.find(xdbXPt->rowId);
                 if (xdbXPtMapRowIdIt2 == xmlCtx->xdbXPtMapRowId.end()) {
@@ -870,7 +870,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::compare(Schema* otherSchema, std::string& msgs) {
+    bool Schema::compare(Schema* otherSchema, std::string& msgs) const {
         if (!compareSysCCol(otherSchema, msgs)) return false;
         if (!compareSysCDef(otherSchema, msgs)) return false;
         if (!compareSysCol(otherSchema, msgs)) return false;
@@ -2166,21 +2166,21 @@ namespace OpenLogReplicator {
         tablesTouched.insert(tableMapIt->second);
     }
 
-    OracleTable* Schema::checkTableDict(typeObj obj) {
-        auto tablePartitionMapIt = tablePartitionMap.find(obj);
+    OracleTable* Schema::checkTableDict(typeObj obj) const {
+        const auto tablePartitionMapIt = tablePartitionMap.find(obj);
         if (tablePartitionMapIt != tablePartitionMap.end())
             return tablePartitionMapIt->second;
 
         return nullptr;
     }
 
-    bool Schema::checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table) {
-        auto objIt = sysObjMapObj.find(obj);
+    bool Schema::checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table) const {
+        const auto objIt = sysObjMapObj.find(obj);
         if (objIt == sysObjMapObj.end())
             return false;
         SysObj* sysObj = objIt->second;
 
-        auto userIt = sysUserMapUser.find(sysObj->owner);
+        const auto userIt = sysUserMapUser.find(sysObj->owner);
         if (userIt == sysUserMapUser.end())
             return false;
         const SysUser* sysUser = userIt->second;
@@ -2190,16 +2190,16 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    OracleLob* Schema::checkLobDict(typeDataObj dataObj) {
-        auto lobPartitionMapIt = lobPartitionMap.find(dataObj);
+    OracleLob* Schema::checkLobDict(typeDataObj dataObj) const {
+        const auto lobPartitionMapIt = lobPartitionMap.find(dataObj);
         if (lobPartitionMapIt != lobPartitionMap.end())
             return lobPartitionMapIt->second;
 
         return nullptr;
     }
 
-    OracleLob* Schema::checkLobIndexDict(typeDataObj dataObj) {
-        auto lobIndexMapIt = lobIndexMap.find(dataObj);
+    OracleLob* Schema::checkLobIndexDict(typeDataObj dataObj) const {
+        const auto lobIndexMapIt = lobIndexMap.find(dataObj);
         if (lobIndexMapIt != lobIndexMap.end())
             return lobIndexMapIt->second;
 

@@ -8,6 +8,7 @@
 - fix: checkpointing is not working for online mode after restart
 - enhancement: add an option to build statically linked binary
 - fix: don't require flag 64 to use experimental XMLTYPE support
+- fix: minor bugs related to timestamp formatting
 
 1.4.0
 - fix: date and timestamp with year before 1900 or after 2262 produce incorrect values

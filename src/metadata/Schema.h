@@ -95,25 +95,25 @@ namespace OpenLogReplicator {
         XdbXPt* xdbXPtTmp;
         XdbXQn* xdbXQnTmp;
 
-        bool compareSysCCol(Schema* otherSchema, std::string& msgs);
-        bool compareSysCDef(Schema* otherSchema, std::string& msgs);
-        bool compareSysCol(Schema* otherSchema, std::string& msgs);
-        bool compareSysDeferredStg(Schema* otherSchema, std::string& msgs);
-        bool compareSysECol(Schema* otherSchema, std::string& msgs);
-        bool compareSysLob(Schema* otherSchema, std::string& msgs);
-        bool compareSysLobCompPart(Schema* otherSchema, std::string& msgs);
-        bool compareSysLobFrag(Schema* otherSchema, std::string& msgs);
-        bool compareSysObj(Schema* otherSchema, std::string& msgs);
-        bool compareSysTab(Schema* otherSchema, std::string& msgs);
-        bool compareSysTabComPart(Schema* otherSchema, std::string& msgs);
-        bool compareSysTabPart(Schema* otherSchema, std::string& msgs);
-        bool compareSysTabSubPart(Schema* otherSchema, std::string& msgs);
-        bool compareSysTs(Schema* otherSchema, std::string& msgs);
-        bool compareSysUser(Schema* otherSchema, std::string& msgs);
-        bool compareXdbTtSet(Schema* otherSchema, std::string& msgs);
-        bool compareXdbXNm(Schema* otherSchema, std::string& msgs);
-        bool compareXdbXQn(Schema* otherSchema, std::string& msgs);
-        bool compareXdbXPt(Schema* otherSchema, std::string& msgs);
+        bool compareSysCCol(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysCDef(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysCol(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysDeferredStg(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysECol(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysLob(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysLobCompPart(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysLobFrag(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysObj(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysTab(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysTabComPart(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysTabPart(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysTabSubPart(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysTs(Schema* otherSchema, std::string& msgs) const;
+        bool compareSysUser(Schema* otherSchema, std::string& msgs) const;
+        bool compareXdbTtSet(Schema* otherSchema, std::string& msgs) const;
+        bool compareXdbXNm(Schema* otherSchema, std::string& msgs) const;
+        bool compareXdbXQn(Schema* otherSchema, std::string& msgs) const;
+        bool compareXdbXPt(Schema* otherSchema, std::string& msgs) const;
         void addTableToDict(OracleTable* table);
         void removeTableFromDict(OracleTable* table);
         uint16_t getLobBlockSize(typeTs ts);
@@ -226,7 +226,7 @@ namespace OpenLogReplicator {
 
         void purgeMetadata();
         void purgeDicts();
-        [[nodiscard]] bool compare(Schema* otherSchema, std::string& msgs);
+        [[nodiscard]] bool compare(Schema* otherSchema, std::string& msgs) const;
         void dictSysCColAdd(const char* rowIdStr, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12);
         void dictSysCDefAdd(const char* rowIdStr, typeCon con, typeObj obj, typeType type);
         void dictSysColAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name, typeType type, uint64_t length,
@@ -311,10 +311,10 @@ namespace OpenLogReplicator {
         [[nodiscard]] XdbXQn* dictXdbXQnFind(const std::string& tokSuf, typeRowId rowId);
 
         void touchTable(typeObj obj);
-        [[nodiscard]] OracleTable* checkTableDict(typeObj obj);
-        [[nodiscard]] bool checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table);
-        [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj);
-        [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj);
+        [[nodiscard]] OracleTable* checkTableDict(typeObj obj) const;
+        [[nodiscard]] bool checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table) const;
+        [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj) const;
+        [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj) const;
         void dropUnusedMetadata(const std::set<std::string>& users, const std::vector<SchemaElement*>& schemaElements, std::vector<std::string>& msgs);
         void buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
                        const std::string& conditionStr, typeOptions options, std::vector<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
