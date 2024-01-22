@@ -101,6 +101,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define DISABLE_CHECKS_BLOCK_SUM                0x00000004
 #define DISABLE_CHECKS(x)                       ((ctx->disableChecks&(x))!=0)
 
+#define MEMORY_MODULE_BUILDER                   0
+#define MEMORY_MODULE_PARSER                    1
+#define MEMORY_MODULE_READER                    2
+#define MEMORY_MODULE_TRANSACTIONS              3
+#define MEMORY_MODULES_NUM                      4
+
 #ifndef GLOBALS
 extern uint64_t OLR_LOCALES;
 #endif
@@ -121,6 +127,7 @@ namespace OpenLogReplicator {
         std::atomic<uint64_t> memoryChunksMax;
         std::atomic<uint64_t> memoryChunksHWM;
         std::atomic<uint64_t> memoryChunksReusable;
+        uint64_t memoryModulesAllocated[MEMORY_MODULES_NUM];
 
         std::condition_variable condMainLoop;
         std::condition_variable condOutOfMemory;
@@ -135,6 +142,7 @@ namespace OpenLogReplicator {
         static const char map16U[17];
         static const char map64[65];
         static const char map64R[256];
+        static const std::string memoryModules[MEMORY_MODULES_NUM];
 
         bool version12;
         std::atomic<uint64_t> version;                   // Compatibility level of redo logs
@@ -249,8 +257,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getMaxUsedMemory() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;
         [[nodiscard]] uint64_t getFreeMemory();
-        [[nodiscard]] uint8_t* getMemoryChunk(const char* module, bool reusable);
-        void freeMemoryChunk(const char* module, uint8_t* chunk, bool reusable);
+        [[nodiscard]] uint8_t* getMemoryChunk(uint64_t module, bool reusable);
+        void freeMemoryChunk(uint64_t module, uint8_t* chunk, bool reusable);
         void stopHard();
         void stopSoft();
         void mainLoop();

@@ -94,7 +94,7 @@ namespace OpenLogReplicator {
 
         while (firstBuilderQueue != nullptr) {
             BuilderQueue* nextBuffer = firstBuilderQueue->next;
-            ctx->freeMemoryChunk("builder", reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
+            ctx->freeMemoryChunk(MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
             firstBuilderQueue = nextBuffer;
             --buffersAllocated;
         }
@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
 
     void Builder::initialize() {
         buffersAllocated = 1;
-        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk("builder", true));
+        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(MEMORY_MODULE_BUILDER, true));
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
         firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
@@ -667,7 +667,7 @@ namespace OpenLogReplicator {
     }
 
     void Builder::builderRotate(bool copy) {
-        auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk("builder", true));
+        auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(MEMORY_MODULE_BUILDER, true));
         nextBuffer->next = nullptr;
         nextBuffer->id = lastBuilderQueue->id + 1;
         nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
@@ -1646,8 +1646,8 @@ namespace OpenLogReplicator {
                     ctx->warning(60036, "incorrect XML data: header too short, can't read flags");
                     return false;
                 }
-                pos++; //uint8_t flags0 = data[pos++];
-                pos++; //uint8_t flags1 = data[pos++];
+                ++pos; //uint8_t flags0 = data[pos++];
+                ++pos; //uint8_t flags1 = data[pos++];
                 uint8_t flags2 = data[pos++];
 
                 if ((flags2 & XML_HEADER_XMLDECL) != 0)
@@ -2133,7 +2133,7 @@ namespace OpenLogReplicator {
         if (builderQueue != nullptr) {
             while (builderQueue->id < maxId) {
                 BuilderQueue* nextBuffer = builderQueue->next;
-                ctx->freeMemoryChunk("builder", reinterpret_cast<uint8_t*>(builderQueue), true);
+                ctx->freeMemoryChunk(MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
                 builderQueue = nextBuffer;
             }
         }

@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
 
         memset(reinterpret_cast<void*>(&zero), 0, sizeof(RedoLogRecord));
 
-        lwnChunks[0] = ctx->getMemoryChunk("parser", false);
+        lwnChunks[0] = ctx->getMemoryChunk(MEMORY_MODULE_PARSER, false);
         auto length = reinterpret_cast<uint64_t*>(lwnChunks[0]);
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
@@ -87,13 +87,13 @@ namespace OpenLogReplicator {
 
     Parser::~Parser() {
         while (lwnAllocated > 0) {
-            ctx->freeMemoryChunk("parser", lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
         }
     }
 
     void Parser::freeLwn() {
         while (lwnAllocated > 1) {
-            ctx->freeMemoryChunk("parser", lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
         }
 
         auto length = reinterpret_cast<uint64_t*>(lwnChunks[0]);
@@ -1321,7 +1321,7 @@ namespace OpenLogReplicator {
                                 if (lwnAllocated == MAX_LWN_CHUNKS)
                                     throw RedoLogException(50052, "all " + std::to_string(MAX_LWN_CHUNKS) + " lwn buffers allocated");
 
-                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk("parser", false);
+                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk(MEMORY_MODULE_PARSER, false);
                                 if (lwnAllocated > lwnAllocatedMax)
                                     lwnAllocatedMax = lwnAllocated;
                                 length = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
