@@ -62,6 +62,8 @@ namespace OpenLogReplicator {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+    const std::string Ctx::memoryModules[MEMORY_MODULES_NUM] = {"builder", "parser", "reader", "transaction"};
+
     typeIntX typeIntX::BASE10[TYPE_INTX_DIGITS][10];
 
     Ctx::Ctx() :
@@ -120,6 +122,10 @@ namespace OpenLogReplicator {
             write56(write56Little),
             write64(write64Little),
             writeScn(writeScnLittle) {
+        memoryModulesAllocated[0] = 0;
+        memoryModulesAllocated[1] = 0;
+        memoryModulesAllocated[2] = 0;
+        memoryModulesAllocated[3] = 0;
     }
 
     Ctx::~Ctx() {
@@ -594,7 +600,7 @@ namespace OpenLogReplicator {
         return memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB;
     }
 
-    uint8_t* Ctx::getMemoryChunk(const char* module, bool reusable) {
+    uint8_t* Ctx::getMemoryChunk(uint64_t module, bool reusable) {
         std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (memoryChunksFree == 0) {
@@ -616,7 +622,7 @@ namespace OpenLogReplicator {
                 memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
                 if (memoryChunks[0] == nullptr) {
                     throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                                  " bytes memory for: " + module);
+                                                  " bytes memory for: " + memoryModules[module]);
                 }
                 ++memoryChunksFree;
                 ++memoryChunksAllocated;
@@ -629,14 +635,16 @@ namespace OpenLogReplicator {
         --memoryChunksFree;
         if (reusable)
             ++memoryChunksReusable;
+        ++memoryModulesAllocated[module];
+
         return memoryChunks[memoryChunksFree];
     }
 
-    void Ctx::freeMemoryChunk(const char* module, uint8_t* chunk, bool reusable) {
+    void Ctx::freeMemoryChunk(uint64_t module, uint8_t* chunk, bool reusable) {
         std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (memoryChunksFree == memoryChunksAllocated)
-            throw RuntimeException(50001, "trying to free unknown memory block for: " + std::string(module));
+            throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[module]);
 
         // Keep memoryChunksMin reserved
         if (memoryChunksFree >= memoryChunksMin) {
@@ -650,6 +658,8 @@ namespace OpenLogReplicator {
             --memoryChunksReusable;
 
         condOutOfMemory.notify_all();
+
+        --memoryModulesAllocated[module];
     }
 
     void Ctx::stopHard() {

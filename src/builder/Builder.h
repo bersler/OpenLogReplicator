@@ -668,7 +668,7 @@ namespace OpenLogReplicator {
                             appendData = true;
                             hasPrev = true;
                             totalLobLength -= chunkLength;
-                            dataMapIt++;
+                            ++dataMapIt;
                         }
 
                         ++page;
@@ -846,7 +846,7 @@ namespace OpenLogReplicator {
                                         appendData = true;
                                         hasPrev = true;
                                         totalLobLength -= chunkLength;
-                                        dataMapIt++;
+                                        ++dataMapIt;
                                     }
                                     ++page;
                                 }

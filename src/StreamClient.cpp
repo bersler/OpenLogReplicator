@@ -229,6 +229,9 @@ int main(int argc, char** argv) {
                         case OpenLogReplicator::pb::CHKPT:
                             msg = "*** CHECKPOINT ***";
                             break;
+
+                        default:
+                            msg = "??? UNKNOWN ???";
                     }
                     ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", idx: " + std::to_string(response.scn()) + ", code: " +
                                 std::to_string(static_cast<uint64_t>(response.code())) + ", length: " + std::to_string(length) + ", op: " + msg);

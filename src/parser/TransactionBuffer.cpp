@@ -106,7 +106,7 @@ namespace OpenLogReplicator {
             else
                 partiallyFullChunks.insert_or_assign(chunk, freeMap);
         } else {
-            chunk = ctx->getMemoryChunk("transaction", false);
+            chunk = ctx->getMemoryChunk(MEMORY_MODULE_TRANSACTIONS, false);
             pos = 0;
             freeMap = BUFFERS_FREE_MASK & (~1);
             partiallyFullChunks.insert_or_assign(chunk, freeMap);
@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
         freeMap |= (1 << pos);
 
         if (freeMap == BUFFERS_FREE_MASK) {
-            ctx->freeMemoryChunk("transaction", chunk, false);
+            ctx->freeMemoryChunk(MEMORY_MODULE_TRANSACTIONS, chunk, false);
             partiallyFullChunks.erase(chunk);
         } else
             partiallyFullChunks.insert_or_assign(chunk, freeMap);
