@@ -1952,7 +1952,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::archGetLogOnline(Replicator* replicator) {
-        ReplicatorOnline *replicatorOnline = dynamic_cast<ReplicatorOnline*>(replicator);
+        ReplicatorOnline* replicatorOnline = dynamic_cast<ReplicatorOnline*>(replicator);
         if (replicatorOnline == nullptr)
             return;
 

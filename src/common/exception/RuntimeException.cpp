@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
             exception(),
             code(newCode),
             supCode(newSupCode),
-            msg(newMsg)  {
+            msg(newMsg) {
     }
 
     RuntimeException::~RuntimeException() = default;

@@ -1207,7 +1207,7 @@ namespace OpenLogReplicator {
         auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
         if (sysColMapSegIt != sysColMapSeg.end())
             throw DataException(50024, "duplicate SYS.COL$ value for unique (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
-                                 std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
+                                       std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
 
         sysColMapRowId.insert_or_assign(sysCol->rowId, sysCol);
         sysColMapSeg.insert_or_assign(sysColSeg, sysCol);

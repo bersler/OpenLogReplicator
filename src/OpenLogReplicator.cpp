@@ -805,8 +805,8 @@ namespace OpenLogReplicator {
                                         replicator2->builder, replicator2->metadata, output, timestampFormat,
                                         maxFileSize, newLine, append);
             } else if (strcmp(writerType, "discard") == 0) {
-                    writer = new WriterDiscard(ctx, std::string(alias) + "-writer", replicator2->database,
-                                            replicator2->builder, replicator2->metadata);
+                writer = new WriterDiscard(ctx, std::string(alias) + "-writer", replicator2->database,
+                                           replicator2->builder, replicator2->metadata);
             } else if (strcmp(writerType, "kafka") == 0) {
 #ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;

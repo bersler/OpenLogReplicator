@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
                 data[i] = 0;
         }
 
-        explicit typeIntX(const typeIntX &other) {
+        explicit typeIntX(const typeIntX& other) {
             for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
                 data[i] = other.data[i];
         }
