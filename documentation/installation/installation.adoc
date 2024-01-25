@@ -29,7 +29,7 @@ Other distributions aren't tested.
 === Database version requirements
 
 OpenLogReplicator has no impact and is not affected when other replication engines are being used, including tools using Streams, XStream or LogMiner.
-Or multiple instances of OpenLogReplicator -- as long as they don't share the same path with checkpoints and configuration file.
+Multiple instances of OpenLogReplicator can replicate from the same source database assuming that they don't share the same path with checkpoints and configuration files.
 
 The following limitations apply to the source database:
 
@@ -118,7 +118,7 @@ However, typically this is not enough, and it is required that the output contai
 
 IMPORTANT: OpenLogReplicator leaves the decision to the user which data is present in the database redo logs.
 Besides the minimal supplemental logging option, it doesn't force the user to enable any other supplemental logging options per table.
-The user can decide which tables should have supplemental logging enabled and which not.
+The user can decide which tables should have supplemental logging enabled and which should not.
 
 ==== Adding primary key to supplemental logging
 

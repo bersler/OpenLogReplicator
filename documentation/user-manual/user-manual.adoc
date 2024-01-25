@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2023-12-26
+:revdate: 2024-01-25
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -69,8 +69,8 @@ If another instance is already running and the lock can't be created, the progra
 
 === Memory allocation
 
-For most data structures, including disk buffers, output buffers and copy of the redo log vectors the program uses one big pool of memory, which is fully controlled by 2 parameters: `memory-min-mb` and `memory-max-mb`.
-Those parameters allow to fully control the memory usage of the program.
+For most data structures, including disk buffers, output buffers and copy of the redo log vectors the program uses one big pool of memory, which is fully controlled by two parameters: `memory-min-mb` and `memory-max-mb`.
+Those parameters allow fully controlling the memory usage of the program.
 Apart from main memory structures, the program uses dynamic memory allocation from heap for storing metadata (table names, types, column names, etc).
 
 CAUTION: Currently also LOB data is stored in dynamic memory, but is planned to be moved to the main memory buffers.
@@ -110,7 +110,7 @@ This is a guarantee point for the database client that all changes have been acc
 
 NOTE: DMLs from different transactions are interleaved in the redo log files.
 
-IMPORTANT: For Oracle database, (unlike PostgreSQL) the redo log files contain also information about transactions that eventually were rolled back.
+IMPORTANT: For Oracle database, unlike PostgreSQL, the redo log files contain also information about transactions that eventually were rolled back.
 Or are partially rolled back.
 
 The task of OpenLogReplicator is to sort DML commands and send them to output in proper order:
@@ -121,7 +121,7 @@ The task of OpenLogReplicator is to sort DML commands and send them to output in
 
 3. All committed transactions are sent to output as soon as the commit record appears
 
-4. Transactions, which has no DML commands (or had, but were rolled back) are ignored.
+4. Transactions, which has no DML commands, or had, but were rolled back, are ignored.
 Like it didn't happen.
 
 5. Transactions are sorted by commit time
@@ -135,7 +135,7 @@ The number of details in the message is configurable.
 .Interleaved transactions
 image:transaction-interleaving.png[Transform interleaved transactions to stream,,,]
 
-NOTE: Depending on user configuration, the output stream in the picture above might contain 2 or 6 messages.
+NOTE: Depending on user configuration, the output stream in the picture above might contain two or six messages.
 It is up to the user to decide how the output should look like.
 
 === Transaction caching & restart
@@ -171,7 +171,7 @@ Although there are debug options that allow to process them, this is not recomme
 
 === Topology
 
-There are 2 possible scenarios of running OpenLogReplicator: on the database host and on another host.
+There are two possible scenarios of running OpenLogReplicator: on the database host and on another host.
 
 ==== Running on the database host
 
@@ -208,11 +208,11 @@ But it can also read just archived redo logs – in this scenario transactions w
 == Output format [[output-format]]
 
 The output format is fully configurable.
-There are 2 formats implemented: JSON and protocol buffer, but the architecture of the program allows implementing any other format in the future.
+There are two formats implemented: JSON and protocol buffer, but the architecture of the program allows implementing any other format in the future.
 
 === JSON format
 
-JSON format is the first implemented format with very fast write speed.
+JSON format is the first implemented format with rapid write speed.
 The stream is directly constructed from the redo log data.
 The process of constructing the stream does not use dynamic memory allocation.
 Instead, the json stream is directly constructed and populated while redo log data is parsed.
@@ -251,9 +251,9 @@ The value can be stored in:
 
 - Field `"xid"` and stored as a string in hex (default).
 An example value would be: `"xid":"0x0009.003.0000568e"`.
-- Field `"xid"` -- like previous but using decimal numbers, for example:
+- Field `"xid"` -- like previous but using decimal numbers, for example,
 `"xid":"9.3.22158"`.
-- Field `"xidn"` and storead as a decimal number, (for example, `"xidn":22158`).
+- Field `"xidn"` and stored as a decimal number, (for example, `"xidn":22158`).
 
 See: xref:../reference-manual/reference-manual.adoc#xid[xid] parameter for configuration details.
 
@@ -284,7 +284,7 @@ A `schema` field is present only in DML operations and contains an object with t
 
 Below are listed the fields of the `schema` object.
 
-- `"owner"` -- owner of the schema, optonal field, may not be present when schemaless mode is used;
+- `"owner"` -- owner of the schema, optional field, may not be present when schemaless mode is used;
 - `"table"` -- name of the table, in case of schemaless mode the value is `OBJ_xxx`, where `xxx` is the object identifier;
 - `"obj"` -- object identifier of the table;
 - `"columns"` -- array of columns (described below).
@@ -420,7 +420,7 @@ Such reproduction requires no setup of the Kafka cluster and is easier to set up
 To keep track of the position in the redo log, OpenLogReplicator writes the checkpoint to series of entities.
 Those entities are files by default, but future versions might use other storing engines, like Redis.
 
-There are 2 types of checkpoints:
+There are two types of checkpoints:
 
 - SCN checkpoint -- the SCN number defines the position in the redo log; The file contains the SCN number of the last transaction sent to output.
 
@@ -564,7 +564,7 @@ List of supported column types (with internal Oracle codes):
 - 231 –- timestamp with local time zone;
 - 252 -- boolean.
 
-If a table contains column types which aren't supported –- `“?”` value is presented in output data.
+For every unsupported type `"?"` is used as value.
 
 === DDL operations
 
@@ -573,11 +573,11 @@ Changes in the schema are supported.
 OpenLogReplicator treats DDL operations as DML operations being executed on system tables.
 Some system tables are also tracked for changes.
 
-Whenever a DDL command appears in the redo log, the transaction contained 2 elements:
+Whenever a DDL command appears in the redo log, the transaction contained two elements:
 
 - the SQL text of the DDL command (which can be sent to output);
 
-- a sequence of DML commands on system tables (which can be sent to output as well) -- which is processed and the internal copy of system tables is updated.
+- a sequence of DML commands on system tables (which can be sent to output as well) -- which is processed, and the internal copy of system tables is updated.
 
 The DML commands are parsed, and particular columns are extracted from the system tables and updated in the internal dictionaries.
 After all changes from one system transaction are processed, OpenLogReplicator deletes internal dictionaries and creates them again.
@@ -608,7 +608,7 @@ The target character set is always Unicode and UTF-8 format.
 == Replication
 
 During the first run of replication OpenLogReplicator creates a local copy of the source database.
-The data dictionary may be very large, and by default only a subset of the data is gathered.
+The data dictionary may be huge, and by default only a subset of the data is gathered.
 Only schemas which are configured for replication are copied.
 Other schemas -- not.
 

@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2023-12-26
+:revdate: 2024-01-25
 :imagesdir: ./images
 :toc: preamble
 
@@ -59,7 +59,7 @@ libdl.so.2 => /lib64/libdl.so.2 (0x00007f45c17d2000)
 /lib64/ld-linux-x86-64.so.2 (0x00007f45c576f000)
 ----
 
-In the above example, all libraries marked with “not found” are missing.
+In the above example, all libraries marked with "not found" are missing.
 Check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located.
 If necessary – create appropriate symlinks.
 
