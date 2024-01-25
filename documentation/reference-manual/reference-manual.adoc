@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2023-12-28
+:revdate: 2024-01-25
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -169,7 +169,7 @@ It doesn't have to match the actual database _SID_.
 |Configuration of redo log reader.
 
 |`arch`
-|_string_, max length: 256, default is `online` for _online_ type; `path` for _offline_ type; `list` for _batch_ type
+|_string_, max length: 256, default is `online` for an _online_ type; `path` for _offline_ type; `list` for _batch_ type
 |Way of getting an archive redo log file list.
 
 Possible values are:
@@ -218,7 +218,7 @@ Flags define various options for the program.
 
 Possible values are:
 
-* `0x0001` -- Read only archived redo logs.
+* `0x0001` -- Read-only archived redo logs.
 Online redo log files aren't read at all.
 
 _CAUTION:_ This option would cause a delay of data replication.
@@ -261,7 +261,7 @@ The program is not designed to continue after error as this can lead to schema d
 
 _TIP_: Incomplete transactions are transactions that have started before replication was set up.
 Some starting elements of such transactions may be missing in the output.
-By default, such transacions are ignored.
+By default, such transactions are ignored.
 
 * `0x0800` -- Include system transactions in output.
 
@@ -321,7 +321,7 @@ Number in microseconds.
 _IMPORTANT:_ The default setting is 50.000 microseconds meaning which is equal to 1/20 s or 50 ms.
 This means that 20 times a second OpenLogReplicator polls disk for new changes on disk (until there is no activity -- after new data appears, it is read sequentially to the end).
 With default setting, in the worst case, the read process would notice after 50 ms that new data is ready.
-This is actually very fast and a proper setting for most cases.
+This is actually rapid and a proper setting for most cases.
 If this delay is potentially too big -- the value can be decreased, but this would increase CPU usage.
 
 |`redo-verify-delay-us`
@@ -334,7 +334,7 @@ Number in microseconds.
 _IMPORTANT:_ Some filesystems (like _ext_4_ or _btrfs_) can share disk read cache between multiple processes.
 This can cause problems when the redo log files are read by multiple processes.
 This can cause read inconsistencies when the database process is writing to the same memory buffer as the OpenLogReplicator process is reading.
-The checksum for disk blocks is just 2 bytes, so it is impossible to detect if the data is corrupted or not.
+The checksum for disk blocks is just two bytes, so it is impossible to detect if the data is corrupted or not.
 The only way to detect this is to read the data again and compare the data.
 This parameter defines time delay after which the redo log file data is read second time for verification.
 
@@ -415,7 +415,7 @@ _NOTE:_ This field is valid only for `online` type.
 _CAUTION:_ The password is stored in unencrypted string in the configuration file.
 
 |`path-mapping`
-|_list_ of pairs of _string_, max length: 2048
+|_list_ of _string_ pairs, max length: 2048
 |List of pairs of files `[before1, after1, before2, after2, …]`.
 Every path (of online and archived redo log) is compared with the list.
 If a prefix of the path matches with `beforeX` it is replaced with `afterX`.
@@ -423,7 +423,7 @@ If a prefix of the path matches with `beforeX` it is replaced with `afterX`.
 _NOTE:_ This field is valid only for `online` and `offline` types.
 
 _TIP:_ The parameter is useful when OpenLogReplicator operates on a different host than the database server is running and the paths differ.
-For example, the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but file is mounted using sshfs under a different path so having `“path-mapping”: [“/db/fra”, “/opt/fast-recovery-area”],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
+For example, the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but file is mounted using sshfs under a different path so having `"path-mapping": ["/db/fra", "/opt/fast-recovery-area"],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
 
 |`redo-copy-path`
 |_string_, max length: 2048
@@ -549,7 +549,7 @@ _TIP:_ Keeping a larger number of checkpoint files allows adjusting starting SCN
 It provides more security in case of filesystem corruption and the last checkpoint file not being available.
 
 _CAUTION:_ The number of checkpoint files may be actually larger than this parameter (exactly up to `keep-checkpoints` + `schema-force-interval`).
-Checkpoint file might be deleted only if it is not referred in some consecutive checkpoint files (which don't contain schema data).
+Checkpoint file might be deleted only if it is not referred in some consecutive checkpoint files (that don't contain schema data).
 
 |`path`
 |_string_, max length: 2048, default: `"checkpoint"`
@@ -652,7 +652,7 @@ By default, the value is written in Unicode format, using UTF-8 to code characte
 
 Field value is a sum of:
 
-* `0x0001` -- No character set transformation is applied, the characters are copied from source “as is”.
+* `0x0001` -- No character set transformation is applied, the characters are copied from source "as is".
 
 * `0x0002` -- Instead of characters, the output is in HEX format (using hex format -- for example, `"column":"4b4c204d"`).
 
@@ -705,19 +705,19 @@ Possible values are:
 
 * `0` -- Value in nanoseconds -- `"val": 123456000000000`.
 
-* `1` -- Value in microseconds (possible data precission loss) -- `"val": 123456000000`.
+* `1` -- Value in microseconds (possible data precision loss) -- `"val": 123456000000`.
 
-* `2` -- Value in milliseconds (possible data precission loss) -- `"val": 123456000`.
+* `2` -- Value in milliseconds (possible data precision loss) -- `"val": 123456000`.
 
-* `3` -- Value in seconds (possible data precission loss) -- `"val": 123456`.
+* `3` -- Value in seconds (possible data precision loss) -- `"val": 123456`.
 
 * `4` -- Value in nanoseconds stored as a string -- `"val": "123456000000000"`.
 
-* `5` -- Value in microseconds stored as a string (possible data precission loss) -- `"val": "123456000000"`.
+* `5` -- Value in microseconds stored as a string (possible data precision loss) -- `"val": "123456000000"`.
 
-* `6` -- Value in milliseconds stored as a string (possible data precission loss) -- `"val": "123456000"`.
+* `6` -- Value in milliseconds stored as a string (possible data precision loss) -- `"val": "123456000"`.
 
-* `7` -- Value in seconds stored as a string (possible data precission loss) -- `"val": "123456"`.
+* `7` -- Value in seconds stored as a string (possible data precision loss) -- `"val": "123456"`.
 
 * `8` -- Value stored in part of _ISO-8601_ format stored as a string -- `"val": "01 06:00:00.123456789"`.
 
@@ -812,7 +812,7 @@ Possible values are:
 
 * `0` -- SCN is stored as a decimal number in `scn` field.
 
-* `1` -– SCN values is stored in a text format in hexadecimal format (in _“C”_ format – like `0xFF`) in `scns` field.
+* `1` -– SCN values are stored in a text format in hexadecimal format (in _"C"_ format – like `0xFF`) in `scns` field.
 
 * `2` -- SCN values for all DML operations are copied from commit SCN record.
 
@@ -830,24 +830,24 @@ Possible values are:
 |_number_, min: 0, max: 8, default: 0
 |Format of timestamp values.
 
-In the following description, the following timerstamp is used as an example: `"2022-05-01 06:00:00.123456789"`.
+In the following description, the following timestamp is used as an example: `"2022-05-01 06:00:00.123456789"`.
 Possible values are:
 
 * `0` -- Unix with nanoseconds -- `"tm": 1651384800123456789`.
 
-* `1` -- Unix with microsecond precision (possible data precission loss) -- `"tm": 1651384800123457`.
+* `1` -- Unix with a precision to the microsecond (possible data precision loss) -- `"tm": 1651384800123457`.
 
-* `2` -- Unix with millisecond precision (possible data precission loss) -- `"tm": 1651384800123`.
+* `2` -- Unix with precision to the millisecond  (possible data precision loss) -- `"tm": 1651384800123`.
 
-* `3` -- Unix with second precision (possible data precission loss) -- `"tm": 1651384800`.
+* `3` -- Unix with precision to the second  (possible data precision loss) -- `"tm": 1651384800`.
 
 * `4` -- Unix with nanoseconds stored as a string -- `"tms": "1651384800123456789"`.
 
-* `5` -- Unix with microsecond precision stored as a string (possible data precission loss) -- `"tms": "1651384800123457"`.
+* `5` -- Unix with microsecond precision stored as a string (possible data precision loss) -- `"tms": "1651384800123457"`.
 
-* `6` -- Unix with millisecond precision stored as a string (possible data precission loss) -- `"tms": "1651384800123"`.
+* `6` -- Unix with millisecond precision stored as a string (possible data precision loss) -- `"tms": "1651384800123"`.
 
-* `7` -- Unix with second precision stored as a string (possible data precission loss) -- `"tms": "1651384800"`.
+* `7` -- Unix with second precision stored as a string (possible data precision loss) -- `"tms": "1651384800"`.
 
 * `8` -- _ISO-8601_ format stored as a string -- `"tms": "2022-05-01 06:00:00.123456789"`.
 
@@ -857,7 +857,7 @@ _NOTE:_ This format is also used for type `timestamp with local time zone` since
 |_number_, min: 0, max: 4, default: 0
 |Format of timestamp with time zone values.
 
-In the following description, the following timerstamp with time zone is used as an example: `"2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+In the following description, the following timestamp with time zone is used as an example: `"2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
 
 Possible values are:
 
@@ -865,9 +865,9 @@ Possible values are:
 
 * `1` -- Unix with microsecond precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800123457,Europe/Warsaw"`.
 
-* `2` -- Unix with millisecond precision stored as a string with time zone after comma sign (possible data precission loss) -- `"tms": "1651384800123,Europe/Warsaw"`.
+* `2` -- Unix with millisecond precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800123,Europe/Warsaw"`.
 
-* `3` -- Unix with second precision stored as a string with time zone after comma sign (possible data precission §loss) -- `"tms": "1651384800,Europe/Warsaw"`.
+* `3` -- Unix with second precision stored as a string with time zone after comma sign (possible data precision §loss) -- `"tms": "1651384800,Europe/Warsaw"`.
 
 * `4` -- _ISO-8601_ format stored as a string with time zone after space sign-- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
 
@@ -922,7 +922,7 @@ Possible values are:
 A table that matches at least one of the rules is tracked, thus the rules can overlap.
 
 Example:
-`“table”: {{“table”: “owner1.table1”}, {“table”: “owner2.table2”, “key”: “col1, col2, col3”}, {“table”:”sys.%”}}.`
+`"table": {{"table": "owner1.table1"}, {"table": "owner2.table2", "key": "col1, col2, col3"}, {"table":"sys.%"}}.`
 
 |`skip-xid` [[skip-xid]]
 |_list_ of _string_ elements, max length: 32
@@ -1067,7 +1067,7 @@ _NOTE:_ This field is valid only for `kafka` type.
 
 Perform all actions like parsing redo log, producing messages, but messages are discarded and not sent to any target.
 
-_TIP:_ This target is useful for testing purposes, to verify if redo log parsing works correctly.
+_TIP:_ This target is useful for testing purposes, to verify if redo log file parsing works correctly.
 This writer does not accept any parameters.
 
 * `file` -- Write output messages directly to a file.
@@ -1109,7 +1109,7 @@ Number in megabytes.
 
 _CAUTION:_ Memory for this buffer is allocated independently of memory defined as `memory-min-mb`/`memory-max-mb` when a big message to Kafka is being constructed.
 If the transaction is close to this value, it would be divided in many parts.
-Every time such situation occurs, a warning is printed to the log.
+Every time such a situation occurs, a warning is printed to the log.
 
 _NOTE:_ This field is valid only for `kafka` type.
 

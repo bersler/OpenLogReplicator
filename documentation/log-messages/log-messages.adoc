@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2024-01-04
+:revdate: 2024-01-25
 :imagesdir: ./images
 :toc: preamble
 
@@ -748,7 +748,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50061: "too short field <code>: <number> offset: <number"
 
-==== code 50062: "non-free blocks in transaction buffer: <number>)"
+==== code 50062: "non-free blocks in transaction buffer: <number>"
 
 ==== code 50063: "nulls field is missing on offset: <number>"
 
@@ -838,7 +838,7 @@ See comment for warning 60002.
 
 ==== code 60015: "big transaction divided (forced commit after <number> bytes), xid: <xid>"
 
-A very big transaction has exceeded provided maximum size for transactions.
+A huge transaction has exceeded provided maximum size for transactions.
 
 ==== code 60016: "LOB is null for (obj: <number>, dataobj: <number>), offset: <number>>, xid: <xid>"
 
