@@ -12,6 +12,7 @@
 - minor documentation fixes
 - enhancement: refactor timestamps, add more output options
 - enhancement: collecting metrics using Prometheus
+- configuration change: moved memory options "memory-max-mb", "memory-min-mb", "read-buffer-max-mb" to "memory" group and renamed to "max-mb", "min-mb"
 
 1.4.0
 - fix: date and timestamp with year before 1900 or after 2262 produce incorrect values

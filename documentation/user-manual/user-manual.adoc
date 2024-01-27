@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2024-01-25
+:revdate: 2024-01-27
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -67,17 +67,43 @@ Other threads perform operations which aren't CPU intensive, however, might be I
 To prevent multiple instances of OpenLogReplicator running simultaneously and overwriting checkpoint files ane another, the program creates a lock on the config file after startup.
 If another instance is already running and the lock can't be created, the program exits with an error.
 
-=== Memory allocation
+=== Memory allocation [[memory-allocation]]
 
-For most data structures, including disk buffers, output buffers and copy of the redo log vectors the program uses one big pool of memory, which is fully controlled by two parameters: `memory-min-mb` and `memory-max-mb`.
+For most data structures, including disk buffers, output buffers and copy of the redo log vectors, the program uses one big pool of memory.
+This memory pool is fully controlled by two parameters: `min-mb` and `max-mb`.
 Those parameters allow fully controlling the memory usage of the program.
 Apart from main memory structures, the program uses dynamic memory allocation from heap for storing metadata (table names, types, column names, etc).
 
-CAUTION: Currently also LOB data is stored in dynamic memory, but is planned to be moved to the main memory buffers.
+CAUTION: Currently also LOB data is stored in dynamic memory, but is planned to be moved to the main memory pool.
 This means that when the redo log stream contains transactions with many large LOB fields, the memory usage may be higher than configured.
 
 .Memory management big picture
 image:memory-management.png[Memory management big picture,,,]
+
+HINT: Use the xref:../metrics/metrics.adoc[metrics module] to dynamically observe memory usage.
+
+==== Sizing memory allocation
+
+There is no single rule for calculating the memory size.
+The size of used memory depends on many factors:
+
+* characteristics of schema (number of columns, number of rows, size of rows);
+
+* characteristics of DML operations;
+
+* size of transactions;
+
+* length (in time) of transactions;
+
+* number of transactions;
+
+* location of OpenLogReplicator, together with oter applications, on the same host;
+
+* hardware configuration, amount of available memory;
+
+* etc.
+
+For best results, performance tests should be made.
 
 === Database redo logs
 

@@ -30,6 +30,7 @@ This document describes the release notes of OpenLogReplicator.
 - minor documentation fixes
 - enhancement: refactor timestamps, add more output options
 - enhancement: collecting metrics using Prometheus
+- configuration change: moved memory options "memory-max-mb", "memory-min-mb", "read-buffer-max-mb" to "memory" group and renamed to "max-mb", "min-mb"
 
 === Version 1.4.0
 

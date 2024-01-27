@@ -11,8 +11,10 @@
       "format": {
         "type": "json"
       },
-      "memory-min-mb": 64,
-      "memory-max-mb": 1024,
+      "memory": {
+        "min-mb": 64,
+        "max-mb": 1024
+      },
       "filter": {
         "table": [
           {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},

@@ -25,12 +25,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OPENLOGREPLICATOR_H_
 
 namespace OpenLogReplicator {
+    class Builder;
     class Ctx;
-    class Replicator;
     class Checkpoint;
     class Locales;
-    class Builder;
     class Metadata;
+    class Replicator;
     class TransactionBuffer;
     class Writer;
 

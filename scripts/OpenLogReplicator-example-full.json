@@ -65,9 +65,11 @@
       },
       "arch": "online",
       "flags": 0,
-      "memory-min-mb": 64,
-      "memory-max-mb": 1024,
-      "read-buffer-max-mb": 256,
+      "memory": {
+        "min-mb": 64,
+        "max-mb": 1024,
+        "read-buffer-max-mb": 256
+      },
       "redo-read-sleep-us": 250000,
       "arch-read-sleep-us": 10000000,
       "arch-read-tries": 10,
