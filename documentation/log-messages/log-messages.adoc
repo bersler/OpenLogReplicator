@@ -143,14 +143,14 @@ This message is printed when the program is terminated by a signal.
 ==== code 10016: "couldn't allocate <number> bytes memory for: <module>"
 
 Memory allocation failed.
-Verify if the provided `memory-min-mb` and `memory-max-mb` parameters are correct and match amount of memory available in the operating system.
+Verify if the provided `min-mb` and `max-mb` parameters are correct and match amount of memory available in the operating system.
 
 ==== code 10017: "out of memory"
 
 Configured amount of memory doesn't allow processing provided stream of redo log files.
 Refer to suggestions for details about reducing xref:../user-manual/user-manual.adoc#memory-allocation[memory allocation].
 
-TIP: Increase `memory-max-mb` parameter to allow more memory to be used.
+TIP: Increase `max-mb` parameter to allow more memory to be used.
 
 ==== code 10018: "memory allocation failed: <message>"
 
@@ -158,7 +158,7 @@ Memory allocation from heap failed.
 Verify if the host contains enough memory to run the program.
 If the problem persists, please report this issue.
 
-IMPORTANT: Some memory structures are allocated adhoc and not from the pool defined with `memory-min-mb` and `memory-max-mb` parameters.
+IMPORTANT: Some memory structures are allocated adhoc and not from the pool defined with `min-mb` and `max-mb` parameters.
 For example for storing schema (copy of content of database `SYS.*` tables).
 This message is printed when such allocation fails.
 

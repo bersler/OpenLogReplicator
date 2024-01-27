@@ -289,32 +289,9 @@ Refer to details in xref:../experimental-features/experimental-features.adoc#bin
 
 * `0x20000` -- Pass JSON data values to output in binary format (experimental).
 
-
-|`memory-max-mb`
-|_number_, min: 16, default: 1024
-|The maximum amount of memory the program can allocate.
-
-Number in megabytes.
-
-_IMPORTANT:_ This number doesn't include memory allocated for sending big JSON messages to Kafka – this memory is not included here and is allocated on demand separately.
-It does also not include memory used for LOB processing.
-
-|`memory-min-mb`
-|_number_, min: 16, max: `memory-max-mb`, default: 32
-|Amount of memory allocated at startup and desired amount of allocated memory during work.
-If memory is dynamically allocated in greater amount, it will be released as soon as it is not required any more.
-See notes for `memory-max-mb` about memory for Kafka buffer.
-
-Number in megabytes.
-
-|`read-buffer-max-mb`
-|_number_, min: 1, max: `memory-max-mb`, default: min(`memory-max-mb` / 4, 32)
-|Size of memory buffer used for disk read.
-
-Number in megabytes.
-
-_IMPORTANT:_ Greater buffer size increases performance, but also increases memory usage.
-Disk buffer memory is part of the main memory (controlled by `memory-max-mb` and `memory-min-mb`).
+|`memory`
+|_element_ of <<memory,memory>>
+|Configuration of memory settings.
 
 |`redo-read-sleep-us`
 |_number_, min: 0, default: 50000
@@ -352,6 +329,46 @@ Use this option just as a workaround in case when Direct IO is not possible.
 In case there is a situation when old redo log file has been completely processed, but still no new group is created, the program would need to refresh the list of redo log groups.
 
 Number in microseconds.
+
+|===
+
+[[memory]]
+
+[width="100%",cols="a,a,50%a",options="header"]
+.Reader element
+|===
+
+|Parameter
+|Specification
+|Notes
+
+|`max-mb`
+|_number_, min: 16, default: 1024
+|The maximum amount of memory the program can allocate.
+
+Number in megabytes.
+
+_IMPORTANT:_ This number doesn't include memory allocated for sending big JSON messages to Kafka – this memory is not included here and is allocated on demand separately.
+It does also not include memory used for LOB processing.
+
+|`min-mb`
+|_number_, min: 16, max: `max-mb`, default: 32
+|Amount of memory allocated at startup and desired amount of allocated memory during work.
+If memory is dynamically allocated in greater amount, it will be released as soon as it is not required any more.
+See notes for `max-mb` about memory for Kafka buffer.
+
+Number in megabytes.
+
+|`read-buffer-max-mb`
+|_number_, min: 1, max: `max-mb`, default: min(`max-mb` / 4, 32)
+|Size of memory buffer used for disk read.
+
+Number in megabytes.
+
+_IMPORTANT:_ Greater buffer size increases performance, but also increases memory usage.
+Disk buffer memory is part of the main memory (controlled by `max-mb` and `min-mb`).
+It is important to not allocate too much memory for disk buffer, otherwise the program would not be able to allocate memory for other purposes.
+This memory is never swapped to disk, and it may happen that OpenLogReplicator would suffer when there is not enough memory for other purposes.
 
 |===
 
@@ -1206,7 +1223,7 @@ _CAUTION:_ Parameter `output` can't be used together with `append`.
 
 Number in megabytes.
 
-_CAUTION:_ Memory for this buffer is allocated independently of memory defined as `memory-min-mb`/`memory-max-mb` when a big message to Kafka is being constructed.
+_CAUTION:_ Memory for this buffer is allocated independently of memory defined as `min-mb`/`max-mb` when a big message to Kafka is being constructed.
 If the transaction is close to this value, it would be divided in many parts.
 Every time such a situation occurs, a warning is printed to the log.
 
