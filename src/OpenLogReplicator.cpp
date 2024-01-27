@@ -33,6 +33,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/typeTime.h"
 #include "common/exception/ConfigurationException.h"
 #include "common/exception/RuntimeException.h"
+#include "common/metrics/Metrics.h"
 #include "common/table/SysObj.h"
 #include "common/table/SysUser.h"
 #include "locales/Locales.h"
@@ -64,6 +65,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifdef LINK_LIBRARY_RDKAFKA
 #include "writer/WriterKafka.h"
 #endif /* LINK_LIBRARY_RDKAFKA */
+
+#ifdef LINK_LIBRARY_PROMETHEUS
+#include "common/metrics/MetricsPrometheus.h"
+#endif /* LINK_LIBRARY_PROMETHEUS */
 
 namespace OpenLogReplicator {
     OpenLogReplicator::OpenLogReplicator(const std::string& newConfigFileName, Ctx* newCtx) :
@@ -387,6 +392,48 @@ namespace OpenLogReplicator {
             // TRANSACTION BUFFER
             TransactionBuffer* transactionBuffer = new TransactionBuffer(ctx);
             transactionBuffers.push_back(transactionBuffer);
+
+            // METRICS
+            if (sourceJson.HasMember("metrics")) {
+                const rapidjson::Value& metricsJson = Ctx::getJsonFieldO(configFileName, sourceJson, "metrics");
+
+                if (metricsJson.HasMember("type")) {
+                    const char* metricsType = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, metricsJson, "type");
+                    uint64_t tagNames = METRICS_TAG_NAMES_NONE;
+
+                    if (metricsJson.HasMember("tag-names")) {
+                        const char* tagNamesStr = Ctx::getJsonFieldS(configFileName, JSON_TOPIC_LENGTH, metricsJson,
+                                                                     "tag-names");
+
+                        if (strcmp(tagNamesStr, "none") == 0)
+                            tagNames = METRICS_TAG_NAMES_NONE;
+                        else if (strcmp(tagNamesStr, "filter") == 0)
+                            tagNames = METRICS_TAG_NAMES_FILTER;
+                        else if (strcmp(tagNamesStr, "sys") == 0)
+                            tagNames = METRICS_TAG_NAMES_SYS;
+                        else if (strcmp(tagNamesStr, "all") == 0)
+                            tagNames = METRICS_TAG_NAMES_ALL;
+                        else
+                            throw ConfigurationException(30001, "bad JSON, invalid \"tag-names\" value: " + std::string(tagNamesStr) +
+                                                                ", expected: one of {\"all\", \"filter\", \"none\", \"sys\"}");
+                    }
+
+                    if (strcmp(metricsType, "prometheus") == 0) {
+#ifdef LINK_LIBRARY_PROMETHEUS
+                        const char* prometheusBind = Ctx::getJsonFieldS(configFileName, JSON_TOPIC_LENGTH, metricsJson, "bind");
+
+                        ctx->metrics = new MetricsPrometheus(tagNames, prometheusBind);
+                        ctx->metrics->initialize(ctx);
+#else
+                        throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: \"" + std::string(metricsType) +
+                                                    "\", expected: not \"prometheus\" since the code is not compiled");
+#endif /*LINK_LIBRARY_PROMETHEUS*/
+                    } else {
+                        throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: \"" + std::string(metricsType) +
+                                                            "\", expected: one of {\"prometheus\"}");
+                    }
+                }
+            }
 
             // FORMAT
             const rapidjson::Value& formatJson = Ctx::getJsonFieldO(configFileName, sourceJson, "format");

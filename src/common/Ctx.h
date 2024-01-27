@@ -119,6 +119,7 @@ extern uint64_t OLR_LOCALES;
 
 namespace OpenLogReplicator {
     class Clock;
+    class Metrics;
     class Thread;
 
     class Ctx final {
@@ -169,6 +170,7 @@ namespace OpenLogReplicator {
         static const int64_t cumDays[12];
         static const int64_t cumDaysLeap[12];
 
+        Metrics* metrics;
         Clock* clock;
         bool version12;
         std::atomic<uint64_t> version;                   // Compatibility level of redo logs

@@ -33,6 +33,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeIntX.h"
 #include "exception/DataException.h"
 #include "exception/RuntimeException.h"
+#include "metrics/Metrics.h"
 
 uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
 
@@ -82,6 +83,7 @@ namespace OpenLogReplicator {
             memoryChunksHWM(0),
             memoryChunksReusable(0),
             mainThread(pthread_self()),
+            metrics(nullptr),
             clock(nullptr),
             version12(false),
             version(0),
@@ -150,6 +152,12 @@ namespace OpenLogReplicator {
         if (memoryChunks != nullptr) {
             delete[] memoryChunks;
             memoryChunks = nullptr;
+        }
+
+        if (metrics != nullptr) {
+            metrics->shutdown();
+            delete metrics;
+            metrics = nullptr;
         }
 
         if (clock != nullptr) {
@@ -836,6 +844,11 @@ namespace OpenLogReplicator {
             ++memoryChunksFree;
         }
         memoryChunksHWM = static_cast<uint64_t>(memoryChunksMin);
+
+        if (metrics) {
+            metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
+            metrics->emitMemoryUsedTotalMb(0);
+        }
     }
 
     void Ctx::wakeAllOutOfMemory() {
@@ -881,6 +894,9 @@ namespace OpenLogReplicator {
                 }
                 ++memoryChunksFree;
                 ++memoryChunksAllocated;
+
+                if (metrics)
+                    metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
             }
 
             if (memoryChunksAllocated > memoryChunksHWM)
@@ -891,6 +907,27 @@ namespace OpenLogReplicator {
         if (reusable)
             ++memoryChunksReusable;
         ++memoryModulesAllocated[module];
+
+        if (metrics) {
+            metrics->emitMemoryUsedTotalMb(memoryChunksAllocated - memoryChunksFree);
+
+            switch (module) {
+                case MEMORY_MODULE_BUILDER:
+                    metrics->emitMemoryUsedMbBuilder(memoryModulesAllocated[module]);
+                    break;
+
+                case MEMORY_MODULE_PARSER:
+                    metrics->emitMemoryUsedMbParser(memoryModulesAllocated[module]);
+                    break;
+
+                case MEMORY_MODULE_READER:
+                    metrics->emitMemoryUsedMbReader(memoryModulesAllocated[module]);
+                    break;
+
+                case MEMORY_MODULE_TRANSACTIONS:
+                    metrics->emitMemoryUsedMbTransactions(memoryModulesAllocated[module]);
+            }
+        }
 
         return memoryChunks[memoryChunksFree];
     }
@@ -905,6 +942,8 @@ namespace OpenLogReplicator {
         if (memoryChunksFree >= memoryChunksMin) {
             free(chunk);
             --memoryChunksAllocated;
+            if (metrics)
+                metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
         } else {
             memoryChunks[memoryChunksFree] = chunk;
             ++memoryChunksFree;
@@ -915,6 +954,27 @@ namespace OpenLogReplicator {
         condOutOfMemory.notify_all();
 
         --memoryModulesAllocated[module];
+
+        if (metrics) {
+            metrics->emitMemoryUsedTotalMb(memoryChunksAllocated - memoryChunksFree);
+
+            switch (module) {
+                case MEMORY_MODULE_BUILDER:
+                    metrics->emitMemoryUsedMbBuilder(memoryModulesAllocated[module]);
+                    break;
+
+                case MEMORY_MODULE_PARSER:
+                    metrics->emitMemoryUsedMbParser(memoryModulesAllocated[module]);
+                    break;
+
+                case MEMORY_MODULE_READER:
+                    metrics->emitMemoryUsedMbReader(memoryModulesAllocated[module]);
+                    break;
+
+                case MEMORY_MODULE_TRANSACTIONS:
+                    metrics->emitMemoryUsedMbTransactions(memoryModulesAllocated[module]);
+            }
+        }
     }
 
     void Ctx::stopHard() {

@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/exception/DataException.h"
 #include "../common/exception/NetworkException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/metrics/Metrics.h"
 #include "../metadata/Metadata.h"
 #include "Writer.h"
 
@@ -115,6 +116,11 @@ namespace OpenLogReplicator {
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
+        if (ctx->metrics && msg != nullptr) {
+            ctx->metrics->emitBytesConfirmed(msg->length);
+            ctx->metrics->emitMessagesConfirmed(1);
+        }
+
         std::unique_lock<std::mutex> lck(mtx);
 
         if (msg == nullptr) {
@@ -289,8 +295,14 @@ namespace OpenLogReplicator {
                     if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
-                    else
+                    else {
+                        uint64_t msgLength = msg->length;
                         sendMessage(msg);
+                        if (ctx->metrics) {
+                            ctx->metrics->emitBytesSent(msgLength);
+                            ctx->metrics->emitMessagesSent(1);
+                        }
+                    }
                     oldLength += length8;
 
                 } else {
@@ -324,8 +336,14 @@ namespace OpenLogReplicator {
                     if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !FLAG(REDO_FLAGS_SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
-                    else
+                    else {
+                        uint64_t msgLength = msg->length;
                         sendMessage(msg);
+                        if (ctx->metrics) {
+                            ctx->metrics->emitBytesSent(msgLength);
+                            ctx->metrics->emitMessagesSent(1);
+                        }
+                    }
                     break;
                 }
             }

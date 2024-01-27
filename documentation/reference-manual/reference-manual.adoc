@@ -211,6 +211,10 @@ If the filter is changed, the schema would not update.
 Startup would fail because the set of users present in checkpoint files would not match the set of users defined in config file.
 The schema would update only when the program is reset, (i.e., the checkpoint files are removed and forced recreation).
 
+|`metrics`
+|_element_ of <<metrics,metrics>>
+|Group of options used for collecting metrics of OpenLogReplicator.
+
 |`flags` [[flags]]
 |_number_, min: 0, max: 262143, default: 0
 |A sum of various flags.
@@ -992,6 +996,45 @@ Example:
 |_list_ of _string_ elements, max length: 32
 |Debug option to dump to _stderr_ internals about certain XID.
 The format is the same as for _skip-xid_.
+
+|===
+
+[[metrics]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Metrics element
+|===
+
+|Parameter
+|Specification
+|Notes
+
+|`type`
+|_string_, max length: 128, mandatory
+|Name of the metrics module. Currently only `prometheus` is supported.
+
+|`bind`
+|_string_, max length: 128, mandatory for `prometheus`
+|Network address used to bind the metrics module for Prometheus.
+The format is `<host>:<port>`.
+Prometheus uses this address to connect to OpenLogReplicator.
+
+Example:
+`"bind": "127.0.0.1:8080"`
+
+|`tag-names`
+|_string_, max length: 128
+|Define tags for `dml_op` metrics.
+
+Possible values are:
+
+* `all` -- Provide `schema` and `table` tags for every metrics.
+This equals to `filter` + `sys` options.
+
+* `filter` -- Provide `schema` and `table` tags only for metrics for tables which are defined in `filter` section, thus are replicated.
+
+* `none` -- Default, don't provide `schema` or `table` tags.
+
+* `sys` -- Provide `schema` and `table` tags just for system tables which are tracked for OpenLogReplicator to work properly.
 
 |===
 
