@@ -1,0 +1,144 @@
+= Metrics
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.4.1
+:revdate: 2024-01-27
+:imagesdir: ./images
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This document describes topics related to collecting metrics of OpenLogReplicator.
+
+The only way of collecting metrics is to use Prometheus.
+
+== Prometheus
+
+The following metrics are published by OpenLogReplicator:
+
+[cols="1,1,2,4",options="header"]
+|===
+| Metric name
+| Type
+| Labels
+| Description
+
+| bytes_confirmed
+| counter
+|
+| Number of bytes confirmed by output.
+
+| bytes_parsed
+| counter
+|
+| Number of bytes parsed containing redo log data.
+
+| bytes_read
+| counter
+|
+| Number of bytes read from redo log files.
+
+| bytes_sent
+| counter
+|
+| Number of bytes sent to output, for example, to Kafka or network writer.
+
+| checkpoints
+| counter
+| filter={out,skip}
+| Number of checkpoint records.
+
+| checkpoint_lag
+| gauge
+|
+| Checkpoint processing lag in seconds.
+The header of every checkpoint record contains information about timestamp.
+The timestamp has just accuracy of 1 second.
+Assuming that the database clock is in sync with the clock of the machine where OpenLogReplicator is running, this metric shows the lag between the current time and the last checkpoint timestamp.
+
+_CAUTION:_ Value of 1s can be misleading.
+It is possible that the checkpoint was created just before the current second and just the second change was recorded.
+Thus, observing 1s lag does not mean necessary that the lag is 1s.
+
+| ddl_ops
+| counter
+| type={alter,create,drop,other,truncate}
+| Number of DDL operations.
+_IMPORTANT:_ DDL operations which are part of skipped transactions are not counted.
+There is no metric for those.
+
+| dml_ops
+| counter
+| type={insert,update,delete},
+filter={out,skip}
+| Number of DML operations.
+
+_IMPORTANT:_ DML operations which are part of skipped transactions are not counted.
+There is no metric for those.
+The `filter` parameter refers to DML operations for tables which are processed by OpenLogReplicator based on filter clause in config file.
+Skipped DML operations are for those tables that are not on the list and are not processed.
+
+| log_switches
+| counter
+| type={online,archived}
+| Number of redo log switches.
+
+| log_switches_lag
+| gauge
+| type={online,archived}
+| Redo log file processing lag in seconds.
+The redo log file contains timestamp about first and last operation in the file.
+This metric is difference in seconds between the time of the last operation and the time when the file was processed.
+
+| memory_allocated_mb
+| gauge
+|
+| Amount of allocated memory in MB.
+
+| memory_used_total_mb
+| gauge
+|
+| Total used memory.
+
+| memory_used_mb
+| gauge
+| type={builder,parser,reader,transactions}
+| Memory used by a particular module.
+The following modules are available:
+
+* builder -- building messages which are sent to output;
+
+* parser -- additional memory allocated by parser module;
+
+* reader -- blocks of redo log data read from redo log files;
+
+* transactions -- redo log vectors for particular transactions.
+
+| messages_confirmed
+| counter
+|
+| Number of messages confirmed by output.
+
+| messages_sent
+| counter
+|
+| Number of messages bytes sent to output, for example, to Kafka or network writer.
+
+| transactions
+| counter
+| type={commit,rollback},
+filter={out,partial,skip}
+| Number of transactions.
+
+_IMPORTANT:_ Transactions marked as `partial` should appear just at startup.
+For every such transaction, a message should appear in the log file.
+A skipped transaction is a transaction that was impossible to process since it started before OpenLogReplicator was started and part of the transaction is missing.
+
+_IMPORTANT:_ Transactions marked as `skip` should appear just at startup.
+Those are transactions that were processed again but were already confirmed by output as processed.
+
+|===
+
+=== Configuration

@@ -102,6 +102,13 @@ if (WITH_RDKAFKA)
     endif ()
 endif ()
 
+# Prometheus, only dynamic
+if (WITH_PROMETHEUS)
+    include_directories(${WITH_PROMETHEUS}/include)
+    link_directories(${WITH_PROMETHEUS}/lib)
+    add_compile_definitions(LINK_LIBRARY_PROMETHEUS)
+endif ()
+
 add_executable(OpenLogReplicator ${SOURCE_FILES})
 
 if (WITH_PROTOBUF)
@@ -127,6 +134,10 @@ if (WITH_RDKAFKA)
     endif ()
 endif ()
 
+if (WITH_PROMETHEUS)
+    target_link_libraries(OpenLogReplicator prometheus-cpp-core prometheus-cpp-pull)
+endif ()
+
 if (WITH_PROTOBUF)
     if (WITH_STATIC)
         target_link_libraries(OpenLogReplicator static_protobuf)
@@ -136,6 +147,10 @@ if (WITH_PROTOBUF)
         target_link_libraries(StreamClient protobuf)
     endif ()
     target_link_libraries(StreamClient Threads::Threads)
+
+    if (WITH_PROMETHEUS)
+        target_link_libraries(StreamClient prometheus-cpp-core prometheus-cpp-pull)
+    endif ()
 
     if (WITH_ZEROMQ)
         target_link_libraries(OpenLogReplicator zmq)

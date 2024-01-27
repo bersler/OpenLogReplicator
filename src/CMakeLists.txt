@@ -38,7 +38,8 @@ list(APPEND ListCommon
         common/expression/BoolValue.cpp
         common/expression/Expression.cpp
         common/expression/StringValue.cpp
-        common/expression/Token.cpp)
+        common/expression/Token.cpp
+        common/metrics/Metrics.cpp)
 
 list(APPEND ListReplicator
         replicator/Replicator.cpp
@@ -132,6 +133,11 @@ endif ()
 if (WITH_RDKAFKA)
     list(APPEND ListWriter
             writer/WriterKafka.cpp)
+endif ()
+
+if (WITH_PROMETHEUS)
+    list(APPEND ListCommon
+            common/metrics/MetricsPrometheus.cpp)
 endif ()
 
 if (WITH_PROTOBUF)

@@ -56,6 +56,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define HAS_KAFKA ""
 #endif /* LINK_LIBRARY_RDKAFKA */
 
+#ifdef LINK_LIBRARY_PROMETHEUS
+#define HAS_PROMETHEUS " Prometheus"
+#else
+#define HAS_PROMETHEUS ""
+#endif /* LINK_LIBRARY_PROMETHEUS */
+
 #ifdef LINK_STATIC
 #define HAS_STATIC " static"
 #else
@@ -93,7 +99,7 @@ namespace OpenLogReplicator {
                          " (C) 2018-2024 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
         mainCtx->welcome("arch: " + std::string(name.machine) + ", system: " + name.sysname + ", release: " + name.release + ", build: " +
                          OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"
-                         HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC);
+                         HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {

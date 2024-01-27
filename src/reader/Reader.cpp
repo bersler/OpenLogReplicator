@@ -29,6 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Clock.h"
 #include "../common/Ctx.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/metrics/Metrics.h"
 #include "Reader.h"
 
 namespace OpenLogReplicator {
@@ -199,6 +200,8 @@ namespace OpenLogReplicator {
         int64_t actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : REDO_PAGE_SIZE_MAX * 2);
         if (actualRead < 512)
             return REDO_ERROR_READ;
+        if (ctx->metrics)
+            ctx->metrics->emitBytesRead(actualRead);
 
         // Check file header
         if (headerBuffer[0] != 0) {
@@ -404,6 +407,8 @@ namespace OpenLogReplicator {
             ret = REDO_ERROR_READ;
             return false;
         }
+        if (ctx->metrics)
+            ctx->metrics->emitBytesRead(actualRead);
 
         if (actualRead > 0 && fileCopyDes != -1 && (ctx->redoVerifyDelayUs == 0 || group == 0)) {
             int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
@@ -551,6 +556,9 @@ namespace OpenLogReplicator {
                 ret = REDO_ERROR_READ;
                 return false;
             }
+            if (ctx->metrics)
+                ctx->metrics->emitBytesRead(actualRead);
+
             if (actualRead > 0 && fileCopyDes != -1) {
                 int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
                                               static_cast<int64_t>(bufferEnd));

@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/OracleTable.h"
 #include "../common/XmlCtx.h"
 #include "../common/exception/RedoLogException.h"
+#include "../common/metrics/Metrics.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 #include "../reader/Reader.h"
@@ -783,6 +784,12 @@ namespace OpenLogReplicator {
 
             if (transaction->begin) {
                 transaction->flush(metadata, transactionBuffer, builder, lwnScn);
+                if (ctx->metrics != nullptr) {
+                    if (transaction->rollback)
+                        ctx->metrics->emitTransactionsRollbackOut(1);
+                    else
+                        ctx->metrics->emitTransactionsCommitOut(1);
+                }
 
                 if (ctx->stopTransactions > 0 && metadata->isNewData(lwnScn, builder->lwnIdx)) {
                     --ctx->stopTransactions;
@@ -798,9 +805,21 @@ namespace OpenLogReplicator {
                     ctx->stopSoft();
                 }
             } else {
+                if (ctx->metrics != nullptr) {
+                    if (transaction->rollback)
+                        ctx->metrics->emitTransactionsRollbackPartial(1);
+                    else
+                        ctx->metrics->emitTransactionsCommitPartial(1);
+                }
                 ctx->warning(60011, "skipping transaction with no beginning: " + transaction->toString());
             }
         } else {
+            if (ctx->metrics != nullptr) {
+                if (transaction->rollback)
+                    ctx->metrics->emitTransactionsRollbackSkip(1);
+                else
+                    ctx->metrics->emitTransactionsCommitSkip(1);
+            }
             if (ctx->trace & TRACE_TRANSACTION)
                 ctx->logTrace(TRACE_TRANSACTION, "skipping transaction already committed: " + transaction->toString());
         }
@@ -1280,6 +1299,11 @@ namespace OpenLogReplicator {
                         lwnScn = ctx->readScn(redoBlock + blockOffset + 40);
                         lwnTimestamp = ctx->read32(redoBlock + blockOffset + 64);
 
+                        if (ctx->metrics) {
+                            int64_t diff = ctx->clock->getTimeT() - lwnTimestamp.toEpoch(ctx->hostTimezone);
+                            ctx->metrics->emitCheckpointLag(diff);
+                        }
+
                         if (lwnNumCnt == 0) {
                             lwnCheckpointBlock = currentBlock;
                             lwnNumMax = ctx->read16(redoBlock + blockOffset + 26);
@@ -1428,11 +1452,19 @@ namespace OpenLogReplicator {
                                 ctx->stopSoft();
                             }
                         }
+                        if (ctx->metrics)
+                            ctx->metrics->emitCheckpointsOut(1);
+                    } else {
+                        if (ctx->metrics)
+                            ctx->metrics->emitCheckpointsSkip(1);
                     }
 
                     lwnNumCnt = 0;
                     freeLwn();
                     lwnRecords = 0;
+
+                    if (ctx->metrics)
+                        ctx->metrics->emitBytesParsed((currentBlock - lwnConfirmedBlock) * reader->getBlockSize());
                     lwnConfirmedBlock = currentBlock;
                 } else if (lwnNumCnt > lwnNumMax)
                     throw RedoLogException(50055, "lwn overflow: " + std::to_string(lwnNumCnt) + "/" + std::to_string(lwnNumMax));
@@ -1452,6 +1484,11 @@ namespace OpenLogReplicator {
                         ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " with switch");
                     builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
                                                currentBlock * reader->getBlockSize(), switchRedo);
+                    if (ctx->metrics)
+                        ctx->metrics->emitCheckpointsOut(1);
+                } else {
+                    if (ctx->metrics)
+                        ctx->metrics->emitCheckpointsSkip(1);
                 }
             }
 
@@ -1460,6 +1497,8 @@ namespace OpenLogReplicator {
                     ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " at exit");
                 builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
                                            currentBlock * reader->getBlockSize(), false);
+                if (ctx->metrics)
+                    ctx->metrics->emitCheckpointsOut(1);
 
                 reader->setRet(REDO_SHUTDOWN);
             } else {
@@ -1470,6 +1509,18 @@ namespace OpenLogReplicator {
                         metadata->offset = lwnConfirmedBlock * reader->getBlockSize();
                     break;
                 }
+            }
+        }
+
+        if (ctx->metrics && reader->getNextScn() != ZERO_SCN) {
+            int64_t diff = ctx->clock->getTimeT() - reader->getNextTime().toEpoch(ctx->hostTimezone);
+
+            if (group == 0) {
+                ctx->metrics->emitLogSwitchesArchived(1);
+                ctx->metrics->emitLogSwitchesLagArchived(diff);
+            } else {
+                ctx->metrics->emitLogSwitchesOnline(1);
+                ctx->metrics->emitLogSwitchesLagOnline(diff);
             }
         }
 

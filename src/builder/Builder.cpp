@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/OracleTable.h"
 #include "../common/RedoLogRecord.h"
 #include "../common/XmlCtx.h"
+#include "../common/metrics/Metrics.h"
 #include "../common/table/SysCol.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
@@ -824,11 +825,31 @@ namespace OpenLogReplicator {
                 systemTransaction->processInsert(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                                                  ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2),
                                                  redoLogRecord1->dataOffset);
+
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+
                 processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsInsertOut(1);
+                }
+            } else {
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsInsertSkip(1);
+                }
+            }
 
             valuesRelease();
 
@@ -897,10 +918,29 @@ namespace OpenLogReplicator {
                                                  redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+
                 processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
+                if (ctx->metrics) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsDeleteOut(1);
+                }
+            } else {
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsDeleteSkip(1);
+                }
+            }
 
             valuesRelease();
 
@@ -1486,8 +1526,27 @@ namespace OpenLogReplicator {
                 systemTransaction->processUpdate(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'u', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'u', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+
                 processUpdate(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsUpdateOut(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsUpdateOut(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsUpdateOut(1);
+                }
+            } else {
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsUpdateSkip(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsUpdateSkip(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsUpdateSkip(1);
+                }
+            }
 
         } else if (type == TRANSACTION_INSERT) {
             if (table != nullptr && !compressedAfter) {
@@ -1541,8 +1600,27 @@ namespace OpenLogReplicator {
                 systemTransaction->processInsert(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+
                 processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsInsertOut(1);
+                }
+            } else {
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsInsertSkip(1);
+                }
+            }
 
         } else if (type == TRANSACTION_DELETE) {
             if (table != nullptr && !compressedBefore) {
@@ -1596,8 +1674,27 @@ namespace OpenLogReplicator {
                 systemTransaction->processDelete(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
+                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+
                 processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsDeleteOut(1);
+                }
+            } else {
+                if (ctx->metrics != nullptr) {
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                        ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
+                    else
+                        ctx->metrics->emitDmlOpsDeleteSkip(1);
+                }
+            }
         }
 
         valuesRelease();
@@ -1651,6 +1748,41 @@ namespace OpenLogReplicator {
         // Track DDL
         if (FLAG(REDO_FLAGS_SHOW_DDL))
             processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, sqlText, sqlLength - 1);
+
+        switch (type) {
+            case 1:     // create table
+            case 4:     // create cluster
+            case 9:     // create index
+                if (ctx->metrics != nullptr)
+                    ctx->metrics->emitDdlOpsCreate(1);
+                break;
+
+            case 85:    // truncate
+                if (ctx->metrics != nullptr)
+                    ctx->metrics->emitDdlOpsTruncate(1);
+                break;
+
+            case 8:     // drop cluster
+            case 12:    // drop table
+                if (ctx->metrics != nullptr)
+                    ctx->metrics->emitDdlOpsDrop(1);
+                break;
+
+            case 15:    // alter table
+            case 11:    // alter index
+                if (ctx->metrics != nullptr)
+                    ctx->metrics->emitDdlOpsAlter(1);
+                break;
+
+            case 198:   // purge
+                if (ctx->metrics != nullptr)
+                    ctx->metrics->emitDdlOpsPurge(1);
+                break;
+
+            default:
+                if (ctx->metrics != nullptr)
+                    ctx->metrics->emitDdlOpsOther(1);
+        }
     }
 
     // Parse binary XML format
