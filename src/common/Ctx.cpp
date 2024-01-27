@@ -27,6 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <string>
 #include <unistd.h>
 
+#include "ClockHW.h"
 #include "Ctx.h"
 #include "Thread.h"
 #include "typeIntX.h"
@@ -64,6 +65,9 @@ namespace OpenLogReplicator {
 
     const std::string Ctx::memoryModules[MEMORY_MODULES_NUM] = {"builder", "parser", "reader", "transaction"};
 
+    const int64_t Ctx::cumDays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+    const int64_t Ctx::cumDaysLeap[12] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
+
     typeIntX typeIntX::BASE10[TYPE_INTX_DIGITS][10];
 
     Ctx::Ctx() :
@@ -78,6 +82,7 @@ namespace OpenLogReplicator {
             memoryChunksHWM(0),
             memoryChunksReusable(0),
             mainThread(pthread_self()),
+            clock(nullptr),
             version12(false),
             version(0),
             columnLimit(COLUMN_LIMIT),
@@ -126,6 +131,11 @@ namespace OpenLogReplicator {
         memoryModulesAllocated[1] = 0;
         memoryModulesAllocated[2] = 0;
         memoryModulesAllocated[3] = 0;
+        clock = new ClockHW();
+        tzset();
+        dbTimezone = BAD_TIMEZONE;
+        logTimezone = -timezone;
+        hostTimezone = -timezone;
     }
 
     Ctx::~Ctx() {
@@ -140,6 +150,11 @@ namespace OpenLogReplicator {
         if (memoryChunks != nullptr) {
             delete[] memoryChunks;
             memoryChunks = nullptr;
+        }
+
+        if (clock != nullptr) {
+            delete clock;
+            clock = nullptr;
         }
     }
 
@@ -562,6 +577,246 @@ namespace OpenLogReplicator {
         return ret.GetString();
     }
 
+    bool Ctx::parseTimezone(const char* str, int64_t& out) {
+        uint64_t len = strlen(str);
+
+        if (len == 5) {
+            if (str[1] >= '0' && str[1] <= '9' &&
+                str[2] == ':' &&
+                str[3] >= '0' && str[3] <= '9' &&
+                str[4] >= '0' && str[4] <= '9') {
+                out = -(str[1] - '0') * 3600 + (str[3] - '0') * 60 + (str[4] - '0');
+            } else
+                return false;
+        } else if (len == 6) {
+            if (str[1] >= '0' && str[1] <= '9' &&
+                str[2] >= '0' && str[2] <= '9' &&
+                str[3] == ':' &&
+                str[4] >= '0' && str[4] <= '9' &&
+                str[5] >= '0' && str[5] <= '9') {
+                out = -(str[1] - '0') * 36000 + (str[2] - '0') * 3600 + (str[4] - '0') * 60 + (str[5] - '0');
+            } else
+                return false;
+        } else
+            return false;
+
+        if (str[0] == '-')
+            out = -out;
+        else if (str[0] != '+')
+            return false;
+
+        return true;
+    }
+
+    std::string Ctx::timezoneToString(int64_t tz) {
+        char result[7];
+
+        if (tz < 0) {
+            result[0] = '-';
+            tz = -tz;
+        } else
+            result[0] = '+';
+
+        tz /= 60;
+
+        result[6] = 0;
+        result[5] = static_cast<char>('0' + (tz % 10));
+        tz /= 10;
+        result[4] = static_cast<char>('0' + (tz % 6));
+        tz /= 6;
+        result[3] = ':';
+        result[2] = static_cast<char>('0' + (tz % 10));
+        tz /= 10;
+        result[1] = static_cast<char>('0' + (tz % 10));
+
+        return result;
+    }
+
+    time_t Ctx::valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) {
+        time_t result;
+
+        if (year > 0) {
+            result = yearToDays(year, month) + cumDays[month % 12] + day;
+            result *= 24;
+            result += hour;
+            result *= 60;
+            result += minute;
+            result *= 60;
+            result += second;
+            return result - UNIX_AD1970_01_01 - tz; // adjust to 1970 epoch, 719527 days
+        } else {
+            // treat dates BC with the exact rules as AD for leap years
+            result = -yearToDaysBC(-year, month) + cumDays[month % 12] + day;
+            result *= 24;
+            result += hour;
+            result *= 60;
+            result += minute;
+            result *= 60;
+            result += second;
+            return result - UNIX_BC1970_01_01 - tz; // adjust to 1970 epoch, 718798 days (year 0 does not exist)
+        }
+    }
+
+    uint64_t Ctx::epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) {
+        // (-)YYYY-MM-DD hh:mm:ss or (-)YYYY-MM-DDThh:mm:ssZ
+
+        if (timestamp < UNIX_BC4712_01_01 || timestamp > UNIX_AD9999_12_31)
+            throw RuntimeException(10069, "invalid timestamp value: " + std::to_string(timestamp));
+
+        timestamp += UNIX_AD1970_01_01;
+        if (timestamp >= 365 * 60 * 60 * 24) {
+            // AD
+            int64_t second = (timestamp % 60);
+            timestamp /= 60;
+            int64_t minute = (timestamp % 60);
+            timestamp /= 60;
+            int64_t hour = (timestamp % 24);
+            timestamp /= 24;
+
+            int64_t year = timestamp / 365 + 1;
+            int64_t day = yearToDays(year, 0);
+
+            while (day > timestamp) {
+                --year;
+                day = yearToDays(year, 0);
+            }
+            day = timestamp - day;
+
+            int64_t month = day / 27;
+            if (month > 11) month = 11;
+
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0)) {
+                // leap year
+                while (cumDaysLeap[month] > day)
+                    --month;
+                day -= cumDaysLeap[month];
+            } else {
+                while (cumDays[month] > day)
+                    --month;
+                day -= cumDays[month];
+            }
+            ++month;
+            ++day;
+
+            buffer[3] = '0' + static_cast<char>(year % 10);
+            year /= 10;
+            buffer[2] = '0' + static_cast<char>(year % 10);
+            year /= 10;
+            buffer[1] = '0' + static_cast<char>(year % 10);
+            year /= 10;
+            buffer[0] = '0' + static_cast<char>(year);
+            buffer[4] = '-';
+            buffer[6] = '0' + static_cast<char>(month % 10);
+            month /= 10;
+            buffer[5] = '0' + static_cast<char>(month);
+            buffer[7] = '-';
+            buffer[9] = '0' + static_cast<char>(day % 10);
+            day /= 10;
+            buffer[8] = '0' + static_cast<char>(day);
+            if (addT)
+                buffer[10] = 'T';
+            else
+                buffer[10] = ' ';
+            buffer[12] = '0' + static_cast<char>(hour % 10);
+            hour /= 10;
+            buffer[11] = '0' + static_cast<char>(hour);
+            buffer[13] = ':';
+            buffer[15] = '0' + static_cast<char>(minute % 10);
+            minute /= 10;
+            buffer[14] = '0' + static_cast<char>(minute);
+            buffer[16] = ':';
+            buffer[18] = '0' + static_cast<char>(second % 10);
+            second /= 10;
+            buffer[17] = '0' + static_cast<char>(second);
+            if (addZ) {
+                buffer[19] = 'Z';
+                buffer[20] = 0;
+                return 20;
+            } else {
+                buffer[19] = 0;
+                return 19;
+            }
+        } else {
+            // BC
+            timestamp = 365 * 24 * 60 * 60 - timestamp;
+
+            int64_t second = (timestamp % 60);
+            timestamp /= 60;
+            int64_t minute = (timestamp % 60);
+            timestamp /= 60;
+            int64_t hour = (timestamp % 24);
+            timestamp /= 24;
+
+            int64_t year = timestamp / 366 - 1;
+            if (year < 0) year = 0;
+            int64_t day = yearToDaysBC(year, 0);
+
+            while (day < timestamp) {
+                ++year;
+                day = yearToDaysBC(year, 0);
+            }
+            if (year == 3013 || year == 3009) {
+                std::cerr << "year: " << year << ", day: " << day << ", timestamp: " << timestamp << std::endl;
+            }
+            day -= timestamp;
+
+            int64_t month = day / 27;
+            if (month > 11) month = 11;
+
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0)) {
+                // leap year
+                while (cumDaysLeap[month] > day)
+                    --month;
+                day -= cumDaysLeap[month];
+            } else {
+                while (cumDays[month] > day)
+                    --month;
+                day -= cumDays[month];
+            }
+            ++month;
+            ++day;
+            buffer[0] = '-';
+            buffer[4] = '0' + static_cast<char>(year % 10);
+            year /= 10;
+            buffer[3] = '0' + static_cast<char>(year % 10);
+            year /= 10;
+            buffer[2] = '0' + static_cast<char>(year % 10);
+            year /= 10;
+            buffer[1] = '0' + static_cast<char>(year);
+            buffer[5] = '-';
+            buffer[7] = '0' + static_cast<char>(month % 10);
+            month /= 10;
+            buffer[6] = '0' + static_cast<char>(month);
+            buffer[8] = '-';
+            buffer[10] = '0' + static_cast<char>(day % 10);
+            day /= 10;
+            buffer[9] = '0' + static_cast<char>(day);
+            if (addT)
+                buffer[11] = 'T';
+            else
+                buffer[11] = ' ';
+            buffer[13] = '0' + static_cast<char>(hour % 10);
+            hour /= 10;
+            buffer[12] = '0' + static_cast<char>(hour);
+            buffer[14] = ':';
+            buffer[16] = '0' + static_cast<char>(minute % 10);
+            minute /= 10;
+            buffer[15] = '0' + static_cast<char>(minute);
+            buffer[17] = ':';
+            buffer[19] = '0' + static_cast<char>(second % 10);
+            second /= 10;
+            buffer[18] = '0' + static_cast<char>(second);
+            if (addZ) {
+                buffer[20] = 'Z';
+                buffer[21] = 0;
+                return 21;
+            } else {
+                buffer[20] = 0;
+                return 20;
+            }
+        };
+    }
+
     void Ctx::initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax) {
         memoryMinMb = newMemoryMinMb;
         memoryMaxMb = newMemoryMaxMb;
@@ -849,11 +1104,9 @@ namespace OpenLogReplicator {
         int code = 0;
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
-            time_t now = time(nullptr);
-            tm nowTm = *localtime(&now);
-            char str[50];
-            strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            char timestamp[30];
+            epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
+            s << timestamp << " INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
             std::cerr << s.str();
         } else {
             std::ostringstream s;
@@ -868,11 +1121,9 @@ namespace OpenLogReplicator {
 
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
-            time_t now = time(nullptr);
-            tm nowTm = *localtime(&now);
-            char str[50];
-            strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " HINT  " << message << std::endl;
+            char timestamp[30];
+            epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
+            s << timestamp << " HINT  " << message << std::endl;
             std::cerr << s.str();
         } else {
             std::ostringstream s;
@@ -887,11 +1138,9 @@ namespace OpenLogReplicator {
 
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
-            time_t now = time(nullptr);
-            tm nowTm = *localtime(&now);
-            char str[50];
-            strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " ERROR " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            char timestamp[30];
+            epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
+            s << timestamp << " ERROR " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
             std::cerr << s.str();
         } else {
             std::ostringstream s;
@@ -906,11 +1155,9 @@ namespace OpenLogReplicator {
 
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
-            time_t now = time(nullptr);
-            tm nowTm = *localtime(&now);
-            char str[50];
-            strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " WARN  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            char timestamp[30];
+            epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
+            s << timestamp << " WARN  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
             std::cerr << s.str();
         } else {
             std::ostringstream s;
@@ -925,11 +1172,9 @@ namespace OpenLogReplicator {
 
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
-            time_t now = time(nullptr);
-            tm nowTm = *localtime(&now);
-            char str[50];
-            strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            char timestamp[30];
+            epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
+            s << timestamp << " INFO  " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
             std::cerr << s.str();
         } else {
             std::ostringstream s;
@@ -944,11 +1189,9 @@ namespace OpenLogReplicator {
 
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
-            time_t now = time(nullptr);
-            tm nowTm = *localtime(&now);
-            char str[50];
-            strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " DEBUG " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
+            char timestamp[30];
+            epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
+            s << timestamp << " DEBUG " << std::setw(5) << std::setfill('0') << std::dec << code << " " << message << std::endl;
             std::cerr << s.str();
         } else {
             std::ostringstream s;
@@ -1038,11 +1281,9 @@ namespace OpenLogReplicator {
 
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
-            time_t now = time(nullptr);
-            tm nowTm = *localtime(&now);
-            char str[50];
-            strftime(str, sizeof(str), "%F %T", &nowTm);
-            s << str << " TRACE " << code << " " << message << '\n';
+            char timestamp[30];
+            epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
+            s << timestamp << " TRACE " << code << " " << message << '\n';
             std::cerr << s.str();
         } else {
             std::ostringstream s;

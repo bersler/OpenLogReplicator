@@ -17,6 +17,7 @@
 # <http://www.gnu.org/licenses/>.
 
 list(APPEND ListCommon
+        common/ClockHW.cpp
         common/Ctx.cpp
         common/LobCtx.cpp
         common/LobData.cpp
@@ -27,7 +28,6 @@ list(APPEND ListCommon
         common/OracleTable.cpp
         common/RedoLogRecord.cpp
         common/Thread.cpp
-        common/Timer.cpp
         common/XmlCtx.cpp
         common/exception/BootException.cpp
         common/exception/ConfigurationException.cpp

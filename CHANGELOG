@@ -10,6 +10,7 @@
 - fix: don't require flag 64 to use experimental XMLTYPE support
 - fix: minor bugs related to timestamp formatting
 - minor documentation fixes
+- enhancement: refactor timestamps, add more output options
 
 1.4.0
 - fix: date and timestamp with year before 1900 or after 2262 produce incorrect values

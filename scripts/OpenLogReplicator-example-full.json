@@ -16,6 +16,9 @@
         "user": "user1",
         "password": "Password1",
         "server": "//host:1521/SERVICE",
+        "host-timezone": "+00:00",
+        "log-timezone": "+00:00",
+        "db-timezone": "+00:00",
         "disable-checks": 0
       },
       "format": {

@@ -28,8 +28,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "builder/BuilderJson.h"
 #include "common/Ctx.h"
-#include "common/types.h"
 #include "common/Thread.h"
+#include "common/types.h"
+#include "common/typeTime.h"
 #include "common/exception/ConfigurationException.h"
 #include "common/exception/RuntimeException.h"
 #include "common/table/SysObj.h"
@@ -454,17 +455,17 @@ namespace OpenLogReplicator {
             uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX_NANO;
             if (formatJson.HasMember("timestamp")) {
                 timestampFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp");
-                if (timestampFormat > 8)
+                if (timestampFormat > 15)
                     throw ConfigurationException(30001, "bad JSON, invalid \"timestamp\" value: " + std::to_string(timestampFormat) +
-                                                        ", expected: one of {0 .. 8}");
+                                                        ", expected: one of {0 .. 15}");
             }
 
             uint64_t timestampTzFormat = TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING;
             if (formatJson.HasMember("timestamp-tz")) {
                 timestampTzFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-tz");
-                if (timestampTzFormat > 4)
+                if (timestampTzFormat > 11)
                     throw ConfigurationException(30001, "bad JSON, invalid \"timestamp-tz\" value: " + std::to_string(timestampTzFormat) +
-                                                        ", expected: one of {0 .. 4}");
+                                                        ", expected: one of {0 .. 11}");
             }
 
             uint64_t timestampAll = TIMESTAMP_JUST_BEGIN;
@@ -592,6 +593,28 @@ namespace OpenLogReplicator {
 
             if (readerJson.HasMember("redo-copy-path"))
                 ctx->redoCopyPath = Ctx::getJsonFieldS(configFileName, MAX_PATH_LENGTH, readerJson, "redo-copy-path");
+
+            if (readerJson.HasMember("db-timezone")) {
+                const char* dbTimezone = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, readerJson, "db-timezone");
+                if (!ctx->parseTimezone(dbTimezone, ctx->dbTimezone))
+                    throw ConfigurationException(30001, "bad JSON, invalid \"db-timezone\" value: " + std::string(dbTimezone) +
+                                                        ", expected value: {\"+/-HH:MM\"}");
+            }
+
+            if (readerJson.HasMember("host-timezone")) {
+                const char* hostTimezone = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, readerJson, "host-timezone");
+                if (!ctx->parseTimezone(hostTimezone, ctx->hostTimezone))
+                    throw ConfigurationException(30001, "bad JSON, invalid \"host-timezone\" value: " + std::string(hostTimezone) +
+                                                        ", expected value: {\"+/-HH:MM\"}");
+            }
+
+            if (readerJson.HasMember("log-timezone")) {
+                const char* logTimezone = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, readerJson, "log-timezone");
+                if (!ctx->parseTimezone(logTimezone, ctx->logTimezone))
+                    throw ConfigurationException(30001, "bad JSON, invalid \"log-timezone\" value: " + std::string(logTimezone) +
+                                                        ", expected value: {\"+/-HH:MM\"}");
+            }
+
 
             if (strcmp(readerType, "online") == 0) {
 #ifdef LINK_LIBRARY_OCI

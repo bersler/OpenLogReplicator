@@ -26,8 +26,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "../common/Clock.h"
 #include "../common/Ctx.h"
-#include "../common/Timer.h"
 #include "ReaderFilesystem.h"
 
 namespace OpenLogReplicator {
@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
     int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
         if (ctx->trace & TRACE_PERFORMANCE)
-            startTime = Timer::getTimeUt();
+            startTime = ctx->clock->getTimeUt();
         int64_t bytes = 0;
         uint64_t tries = ctx->archReadTries;
 
@@ -121,7 +121,7 @@ namespace OpenLogReplicator {
         if (ctx->trace & TRACE_PERFORMANCE) {
             if (bytes > 0)
                 sumRead += bytes;
-            sumTime += Timer::getTimeUt() - startTime;
+            sumTime += ctx->clock->getTimeUt() - startTime;
         }
 
         return bytes;

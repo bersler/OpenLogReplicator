@@ -18,10 +18,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../builder/Builder.h"
+#include "../common/Clock.h"
 #include "../common/LobCtx.h"
 #include "../common/OracleLob.h"
 #include "../common/OracleTable.h"
-#include "../common/Timer.h"
 #include "../common/XmlCtx.h"
 #include "../common/exception/RedoLogException.h"
 #include "../metadata/Metadata.h"
@@ -549,10 +549,6 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionDdl(RedoLogRecord* redoLogRecord1) {
-        // Track DDL
-        if (!FLAG(REDO_FLAGS_SHOW_DDL))
-            return;
-
         // Skip list
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
@@ -1249,7 +1245,7 @@ namespace OpenLogReplicator {
             metadata->setActivation(reader->getActivation());
         }
 
-        time_ut cStart = Timer::getTimeUt();
+        time_ut cStart = ctx->clock->getTimeUt();
         reader->setStatusRead();
         LwnMember* lwnMember;
         uint64_t currentBlock = lwnConfirmedBlock;
@@ -1411,7 +1407,8 @@ namespace OpenLogReplicator {
                     if (lwnScn > metadata->firstDataScn) {
                         if (ctx->trace & TRACE_CHECKPOINT)
                             ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn));
-                        builder->processCheckpoint(lwnScn, sequence, lwnTimestamp, currentBlock * reader->getBlockSize(), switchRedo);
+                        builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
+                                                   currentBlock * reader->getBlockSize(), switchRedo);
 
                         typeSeq minSequence = ZERO_SEQ;
                         uint64_t minOffset = -1;
@@ -1448,19 +1445,22 @@ namespace OpenLogReplicator {
             }
 
             // Processing finished
-            if (!switchRedo && lwnScn > 0 && lwnScn > metadata->firstDataScn &&
-                confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == REDO_FINISHED) {
-                switchRedo = true;
-                if (ctx->trace & TRACE_CHECKPOINT)
-                    ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " with switch");
-                builder->processCheckpoint(lwnScn, sequence, lwnTimestamp, currentBlock * reader->getBlockSize(), switchRedo);
-            } else if (ctx->softShutdown) {
-                if (ctx->trace & TRACE_CHECKPOINT)
-                    ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " at exit");
-                builder->processCheckpoint(lwnScn, sequence, lwnTimestamp, currentBlock * reader->getBlockSize(), false);
+            if (!switchRedo && lwnScn > 0 && confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == REDO_FINISHED) {
+                if (lwnScn > metadata->firstDataScn) {
+                    switchRedo = true;
+                    if (ctx->trace & TRACE_CHECKPOINT)
+                        ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " with switch");
+                    builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
+                                               currentBlock * reader->getBlockSize(), switchRedo);
+                }
             }
 
             if (ctx->softShutdown) {
+                if (ctx->trace & TRACE_CHECKPOINT)
+                    ctx->logTrace(TRACE_CHECKPOINT, "on: " + std::to_string(lwnScn) + " at exit");
+                builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
+                                           currentBlock * reader->getBlockSize(), false);
+
                 reader->setRet(REDO_SHUTDOWN);
             } else {
                 if (reader->checkFinished(confirmedBufferStart)) {
@@ -1475,7 +1475,7 @@ namespace OpenLogReplicator {
 
         // Print performance information
         if ((ctx->trace & TRACE_PERFORMANCE) != 0) {
-            time_ut cEnd = Timer::getTimeUt();
+            time_ut cEnd = ctx->clock->getTimeUt();
             double suppLogPercent = 0.0;
             if (currentBlock != startBlock)
                 suppLogPercent = 100.0 * ctx->suppLogSize / ((currentBlock - startBlock) * reader->getBlockSize());

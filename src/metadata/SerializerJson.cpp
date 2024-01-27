@@ -76,6 +76,8 @@ namespace OpenLogReplicator {
         ss << R"(","con-id":)" << std::dec << metadata->conId <<
            R"(,"con-name":")";
         Ctx::writeEscapeValue(ss, metadata->conName);
+        ss << R"(","db-timezone":")";
+        Ctx::writeEscapeValue(ss, metadata->dbTimezoneStr);
         ss << R"(","db-recovery-file-dest":")";
         Ctx::writeEscapeValue(ss, metadata->dbRecoveryFileDest);
         ss << R"(",)" << R"("db-block-checksum":")";
@@ -558,6 +560,17 @@ namespace OpenLogReplicator {
                         metadata->context = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "context");
                         metadata->conId = Ctx::getJsonFieldI16(fileName, document, "con-id");
                         metadata->conName = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "con-name");
+                        if (document.HasMember("db-timezone"))
+                            metadata->dbTimezoneStr = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "db-timezone");
+                        else
+                            metadata->dbTimezoneStr = "+00:00";
+                        if (metadata->ctx->dbTimezone != BAD_TIMEZONE) {
+                            metadata->dbTimezone = metadata->ctx->dbTimezone;
+                        } else {
+                            if (!metadata->ctx->parseTimezone(metadata->dbTimezoneStr.c_str(), metadata->dbTimezone))
+                                throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
+                                                           " - parse error of field \"db-timezone\", invalid value: " + metadata->dbTimezoneStr);
+                        }
                         metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
                         metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-block-checksum");
                         if (!metadata->logArchiveFormatCustom)

@@ -72,6 +72,7 @@ namespace OpenLogReplicator {
             ",  VER.BANNER"
             ",  SYS_CONTEXT('USERENV','DB_NAME')"
             ",  CURRENT_SCN"
+            ",  DBTIMEZONE"
             " FROM"
             "   SYS.V_$DATABASE D"
             " JOIN"
@@ -583,6 +584,8 @@ namespace OpenLogReplicator {
             char context[81];
             stmt.defineString(7, context, sizeof(context));
             stmt.defineUInt64(8, currentScn);
+            char dbTimezoneStr[81];
+            stmt.defineString(9, dbTimezoneStr, sizeof(dbTimezoneStr));
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
@@ -605,6 +608,13 @@ namespace OpenLogReplicator {
                 metadata->suppLogDbPrimary = suppLogDbPrimary;
                 metadata->suppLogDbAll = suppLogDbAll;
                 metadata->context = context;
+                metadata->dbTimezoneStr = dbTimezoneStr;
+                if (metadata->ctx->dbTimezone != BAD_TIMEZONE) {
+                    metadata->dbTimezone = metadata->ctx->dbTimezone;
+                } else {
+                    if (!ctx->parseTimezone(dbTimezoneStr, metadata->dbTimezone))
+                        throw RuntimeException(10068, "invalid DBTIMEZONE value: " + std::string(dbTimezoneStr));
+                }
 
                 // 12+
                 metadata->conId = 0;

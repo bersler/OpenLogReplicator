@@ -66,6 +66,7 @@ namespace OpenLogReplicator {
             allowedCheckpoints(false),
             bootFailsafe(false),
             conId(newConId),
+            dbTimezone(0),
             logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
@@ -366,7 +367,7 @@ namespace OpenLogReplicator {
                 return;
 
             if (lastSequence == sequence && !force &&
-                (checkpointTime.getVal() - lastCheckpointTime.getVal() < ctx->checkpointIntervalS) &&
+                (static_cast<uint64_t>(checkpointTime.toEpoch(ctx->hostTimezone) - lastCheckpointTime.toEpoch(ctx->hostTimezone)) < ctx->checkpointIntervalS) &&
                 (checkpointBytes - lastCheckpointBytes) / 1024 / 1024 < ctx->checkpointIntervalMb)
                 return;
 
