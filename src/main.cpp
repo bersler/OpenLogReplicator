@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "OpenLogReplicator.h"
+#include "common/ClockHW.h"
 #include "common/Ctx.h"
 #include "common/Thread.h"
 #include "common/exception/ConfigurationException.h"
@@ -89,13 +90,10 @@ namespace OpenLogReplicator {
 
         mainCtx->welcome("OpenLogReplicator v" + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
                          std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
-                         " (C) 2018-2024 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information, arch: " + name.machine +
-                         ", system: " + name.sysname + ", release: " + name.release + ", build: " + OpenLogReplicator_CMAKE_BUILD_TYPE + ", modules:"
-                                                                                                                                         HAS_KAFKA
-                                                                                                                                         HAS_OCI
-                                                                                                                                         HAS_PROTOBUF
-                                                                                                                                         HAS_ZEROMQ
-                                                                                                                                         HAS_STATIC);
+                         " (C) 2018-2024 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
+        mainCtx->welcome("arch: " + std::string(name.machine) + ", system: " + name.sysname + ", release: " + name.release + ", build: " +
+                         OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"
+                         HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {
@@ -153,6 +151,11 @@ int main(int argc, char** argv) {
     signal(SIGPIPE, OpenLogReplicator::signalHandler);
     signal(SIGSEGV, OpenLogReplicator::signalCrash);
     signal(SIGUSR1, OpenLogReplicator::signalDump);
+
+    const char* logTimezone = std::getenv("OLR_LOG_TIMEZONE");
+    if (logTimezone != nullptr)
+        if (!ctx.parseTimezone(logTimezone, ctx.logTimezone))
+            ctx.warning(10070, "invalid environment variable OLR_LOG_TIMEZONE value: " + std::string(logTimezone));
 
     std::string olrLocales;
     const char* olrLocalesStr = getenv("OLR_LOCALES");

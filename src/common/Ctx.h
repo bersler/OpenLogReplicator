@@ -107,11 +107,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define MEMORY_MODULE_TRANSACTIONS              3
 #define MEMORY_MODULES_NUM                      4
 
+#define UNIX_AD1970_01_01                       62167132800L
+#define UNIX_BC1970_01_01                       (62167132800L-365*24*60*60)
+#define UNIX_BC4712_01_01                       (-210831897600L)
+#define UNIX_AD9999_12_31                       253402300799L
+#define BAD_TIMEZONE                            0x7FFFFFFFFFFFFFFF
+
 #ifndef GLOBALS
 extern uint64_t OLR_LOCALES;
 #endif
 
 namespace OpenLogReplicator {
+    class Clock;
     class Thread;
 
     class Ctx final {
@@ -136,6 +143,22 @@ namespace OpenLogReplicator {
         std::set<Thread*> threads;
         pthread_t mainThread;
 
+        int64_t yearToDays(int64_t year, int64_t month) {
+            int64_t result = year * 365 + year / 4 - year / 100 + year / 400;
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month < 2)
+                --result;
+
+            return result;
+        }
+
+        int64_t yearToDaysBC(int64_t year, int64_t month) {
+            int64_t result = (year * 365) + (year / 4) - (year / 100) + (year / 400);
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month >= 2)
+                --result;
+
+            return result;
+        }
+
     public:
         static const char map10[11];
         static const char map16[17];
@@ -143,7 +166,10 @@ namespace OpenLogReplicator {
         static const char map64[65];
         static const char map64R[256];
         static const std::string memoryModules[MEMORY_MODULES_NUM];
+        static const int64_t cumDays[12];
+        static const int64_t cumDaysLeap[12];
 
+        Clock* clock;
         bool version12;
         std::atomic<uint64_t> version;                   // Compatibility level of redo logs
         uint64_t columnLimit;
@@ -151,6 +177,9 @@ namespace OpenLogReplicator {
         std::atomic<uint64_t> dumpRedoLog;
         std::atomic<uint64_t> dumpRawData;
         std::ofstream dumpStream;
+        int64_t dbTimezone;
+        int64_t hostTimezone;
+        int64_t logTimezone;
 
         void setBigEndian();
         [[nodiscard]] bool isBigEndian() const;
@@ -251,6 +280,11 @@ namespace OpenLogReplicator {
         [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
         [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field,
                                                        uint64_t num);
+
+        bool parseTimezone(const char* str, int64_t& out);
+        std::string timezoneToString(int64_t tz);
+        time_t valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz);
+        uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ);
 
         void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
         void wakeAllOutOfMemory();

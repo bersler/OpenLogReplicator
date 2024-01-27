@@ -26,8 +26,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <thread>
 #include <unistd.h>
 
+#include "../common/Clock.h"
 #include "../common/Ctx.h"
-#include "../common/Timer.h"
 #include "../common/exception/RuntimeException.h"
 #include "Reader.h"
 
@@ -469,7 +469,7 @@ namespace OpenLogReplicator {
         }
 
         lastRead = goodBlocks * blockSize;
-        lastReadTime = Timer::getTimeUt();
+        lastReadTime = ctx->clock->getTimeUt();
         if (goodBlocks > 0) {
             if (ctx->redoVerifyDelayUs > 0 && group != 0) {
                 bufferScan += goodBlocks * blockSize;
@@ -667,7 +667,7 @@ namespace OpenLogReplicator {
                 reachedZero = false;
 
                 while (!ctx->softShutdown && status == READER_STATUS_READ) {
-                    loopTime = Timer::getTimeUt();
+                    loopTime = ctx->clock->getTimeUt();
                     readBlocks = false;
                     readTime = 0;
 
@@ -721,7 +721,7 @@ namespace OpenLogReplicator {
                         if (readTime == 0) {
                             usleep(ctx->redoReadSleepUs);
                         } else {
-                            time_ut nowTime = Timer::getTimeUt();
+                            time_ut nowTime = ctx->clock->getTimeUt();
                             if (readTime > nowTime) {
                                 if (static_cast<time_ut>(ctx->redoReadSleepUs) < readTime - nowTime)
                                     usleep(ctx->redoReadSleepUs);

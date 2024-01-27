@@ -85,6 +85,8 @@ namespace OpenLogReplicator {
         typeConId conId;
         std::string conName;
         std::string context;
+        std::string dbTimezoneStr;
+        int64_t dbTimezone;
         std::string dbRecoveryFileDest;
         std::string logArchiveDest;
         std::string dbBlockChecksum;

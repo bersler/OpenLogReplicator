@@ -25,7 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/Thread.h"
 #include "../common/types.h"
-#include "../common/typeTime.h"
 #include "../common/typeXid.h"
 
 #ifndef CHECKPOINT_H_

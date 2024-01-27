@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <cstring>
-#include <ctime>
 #include <iomanip>
 #include <ostream>
 
@@ -48,68 +46,28 @@ namespace OpenLogReplicator {
             return *this;
         }
 
-        [[nodiscard]] time_t toTime() const {
-            struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
-            memset(reinterpret_cast<void*>(&epochTime), 0, sizeof(epochTime));
+        [[nodiscard]] time_t toEpoch(int64_t hostTimezone) const {
             uint64_t rest = data;
-            epochTime.tm_sec = static_cast<int>(rest % 60);
+            uint64_t sec = rest % 60;
             rest /= 60;
-            epochTime.tm_min = static_cast<int>(rest % 60);
+            uint64_t min = rest % 60;
             rest /= 60;
-            epochTime.tm_hour = static_cast<int>(rest % 24);
+            uint64_t hour = rest % 24;
             rest /= 24;
-            epochTime.tm_mday = static_cast<int>((rest % 31) + 1);
+            uint64_t day = (rest % 31) + 1;
             rest /= 31;
-            epochTime.tm_mon = static_cast<int>(rest % 12);
+            uint64_t mon = rest % 12 + 1;
             rest /= 12;
-            epochTime.tm_year = static_cast<int>(rest + 88);
-            return mktime(&epochTime) - timezone;
-        }
+            uint64_t year = rest + 1988;
 
-        void toIso8601(char* buffer) const {
-            uint64_t rest = data;
-            uint64_t ss = rest % 60;
-            rest /= 60;
-            uint64_t mi = rest % 60;
-            rest /= 60;
-            uint64_t hh = rest % 24;
-            rest /= 24;
-            uint64_t dd = (rest % 31) + 1;
-            rest /= 31;
-            uint64_t mm = (rest % 12) + 1;
-            rest /= 12;
-            uint64_t yy = rest + 1988;
-            buffer[3] = '0' + static_cast<char>(yy % 10);
-            yy /= 10;
-            buffer[2] = '0' + static_cast<char>(yy % 10);
-            yy /= 10;
-            buffer[1] = '0' + static_cast<char>(yy % 10);
-            yy /= 10;
-            buffer[0] = '0' + static_cast<char>(yy);
-            buffer[4] = '-';
-            buffer[6] = '0' + static_cast<char>(mm % 10);
-            mm /= 10;
-            buffer[5] = '0' + static_cast<char>(mm);
-            buffer[7] = '-';
-            buffer[9] = '0' + static_cast<char>(dd % 10);
-            dd /= 10;
-            buffer[8] = '0' + static_cast<char>(dd);
-            buffer[10] = 'T';
-            buffer[12] = '0' + static_cast<char>(hh % 10);
-            hh /= 10;
-            buffer[11] = '0' + static_cast<char>(hh);
-            buffer[13] = ':';
-            buffer[15] = '0' + static_cast<char>(mi % 10);
-            mi /= 10;
-            buffer[14] = '0' + static_cast<char>(mi);
-            buffer[16] = ':';
-            buffer[18] = '0' + static_cast<char>(ss % 10);
-            ss /= 10;
-            buffer[17] = '0' + static_cast<char>(ss);
-            buffer[19] = 'Z';
-            buffer[20] = 0;
-            // 01234567890123456789
-            // YYYY-MM-DDThh:mm:ssZ
+            if (mon <= 2) {
+                mon += 10;
+                year -= 1;
+            } else
+                mon -= 2;
+
+            return (((static_cast<time_t>(year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day) + year * 365 - 719499) * 24
+                     + hour) * 60 + min) * 60 + sec - hostTimezone;
         }
 
         friend std::ostream& operator<<(std::ostream& os, const typeTime& other) {

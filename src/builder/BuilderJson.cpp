@@ -170,8 +170,7 @@ namespace OpenLogReplicator {
         append('"');
     }
 
-    void BuilderJson::columnTimestamp(const std::string& columnName, struct tm& epochTime, uint64_t fraction) {
-        int64_t val;
+    void BuilderJson::columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) {
         if (hasPreviousColumn)
             append(',');
         else
@@ -180,124 +179,179 @@ namespace OpenLogReplicator {
         append('"');
         appendEscape(columnName);
         append(R"(":)", sizeof(R"(":)") - 1);
+        char buffer[22];
 
         switch (timestampFormat) {
             case TIMESTAMP_FORMAT_UNIX_NANO:
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                val = tmToEpoch(&epochTime);
-                if (val == -1) {
-                    appendSDec(val * 1000000000L + fraction);
-                } else {
-                    if (val < 0 && fraction > 0) {
-                        ++val;
-                        fraction = 1000000000 - fraction;
+                // 1712345678123456789
+                if (timestamp < 1000000000 && timestamp > -1000000000)
+                    appendSDec(timestamp * 1000000000L + fraction);
+                else {
+                    // Big number
+                    int64_t firstDigits = timestamp / 1000000000;
+                    if (timestamp < 0) {
+                        timestamp = -timestamp;
+                        fraction = -fraction;
                     }
-                    if (val != 0) {
-                        appendSDec(val);
-                        appendDec(fraction, 9);
-                    } else {
-                        appendDec(fraction);
-                    }
+                    timestamp %= 1000000000;
+                    appendSDec(firstDigits);
+                    appendDec(timestamp * 1000000000L + fraction, 18);
                 }
                 break;
 
             case TIMESTAMP_FORMAT_UNIX_MICRO:
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
+                // 1712345678123457
+                appendSDec(timestamp * 1000000L + ((fraction + 500) / 1000));
                 break;
 
             case TIMESTAMP_FORMAT_UNIX_MILLI:
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
+                // 1712345678123
+                appendSDec(timestamp * 1000L + ((fraction + 500000) / 1000000));
                 break;
 
             case TIMESTAMP_FORMAT_UNIX:
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
+                // 1712345678
+                appendSDec(timestamp + ((fraction + 500000000) / 1000000000));
                 break;
 
             case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
+                // "1712345678123456789"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                val = tmToEpoch(&epochTime);
-                if (val == -1) {
-                    appendSDec(val * 1000000000L + fraction);
-                } else {
-                    if (val < 0 && fraction > 0) {
-                        ++val;
-                        fraction = 1000000000 - fraction;
+                if (timestamp < 1000000000 && timestamp > -1000000000)
+                    appendSDec(timestamp * 1000000000L + fraction);
+                else {
+                    // Big number
+                    int64_t firstDigits = timestamp / 1000000000;
+                    if (timestamp < 0) {
+                        timestamp = -timestamp;
+                        fraction = -fraction;
                     }
-                    if (val != 0) {
-                        appendSDec(val);
-                        appendDec(fraction, 9);
-                    } else {
-                        appendDec(fraction);
-                    }
+                    timestamp %= 1000000000;
+                    appendSDec(firstDigits);
+                    appendDec(timestamp * 1000000000L + fraction, 18);
                 }
                 append('"');
                 break;
 
             case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
+                // "1712345678123457"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
+                appendSDec(timestamp * 1000000L + ((fraction + 500) / 1000));
                 append('"');
                 break;
 
             case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
+                // "1712345678123"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
+                appendSDec(timestamp * 1000L + ((fraction + 500000) / 1000000));
                 append('"');
                 break;
 
             case TIMESTAMP_FORMAT_UNIX_STRING:
+                // "1712345678"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
+                appendSDec(timestamp + ((fraction + 500000000) / 1000000000));
+                append('"');
+                break;
+
+            case TIMESTAMP_FORMAT_ISO8601_NANO_TZ:
+                // "2024-04-05T19:34:38.123456789Z"
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append('.');
+                appendDec(fraction, 9);
+                append(R"(Z")", sizeof(R"(Z")") - 1);
+                break;
+
+            case TIMESTAMP_FORMAT_ISO8601_MICRO_TZ:
+                // "2024-04-05T19:34:38.123456Z"
+                fraction += 500;
+                fraction /= 1000;
+                if (fraction >= 1000000) {
+                    fraction -= 1000000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append('.');
+                appendDec(fraction, 6);
+                append(R"(Z")", sizeof(R"(Z")") - 1);
+                break;
+
+            case TIMESTAMP_FORMAT_ISO8601_MILLI_TZ:
+                // "2024-04-05T19:34:38.123Z"
+                fraction += 500000;
+                fraction /= 1000000;
+                if (fraction >= 1000) {
+                    fraction -= 1000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append('.');
+                appendDec(fraction, 3);
+                append(R"(Z")", sizeof(R"(Z")") - 1);
+                break;
+
+            case TIMESTAMP_FORMAT_ISO8601_TZ:
+                // "2024-04-05T19:34:38Z"
+                if (fraction >= 500000000)
+                    ++timestamp;
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append(R"(Z")", sizeof(R"(Z")") - 1);
+                break;
+            case TIMESTAMP_FORMAT_ISO8601_NANO:
+                // "2024-04-05 19:34:38.123456789"
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                append('.');
+                appendDec(fraction, 9);
+                append('"');
+                break;
+
+            case TIMESTAMP_FORMAT_ISO8601_MICRO:
+                // "2024-04-05 19:34:38.123456"
+                fraction += 500;
+                fraction /= 1000;
+                if (fraction >= 1000000) {
+                    fraction -= 1000000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                append('.');
+                appendDec(fraction, 6);
+                append('"');
+                break;
+
+            case TIMESTAMP_FORMAT_ISO8601_MILLI:
+                // "2024-04-05 19:34:38.123"
+                fraction += 500000;
+                fraction /= 1000000;
+                if (fraction >= 1000) {
+                    fraction -= 1000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                append('.');
+                appendDec(fraction, 3);
                 append('"');
                 break;
 
             case TIMESTAMP_FORMAT_ISO8601:
-                // 2012-04-23T18:25:43.511Z - ISO 8601 format
+                // "2024-04-05 19:34:38"
+                if (fraction >= 500000000)
+                    ++timestamp;
                 append('"');
-                if (epochTime.tm_year > 0) {
-                    appendDec(static_cast<uint64_t>(epochTime.tm_year));
-                } else {
-                    appendDec(static_cast<uint64_t>(-epochTime.tm_year));
-                    append("BC", sizeof("BC") - 1);
-                }
-                append('-');
-                appendDec(epochTime.tm_mon, 2);
-                append('-');
-                appendDec(epochTime.tm_mday, 2);
-                append('T');
-                appendDec(epochTime.tm_hour, 2);
-                append(':');
-                appendDec(epochTime.tm_min, 2);
-                append(':');
-                appendDec(epochTime.tm_sec, 2);
-
-                if (fraction > 0) {
-                    append('.');
-                    appendDec(fraction, 9);
-                }
-
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append('"');
                 break;
         }
     }
 
-    void BuilderJson::columnTimestampTz(const std::string& columnName, struct tm& epochTime, uint64_t fraction, const char* tz) {
-        int64_t val;
+    void BuilderJson::columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const char* tz) {
         if (hasPreviousColumn)
             append(',');
         else
@@ -306,25 +360,24 @@ namespace OpenLogReplicator {
         append('"');
         appendEscape(columnName);
         append(R"(":)", sizeof(R"(":)") - 1);
+        char buffer[22];
 
         switch (timestampTzFormat) {
             case TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING:
+                // "1700000000.123456789,Europe/Warsaw"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                val = tmToEpoch(&epochTime);
-                if (val == -1) {
-                    appendSDec(val * 1000000000L + fraction);
-                } else {
-                    if (val < 0 && fraction > 0) {
-                        ++val;
-                        fraction = 1000000000 - fraction;
+                if (timestamp < 1000000000 && timestamp > -1000000000)
+                    appendSDec(timestamp * 1000000000L + fraction);
+                else {
+                    // Big number
+                    int64_t firstDigits = timestamp / 1000000000;
+                    if (timestamp < 0) {
+                        timestamp = -timestamp;
+                        fraction = -fraction;
                     }
-                    if (val != 0) {
-                        appendSDec(val);
-                        appendDec(fraction, 9);
-                    } else
-                        appendDec(fraction);
+                    timestamp %= 1000000000;
+                    appendSDec(firstDigits);
+                    appendDec(timestamp * 1000000000L + fraction, 18);
                 }
                 append(',');
                 append(tz);
@@ -332,61 +385,141 @@ namespace OpenLogReplicator {
                 break;
 
             case TIMESTAMP_TZ_FORMAT_UNIX_MICRO_STRING:
+                // "1700000000.123456,Europe/Warsaw"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) * 1000000L + ((fraction + 500) / 1000));
+                appendSDec(timestamp * 1000000L + ((fraction + 500) / 1000));
                 append(',');
                 append(tz);
                 append('"');
                 break;
 
             case TIMESTAMP_TZ_FORMAT_UNIX_MILLI_STRING:
+                // "1700000000.123,Europe/Warsaw"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) * 1000L + ((fraction + 500000) / 1000000));
+                appendSDec(timestamp * 1000L + ((fraction + 500000) / 1000000));
                 append(',');
                 append(tz);
                 append('"');
                 break;
 
             case TIMESTAMP_TZ_FORMAT_UNIX_STRING:
+                // "1700000000,Europe/Warsaw"
                 append('"');
-                --epochTime.tm_mon;
-                epochTime.tm_year -= 1900;
-                appendSDec(tmToEpoch(&epochTime) + ((fraction + 500000000) / 1000000000));
+                appendSDec(timestamp + ((fraction + 500000000) / 1000000000));
+                append(',');
+                append(tz);
+                append('"');
+                break;
+
+            case TIMESTAMP_TZ_FORMAT_ISO8601_NANO_TZ:
+                // "2024-04-05T19:34:38.123456789Z Europe/Warsaw"
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append('.');
+                appendDec(fraction, 9);
+                append("Z ", sizeof("Z ") - 1);
+                append(tz);
+                append('"');
+                break;
+
+            case TIMESTAMP_TZ_FORMAT_ISO8601_MICRO_TZ:
+                // "2024-04-05T19:34:38.123456Z Europe/Warsaw"
+                fraction += 500;
+                fraction /= 1000;
+                if (fraction >= 1000000) {
+                    fraction -= 1000000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append('.');
+                appendDec(fraction, 6);
+                append("Z ", sizeof("Z ") - 1);
+                append(tz);
+                append('"');
+                break;
+
+            case TIMESTAMP_TZ_FORMAT_ISO8601_MILLI_TZ:
+                // "2024-04-05T19:34:38.123Z Europe/Warsaw"
+                fraction += 500000;
+                fraction /= 1000000;
+                if (fraction >= 1000) {
+                    fraction -= 1000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append('.');
+                appendDec(fraction, 3);
+                append("Z ", sizeof("Z ") - 1);
+                append(tz);
+                append('"');
+                break;
+
+            case TIMESTAMP_TZ_FORMAT_ISO8601_TZ:
+                // "2024-04-05T19:34:38Z Europe/Warsaw"
+                if (fraction >= 500000000)
+                    ++timestamp;
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                append("Z ", sizeof("Z ") - 1);
+                append(tz);
+                append('"');
+                break;
+
+            case TIMESTAMP_TZ_FORMAT_ISO8601_NANO:
+                // "2024-04-05 19:34:38.123456789,Europe/Warsaw"
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                append('.');
+                appendDec(fraction, 9);
+                append(' ');
+                append(tz);
+                append('"');
+                break;
+
+            case TIMESTAMP_TZ_FORMAT_ISO8601_MICRO:
+                // "2024-04-05 19:34:38.123456,Europe/Warsaw"
+                fraction += 500;
+                fraction /= 1000;
+                if (fraction >= 1000000) {
+                    fraction -= 1000000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                append('.');
+                appendDec(fraction, 6);
+                append(' ');
+                append(tz);
+                append('"');
+                break;
+
+            case TIMESTAMP_TZ_FORMAT_ISO8601_MILLI:
+                // "2024-04-05 19:34:38.123 Europe/Warsaw"
+                fraction += 500000;
+                fraction /= 1000000;
+                if (fraction >= 1000) {
+                    fraction -= 1000;
+                    ++timestamp;
+                }
+                append('"');
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                append('.');
+                appendDec(fraction, 3);
+                append(' ');
+                append(tz);
                 append('"');
                 break;
 
             case TIMESTAMP_TZ_FORMAT_ISO8601:
-                // 2012-04-23T18:25:43.511Z - ISO 8601 format
+                // "2024-04-05 19:34:38 Europe/Warsaw"
+                if (fraction >= 500000000)
+                    ++timestamp;
                 append('"');
-                if (epochTime.tm_year > 0) {
-                    appendDec(static_cast<uint64_t>(epochTime.tm_year));
-                } else {
-                    appendDec(static_cast<uint64_t>(-epochTime.tm_year));
-                    append("BC", sizeof("BC") - 1);
-                }
-                append('-');
-                appendDec(epochTime.tm_mon, 2);
-                append('-');
-                appendDec(epochTime.tm_mday, 2);
-                append('T');
-                appendDec(epochTime.tm_hour, 2);
-                append(':');
-                appendDec(epochTime.tm_min, 2);
-                append(':');
-                appendDec(epochTime.tm_sec, 2);
-
-                if (fraction > 0) {
-                    append('.');
-                    appendDec(fraction, 9);
-                }
-
+                append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append(' ');
                 append(tz);
-
                 append('"');
                 break;
         }
@@ -410,7 +543,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::appendHeader(typeScn scn, typeTime time_, bool first, bool showDb, bool showXid) {
+    void BuilderJson::appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
         if (first || (scnAll & SCN_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
                 append(',');
@@ -433,75 +566,109 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            time_t val;
+            char buffer[22];
             switch (timestampFormat) {
                 case TIMESTAMP_FORMAT_UNIX_NANO:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    val = time_.toTime();
-                    appendDec(val);
-                    if (val != 0)
+                    appendDec(timestamp);
+                    if (timestamp != 0)
                         append("000000000", 9);
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_MICRO:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    val = time_.toTime();
-                    appendDec(val);
-                    if (val != 0)
+                    appendDec(timestamp);
+                    if (timestamp != 0)
                         append("000000", 6);
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_MILLI:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    val = time_.toTime();
-                    appendDec(val);
-                    if (val != 0)
-                       append("000", 3);
+                    appendDec(timestamp);
+                    if (timestamp != 0)
+                        append("000", 3);
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX:
                     append(R"("tm":)", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
+                    appendDec(timestamp);
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_NANO_STRING:
                     append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                    val = time_.toTime();
-                    appendDec(val);
-                    if (val != 0)
+                    appendDec(timestamp);
+                    if (timestamp != 0)
                         append("000000000", 9);
                     append('"');
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_MICRO_STRING:
                     append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                    val = time_.toTime();
-                    appendDec(val);
-                    if (val != 0)
+                    appendDec(timestamp);
+                    if (timestamp != 0)
                         append("000000", 6);
                     append('"');
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_MILLI_STRING:
-                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    val = time_.toTime();
-                    appendDec(val);
-                    if (val != 0)
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    appendDec(timestamp);
+                    if (timestamp != 0)
                         append("000", 3);
                     append('"');
                     break;
 
                 case TIMESTAMP_FORMAT_UNIX_STRING:
-                    append(R"("tms":")", sizeof(R"("tm":)") - 1);
-                    appendDec(time_.toTime());
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    appendDec(timestamp);
                     append('"');
+                    break;
+
+                case TIMESTAMP_FORMAT_ISO8601_NANO_TZ:
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                    append(R"(.000000000Z")", sizeof(R"(.000000000Z")") - 1);
+                    break;
+
+                case TIMESTAMP_FORMAT_ISO8601_MICRO_TZ:
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
+                    append(R"(.000000Z")", sizeof(R"(.000000Z")") - 1);
+                    break;
+
+                case TIMESTAMP_FORMAT_ISO8601_MILLI_TZ:
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                    append(R"(.000Z")", sizeof(R"(.000Z")") - 1);
+                    break;
+
+                case TIMESTAMP_FORMAT_ISO8601_TZ:
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
+                    append('"');
+                    break;
+
+                case TIMESTAMP_FORMAT_ISO8601_NANO:
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                    append(R"(.000000000")", sizeof(R"(.000000000")") - 1);
+                    break;
+
+                case TIMESTAMP_FORMAT_ISO8601_MICRO:
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                    append(R"(.000000")", sizeof(R"(.000000")") - 1);
+                    break;
+
+                case TIMESTAMP_FORMAT_ISO8601_MILLI:
+                    append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                    append(R"(.000")", sizeof(R"(.000")") - 1);
                     break;
 
                 case TIMESTAMP_FORMAT_ISO8601:
                     append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                    char iso[21];
-                    time_.toIso8601(iso);
-                    append(iso, 20);
+                    append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                     append('"');
                     break;
             }
@@ -736,49 +903,7 @@ namespace OpenLogReplicator {
         append('}');
     }
 
-    time_t BuilderJson::tmToEpoch(const struct tm* epoch) {
-        static const int cumDays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
-        long year;
-        time_t result;
-
-        year = 1900 + epoch->tm_year;
-        if (year > 0) {
-            result = year * 365 + cumDays[epoch->tm_mon % 12];
-            result += year / 4;
-            result -= year / 100;
-            result += year / 400;
-            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && (epoch->tm_mon % 12) < 2)
-                result--;
-            result += epoch->tm_mday - 1;
-            result *= 24;
-            result += epoch->tm_hour;
-            result *= 60;
-            result += epoch->tm_min;
-            result *= 60;
-            result += epoch->tm_sec;
-            return result - 62167132800L; // adjust to 1970 epoch, 719527 days
-        } else {
-            // treat dates BC with the exact rules as AD for leap years
-            year = -year;
-            result = year * 365 - cumDays[epoch->tm_mon % 12];
-            result += year / 4;
-            result -= year / 100;
-            result += year / 400;
-            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && (epoch->tm_mon % 12) < 2)
-                result--;
-            result -= epoch->tm_mday - 1;
-            result *= 24;
-            result -= epoch->tm_hour;
-            result *= 60;
-            result -= epoch->tm_min;
-            result *= 60;
-            result -= epoch->tm_sec;
-            result = -result;
-            return result - 62104147200L; // adjust to 1970 epoch, 718798 days (year 0 does not exist)
-        }
-    }
-
-    void BuilderJson::processBeginMessage(typeScn scn, typeSeq sequence, typeTime time_) {
+    void BuilderJson::processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) {
         newTran = false;
         hasPreviousRedo = false;
 
@@ -788,7 +913,7 @@ namespace OpenLogReplicator {
         builderBegin(scn, sequence, 0, 0);
         append('{');
         hasPreviousValue = false;
-        appendHeader(scn, time_, true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+        appendHeader(scn, timestamp, true, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
         if (hasPreviousValue)
             append(',');
@@ -806,7 +931,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::processCommit(typeScn scn, typeSeq sequence, typeTime time_) {
+    void BuilderJson::processCommit(typeScn scn, typeSeq sequence, time_t timestamp) {
         // Skip empty transaction
         if (newTran) {
             newTran = false;
@@ -821,7 +946,7 @@ namespace OpenLogReplicator {
             append('{');
 
             hasPreviousValue = false;
-            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 append(',');
@@ -837,10 +962,10 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderJson::processInsert(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
+    void BuilderJson::processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                     typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
-            processBeginMessage(scn, sequence, time_);
+            processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -851,7 +976,7 @@ namespace OpenLogReplicator {
             builderBegin(scn, sequence, obj, 0);
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 append(',');
@@ -877,10 +1002,10 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processUpdate(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
+    void BuilderJson::processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                     typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused)), uint64_t offset) {
         if (newTran)
-            processBeginMessage(scn, sequence, time_);
+            processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -891,7 +1016,7 @@ namespace OpenLogReplicator {
             builderBegin(scn, sequence, obj, 0);
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 append(',');
@@ -918,10 +1043,10 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDelete(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
+    void BuilderJson::processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                     typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused)), uint64_t offset) {
         if (newTran)
-            processBeginMessage(scn, sequence, time_);
+            processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -932,7 +1057,7 @@ namespace OpenLogReplicator {
             builderBegin(scn, sequence, obj, 0);
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, false, (dbFormat & DB_FORMAT_ADD_DML) != 0, true);
 
             if (hasPreviousValue)
                 append(',');
@@ -958,10 +1083,10 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDdl(typeScn scn, typeSeq sequence, typeTime time_, const OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
+    void BuilderJson::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
                                  uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
-            processBeginMessage(scn, sequence, time_);
+            processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
@@ -972,7 +1097,7 @@ namespace OpenLogReplicator {
             builderBegin(scn, sequence, obj, 0);
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, time_, false, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
+            appendHeader(scn, timestamp, false, (dbFormat & DB_FORMAT_ADD_DDL) != 0, true);
 
             if (hasPreviousValue)
                 append(',');
@@ -998,7 +1123,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processCheckpoint(typeScn scn, typeSeq sequence, typeTime time_, uint64_t offset, bool redo) {
+    void BuilderJson::processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) {
         if (lwnScn != scn) {
             lwnScn = scn;
             lwnIdx = 0;
@@ -1007,7 +1132,7 @@ namespace OpenLogReplicator {
         builderBegin(scn, sequence, 0, OUTPUT_BUFFER_MESSAGE_CHECKPOINT);
         append('{');
         hasPreviousValue = false;
-        appendHeader(scn, time_, true, false, false);
+        appendHeader(scn, timestamp, true, false, false);
 
         if (hasPreviousValue)
             append(',');

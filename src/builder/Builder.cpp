@@ -208,18 +208,16 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_DATE:
-            case SYS_COL_TYPE_TIMESTAMP:
             case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
                 if (length != 7 && length != 11)
                     columnUnknown(column->name, data, length);
                 else {
-                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
-                    epochTime.tm_sec = data[6] - 1;  // 0..59
-                    epochTime.tm_min = data[5] - 1;  // 0..59
-                    epochTime.tm_hour = data[4] - 1; // 0..23
-                    epochTime.tm_mday = data[3];     // 1..31
-                    epochTime.tm_mon = data[2];      // 1..12
+                    int64_t year;
+                    int64_t month = data[2] - 1;    // 0..11
+                    int64_t day = data[3] - 1;      // 0..30
+                    int64_t hour = data[4] - 1;     // 0..23
+                    int64_t minute = data[5] - 1;   // 0..59
+                    int64_t second = data[6] - 1;   // 0..59
 
                     int val1 = data[0];
                     int val2 = data[1];
@@ -227,26 +225,72 @@ namespace OpenLogReplicator {
                     if (val1 >= 100 && val2 >= 100) {
                         val1 -= 100;
                         val2 -= 100;
-                        epochTime.tm_year = val1 * 100 + val2;
+                        year = val1 * 100 + val2;
 
                     } else {
                         val1 = 100 - val1;
                         val2 = 100 - val2;
-                        epochTime.tm_year = -(val1 * 100 + val2);
+                        year = -(val1 * 100 + val2);
                     }
 
                     uint64_t fraction = 0;
                     if (length == 11)
                         fraction = Ctx::read32Big(data + 7);
 
-                    if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
-                        epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
-                        epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
-                        epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
-                        epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
+                    if (second < 0 || second > 59 || minute < 0 || minute > 59 || hour < 0 || hour > 23 || day < 0 || day > 30 || month < 0 || month > 11 ||
+                            fraction > 999999999) {
                         columnUnknown(column->name, data, length);
                     } else {
-                        columnTimestamp(column->name, epochTime, fraction);
+                        time_t timestamp = ctx->valuesToEpoch(year, month, day, hour, minute, second, metadata->dbTimezone);
+                        if (year < 0 && fraction > 0) {
+                            fraction = 1000000000 - fraction;
+                            --timestamp;
+                        }
+                        columnTimestamp(column->name, timestamp, fraction);
+                    }
+                }
+                break;
+
+            case SYS_COL_TYPE_DATE:
+            case SYS_COL_TYPE_TIMESTAMP:
+                if (length != 7 && length != 11)
+                    columnUnknown(column->name, data, length);
+                else {
+                    int64_t year;
+                    int64_t month = data[2] - 1;    // 0..11
+                    int64_t day = data[3] - 1;      // 0..30
+                    int64_t hour = data[4] - 1;     // 0..23
+                    int64_t minute = data[5] - 1;   // 0..59
+                    int64_t second = data[6] - 1;   // 0..59
+
+                    int val1 = data[0];
+                    int val2 = data[1];
+                    // AD
+                    if (val1 >= 100 && val2 >= 100) {
+                        val1 -= 100;
+                        val2 -= 100;
+                        year = val1 * 100 + val2;
+
+                    } else {
+                        val1 = 100 - val1;
+                        val2 = 100 - val2;
+                        year = -(val1 * 100 + val2);
+                    }
+
+                    uint64_t fraction = 0;
+                    if (length == 11)
+                        fraction = Ctx::read32Big(data + 7);
+
+                    if (second < 0 || second > 59 || minute < 0 || minute > 59 || hour < 0 || hour > 23 || day < 0 || day > 30 || month < 0 || month > 11 ||
+                            fraction > 999999999) {
+                        columnUnknown(column->name, data, length);
+                    } else {
+                        time_t timestamp = ctx->valuesToEpoch(year, month, day, hour, minute, second, 0);
+                        if (year < 0 && fraction > 0) {
+                            fraction = 1000000000 - fraction;
+                            --timestamp;
+                        }
+                        columnTimestamp(column->name, timestamp, fraction);
                     }
                 }
                 break;
@@ -273,12 +317,12 @@ namespace OpenLogReplicator {
                 if (length != 9 && length != 13) {
                     columnUnknown(column->name, data, length);
                 } else {
-                    struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
-                    epochTime.tm_sec = data[6] - 1;  // 0..59
-                    epochTime.tm_min = data[5] - 1;  // 0..59
-                    epochTime.tm_hour = data[4] - 1; // 0..23
-                    epochTime.tm_mday = data[3];     // 1..31
-                    epochTime.tm_mon = data[2];      // 1..12
+                    int64_t year;
+                    int64_t month = data[2] - 1;    // 0..11
+                    int64_t day = data[3] - 1;      // 0..30
+                    int64_t hour = data[4] - 1;     // 0..23
+                    int64_t minute = data[5] - 1;   // 0..59
+                    int64_t second = data[6] - 1;   // 0..59
 
                     int val1 = data[0];
                     int val2 = data[1];
@@ -286,12 +330,12 @@ namespace OpenLogReplicator {
                     if (val1 >= 100 && val2 >= 100) {
                         val1 -= 100;
                         val2 -= 100;
-                        epochTime.tm_year = val1 * 100 + val2;
+                        year = val1 * 100 + val2;
 
                     } else {
                         val1 = 100 - val1;
                         val2 = 100 - val2;
-                        epochTime.tm_year = -(val1 * 100 + val2);
+                        year = -(val1 * 100 + val2);
                     }
 
                     uint64_t fraction = 0;
@@ -339,14 +383,15 @@ namespace OpenLogReplicator {
                             tz = "TZ?";
                     }
 
-                    if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
-                        epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
-                        epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
-                        epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
-                        epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
+                    if (second < 0 || second > 59 || minute < 0 || minute > 59 || hour < 0 || hour > 23 || day < 0 || day > 30 || month < 0 || month > 11) {
                         columnUnknown(column->name, data, length);
                     } else {
-                        columnTimestampTz(column->name, epochTime, fraction, tz);
+                        time_t timestamp = ctx->valuesToEpoch(year, month, day, hour, minute, second, 0);
+                        if (year < 0 && fraction > 0) {
+                            fraction = 1000000000 - fraction;
+                            --timestamp;
+                        }
+                        columnTimestampTz(column->name, timestamp, fraction, tz);
                     }
                 }
                 break;
@@ -455,7 +500,7 @@ namespace OpenLogReplicator {
                     if (day > 999999999 || us > 999999999)
                         columnUnknown(column->name, data, length);
                     else {
-                        uint64_t hour;
+                        int64_t hour;
                         if (data[4] >= 60)
                             hour = data[4] - 60;
                         else {
@@ -463,7 +508,7 @@ namespace OpenLogReplicator {
                             minus = true;
                         }
 
-                        uint64_t minute;
+                        int64_t minute;
                         if (data[5] >= 60)
                             minute = data[5] - 60;
                         else {
@@ -471,7 +516,7 @@ namespace OpenLogReplicator {
                             minus = true;
                         }
 
-                        uint64_t second;
+                        int64_t second;
                         if (data[6] >= 60)
                             second = data[6] - 60;
                         else {
@@ -721,7 +766,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0B
-    void Builder::processInsertMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx,
+    void Builder::processInsertMultiple(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx,
                                         const RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -781,7 +826,7 @@ namespace OpenLogReplicator {
                                                  redoLogRecord1->dataOffset);
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processInsert(scn, sequence, time_, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
 
@@ -792,7 +837,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0C
-    void Builder::processDeleteMultiple(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx,
+    void Builder::processDeleteMultiple(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx,
                                         const RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -853,7 +898,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processDelete(scn, sequence, time_, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
 
@@ -863,7 +908,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Builder::processDml(typeScn scn, typeSeq sequence, typeTime time_, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
+    void Builder::processDml(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                              const RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema, bool dump) {
         uint8_t fb;
         typeObj obj;
@@ -1442,7 +1487,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'u', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processUpdate(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processUpdate(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_INSERT) {
             if (table != nullptr && !compressedAfter) {
@@ -1497,7 +1542,7 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processInsert(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
 
         } else if (type == TRANSACTION_DELETE) {
             if (table != nullptr && !compressedBefore) {
@@ -1552,31 +1597,26 @@ namespace OpenLogReplicator {
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS))
-                processDelete(scn, sequence, time_, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
         }
 
         valuesRelease();
     }
 
     // 0x18010000
-    void Builder::processDdlHeader(typeScn scn, typeSeq sequence, typeTime time_, const RedoLogRecord* redoLogRecord1) {
+    void Builder::processDdlHeader(typeScn scn, typeSeq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1) {
         uint64_t fieldPos = 0;
-        uint64_t sqlLength;
         typeField fieldNum = 0;
-        uint16_t seq = 0;
-        // uint16_t cnt = 0;
-        uint16_t type = 0;
         uint16_t fieldLength = 0;
-        const char* sqlText = nullptr;
         const OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
             scn = commitScn;
 
         RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000009);
         // Field: 1
-        type = ctx->read16(redoLogRecord1->data + fieldPos + 12);
-        seq = ctx->read16(redoLogRecord1->data + fieldPos + 18);
-        // cnt = ctx->read16(redoLogRecord1->data + fieldPos + 20);
+        uint16_t type = ctx->read16(redoLogRecord1->data + fieldPos + 12);
+        uint16_t seq = ctx->read16(redoLogRecord1->data + fieldPos + 18);
+        // uint16_t cnt = ctx->read16(redoLogRecord1->data + fieldPos + 20);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000A))
             return;
@@ -1605,9 +1645,12 @@ namespace OpenLogReplicator {
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000011))
             return;
         // Field: 8
-        sqlLength = fieldLength;
-        sqlText = reinterpret_cast<char*>(redoLogRecord1->data) + fieldPos;
-        processDdl(scn, sequence, time_, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, sqlText, sqlLength - 1);
+        uint64_t sqlLength = fieldLength;
+        const char* sqlText = reinterpret_cast<char*>(redoLogRecord1->data) + fieldPos;
+
+        // Track DDL
+        if (FLAG(REDO_FLAGS_SHOW_DDL))
+            processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, sqlText, sqlLength - 1);
     }
 
     // Parse binary XML format

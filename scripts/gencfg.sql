@@ -45,6 +45,7 @@ DECLARE
     v_ACTIVATION# SYS.V_$DATABASE.ACTIVATION#%TYPE;
     v_BANNER SYS.V_$VERSION.BANNER%TYPE;
     v_DB_NAME VARCHAR2(100);
+    v_DB_TIMEZONE VARCHAR2(100);
     v_CON_ID NUMBER;
     v_CON_NAME VARCHAR2(100);
     v_DB_RECOVERY_FILE_DEST SYS.V_$PARAMETER.VALUE%TYPE;
@@ -160,11 +161,11 @@ BEGIN
 
     IF INSTR(v_BANNER, 'Oracle Database 11g') = 0 THEN
         EXECUTE IMMEDIATE 'SELECT SYS_CONTEXT(''USERENV'',''CON_ID''), SYS_CONTEXT(''USERENV'',''CON_NAME''), NVL(SYS_CONTEXT(''USERENV'',''CDB_NAME''), ' ||
-            'SYS_CONTEXT(''USERENV'',''DB_NAME'')) FROM DUAL'
-        INTO v_CON_ID, v_CON_NAME, v_DB_NAME;
+            'SYS_CONTEXT(''USERENV'',''DB_NAME'')), DBTIMEZONE FROM DUAL'
+        INTO v_CON_ID, v_CON_NAME, v_DB_NAME, v_DB_TIMEZONE;
         v_VERSION11 := FALSE;
     ELSE
-        EXECUTE IMMEDIATE 'SELECT SYS_CONTEXT(''USERENV'',''DB_NAME'') FROM DUAL' INTO v_DB_NAME;
+        EXECUTE IMMEDIATE 'SELECT SYS_CONTEXT(''USERENV'',''DB_NAME''), DBTIMEZONE FROM DUAL' INTO v_DB_NAME, v_DB_TIMEZONE;
         v_CON_ID := 0;
         v_VERSION11 := TRUE;
     END IF;
@@ -214,6 +215,7 @@ BEGIN
     DBMS_OUTPUT.PUT(',"context":"' || v_DB_NAME || '"');
     DBMS_OUTPUT.PUT(',"con-id":' || v_CON_ID);
     DBMS_OUTPUT.PUT(',"con-name":"' || v_CON_NAME || '"');
+    DBMS_OUTPUT.PUT(',"db-timezone":"' || v_DB_TIMEZONE || '"');
     DBMS_OUTPUT.PUT(',"db-recovery-file-dest":"' || v_DB_RECOVERY_FILE_DEST || '"');
     DBMS_OUTPUT.PUT(',"db-block-checksum":"' || v_DB_BLOCK_CHECKSUM || '"');
     DBMS_OUTPUT.PUT(',"log-archive-dest":"' || v_LOG_ARCHIVE_DEST || '"');

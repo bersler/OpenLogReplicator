@@ -19,9 +19,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <atomic>
 
+#include "common/ClockHW.h"
 #include "common/Ctx.h"
 #include "common/OraProtoBuf.pb.h"
-#include "common/Timer.h"
 #include "common/types.h"
 #include "common/exception/ConfigurationException.h"
 #include "common/exception/DataException.h"
@@ -67,6 +67,11 @@ int main(int argc, char** argv) {
         OLR_LOCALES = OLR_LOCALES_MOCK;
 
     OpenLogReplicator::Ctx ctx;
+    const char* logTimezone = std::getenv("OLR_LOG_TIMEZONE");
+    if (logTimezone != nullptr)
+        if (!ctx.parseTimezone(logTimezone, ctx.logTimezone))
+            ctx.error(10070, "invalid environment variable OLR_LOG_TIMEZONE value: " + std::string(logTimezone));
+
     ctx.welcome("OpenLogReplicator v." + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
                 std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
                 " StreamClient (C) 2018-2024 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
@@ -182,7 +187,7 @@ int main(int argc, char** argv) {
 
         // Index to count messages, to confirm after 1000th
         uint64_t num = 0;
-        uint64_t last = OpenLogReplicator::Timer::getTimeUt();
+        uint64_t last = ctx.clock->getTimeUt();
 
         send(request, stream, &ctx);
         receive(response, stream, &ctx, buffer, true);
@@ -257,7 +262,7 @@ int main(int argc, char** argv) {
             }
 
             ++num;
-            time_ut now = OpenLogReplicator::Timer::getTimeUt();
+            time_ut now = ctx.clock->getTimeUt();
             double timeDelta = static_cast<double>(now - last) / 1000000.0;
 
             // Confirm every 1000 messages or every 10 seconds

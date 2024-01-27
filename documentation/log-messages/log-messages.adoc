@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2024-01-25
+:revdate: 2024-01-27
 :imagesdir: ./images
 :toc: preamble
 
@@ -441,6 +441,19 @@ Verify if the ZeroMQ library is installed and available.
 The module which builds output stream is out of memory.
 Stream building is suspended until memory is released.
 If possible, configure higher memory limits.
+
+==== code 10068: "invalid DBTIMEZONE value: <value>"
+
+Database parameter `DBTIMEZONE` has an invalid value.
+Please report this issue.
+
+==== code 10069: "invalid timestamp value: <value>"
+
+Timestamp value is invalid. Please report this issue.
+
+==== code 10070: "invalid environment variable OLR_LOG_TIMEZONE value: <value>"
+
+The value of environment variable `OLR_LOG_TIMEZONE` is invalid.
 
 === Data exceptions (2xxxx)
 

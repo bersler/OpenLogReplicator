@@ -24,9 +24,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../builder/Builder.h"
+#include "../common/Clock.h"
 #include "../common/Ctx.h"
 #include "../common/OracleIncarnation.h"
-#include "../common/Timer.h"
 #include "../common/exception/BootException.h"
 #include "../common/exception/RedoLogException.h"
 #include "../common/exception/RuntimeException.h"
@@ -170,6 +170,8 @@ namespace OpenLogReplicator {
             loadDatabaseMetadata();
             metadata->readCheckpoints();
             updateOnlineRedoLogData();
+            ctx->info(0, "timezone: " + ctx->timezoneToString(-timezone) + ", db-timezone: " + ctx->timezoneToString(metadata->dbTimezone) +
+                         ", log-timezone: " + ctx->timezoneToString(ctx->logTimezone) + ", host-timezone: " + ctx->timezoneToString(ctx->hostTimezone));
 
             do {
                 if (ctx->softShutdown)
@@ -808,7 +810,7 @@ namespace OpenLogReplicator {
 
             // Keep reading online redo logs while it is possible
             bool higher = false;
-            time_ut beginTime = Timer::getTimeUt();
+            time_ut beginTime = ctx->clock->getTimeUt();
 
             while (!ctx->softShutdown) {
                 for (Parser* onlineRedo: onlineRedoSet) {
@@ -836,7 +838,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     break;
 
-                time_ut endTime = Timer::getTimeUt();
+                time_ut endTime = ctx->clock->getTimeUt();
                 if (beginTime + static_cast<time_ut>(ctx->refreshIntervalUs) < endTime) {
                     if (ctx->trace & TRACE_REDO)
                         ctx->logTrace(TRACE_REDO, "refresh interval reached, checking online redo logs again");

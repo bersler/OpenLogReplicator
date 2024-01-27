@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.4.1
-:revdate: 2024-01-25
+:revdate: 2024-01-27
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -384,6 +384,14 @@ This is used for multi-tenant databases.
 
 _TIP:_ `-1' is the default value and means that the database is single-tenant.
 
+|`db-timezone`
+|_string_, default: database DBTIMEZONE value
+|Overwrites database DBTIMEZONE value.
+
+Timezone should be in format `+xx:yy` or `-xx:yy`.
+
+The time zone is used only as base timezone for values for TIMESTAMP WITH LOCAL TZ type.
+
 |`disable-checks`
 |_number_, min: 0, max: 7, default: 0
 |A sum of numbers:
@@ -398,6 +406,14 @@ _NOTE:_ This field is valid only for `online` type.
 
 _IMPORTANT:_ This might increase performance a bit, but it is not recommended to use this option.
 
+|`host-timezone`
+|_string_, default: time zone of OpenLogReplicator host
+|Time zone used by the host where the database is running.
+
+Timezone should be in format `+xx:yy` or `-xx:yy`.
+
+If OpenLogReplicator is running on a host with a different time zone, adjust this parameter to the proper value.
+
 |`log-archive-format`
 |_string_, max length: 4000
 |Format of expected archived redo log files.
@@ -405,6 +421,18 @@ This parameter defines how to parse the redo log file name to read the sequence 
 
 When FRA is configured the format of files is expected to be `o1_mf_%t_%s_%h_.arc`.
 When FRA is not used the value use for this parameter is read from database configuration parameter `log_archive_format`.
+
+|`log-timezone`
+|_string_, default: time zone of OpenLogReplicator host
+|Time zone used for logging messagees.
+
+Timezone should be in format `+xx:yy` or `-xx:yy`.
+
+By default, log messages are printed in the local time zone of the host where OpenLogReplicator is being run.
+To print messages with log in the UTC timezone, set the value to '+00:00'.
+Used log timezone is printed on startup.
+
+_IMPORTANT:_ The value of this parameter can be configured by setting the environment variable `OLR_LOG_TIMEZONE`.
 
 |`password`
 |_string_, max length: 128
@@ -827,7 +855,7 @@ Possible values are:
 * `1` -- Put `scn` field in every message.
 
 |`timestamp` [[timestamp]]
-|_number_, min: 0, max: 8, default: 0
+|_number_, min: 0, max: 15, default: 0
 |Format of timestamp values.
 
 In the following description, the following timestamp is used as an example: `"2022-05-01 06:00:00.123456789"`.
@@ -841,7 +869,7 @@ Possible values are:
 
 * `3` -- Unix with precision to the second  (possible data precision loss) -- `"tm": 1651384800`.
 
-* `4` -- Unix with nanoseconds stored as a string -- `"tms": "1651384800123456789"`.
+* `4` -- Unix with nanoseconds precision stored as a string -- `"tms": "1651384800123456789"`.
 
 * `5` -- Unix with microsecond precision stored as a string (possible data precision loss) -- `"tms": "1651384800123457"`.
 
@@ -849,7 +877,21 @@ Possible values are:
 
 * `7` -- Unix with second precision stored as a string (possible data precision loss) -- `"tms": "1651384800"`.
 
-* `8` -- _ISO-8601_ format stored as a string -- `"tms": "2022-05-01 06:00:00.123456789"`.
+* `8` -- _ISO-8601_ format stored with nanosecond precision -- `"tms": "2022-05-01T06:00:00.123456789Z"`.
+
+* `9` -- _ISO-8601_ format stored with microsecond precision as a string -- `"tms": "2022-05-01T06:00:00.123456Z"`.
+
+* `10` -- _ISO-8601_ format stored with millisecond precision as a string -- `"tms": "2022-05-01T06:00:00.123Z"`.
+
+* `11` -- _ISO-8601_ format stored second precission as a string -- `"tms": "2022-05-01T06:00:00Z"`.
+
+* `12` -- _ISO-8601_ format stored with nanosecond precision as a string without "TZ" -- `"tms": "2022-05-01 06:00:00.123456789"`.
+
+* `13` -- _ISO-8601_ format stored with microsecond precision as a string  without "TZ" -- `"tms": "2022-05-01 06:00:00.123456"`.
+
+* `14` -- _ISO-8601_ format stored with millisecond precission as a string without "TZ" -- `"tms": "2022-05-01 06:00:00.123"`.
+
+* `15` -- _ISO-8601_ format stored second precission as a string without "TZ" -- `"tms": "2022-05-01 06:00:00"`.
 
 _NOTE:_ This format is also used for type `timestamp with local time zone` since this type internally does not contain time zone data.
 
@@ -867,9 +909,23 @@ Possible values are:
 
 * `2` -- Unix with millisecond precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800123,Europe/Warsaw"`.
 
-* `3` -- Unix with second precision stored as a string with time zone after comma sign (possible data precision §loss) -- `"tms": "1651384800,Europe/Warsaw"`.
+* `3` -- Unix with second precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800,Europe/Warsaw"`.
 
-* `4` -- _ISO-8601_ format stored as a string with time zone after space sign-- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+* `4` -- _ISO-8601_ format stored with nanosecond precision with time zone after space sign -- `"tms": "2022-05-01T06:00:00.123456789Z Europe/Warsaw"`.
+
+* `5` -- _ISO-8601_ format stored with microsecond precision as a string with time zone after space sign-- `"tms": "2022-05-01T06:00:00.123456Z Europe/Warsaw"`.
+
+* `6` -- _ISO-8601_ format stored with millisecond precision as a string with time zone after space sign-- `"tms": "2022-05-01T06:00:00.123Z Europe/Warsaw"`.
+
+* `7` -- _ISO-8601_ format stored second precission as a string with time zone after space sign -- `"tms": "2022-05-01T06:00:00Z Europe/Warsaw"`.
+
+* `8` -- _ISO-8601_ format stored with nanosecond precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+
+* `9` -- _ISO-8601_ format stored with microsecond precision as a string  without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123456 Europe/Warsaw"`.
+
+* `10` -- _ISO-8601_ format stored with millisecond precission as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123 Europe/Warsaw"`.
+
+* `11` -- _ISO-8601_ format stored second precission as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
 
 |`timestamp-all` [[timestamp-all]]
 |_number_, min: 0, max: 1, default: 0

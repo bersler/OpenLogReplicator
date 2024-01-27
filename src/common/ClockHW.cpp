@@ -1,4 +1,4 @@
-/* Header for Timer class
+/* Base class for hardware clockś
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,21 +17,16 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <stdint.h>
-#include <sys/time.h>
-
-#include "types.h"
-
-#ifndef TIMER_H_
-#define TIMER_H_
+#include "ClockHW.h"
 
 namespace OpenLogReplicator {
-    class Timer {
+    time_ut ClockHW::getTimeUt() {
+        struct timeval tv = {0, 0};
+        gettimeofday(&tv, nullptr);
+        return (1000000 * tv.tv_sec) + tv.tv_usec;
+    }
 
-    public:
-        static time_ut getTimeUt();
-        static time_t getTimeT();
-    };
+    time_t ClockHW::getTimeT() {
+        return time(nullptr);
+    }
 }
-
-#endif

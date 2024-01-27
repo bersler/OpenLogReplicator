@@ -1,4 +1,4 @@
-/* Header of config.h
+/* Header for Clock class
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,13 +17,19 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#include "Clock.h"
 
-#define OpenLogReplicator_VERSION_MAJOR @OpenLogReplicator_VERSION_MAJOR@
-#define OpenLogReplicator_VERSION_MINOR @OpenLogReplicator_VERSION_MINOR@
-#define OpenLogReplicator_VERSION_PATCH @OpenLogReplicator_VERSION_PATCH@
-#define OpenLogReplicator_CMAKE_BUILD_TYPE "@CMAKE_BUILD_TYPE@"
-#define OpenLogReplicator_CMAKE_BUILD_TIMESTAMP "@CMAKE_BUILD_TIMESTAMP@"
+#ifndef CLOCK_HW_H_
+#define CLOCK_HW_H_
+
+namespace OpenLogReplicator {
+    class ClockHW final : public Clock {
+    public:
+        virtual ~ClockHW() = default;
+
+        virtual time_ut getTimeUt() override;
+        virtual time_t getTimeT() override;
+    };
+}
 
 #endif
