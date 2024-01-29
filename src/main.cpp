@@ -39,7 +39,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #endif /* LINK_LIBRARY_OCI */
 
 #ifdef LINK_LIBRARY_PROTOBUF
-#define HAS_PROTOBUF " Probobuf"
+#define HAS_PROTOBUF " Protobuf"
 #ifdef LINK_LIBRARY_ZEROMQ
 #define HAS_ZEROMQ " ZeroMQ"
 #else
