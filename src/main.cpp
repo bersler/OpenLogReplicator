@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <algorithm>
 #include <csignal>
+#include <pthread.h>
 #include <regex>
 #include <sys/utsname.h>
 #include <thread>
@@ -112,15 +113,34 @@ namespace OpenLogReplicator {
             if (getuid() == 0)
                 throw RuntimeException(10020, "program is run as root, you should never do that");
 
-            if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
-                // Print banner and exit
-                return 0;
-            } else if (argc == 3 && (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)) {
-                // Custom config path
-                fileName = argv[2];
-            } else if (argc > 1)
+            for (int i = 1; i < argc; i++) {
+                if ((strncmp(argv[i], "-v", 2) == 0 || strncmp(argv[i], "--version", 9) == 0)) {
+                    // Print banner and exit
+                    return 0;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-f", 2) == 0 || strncmp(argv[i], "--file", 6) == 0)) {
+                    // Custom config path
+                    fileName = argv[i + 1];
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-p", 2) == 0 || strncmp(argv[i], "--process", 9) == 0)) {
+                    // Custom process name
+#if __linux__
+                    pthread_setname_np(pthread_self(), argv[i + 1]);
+#endif
+#if __APPLE__
+                    pthread_setname_np(argv[i + 1]);
+#endif
+                    ++i;
+                    continue;
+                }
+
                 throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
-                                                    " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+                                                             " [-v|--version] [-f|--file CONFIG] [-p|--process PROCESSNAME]");
+            }
         } catch (ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             return 1;

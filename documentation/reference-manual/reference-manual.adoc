@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.5.1
-:revdate: 2024-01-30
+:revdate: 2024-02-14
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -19,9 +19,11 @@ This document describes configuration parameters and usage of OpenLogReplicator.
 OpenLogReplicator program is non-interactive.
 The only parameters accepted are:
 
-* `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`)
+* `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`),
 
-* `-v|--version` -- print version and exit
+* `-p <process name>` -- process name (default: `"OpenLogReplicator"`) displayed in the process list; useful when multiple instances are running,
+
+* `-v|--version` -- print version and exit.
 
 All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
 The file should be in JSON format.
