@@ -60,6 +60,7 @@ namespace OpenLogReplicator {
             unknownType(newUnknownType),
             unconfirmedLength(0),
             messageLength(0),
+            messagePosition(0),
             flushBuffer(newFlushBuffer),
             valueBuffer(nullptr),
             valueLength(0),
@@ -236,7 +237,7 @@ namespace OpenLogReplicator {
 
                     uint64_t fraction = 0;
                     if (length == 11)
-                        fraction = Ctx::read32Big(data + 7);
+                        fraction = ctx->read32Big(data + 7);
 
                     if (second < 0 || second > 59 || minute < 0 || minute > 59 || hour < 0 || hour > 23 || day < 0 || day > 30 || month < 0 || month > 11 ||
                             fraction > 999999999) {
@@ -280,7 +281,7 @@ namespace OpenLogReplicator {
 
                     uint64_t fraction = 0;
                     if (length == 11)
-                        fraction = Ctx::read32Big(data + 7);
+                        fraction = ctx->read32Big(data + 7);
 
                     if (second < 0 || second > 59 || minute < 0 || minute > 59 || hour < 0 || hour > 23 || day < 0 || day > 30 || month < 0 || month > 11 ||
                             fraction > 999999999) {
@@ -341,7 +342,7 @@ namespace OpenLogReplicator {
 
                     uint64_t fraction = 0;
                     if (length == 13)
-                        fraction = Ctx::read32Big(data + 7);
+                        fraction = ctx->read32Big(data + 7);
 
                     const char* tz;
                     char tz2[7];
@@ -354,24 +355,24 @@ namespace OpenLogReplicator {
 
                         if (data[11] < 20) {
                             uint64_t val = 20 - data[11];
-                            tz2[1] = ctx->map10[val / 10];
-                            tz2[2] = ctx->map10[val % 10];
+                            tz2[1] = '0' + static_cast<char>(val / 10);
+                            tz2[2] = '0' + static_cast<char>(val % 10);
                         } else {
                             uint64_t val = data[11] - 20;
-                            tz2[1] = ctx->map10[val / 10];
-                            tz2[2] = ctx->map10[val % 10];
+                            tz2[1] = '0' + static_cast<char>(val / 10);
+                            tz2[2] = '0' + static_cast<char>(val % 10);
                         }
 
                         tz2[3] = ':';
 
                         if (data[12] < 60) {
                             uint64_t val = 60 - data[12];
-                            tz2[4] = ctx->map10[val / 10];
-                            tz2[5] = ctx->map10[val % 10];
+                            tz2[4] = '0' + static_cast<char>(val / 10);
+                            tz2[5] = '0' + static_cast<char>(val % 10);
                         } else {
                             uint64_t val = data[12] - 60;
-                            tz2[4] = ctx->map10[val / 10];
-                            tz2[5] = ctx->map10[val % 10];
+                            tz2[4] = '0' + static_cast<char>(val / 10);
+                            tz2[5] = '0' + static_cast<char>(val % 10);
                         }
                         tz2[6] = 0;
                         tz = tz2;
@@ -404,9 +405,9 @@ namespace OpenLogReplicator {
                     bool minus = false;
                     uint64_t year;
                     if ((data[0] & 0x80) != 0)
-                        year = Ctx::read32Big(data) - 0x80000000;
+                        year = ctx->read32Big(data) - 0x80000000;
                     else {
-                        year = 0x80000000 - Ctx::read32Big(data);
+                        year = 0x80000000 - ctx->read32Big(data);
                         minus = true;
                     }
 
@@ -434,7 +435,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = ctx->map10[val % 10];
+                                    buffer[len++] = '0' + static_cast<char>(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -451,7 +452,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = ctx->map10[val % 10];
+                                    buffer[len++] = '0' + static_cast<char>(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -467,9 +468,9 @@ namespace OpenLogReplicator {
 
                             if (month >= 10) {
                                 valueBuffer[valueLength++] = '1';
-                                valueBuffer[valueLength++] = ctx->map10[month - 10];
+                                valueBuffer[valueLength++] = '0' + static_cast<char>(month - 10);
                             } else
-                                valueBuffer[valueLength++] = ctx->map10[month];
+                                valueBuffer[valueLength++] = '0' + static_cast<char>(month);
 
                             columnString(column->name);
                         }
@@ -484,17 +485,17 @@ namespace OpenLogReplicator {
                     bool minus = false;
                     uint64_t day;
                     if ((data[0] & 0x80) != 0)
-                        day = Ctx::read32Big(data) - 0x80000000;
+                        day = ctx->read32Big(data) - 0x80000000;
                     else {
-                        day = 0x80000000 - Ctx::read32Big(data);
+                        day = 0x80000000 - ctx->read32Big(data);
                         minus = true;
                     }
 
                     int32_t us;
                     if ((data[7] & 0x80) != 0)
-                        us = Ctx::read32Big(data + 7) - 0x80000000;
+                        us = ctx->read32Big(data + 7) - 0x80000000;
                     else {
-                        us = 0x80000000 - Ctx::read32Big(data + 7);
+                        us = 0x80000000 - ctx->read32Big(data + 7);
                         minus = true;
                     }
 
@@ -541,7 +542,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = ctx->map10[val % 10];
+                                    buffer[len++] = '0' + static_cast<char>(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -555,18 +556,18 @@ namespace OpenLogReplicator {
                             else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH)
                                 valueBuffer[valueLength++] = '-';
 
-                            valueBuffer[valueLength++] = ctx->map10[hour / 10];
-                            valueBuffer[valueLength++] = ctx->map10[hour % 10];
+                            valueBuffer[valueLength++] = '0' + static_cast<char>(hour / 10);
+                            valueBuffer[valueLength++] = '0' + static_cast<char>(hour % 10);
                             valueBuffer[valueLength++] = ':';
-                            valueBuffer[valueLength++] = ctx->map10[minute / 10];
-                            valueBuffer[valueLength++] = ctx->map10[minute % 10];
+                            valueBuffer[valueLength++] = '0' + static_cast<char>(minute / 10);
+                            valueBuffer[valueLength++] = '0' + static_cast<char>(minute % 10);
                             valueBuffer[valueLength++] = ':';
-                            valueBuffer[valueLength++] = ctx->map10[second / 10];
-                            valueBuffer[valueLength++] = ctx->map10[second % 10];
+                            valueBuffer[valueLength++] = '0' + static_cast<char>(second / 10);
+                            valueBuffer[valueLength++] = '0' + static_cast<char>(second % 10);
                             valueBuffer[valueLength++] = '.';
 
                             for (uint64_t j = 0; j < 9; ++j) {
-                                valueBuffer[valueLength + 8 - j] = ctx->map10[us % 10];
+                                valueBuffer[valueLength + 8 - j] = '0' + static_cast<char>(us % 10);
                                 us /= 10;
                             }
                             valueLength += 9;
@@ -598,7 +599,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = ctx->map10[val % 10];
+                                    buffer[len++] = '0' + static_cast<char>(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -719,17 +720,18 @@ namespace OpenLogReplicator {
         nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
 
         // Message could potentially fit in one buffer
-        if (copy && msg != nullptr && sizeof(struct BuilderMsg) + messageLength < OUTPUT_BUFFER_DATA_SIZE) {
-            memcpy(reinterpret_cast<void*>(nextBuffer->data), msg, sizeof(struct BuilderMsg) + messageLength);
+        if (copy && msg != nullptr && messageLength + messagePosition < OUTPUT_BUFFER_DATA_SIZE) {
+            memcpy(reinterpret_cast<void*>(nextBuffer->data), msg, messagePosition);
             msg = reinterpret_cast<BuilderMsg*>(nextBuffer->data);
             msg->data = nextBuffer->data + sizeof(struct BuilderMsg);
-            nextBuffer->length = sizeof(struct BuilderMsg) + messageLength;
             nextBuffer->start = 0;
-            lastBuilderQueue->length -= sizeof(struct BuilderMsg) + messageLength;
         } else {
-            nextBuffer->length = 0;
+            lastBuilderQueue->length += messagePosition;
+            messageLength += messagePosition;
+            messagePosition = 0;
             nextBuffer->start = BUFFER_START_UNDEFINED;
         }
+        nextBuffer->length = 0;
 
         {
             std::unique_lock<std::mutex> lck(mtx);
@@ -740,7 +742,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t Builder::builderSize() const {
-        return ((messageLength + 7) & 0xFFFFFFFFFFFFFFF8) + sizeof(struct BuilderMsg);
+        return ((messageLength + messagePosition + 7) & 0xFFFFFFFFFFFFFFF8);
     }
 
     uint64_t Builder::getMaxMessageMb() const {
