@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
         void* ptr;
         uint64_t id;
         uint64_t queueId;
-        uint64_t length;
+        std::atomic<uint64_t> length;
         typeScn scn;
         typeScn lwnScn;
         typeIdx lwnIdx;
@@ -120,6 +120,7 @@ namespace OpenLogReplicator {
         uint64_t unknownType;
         uint64_t unconfirmedLength;
         uint64_t messageLength;
+        uint64_t messagePosition;
         uint64_t flushBuffer;
         char* valueBuffer;
         uint64_t valueLength;
@@ -157,7 +158,7 @@ namespace OpenLogReplicator {
         void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, uint64_t offset,
                           bool after, bool compressed);
 
-        void valuesRelease() {
+        inline void valuesRelease() {
             for (uint64_t i = 0; i < mergesMax; ++i)
                 delete[] merges[i];
             mergesMax = 0;
@@ -183,7 +184,7 @@ namespace OpenLogReplicator {
             compressedAfter = false;
         };
 
-        void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb, bool dump) {
+        inline void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb, bool dump) {
             if ((ctx->trace & TRACE_DML) != 0 || dump) {
                 std::ostringstream ss;
                 ss << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << length << "/" << std::setfill('0') <<
@@ -231,27 +232,28 @@ namespace OpenLogReplicator {
             }
         };
 
-        void builderShift(uint64_t bytes, bool copy) {
-            lastBuilderQueue->length += bytes;
+        inline void builderShift(bool copy) {
+            ++messagePosition;
 
-            if (lastBuilderQueue->length >= OUTPUT_BUFFER_DATA_SIZE)
+            if (lastBuilderQueue->length + messagePosition >= OUTPUT_BUFFER_DATA_SIZE)
                 builderRotate(copy);
         };
 
-        void builderShiftFast(uint64_t bytes) const {
-            lastBuilderQueue->length += bytes;
+        inline void builderShiftFast(uint64_t bytes) {
+            messagePosition += bytes;
         };
 
-        void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, uint16_t flags) {
+        inline void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, uint16_t flags) {
             messageLength = 0;
+            messagePosition = 0;
             if ((scnFormat & SCN_ALL_COMMIT_VALUE) != 0)
                 scn = commitScn;
 
-            if (lastBuilderQueue->length + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)
+            if (lastBuilderQueue->length + messagePosition + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)
                 builderRotate(true);
 
             msg = reinterpret_cast<BuilderMsg*>(lastBuilderQueue->data + lastBuilderQueue->length);
-            builderShift(sizeof(struct BuilderMsg), true);
+            builderShiftFast(sizeof(struct BuilderMsg));
             msg->scn = scn;
             msg->lwnScn = lwnScn;
             msg->lwnIdx = lwnIdx++;
@@ -261,17 +263,19 @@ namespace OpenLogReplicator {
             msg->obj = obj;
             msg->pos = 0;
             msg->flags = flags;
-            msg->data = lastBuilderQueue->data + lastBuilderQueue->length;
+            msg->data = lastBuilderQueue->data + lastBuilderQueue->length + sizeof(struct BuilderMsg);
         };
 
-        void builderCommit(bool force) {
-            if (messageLength == 0)
+        inline void builderCommit(bool force) {
+            messageLength += messagePosition;
+            if (messageLength == sizeof(struct BuilderMsg))
                 throw RedoLogException(50058, "output buffer - commit of empty transaction");
 
             msg->queueId = lastBuilderQueue->id;
-            builderShift((8 - (messageLength & 7)) & 7, false);
+            builderShiftFast((8 - (messagePosition & 7)) & 7);
             unconfirmedLength += messageLength;
-            msg->length = messageLength;
+            msg->length = messageLength - sizeof(struct BuilderMsg);
+            lastBuilderQueue->length += messagePosition;
             if (lastBuilderQueue->start == BUFFER_START_UNDEFINED)
                 lastBuilderQueue->start = static_cast<uint64_t>(lastBuilderQueue->length);
 
@@ -286,38 +290,27 @@ namespace OpenLogReplicator {
         };
 
         void append(char character) {
-            lastBuilderQueue->data[lastBuilderQueue->length] = character;
-            ++messageLength;
-            builderShift(1, true);
+            lastBuilderQueue->data[lastBuilderQueue->length + messagePosition] = character;
+            builderShift(true);
         };
 
         void append(const char* str, uint64_t length) {
-            if (lastBuilderQueue->length + length < OUTPUT_BUFFER_DATA_SIZE) {
-                memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderQueue->length),
+            if (lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE) {
+                memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderQueue->length + messagePosition),
                        reinterpret_cast<const void*>(str), length);
-                lastBuilderQueue->length += length;
-                messageLength += length;
+                messagePosition += length;
             } else {
                 for (uint64_t i = 0; i < length; ++i)
                     append(*str++);
             }
         };
 
-        void append(const char* str) {
-            char character = *str++;
-            while (character != 0) {
-                append(character);
-                character = *str++;
-            }
-        };
-
-        void append(const std::string& str) {
+        inline void append(const std::string& str) {
             uint64_t length = str.length();
-            if (lastBuilderQueue->length + length < OUTPUT_BUFFER_DATA_SIZE) {
-                memcpy(lastBuilderQueue->data + lastBuilderQueue->length,
+            if (lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE) {
+                memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderQueue->length + messagePosition),
                        reinterpret_cast<const void*>(str.c_str()), length);
-                lastBuilderQueue->length += length;
-                messageLength += length;
+                messagePosition += length;
             } else {
                 const char* charStr = str.c_str();
                 for (uint64_t i = 0; i < length; ++i)
@@ -325,7 +318,7 @@ namespace OpenLogReplicator {
             }
         };
 
-        void columnUnknown(const std::string& columnName, const uint8_t* data, uint64_t length) {
+        inline void columnUnknown(const std::string& columnName, const uint8_t* data, uint64_t length) {
             valueBuffer[0] = '?';
             valueLength = 1;
             columnString(columnName);
@@ -337,22 +330,22 @@ namespace OpenLogReplicator {
             }
         };
 
-        void valueBufferAppend(const char* text, uint64_t length) {
+        inline void valueBufferAppend(const char* text, uint64_t length) {
             for (uint64_t i = 0; i < length; ++i)
-                valueBufferAppend(text[i]);
+                valueBufferAppend(*text++);
         };
 
-        void valueBufferAppend(uint8_t value) {
+        inline void valueBufferAppend(uint8_t value) {
             valueBuffer[valueLength++] = static_cast<char>(value);
         };
 
-        void valueBufferAppendHex(uint8_t value, uint64_t offset) {
+        inline void valueBufferAppendHex(uint8_t value, uint64_t offset) {
             valueBufferCheck(2, offset);
             valueBuffer[valueLength++] = Ctx::map16[(value >> 4) & 0x0F];
             valueBuffer[valueLength++] = Ctx::map16[value & 0x0F];
         };
 
-        void parseNumber(const uint8_t* data, uint64_t length, uint64_t offset) {
+        inline void parseNumber(const uint8_t* data, uint64_t length, uint64_t offset) {
             valueBufferPurge();
             valueBufferCheck(length * 2 + 2, offset);
 
@@ -489,7 +482,7 @@ namespace OpenLogReplicator {
             }
         };
 
-        std::string dumpLob(const uint8_t* data, uint64_t length) const {
+        inline std::string dumpLob(const uint8_t* data, uint64_t length) const {
             std::ostringstream ss;
             for (uint64_t j = 0; j < length; ++j) {
                 ss << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]);
@@ -497,7 +490,7 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        void addLobToOutput(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool isClob, bool hasPrev,
+        inline void addLobToOutput(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool isClob, bool hasPrev,
                             bool hasNext, bool isSystem) {
             if (isClob) {
                 parseString(data, length, charsetId, offset, appendData, hasPrev, hasNext, isSystem);
@@ -508,7 +501,7 @@ namespace OpenLogReplicator {
             };
         }
 
-        bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t length, uint64_t charsetId, typeObj obj, uint64_t offset, bool isClob, bool isSystem) {
+        inline bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t length, uint64_t charsetId, typeObj obj, uint64_t offset, bool isClob, bool isSystem) {
             bool appendData = false, hasPrev = false, hasNext = true;
             valueLength = 0;
             if (ctx->trace & TRACE_LOB_DATA)
@@ -1000,7 +993,7 @@ namespace OpenLogReplicator {
             return true;
         }
 
-        void parseRaw(const uint8_t* data, uint64_t length, uint64_t offset) {
+        inline void parseRaw(const uint8_t* data, uint64_t length, uint64_t offset) {
             valueBufferPurge();
             valueBufferCheck(length * 2, offset);
 
@@ -1013,7 +1006,7 @@ namespace OpenLogReplicator {
             }
         };
 
-        void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool hasPrev, bool hasNext,
+        inline void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId, uint64_t offset, bool appendData, bool hasPrev, bool hasNext,
                          bool isSystem) {
             CharacterSet* characterSet = locales->characterMap[charsetId];
             if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0)
@@ -1125,7 +1118,7 @@ namespace OpenLogReplicator {
             }
         };
 
-        void valueBufferCheck(uint64_t length, uint64_t offset) {
+        inline void valueBufferCheck(uint64_t length, uint64_t offset) {
             if (valueLength + length > VALUE_BUFFER_MAX)
                 throw RedoLogException(50012, "trying to allocate length for value: " + std::to_string(valueLength + length) +
                                               " exceeds maximum: " + std::to_string(VALUE_BUFFER_MAX) + " at offset: " + std::to_string(offset));
@@ -1144,7 +1137,7 @@ namespace OpenLogReplicator {
             valueBuffer = newValueBuffer;
         };
 
-        void valueBufferPurge() {
+        inline void valueBufferPurge() {
             valueLength = 0;
             if (valueBufferLength == VALUE_BUFFER_MIN)
                 return;

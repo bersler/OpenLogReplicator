@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <vector>
+
 #include "../common/Ctx.h"
 #include "../common/RedoLogRecord.h"
 #include "../common/types.h"
@@ -40,8 +42,9 @@ namespace OpenLogReplicator {
         uint64_t offset;
         uint64_t length;
         typeScn scn;
-        typeSubScn subScn;
         typeBlk block;
+        uint32_t number;
+        typeSubScn subScn;
     };
 
     class Parser final {
@@ -54,7 +57,7 @@ namespace OpenLogReplicator {
         Transaction* lastTransaction;
 
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
-        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
+        std::vector<LwnMember*> lwnMembers;
         uint64_t lwnAllocated;
         uint64_t lwnAllocatedMax;
         typeTime lwnTimestamp;
