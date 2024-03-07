@@ -481,9 +481,9 @@ namespace OpenLogReplicator {
             uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
             if (formatJson.HasMember("message")) {
                 messageFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "message");
-                if (messageFormat > 15)
+                if (messageFormat > 31)
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(messageFormat) +
-                                                        ", expected: one of {0 .. 15}");
+                                                        ", expected: one of {0 .. 31}");
                 if ((messageFormat & MESSAGE_FORMAT_FULL) != 0 && (messageFormat & (MESSAGE_FORMAT_SKIP_BEGIN | MESSAGE_FORMAT_SKIP_COMMIT)) != 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(messageFormat) +
                                                         ", expected: BEGIN/COMMIT flag is unset (" + std::to_string(MESSAGE_FORMAT_SKIP_BEGIN) + "/" +
