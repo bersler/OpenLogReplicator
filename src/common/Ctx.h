@@ -161,8 +161,6 @@ namespace OpenLogReplicator {
         }
 
     public:
-        static const char map16[17];
-        static const char map16U[17];
         static const char map64[65];
         static const char map64R[256];
         static const std::string memoryModules[MEMORY_MODULES_NUM];
@@ -228,6 +226,24 @@ namespace OpenLogReplicator {
 
         Ctx();
         virtual ~Ctx();
+
+        static inline char map10(uint64_t x) {
+            return static_cast<char>('0' + x);
+        }
+
+        static inline char map16(uint64_t x) {
+            if (x < 10)
+                return static_cast<char>('0' + x);
+            else
+                return static_cast<char>('a' + (x - 10));
+        }
+
+        static inline char map16U(uint64_t x) {
+            if (x < 10)
+                return static_cast<char>('0' + x);
+            else
+                return static_cast<char>('A' + (x - 10));
+        }
 
         inline uint16_t read16(const uint8_t* buf) const {
             if (bigEndian)

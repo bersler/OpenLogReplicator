@@ -108,7 +108,7 @@ namespace OpenLogReplicator {
 
                 if ((scnFormat & SCN_FORMAT_TEXT_HEX) != 0) {
                     append(R"("scns":"0x)", sizeof(R"("scns":"0x)") - 1);
-                    appendHex(scn, 16);
+                    appendHex16(scn);
                     append('"');
                 } else {
                     append(R"("scn":)", sizeof(R"("scn":)") - 1);
@@ -247,11 +247,11 @@ namespace OpenLogReplicator {
 
                 if (xidFormat == XID_FORMAT_TEXT_HEX) {
                     append(R"("xid":"0x)", sizeof(R"("xid":"0x)") - 1);
-                    appendHex(lastXid.usn(), 4);
+                    appendHex4(lastXid.usn());
                     append('.');
-                    appendHex(lastXid.slt(), 3);
+                    appendHex3(lastXid.slt());
                     append('.');
-                    appendHex(lastXid.sqn(), 8);
+                    appendHex8(lastXid.sqn());
                     append('"');
                 } else if (xidFormat == XID_FORMAT_TEXT_DEC) {
                     append(R"("xid":")", sizeof(R"("xid":")") - 1);
@@ -459,20 +459,59 @@ namespace OpenLogReplicator {
             append('}');
         }
 
-        inline void appendHex(uint64_t value, uint64_t length) {
-            const char map16[17] = "0123456789abcdef";
-            uint64_t j = (length - 1) * 4;
-            for (uint64_t i = 0; i < length; ++i) {
-                append(map16[(value >> j) & 0xF]);
-                j -= 4;
-            }
+        inline void appendHex2(uint8_t value) {
+            append(Ctx::map16((value >> 4) & 0xF));
+            append(Ctx::map16(value & 0xF));
+        }
+
+        inline void appendHex3(uint16_t value) {
+            append(Ctx::map16((value >> 8) & 0xF));
+            append(Ctx::map16((value >> 4) & 0xF));
+            append(Ctx::map16(value & 0xF));
+        }
+
+        inline void appendHex4(uint16_t value) {
+            append(Ctx::map16((value >> 12) & 0xF));
+            append(Ctx::map16((value >> 8) & 0xF));
+            append(Ctx::map16((value >> 4) & 0xF));
+            append(Ctx::map16(value & 0xF));
+        }
+
+        inline void appendHex8(uint32_t value) {
+            append(Ctx::map16((value >> 28) & 0xF));
+            append(Ctx::map16((value >> 24) & 0xF));
+            append(Ctx::map16((value >> 20) & 0xF));
+            append(Ctx::map16((value >> 16) & 0xF));
+            append(Ctx::map16((value >> 12) & 0xF));
+            append(Ctx::map16((value >> 8) & 0xF));
+            append(Ctx::map16((value >> 4) & 0xF));
+            append(Ctx::map16(value & 0xF));
+        }
+
+        inline void appendHex16(uint64_t value) {
+            append(Ctx::map16((value >> 60) & 0xF));
+            append(Ctx::map16((value >> 56) & 0xF));
+            append(Ctx::map16((value >> 52) & 0xF));
+            append(Ctx::map16((value >> 48) & 0xF));
+            append(Ctx::map16((value >> 44) & 0xF));
+            append(Ctx::map16((value >> 40) & 0xF));
+            append(Ctx::map16((value >> 36) & 0xF));
+            append(Ctx::map16((value >> 32) & 0xF));
+            append(Ctx::map16((value >> 28) & 0xF));
+            append(Ctx::map16((value >> 24) & 0xF));
+            append(Ctx::map16((value >> 20) & 0xF));
+            append(Ctx::map16((value >> 16) & 0xF));
+            append(Ctx::map16((value >> 12) & 0xF));
+            append(Ctx::map16((value >> 8) & 0xF));
+            append(Ctx::map16((value >> 4) & 0xF));
+            append(Ctx::map16(value & 0xF));
         }
 
         inline void appendDec(uint64_t value, uint64_t length) {
             char buffer[21];
 
             for (uint64_t i = 0; i < length; ++i) {
-                buffer[i] = '0' + static_cast<char>(value % 10);
+                buffer[i] = Ctx::map10(value % 10);
                 value /= 10;
             }
 
@@ -496,7 +535,7 @@ namespace OpenLogReplicator {
                 length = 1;
             } else {
                 while (value > 0) {
-                    buffer[length++] = '0' + static_cast<char>(value % 10);
+                    buffer[length++] = Ctx::map10(value % 10);
                     value /= 10;
                 }
             }
@@ -523,13 +562,13 @@ namespace OpenLogReplicator {
                 if (value < 0) {
                     value = -value;
                     while (value > 0) {
-                        buffer[length++] = '0' + static_cast<char>(value % 10);
+                        buffer[length++] = Ctx::map10(value % 10);
                         value /= 10;
                     }
                     buffer[length++] = '-';
                 } else {
                     while (value > 0) {
-                        buffer[length++] = '0' + static_cast<char>(value % 10);
+                        buffer[length++] = Ctx::map10(value % 10);
                         value /= 10;
                     }
                 }

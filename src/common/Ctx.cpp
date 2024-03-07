@@ -38,10 +38,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
 
 namespace OpenLogReplicator {
-    const char Ctx::map16[17] = "0123456789abcdef";
-
-    const char Ctx::map16U[17] = "0123456789ABCDEF";
-
     const char Ctx::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     const char Ctx::map64R[256] = {
@@ -383,14 +379,14 @@ namespace OpenLogReplicator {
         tz /= 60;
 
         result[6] = 0;
-        result[5] = static_cast<char>('0' + (tz % 10));
+        result[5] = map10(tz % 10);
         tz /= 10;
-        result[4] = static_cast<char>('0' + (tz % 6));
+        result[4] = map10(tz % 6);
         tz /= 6;
         result[3] = ':';
-        result[2] = static_cast<char>('0' + (tz % 10));
+        result[2] = map10(tz % 10);
         tz /= 10;
-        result[1] = static_cast<char>('0' + (tz % 10));
+        result[1] = map10(tz % 10);
 
         return result;
     }
@@ -461,36 +457,36 @@ namespace OpenLogReplicator {
             ++month;
             ++day;
 
-            buffer[3] = '0' + static_cast<char>(year % 10);
+            buffer[3] = map10(year % 10);
             year /= 10;
-            buffer[2] = '0' + static_cast<char>(year % 10);
+            buffer[2] = map10(year % 10);
             year /= 10;
-            buffer[1] = '0' + static_cast<char>(year % 10);
+            buffer[1] = map10(year % 10);
             year /= 10;
-            buffer[0] = '0' + static_cast<char>(year);
+            buffer[0] = map10(year);
             buffer[4] = '-';
-            buffer[6] = '0' + static_cast<char>(month % 10);
+            buffer[6] = map10(month % 10);
             month /= 10;
-            buffer[5] = '0' + static_cast<char>(month);
+            buffer[5] = map10(month);
             buffer[7] = '-';
-            buffer[9] = '0' + static_cast<char>(day % 10);
+            buffer[9] = map10(day % 10);
             day /= 10;
-            buffer[8] = '0' + static_cast<char>(day);
+            buffer[8] = map10(day);
             if (addT)
                 buffer[10] = 'T';
             else
                 buffer[10] = ' ';
-            buffer[12] = '0' + static_cast<char>(hour % 10);
+            buffer[12] = map10(hour % 10);
             hour /= 10;
-            buffer[11] = '0' + static_cast<char>(hour);
+            buffer[11] = map10(hour);
             buffer[13] = ':';
-            buffer[15] = '0' + static_cast<char>(minute % 10);
+            buffer[15] = map10(minute % 10);
             minute /= 10;
-            buffer[14] = '0' + static_cast<char>(minute);
+            buffer[14] = map10(minute);
             buffer[16] = ':';
-            buffer[18] = '0' + static_cast<char>(second % 10);
+            buffer[18] = map10(second % 10);
             second /= 10;
-            buffer[17] = '0' + static_cast<char>(second);
+            buffer[17] = map10(second);
             if (addZ) {
                 buffer[19] = 'Z';
                 buffer[20] = 0;
@@ -539,36 +535,36 @@ namespace OpenLogReplicator {
             ++month;
             ++day;
             buffer[0] = '-';
-            buffer[4] = '0' + static_cast<char>(year % 10);
+            buffer[4] = map10(year % 10);
             year /= 10;
-            buffer[3] = '0' + static_cast<char>(year % 10);
+            buffer[3] = map10(year % 10);
             year /= 10;
-            buffer[2] = '0' + static_cast<char>(year % 10);
+            buffer[2] = map10(year % 10);
             year /= 10;
-            buffer[1] = '0' + static_cast<char>(year);
+            buffer[1] = map10(year);
             buffer[5] = '-';
-            buffer[7] = '0' + static_cast<char>(month % 10);
+            buffer[7] = map10(month % 10);
             month /= 10;
-            buffer[6] = '0' + static_cast<char>(month);
+            buffer[6] = map10(month);
             buffer[8] = '-';
-            buffer[10] = '0' + static_cast<char>(day % 10);
+            buffer[10] = map10(day % 10);
             day /= 10;
-            buffer[9] = '0' + static_cast<char>(day);
+            buffer[9] = map10(day);
             if (addT)
                 buffer[11] = 'T';
             else
                 buffer[11] = ' ';
-            buffer[13] = '0' + static_cast<char>(hour % 10);
+            buffer[13] = map10(hour % 10);
             hour /= 10;
-            buffer[12] = '0' + static_cast<char>(hour);
+            buffer[12] = map10(hour);
             buffer[14] = ':';
-            buffer[16] = '0' + static_cast<char>(minute % 10);
+            buffer[16] = map10(minute % 10);
             minute /= 10;
-            buffer[15] = '0' + static_cast<char>(minute);
+            buffer[15] = map10(minute);
             buffer[17] = ':';
-            buffer[19] = '0' + static_cast<char>(second % 10);
+            buffer[19] = map10(second % 10);
             second /= 10;
-            buffer[18] = '0' + static_cast<char>(second);
+            buffer[18] = map10(second);
             if (addZ) {
                 buffer[20] = 'Z';
                 buffer[21] = 0;
@@ -872,7 +868,7 @@ namespace OpenLogReplicator {
             } else if (*c_str == '"' || *c_str == '\\') {
                 ss << '\\' << *c_str;
             } else if (*c_str < 32) {
-                ss << "\\u00" << map16[(*c_str >> 4) & 0x0F] << map16[*c_str & 0x0F];
+                ss << "\\u00" << Ctx::map16((*c_str >> 4) & 0x0F) << Ctx::map16(*c_str & 0x0F);
             } else {
                 ss << *c_str;
             }

@@ -355,24 +355,24 @@ namespace OpenLogReplicator {
 
                         if (data[11] < 20) {
                             uint64_t val = 20 - data[11];
-                            tz2[1] = '0' + static_cast<char>(val / 10);
-                            tz2[2] = '0' + static_cast<char>(val % 10);
+                            tz2[1] = Ctx::map10(val / 10);
+                            tz2[2] = Ctx::map10(val % 10);
                         } else {
                             uint64_t val = data[11] - 20;
-                            tz2[1] = '0' + static_cast<char>(val / 10);
-                            tz2[2] = '0' + static_cast<char>(val % 10);
+                            tz2[1] = Ctx::map10(val / 10);
+                            tz2[2] = Ctx::map10(val % 10);
                         }
 
                         tz2[3] = ':';
 
                         if (data[12] < 60) {
                             uint64_t val = 60 - data[12];
-                            tz2[4] = '0' + static_cast<char>(val / 10);
-                            tz2[5] = '0' + static_cast<char>(val % 10);
+                            tz2[4] = Ctx::map10(val / 10);
+                            tz2[5] = Ctx::map10(val % 10);
                         } else {
                             uint64_t val = data[12] - 60;
-                            tz2[4] = '0' + static_cast<char>(val / 10);
-                            tz2[5] = '0' + static_cast<char>(val % 10);
+                            tz2[4] = Ctx::map10(val / 10);
+                            tz2[5] = Ctx::map10(val % 10);
                         }
                         tz2[6] = 0;
                         tz = tz2;
@@ -435,7 +435,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = '0' + static_cast<char>(val % 10);
+                                    buffer[len++] = Ctx::map10(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -452,7 +452,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = '0' + static_cast<char>(val % 10);
+                                    buffer[len++] = Ctx::map10(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -468,9 +468,9 @@ namespace OpenLogReplicator {
 
                             if (month >= 10) {
                                 valueBuffer[valueLength++] = '1';
-                                valueBuffer[valueLength++] = '0' + static_cast<char>(month - 10);
+                                valueBuffer[valueLength++] = Ctx::map10(month - 10);
                             } else
-                                valueBuffer[valueLength++] = '0' + static_cast<char>(month);
+                                valueBuffer[valueLength++] = Ctx::map10(month);
 
                             columnString(column->name);
                         }
@@ -542,7 +542,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = '0' + static_cast<char>(val % 10);
+                                    buffer[len++] = Ctx::map10(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -556,18 +556,18 @@ namespace OpenLogReplicator {
                             else if (intervalDtsFormat == INTERVAL_DTS_FORMAT_ISO8601_DASH)
                                 valueBuffer[valueLength++] = '-';
 
-                            valueBuffer[valueLength++] = '0' + static_cast<char>(hour / 10);
-                            valueBuffer[valueLength++] = '0' + static_cast<char>(hour % 10);
+                            valueBuffer[valueLength++] = Ctx::map10(hour / 10);
+                            valueBuffer[valueLength++] = Ctx::map10(hour % 10);
                             valueBuffer[valueLength++] = ':';
-                            valueBuffer[valueLength++] = '0' + static_cast<char>(minute / 10);
-                            valueBuffer[valueLength++] = '0' + static_cast<char>(minute % 10);
+                            valueBuffer[valueLength++] = Ctx::map10(minute / 10);
+                            valueBuffer[valueLength++] = Ctx::map10(minute % 10);
                             valueBuffer[valueLength++] = ':';
-                            valueBuffer[valueLength++] = '0' + static_cast<char>(second / 10);
-                            valueBuffer[valueLength++] = '0' + static_cast<char>(second % 10);
+                            valueBuffer[valueLength++] = Ctx::map10(second / 10);
+                            valueBuffer[valueLength++] = Ctx::map10(second % 10);
                             valueBuffer[valueLength++] = '.';
 
                             for (uint64_t j = 0; j < 9; ++j) {
-                                valueBuffer[valueLength + 8 - j] = '0' + static_cast<char>(us % 10);
+                                valueBuffer[valueLength + 8 - j] = Ctx::map10(us % 10);
                                 us /= 10;
                             }
                             valueLength += 9;
@@ -599,7 +599,7 @@ namespace OpenLogReplicator {
                                 valueBuffer[valueLength++] = '0';
                             } else {
                                 while (val) {
-                                    buffer[len++] = '0' + static_cast<char>(val % 10);
+                                    buffer[len++] = Ctx::map10(val % 10);
                                     val /= 10;
                                 }
                                 while (len > 0)
@@ -628,7 +628,7 @@ namespace OpenLogReplicator {
             case SYS_COL_TYPE_BOOLEAN:
                 if (length == 1 && data[0] <= 1) {
                     valueLength = 0;
-                    valueBuffer[valueLength++] = '0' + data[0];
+                    valueBuffer[valueLength++] = Ctx::map10(data[0]);
                     columnNumber(column->name, column->precision, column->scale);
                 } else {
                     columnUnknown(column->name, data, length);
@@ -710,34 +710,6 @@ namespace OpenLogReplicator {
                 significand += 0x10000000000000;
             exponent = 0x400 - exponent;
             return -ldexpl(static_cast<long double>(significand) / static_cast<long double>(0x10000000000000), exponent);
-        }
-    }
-
-    void Builder::builderRotate(bool copy) {
-        auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(MEMORY_MODULE_BUILDER, true));
-        nextBuffer->next = nullptr;
-        nextBuffer->id = lastBuilderQueue->id + 1;
-        nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
-
-        // Message could potentially fit in one buffer
-        if (copy && msg != nullptr && messageLength + messagePosition < OUTPUT_BUFFER_DATA_SIZE) {
-            memcpy(reinterpret_cast<void*>(nextBuffer->data), msg, messagePosition);
-            msg = reinterpret_cast<BuilderMsg*>(nextBuffer->data);
-            msg->data = nextBuffer->data + sizeof(struct BuilderMsg);
-            nextBuffer->start = 0;
-        } else {
-            lastBuilderQueue->length += messagePosition;
-            messageLength += messagePosition;
-            messagePosition = 0;
-            nextBuffer->start = BUFFER_START_UNDEFINED;
-        }
-        nextBuffer->length = 0;
-
-        {
-            std::unique_lock<std::mutex> lck(mtx);
-            lastBuilderQueue->next = nextBuffer;
-            ++buffersAllocated;
-            lastBuilderQueue = nextBuffer;
         }
     }
 
@@ -2005,19 +1977,20 @@ namespace OpenLogReplicator {
 
                 std::string codeStr;
                 if (code < 0x100)
-                    codeStr = {ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                    codeStr = {Ctx::map16U((code >> 4) & 0x0F), Ctx::map16U(code & 0x0F)};
                 else if (code < 0x10000)
-                    codeStr = {ctx->map16U[(code >> 12) & 0x0F], ctx->map16U[(code >> 8) & 0x0F],
-                               ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                    codeStr = {Ctx::map16U((code >> 12) & 0x0F), Ctx::map16U((code >> 8) & 0x0F),
+                               Ctx::map16U((code >> 4) & 0x0F), Ctx::map16U(code & 0x0F)};
                 else if (code < 0x1000000)
-                    codeStr = {ctx->map16U[(code >> 20) & 0x0F], ctx->map16U[(code >> 16) & 0x0F],
-                               ctx->map16U[(code >> 12) & 0x0F], ctx->map16U[(code >> 8) & 0x0F],
-                               ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                    codeStr = {Ctx::map16U((code >> 20) & 0x0F), Ctx::map16U((code >> 16) & 0x0F),
+                               Ctx::map16U((code >> 12) & 0x0F), Ctx::map16U((code >> 8) & 0x0F),
+                               Ctx::map16U((code >> 4) & 0x0F), Ctx::map16U(code & 0x0F)};
                 else
-                    codeStr = {ctx->map16U[(code >> 28) & 0x0F], ctx->map16U[(code >> 24) & 0x0F],
-                               ctx->map16U[(code >> 20) & 0x0F], ctx->map16U[(code >> 16) & 0x0F],
-                               ctx->map16U[(code >> 12) & 0x0F], ctx->map16U[(code >> 8) & 0x0F],
-                               ctx->map16U[(code >> 4) & 0x0F], ctx->map16U[code & 0x0F]};
+                    codeStr = {Ctx::map16U((code >> 28) & 0x0F), Ctx::map16U((code >> 24) & 0x0F),
+                               Ctx::map16U((code >> 20) & 0x0F), Ctx::map16U((code >> 16) & 0x0F),
+                               Ctx::map16U((code >> 12) & 0x0F), Ctx::map16U((code >> 8) & 0x0F),
+                               Ctx::map16U((code >> 4) & 0x0F), Ctx::map16U(code & 0x0F)};
+
                 auto xdbXQnMapIdIt = xmlCtx->xdbXQnMapId.find(codeStr);
                 if (xdbXQnMapIdIt == xmlCtx->xdbXQnMapId.end()) {
                     ctx->warning(60036, "incorrect XML data: string too short, can't decode qn   " + codeStr);
@@ -2106,17 +2079,17 @@ namespace OpenLogReplicator {
 
                 std::string nmSpcId;
                 if (nmSpc < 256)
-                    nmSpcId = {ctx->map16U[(nmSpc >> 4) & 0x0F], ctx->map16U[nmSpc & 0x0F]};
+                    nmSpcId = {Ctx::map16U((nmSpc >> 4) & 0x0F), Ctx::map16U(nmSpc & 0x0F)};
                 else
-                    nmSpcId = {ctx->map16U[(nmSpc >> 12) & 0x0F], ctx->map16U[(nmSpc >> 8) & 0x0F],
-                               ctx->map16U[(nmSpc >> 4) & 0x0F], ctx->map16U[nmSpc & 0x0F]};
+                    nmSpcId = {Ctx::map16U((nmSpc >> 12) & 0x0F), Ctx::map16U((nmSpc >> 8) & 0x0F),
+                               Ctx::map16U((nmSpc >> 4) & 0x0F), Ctx::map16U(nmSpc & 0x0F)};
 
                 std::string dictId;
                 if (dict < 256)
-                    dictId = {ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
+                    dictId = {Ctx::map16U((dict >> 4) & 0x0F), Ctx::map16U(dict & 0x0F)};
                 else
-                    dictId = {ctx->map16U[(dict >> 12) & 0x0F], ctx->map16U[(dict >> 8) & 0x0F],
-                              ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
+                    dictId = {Ctx::map16U((dict >> 12) & 0x0F), Ctx::map16U((dict >> 8) & 0x0F),
+                              Ctx::map16U((dict >> 4) & 0x0F), Ctx::map16U(dict & 0x0F)};
 
                 auto dictNmSpcMapIt = dictNmSpcMap.find(dictId);
                 if (dictNmSpcMapIt != dictNmSpcMap.end()) {
@@ -2153,10 +2126,10 @@ namespace OpenLogReplicator {
 
                 std::string dictId;
                 if (dict < 256)
-                    dictId = {ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
+                    dictId = {Ctx::map16U((dict >> 4) & 0x0F), Ctx::map16U(dict & 0x0F)};
                 else
-                    dictId = {ctx->map16U[(dict >> 12) & 0x0F], ctx->map16U[(dict >> 8) & 0x0F],
-                              ctx->map16U[(dict >> 4) & 0x0F], ctx->map16U[dict & 0x0F]};
+                    dictId = {Ctx::map16U((dict >> 12) & 0x0F), Ctx::map16U((dict >> 8) & 0x0F),
+                              Ctx::map16U((dict >> 4) & 0x0F), Ctx::map16U(dict & 0x0F)};
 
                 auto dictNmSpcMapIt = dictNmSpcMap.find(dictId);
                 if (dictNmSpcMapIt == dictNmSpcMap.end()) {
