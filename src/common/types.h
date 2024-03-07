@@ -108,6 +108,7 @@ typedef int64_t time_ut;
 // JSON only:
 #define MESSAGE_FORMAT_SKIP_BEGIN               4
 #define MESSAGE_FORMAT_SKIP_COMMIT              8
+#define MESSAGE_FORMAT_ADD_OFFSET              16
 
 #define TIMESTAMP_FORMAT_UNIX_NANO              0
 #define TIMESTAMP_FORMAT_UNIX_MICRO             1

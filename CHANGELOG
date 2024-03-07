@@ -1,6 +1,7 @@
 1.5.1
 - enhancement: add parameter -p
 - enhancement: performance optimizations
+- enhancement: add offset to payload for debugging purposes
 
 1.5.0
 - code style cleanup

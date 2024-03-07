@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.5.1
-:revdate: 2024-02-14
+:revdate: 2024-03-07
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -792,7 +792,7 @@ Possible values are:
 * `4` -- Value in string format, number of years and months separated by `"-"` -- `"val": "1-8"`.
 
 |`message` [[message]]
-|_number_, min: 0, max: 15, default: 0
+|_number_, min: 0, max: 31, default: 0
 |Message format specification.
 
 Value is a sum of:
@@ -811,6 +811,8 @@ For JSON only target, the following additional flags are available:
 * `0x0004` -- Skip begin message (when using flag `0x0001`).
 
 * `0x0008` -- Skip commit message (when using flag `0x0001`).
+
+* `0x0010` -- Add information about data offset (for debugging purpopses).
 
 |`rid` [[rid]]
 |_number_, min: 0, max: 1, default: 0
