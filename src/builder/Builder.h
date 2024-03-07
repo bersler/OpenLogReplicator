@@ -154,7 +154,35 @@ namespace OpenLogReplicator {
 
         double decodeFloat(const uint8_t* data);
         long double decodeDouble(const uint8_t* data);
-        void builderRotate(bool copy);
+
+        inline void builderRotate(bool copy) {
+            auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(MEMORY_MODULE_BUILDER, true));
+            nextBuffer->next = nullptr;
+            nextBuffer->id = lastBuilderQueue->id + 1;
+            nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
+
+            // Message could potentially fit in one buffer
+            if (copy && msg != nullptr && messageLength + messagePosition < OUTPUT_BUFFER_DATA_SIZE) {
+                memcpy(reinterpret_cast<void*>(nextBuffer->data), msg, messagePosition);
+                msg = reinterpret_cast<BuilderMsg*>(nextBuffer->data);
+                msg->data = nextBuffer->data + sizeof(struct BuilderMsg);
+                nextBuffer->start = 0;
+            } else {
+                lastBuilderQueue->length += messagePosition;
+                messageLength += messagePosition;
+                messagePosition = 0;
+                nextBuffer->start = BUFFER_START_UNDEFINED;
+            }
+            nextBuffer->length = 0;
+
+            {
+                std::unique_lock<std::mutex> lck(mtx);
+                lastBuilderQueue->next = nextBuffer;
+                ++buffersAllocated;
+                lastBuilderQueue = nextBuffer;
+            }
+        }
+
         void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, uint64_t offset,
                           bool after, bool compressed);
 
@@ -341,8 +369,8 @@ namespace OpenLogReplicator {
 
         inline void valueBufferAppendHex(uint8_t value, uint64_t offset) {
             valueBufferCheck(2, offset);
-            valueBuffer[valueLength++] = Ctx::map16[(value >> 4) & 0x0F];
-            valueBuffer[valueLength++] = Ctx::map16[value & 0x0F];
+            valueBuffer[valueLength++] = Ctx::map16((value >> 4) & 0x0F);
+            valueBuffer[valueLength++] = Ctx::map16(value & 0x0F);
         };
 
         inline void parseNumber(const uint8_t* data, uint64_t length, uint64_t offset) {
@@ -370,10 +398,10 @@ namespace OpenLogReplicator {
                         // Part of the total - omitting first zero for a first digit
                         value = data[j] - 1;
                         if (value < 10)
-                            valueBufferAppend('0' + value);
+                            valueBufferAppend(Ctx::map10(value));
                         else {
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
+                            valueBufferAppend(Ctx::map10(value / 10));
+                            valueBufferAppend(Ctx::map10(value % 10));
                         }
 
                         ++j;
@@ -382,8 +410,8 @@ namespace OpenLogReplicator {
                         while (digits > 0) {
                             value = data[j] - 1;
                             if (j <= jMax) {
-                                valueBufferAppend('0' + (value / 10));
-                                valueBufferAppend('0' + (value % 10));
+                                valueBufferAppend(Ctx::map10(value / 10));
+                                valueBufferAppend(Ctx::map10(value % 10));
                                 ++j;
                             } else {
                                 valueBufferAppend('0');
@@ -405,16 +433,16 @@ namespace OpenLogReplicator {
 
                         while (j <= jMax - 1) {
                             value = data[j] - 1;
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
+                            valueBufferAppend(Ctx::map10(value / 10));
+                            valueBufferAppend(Ctx::map10(value % 10));
                             ++j;
                         }
 
                         // Last digit - omitting 0 at the end
                         value = data[j] - 1;
-                        valueBufferAppend('0' + (value / 10));
+                        valueBufferAppend(Ctx::map10(value / 10));
                         if ((value % 10) != 0)
-                            valueBufferAppend('0' + (value % 10));
+                            valueBufferAppend(Ctx::map10(value % 10));
                     }
                 } else if (digits < 0x80 && jMax >= 1) {
                     // Negative number
@@ -434,10 +462,10 @@ namespace OpenLogReplicator {
 
                         value = 101 - data[j];
                         if (value < 10)
-                            valueBufferAppend('0' + value);
+                            valueBufferAppend(Ctx::map10(value));
                         else {
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
+                            valueBufferAppend(Ctx::map10(value / 10));
+                            valueBufferAppend(Ctx::map10(value % 10));
                         }
                         ++j;
                         --digits;
@@ -445,8 +473,8 @@ namespace OpenLogReplicator {
                         while (digits > 0) {
                             if (j <= jMax) {
                                 value = 101 - data[j];
-                                valueBufferAppend('0' + (value / 10));
-                                valueBufferAppend('0' + (value % 10));
+                                valueBufferAppend(Ctx::map10(value / 10));
+                                valueBufferAppend(Ctx::map10(value % 10));
                                 ++j;
                             } else {
                                 valueBufferAppend('0');
@@ -467,15 +495,15 @@ namespace OpenLogReplicator {
 
                         while (j <= jMax - 1) {
                             value = 101 - data[j];
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
+                            valueBufferAppend(Ctx::map10(value / 10));
+                            valueBufferAppend(Ctx::map10(value % 10));
                             ++j;
                         }
 
                         value = 101 - data[j];
-                        valueBufferAppend('0' + (value / 10));
+                        valueBufferAppend(Ctx::map10(value / 10));
                         if ((value % 10) != 0)
-                            valueBufferAppend('0' + (value % 10));
+                            valueBufferAppend(Ctx::map10(value % 10));
                     }
                 } else
                     throw RedoLogException(50009, "error parsing numeric value at offset: " + std::to_string(offset));
@@ -1001,8 +1029,8 @@ namespace OpenLogReplicator {
                 return;
 
             for (uint64_t j = 0; j < length; ++j) {
-                valueBufferAppend(Ctx::map16U[data[j] >> 4]);
-                valueBufferAppend(Ctx::map16U[data[j] & 0x0F]);
+                valueBufferAppend(Ctx::map16U(data[j] >> 4));
+                valueBufferAppend(Ctx::map16U(data[j] & 0x0F));
             }
         };
 

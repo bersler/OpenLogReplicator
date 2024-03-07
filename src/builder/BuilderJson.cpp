@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
         appendEscape(columnName);
         append(R"(":")", sizeof(R"(":")") - 1);
         for (uint64_t j = 0; j < length; ++j)
-            appendHex(*(data + j), 2);
+            appendHex2(*(data + j));
         append('"');
     }
 

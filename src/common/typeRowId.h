@@ -120,24 +120,24 @@ namespace OpenLogReplicator {
         }
 
         void toHex(char* str) const {
-            str[0] = Ctx::map16[(dba >> 28) & 0x0F];
-            str[1] = Ctx::map16[(dba >> 24) & 0x0F];
-            str[2] = Ctx::map16[(dba >> 20) & 0x0F];
-            str[3] = Ctx::map16[(dba >> 16) & 0x0F];
-            str[4] = Ctx::map16[(dba >> 12) & 0x0F];
-            str[5] = Ctx::map16[(dba >> 8) & 0x0F];
-            str[6] = Ctx::map16[(dba >> 4) & 0x0F];
-            str[7] = Ctx::map16[(dba) & 0x0F];
+            str[0] = Ctx::map16((dba >> 28) & 0x0F);
+            str[1] = Ctx::map16((dba >> 24) & 0x0F);
+            str[2] = Ctx::map16((dba >> 20) & 0x0F);
+            str[3] = Ctx::map16((dba >> 16) & 0x0F);
+            str[4] = Ctx::map16((dba >> 12) & 0x0F);
+            str[5] = Ctx::map16((dba >> 8) & 0x0F);
+            str[6] = Ctx::map16((dba >> 4) & 0x0F);
+            str[7] = Ctx::map16((dba) & 0x0F);
             str[8] = '.';
-            str[9] = Ctx::map16[(dataObj >> 12) & 0x0F];
-            str[10] = Ctx::map16[(dataObj >> 8) & 0x0F];
-            str[11] = Ctx::map16[(dataObj >> 4) & 0x0F];
-            str[12] = Ctx::map16[(dataObj) & 0x0F];
+            str[9] = Ctx::map16((dataObj >> 12) & 0x0F);
+            str[10] = Ctx::map16((dataObj >> 8) & 0x0F);
+            str[11] = Ctx::map16((dataObj >> 4) & 0x0F);
+            str[12] = Ctx::map16((dataObj) & 0x0F);
             str[13] = '.';
-            str[14] = Ctx::map16[(slot >> 12) & 0x0F];
-            str[15] = Ctx::map16[(slot >> 8) & 0x0F];
-            str[16] = Ctx::map16[(slot >> 4) & 0x0F];
-            str[17] = Ctx::map16[(slot) & 0x0F];
+            str[14] = Ctx::map16((slot >> 12) & 0x0F);
+            str[15] = Ctx::map16((slot >> 8) & 0x0F);
+            str[16] = Ctx::map16((slot >> 4) & 0x0F);
+            str[17] = Ctx::map16((slot) & 0x0F);
             str[18] = 0;
         }
 
