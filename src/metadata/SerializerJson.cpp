@@ -748,7 +748,7 @@ namespace OpenLogReplicator {
             uint64_t property2 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 1);
 
             metadata->schema->dictSysColAdd(rowIdStr, obj, col, segCol, intCol, name_, type, length, precision, scale, charsetForm, charsetId,
-                                            null_ != 0, property1, property2);
+                                            null_, property1, property2);
         }
     }
 

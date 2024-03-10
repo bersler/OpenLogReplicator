@@ -1435,6 +1435,22 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
+                        if (table != nullptr && table->columns[column]->nullable == false &&
+                                values[column][VALUE_BEFORE] != nullptr && values[column][VALUE_AFTER] != nullptr &&
+                                lengths[column][VALUE_BEFORE] == 0 && lengths[column][VALUE_AFTER] > 0) {
+                            if (!table->columns[column]->nullWarning) {
+                                table->columns[column]->nullWarning = true;
+                                ctx->warning(60037, "observed UPDATE operation for NOT NULL column with NULL value for table " +
+                                        table->owner + "." + table->name + " column " + table->columns[column]->name);
+                            }
+                            if (FLAG(REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING)) {
+                                values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
+                                lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
+                                values[column][VALUE_BEFORE_SUPP] = values[column][VALUE_AFTER_SUPP];
+                                lengths[column][VALUE_BEFORE_SUPP] = lengths[column][VALUE_AFTER_SUPP];
+                            }
+                        }
+
                         if (table != nullptr && columnFormat < COLUMN_FORMAT_FULL_UPD) {
                             if (table->columns[column]->numPk == 0) {
                                 // Remove unchanged column values - only for tables with a defined primary key

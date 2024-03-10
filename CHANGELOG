@@ -2,6 +2,7 @@
 - enhancement: add parameter -p
 - enhancement: performance optimizations
 - enhancement: add offset to payload for debugging purposes
+- enhancement: support UPDATE operations for NOT NULL columns with occasional NULL values (experimental)
 
 1.5.0
 - code style cleanup
