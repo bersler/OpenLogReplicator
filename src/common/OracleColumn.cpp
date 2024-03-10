@@ -42,7 +42,8 @@ namespace OpenLogReplicator {
             unused(newUnused),
             added(newAdded),
             guard(newGuard),
-            xmlType(newXmlType) {
+            xmlType(newXmlType),
+            nullWarning(false) {
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleColumn& column) {

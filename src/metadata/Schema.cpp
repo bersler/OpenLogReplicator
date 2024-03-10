@@ -916,7 +916,7 @@ namespace OpenLogReplicator {
     }
 
     void Schema::dictSysColAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name, typeType type,
-                               uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, bool null_,
+                               uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_,
                                uint64_t property1, uint64_t property2) {
         typeRowId rowId(rowIdStr);
         if (sysColMapRowId.find(rowId) != sysColMapRowId.end())

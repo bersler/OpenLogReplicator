@@ -44,6 +44,7 @@ namespace OpenLogReplicator {
         bool added;
         bool guard;
         bool xmlType;
+        bool nullWarning;
 
         OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
                      int64_t newPrecision, int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newHidden,

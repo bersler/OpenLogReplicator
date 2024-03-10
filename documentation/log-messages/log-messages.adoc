@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.5.1
-:revdate: 2024-01-30
+:revdate: 2024-03-11
 :imagesdir: ./images
 :toc: preamble
 
@@ -961,6 +961,16 @@ The client requested a database which is not configured in the program.
 ==== code 60036, "incorrect XML data: <message>"
 
 Data for XMLTYPE column type is not correct.
+
+==== code 60037, "observed UPDATE operation for NOT NULL column with NULL value for table <owner>.<table> column <column>"
+
+There could be cases that due to some upgrades from old versions or other unknown reasons, the BEFORE image for UPDATE command contains NULL value for a column that has been defied as NOT NULL.
+
+By default, OpenLogReplicator would just print the informational message (but just once per column) and continue with the replication.
+
+It is also possible to treat the AFTER image as the correct value and copy it to the BEFORE image of the column value.
+This feature is experimental.
+To achieve this behavior, the xref:../reference-manual/reference-manual.adoc#flags[flags] parameter should be set appropriately.
 
 === Internal warnings (7xxxx)
 
