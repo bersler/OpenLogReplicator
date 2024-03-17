@@ -28,6 +28,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "builder/BuilderJson.h"
 #include "common/Ctx.h"
+#include "common/MemoryManager.h"
+#include "common/types.h"
 #include "common/Thread.h"
 #include "common/types.h"
 #include "common/typeTime.h"
@@ -114,6 +116,10 @@ namespace OpenLogReplicator {
         for (Locales* locales: localess)
             delete locales;
         localess.clear();
+
+        for (MemoryManager* memoryManager: memoryManagers)
+            delete memoryManager;
+        memoryManagers.clear();
 
         if (fid != -1)
             close(fid);
@@ -226,6 +232,8 @@ namespace OpenLogReplicator {
 
             uint64_t memoryMinMb = 32;
             uint64_t memoryMaxMb = 1024;
+            uint64_t memorySwapMb = 768;
+            const char *memorySwapPath = "./tmp";
             uint64_t readBufferMax = memoryMaxMb / 4 / MEMORY_CHUNK_SIZE_MB;
 
             // MEMORY
@@ -255,6 +263,14 @@ namespace OpenLogReplicator {
                     readBufferMax = memoryMaxMb / 4 / MEMORY_CHUNK_SIZE_MB;
                     if (readBufferMax > 32 / MEMORY_CHUNK_SIZE_MB)
                         readBufferMax = 32 / MEMORY_CHUNK_SIZE_MB;
+                    memorySwapMb = memoryMaxMb * 3 / 4 ;
+                }
+
+                if (memoryJson.HasMember("swap-mb")) {
+                    memorySwapMb = Ctx::getJsonFieldU64(configFileName, memoryJson, "swap-mb");
+                    if (memorySwapMb > memoryMaxMb - 1)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"swap-mb\" value: " + std::to_string(memorySwapMb) +
+                                                            ", expected maximum \"max-mb\"-1 value (" + std::to_string(memoryMaxMb - 1) + ")");
                 }
 
                 if (memoryJson.HasMember("read-buffer-max-mb")) {
@@ -268,6 +284,9 @@ namespace OpenLogReplicator {
                                                             std::to_string(readBufferMax) + ", expected: at least: " +
                                                             std::to_string(MEMORY_CHUNK_SIZE_MB * 2));
                 }
+
+                if (memoryJson.HasMember("swap-path") && memorySwapMb > 0)
+                    memorySwapPath = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, memoryJson, "swap-path");
             }
 
             const char* name = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, sourceJson, "name");
@@ -409,7 +428,7 @@ namespace OpenLogReplicator {
             }
 
             // MEMORY MANAGER
-            ctx->initialize(memoryMinMb, memoryMaxMb, readBufferMax);
+            ctx->initialize(memoryMinMb, memoryMaxMb, memorySwapMb, readBufferMax);
 
             // METADATA
             Metadata* metadata = new Metadata(ctx, locales, name, conId, startScn,
@@ -435,6 +454,11 @@ namespace OpenLogReplicator {
                                              configFileStat.st_mtime);
             checkpoints.push_back(checkpoint);
             ctx->spawnThread(checkpoint);
+
+            // MEMORY MANAGER
+            auto memoryManager = new MemoryManager(ctx, std::string(alias) + "-memory-manager", memorySwapPath);
+            memoryManagers.push_back(memoryManager);
+            ctx->spawnThread(memoryManager);
 
             // TRANSACTION BUFFER
             TransactionBuffer* transactionBuffer = new TransactionBuffer(ctx);

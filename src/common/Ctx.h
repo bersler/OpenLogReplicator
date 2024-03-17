@@ -129,6 +129,7 @@ namespace OpenLogReplicator {
         bool bigEndian;
         std::atomic<uint64_t> memoryMinMb;
         std::atomic<uint64_t> memoryMaxMb;
+        std::atomic<uint64_t> memorySwapMb;
 
         std::atomic<uint8_t**> memoryChunks;
         std::atomic<uint64_t> memoryChunksMin;
@@ -564,7 +565,7 @@ namespace OpenLogReplicator {
         time_t valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz);
         uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ);
 
-        void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
+        void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newMemorySwapMb, uint64_t newReadBufferMax);
         void wakeAllOutOfMemory();
         [[nodiscard]] uint64_t getMaxUsedMemory() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;
