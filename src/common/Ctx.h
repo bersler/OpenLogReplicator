@@ -100,6 +100,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define DISABLE_CHECKS_GRANTS                   0x00000001
 #define DISABLE_CHECKS_SUPPLEMENTAL_LOG         0x00000002
 #define DISABLE_CHECKS_BLOCK_SUM                0x00000004
+#define DISABLE_CHECKS_JSON_TAGS                0x00000008
 #define DISABLE_CHECKS(x)                       ((ctx->disableChecks&(x))!=0)
 
 #define MEMORY_MODULE_BUILDER                   0
@@ -536,6 +537,7 @@ namespace OpenLogReplicator {
             }
         }
 
+        static void checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const char* names[]);
         [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static int16_t getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field);

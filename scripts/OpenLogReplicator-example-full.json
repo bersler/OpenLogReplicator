@@ -60,8 +60,7 @@
         "table": "OPENLOGREPLICATOR",
         "stop-log-switches": 0,
         "stop-checkpoints": 0,
-        "stop-transactions": 0,
-        "stop-dmls": 0
+        "stop-transactions": 0
       },
       "arch": "online",
       "flags": 0,

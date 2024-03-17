@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.5.1
-:revdate: 2024-03-11
+:revdate: 2024-03-17
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -418,7 +418,7 @@ Timezone should be in format `+xx:yy` or `-xx:yy`.
 The time zone is used only as base timezone for values for TIMESTAMP WITH LOCAL TZ type.
 
 |`disable-checks`
-|_number_, min: 0, max: 7, default: 0
+|_number_, min: 0, max: 15, default: 0
 |A sum of numbers:
 
 * `0x0001` -- During startup, don't check if the database user has appropriate grants to system tables.
@@ -430,6 +430,12 @@ The time zone is used only as base timezone for values for TIMESTAMP WITH LOCAL 
 _NOTE:_ This field is valid only for `online` type.
 
 _IMPORTANT:_ This might increase performance a bit, but it is not recommended to use this option.
+
+* `0x0008` -- Don't check if JSON checkpoint and schema files and OpenLogReplicator.json configuration file contain invalid JSON tags.
+
+_NOTE:_ For performance reasons, user might disable those checks.
+They are recommended to be enabled in production environment, especially when during program upgrades, the field names change.
+Referring to old invalid field names might cause the program to fail.
 
 |`host-timezone`
 |_string_, default: time zone of OpenLogReplicator host
