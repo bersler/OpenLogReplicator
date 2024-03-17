@@ -149,6 +149,23 @@ namespace OpenLogReplicator {
         }
     }
 
+    void Ctx::checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const char* names[]) {
+        for (auto const& child : value.GetObject()) {
+            bool found = false;
+            for (int i = 0; names[i] != nullptr; ++i) {
+                if (strcmp(child.name.GetString(), names[i]) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found && memcmp(child.name.GetString(), "xdb-xnm", 7) != 0 &&
+                    memcmp(child.name.GetString(), "xdb-xpt", 7) != 0 &&
+                    memcmp(child.name.GetString(), "xdb-xqn", 7) != 0)
+                throw DataException(20003, "file: " + fileName + " - parse error, attribute " + child.name.GetString() + " not expected");
+        }
+    }
+
     const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");

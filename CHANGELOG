@@ -3,6 +3,7 @@
 - enhancement: performance optimizations
 - enhancement: add offset to payload for debugging purposes
 - enhancement: support UPDATE operations for NOT NULL columns with occasional NULL values (experimental)
+- enhancement: add JSON validation for invalid tags
 
 1.5.0
 - code style cleanup

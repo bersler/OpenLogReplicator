@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.5.1
-:revdate: 2024-03-11
+:revdate: 2024-03-17
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -21,6 +21,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: performance optimizations
 - enhancement: add offset to payload for debugging purposes
 - enhancement: support UPDATE operations for NOT NULL columns with occasional NULL values (experimental)
+- enhancement: add JSON validation for invalid tags
 
 === Version 1.5.0
 - code style cleanup

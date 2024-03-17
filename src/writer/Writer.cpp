@@ -412,6 +412,11 @@ namespace OpenLogReplicator {
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
                                        " - parse error: " + GetParseError_En(document.GetParseError()));
 
+        if ((metadata->ctx->disableChecks & DISABLE_CHECKS_JSON_TAGS) == 0) {
+            static const char* documentNames[] = {"database", "resetlogs", "activation", "scn", "idx", nullptr};
+            Ctx::checkJsonFields(name, document, documentNames);
+        }
+
         const char* databaseJson = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
         if (database != databaseJson)
             throw DataException(20001, "file: " + name + " - invalid database name: " + databaseJson);
