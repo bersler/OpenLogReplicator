@@ -629,7 +629,7 @@ namespace OpenLogReplicator {
                     char conNameChar[81];
                     stmt2.defineString(2, conNameChar, sizeof(conNameChar));
                     char conContext[81];
-                    stmt2.defineString(3, context, sizeof(conContext));
+                    stmt2.defineString(3, conContext, sizeof(conContext));
 
                     if (stmt2.executeQuery()) {
                         metadata->conId = conId;
