@@ -33,7 +33,6 @@
       "writer": {
         "type": "file",
         "output": "output-%t.json",
-        "format": "%F-%T",
         "new-line": 1,
         "max-file-size": 1073741824,
         "append": 0

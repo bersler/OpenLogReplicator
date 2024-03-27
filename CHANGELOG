@@ -5,6 +5,7 @@
 - enhancement: support UPDATE operations for NOT NULL columns with occasional NULL values (experimental)
 - enhancement: add JSON validation for invalid tags
 - fix: context field contains invalid value
+- fix: invalid tag in example json config file
 
 1.5.0
 - code style cleanup
