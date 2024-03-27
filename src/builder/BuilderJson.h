@@ -515,7 +515,7 @@ namespace OpenLogReplicator {
                 value /= 10;
             }
 
-            if (lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE) {
+            if (likely(lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE)) {
                 uint8_t *ptr = lastBuilderQueue->data + lastBuilderQueue->length + messagePosition;
                 for (uint64_t i = 0; i < length; ++i)
                     *ptr++ = buffer[length - i - 1];
@@ -540,7 +540,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE) {
+            if (likely(lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE)) {
                 uint8_t* ptr = lastBuilderQueue->data + lastBuilderQueue->length + messagePosition;
                 for (uint64_t i = 0; i < length; ++i)
                     *ptr++ = buffer[length - i - 1];

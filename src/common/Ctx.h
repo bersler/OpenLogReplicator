@@ -115,6 +115,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define UNIX_AD9999_12_31                       253402300799L
 #define BAD_TIMEZONE                            0x7FFFFFFFFFFFFFFF
 
+#define likely(x)                               __builtin_expect(!!(x),1)
+#define unlikely(x)                             __builtin_expect(!!(x),0)
+
 #ifndef GLOBALS
 extern uint64_t OLR_LOCALES;
 #endif
