@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.5.1
-:revdate: 2024-03-28
+:revdate: 2024-03-29
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -24,6 +24,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: add JSON validation for invalid tags
 - fix: context field contains invalid value
 - fix: invalid tag in example json config file
+- fix: online redo log are read in rare cases for archived redo log only mode
 
 === Version 1.5.0
 - code style cleanup
