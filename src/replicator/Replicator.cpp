@@ -169,7 +169,8 @@ namespace OpenLogReplicator {
 
             loadDatabaseMetadata();
             metadata->readCheckpoints();
-            updateOnlineRedoLogData();
+            if (!FLAG(REDO_FLAGS_ARCH_ONLY))
+                updateOnlineRedoLogData();
             ctx->info(0, "timezone: " + ctx->timezoneToString(-timezone) + ", db-timezone: " + ctx->timezoneToString(metadata->dbTimezone) +
                          ", log-timezone: " + ctx->timezoneToString(ctx->logTimezone) + ", host-timezone: " + ctx->timezoneToString(ctx->hostTimezone));
 

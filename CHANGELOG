@@ -6,6 +6,7 @@
 - enhancement: add JSON validation for invalid tags
 - fix: context field contains invalid value
 - fix: invalid tag in example json config file
+- fix: online redo log are read in rare cases for archived redo log only mode
 
 1.5.0
 - code style cleanup
