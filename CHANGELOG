@@ -7,6 +7,7 @@
 - fix: context field contains invalid value
 - fix: invalid tag in example json config file
 - fix: online redo log are read in rare cases for archived redo log only mode
+- fix: don't write checkpoint file until the first data chunk is processed
 
 1.5.0
 - code style cleanup
