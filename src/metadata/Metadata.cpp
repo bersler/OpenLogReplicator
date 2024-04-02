@@ -363,7 +363,7 @@ namespace OpenLogReplicator {
                 return;
 
             // Nothing processed so far
-            if (checkpointScn == ZERO_SCN || lastCheckpointScn == checkpointScn)
+            if (checkpointScn == ZERO_SCN || lastCheckpointScn == checkpointScn || checkpointSequence == ZERO_SEQ)
                 return;
 
             if (lastSequence == sequence && !force &&
