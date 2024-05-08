@@ -1337,6 +1337,9 @@ namespace OpenLogReplicator {
                     valuesMerge[base] &= ~mask;
                 }
 
+                if (table != nullptr && column >= table->maxSegCol)
+                    break;
+
                 if (values[column][VALUE_BEFORE] == nullptr) {
                     bool guardPresent = false;
                     if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][VALUE_BEFORE] != nullptr) {
@@ -1392,6 +1395,8 @@ namespace OpenLogReplicator {
                             break;
                         if ((valuesSet[base] & mask) == 0)
                             continue;
+                        if (column >= table->maxSegCol)
+                            break;
 
                         ctx->logTrace(TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
                                                  std::to_string(values[column][VALUE_BEFORE] != nullptr ? lengths[column][VALUE_BEFORE] : -1) + ") A(" +
@@ -1434,66 +1439,74 @@ namespace OpenLogReplicator {
                             break;
                         if ((valuesSet[base] & mask) == 0)
                             continue;
+                        if (table != nullptr && column >= table->maxSegCol)
+                            break;
 
-                        if (table != nullptr && table->columns[column]->nullable == false &&
+                        if (table != nullptr) {
+                            if (table->columns[column]->nullable == false &&
                                 values[column][VALUE_BEFORE] != nullptr && values[column][VALUE_AFTER] != nullptr &&
                                 lengths[column][VALUE_BEFORE] == 0 && lengths[column][VALUE_AFTER] > 0) {
-                            if (!table->columns[column]->nullWarning) {
-                                table->columns[column]->nullWarning = true;
-                                ctx->warning(60037, "observed UPDATE operation for NOT NULL column with NULL value for table " +
-                                        table->owner + "." + table->name + " column " + table->columns[column]->name);
+                                if (!table->columns[column]->nullWarning) {
+                                    table->columns[column]->nullWarning = true;
+                                    ctx->warning(60037, "observed UPDATE operation for NOT NULL column with NULL value for table " +
+                                            table->owner + "." + table->name + " column " + table->columns[column]->name);
+                                }
+                                if (FLAG(REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING)) {
+                                    values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
+                                    lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
+                                    values[column][VALUE_BEFORE_SUPP] = values[column][VALUE_AFTER_SUPP];
+                                    lengths[column][VALUE_BEFORE_SUPP] = lengths[column][VALUE_AFTER_SUPP];
+                                }
                             }
-                            if (FLAG(REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING)) {
-                                values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
-                                lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
-                                values[column][VALUE_BEFORE_SUPP] = values[column][VALUE_AFTER_SUPP];
-                                lengths[column][VALUE_BEFORE_SUPP] = lengths[column][VALUE_AFTER_SUPP];
-                            }
-                        }
 
-                        if (table != nullptr && columnFormat < COLUMN_FORMAT_FULL_UPD) {
-                            if (table->columns[column]->numPk == 0) {
-                                // Remove unchanged column values - only for tables with a defined primary key
-                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
-                                    values[column][VALUE_AFTER] != nullptr) {
-                                    if (lengths[column][VALUE_BEFORE] == 0 ||
-                                        memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
+                            if (columnFormat < COLUMN_FORMAT_FULL_UPD) {
+                                if (table->columns[column]->numPk == 0) {
+                                    // Remove unchanged column values - only for tables with a defined primary key
+                                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
+                                        values[column][VALUE_AFTER] != nullptr) {
+                                        if (lengths[column][VALUE_BEFORE] == 0 ||
+                                            memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
+                                            valuesSet[base] &= ~mask;
+                                            values[column][VALUE_BEFORE] = nullptr;
+                                            values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                            values[column][VALUE_AFTER] = nullptr;
+                                            values[column][VALUE_AFTER_SUPP] = nullptr;
+                                            continue;
+                                        }
+                                    }
+
+                                    // Remove columns additionally present, but null
+                                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 &&
+                                            values[column][VALUE_AFTER] == nullptr) {
                                         valuesSet[base] &= ~mask;
                                         values[column][VALUE_BEFORE] = nullptr;
                                         values[column][VALUE_BEFORE_SUPP] = nullptr;
-                                        values[column][VALUE_AFTER] = nullptr;
                                         values[column][VALUE_AFTER_SUPP] = nullptr;
                                         continue;
                                     }
-                                }
 
-                                // Remove columns additionally present, but null
-                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
-                                    valuesSet[base] &= ~mask;
-                                    values[column][VALUE_BEFORE] = nullptr;
-                                    values[column][VALUE_BEFORE_SUPP] = nullptr;
-                                    values[column][VALUE_AFTER_SUPP] = nullptr;
-                                    continue;
-                                }
+                                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 &&
+                                            values[column][VALUE_BEFORE] == nullptr) {
+                                        valuesSet[base] &= ~mask;
+                                        values[column][VALUE_AFTER] = nullptr;
+                                        values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                        values[column][VALUE_AFTER_SUPP] = nullptr;
+                                        continue;
+                                    }
 
-                                if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
-                                    valuesSet[base] &= ~mask;
-                                    values[column][VALUE_AFTER] = nullptr;
-                                    values[column][VALUE_BEFORE_SUPP] = nullptr;
-                                    values[column][VALUE_AFTER_SUPP] = nullptr;
-                                    continue;
-                                }
+                                } else {
+                                    // Leave null value & propagate
+                                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 &&
+                                            values[column][VALUE_AFTER] == nullptr) {
+                                        values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
+                                        lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
+                                    }
 
-                            } else {
-                                // Leave null value & propagate
-                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
-                                    values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
-                                    lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
-                                }
-
-                                if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
-                                    values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
-                                    lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
+                                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 &&
+                                            values[column][VALUE_BEFORE] == nullptr) {
+                                        values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
+                                        lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
+                                    }
                                 }
                             }
                         }
@@ -1562,6 +1575,8 @@ namespace OpenLogReplicator {
                                 break;
                             if ((valuesSet[base] & mask) == 0)
                                 continue;
+                            if (column >= table->maxSegCol)
+                                break;
                             if (table->columns[column]->numPk > 0)
                                 continue;
 
@@ -1636,6 +1651,8 @@ namespace OpenLogReplicator {
                                 break;
                             if ((valuesSet[base] & mask) == 0)
                                 continue;
+                            if (column >= table->maxSegCol)
+                                break;
                             if (table->columns[column]->numPk > 0)
                                 continue;
 
