@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
             ss << R"(,"min-tran":{)" <<
                R"("seq":)" << std::dec << metadata->minSequence <<
                R"(,"offset":)" << std::dec << metadata->minOffset <<
-               R"(,"xid:":")" << metadata->minXid.toString() << R"("})";
+               R"(,"xid":")" << metadata->minXid.toString() << R"("})";
         }
         ss << R"(,"big-endian":)" << std::dec << (metadata->ctx->isBigEndian() ? 1 : 0) <<
            R"(,"context":")";
