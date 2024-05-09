@@ -9,6 +9,7 @@
 - fix: online redo log are read in rare cases for archived redo log only mode
 - fix: don't write checkpoint file until the first data chunk is processed
 - fix: minor bug related to crash with large number of columns
+- fix: error: "parse error, attribute xid: not expected"
 
 1.5.0
 - code style cleanup
