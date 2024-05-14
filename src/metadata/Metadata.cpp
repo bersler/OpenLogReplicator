@@ -510,7 +510,7 @@ namespace OpenLogReplicator {
     void Metadata::deleteOldCheckpoints() {
         std::set<typeScn> scnToDrop;
 
-        if (FLAG(REDO_FLAGS_CHECKPOINT_KEEP))
+        if (ctx->flagsSet(Ctx::REDO_FLAGS_CHECKPOINT_KEEP))
             return;
 
         {

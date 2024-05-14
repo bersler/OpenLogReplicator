@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
         fileSize = fileStat.st_size;
 
 #if __linux__
-        if (!FLAG(REDO_FLAGS_DIRECT_DISABLE))
+        if (!ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
             flags |= O_DIRECT;
 #endif
 
@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
         }
 
 #if __APPLE__
-        if (!FLAG(REDO_FLAGS_DIRECT_DISABLE)) {
+        if (!ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
             if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0)
                 ctx->error(10008, "file: " + fileName + " - set no cache returned: " + strerror(errno));
         }
@@ -113,9 +113,9 @@ namespace OpenLogReplicator {
         }
 
         // Maybe direct IO does not work
-        if (bytes < 0 && !FLAG(REDO_FLAGS_DIRECT_DISABLE)) {
+        if (bytes < 0 && !ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
             ctx->hint("if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " +
-                      std::to_string(REDO_FLAGS_DIRECT_DISABLE));
+                      std::to_string(Ctx::REDO_FLAGS_DIRECT_DISABLE));
         }
 
         if (ctx->trace & TRACE_PERFORMANCE) {

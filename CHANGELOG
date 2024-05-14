@@ -11,6 +11,7 @@
 - fix: minor bug related to crash with large number of columns
 - fix: error: "parse error, attribute xid: not expected"
 - fix: in rare cases, the AFTER value for UPDATE is missing
+- code style cleanup
 
 1.5.0
 - code style cleanup

@@ -75,28 +75,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TRACE_SLEEP                             0x00020000
 #define TRACE_CONDITION                         0x00040000
 
-#define REDO_FLAGS_ARCH_ONLY                    0x00000001
-#define REDO_FLAGS_SCHEMALESS                   0x00000002
-#define REDO_FLAGS_ADAPTIVE_SCHEMA              0x00000004
-#define REDO_FLAGS_DIRECT_DISABLE               0x00000008
-#define REDO_FLAGS_IGNORE_DATA_ERRORS           0x00000010
-#define REDO_FLAGS_SHOW_DDL                     0x00000020
-#define REDO_FLAGS_SHOW_HIDDEN_COLUMNS          0x00000040
-#define REDO_FLAGS_SHOW_GUARD_COLUMNS           0x00000080
-#define REDO_FLAGS_SHOW_NESTED_COLUMNS          0x00000100
-#define REDO_FLAGS_SHOW_UNUSED_COLUMNS          0x00000200
-#define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x00000400
-#define REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS     0x00000800
-#define REDO_FLAGS_SHOW_CHECKPOINT              0x00001000
-#define REDO_FLAGS_CHECKPOINT_KEEP              0x00002000
-#define REDO_FLAGS_VERIFY_SCHEMA                0x00004000
-#define REDO_FLAGS_RAW_COLUMN_DATA              0x00008000
-#define REDO_FLAGS_EXPERIMENTAL_XMLTYPE         0x00010000
-#define REDO_FLAGS_EXPERIMENTAL_JSON            0x00020000
-#define REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING 0x00040000
-
-#define FLAG(x)                                 ((ctx->flags&(x))!=0)
-
 #define DISABLE_CHECKS_GRANTS                   0x00000001
 #define DISABLE_CHECKS_SUPPLEMENTAL_LOG         0x00000002
 #define DISABLE_CHECKS_BLOCK_SUM                0x00000004
@@ -163,6 +141,30 @@ namespace OpenLogReplicator {
         }
 
     public:
+        static constexpr uint64_t REDO_FLAGS_ARCH_ONLY = 0x00000001;
+        static constexpr uint64_t REDO_FLAGS_SCHEMALESS = 0x00000002;
+        static constexpr uint64_t REDO_FLAGS_ADAPTIVE_SCHEMA = 0x00000004;
+        static constexpr uint64_t REDO_FLAGS_DIRECT_DISABLE = 0x00000008;
+        static constexpr uint64_t REDO_FLAGS_IGNORE_DATA_ERRORS = 0x00000010;
+        static constexpr uint64_t REDO_FLAGS_SHOW_DDL = 0x00000020;
+        static constexpr uint64_t REDO_FLAGS_SHOW_HIDDEN_COLUMNS = 0x00000040;
+        static constexpr uint64_t REDO_FLAGS_SHOW_GUARD_COLUMNS = 0x00000080;
+        static constexpr uint64_t REDO_FLAGS_SHOW_NESTED_COLUMNS = 0x00000100;
+        static constexpr uint64_t REDO_FLAGS_SHOW_UNUSED_COLUMNS = 0x00000200;
+        static constexpr uint64_t REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS = 0x00000400;
+        static constexpr uint64_t REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS = 0x00000800;
+        static constexpr uint64_t REDO_FLAGS_SHOW_CHECKPOINT = 0x00001000;
+        static constexpr uint64_t REDO_FLAGS_CHECKPOINT_KEEP = 0x00002000;
+        static constexpr uint64_t REDO_FLAGS_VERIFY_SCHEMA = 0x00004000;
+        static constexpr uint64_t REDO_FLAGS_RAW_COLUMN_DATA = 0x00008000;
+        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_XMLTYPE = 0x00010000;
+        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_JSON = 0x00020000;
+        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING = 0x00040000;
+
+        bool flagsSet(uint64_t mask) const {
+            return (flags & mask) != 0;
+        }
+
         static const char map64[65];
         static const char map64R[256];
         static const std::string memoryModules[MEMORY_MODULES_NUM];

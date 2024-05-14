@@ -2307,7 +2307,7 @@ namespace OpenLogReplicator {
         }
 
         // SYS.OBJ$
-        if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+        if (!ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
             // delete objects owned by users that are not in the list of users
             for (auto sysObj: sysObjSetTouched) {
                 auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
@@ -2505,7 +2505,7 @@ namespace OpenLogReplicator {
             SysUser* sysUser = nullptr;
             auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
             if (sysUserMapUserIt == sysUserMapUser.end()) {
-                if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                if (!ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
                     continue;
                 sysUserAdaptive.name = "USER_" + std::to_string(sysObj->obj);
                 sysUser = &sysUserAdaptive;
@@ -2732,7 +2732,7 @@ namespace OpenLogReplicator {
                 columnTmp = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, columnName,
                                              sysCol->type, sysCol->length, sysCol->precision, sysCol->scale,
                                              numPk, charmapId, sysCol->isNullable(), sysCol->isHidden() &&
-                                                                                     !(xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)),
+                                                                                     !(xmlType && ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)),
                                              sysCol->isStoredAsLob(), sysCol->isSystemGenerated(), sysCol->isNested(),
                                              sysCol->isUnused(), sysCol->isAdded(), sysCol->isGuard(), xmlType);
 
