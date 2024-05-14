@@ -2470,7 +2470,7 @@ namespace OpenLogReplicator {
     }
 
     void Schema::updateXmlCtx() {
-        if ((ctx->flags & REDO_FLAGS_EXPERIMENTAL_XMLTYPE) != 0) {
+        if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
             xmlCtxDefault = nullptr;
             auto schemaXmlMapIt = schemaXmlMap.begin();
             while (schemaXmlMapIt != schemaXmlMap.end()) {
@@ -2483,7 +2483,6 @@ namespace OpenLogReplicator {
             if (xmlCtxDefault == nullptr)
                 throw DataException(50069, "no active XML context found");
         }
-
     }
 
     void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
@@ -2615,7 +2614,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (!DISABLE_CHECKS(DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0 &&
+            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0 &&
                 !suppLogDbAll && !sysUser->isSuppLogAll()) {
 
                 SysCDefKey sysCDefKeyFirst(sysObj->obj, 0);
@@ -2900,7 +2899,7 @@ namespace OpenLogReplicator {
             if (sysTab->isRowMovement())
                 ss << ", row movement enabled";
 
-            if (!DISABLE_CHECKS(DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0) {
+            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0) {
                 // Use a default primary key
                 if (keys.empty()) {
                     if (tableTmp->totalPk == 0)

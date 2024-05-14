@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR_BLOCK;
         }
 
-        if (!DISABLE_CHECKS(DISABLE_CHECKS_BLOCK_SUM)) {
+        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_BLOCK_SUM)) {
             typeSum chSum = ctx->read16(buffer + 14);
             typeSum chSumCalculated = calcChSum(buffer, blockSize);
             if (chSum != chSumCalculated) {
@@ -170,7 +170,7 @@ namespace OpenLogReplicator {
                     if (!hintDisplayed) {
                         if (!configuredBlockSum) {
                             ctx->hint("set DB_BLOCK_CHECKSUM = TYPICAL on the database or turn off consistency checking in OpenLogReplicator"
-                                      " setting parameter disable-checks: " + std::to_string(DISABLE_CHECKS_BLOCK_SUM) + " for the reader");
+                                      " setting parameter disable-checks: " + std::to_string(Ctx::DISABLE_CHECKS_BLOCK_SUM) + " for the reader");
                         }
                         hintDisplayed = true;
                     }

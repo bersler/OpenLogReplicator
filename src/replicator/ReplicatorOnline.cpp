@@ -551,7 +551,7 @@ namespace OpenLogReplicator {
             return;
 
         typeScn currentScn;
-        if (!DISABLE_CHECKS(DISABLE_CHECKS_GRANTS)) {
+        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_GRANTS)) {
             checkTableForGrants("SYS.V_$ARCHIVED_LOG");
             checkTableForGrants("SYS.V_$DATABASE");
             checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
@@ -646,7 +646,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (!DISABLE_CHECKS(DISABLE_CHECKS_GRANTS) && !standby) {
+        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_GRANTS) && !standby) {
             checkTableForGrantsFlashback("SYS.CCOL$", currentScn);
             checkTableForGrantsFlashback("SYS.CDEF$", currentScn);
             checkTableForGrantsFlashback("SYS.COL$", currentScn);

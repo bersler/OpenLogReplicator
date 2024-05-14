@@ -75,12 +75,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TRACE_SLEEP                             0x00020000
 #define TRACE_CONDITION                         0x00040000
 
-#define DISABLE_CHECKS_GRANTS                   0x00000001
-#define DISABLE_CHECKS_SUPPLEMENTAL_LOG         0x00000002
-#define DISABLE_CHECKS_BLOCK_SUM                0x00000004
-#define DISABLE_CHECKS_JSON_TAGS                0x00000008
-#define DISABLE_CHECKS(x)                       ((ctx->disableChecks&(x))!=0)
-
 #define MEMORY_MODULE_BUILDER                   0
 #define MEMORY_MODULE_PARSER                    1
 #define MEMORY_MODULE_READER                    2
@@ -163,6 +157,15 @@ namespace OpenLogReplicator {
 
         bool flagsSet(uint64_t mask) const {
             return (flags & mask) != 0;
+        }
+
+        static constexpr uint64_t DISABLE_CHECKS_GRANTS = 0x00000001;
+        static constexpr uint64_t DISABLE_CHECKS_SUPPLEMENTAL_LOG = 0x00000002;
+        static constexpr uint64_t DISABLE_CHECKS_BLOCK_SUM = 0x00000004;
+        static constexpr uint64_t DISABLE_CHECKS_JSON_TAGS = 0x00000008;
+
+        bool disableChecksSet(uint64_t mask) {
+            return (disableChecks & mask) != 0;
         }
 
         static const char map64[65];

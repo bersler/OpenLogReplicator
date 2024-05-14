@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
             throw ConfigurationException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                                 " - parse error: " + GetParseError_En(document.GetParseError()));
 
-        if ((metadata->ctx->disableChecks & DISABLE_CHECKS_JSON_TAGS) == 0) {
+        if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
             static const char* documentChildNames[] = {"version", "source", nullptr};
             Ctx::checkJsonFields(configFileName, document, documentChildNames);
         }
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
-            if ((metadata->ctx->disableChecks & DISABLE_CHECKS_JSON_TAGS) == 0) {
+            if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                 static const char* sourceChildNames[] = {"debug", "table", "filter", nullptr};
                 Ctx::checkJsonFields(configFileName, sourceJson, sourceChildNames);
             }
