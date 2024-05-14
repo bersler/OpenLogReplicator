@@ -718,7 +718,7 @@ namespace OpenLogReplicator {
                 hasPreviousValue = true;
 
             append(R"("db":")", sizeof(R"("db":")") - 1);
-            append(metadata->conName);
+            append(metadata->conName.length() ? metadata->conName : metadata->context);
             append('"');
         }
     }
