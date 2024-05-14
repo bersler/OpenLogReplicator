@@ -109,9 +109,6 @@ namespace OpenLogReplicator {
             if (!regexWorks)
                 throw RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
-            if (getuid() == 0)
-                throw RuntimeException(10020, "program is run as root, you should never do that");
-
             if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
                 // Print banner and exit
                 return 0;
