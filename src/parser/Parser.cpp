@@ -556,7 +556,7 @@ namespace OpenLogReplicator {
             return;
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                                                                      true, ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -568,7 +568,7 @@ namespace OpenLogReplicator {
         }
 
         if (table == nullptr) {
-            if (!FLAG(REDO_FLAGS_SCHEMALESS) && !FLAG(REDO_FLAGS_SHOW_DDL)) {
+            if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_DDL)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
                 return;
             }
@@ -624,7 +624,7 @@ namespace OpenLogReplicator {
             return;
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                                                                      true, ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -650,7 +650,7 @@ namespace OpenLogReplicator {
             return;
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                                                                      true, ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -667,7 +667,7 @@ namespace OpenLogReplicator {
         }
 
         if (table == nullptr) {
-            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
                 return;
             }
@@ -723,7 +723,7 @@ namespace OpenLogReplicator {
         }
 
         if (table == nullptr) {
-            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "rls ", redoLogRecord1);
                 return;
             }
@@ -769,7 +769,7 @@ namespace OpenLogReplicator {
             transactionBuffer->brokenXidMapList.erase(xidMap);
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                                                                      true, ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
 
@@ -841,7 +841,7 @@ namespace OpenLogReplicator {
             return;
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                                                                      true, ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -891,7 +891,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (table == nullptr) {
-                    if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+                    if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
                         transaction->log(ctx, "tbl1", redoLogRecord1);
                         transaction->log(ctx, "tbl2", redoLogRecord2);
                         return;
@@ -976,7 +976,7 @@ namespace OpenLogReplicator {
         }
 
         if (table == nullptr) {
-            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "rls1", redoLogRecord1);
                 transaction->log(ctx, "rls2", redoLogRecord2);
                 return;
@@ -1028,7 +1028,7 @@ namespace OpenLogReplicator {
             return;
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                                                                      true, ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
         if (transaction == nullptr)
             return;
         lastTransaction = transaction;
@@ -1103,7 +1103,7 @@ namespace OpenLogReplicator {
                     redoLogRecord2->xid = parentXid;
 
                     transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                     true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                                                                     true, ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
                     if (transaction == nullptr) {
                         if (ctx->trace & TRACE_LOB)
                             ctx->logTrace(TRACE_LOB, "parent transaction not found");
@@ -1247,7 +1247,7 @@ namespace OpenLogReplicator {
                                   lwnConfirmedBlock * reader->getBlockSize());
 
         ctx->info(0, "processing redo log: " + toString() + " offset: " + std::to_string(reader->getBufferStart()));
-        if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA) && !metadata->schema->loaded && ctx->versionStr.length() > 0) {
+        if (ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA) && !metadata->schema->loaded && ctx->versionStr.length() > 0) {
             metadata->loadAdaptiveSchema();
             metadata->schema->loaded = true;
         }
@@ -1421,13 +1421,13 @@ namespace OpenLogReplicator {
                         try {
                             analyzeLwn(member);
                         } catch (DataException& ex) {
-                            if (FLAG(REDO_FLAGS_IGNORE_DATA_ERRORS)) {
+                            if (ctx->flagsSet(Ctx::REDO_FLAGS_IGNORE_DATA_ERRORS)) {
                                 ctx->error(ex.code, ex.msg);
                                 ctx->warning(60013, "forced to continue working in spite of error");
                             } else
                                 throw DataException(ex.code, "runtime error, aborting further redo log processing: " + ex.msg);
                         } catch (RedoLogException& ex) {
-                            if (FLAG(REDO_FLAGS_IGNORE_DATA_ERRORS)) {
+                            if (ctx->flagsSet(Ctx::REDO_FLAGS_IGNORE_DATA_ERRORS)) {
                                 ctx->error(ex.code, ex.msg);
                                 ctx->warning(60013, "forced to continue working in spite of error");
                             } else

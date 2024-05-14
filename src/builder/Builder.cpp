@@ -144,17 +144,17 @@ namespace OpenLogReplicator {
             return;
         }
         OracleColumn* column = table->columns[col];
-        if (FLAG(REDO_FLAGS_RAW_COLUMN_DATA)) {
+        if (ctx->flagsSet(Ctx::REDO_FLAGS_RAW_COLUMN_DATA)) {
             columnRaw(column->name, data, length);
             return;
         }
-        if (column->guard && !FLAG(REDO_FLAGS_SHOW_GUARD_COLUMNS))
+        if (column->guard && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_GUARD_COLUMNS))
             return;
-        if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
+        if (column->nested && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_NESTED_COLUMNS))
             return;
-        if (column->hidden && !FLAG(REDO_FLAGS_SHOW_HIDDEN_COLUMNS))
+        if (column->hidden && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_HIDDEN_COLUMNS))
             return;
-        if (column->unused && !FLAG(REDO_FLAGS_SHOW_UNUSED_COLUMNS))
+        if (column->unused && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_UNUSED_COLUMNS))
             return;
 
         if (length == 0)
@@ -186,7 +186,7 @@ namespace OpenLogReplicator {
             case SYS_COL_TYPE_BLOB:
                 if (after) {
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
-                        if (column->xmlType && FLAG(REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
+                        if (column->xmlType && ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
                             if (parseXml(xmlCtx, reinterpret_cast<uint8_t*>(valueBuffer), valueLength, offset))
                                 columnString(column->name);
                             else
@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
                 break;
 
             case SYS_COL_TYPE_JSON:
-                if (FLAG(REDO_FLAGS_EXPERIMENTAL_JSON))
+                if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_JSON))
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys))
                         columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
                 break;
@@ -801,7 +801,8 @@ namespace OpenLogReplicator {
                                                  redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+                 table->matchesCondition(ctx, 'i', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
+                 ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
@@ -892,7 +893,8 @@ namespace OpenLogReplicator {
                                                  redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+                 table->matchesCondition(ctx, 'd', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
+                 ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
@@ -1451,7 +1453,7 @@ namespace OpenLogReplicator {
                                     ctx->warning(60037, "observed UPDATE operation for NOT NULL column with NULL value for table " +
                                             table->owner + "." + table->name + " column " + table->columns[column]->name);
                                 }
-                                if (FLAG(REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING)) {
+                                if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING)) {
                                     values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
                                     lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
                                     values[column][VALUE_BEFORE_SUPP] = values[column][VALUE_AFTER_SUPP];
@@ -1529,7 +1531,8 @@ namespace OpenLogReplicator {
                 systemTransaction->processUpdate(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'u', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+                 table->matchesCondition(ctx, 'u', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
+                    ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processUpdate(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
@@ -1609,7 +1612,8 @@ namespace OpenLogReplicator {
                 systemTransaction->processInsert(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'i', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+                 table->matchesCondition(ctx, 'i', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
+                 ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
@@ -1685,7 +1689,8 @@ namespace OpenLogReplicator {
                 systemTransaction->processDelete(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
-                 table->matchesCondition(ctx, 'd', attributes)) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) || FLAG(REDO_FLAGS_SCHEMALESS)) {
+                 table->matchesCondition(ctx, 'd', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
+                 ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
@@ -1757,7 +1762,7 @@ namespace OpenLogReplicator {
         const char* sqlText = reinterpret_cast<char*>(redoLogRecord1->data) + fieldPos;
 
         // Track DDL
-        if (FLAG(REDO_FLAGS_SHOW_DDL))
+        if (ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_DDL))
             processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, sqlText, sqlLength - 1);
 
         switch (type) {
