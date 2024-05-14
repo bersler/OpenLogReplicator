@@ -1563,6 +1563,8 @@ namespace OpenLogReplicator {
                             valuesSet[base] |= mask;
                             values[column][VALUE_AFTER] = reinterpret_cast<uint8_t*>(1);
                             lengths[column][VALUE_AFTER] = 0;
+                            if (static_cast<uint64_t>(column) >= valuesMax)
+                                valuesMax = column + 1;
                         }
                     }
                 } else {
@@ -1596,6 +1598,8 @@ namespace OpenLogReplicator {
                             valuesSet[base] |= mask;
                             values[column][VALUE_AFTER] = reinterpret_cast<uint8_t*>(1);
                             lengths[column][VALUE_AFTER] = 0;
+                            if (static_cast<uint64_t>(column) >= valuesMax)
+                                valuesMax = column + 1;
                         }
                     }
                 }
