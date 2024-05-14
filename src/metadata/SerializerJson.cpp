@@ -543,7 +543,7 @@ namespace OpenLogReplicator {
                     if (document.HasMember("min-tran")) {
                         const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(fileName, document, "min-tran");
                         if ((metadata->ctx->disableChecks & DISABLE_CHECKS_JSON_TAGS) == 0) {
-                            static const char* minTranJsonChildNames[] = {"seq", "offset", nullptr};
+                            static const char* minTranJsonChildNames[] = {"seq", "offset", "xid", nullptr};
                             Ctx::checkJsonFields(fileName, minTranJson, minTranJsonChildNames);
                         }
 
