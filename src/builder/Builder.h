@@ -1195,6 +1195,103 @@ namespace OpenLogReplicator {
         bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t length, uint64_t offset);
 
     public:
+        static constexpr uint64_t ATTRIBUTES_FORMAT_DEFAULT = 0;
+        static constexpr uint64_t ATTRIBUTES_FORMAT_BEGIN = 1;
+        static constexpr uint64_t ATTRIBUTES_FORMAT_DML = 2;
+        static constexpr uint64_t ATTRIBUTES_FORMAT_COMMIT = 4;
+
+        static constexpr uint64_t DB_FORMAT_DEFAULT = 0;
+        static constexpr uint64_t DB_FORMAT_ADD_DML = 1;
+        static constexpr uint64_t DB_FORMAT_ADD_DDL = 2;
+
+        static constexpr uint64_t CHAR_FORMAT_UTF8 = 0;
+        static constexpr uint64_t CHAR_FORMAT_NOMAPPING = 1;
+        static constexpr uint64_t CHAR_FORMAT_HEX = 2;
+
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_NANO = 0;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_MICRO = 1;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_MILLI = 2;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX = 3;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_NANO_STRING = 4;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_MICRO_STRING = 5;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_MILLI_STRING = 6;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_STRING = 7;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_ISO8601_SPACE = 8;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_ISO8601_COMMA = 9;
+        static constexpr uint64_t INTERVAL_DTS_FORMAT_ISO8601_DASH = 10;
+
+        static constexpr uint64_t INTERVAL_YTM_FORMAT_MONTHS = 0;
+        static constexpr uint64_t INTERVAL_YTM_FORMAT_MONTHS_STRING = 1;
+        static constexpr uint64_t INTERVAL_YTM_FORMAT_STRING_YM_SPACE = 2;
+        static constexpr uint64_t INTERVAL_YTM_FORMAT_STRING_YM_COMMA = 3;
+        static constexpr uint64_t INTERVAL_YTM_FORMAT_STRING_YM_DASH = 4;
+
+        static constexpr uint64_t MESSAGE_FORMAT_DEFAULT = 0;
+        static constexpr uint64_t MESSAGE_FORMAT_FULL = 1;
+        static constexpr uint64_t MESSAGE_FORMAT_ADD_SEQUENCES = 2;
+        // JSON only:
+        static constexpr uint64_t MESSAGE_FORMAT_SKIP_BEGIN = 4;
+        static constexpr uint64_t MESSAGE_FORMAT_SKIP_COMMIT = 8;
+        static constexpr uint64_t MESSAGE_FORMAT_ADD_OFFSET = 16;
+
+        static constexpr uint64_t RID_FORMAT_SKIP = 0;
+        static constexpr uint64_t RID_FORMAT_TEXT = 1;
+
+        static constexpr uint64_t SCN_FORMAT_NUMERIC = 0;
+        static constexpr uint64_t SCN_FORMAT_TEXT_HEX = 1;
+
+        static constexpr uint64_t SCN_JUST_BEGIN = 0;
+        static constexpr uint64_t SCN_ALL_PAYLOADS = 1;
+        static constexpr uint64_t SCN_ALL_COMMIT_VALUE = 2;
+
+        static constexpr uint64_t SCHEMA_FORMAT_NAME = 0;
+        static constexpr uint64_t SCHEMA_FORMAT_FULL = 1;
+        static constexpr uint64_t SCHEMA_FORMAT_REPEATED =2;
+        static constexpr uint64_t SCHEMA_FORMAT_OBJ = 4;
+
+        static constexpr uint64_t TIMESTAMP_JUST_BEGIN = 0;
+        static constexpr uint64_t TIMESTAMP_ALL_PAYLOADS = 1;
+
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX_NANO = 0;
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX_MICRO = 1;
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX_MILLI = 2;
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX = 3;
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX_NANO_STRING = 4;
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX_MICRO_STRING = 5;
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX_MILLI_STRING = 6;
+        static constexpr uint64_t TIMESTAMP_FORMAT_UNIX_STRING = 7;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601_NANO_TZ = 8;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601_MICRO_TZ = 9;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601_MILLI_TZ = 10;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601_TZ = 11;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601_NANO = 12;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601_MICRO = 13;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601_MILLI = 14;
+        static constexpr uint64_t TIMESTAMP_FORMAT_ISO8601 = 15;
+
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING = 0;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_UNIX_MICRO_STRING = 1;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_UNIX_MILLI_STRING = 2;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_UNIX_STRING = 3;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_NANO_TZ = 4;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_MICRO_TZ = 5;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_MILLI_TZ = 6;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_TZ = 7;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_NANO = 8;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_MICRO = 9;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_MILLI = 10;
+        static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601 = 11;
+
+        static constexpr uint64_t UNKNOWN_FORMAT_QUESTION_MARK = 0;
+        static constexpr uint64_t UNKNOWN_FORMAT_DUMP = 1;
+
+        static constexpr uint64_t UNKNOWN_TYPE_HIDE = 0;
+        static constexpr uint64_t UNKNOWN_TYPE_SHOW = 1;
+
+        static constexpr uint64_t XID_FORMAT_TEXT_HEX = 0;
+        static constexpr uint64_t XID_FORMAT_TEXT_DEC = 1;
+        static constexpr uint64_t XID_FORMAT_NUMERIC = 2;
+
         SystemTransaction* systemTransaction;
         uint64_t buffersAllocated;
         BuilderQueue* firstBuilderQueue;

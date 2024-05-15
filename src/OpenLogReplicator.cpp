@@ -498,7 +498,7 @@ namespace OpenLogReplicator {
                 Ctx::checkJsonFields(configFileName, formatJson, formatNames);
             }
 
-            uint64_t dbFormat = DB_FORMAT_DEFAULT;
+            uint64_t dbFormat = Builder::DB_FORMAT_DEFAULT;
             if (formatJson.HasMember("db")) {
                 dbFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "db");
                 if (dbFormat > 3)
@@ -506,7 +506,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 3}");
             }
 
-            uint64_t attributesFormat = ATTRIBUTES_FORMAT_DEFAULT;
+            uint64_t attributesFormat = Builder::ATTRIBUTES_FORMAT_DEFAULT;
             if (formatJson.HasMember("attributes")) {
                 attributesFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
                 if (attributesFormat > 7)
@@ -514,7 +514,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 7}");
             }
 
-            uint64_t intervalDtsFormat = INTERVAL_DTS_FORMAT_UNIX_NANO;
+            uint64_t intervalDtsFormat = Builder::INTERVAL_DTS_FORMAT_UNIX_NANO;
             if (formatJson.HasMember("interval-dts")) {
                 intervalDtsFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "interval-dts");
                 if (intervalDtsFormat > 10)
@@ -522,7 +522,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 10}");
             }
 
-            uint64_t intervalYtmFormat = INTERVAL_YTM_FORMAT_MONTHS;
+            uint64_t intervalYtmFormat = Builder::INTERVAL_YTM_FORMAT_MONTHS;
             if (formatJson.HasMember("interval-ytm")) {
                 intervalYtmFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "interval-ytm");
                 if (intervalYtmFormat > 4)
@@ -530,20 +530,21 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 4}");
             }
 
-            uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
+            uint64_t messageFormat = Builder::MESSAGE_FORMAT_DEFAULT;
             if (formatJson.HasMember("message")) {
                 messageFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "message");
                 if (messageFormat > 31)
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(messageFormat) +
                                                         ", expected: one of {0 .. 31}");
-                if ((messageFormat & MESSAGE_FORMAT_FULL) != 0 && (messageFormat & (MESSAGE_FORMAT_SKIP_BEGIN | MESSAGE_FORMAT_SKIP_COMMIT)) != 0)
+                if ((messageFormat & Builder::MESSAGE_FORMAT_FULL) != 0 &&
+                        (messageFormat & (Builder::MESSAGE_FORMAT_SKIP_BEGIN | Builder::MESSAGE_FORMAT_SKIP_COMMIT)) != 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(messageFormat) +
-                                                        ", expected: BEGIN/COMMIT flag is unset (" + std::to_string(MESSAGE_FORMAT_SKIP_BEGIN) + "/" +
-                                                        std::to_string(MESSAGE_FORMAT_SKIP_COMMIT) + ") together with FULL mode (" +
-                                                        std::to_string(MESSAGE_FORMAT_FULL) + ")");
+                                                        ", expected: BEGIN/COMMIT flag is unset (" + std::to_string(Builder::MESSAGE_FORMAT_SKIP_BEGIN) + "/" +
+                                                        std::to_string(Builder::MESSAGE_FORMAT_SKIP_COMMIT) + ") together with FULL mode (" +
+                                                        std::to_string(Builder::MESSAGE_FORMAT_FULL) + ")");
             }
 
-            uint64_t ridFormat = RID_FORMAT_SKIP;
+            uint64_t ridFormat = Builder::RID_FORMAT_SKIP;
             if (formatJson.HasMember("rid")) {
                 ridFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "rid");
                 if (ridFormat > 1)
@@ -551,7 +552,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0, 1}");
             }
 
-            uint64_t xidFormat = XID_FORMAT_TEXT_HEX;
+            uint64_t xidFormat = Builder::XID_FORMAT_TEXT_HEX;
             if (formatJson.HasMember("xid")) {
                 xidFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "xid");
                 if (xidFormat > 2)
@@ -559,7 +560,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 2}");
             }
 
-            uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX_NANO;
+            uint64_t timestampFormat = Builder::TIMESTAMP_FORMAT_UNIX_NANO;
             if (formatJson.HasMember("timestamp")) {
                 timestampFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp");
                 if (timestampFormat > 15)
@@ -567,7 +568,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 15}");
             }
 
-            uint64_t timestampTzFormat = TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING;
+            uint64_t timestampTzFormat = Builder::TIMESTAMP_TZ_FORMAT_UNIX_NANO_STRING;
             if (formatJson.HasMember("timestamp-tz")) {
                 timestampTzFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-tz");
                 if (timestampTzFormat > 11)
@@ -575,7 +576,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 11}");
             }
 
-            uint64_t timestampAll = TIMESTAMP_JUST_BEGIN;
+            uint64_t timestampAll = Builder::TIMESTAMP_JUST_BEGIN;
             if (formatJson.HasMember("timestamp-all")) {
                 timestampAll = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-all");
                 if (timestampAll > 1)
@@ -583,7 +584,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0, 1}");
             }
 
-            uint64_t charFormat = CHAR_FORMAT_UTF8;
+            uint64_t charFormat = Builder::CHAR_FORMAT_UTF8;
             if (formatJson.HasMember("char")) {
                 charFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "char");
                 if (charFormat > 3)
@@ -591,7 +592,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 3}");
             }
 
-            uint64_t scnFormat = SCN_FORMAT_NUMERIC;
+            uint64_t scnFormat = Builder::SCN_FORMAT_NUMERIC;
             if (formatJson.HasMember("scn")) {
                 scnFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "scn");
                 if (scnFormat > 3)
@@ -599,7 +600,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0 .. 3}");
             }
 
-            uint64_t scnAll = SCN_JUST_BEGIN;
+            uint64_t scnAll = Builder::SCN_JUST_BEGIN;
             if (formatJson.HasMember("scn-all")) {
                 scnAll = Ctx::getJsonFieldU64(configFileName, formatJson, "scn-all");
                 if (scnAll > 1)
@@ -607,7 +608,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0, 1}");
             }
 
-            uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION_MARK;
+            uint64_t unknownFormat = Builder::UNKNOWN_FORMAT_QUESTION_MARK;
             if (formatJson.HasMember("unknown")) {
                 unknownFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "unknown");
                 if (unknownFormat > 1)
@@ -615,7 +616,7 @@ namespace OpenLogReplicator {
                                                         ", expected: one of {0, 1}");
             }
 
-            uint64_t schemaFormat = SCHEMA_FORMAT_NAME;
+            uint64_t schemaFormat = Builder::SCHEMA_FORMAT_NAME;
             if (formatJson.HasMember("schema")) {
                 schemaFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "schema");
                 if (schemaFormat > 7)

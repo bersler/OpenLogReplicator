@@ -69,7 +69,8 @@
 - enhancement: added options interval-ytm and interval-dts to control interval type output format
 - fix: minor style fixes
 - fix: network client date was not consistent when reconnected
-- fix: scn information inconsistency in transaction fix
+- fix: scn informatio
+n inconsistency in transaction fix
 - enhancement: added flag 2 for "scn" field type to control scn values
 - enhancement: changed checkpointing mechanism to allow more frequent checkpoints
 - experimental: added partial support for binary XMLType data
