@@ -470,7 +470,7 @@ namespace OpenLogReplicator {
 
         if (ctx->dumpRedoLog >= 1) {
             typeScn dscn = ctx->readScn(redoLogRecord->data + fieldPos + 0);
-            if (ctx->version < REDO_VERSION_12_2)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                 ctx->dumpStream << "dscn: " << PRINTSCN48(dscn) << '\n';
             else
                 ctx->dumpStream << "dscn: " << PRINTSCN64(dscn) << '\n';

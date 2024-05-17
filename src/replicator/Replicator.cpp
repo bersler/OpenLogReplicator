@@ -271,7 +271,7 @@ namespace OpenLogReplicator {
 
         ctx->replicatorFinished = true;
         ctx->info(0, "Oracle replicator for: " + database + " allocated at most " + std::to_string(ctx->getMaxUsedMemory()) +
-                     "MB memory, max disk read buffer: " + std::to_string(ctx->buffersMaxUsed * MEMORY_CHUNK_SIZE_MB) + "MB");
+                     "MB memory, max disk read buffer: " + std::to_string(ctx->buffersMaxUsed * Ctx::MEMORY_CHUNK_SIZE_MB) + "MB");
 
         if (ctx->trace & TRACE_THREADS) {
             std::ostringstream ss;

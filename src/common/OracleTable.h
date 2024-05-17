@@ -36,6 +36,26 @@ namespace OpenLogReplicator {
 
     class OracleTable final {
     public:
+        static constexpr uint64_t SYS_CCOL = 1;
+        static constexpr uint64_t SYS_CDEF = 2;
+        static constexpr uint64_t SYS_COL = 3;
+        static constexpr uint64_t SYS_DEFERRED_STG = 4;
+        static constexpr uint64_t SYS_ECOL = 5;
+        static constexpr uint64_t SYS_LOB = 6;
+        static constexpr uint64_t SYS_LOB_COMP_PART = 7;
+        static constexpr uint64_t SYS_LOB_FRAG = 8;
+        static constexpr uint64_t SYS_OBJ = 9;
+        static constexpr uint64_t SYS_TAB = 10;
+        static constexpr uint64_t SYS_TABPART = 11;
+        static constexpr uint64_t SYS_TABCOMPART = 12;
+        static constexpr uint64_t SYS_TABSUBPART = 13;
+        static constexpr uint64_t SYS_TS = 14;
+        static constexpr uint64_t SYS_USER = 15;
+        static constexpr uint64_t XDB_TTSET = 16;
+        static constexpr uint64_t XDB_XNM = 17;
+        static constexpr uint64_t XDB_XPT = 18;
+        static constexpr uint64_t XDB_XQN = 19;
+
         typeObj obj;
         typeDataObj dataObj;
         typeUser user;

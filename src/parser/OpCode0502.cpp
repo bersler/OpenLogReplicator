@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
         // Field: 1
         ktudh(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (ctx->version >= REDO_VERSION_12_1) {
+        if (ctx->version >= RedoLogRecord::REDO_VERSION_12_1) {
             // Field: 2
             if (RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050202)) {
                 if (fieldLength == 4) {
@@ -105,7 +105,7 @@ namespace OpenLogReplicator {
                             " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
                             " siz: " << std::dec << siz <<
                             " fbi: " << std::dec << static_cast<uint64_t>(fbi) << '\n';
-            /*if (ctx->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
+            /*if (ctx->version < RedoLogRecord::REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                 ctx->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                         " pxid:  " << pXid;
@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "           " <<
                             " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                             " pxid:  " << pXid.toString();
-            if (ctx->version < REDO_VERSION_12_1) // || redoLogRecord->conId == 0)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_1) // || redoLogRecord->conId == 0)
                 ctx->dumpStream << '\n';
         }
     }

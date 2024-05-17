@@ -80,7 +80,7 @@ namespace OpenLogReplicator {
 
         memset(reinterpret_cast<void*>(&zero), 0, sizeof(RedoLogRecord));
 
-        lwnChunks[0] = ctx->getMemoryChunk(MEMORY_MODULE_PARSER, false);
+        lwnChunks[0] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_PARSER, false);
         auto length = reinterpret_cast<uint64_t*>(lwnChunks[0]);
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
@@ -89,13 +89,13 @@ namespace OpenLogReplicator {
 
     Parser::~Parser() {
         while (lwnAllocated > 0) {
-            ctx->freeMemoryChunk(MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
         }
     }
 
     void Parser::freeLwn() {
         while (lwnAllocated > 1) {
-            ctx->freeMemoryChunk(MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
         }
 
         auto length = reinterpret_cast<uint64_t*>(lwnChunks[0]);
@@ -133,7 +133,7 @@ namespace OpenLogReplicator {
             uint16_t thread = 1; // TODO: verify field length/position
             ctx->dumpStream << " \n";
 
-            if (ctx->version < REDO_VERSION_12_1)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_1)
                 ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
                                 std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                                 std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength << " VLD: 0x" <<
@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
             }
 
             if (headerLength == 68) {
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                     lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
@@ -168,7 +168,7 @@ namespace OpenLogReplicator {
                 uint16_t lwnNst = ctx->read16(data + 26);
                 uint32_t lwnLen = ctx->read32(data + 32);
 
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
                                     std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) << std::hex <<
                                     lwnMember->offset << " LEN: " << std::setfill('0') << std::setw(4) << std::dec << lwnLen << " NST: " <<
@@ -179,7 +179,7 @@ namespace OpenLogReplicator {
                                     lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(8) << std::hex << lwnLen << " NST: 0x" <<
                                     std::setfill('0') << std::setw(4) << std::hex << lwnNst << " SCN: " << PRINTSCN64(lwnScn) << ")" << '\n';
             } else {
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                     lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
@@ -217,7 +217,7 @@ namespace OpenLogReplicator {
             typeUsn usn = (redoLogRecord[vectorCur].cls >= 15) ? (redoLogRecord[vectorCur].cls - 15) / 2 : -1;
 
             uint64_t fieldOffset;
-            if (ctx->version >= REDO_VERSION_12_1) {
+            if (ctx->version >= RedoLogRecord::REDO_VERSION_12_1) {
                 fieldOffset = 32;
                 redoLogRecord[vectorCur].flgRecord = ctx->read16(data + offset + 28);
                 redoLogRecord[vectorCur].conId = static_cast<typeConId>(ctx->read16(data + offset + 24));
@@ -1284,8 +1284,8 @@ namespace OpenLogReplicator {
         while (!ctx->softShutdown) {
             // There is some work to do
             while (confirmedBufferStart < reader->getBufferEnd()) {
-                uint64_t redoBufferPos = (currentBlock * reader->getBlockSize()) % MEMORY_CHUNK_SIZE;
-                uint64_t redoBufferNum = ((currentBlock * reader->getBlockSize()) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+                uint64_t redoBufferPos = (currentBlock * reader->getBlockSize()) % Ctx::MEMORY_CHUNK_SIZE;
+                uint64_t redoBufferNum = ((currentBlock * reader->getBlockSize()) / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
                 uint8_t* redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
 
                 blockOffset = 16;
@@ -1338,18 +1338,18 @@ namespace OpenLogReplicator {
                         if (recordLength4 > 0) {
                             uint64_t* length = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
 
-                            if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
+                            if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
                                 if (lwnAllocated == MAX_LWN_CHUNKS)
                                     throw RedoLogException(50052, "all " + std::to_string(MAX_LWN_CHUNKS) + " lwn buffers allocated");
 
-                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk(MEMORY_MODULE_PARSER, false);
+                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_PARSER, false);
                                 if (lwnAllocated > lwnAllocatedMax)
                                     lwnAllocatedMax = lwnAllocated;
                                 length = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
                                 *length = sizeof(uint64_t);
                             }
 
-                            if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
+                            if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
                                 throw RedoLogException(50053, "too big redo log record, length: " + std::to_string(recordLength4));
 
                             lwnMember = reinterpret_cast<struct LwnMember*>(lwnChunks[lwnAllocated - 1] + *length);
@@ -1477,7 +1477,7 @@ namespace OpenLogReplicator {
                     throw RedoLogException(50055, "lwn overflow: " + std::to_string(lwnNumCnt) + "/" + std::to_string(lwnNumMax));
 
                 // Free memory
-                if (redoBufferPos == MEMORY_CHUNK_SIZE) {
+                if (redoBufferPos == Ctx::MEMORY_CHUNK_SIZE) {
                     reader->bufferFree(redoBufferNum);
                     reader->confirmReadData(confirmedBufferStart);
                 }

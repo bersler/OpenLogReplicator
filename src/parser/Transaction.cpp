@@ -420,17 +420,17 @@ namespace OpenLogReplicator {
 
                         if (type == 0) {
                             if (op == 0x05010B02)
-                                type = TRANSACTION_INSERT;
+                                type = Builder::TRANSACTION_INSERT;
                             else if (op == 0x05010B03)
-                                type = TRANSACTION_DELETE;
+                                type = Builder::TRANSACTION_DELETE;
                             else
-                                type = TRANSACTION_UPDATE;
-                        } else if (type == TRANSACTION_INSERT) {
+                                type = Builder::TRANSACTION_UPDATE;
+                        } else if (type == Builder::TRANSACTION_INSERT) {
                             if (op == 0x05010B03 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                                type = TRANSACTION_UPDATE;
-                        } else if (type == TRANSACTION_DELETE) {
+                                type = Builder::TRANSACTION_UPDATE;
+                        } else if (type == Builder::TRANSACTION_DELETE) {
                             if (op == 0x05010B02 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                                type = TRANSACTION_UPDATE;
+                                type = Builder::TRANSACTION_UPDATE;
                         }
 
                         if (first1 == nullptr) {
@@ -447,7 +447,7 @@ namespace OpenLogReplicator {
                         } else {
                             if (last1->suppLogBdba == redoLogRecord1->suppLogBdba && last1->suppLogSlot == redoLogRecord1->suppLogSlot &&
                                 first1->obj == redoLogRecord1->obj && first2->obj == redoLogRecord2->obj) {
-                                if (type == TRANSACTION_INSERT) {
+                                if (type == Builder::TRANSACTION_INSERT) {
                                     redoLogRecord1->next = first1;
                                     redoLogRecord2->next = first2;
                                     first1->prev = redoLogRecord1;

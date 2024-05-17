@@ -33,21 +33,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CTX_H_
 #define CTX_H_
 
-#define REDO_VERSION_12_1       0x0C100000
-#define REDO_VERSION_12_2       0x0C200000
-#define REDO_VERSION_18_0       0x12000000
-#define REDO_VERSION_19_0       0x13000000
-#define REDO_VERSION_23_0       0x17000000
 #define COLUMN_LIMIT            1000
 #define COLUMN_LIMIT_23_0       4096
-
-
-#define MEMORY_CHUNK_SIZE_MB                    1
-#define MEMORY_CHUNK_SIZE                       (MEMORY_CHUNK_SIZE_MB*1024*1024)
-#define MEMORY_CHUNK_MIN_MB                     16
-
-#define OLR_LOCALES_TIMESTAMP                   0
-#define OLR_LOCALES_MOCK                        1
 
 #define LOG_LEVEL_SILENT                        0
 #define LOG_LEVEL_ERROR                         1
@@ -75,12 +62,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TRACE_SLEEP                             0x00020000
 #define TRACE_CONDITION                         0x00040000
 
-#define MEMORY_MODULE_BUILDER                   0
-#define MEMORY_MODULE_PARSER                    1
-#define MEMORY_MODULE_READER                    2
-#define MEMORY_MODULE_TRANSACTIONS              3
-#define MEMORY_MODULES_NUM                      4
-
 #define UNIX_AD1970_01_01                       62167132800L
 #define UNIX_BC1970_01_01                       (62167132800L-365*24*60*60)
 #define UNIX_BC4712_01_01                       (-210831897600L)
@@ -97,6 +78,20 @@ namespace OpenLogReplicator {
     class Thread;
 
     class Ctx final {
+    public:
+        static constexpr uint64_t MEMORY_MODULE_BUILDER = 0;
+        static constexpr uint64_t MEMORY_MODULE_PARSER = 1;
+        static constexpr uint64_t MEMORY_MODULE_READER = 2;
+        static constexpr uint64_t MEMORY_MODULE_TRANSACTIONS = 3;
+        static constexpr uint64_t MEMORY_MODULES_NUM = 4;
+
+        static constexpr uint64_t MEMORY_CHUNK_SIZE_MB = 1;
+        static constexpr uint64_t MEMORY_CHUNK_SIZE = MEMORY_CHUNK_SIZE_MB * 1024 * 1024;
+        static constexpr uint64_t MEMORY_CHUNK_MIN_MB = 16;
+
+        static constexpr uint64_t OLR_LOCALES_TIMESTAMP = 0;
+        static constexpr uint64_t OLR_LOCALES_MOCK = 1;
+
     protected:
         bool bigEndian;
         std::atomic<uint64_t> memoryMinMb;

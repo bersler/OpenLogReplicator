@@ -26,11 +26,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDO_LOG_RECORD_H_
 #define REDO_LOG_RECORD_H_
 
-#define INVALID_LOB_PAGE_NO 0xFFFFFFFF
-
 namespace OpenLogReplicator {
     class RedoLogRecord final {
     public:
+        static constexpr uint32_t INVALID_LOB_PAGE_NO = 0xFFFFFFFF;
+
+        static constexpr uint32_t REDO_VERSION_12_1 = 0x0C100000;
+        static constexpr uint32_t REDO_VERSION_12_2 = 0x0C200000;
+        static constexpr uint32_t REDO_VERSION_18_0 = 0x12000000;
+        static constexpr uint32_t REDO_VERSION_19_0 = 0x13000000;
+        static constexpr uint32_t REDO_VERSION_23_0 = 0x17000000;
+
         RedoLogRecord* next;
         RedoLogRecord* prev;
         uint16_t cls;

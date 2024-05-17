@@ -170,21 +170,21 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->lengths[column][Builder::Builder::VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             auto newVal = static_cast<int16_t>(strtol(builder->valueBuffer, &retPtr, 10));
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
                                             std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
@@ -192,14 +192,15 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::Builder::Builder::VALUE_AFTER],
+                                 builder->lengths[column][Builder::Builder::Builder::VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -210,7 +211,7 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
                                             std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
@@ -218,14 +219,14 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -236,7 +237,7 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
                                             std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
@@ -244,14 +245,14 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0)
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -262,7 +263,7 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
                                             std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
@@ -270,14 +271,14 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -288,7 +289,7 @@ namespace OpenLogReplicator {
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
                                             std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
@@ -296,13 +297,13 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumberXu(typeIntX& val, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
             builder->valueBuffer[builder->valueLength] = 0;
             if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -317,7 +318,7 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> " + newVal.toString() + ")");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL)");
             val.set(0, 0);
@@ -325,13 +326,13 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateRaw(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
             if (table->columns[column]->type != SYS_COL_TYPE_RAW)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseRaw(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], offset);
+            builder->parseRaw(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
             std::string newVal(builder->valueBuffer, builder->valueLength);
             if (builder->valueLength > maxLength)
                 throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
@@ -341,7 +342,7 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
             val.assign("");
@@ -349,13 +350,13 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
             if (table->columns[column]->type != SYS_COL_TYPE_VARCHAR && table->columns[column]->type != SYS_COL_TYPE_CHAR)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseString(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER],
+            builder->parseString(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER],
                                  table->columns[column]->charsetId, offset, false, false, false, true);
             std::string newVal(builder->valueBuffer, builder->valueLength);
             if (builder->valueLength > maxLength)
@@ -366,7 +367,7 @@ namespace OpenLogReplicator {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
             val = newVal;
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
             if (ctx->trace & TRACE_SYSTEM)
                 ctx->logTrace(TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
             val.assign("");
@@ -1061,79 +1062,79 @@ namespace OpenLogReplicator {
             ctx->logTrace(TRACE_SYSTEM, "insert table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
 
         switch (table->systemTable) {
-            case TABLE_SYS_CCOL:
+            case OracleTable::SYS_CCOL:
                 processInsertSysCCol(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_CDEF:
+            case OracleTable::SYS_CDEF:
                 processInsertSysCDef(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_COL:
+            case OracleTable::SYS_COL:
                 processInsertSysCol(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_DEFERRED_STG:
+            case OracleTable::SYS_DEFERRED_STG:
                 processInsertSysDeferredStg(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_ECOL:
+            case OracleTable::SYS_ECOL:
                 processInsertSysECol(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB:
+            case OracleTable::SYS_LOB:
                 processInsertSysLob(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB_COMP_PART:
+            case OracleTable::SYS_LOB_COMP_PART:
                 processInsertSysLobCompPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB_FRAG:
+            case OracleTable::SYS_LOB_FRAG:
                 processInsertSysLobFrag(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_OBJ:
+            case OracleTable::SYS_OBJ:
                 processInsertSysObj(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TAB:
+            case OracleTable::SYS_TAB:
                 processInsertSysTab(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TABCOMPART:
+            case OracleTable::SYS_TABCOMPART:
                 processInsertSysTabComPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TABPART:
+            case OracleTable::SYS_TABPART:
                 processInsertSysTabPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TABSUBPART:
+            case OracleTable::SYS_TABSUBPART:
                 processInsertSysTabSubPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TS:
+            case OracleTable::SYS_TS:
                 processInsertSysTs(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_USER:
+            case OracleTable::SYS_USER:
                 processInsertSysUser(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_TTSET:
+            case OracleTable::XDB_TTSET:
                 processInsertXdbTtSet(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XNM:
+            case OracleTable::XDB_XNM:
                 processInsertXdbXNm(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XPT:
+            case OracleTable::XDB_XPT:
                 processInsertXdbXPt(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XQN:
+            case OracleTable::XDB_XQN:
                 processInsertXdbXQn(table, rowId, offset);
                 break;
         }
@@ -1865,79 +1866,79 @@ namespace OpenLogReplicator {
             ctx->logTrace(TRACE_SYSTEM, "update table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
 
         switch (table->systemTable) {
-            case TABLE_SYS_CCOL:
+            case OracleTable::SYS_CCOL:
                 processUpdateSysCCol(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_CDEF:
+            case OracleTable::SYS_CDEF:
                 processUpdateSysCDef(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_COL:
+            case OracleTable::SYS_COL:
                 processUpdateSysCol(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_DEFERRED_STG:
+            case OracleTable::SYS_DEFERRED_STG:
                 processUpdateSysDeferredStg(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_ECOL:
+            case OracleTable::SYS_ECOL:
                 processUpdateSysECol(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB:
+            case OracleTable::SYS_LOB:
                 processUpdateSysLob(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB_COMP_PART:
+            case OracleTable::SYS_LOB_COMP_PART:
                 processUpdateSysLobCompPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB_FRAG:
+            case OracleTable::SYS_LOB_FRAG:
                 processUpdateSysLobFrag(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_OBJ:
+            case OracleTable::SYS_OBJ:
                 processUpdateSysObj(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TAB:
+            case OracleTable::SYS_TAB:
                 processUpdateSysTab(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TABCOMPART:
+            case OracleTable::SYS_TABCOMPART:
                 processUpdateSysTabComPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TABPART:
+            case OracleTable::SYS_TABPART:
                 processUpdateSysTabPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TABSUBPART:
+            case OracleTable::SYS_TABSUBPART:
                 processUpdateSysTabSubPart(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_TS:
+            case OracleTable::SYS_TS:
                 processUpdateSysTs(table, rowId, offset);
                 break;
 
-            case TABLE_SYS_USER:
+            case OracleTable::SYS_USER:
                 processUpdateSysUser(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_TTSET:
+            case OracleTable::XDB_TTSET:
                 processUpdateXdbTtSet(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XNM:
+            case OracleTable::XDB_XNM:
                 processUpdateXdbXNm(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XPT:
+            case OracleTable::XDB_XPT:
                 processUpdateXdbXPt(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XQN:
+            case OracleTable::XDB_XQN:
                 processUpdateXdbXQn(table, rowId, offset);
                 break;
         }
@@ -2250,79 +2251,79 @@ namespace OpenLogReplicator {
             ctx->logTrace(TRACE_SYSTEM, "delete table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
 
         switch (table->systemTable) {
-            case TABLE_SYS_CCOL:
+            case OracleTable::SYS_CCOL:
                 processDeleteSysCCol(rowId, offset);
                 break;
 
-            case TABLE_SYS_CDEF:
+            case OracleTable::SYS_CDEF:
                 processDeleteSysCDef(rowId, offset);
                 break;
 
-            case TABLE_SYS_COL:
+            case OracleTable::SYS_COL:
                 processDeleteSysCol(rowId, offset);
                 break;
 
-            case TABLE_SYS_DEFERRED_STG:
+            case OracleTable::SYS_DEFERRED_STG:
                 processDeleteSysDeferredStg(rowId, offset);
                 break;
 
-            case TABLE_SYS_ECOL:
+            case OracleTable::SYS_ECOL:
                 processDeleteSysECol(rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB:
+            case OracleTable::SYS_LOB:
                 processDeleteSysLob(rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB_COMP_PART:
+            case OracleTable::SYS_LOB_COMP_PART:
                 processDeleteSysLobCompPart(rowId, offset);
                 break;
 
-            case TABLE_SYS_LOB_FRAG:
+            case OracleTable::SYS_LOB_FRAG:
                 processDeleteSysLobFrag(rowId, offset);
                 break;
 
-            case TABLE_SYS_OBJ:
+            case OracleTable::SYS_OBJ:
                 processDeleteSysObj(rowId, offset);
                 break;
 
-            case TABLE_SYS_TAB:
+            case OracleTable::SYS_TAB:
                 processDeleteSysTab(rowId, offset);
                 break;
 
-            case TABLE_SYS_TABCOMPART:
+            case OracleTable::SYS_TABCOMPART:
                 processDeleteSysTabComPart(rowId, offset);
                 break;
 
-            case TABLE_SYS_TABPART:
+            case OracleTable::SYS_TABPART:
                 processDeleteSysTabPart(rowId, offset);
                 break;
 
-            case TABLE_SYS_TABSUBPART:
+            case OracleTable::SYS_TABSUBPART:
                 processDeleteSysTabSubPart(rowId, offset);
                 break;
 
-            case TABLE_SYS_TS:
+            case OracleTable::SYS_TS:
                 processDeleteSysTs(rowId, offset);
                 break;
 
-            case TABLE_SYS_USER:
+            case OracleTable::SYS_USER:
                 processDeleteSysUser(rowId, offset);
                 break;
 
-            case TABLE_XDB_TTSET:
+            case OracleTable::XDB_TTSET:
                 processDeleteXdbTtSet(rowId, offset);
                 break;
 
-            case TABLE_XDB_XNM:
+            case OracleTable::XDB_XNM:
                 processDeleteXdbXNm(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XPT:
+            case OracleTable::XDB_XPT:
                 processDeleteXdbXPt(table, rowId, offset);
                 break;
 
-            case TABLE_XDB_XQN:
+            case OracleTable::XDB_XQN:
                 processDeleteXdbXQn(table, rowId, offset);
                 break;
         }

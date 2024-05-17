@@ -35,7 +35,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "exception/RuntimeException.h"
 #include "metrics/Metrics.h"
 
-uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
+uint64_t OLR_LOCALES = OpenLogReplicator::Ctx::OLR_LOCALES_TIMESTAMP;
 
 namespace OpenLogReplicator {
     const char Ctx::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

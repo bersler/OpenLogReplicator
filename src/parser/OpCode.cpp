@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->typ & 0x80) != 0)
                 encrypted = true;
 
-            if (ctx->version < REDO_VERSION_12_1) {
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_1) {
                 if (redoLogRecord->typ == 6)
                     ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
                                     " MEDIA RECOVERY MARKER" <<
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
                                     " OP:" << static_cast<uint64_t>(redoLogRecord->opCode >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opCode & 0xFF) <<
                                     " ENC:" << std::dec << static_cast<uint64_t>(encrypted) <<
                                     " RBL:" << std::dec << redoLogRecord->rbl << '\n';
-            } else if (ctx->version < REDO_VERSION_12_2) {
+            } else if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
                 if (redoLogRecord->typ == 6)
                     ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
                                     " MEDIA RECOVERY MARKER" <<
@@ -189,7 +189,7 @@ namespace OpenLogReplicator {
                 if ((flag & 0x80) != 0) flagStr[0] = 'C';
                 typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + startPos + 18);
 
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     ctx->dumpStream << "                     " <<
                                     " flg: " << flagStr << "   " <<
                                     " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
                 uint8_t ver2 = redoLogRecord->data[fieldPos + startPos + 38];
                 uint8_t entries = redoLogRecord->data[fieldPos + startPos + 37];
 
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     ctx->dumpStream << "Block cleanout record, scn: " <<
                                     " " << PRINTSCN48(scn) <<
                                     " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(ver2) <<
@@ -313,11 +313,11 @@ namespace OpenLogReplicator {
                     uint8_t itli = redoLogRecord->data[fieldPos + startPos + 48 + j * 8];
                     uint8_t flg2 = redoLogRecord->data[fieldPos + startPos + 49 + j * 8];
                     typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + startPos + 50 + j * 8);
-                    if (ctx->version < REDO_VERSION_12_1)
+                    if (ctx->version < RedoLogRecord::REDO_VERSION_12_1)
                         ctx->dumpStream << "  itli: " << std::dec << static_cast<uint64_t>(itli) << " " <<
                                         " flg: " << static_cast<uint64_t>(flg2) << " " <<
                                         " scn: " << PRINTSCN48(scnx) << '\n';
-                    else if (ctx->version < REDO_VERSION_12_2)
+                    else if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                         ctx->dumpStream << "  itli: " << std::dec << static_cast<uint64_t>(itli) << " " <<
                                         " flg: (opt=" << static_cast<uint64_t>(flg2 & 0x03) << " whr=" << static_cast<uint64_t>(flg2 >> 2) << ") " <<
                                         " scn: " << PRINTSCN48(scnx) << '\n';
@@ -439,7 +439,7 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->lobId.set(redoLogRecord->data + fieldPos + 12);
-        redoLogRecord->lobPageNo = INVALID_LOB_PAGE_NO;
+        redoLogRecord->lobPageNo = RedoLogRecord::INVALID_LOB_PAGE_NO;
         if (ctx->dumpRedoLog >= 1) {
             typeScn scn = ctx->readScnR(redoLogRecord->data + fieldPos + 2);
             uint8_t flg0 = redoLogRecord->data[fieldPos + 10];
@@ -509,7 +509,7 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "  flg0  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg0) <<
                             " [ver=" << flg0ver << " typ=" << flg0typ << " lock=" << flg0lock << "]\n";
             ctx->dumpStream << "  flg1  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg1) << '\n';
-            if (ctx->version < REDO_VERSION_12_2)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                 ctx->dumpStream << "  scn   0x" << std::setfill('0') << std::setw(12) << std::hex << scn << " [0x" << PRINTSCN48(scn) << "]\n";
             else
                 ctx->dumpStream << "  scn   0x" << std::setfill('0') << std::setw(16) << std::hex << (scn & 0xFFFF7FFFFFFFFFFF) <<
@@ -698,7 +698,7 @@ namespace OpenLogReplicator {
 
             ctx->dumpStream << "KDLI fpload [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]\n";
             ctx->dumpStream << "  bsz   " << std::dec << bsz << '\n';
-            if (ctx->version < REDO_VERSION_12_2)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                 ctx->dumpStream << "  scn   " << PRINTSCN48(scn) << '\n';
             else
                 ctx->dumpStream << "  scn   " << PRINTSCN64(scn) << '\n';
@@ -713,7 +713,7 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->lobId.set(redoLogRecord->data + fieldPos + 12);
-        redoLogRecord->lobPageNo = INVALID_LOB_PAGE_NO;
+        redoLogRecord->lobPageNo = RedoLogRecord::INVALID_LOB_PAGE_NO;
         redoLogRecord->dba0 = ctx->read32(redoLogRecord->data + fieldPos + 64);
         redoLogRecord->dba1 = ctx->read32(redoLogRecord->data + fieldPos + 68);
         redoLogRecord->dba2 = ctx->read32(redoLogRecord->data + fieldPos + 72);
@@ -764,7 +764,7 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "  flg0  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg0) <<
                             " [ver=" << flg0ver << " typ=" << flg0typ << " lock=" << flg0lock << "]\n";
             ctx->dumpStream << "  flg1  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg1) << '\n';
-            if (ctx->version < REDO_VERSION_12_2)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                 ctx->dumpStream << "  scn   0x" << std::setfill('0') << std::setw(12) << std::hex << scn << " [0x" << PRINTSCN48(scn) << "]\n";
             else
                 ctx->dumpStream << "  scn   0x" << std::setfill('0') << std::setw(16) << std::hex << (scn & 0xFFFF7FFFFFFFFFFF) <<
@@ -796,7 +796,7 @@ namespace OpenLogReplicator {
                        reinterpret_cast<const void*>(redoLogRecord->data + fieldPos + 96), 16);
                 ctx->dumpStream << "kdlihh  [0xXXXXXXXXXXXX 24]\n";
 
-                if (ctx->version < REDO_VERSION_12_2) {
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
                     const char* flg2pfill = "n";
                     if (flg2 & KDLI_FLG2_121_PFILL)
                         flg2pfill = "y";
@@ -865,7 +865,7 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << "  asiz  " << std::dec << asiz << '\n';
                 ctx->dumpStream << "  hwm   " << std::dec << hwm << '\n';
                 ctx->dumpStream << "  ovr   0x" << std::setfill('0') << std::setw(8) << std::hex << ovr1 << "." << std::dec << ovr2 << '\n';
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     ctx->dumpStream << "  descn 0x" << std::setfill('0') << std::setw(12) << std::hex << deScn1 << " [0x" << PRINTSCN48(deScn2) << "]\n";
                 else
                     ctx->dumpStream << "  descn 0x" << std::setfill('0') << std::setw(16) << std::hex << deScn1 << " [" << PRINTSCN64D(deScn2) << "]\n";
@@ -947,7 +947,7 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->lobId.set(redoLogRecord->data + fieldPos + 12);
-        redoLogRecord->lobPageNo = INVALID_LOB_PAGE_NO;
+        redoLogRecord->lobPageNo = RedoLogRecord::INVALID_LOB_PAGE_NO;
 
         if (ctx->dumpRedoLog >= 1) {
             typeScn scn = ctx->readScnR(redoLogRecord->data + fieldPos + 2);
@@ -1006,7 +1006,7 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "  flg0  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg0) <<
                             " [ver=" << flg0ver << " typ=" << flg0typ << " lock=" << flg0lock << "]\n";
             ctx->dumpStream << "  flg1  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg1) << '\n';
-            if (ctx->version < REDO_VERSION_12_2)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                 ctx->dumpStream << "  scn   0x" << std::setfill('0') << std::setw(12) << std::hex << scn << '\n';
             else
                 ctx->dumpStream << "  scn   0x" << std::setfill('0') << std::setw(16) << std::hex << (scn & 0xFFFF7FFFFFFFFFFF) <<
@@ -1792,13 +1792,13 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0 && isKtubl) {
             ktubl = true;
             ktuType = "ktubl";
-            if (ctx->version < REDO_VERSION_19_0) {
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                 prevObj = "[";
                 postObj = "]";
             }
         }
 
-        if (ctx->version < REDO_VERSION_19_0) {
+        if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
             ctx->dumpStream <<
                             ktuType << " redo:" <<
                             " slt: " << std::dec << static_cast<uint64_t>(redoLogRecord->slt) <<
@@ -1828,7 +1828,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_LASTBUFFERSPLIT) != 0)
             lastBufferSplit = "Yes";
         else {
-            if (ctx->version < REDO_VERSION_19_0)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
                 lastBufferSplit = "No";
             else
                 lastBufferSplit = " No";
@@ -1838,14 +1838,14 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
             userUndoDone = "Yes";
         else {
-            if (ctx->version < REDO_VERSION_19_0)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
                 userUndoDone = "No";
             else
                 userUndoDone = " No";
         }
 
         const char* undoType;
-        if (ctx->version < REDO_VERSION_12_2) {
+        if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "Multi-block undo - HEAD";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
@@ -1854,7 +1854,7 @@ namespace OpenLogReplicator {
                 undoType = "Multi-block undo - MID";
             else
                 undoType = "Regular undo      ";
-        } else if (ctx->version < REDO_VERSION_19_0) {
+        } else if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "Multi-block undo - HEAD";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
@@ -1878,7 +1878,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_ISTEMPOBJECT) != 0)
             tempObject = "Yes";
         else {
-            if (ctx->version < REDO_VERSION_19_0)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
                 tempObject = "No";
             else
                 tempObject = " No";
@@ -1888,7 +1888,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_TABLESPACEUNDO) != 0)
             tablespaceUndo = "Yes";
         else {
-            if (ctx->version < REDO_VERSION_19_0)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
                 tablespaceUndo = "No";
             else
                 tablespaceUndo = " No";
@@ -1898,7 +1898,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_USERONLY) != 0)
             userOnly = "Yes";
         else {
-            if (ctx->version < REDO_VERSION_19_0)
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
                 userOnly = "No";
             else
                 userOnly = " No";
@@ -1919,7 +1919,7 @@ namespace OpenLogReplicator {
                 uint16_t flg2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
                 auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data + fieldPos + 26));
 
-                if (ctx->version < REDO_VERSION_19_0) {
+                if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                     ctx->dumpStream <<
                                     "Undo type:  " << undoType << "  " <<
                                     "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
@@ -1955,7 +1955,7 @@ namespace OpenLogReplicator {
                 uint32_t prevBcl = ctx->read32(redoLogRecord->data + fieldPos + 68);
                 uint32_t logonUser = ctx->read32(redoLogRecord->data + fieldPos + 72);
 
-                if (ctx->version < REDO_VERSION_12_2) {
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
                     ctx->dumpStream <<
                                     "Undo type:  " << undoType << "  " <<
                                     "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
@@ -1975,7 +1975,7 @@ namespace OpenLogReplicator {
                     ctx->dumpStream <<
                                     " BuExt idx: " << std::dec << buExtIdx <<
                                     " flg2: " << std::hex << flg2 << '\n';
-                } else if (ctx->version < REDO_VERSION_19_0) {
+                } else if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                     ctx->dumpStream <<
                                     "Undo type:  " << undoType << "  " <<
                                     "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
@@ -2021,7 +2021,7 @@ namespace OpenLogReplicator {
             }
         } else {
             // KTUBU
-            if (ctx->version < REDO_VERSION_19_0) {
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                 ctx->dumpStream <<
                                 "Undo type:  " << undoType << " " <<
                                 "Undo type:  ";
@@ -2173,7 +2173,7 @@ namespace OpenLogReplicator {
                 pos += 3;
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                    if (ctx->version < REDO_VERSION_12_2)
+                    if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                         pos += 6;
                     else
                         pos += 8;

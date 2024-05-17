@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
     if (olrLocalesStr != nullptr)
         olrLocales = olrLocalesStr;
     if (olrLocales == "MOCK")
-        OLR_LOCALES = OLR_LOCALES_MOCK;
+        OLR_LOCALES = OpenLogReplicator::Ctx::OLR_LOCALES_MOCK;
 
     int ret = OpenLogReplicator::mainFunction(argc, argv);
 

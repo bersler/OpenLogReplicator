@@ -55,7 +55,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define REDO_PAGE_SIZE_MAX      4096
 #define REDO_BAD_CDC_MAX_CNT    20
-#define REDO_READ_VERIFY_MAX_BLOCKS (MEMORY_CHUNK_SIZE/blockSize)
+#define REDO_READ_VERIFY_MAX_BLOCKS (Ctx::MEMORY_CHUNK_SIZE/blockSize)
 
 namespace OpenLogReplicator {
     class Reader : public Thread {

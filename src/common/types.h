@@ -75,45 +75,9 @@ typedef int64_t time_ut;
 #define MAX_TRANSACTIONS_LIMIT                  1048576
 #define MAX_RECORDS_IN_LWN                      1048576
 
-// Default, only changed columns for update, or PK
-#define COLUMN_FORMAT_CHANGED                   0
-// Show full nulls from insert & delete
-#define COLUMN_FORMAT_FULL_INS_DEC              1
-// Show all from redo
-#define COLUMN_FORMAT_FULL_UPD                  2
-
-#define TRANSACTION_INSERT                      1
-#define TRANSACTION_DELETE                      2
-#define TRANSACTION_UPDATE                      3
-
-#define VALUE_BEFORE                            0
-#define VALUE_AFTER                             1
-#define VALUE_BEFORE_SUPP                       2
-#define VALUE_AFTER_SUPP                        3
-
 #define OPTIONS_DEBUG_TABLE                     1
 #define OPTIONS_SYSTEM_TABLE                    2
 #define OPTIONS_SCHEMA_TABLE                    4
-
-#define TABLE_SYS_CCOL                          1
-#define TABLE_SYS_CDEF                          2
-#define TABLE_SYS_COL                           3
-#define TABLE_SYS_DEFERRED_STG                  4
-#define TABLE_SYS_ECOL                          5
-#define TABLE_SYS_LOB                           6
-#define TABLE_SYS_LOB_COMP_PART                 7
-#define TABLE_SYS_LOB_FRAG                      8
-#define TABLE_SYS_OBJ                           9
-#define TABLE_SYS_TAB                           10
-#define TABLE_SYS_TABPART                       11
-#define TABLE_SYS_TABCOMPART                    12
-#define TABLE_SYS_TABSUBPART                    13
-#define TABLE_SYS_TS                            14
-#define TABLE_SYS_USER                          15
-#define TABLE_XDB_TTSET                         16
-#define TABLE_XDB_XNM                           17
-#define TABLE_XDB_XPT                           18
-#define TABLE_XDB_XQN                           19
 
 #define BLOCK(__uba)                            (static_cast<uint32_t>((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         (static_cast<uint16_t>(((static_cast<uint64_t>(__uba))>>32)&0xFFFF))

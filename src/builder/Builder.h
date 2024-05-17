@@ -41,7 +41,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef BUILDER_H_
 #define BUILDER_H_
 
-#define OUTPUT_BUFFER_DATA_SIZE                 (MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue))
+#define OUTPUT_BUFFER_DATA_SIZE                 (Ctx::MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue))
 #define OUTPUT_BUFFER_MESSAGE_ALLOCATED         0x0001
 #define OUTPUT_BUFFER_MESSAGE_CONFIRMED         0x0002
 #define OUTPUT_BUFFER_MESSAGE_CHECKPOINT        0x0004
@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
         long double decodeDouble(const uint8_t* data);
 
         inline void builderRotate(bool copy) {
-            auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(MEMORY_MODULE_BUILDER, true));
+            auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, true));
             nextBuffer->next = nullptr;
             nextBuffer->id = lastBuilderQueue->id + 1;
             nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
@@ -1208,6 +1208,13 @@ namespace OpenLogReplicator {
         static constexpr uint64_t CHAR_FORMAT_NOMAPPING = 1;
         static constexpr uint64_t CHAR_FORMAT_HEX = 2;
 
+        // Default, only changed columns for update, or PK
+        static constexpr uint64_t COLUMN_FORMAT_CHANGED = 0;
+        // Show full nulls from insert & delete
+        static constexpr uint64_t COLUMN_FORMAT_FULL_INS_DEC = 1;
+        // Show all from redo
+        static constexpr uint64_t COLUMN_FORMAT_FULL_UPD = 2;
+
         static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_NANO = 0;
         static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_MICRO = 1;
         static constexpr uint64_t INTERVAL_DTS_FORMAT_UNIX_MILLI = 2;
@@ -1282,11 +1289,20 @@ namespace OpenLogReplicator {
         static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601_MILLI = 10;
         static constexpr uint64_t TIMESTAMP_TZ_FORMAT_ISO8601 = 11;
 
+        static constexpr uint64_t TRANSACTION_INSERT = 1;
+        static constexpr uint64_t TRANSACTION_DELETE = 2;
+        static constexpr uint64_t TRANSACTION_UPDATE = 3;
+
         static constexpr uint64_t UNKNOWN_FORMAT_QUESTION_MARK = 0;
         static constexpr uint64_t UNKNOWN_FORMAT_DUMP = 1;
 
         static constexpr uint64_t UNKNOWN_TYPE_HIDE = 0;
         static constexpr uint64_t UNKNOWN_TYPE_SHOW = 1;
+
+        static constexpr uint64_t VALUE_BEFORE = 0;
+        static constexpr uint64_t VALUE_AFTER = 1;
+        static constexpr uint64_t VALUE_BEFORE_SUPP = 2;
+        static constexpr uint64_t VALUE_AFTER_SUPP = 3;
 
         static constexpr uint64_t XID_FORMAT_TEXT_HEX = 0;
         static constexpr uint64_t XID_FORMAT_TEXT_DEC = 1;

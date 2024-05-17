@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
 
         while (firstBuilderQueue != nullptr) {
             BuilderQueue* nextBuffer = firstBuilderQueue->next;
-            ctx->freeMemoryChunk(MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
+            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
             firstBuilderQueue = nextBuffer;
             --buffersAllocated;
         }
@@ -119,7 +119,7 @@ namespace OpenLogReplicator {
 
     void Builder::initialize() {
         buffersAllocated = 1;
-        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(MEMORY_MODULE_BUILDER, true));
+        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, true));
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
         firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
@@ -764,7 +764,7 @@ namespace OpenLogReplicator {
             pos = 3;
 
             if ((redoLogRecord2->op & OP_ROWDEPENDENCIES) != 0) {
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     pos += 6;
                 else
                     pos += 8;
@@ -856,7 +856,7 @@ namespace OpenLogReplicator {
             pos = 3;
 
             if ((redoLogRecord1->op & OP_ROWDEPENDENCIES) != 0) {
-                if (ctx->version < REDO_VERSION_12_2)
+                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     pos += 6;
                 else
                     pos += 8;
@@ -2325,7 +2325,7 @@ namespace OpenLogReplicator {
         if (builderQueue != nullptr) {
             while (builderQueue->id < maxId) {
                 BuilderQueue* nextBuffer = builderQueue->next;
-                ctx->freeMemoryChunk(MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
+                ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
                 builderQueue = nextBuffer;
             }
         }

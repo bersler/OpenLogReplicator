@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
         }
 
         uint32_t pageNo = redoLogRecordLob->lobPageNo;
-        if (pageNo != INVALID_LOB_PAGE_NO) {
+        if (pageNo != RedoLogRecord::INVALID_LOB_PAGE_NO) {
             auto indexMapIt = lobData->indexMap.find(page);
             if (indexMapIt != lobData->indexMap.end()) {
                 if (indexMapIt->second != page)
