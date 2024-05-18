@@ -12,6 +12,7 @@
 - fix: error: "parse error, attribute xid: not expected"
 - fix: in rare cases, the AFTER value for UPDATE is missing
 - code style cleanup
+- documentation update
 
 1.5.0
 - code style cleanup
