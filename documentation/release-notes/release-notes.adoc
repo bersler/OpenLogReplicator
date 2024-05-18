@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.5.1
-:revdate: 2024-05-14
+:revdate: 2024-05-19
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -30,6 +30,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: error: "parse error, attribute xid: not expected"
 - fix: in rare cases, the AFTER value for UPDATE is missing
 - code style cleanup
+- documentation update
 
 === Version 1.5.0
 - code style cleanup
