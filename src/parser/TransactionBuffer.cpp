@@ -360,9 +360,9 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
-        if (ctx->trace & TRACE_LOB)
-            ctx->logTrace(TRACE_LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
-                                     " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
+        if (ctx->trace & Ctx::TRACE_LOB)
+            ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
+                                          " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
 
         LobKey lobKey(redoLogRecord1->lobId, redoLogRecord1->dba);
 

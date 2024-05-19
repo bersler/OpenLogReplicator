@@ -992,8 +992,8 @@ namespace OpenLogReplicator {
 
             // UNDO
             if (redoLogRecord1p->rowData > 0) {
-                if ((ctx->trace & TRACE_DML) != 0 || dump) {
-                    ctx->logTrace(TRACE_DML, "UNDO");
+                if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
+                    ctx->logTrace(Ctx::TRACE_DML, "UNDO");
                 }
 
                 nulls = redoLogRecord1p->data + redoLogRecord1p->nullsDelta;
@@ -1093,8 +1093,8 @@ namespace OpenLogReplicator {
 
             // Supplemental columns
             if (redoLogRecord1p->suppLogRowData > 0) {
-                if ((ctx->trace & TRACE_DML) != 0 || dump) {
-                    ctx->logTrace(TRACE_DML, "UNDO SUP");
+                if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
+                    ctx->logTrace(Ctx::TRACE_DML, "UNDO SUP");
                 }
 
                 while (fieldNum < redoLogRecord1p->suppLogRowData - 1)
@@ -1171,8 +1171,8 @@ namespace OpenLogReplicator {
 
             // REDO
             if (redoLogRecord2p->rowData > 0) {
-                if ((ctx->trace & TRACE_DML) != 0 || dump) {
-                    ctx->logTrace(TRACE_DML, "REDO");
+                if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
+                    ctx->logTrace(Ctx::TRACE_DML, "REDO");
                 }
 
                 fieldPos = 0;
@@ -1384,10 +1384,10 @@ namespace OpenLogReplicator {
             }
         }
 
-        if ((ctx->trace & TRACE_DML) != 0 || dump) {
+        if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
             if (table != nullptr) {
-                ctx->logTrace(TRACE_DML, "tab: " + table->owner + "." + table->name + " type: " + std::to_string(type) + " columns: " +
-                                         std::to_string(valuesMax));
+                ctx->logTrace(Ctx::TRACE_DML, "tab: " + table->owner + "." + table->name + " type: " + std::to_string(type) + " columns: " +
+                                              std::to_string(valuesMax));
 
                 baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1400,18 +1400,18 @@ namespace OpenLogReplicator {
                         if (column >= table->maxSegCol)
                             break;
 
-                        ctx->logTrace(TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
-                                                 std::to_string(values[column][VALUE_BEFORE] != nullptr ? lengths[column][VALUE_BEFORE] : -1) + ") A(" +
-                                                 std::to_string(values[column][VALUE_AFTER] != nullptr ? lengths[column][VALUE_AFTER] : -1) + ") BS(" +
-                                                 std::to_string(values[column][VALUE_BEFORE_SUPP] != nullptr ? lengths[column][VALUE_BEFORE_SUPP] : -1) + ")" +
-                                                 " AS(" + std::to_string(values[column][VALUE_AFTER_SUPP] != nullptr ? lengths[column][VALUE_AFTER_SUPP] : -1) +
-                                                 ") pk: " + std::to_string(table->columns[column]->numPk));
+                        ctx->logTrace(Ctx::TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
+                                                      std::to_string(values[column][VALUE_BEFORE] != nullptr ? lengths[column][VALUE_BEFORE] : -1) + ") A(" +
+                                                      std::to_string(values[column][VALUE_AFTER] != nullptr ? lengths[column][VALUE_AFTER] : -1) + ") BS(" +
+                                                      std::to_string(values[column][VALUE_BEFORE_SUPP] != nullptr ? lengths[column][VALUE_BEFORE_SUPP] : -1) + ")" +
+                                                      " AS(" + std::to_string(values[column][VALUE_AFTER_SUPP] != nullptr ? lengths[column][VALUE_AFTER_SUPP] : -1) +
+                                                      ") pk: " + std::to_string(table->columns[column]->numPk));
                     }
                 }
             } else {
-                ctx->logTrace(TRACE_DML, "tab: (obj: " + std::to_string(redoLogRecord1->obj) + ", dataobj: " +
-                                         std::to_string(redoLogRecord1->dataObj) + ") type: " + std::to_string(type) + " columns: " +
-                                         std::to_string(valuesMax));
+                ctx->logTrace(Ctx::TRACE_DML, "tab: (obj: " + std::to_string(redoLogRecord1->obj) + ", dataobj: " +
+                                              std::to_string(redoLogRecord1->dataObj) + ") type: " + std::to_string(type) + " columns: " +
+                                              std::to_string(valuesMax));
 
                 baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1422,10 +1422,10 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        ctx->logTrace(TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
-                                                 std::to_string(lengths[column][VALUE_BEFORE]) + ") A(" + std::to_string(lengths[column][VALUE_AFTER]) +
-                                                 ") BS(" + std::to_string(lengths[column][VALUE_BEFORE_SUPP]) + ") AS(" +
-                                                 std::to_string(lengths[column][VALUE_AFTER_SUPP]) + ")");
+                        ctx->logTrace(Ctx::TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
+                                                      std::to_string(lengths[column][VALUE_BEFORE]) + ") A(" + std::to_string(lengths[column][VALUE_AFTER]) +
+                                                      ") BS(" + std::to_string(lengths[column][VALUE_BEFORE_SUPP]) + ") AS(" +
+                                                      std::to_string(lengths[column][VALUE_AFTER_SUPP]) + ")");
                     }
                 }
             }
@@ -2332,8 +2332,8 @@ namespace OpenLogReplicator {
     }
 
     void Builder::sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds) {
-        if (ctx->trace & TRACE_SLEEP)
-            ctx->logTrace(TRACE_SLEEP, "Builder:sleepForWriterWork");
+        if (ctx->trace & Ctx::TRACE_SLEEP)
+            ctx->logTrace(Ctx::TRACE_SLEEP, "Builder:sleepForWriterWork");
 
         std::unique_lock<std::mutex> lck(mtx);
         if (queueSize > 0)

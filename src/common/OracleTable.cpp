@@ -152,8 +152,8 @@ namespace OpenLogReplicator {
         if (condition != nullptr)
             result = condition->evaluateToBool(op, attributes);
 
-        if (ctx->trace & TRACE_CONDITION)
-            ctx->logTrace(TRACE_CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + conditionStr + ", result: " +
+        if (ctx->trace & Ctx::TRACE_CONDITION)
+            ctx->logTrace(Ctx::TRACE_CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + conditionStr + ", result: " +
                                            std::to_string(result));
         return result;
     }

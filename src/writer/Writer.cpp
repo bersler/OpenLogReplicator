@@ -174,10 +174,10 @@ namespace OpenLogReplicator {
     }
 
     void Writer::run() {
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "writer (" + ss.str() + ") start");
+            ctx->logTrace(Ctx::TRACE_THREADS, "writer (" + ss.str() + ") start");
         }
 
         ctx->info(0, "writer is starting with " + getName());
@@ -212,10 +212,10 @@ namespace OpenLogReplicator {
         }
 
         ctx->info(0, "writer is stopping: " + getName() + ", max queue size: " + std::to_string(maxQueueSize));
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "writer (" + ss.str() + ") stop");
+            ctx->logTrace(Ctx::TRACE_THREADS, "writer (" + ss.str() + ") stop");
         }
     }
 
@@ -233,8 +233,8 @@ namespace OpenLogReplicator {
                 if (streaming && metadata->status == METADATA_STATUS_REPLICATE)
                     break;
 
-                if (ctx->trace & TRACE_WRITER)
-                    ctx->logTrace(TRACE_WRITER, "waiting for client");
+                if (ctx->trace & Ctx::TRACE_WRITER)
+                    ctx->logTrace(Ctx::TRACE_WRITER, "waiting for client");
                 usleep(ctx->pollIntervalUs);
             }
 
@@ -274,9 +274,9 @@ namespace OpenLogReplicator {
                 // The queue is full
                 pollQueue();
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
-                    if (ctx->trace & TRACE_WRITER)
-                        ctx->logTrace(TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
-                                                    " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
+                    if (ctx->trace & Ctx::TRACE_WRITER)
+                        ctx->logTrace(Ctx::TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
+                                                         " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     usleep(ctx->pollIntervalUs);
                     pollQueue();
                 }
@@ -375,14 +375,14 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
-        if (ctx->trace & TRACE_CHECKPOINT) {
+        if (ctx->trace & Ctx::TRACE_CHECKPOINT) {
             if (checkpointScn == ZERO_SCN)
-                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
-                                                std::to_string(confirmedIdx));
+                ctx->logTrace(Ctx::TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
+                                                     std::to_string(confirmedIdx));
             else
-                ctx->logTrace(TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
-                                                std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
-                                                std::to_string(checkpointIdx));
+                ctx->logTrace(Ctx::TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
+                                                     std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
+                                                     std::to_string(checkpointIdx));
         }
         std::string name(database + "-chkpt");
         std::ostringstream ss;

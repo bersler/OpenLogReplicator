@@ -127,10 +127,10 @@ namespace OpenLogReplicator {
         localess.push_back(locales);
         locales->initialize();
 
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "main (" + ss.str() + ") start");
+            ctx->logTrace(Ctx::TRACE_THREADS, "main (" + ss.str() + ") start");
         }
 
         struct stat configFileStat;
@@ -1018,10 +1018,10 @@ namespace OpenLogReplicator {
 
         ctx->mainLoop();
 
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "main (" + ss.str() + ") stop");
+            ctx->logTrace(Ctx::TRACE_THREADS, "main (" + ss.str() + ") stop");
         }
 
         return 0;
