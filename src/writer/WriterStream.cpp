@@ -58,17 +58,17 @@ namespace OpenLogReplicator {
         }
 
         if (metadata->status == METADATA_STATUS_READY) {
-            ctx->logTrace(TRACE_WRITER, "info, ready");
+            ctx->logTrace(Ctx::TRACE_WRITER, "info, ready");
             response.set_code(pb::ResponseCode::READY);
             return;
         }
 
         if (metadata->status == METADATA_STATUS_START) {
-            ctx->logTrace(TRACE_WRITER, "info, start");
+            ctx->logTrace(Ctx::TRACE_WRITER, "info, start");
             response.set_code(pb::ResponseCode::STARTING);
         }
 
-        ctx->logTrace(TRACE_WRITER, "info, first scn: " + std::to_string(metadata->firstDataScn));
+        ctx->logTrace(Ctx::TRACE_WRITER, "info, first scn: " + std::to_string(metadata->firstDataScn));
         response.set_code(pb::ResponseCode::REPLICATE);
         response.set_scn(metadata->firstDataScn);
         response.set_c_scn(confirmedScn);
@@ -84,7 +84,7 @@ namespace OpenLogReplicator {
         }
 
         if (metadata->status == METADATA_STATUS_REPLICATE) {
-            ctx->logTrace(TRACE_WRITER, "client requested start when already started");
+            ctx->logTrace(Ctx::TRACE_WRITER, "client requested start when already started");
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
             response.set_scn(metadata->firstDataScn);
             response.set_c_scn(confirmedScn);
@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
         }
 
         if (metadata->status == METADATA_STATUS_START) {
-            ctx->logTrace(TRACE_WRITER, "client requested start when already starting");
+            ctx->logTrace(Ctx::TRACE_WRITER, "client requested start when already starting");
             response.set_code(pb::ResponseCode::STARTING);
             return;
         }
@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
                 break;
 
             default:
-                ctx->logTrace(TRACE_WRITER, "client requested an invalid starting point");
+                ctx->logTrace(Ctx::TRACE_WRITER, "client requested an invalid starting point");
                 response.set_code(pb::ResponseCode::INVALID_COMMAND);
                 return;
         }
@@ -146,7 +146,7 @@ namespace OpenLogReplicator {
             ctx->info(0, "streaming to client");
             streaming = true;
         } else {
-            ctx->logTrace(TRACE_WRITER, "starting failed");
+            ctx->logTrace(Ctx::TRACE_WRITER, "starting failed");
             response.set_code(pb::ResponseCode::FAILED_START);
         }
     }

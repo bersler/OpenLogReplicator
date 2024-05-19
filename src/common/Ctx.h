@@ -33,41 +33,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CTX_H_
 #define CTX_H_
 
-#define COLUMN_LIMIT            1000
-#define COLUMN_LIMIT_23_0       4096
-
-#define LOG_LEVEL_SILENT                        0
-#define LOG_LEVEL_ERROR                         1
-#define LOG_LEVEL_WARNING                       2
-#define LOG_LEVEL_INFO                          3
-#define LOG_LEVEL_DEBUG                         4
-
-#define TRACE_DML                               0x00000001
-#define TRACE_DUMP                              0x00000002
-#define TRACE_LOB                               0x00000004
-#define TRACE_LWN                               0x00000008
-#define TRACE_THREADS                           0x00000010
-#define TRACE_SQL                               0x00000020
-#define TRACE_FILE                              0x00000040
-#define TRACE_DISK                              0x00000080
-#define TRACE_PERFORMANCE                       0x00000100
-#define TRACE_TRANSACTION                       0x00000200
-#define TRACE_REDO                              0x00000400
-#define TRACE_ARCHIVE_LIST                      0x00000800
-#define TRACE_SCHEMA_LIST                       0x00001000
-#define TRACE_WRITER                            0x00002000
-#define TRACE_CHECKPOINT                        0x00004000
-#define TRACE_SYSTEM                            0x00008000
-#define TRACE_LOB_DATA                          0x00010000
-#define TRACE_SLEEP                             0x00020000
-#define TRACE_CONDITION                         0x00040000
-
-#define UNIX_AD1970_01_01                       62167132800L
-#define UNIX_BC1970_01_01                       (62167132800L-365*24*60*60)
-#define UNIX_BC4712_01_01                       (-210831897600L)
-#define UNIX_AD9999_12_31                       253402300799L
-#define BAD_TIMEZONE                            0x7FFFFFFFFFFFFFFF
-
 #ifndef GLOBALS
 extern uint64_t OLR_LOCALES;
 #endif
@@ -79,6 +44,22 @@ namespace OpenLogReplicator {
 
     class Ctx final {
     public:
+        static constexpr uint64_t BAD_TIMEZONE = 0x7FFFFFFFFFFFFFFF;
+
+        static constexpr uint64_t COLUMN_LIMIT = 1000;
+        static constexpr uint64_t COLUMN_LIMIT_23_0 = 4096;
+
+        static constexpr uint64_t DISABLE_CHECKS_GRANTS = 0x00000001;
+        static constexpr uint64_t DISABLE_CHECKS_SUPPLEMENTAL_LOG = 0x00000002;
+        static constexpr uint64_t DISABLE_CHECKS_BLOCK_SUM = 0x00000004;
+        static constexpr uint64_t DISABLE_CHECKS_JSON_TAGS = 0x00000008;
+
+        static constexpr uint64_t LOG_LEVEL_SILENT = 0;
+        static constexpr uint64_t LOG_LEVEL_ERROR = 1;
+        static constexpr uint64_t LOG_LEVEL_WARNING = 2;
+        static constexpr uint64_t LOG_LEVEL_INFO = 3;
+        static constexpr uint64_t LOG_LEVEL_DEBUG = 4;
+
         static constexpr uint64_t MEMORY_MODULE_BUILDER = 0;
         static constexpr uint64_t MEMORY_MODULE_PARSER = 1;
         static constexpr uint64_t MEMORY_MODULE_READER = 2;
@@ -91,6 +72,51 @@ namespace OpenLogReplicator {
 
         static constexpr uint64_t OLR_LOCALES_TIMESTAMP = 0;
         static constexpr uint64_t OLR_LOCALES_MOCK = 1;
+
+        static constexpr uint64_t REDO_FLAGS_ARCH_ONLY = 0x00000001;
+        static constexpr uint64_t REDO_FLAGS_SCHEMALESS = 0x00000002;
+        static constexpr uint64_t REDO_FLAGS_ADAPTIVE_SCHEMA = 0x00000004;
+        static constexpr uint64_t REDO_FLAGS_DIRECT_DISABLE = 0x00000008;
+        static constexpr uint64_t REDO_FLAGS_IGNORE_DATA_ERRORS = 0x00000010;
+        static constexpr uint64_t REDO_FLAGS_SHOW_DDL = 0x00000020;
+        static constexpr uint64_t REDO_FLAGS_SHOW_HIDDEN_COLUMNS = 0x00000040;
+        static constexpr uint64_t REDO_FLAGS_SHOW_GUARD_COLUMNS = 0x00000080;
+        static constexpr uint64_t REDO_FLAGS_SHOW_NESTED_COLUMNS = 0x00000100;
+        static constexpr uint64_t REDO_FLAGS_SHOW_UNUSED_COLUMNS = 0x00000200;
+        static constexpr uint64_t REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS = 0x00000400;
+        static constexpr uint64_t REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS = 0x00000800;
+        static constexpr uint64_t REDO_FLAGS_SHOW_CHECKPOINT = 0x00001000;
+        static constexpr uint64_t REDO_FLAGS_CHECKPOINT_KEEP = 0x00002000;
+        static constexpr uint64_t REDO_FLAGS_VERIFY_SCHEMA = 0x00004000;
+        static constexpr uint64_t REDO_FLAGS_RAW_COLUMN_DATA = 0x00008000;
+        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_XMLTYPE = 0x00010000;
+        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_JSON = 0x00020000;
+        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING = 0x00040000;
+
+        static constexpr uint64_t TRACE_DML = 0x00000001;
+        static constexpr uint64_t TRACE_DUMP = 0x00000002;
+        static constexpr uint64_t TRACE_LOB = 0x00000004;
+        static constexpr uint64_t TRACE_LWN = 0x00000008;
+        static constexpr uint64_t TRACE_THREADS = 0x00000010;
+        static constexpr uint64_t TRACE_SQL = 0x00000020;
+        static constexpr uint64_t TRACE_FILE = 0x00000040;
+        static constexpr uint64_t TRACE_DISK = 0x00000080;
+        static constexpr uint64_t TRACE_PERFORMANCE = 0x00000100;
+        static constexpr uint64_t TRACE_TRANSACTION = 0x00000200;
+        static constexpr uint64_t TRACE_REDO = 0x00000400;
+        static constexpr uint64_t TRACE_ARCHIVE_LIST = 0x00000800;
+        static constexpr uint64_t TRACE_SCHEMA_LIST = 0x00001000;
+        static constexpr uint64_t TRACE_WRITER = 0x00002000;
+        static constexpr uint64_t TRACE_CHECKPOINT = 0x00004000;
+        static constexpr uint64_t TRACE_SYSTEM = 0x00008000;
+        static constexpr uint64_t TRACE_LOB_DATA = 0x00010000;
+        static constexpr uint64_t TRACE_SLEEP = 0x00020000;
+        static constexpr uint64_t TRACE_CONDITION = 0x00040000;
+
+        static constexpr time_t UNIX_AD1970_01_01 = 62167132800L;
+        static constexpr time_t UNIX_BC1970_01_01 = 62167132800L - 365 * 24 * 60 * 60;
+        static constexpr time_t UNIX_BC4712_01_01 = -210831897600L;
+        static constexpr time_t UNIX_AD9999_12_31 = 253402300799L;
 
     protected:
         bool bigEndian;
@@ -130,34 +156,10 @@ namespace OpenLogReplicator {
         }
 
     public:
-        static constexpr uint64_t REDO_FLAGS_ARCH_ONLY = 0x00000001;
-        static constexpr uint64_t REDO_FLAGS_SCHEMALESS = 0x00000002;
-        static constexpr uint64_t REDO_FLAGS_ADAPTIVE_SCHEMA = 0x00000004;
-        static constexpr uint64_t REDO_FLAGS_DIRECT_DISABLE = 0x00000008;
-        static constexpr uint64_t REDO_FLAGS_IGNORE_DATA_ERRORS = 0x00000010;
-        static constexpr uint64_t REDO_FLAGS_SHOW_DDL = 0x00000020;
-        static constexpr uint64_t REDO_FLAGS_SHOW_HIDDEN_COLUMNS = 0x00000040;
-        static constexpr uint64_t REDO_FLAGS_SHOW_GUARD_COLUMNS = 0x00000080;
-        static constexpr uint64_t REDO_FLAGS_SHOW_NESTED_COLUMNS = 0x00000100;
-        static constexpr uint64_t REDO_FLAGS_SHOW_UNUSED_COLUMNS = 0x00000200;
-        static constexpr uint64_t REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS = 0x00000400;
-        static constexpr uint64_t REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS = 0x00000800;
-        static constexpr uint64_t REDO_FLAGS_SHOW_CHECKPOINT = 0x00001000;
-        static constexpr uint64_t REDO_FLAGS_CHECKPOINT_KEEP = 0x00002000;
-        static constexpr uint64_t REDO_FLAGS_VERIFY_SCHEMA = 0x00004000;
-        static constexpr uint64_t REDO_FLAGS_RAW_COLUMN_DATA = 0x00008000;
-        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_XMLTYPE = 0x00010000;
-        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_JSON = 0x00020000;
-        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING = 0x00040000;
 
         bool flagsSet(uint64_t mask) const {
             return (flags & mask) != 0;
         }
-
-        static constexpr uint64_t DISABLE_CHECKS_GRANTS = 0x00000001;
-        static constexpr uint64_t DISABLE_CHECKS_SUPPLEMENTAL_LOG = 0x00000002;
-        static constexpr uint64_t DISABLE_CHECKS_BLOCK_SUM = 0x00000004;
-        static constexpr uint64_t DISABLE_CHECKS_JSON_TAGS = 0x00000008;
 
         bool disableChecksSet(uint64_t mask) {
             return (disableChecks & mask) != 0;

@@ -205,7 +205,7 @@ namespace OpenLogReplicator {
 
             std::vector<std::string> msgs;
             for (const SchemaElement* element: metadata->schemaElements) {
-                if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
+                if (metadata->ctx->logLevel >= Ctx::LOG_LEVEL_DEBUG)
                     msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                    std::to_string(element->options));
 
@@ -222,10 +222,10 @@ namespace OpenLogReplicator {
     }
 
     void Checkpoint::run() {
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "checkpoint (" + ss.str() + ") start");
+            ctx->logTrace(Ctx::TRACE_THREADS, "checkpoint (" + ss.str() + ") start");
         }
 
         try {
@@ -242,9 +242,9 @@ namespace OpenLogReplicator {
                 trackConfigFile();
 
                 {
-                    if (ctx->trace & TRACE_SLEEP)
-                        ctx->logTrace(TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
-                                                   " checkpointScn: " + std::to_string(metadata->checkpointScn));
+                    if (ctx->trace & Ctx::TRACE_SLEEP)
+                        ctx->logTrace(Ctx::TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
+                                                        " checkpointScn: " + std::to_string(metadata->checkpointScn));
 
                     std::unique_lock<std::mutex> lck(mtx);
                     condLoop.wait_for(lck, std::chrono::milliseconds(100));
@@ -262,10 +262,10 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "checkpoint (" + ss.str() + ") stop");
+            ctx->logTrace(Ctx::TRACE_THREADS, "checkpoint (" + ss.str() + ") stop");
         }
     }
 }

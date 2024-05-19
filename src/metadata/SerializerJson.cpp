@@ -582,7 +582,7 @@ namespace OpenLogReplicator {
                             metadata->dbTimezoneStr = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "db-timezone");
                         else
                             metadata->dbTimezoneStr = "+00:00";
-                        if (metadata->ctx->dbTimezone != BAD_TIMEZONE) {
+                        if (metadata->ctx->dbTimezone != Ctx::BAD_TIMEZONE) {
                             metadata->dbTimezone = metadata->ctx->dbTimezone;
                         } else {
                             if (!metadata->ctx->parseTimezone(metadata->dbTimezoneStr.c_str(), metadata->dbTimezone))
@@ -707,7 +707,7 @@ namespace OpenLogReplicator {
                     }
 
                     for (const SchemaElement* element: metadata->schemaElements) {
-                        if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
+                        if (metadata->ctx->logLevel >= Ctx::LOG_LEVEL_DEBUG)
                             msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                            std::to_string(element->options));
 

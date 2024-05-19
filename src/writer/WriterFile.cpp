@@ -168,8 +168,8 @@ namespace OpenLogReplicator {
                 if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length()) != suffix)
                     continue;
 
-                if (ctx->trace & TRACE_WRITER)
-                    ctx->logTrace(TRACE_WRITER, "found previous output file: " + pathName + "/" + fileName);
+                if (ctx->trace & Ctx::TRACE_WRITER)
+                    ctx->logTrace(Ctx::TRACE_WRITER, "found previous output file: " + pathName + "/" + fileName);
                 std::string fileNameFoundNum(fileName.substr(prefix.length(), fileName.length() - suffix.length() - prefix.length()));
                 typeScn fileNum;
                 try {

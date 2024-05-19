@@ -130,14 +130,14 @@ namespace OpenLogReplicator {
         std::unordered_set<const OracleTable*> tables;
         typeScn commitScn;
         typeXid lastXid;
-        uint64_t valuesSet[COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
-        uint64_t valuesMerge[COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
-        int64_t lengths[COLUMN_LIMIT_23_0][4];
-        uint8_t* values[COLUMN_LIMIT_23_0][4];
-        uint64_t lengthsPart[3][COLUMN_LIMIT_23_0][4];
-        uint8_t* valuesPart[3][COLUMN_LIMIT_23_0][4];
+        uint64_t valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
+        uint64_t valuesMerge[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
+        int64_t lengths[Ctx::COLUMN_LIMIT_23_0][4];
+        uint8_t* values[Ctx::COLUMN_LIMIT_23_0][4];
+        uint64_t lengthsPart[3][Ctx::COLUMN_LIMIT_23_0][4];
+        uint8_t* valuesPart[3][Ctx::COLUMN_LIMIT_23_0][4];
         uint64_t valuesMax;
-        uint8_t* merges[COLUMN_LIMIT_23_0 * 4];
+        uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * 4];
         uint64_t mergesMax;
         uint64_t id;
         uint64_t num;
@@ -213,7 +213,7 @@ namespace OpenLogReplicator {
         };
 
         inline void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb, bool dump) {
-            if ((ctx->trace & TRACE_DML) != 0 || dump) {
+            if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
                 std::ostringstream ss;
                 ss << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << length << "/" << std::setfill('0') <<
                    std::setw(2) << std::hex << static_cast<uint64_t>(fb) << " to: ";
@@ -532,8 +532,8 @@ namespace OpenLogReplicator {
         inline bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t length, uint64_t charsetId, typeObj obj, uint64_t offset, bool isClob, bool isSystem) {
             bool appendData = false, hasPrev = false, hasNext = true;
             valueLength = 0;
-            if (ctx->trace & TRACE_LOB_DATA)
-                ctx->logTrace(TRACE_LOB_DATA, dumpLob(data, length));
+            if (ctx->trace & Ctx::TRACE_LOB_DATA)
+                ctx->logTrace(Ctx::TRACE_LOB_DATA, dumpLob(data, length));
 
             if (length < 20) {
                 ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, length) + ", location: 1");
@@ -548,9 +548,9 @@ namespace OpenLogReplicator {
             if ((flags & 0x04) == 0) {
                 auto lobsIt = lobCtx->lobs.find(lobId);
                 if (lobsIt == lobCtx->lobs.end()) {
-                    if (ctx->trace & TRACE_LOB_DATA)
-                        ctx->logTrace(TRACE_LOB_DATA, "LOB missing LOB index xid: " + lastXid.toString() + " LOB: " + lobId.lower() +
-                                                      " data: " + dumpLob(data, length));
+                    if (ctx->trace & Ctx::TRACE_LOB_DATA)
+                        ctx->logTrace(Ctx::TRACE_LOB_DATA, "LOB missing LOB index xid: " + lastXid.toString() + " LOB: " + lobId.lower() +
+                                                           " data: " + dumpLob(data, length));
                     return true;
                 }
                 LobData* lobData = lobsIt->second;
@@ -568,11 +568,11 @@ namespace OpenLogReplicator {
                     LobDataElement element(page, 0);
                     auto dataMapIt = lobData->dataMap.find(element);
                     if (dataMapIt == lobData->dataMap.end()) {
-                        if (ctx->trace & TRACE_LOB_DATA)
-                            ctx->logTrace(TRACE_LOB_DATA, "missing LOB (in-index) for xid: " + lastXid.toString() + " LOB: " +
-                                                          lobId.lower() + " page: " + std::to_string(page) + " obj: " + std::to_string(obj));
-                        if (ctx->trace & TRACE_LOB_DATA)
-                            ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
+                        if (ctx->trace & Ctx::TRACE_LOB_DATA)
+                            ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB (in-index) for xid: " + lastXid.toString() + " LOB: " +
+                                                               lobId.lower() + " page: " + std::to_string(page) + " obj: " + std::to_string(obj));
+                        if (ctx->trace & Ctx::TRACE_LOB_DATA)
+                            ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
                         return false;
                     }
                     uint64_t chunkLength = lobData->pageSize;
@@ -625,10 +625,10 @@ namespace OpenLogReplicator {
 
                     auto lobsIt = lobCtx->lobs.find(lobId);
                     if (lobsIt == lobCtx->lobs.end()) {
-                        if (ctx->trace & TRACE_LOB_DATA) {
-                            ctx->logTrace(TRACE_LOB_DATA, "missing LOB (in-index) for xid: " + lastXid.toString() + " obj: " +
-                                                          std::to_string(obj));
-                            ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
+                        if (ctx->trace & Ctx::TRACE_LOB_DATA) {
+                            ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB (in-index) for xid: " + lastXid.toString() + " obj: " +
+                                                               std::to_string(obj));
+                            ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
                         }
                         return false;
                     }
@@ -664,10 +664,10 @@ namespace OpenLogReplicator {
                         LobDataElement element(page, 0);
                         auto dataMapIt = lobData->dataMap.find(element);
                         if (dataMapIt == lobData->dataMap.end()) {
-                            if (ctx->trace & TRACE_LOB_DATA) {
-                                ctx->logTrace(TRACE_LOB_DATA, "missing LOB index (in-index) for xid: " + lastXid.toString() + " LOB: " +
-                                                              lobId.lower() + " page: " + std::to_string(page) + " obj: " + std::to_string(obj));
-                                ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
+                            if (ctx->trace & Ctx::TRACE_LOB_DATA) {
+                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB index (in-index) for xid: " + lastXid.toString() + " LOB: " +
+                                                                   lobId.lower() + " page: " + std::to_string(page) + " obj: " + std::to_string(obj));
+                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
                             }
                             return false;
                         }
@@ -809,10 +809,10 @@ namespace OpenLogReplicator {
                         // 12+ data
                         auto lobsIt = lobCtx->lobs.find(lobId);
                         if (lobsIt == lobCtx->lobs.end()) {
-                            if (ctx->trace & TRACE_LOB_DATA) {
-                                ctx->logTrace(TRACE_LOB_DATA, "missing LOB index (12+ in-value) for xid: " + lastXid.toString() + " LOB: " +
-                                                              lobId.lower() + " obj: " + std::to_string(obj));
-                                ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
+                            if (ctx->trace & Ctx::TRACE_LOB_DATA) {
+                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB index (12+ in-value) for xid: " + lastXid.toString() + " LOB: " +
+                                                                   lobId.lower() + " obj: " + std::to_string(obj));
+                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
                             }
                             return false;
                         }
@@ -844,11 +844,11 @@ namespace OpenLogReplicator {
                                     LobDataElement element(page, 0);
                                     auto dataMapIt = lobData->dataMap.find(element);
                                     if (dataMapIt == lobData->dataMap.end()) {
-                                        if (ctx->trace & TRACE_LOB_DATA) {
-                                            ctx->logTrace(TRACE_LOB_DATA, "missing LOB data (new in-value) for xid: " + lastXid.toString() +
-                                                                          " LOB: " + lobId.lower() + " page: " + std::to_string(page) + " obj: " +
-                                                                          std::to_string(obj));
-                                            ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
+                                        if (ctx->trace & Ctx::TRACE_LOB_DATA) {
+                                            ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB data (new in-value) for xid: " + lastXid.toString() +
+                                                                               " LOB: " + lobId.lower() + " page: " + std::to_string(page) + " obj: " +
+                                                                               std::to_string(obj));
+                                            ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
                                         }
                                         return false;
                                     }
@@ -901,12 +901,12 @@ namespace OpenLogReplicator {
                                         LobDataElement element(page, 0);
                                         auto dataMapIt = lobData->dataMap.find(element);
                                         if (dataMapIt == lobData->dataMap.end()) {
-                                            if (ctx->trace & TRACE_LOB_DATA) {
-                                                ctx->logTrace(TRACE_LOB_DATA, "missing LOB data (new in-value 12+) for xid: " +
-                                                                              lastXid.toString() + " LOB: " + lobId.lower() + " page: " + std::to_string(page) +
-                                                                              " obj: " + std::to_string(obj));
-                                                ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " +
-                                                                              dumpLob(dataLob, length));
+                                            if (ctx->trace & Ctx::TRACE_LOB_DATA) {
+                                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB data (new in-value 12+) for xid: " +
+                                                                                   lastXid.toString() + " LOB: " + lobId.lower() + " page: " + std::to_string(page) +
+                                                                                   " obj: " + std::to_string(obj));
+                                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " +
+                                                                                   dumpLob(dataLob, length));
                                             }
                                             return false;
                                         }
@@ -945,11 +945,11 @@ namespace OpenLogReplicator {
 
                         auto lobsIt = lobCtx->lobs.find(lobId);
                         if (lobsIt == lobCtx->lobs.end()) {
-                            if (ctx->trace & TRACE_LOB_DATA)
-                                ctx->logTrace(TRACE_LOB_DATA, "missing LOB index (new in-value) for xid: " + lastXid.toString() + " LOB: " +
-                                                              lobId.lower() + " obj: " + std::to_string(obj));
-                            if (ctx->trace & TRACE_LOB_DATA)
-                                ctx->logTrace(TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
+                            if (ctx->trace & Ctx::TRACE_LOB_DATA)
+                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB index (new in-value) for xid: " + lastXid.toString() + " LOB: " +
+                                                                   lobId.lower() + " obj: " + std::to_string(obj));
+                            if (ctx->trace & Ctx::TRACE_LOB_DATA)
+                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, length));
                             return false;
                         }
                         LobData* lobData = lobsIt->second;
