@@ -89,6 +89,8 @@ namespace OpenLogReplicator {
 
         } catch (ConfigurationException& ex) {
             ctx->error(ex.code, ex.msg);
+        } catch (DataException& ex) {
+            ctx->error(ex.code, ex.msg);
         }
 
         configFileChange = configFileStat.st_mtime;
@@ -101,8 +103,9 @@ namespace OpenLogReplicator {
                                                 " - parse error: " + GetParseError_En(document.GetParseError()));
 
         if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-            static const char* documentChildNames[] = {"version", "source", nullptr};
-            Ctx::checkJsonFields(configFileName, document, documentChildNames);
+            static const char* documentNames[] = {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace",
+                                                  "source", "target", nullptr};
+            Ctx::checkJsonFields(configFileName, document, documentNames);
         }
 
         const char* version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
@@ -121,8 +124,11 @@ namespace OpenLogReplicator {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
             if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sourceChildNames[] = {"debug", "table", "filter", nullptr};
-                Ctx::checkJsonFields(configFileName, sourceJson, sourceChildNames);
+                static const char* sourceNames[] = {"alias", "memory", "name", "reader", "flags", "state", "debug",
+                                                    "transaction-max-mb", "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us",
+                                                    "arch-read-tries", "redo-verify-delay-us", "refresh-interval-us", "arch",
+                                                    "filter", nullptr};
+                Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
             }
 
             metadata->resetElements();
