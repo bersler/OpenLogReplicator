@@ -683,7 +683,7 @@ namespace OpenLogReplicator {
     }
 
     bool Replicator::processArchivedRedoLogs() {
-        uint64_t ret = REDO_OK;
+        uint64_t ret = Reader::REDO_OK;
         Parser* parser;
         bool logsProcessed = false;
 
@@ -763,8 +763,8 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     break;
 
-                if (ret != REDO_FINISHED) {
-                    if (ret == REDO_STOPPED) {
+                if (ret != Reader::REDO_FINISHED) {
+                    if (ret == Reader::REDO_STOPPED) {
                         archiveRedoQueue.pop();
                         delete parser;
                         break;
@@ -867,10 +867,10 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 break;
 
-            if (ret == REDO_FINISHED) {
+            if (ret == Reader::REDO_FINISHED) {
                 // verifySchema(metadata->nextScn);
                 metadata->setNextSequence();
-            } else if (ret == REDO_STOPPED || ret == REDO_OK) {
+            } else if (ret == Reader::REDO_STOPPED || ret == Reader::REDO_OK) {
                 if (ctx->trace & Ctx::TRACE_REDO)
                     ctx->logTrace(Ctx::TRACE_REDO, "updating redo log files, return code: " + std::to_string(ret) + ", sequence: " +
                                                    std::to_string(metadata->sequence) + ", first scn: " + std::to_string(metadata->firstScn) + ", next scn: " +
@@ -878,7 +878,7 @@ namespace OpenLogReplicator {
 
                 updateOnlineRedoLogData();
                 updateOnlineLogs();
-            } else if (ret == REDO_OVERWRITTEN) {
+            } else if (ret == Reader::REDO_OVERWRITTEN) {
                 ctx->info(0, "online redo log has been overwritten by new ctx, continuing reading from archived redo log");
                 break;
             } else {

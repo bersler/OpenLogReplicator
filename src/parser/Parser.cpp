@@ -1484,7 +1484,7 @@ namespace OpenLogReplicator {
             }
 
             // Processing finished
-            if (!switchRedo && lwnScn > 0 && confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == REDO_FINISHED) {
+            if (!switchRedo && lwnScn > 0 && confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == Reader::REDO_FINISHED) {
                 if (lwnScn > metadata->firstDataScn) {
                     switchRedo = true;
                     if (ctx->trace & Ctx::TRACE_CHECKPOINT)
@@ -1507,12 +1507,12 @@ namespace OpenLogReplicator {
                 if (ctx->metrics)
                     ctx->metrics->emitCheckpointsOut(1);
 
-                reader->setRet(REDO_SHUTDOWN);
+                reader->setRet(Reader::REDO_SHUTDOWN);
             } else {
                 if (reader->checkFinished(confirmedBufferStart)) {
-                    if (reader->getRet() == REDO_FINISHED && nextScn == ZERO_SCN && reader->getNextScn() != ZERO_SCN)
+                    if (reader->getRet() == Reader::REDO_FINISHED && nextScn == ZERO_SCN && reader->getNextScn() != ZERO_SCN)
                         nextScn = reader->getNextScn();
-                    if (reader->getRet() == REDO_STOPPED || reader->getRet() == REDO_OVERWRITTEN)
+                    if (reader->getRet() == Reader::REDO_STOPPED || reader->getRet() == Reader::REDO_OVERWRITTEN)
                         metadata->offset = lwnConfirmedBlock * reader->getBlockSize();
                     break;
                 }

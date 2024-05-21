@@ -324,7 +324,7 @@ namespace OpenLogReplicator {
                                                         ", expected: unset when \"start-time-rel\" is set (" + std::to_string(startTimeRel) + ")");
             }
 
-            uint64_t stateType = STATE_TYPE_DISK;
+            uint64_t stateType = State::TYPE_DISK;
             const char* statePath = "checkpoint";
 
             if (sourceJson.HasMember("state")) {
@@ -339,7 +339,7 @@ namespace OpenLogReplicator {
                 if (stateJson.HasMember("type")) {
                     const char* stateTypeStr = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, stateJson, "type");
                     if (strcmp(stateTypeStr, "disk") == 0) {
-                        stateType = STATE_TYPE_DISK;
+                        stateType = State::TYPE_DISK;
                         if (stateJson.HasMember("path"))
                             statePath = Ctx::getJsonFieldS(configFileName, MAX_PATH_LENGTH, stateJson, "path");
                     } else
@@ -424,7 +424,7 @@ namespace OpenLogReplicator {
             if (ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
                 metadata->addElement(".*", ".*", 0);
 
-            if (stateType == STATE_TYPE_DISK) {
+            if (stateType == State::TYPE_DISK) {
                 metadata->state = new StateDisk(ctx, statePath);
                 metadata->stateDisk = new StateDisk(ctx, "scripts");
                 metadata->serializer = new SerializerJson();
@@ -960,9 +960,9 @@ namespace OpenLogReplicator {
                 uint64_t maxMessageMb = 100;
                 if (writerJson.HasMember("max-message-mb")) {
                     maxMessageMb = Ctx::getJsonFieldU64(configFileName, writerJson, "max-message-mb");
-                    if (maxMessageMb < 1 || maxMessageMb > MAX_KAFKA_MESSAGE_MB)
+                    if (maxMessageMb < 1 || maxMessageMb > WriterKafka::MAX_KAFKA_MESSAGE_MB)
                         throw ConfigurationException(30001, "bad JSON, invalid \"max-message-mb\" value: " + std::to_string(maxMessageMb) +
-                                                            ", expected: one of {1 .. " + std::to_string(MAX_KAFKA_MESSAGE_MB) + "}");
+                                                            ", expected: one of {1 .. " + std::to_string(WriterKafka::MAX_KAFKA_MESSAGE_MB) + "}");
                 }
                 replicator2->builder->setMaxMessageMb(maxMessageMb);
 
