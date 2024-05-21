@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STREAM_H_
 #define STREAM_H_
 
-#define READ_NETWORK_BUFFER         1024
-
 namespace OpenLogReplicator {
     class Ctx;
 
@@ -33,6 +31,8 @@ namespace OpenLogReplicator {
         std::string uri;
 
     public:
+        static constexpr uint64_t READ_NETWORK_BUFFER = 1024;
+
         Stream(Ctx* newCtx, const char* newUri);
         virtual ~Stream();
 

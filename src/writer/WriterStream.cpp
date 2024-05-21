@@ -195,10 +195,10 @@ namespace OpenLogReplicator {
         if (!stream->isConnected())
             return;
 
-        uint8_t msgR[READ_NETWORK_BUFFER];
+        uint8_t msgR[Stream::READ_NETWORK_BUFFER];
         std::string msgS;
 
-        uint64_t length = stream->receiveMessageNB(msgR, READ_NETWORK_BUFFER);
+        uint64_t length = stream->receiveMessageNB(msgR, Stream::READ_NETWORK_BUFFER);
 
         if (length > 0) {
             request.Clear();

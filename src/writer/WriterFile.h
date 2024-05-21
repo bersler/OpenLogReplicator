@@ -22,15 +22,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef WRITER_FILE_H_
 #define WRITER_FILE_H_
 
-#define WRITER_FILE_MODE_STDOUT             0
-#define WRITER_FILE_MODE_NO_ROTATE          1
-#define WRITER_FILE_MODE_NUM                2
-#define WRITER_FILE_MODE_TIMESTAMP          3
-#define WRITER_FILE_MODE_SEQUENCE           4
-
 namespace OpenLogReplicator {
     class WriterFile final : public Writer {
     protected:
+        static constexpr uint64_t MODE_STDOUT = 0;
+        static constexpr uint64_t MODE_NO_ROTATE = 1;
+        static constexpr uint64_t MODE_NUM = 2;
+        static constexpr uint64_t MODE_TIMESTAMP = 3;
+        static constexpr uint64_t MODE_SEQUENCE = 4;
+
         size_t prefixPos;
         size_t suffixPos;
         uint64_t mode;

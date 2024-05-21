@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STATE_H_
 #define STATE_H_
 
-#define STATE_TYPE_DISK 0
-
 namespace OpenLogReplicator {
     class Ctx;
 
@@ -34,6 +32,8 @@ namespace OpenLogReplicator {
         Ctx* ctx;
 
     public:
+        static constexpr uint64_t TYPE_DISK = 0;
+
         State(Ctx* newCtx);
         virtual ~State();
 

@@ -25,8 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef WRITER_KAFKA_H_
 #define WRITER_KAFKA_H_
 
-#define MAX_KAFKA_MESSAGE_MB        953
-
 namespace OpenLogReplicator {
     class WriterKafka final : public Writer {
     protected:
@@ -45,6 +43,8 @@ namespace OpenLogReplicator {
         void pollQueue() override;
 
     public:
+        static constexpr uint64_t MAX_KAFKA_MESSAGE_MB = 953;
+
         WriterKafka(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
                     const char* newTopic);
         ~WriterKafka() override;
