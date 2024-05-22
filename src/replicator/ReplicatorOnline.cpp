@@ -1018,9 +1018,9 @@ namespace OpenLogReplicator {
             xdbTtSetStmt.bindUInt64(1, targetScn);
             char xdbTtSetRowid[19];
             xdbTtSetStmt.defineString(1, xdbTtSetRowid, sizeof(xdbTtSetRowid));
-            char xdbTtSetGuid[XDB_TTSET_GUID_LENGTH + 1];
+            char xdbTtSetGuid[XdbTtSet::GUID_LENGTH + 1];
             xdbTtSetStmt.defineString(2, xdbTtSetGuid, sizeof(xdbTtSetGuid));
-            char xdbTtSetTokSuf[XDB_TTSET_TOKSUF_LENGTH + 1];
+            char xdbTtSetTokSuf[XdbTtSet::TOKSUF_LENGTH + 1];
             xdbTtSetStmt.defineString(3, xdbTtSetTokSuf, sizeof(xdbTtSetTokSuf));
             uint64_t xdbTtSetFlags;
             xdbTtSetStmt.defineUInt64(4, xdbTtSetFlags);
@@ -1059,9 +1059,9 @@ namespace OpenLogReplicator {
                 xdbXNmStmt.bindUInt64(1, targetScn);
                 char xdbXNmRowid[19];
                 xdbXNmStmt.defineString(1, xdbXNmRowid, sizeof(xdbXNmRowid));
-                char xdbNmNmSpcUri[XDB_XNM_NMSPCURI_LENGTH + 1];
+                char xdbNmNmSpcUri[XdbXNm::NMSPCURI_LENGTH + 1];
                 xdbXNmStmt.defineString(2, xdbNmNmSpcUri, sizeof(xdbNmNmSpcUri));
-                char xdbNmId[XDB_XNM_ID_LENGTH + 1];
+                char xdbNmId[XdbXNm::ID_LENGTH + 1];
                 xdbXNmStmt.defineString(3, xdbNmId, sizeof(xdbNmId));
 
                 int64_t xdbXNmRet = xdbXNmStmt.executeQuery();
@@ -1084,9 +1084,9 @@ namespace OpenLogReplicator {
                 xdbXPtStmt.bindUInt64(1, targetScn);
                 char xdbXPtRowid[19];
                 xdbXPtStmt.defineString(1, xdbXPtRowid, sizeof(xdbXPtRowid));
-                char xdbPtPath[XDB_XPT_PATH_LENGTH + 1];
+                char xdbPtPath[XdbXPt::PATH_LENGTH + 1];
                 xdbXPtStmt.defineString(2, xdbPtPath, sizeof(xdbPtPath));
-                char xdbPtId[XDB_XPT_ID_LENGTH + 1];
+                char xdbPtId[XdbXPt::ID_LENGTH + 1];
                 xdbXPtStmt.defineString(3, xdbPtId, sizeof(xdbPtId));
 
                 int64_t xdbXPtRet = xdbXPtStmt.executeQuery();
@@ -1109,13 +1109,13 @@ namespace OpenLogReplicator {
                 xdbXQnStmt.bindUInt64(1, targetScn);
                 char xdbXQnRowid[19];
                 xdbXQnStmt.defineString(1, xdbXQnRowid, sizeof(xdbXQnRowid));
-                char xdbXQnNmSpcId[XDB_XQN_NMSPCID_LENGTH + 1];
+                char xdbXQnNmSpcId[XdbXQn::NMSPCID_LENGTH + 1];
                 xdbXQnStmt.defineString(2, xdbXQnNmSpcId, sizeof(xdbXQnNmSpcId));
-                char xdbXQnLocalName[XDB_XQN_LOCALNAME_LENGTH + 1];
+                char xdbXQnLocalName[XdbXQn::LOCALNAME_LENGTH + 1];
                 xdbXQnStmt.defineString(3, xdbXQnLocalName, sizeof(xdbXQnLocalName));
-                char xdbXQnFlags[XDB_XQN_FLAGS_LENGTH + 1];
+                char xdbXQnFlags[XdbXQn::FLAGS_LENGTH + 1];
                 xdbXQnStmt.defineString(4, xdbXQnFlags, sizeof(xdbXQnFlags));
-                char xdbXQnId[XDB_XQN_ID_LENGTH + 1];
+                char xdbXQnId[XdbXQn::ID_LENGTH + 1];
                 xdbXQnStmt.defineString(5, xdbXQnId, sizeof(xdbXQnId));
 
                 int64_t xdbXQnRet = xdbXQnStmt.executeQuery();

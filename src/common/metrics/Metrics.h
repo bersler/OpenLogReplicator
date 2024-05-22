@@ -22,11 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef METRICS_H_
 #define METRICS_H_
 
-#define METRICS_TAG_NAMES_NONE          0
-#define METRICS_TAG_NAMES_FILTER        1
-#define METRICS_TAG_NAMES_SYS           2
-#define METRICS_TAG_NAMES_ALL           3
-
 namespace OpenLogReplicator {
     class Ctx;
 
@@ -35,6 +30,11 @@ namespace OpenLogReplicator {
         uint64_t tagNames;
 
     public:
+        static constexpr uint64_t TAG_NAMES_NONE = 0;
+        static constexpr uint64_t TAG_NAMES_FILTER = 1;
+        static constexpr uint64_t TAG_NAMES_SYS = 2;
+        static constexpr uint64_t TAG_NAMES_ALL = 3;
+
         Metrics(uint64_t newTagNames);
         virtual ~Metrics();
 

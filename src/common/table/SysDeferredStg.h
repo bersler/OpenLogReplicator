@@ -24,11 +24,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_DEFERRED_STG_H_
 #define SYS_DEFERRED_STG_H_
 
-#define SYSDEFERREDSTG_FLAGSSTG_COMPRESSED  4
-
 namespace OpenLogReplicator {
     class SysDeferredStg final {
     public:
+        static constexpr uint64_t FLAGSSTG_COMPRESSED = 4;
+
         SysDeferredStg(typeRowId newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
                 rowId(newRowId),
                 obj(newObj),
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isCompressed() {
-            return flagsStg.isSet64(SYSDEFERREDSTG_FLAGSSTG_COMPRESSED);
+            return flagsStg.isSet64(FLAGSSTG_COMPRESSED);
         }
 
         typeRowId rowId;

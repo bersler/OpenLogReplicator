@@ -162,28 +162,28 @@ namespace OpenLogReplicator {
                                           std::to_string(offset));
 
         if (column->storedAsLob) {
-            if (column->type == SYS_COL_TYPE_VARCHAR) {
+            if (column->type == SysCol::TYPE_VARCHAR) {
                 // VARCHAR2 stored as CLOB
-                column->type = SYS_COL_TYPE_CLOB;
-            } else if (column->type == SYS_COL_TYPE_RAW) {
+                column->type = SysCol::TYPE_CLOB;
+            } else if (column->type == SysCol::TYPE_RAW) {
                 // RAW stored as BLOB
-                column->type = SYS_COL_TYPE_BLOB;
+                column->type = SysCol::TYPE_BLOB;
             }
         }
 
         switch (column->type) {
-            case SYS_COL_TYPE_VARCHAR:
-            case SYS_COL_TYPE_CHAR:
+            case SysCol::TYPE_VARCHAR:
+            case SysCol::TYPE_CHAR:
                 parseString(data, length, column->charsetId, offset, false, false, false, table->systemTable > 0);
                 columnString(column->name);
                 break;
 
-            case SYS_COL_TYPE_NUMBER:
+            case SysCol::TYPE_NUMBER:
                 parseNumber(data, length, offset);
                 columnNumber(column->name, column->precision, column->scale);
                 break;
 
-            case SYS_COL_TYPE_BLOB:
+            case SysCol::TYPE_BLOB:
                 if (after) {
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys)) {
                         if (column->xmlType && ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
@@ -197,20 +197,20 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_JSON:
+            case SysCol::TYPE_JSON:
                 if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_JSON))
                     if (parseLob(lobCtx, data, length, 0, table->obj, offset, false, table->sys))
                         columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
                 break;
 
-            case SYS_COL_TYPE_CLOB:
+            case SysCol::TYPE_CLOB:
                 if (after) {
                     if (parseLob(lobCtx, data, length, column->charsetId, table->obj, offset, true, table->systemTable > 0))
                         columnString(column->name);
                 }
                 break;
 
-            case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
+            case SysCol::TYPE_TIMESTAMP_WITH_LOCAL_TZ:
                 if (length != 7 && length != 11)
                     columnUnknown(column->name, data, length);
                 else {
@@ -253,8 +253,8 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_DATE:
-            case SYS_COL_TYPE_TIMESTAMP:
+            case SysCol::TYPE_DATE:
+            case SysCol::TYPE_TIMESTAMP:
                 if (length != 7 && length != 11)
                     columnUnknown(column->name, data, length);
                 else {
@@ -297,25 +297,25 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_RAW:
+            case SysCol::TYPE_RAW:
                 columnRaw(column->name, data, length);
                 break;
 
-            case SYS_COL_TYPE_FLOAT:
+            case SysCol::TYPE_FLOAT:
                 if (length == 4)
                     columnFloat(column->name, decodeFloat(data));
                 else
                     columnUnknown(column->name, data, length);
                 break;
 
-            case SYS_COL_TYPE_DOUBLE:
+            case SysCol::TYPE_DOUBLE:
                 if (length == 8)
                     columnDouble(column->name, decodeDouble(data));
                 else
                     columnUnknown(column->name, data, length);
                 break;
 
-            case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
+            case SysCol::TYPE_TIMESTAMP_WITH_TZ:
                 if (length != 9 && length != 13) {
                     columnUnknown(column->name, data, length);
                 } else {
@@ -398,7 +398,7 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
+            case SysCol::TYPE_INTERVAL_YEAR_TO_MONTH:
                 if (length != 5 || data[4] < 49 || data[4] > 71)
                     columnUnknown(column->name, data, length);
                 else {
@@ -478,7 +478,7 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
+            case SysCol::TYPE_INTERVAL_DAY_TO_SECOND:
                 if (length != 11 || data[4] < 37 || data[4] > 83 || data[5] < 1 || data[5] > 119 || data[6] < 1 || data[6] > 119)
                     columnUnknown(column->name, data, length);
                 else {
@@ -625,7 +625,7 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_BOOLEAN:
+            case SysCol::TYPE_BOOLEAN:
                 if (length == 1 && data[0] <= 1) {
                     valueLength = 0;
                     valueBuffer[valueLength++] = Ctx::map10(data[0]);
@@ -635,7 +635,7 @@ namespace OpenLogReplicator {
                 }
                 break;
 
-            case SYS_COL_TYPE_UROWID:
+            case SysCol::TYPE_UROWID:
                 if (length == 13 && data[0] == 0x01) {
                     typeRowId rowId;
                     rowId.decodeFromHex(data + 1);
@@ -2042,7 +2042,7 @@ namespace OpenLogReplicator {
                 std::string tag = xdbXQnMapIdIt->second->localName;
                 // not very efficient, but it's not a problem
                 uint64_t flagsLength = xdbXQnMapIdIt->second->flags.length();
-                bool isAttribute = (((xdbXQnMapIdIt->second->flags.at(flagsLength - 1) - '0') & XDB_XQN_FLAG_ISATTRIBUTE) != 0);
+                bool isAttribute = (((xdbXQnMapIdIt->second->flags.at(flagsLength - 1) - '0') & XdbXQn::FLAG_ISATTRIBUTE) != 0);
 
                 if (isAttribute) {
                     out = " " + tag + "=\"";

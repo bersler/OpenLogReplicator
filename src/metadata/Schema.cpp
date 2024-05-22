@@ -922,7 +922,7 @@ namespace OpenLogReplicator {
         if (sysColMapRowId.find(rowId) != sysColMapRowId.end())
             throw DataException(50023, "duplicate SYS.COL$ value: (rowid: " + rowId.toString() + ")");
 
-        if (strlen(name) > SYS_COL_NAME_LENGTH)
+        if (strlen(name) > SysCol::NAME_LENGTH)
             throw DataException(50025, "value of SYS.COL$ too long for NAME (value: '" + std::string(name) + "', length: " +
                                        std::to_string(strlen(name)) + ")");
 
@@ -1007,7 +1007,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        if (strlen(name) > SYS_OBJ_NAME_LENGTH)
+        if (strlen(name) > SysObj::NAME_LENGTH)
             throw DataException(50025, "value of SYS.OBJ$ too long for NAME (value: '" + std::string(name) + "', length: " +
                                        std::to_string(strlen(name)) + ")");
         sysObjTmp = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2,
@@ -1090,7 +1090,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        if (strlen(name) > SYS_USER_NAME_LENGTH)
+        if (strlen(name) > SysUser::NAME_LENGTH)
             throw DataException(50025, "value of SYS.USER$ too long for NAME (value: '" + std::string(name) + "', length: " +
                                        std::to_string(strlen(name)) + ")");
         sysUserTmp = new SysUser(rowId, user, name, spare11, spare12, single);
@@ -2648,7 +2648,7 @@ namespace OpenLogReplicator {
                     guardSeg = sysEColIt->second->guardId;
 
                 if (sysCol->charsetForm == 1) {
-                    if (sysCol->type == SYS_COL_TYPE_CLOB) {
+                    if (sysCol->type == SysCol::TYPE_CLOB) {
                         charmapId = defaultCharacterNcharMapId;
                     } else
                         charmapId = defaultCharacterMapId;
@@ -2657,7 +2657,7 @@ namespace OpenLogReplicator {
                 else
                     charmapId = sysCol->charsetId;
 
-                if (sysCol->type == SYS_COL_TYPE_VARCHAR || sysCol->type == SYS_COL_TYPE_CHAR || sysCol->type == SYS_COL_TYPE_CLOB) {
+                if (sysCol->type == SysCol::TYPE_VARCHAR || sysCol->type == SysCol::TYPE_CHAR || sysCol->type == SysCol::TYPE_CLOB) {
                     auto characterMapIt = locales->characterMap.find(charmapId);
                     if (characterMapIt == locales->characterMap.end()) {
                         ctx->hint("check in database for name: SELECT NLS_CHARSET_NAME(" + std::to_string(charmapId) + ") FROM DUAL;");

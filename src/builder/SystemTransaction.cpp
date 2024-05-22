@@ -327,7 +327,7 @@ namespace OpenLogReplicator {
 
     void SystemTransaction::updateRaw(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
         if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
-            if (table->columns[column]->type != SYS_COL_TYPE_RAW)
+            if (table->columns[column]->type != SysCol::TYPE_RAW)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
@@ -351,7 +351,7 @@ namespace OpenLogReplicator {
 
     void SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
         if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
-            if (table->columns[column]->type != SYS_COL_TYPE_VARCHAR && table->columns[column]->type != SYS_COL_TYPE_CHAR)
+            if (table->columns[column]->type != SysCol::TYPE_VARCHAR && table->columns[column]->type != SysCol::TYPE_CHAR)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
@@ -474,7 +474,7 @@ namespace OpenLogReplicator {
                 } else if (table->columns[column]->name == "INTCOL#") {
                     updateNumber16(sysColTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysColTmp->name, SYS_COL_NAME_LENGTH, column, table, offset);
+                    updateString(sysColTmp->name, SysCol::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysColTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LENGTH") {
@@ -696,7 +696,7 @@ namespace OpenLogReplicator {
                 } else if (table->columns[column]->name == "DATAOBJ#") {
                     updateNumber32u(sysObjTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysObjTmp->name, SYS_OBJ_NAME_LENGTH, column, table, offset);
+                    updateString(sysObjTmp->name, SysObj::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysObjTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
@@ -874,7 +874,7 @@ namespace OpenLogReplicator {
                 if (table->columns[column]->name == "TS#") {
                     updateNumber32u(sysTsTmp->ts, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysTsTmp->name, SYS_TS_NAME_LENGTH, column, table, offset);
+                    updateString(sysTsTmp->name, SysTs::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "BLOCKSIZE") {
                     updateNumber32u(sysTsTmp->blockSize, 0, column, table, offset);
                 }
@@ -908,7 +908,7 @@ namespace OpenLogReplicator {
                 if (table->columns[column]->name == "USER#") {
                     updateNumber32u(sysUserTmp->user, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysUserTmp->name, SYS_USER_NAME_LENGTH, column, table, offset);
+                    updateString(sysUserTmp->name, SysUser::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "SPARE1") {
                     updateNumberXu(sysUserTmp->spare1, column, table, offset);
                 }
@@ -940,9 +940,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "GUID") {
-                    updateRaw(xdbTtSetTmp->guid, XDB_TTSET_GUID_LENGTH, column, table, offset);
+                    updateRaw(xdbTtSetTmp->guid, XdbTtSet::GUID_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TOKSUF") {
-                    updateString(xdbTtSetTmp->tokSuf, XDB_TTSET_TOKSUF_LENGTH, column, table, offset);
+                    updateString(xdbTtSetTmp->tokSuf, XdbTtSet::TOKSUF_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
                     updateNumber64u(xdbTtSetTmp->flags, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ#") {
@@ -976,9 +976,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "NMSPCURI") {
-                    updateString(xdbXNmTmp->nmSpcUri, XDB_XNM_NMSPCURI_LENGTH, column, table, offset);
+                    updateString(xdbXNmTmp->nmSpcUri, XdbXNm::NMSPCURI_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "ID") {
-                    updateRaw(xdbXNmTmp->id, XDB_XNM_ID_LENGTH, column, table, offset);
+                    updateRaw(xdbXNmTmp->id, XdbXNm::ID_LENGTH, column, table, offset);
                 }
             }
         }
@@ -1008,9 +1008,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "PATH") {
-                    updateRaw(xdbXPtTmp->path, XDB_XPT_PATH_LENGTH, column, table, offset);
+                    updateRaw(xdbXPtTmp->path, XdbXPt::PATH_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "ID") {
-                    updateRaw(xdbXPtTmp->id, XDB_XPT_ID_LENGTH, column, table, offset);
+                    updateRaw(xdbXPtTmp->id, XdbXPt::ID_LENGTH, column, table, offset);
                 }
             }
         }
@@ -1039,13 +1039,13 @@ namespace OpenLogReplicator {
                 if ((builder->valuesSet[base] & mask) == 0)
                     continue;
                 if (table->columns[column]->name == "NMSPCID") {
-                    updateRaw(xdbXQnTmp->nmSpcId, XDB_XQN_NMSPCID_LENGTH, column, table, offset);
+                    updateRaw(xdbXQnTmp->nmSpcId, XdbXQn::NMSPCID_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "LOCALNAME") {
-                    updateString(xdbXQnTmp->localName, XDB_XQN_LOCALNAME_LENGTH, column, table, offset);
+                    updateString(xdbXQnTmp->localName, XdbXQn::LOCALNAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    updateRaw(xdbXQnTmp->flags, XDB_XQN_FLAGS_LENGTH, column, table, offset);
+                    updateRaw(xdbXQnTmp->flags, XdbXQn::FLAGS_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "ID") {
-                    updateRaw(xdbXQnTmp->id, XDB_XQN_ID_LENGTH, column, table, offset);
+                    updateRaw(xdbXQnTmp->id, XdbXQn::ID_LENGTH, column, table, offset);
                 }
             }
         }
@@ -1246,7 +1246,7 @@ namespace OpenLogReplicator {
                 } else if (table->columns[column]->name == "INTCOL#") {
                     updateNumber16(sysColTmp->intCol, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysColTmp->name, SYS_COL_NAME_LENGTH, column, table, offset);
+                    updateString(sysColTmp->name, SysCol::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysColTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "LENGTH") {
@@ -1480,7 +1480,7 @@ namespace OpenLogReplicator {
                 } else if (table->columns[column]->name == "DATAOBJ#") {
                     updateNumber32u(sysObjTmp->dataObj, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysObjTmp->name, SYS_OBJ_NAME_LENGTH, column, table, offset);
+                    updateString(sysObjTmp->name, SysObj::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysObjTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
@@ -1667,7 +1667,7 @@ namespace OpenLogReplicator {
                 if (table->columns[column]->name == "TS#") {
                     updateNumber32u(sysTsTmp->ts, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysTsTmp->name, SYS_TS_NAME_LENGTH, column, table, offset);
+                    updateString(sysTsTmp->name, SysTs::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "BLOCKSIZE") {
                     updateNumber32u(sysTsTmp->blockSize, 0, column, table, offset);
                 }
@@ -1703,7 +1703,7 @@ namespace OpenLogReplicator {
                 if (table->columns[column]->name == "USER#") {
                     updateNumber32u(sysUserTmp->user, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NAME") {
-                    updateString(sysUserTmp->name, SYS_USER_NAME_LENGTH, column, table, offset);
+                    updateString(sysUserTmp->name, SysUser::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "SPARE1") {
                     updateNumberXu(sysUserTmp->spare1, column, table, offset);
                 }
@@ -1737,9 +1737,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "GUID") {
-                    updateRaw(xdbTtSetTmp->guid, XDB_TTSET_GUID_LENGTH, column, table, offset);
+                    updateRaw(xdbTtSetTmp->guid, XdbTtSet::GUID_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TOKSUF") {
-                    updateString(xdbTtSetTmp->tokSuf, XDB_TTSET_TOKSUF_LENGTH, column, table, offset);
+                    updateString(xdbTtSetTmp->tokSuf, XdbTtSet::TOKSUF_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
                     updateNumber64u(xdbTtSetTmp->flags, 0, column, table, offset);
                 } else if (table->columns[column]->name == "OBJ") {
@@ -1775,9 +1775,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "NMSPCURI") {
-                    updateString(xdbXNmTmp->nmSpcUri, XDB_XNM_NMSPCURI_LENGTH, column, table, offset);
+                    updateString(xdbXNmTmp->nmSpcUri, XdbXNm::NMSPCURI_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "ID") {
-                    updateRaw(xdbXNmTmp->id, XDB_XNM_ID_LENGTH, column, table, offset);
+                    updateRaw(xdbXNmTmp->id, XdbXNm::ID_LENGTH, column, table, offset);
                 }
             }
         }
@@ -1809,9 +1809,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "PATH") {
-                    updateRaw(xdbXPtTmp->path, XDB_XPT_PATH_LENGTH, column, table, offset);
+                    updateRaw(xdbXPtTmp->path, XdbXPt::PATH_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "ID") {
-                    updateRaw(xdbXPtTmp->id, XDB_XPT_ID_LENGTH, column, table, offset);
+                    updateRaw(xdbXPtTmp->id, XdbXPt::ID_LENGTH, column, table, offset);
                 }
             }
         }
@@ -1843,13 +1843,13 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "NMSPCID") {
-                    updateRaw(xdbXQnTmp->nmSpcId, XDB_XQN_NMSPCID_LENGTH, column, table, offset);
+                    updateRaw(xdbXQnTmp->nmSpcId, XdbXQn::NMSPCID_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "LOCALNAME") {
-                    updateString(xdbXQnTmp->localName, XDB_XQN_LOCALNAME_LENGTH, column, table, offset);
+                    updateString(xdbXQnTmp->localName, XdbXQn::LOCALNAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    updateRaw(xdbXQnTmp->flags, XDB_XQN_FLAGS_LENGTH, column, table, offset);
+                    updateRaw(xdbXQnTmp->flags, XdbXQn::FLAGS_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "ID") {
-                    updateRaw(xdbXQnTmp->id, XDB_XQN_ID_LENGTH, column, table, offset);
+                    updateRaw(xdbXQnTmp->id, XdbXQn::ID_LENGTH, column, table, offset);
                 }
             }
         }

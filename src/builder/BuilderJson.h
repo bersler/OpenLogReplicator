@@ -47,22 +47,22 @@ namespace OpenLogReplicator {
                     return;
 
                 uint64_t typeNo = table->columns[col]->type;
-                if (typeNo != SYS_COL_TYPE_VARCHAR
-                    && typeNo != SYS_COL_TYPE_NUMBER
-                    && typeNo != SYS_COL_TYPE_DATE
-                    && typeNo != SYS_COL_TYPE_RAW
-                    && typeNo != SYS_COL_TYPE_CHAR
-                    && typeNo != SYS_COL_TYPE_FLOAT
-                    && typeNo != SYS_COL_TYPE_DOUBLE
-                    && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
-                    && (typeNo != SYS_COL_TYPE_JSON || !after)
-                    && (typeNo != SYS_COL_TYPE_CLOB || !after)
-                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP
-                    && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
-                    && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
-                    && typeNo != SYS_COL_TYPE_UROWID
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ)
+                if (typeNo != SysCol::TYPE_VARCHAR
+                    && typeNo != SysCol::TYPE_NUMBER
+                    && typeNo != SysCol::TYPE_DATE
+                    && typeNo != SysCol::TYPE_RAW
+                    && typeNo != SysCol::TYPE_CHAR
+                    && typeNo != SysCol::TYPE_FLOAT
+                    && typeNo != SysCol::TYPE_DOUBLE
+                    && (typeNo != SysCol::TYPE_XMLTYPE || !after)
+                    && (typeNo != SysCol::TYPE_JSON || !after)
+                    && (typeNo != SysCol::TYPE_CLOB || !after)
+                    && (typeNo != SysCol::TYPE_BLOB || !after)
+                    && typeNo != SysCol::TYPE_TIMESTAMP
+                    && typeNo != SysCol::TYPE_INTERVAL_YEAR_TO_MONTH
+                    && typeNo != SysCol::TYPE_INTERVAL_DAY_TO_SECOND
+                    && typeNo != SysCol::TYPE_UROWID
+                    && typeNo != SysCol::TYPE_TIMESTAMP_WITH_LOCAL_TZ)
                     return;
             }
 
@@ -359,83 +359,83 @@ namespace OpenLogReplicator {
 
                     append(R"(","type":)", sizeof(R"(","type":)") - 1);
                     switch (table->columns[column]->type) {
-                        case SYS_COL_TYPE_VARCHAR:
+                        case SysCol::TYPE_VARCHAR:
                             append(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_NUMBER:
+                        case SysCol::TYPE_NUMBER:
                             append(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
                             appendSDec(table->columns[column]->precision);
                             append(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
                             appendSDec(table->columns[column]->scale);
                             break;
 
-                        case SYS_COL_TYPE_LONG:
+                        case SysCol::TYPE_LONG:
                             // Long, not supported
                             append(R"("long")", sizeof(R"("long")") - 1);
                             break;
 
-                        case SYS_COL_TYPE_DATE:
+                        case SysCol::TYPE_DATE:
                             append(R"("date")", sizeof(R"("date")") - 1);
                             break;
 
-                        case SYS_COL_TYPE_RAW:
+                        case SysCol::TYPE_RAW:
                             append(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_LONG_RAW: // Not supported
+                        case SysCol::TYPE_LONG_RAW: // Not supported
                             append(R"("long raw")", sizeof(R"("long raw")") - 1);
                             break;
 
-                        case SYS_COL_TYPE_CHAR:
+                        case SysCol::TYPE_CHAR:
                             append(R"("char","length":)", sizeof(R"("char","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_FLOAT:
+                        case SysCol::TYPE_FLOAT:
                             append(R"("binary_float")", sizeof(R"("binary_float")") - 1);
                             break;
 
-                        case SYS_COL_TYPE_DOUBLE:
+                        case SysCol::TYPE_DOUBLE:
                             append(R"("binary_double")", sizeof(R"("binary_double")") - 1);
                             break;
 
-                        case SYS_COL_TYPE_CLOB:
+                        case SysCol::TYPE_CLOB:
                             append(R"("clob")", sizeof(R"("clob")") - 1);
                             break;
 
-                        case SYS_COL_TYPE_BLOB:
+                        case SysCol::TYPE_BLOB:
                             append(R"("blob")", sizeof(R"("blob")") - 1);
                             break;
 
-                        case SYS_COL_TYPE_TIMESTAMP:
+                        case SysCol::TYPE_TIMESTAMP:
                             append(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
+                        case SysCol::TYPE_TIMESTAMP_WITH_TZ:
                             append(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                        case SysCol::TYPE_INTERVAL_YEAR_TO_MONTH:
                             append(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
+                        case SysCol::TYPE_INTERVAL_DAY_TO_SECOND:
                             append(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_UROWID:
+                        case SysCol::TYPE_UROWID:
                             append(R"("urowid","length":)", sizeof(R"("urowid","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
 
-                        case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
+                        case SysCol::TYPE_TIMESTAMP_WITH_LOCAL_TZ:
                             append(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
                             appendDec(table->columns[column]->length);
                             break;
