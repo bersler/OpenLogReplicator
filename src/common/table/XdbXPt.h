@@ -23,12 +23,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef XDB_XPT_H_
 #define XDB_XPT_H_
 
-#define XDB_XPT_PATH_LENGTH 2000
-#define XDB_XPT_ID_LENGTH 16
-
 namespace OpenLogReplicator {
     class XdbXPt final {
     public:
+        static constexpr uint64_t PATH_LENGTH = 2000;
+        static constexpr uint64_t ID_LENGTH = 16;
+
         XdbXPt(typeRowId newRowId, const char* newPath, const char* newId) :
                 rowId(newRowId),
                 path(newPath),

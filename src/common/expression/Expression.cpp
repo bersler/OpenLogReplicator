@@ -25,48 +25,48 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     void Expression::buildTokens(const std::string& conditionStr, std::vector<Token*>& tokens) {
-        uint64_t expressionType = TOKEN_TYPE_NONE;
+        uint64_t expressionType = Token::TYPE_NONE;
         uint64_t tokenIndex = 0;
 
         uint64_t i = 0;
         while (i < conditionStr.length()) {
             switch (expressionType) {
-                case TOKEN_TYPE_NONE:
+                case Token::TYPE_NONE:
                     if (conditionStr[i] == ' ' || conditionStr[i] == '\t' || conditionStr[i] == '\n' || conditionStr[i] == '\r') {
                         ++i;
                         continue;
                     } else if (conditionStr[i] == '(') {
-                        expressionType = TOKEN_TYPE_LEFT_PARENTHESIS;
+                        expressionType = Token::TYPE_LEFT_PARENTHESIS;
                         tokenIndex = i++;
                         continue;
                     } else if (conditionStr[i] == ')') {
-                        expressionType = TOKEN_TYPE_RIGHT_PARENTHESIS;
+                        expressionType = Token::TYPE_RIGHT_PARENTHESIS;
                         tokenIndex = i++;
                         continue;
                     } else if (conditionStr[i] == ',') {
-                        expressionType = TOKEN_TYPE_COMMA;
+                        expressionType = Token::TYPE_COMMA;
                         tokenIndex = i++;
                         continue;
                     } else if (conditionStr[i] == '[') {
-                        expressionType = TOKEN_TYPE_IDENTIFIER;
+                        expressionType = Token::TYPE_IDENTIFIER;
                         tokenIndex = ++i;
                         continue;
                     } else if (conditionStr[i] == '|' || conditionStr[i] == '&' || conditionStr[i] == '!' || conditionStr[i] == '=') {
-                        expressionType = TOKEN_TYPE_OPERATOR;
+                        expressionType = Token::TYPE_OPERATOR;
                         tokenIndex = i++;
                         continue;
                     } else if ((conditionStr[i] >= '0' && conditionStr[i] <= '9') || conditionStr[i] == '.') {
-                        expressionType = TOKEN_TYPE_NUMBER;
+                        expressionType = Token::TYPE_NUMBER;
                         tokenIndex = i++;
                         continue;
                     } else if (conditionStr[i] == '\'') {
-                        expressionType = TOKEN_TYPE_STRING;
+                        expressionType = Token::TYPE_STRING;
                         tokenIndex = ++i;
                         continue;
                     }
                     throw RuntimeException(50067, "invalid condition: " + conditionStr + " position: " + std::to_string(i));
 
-                case TOKEN_TYPE_IDENTIFIER:
+                case Token::TYPE_IDENTIFIER:
                     if (conditionStr[i] != ']') {
                         ++i;
                         continue;
@@ -74,18 +74,18 @@ namespace OpenLogReplicator {
 
                     // ends with ']'
                     tokens.push_back(new Token(expressionType, conditionStr.substr(tokenIndex, i - tokenIndex)));
-                    expressionType = TOKEN_TYPE_NONE;
+                    expressionType = Token::TYPE_NONE;
                     ++i;
                     continue;
 
-                case TOKEN_TYPE_LEFT_PARENTHESIS:
-                case TOKEN_TYPE_RIGHT_PARENTHESIS:
-                case TOKEN_TYPE_COMMA:
+                case Token::TYPE_LEFT_PARENTHESIS:
+                case Token::TYPE_RIGHT_PARENTHESIS:
+                case Token::TYPE_COMMA:
                     tokens.push_back(new Token(expressionType, conditionStr.substr(tokenIndex, i - tokenIndex)));
-                    expressionType = TOKEN_TYPE_NONE;
+                    expressionType = Token::TYPE_NONE;
                     continue;
 
-                case TOKEN_TYPE_OPERATOR:
+                case Token::TYPE_OPERATOR:
                     if (tokenIndex + 1 == i && conditionStr[tokenIndex] == '!') {
                         if (conditionStr[i] == '=') {
                             ++i;
@@ -97,10 +97,10 @@ namespace OpenLogReplicator {
                     }
 
                     tokens.push_back(new Token(expressionType, conditionStr.substr(tokenIndex, i - tokenIndex)));
-                    expressionType = TOKEN_TYPE_NONE;
+                    expressionType = Token::TYPE_NONE;
                     continue;
 
-                case TOKEN_TYPE_STRING:
+                case Token::TYPE_STRING:
                     if (conditionStr[i] != '\'') {
                         ++i;
                         continue;
@@ -108,11 +108,11 @@ namespace OpenLogReplicator {
 
                     // ends with apostrophe
                     tokens.push_back(new Token(expressionType, conditionStr.substr(tokenIndex, i - tokenIndex)));
-                    expressionType = TOKEN_TYPE_NONE;
+                    expressionType = Token::TYPE_NONE;
                     ++i;
                     continue;
 
-                case TOKEN_TYPE_NUMBER:
+                case Token::TYPE_NUMBER:
                     if ((conditionStr[i] >= '0' && conditionStr[i] <= '9') || conditionStr[i] == '.' || conditionStr[i] == 'e' || conditionStr[i] == 'E') {
                         ++i;
                         continue;
@@ -120,16 +120,16 @@ namespace OpenLogReplicator {
                         throw RuntimeException(50067, "invalid condition: " + conditionStr + " number on position: " + std::to_string(i));
 
                     tokens.push_back(new Token(expressionType, conditionStr.substr(tokenIndex, i - tokenIndex)));
-                    expressionType = TOKEN_TYPE_NONE;
+                    expressionType = Token::TYPE_NONE;
                     continue;
             }
         }
 
         // Reached end and the token is not finished
-        if (expressionType == TOKEN_TYPE_STRING || expressionType == TOKEN_TYPE_IDENTIFIER)
+        if (expressionType == Token::TYPE_STRING || expressionType == Token::TYPE_IDENTIFIER)
             throw RuntimeException(50067, "invalid condition: " + conditionStr + " unfinished token: " + conditionStr.substr(tokenIndex, i - tokenIndex));
 
-        if (expressionType != TOKEN_TYPE_NONE)
+        if (expressionType != Token::TYPE_NONE)
             tokens.push_back(new Token(expressionType, conditionStr.substr(tokenIndex, i - tokenIndex)));
     }
 
@@ -145,10 +145,10 @@ namespace OpenLogReplicator {
                     const Token* firstToken = dynamic_cast<Token*>(first);
 
                     // ! x
-                    if (firstToken->tokenType == TOKEN_TYPE_OPERATOR && firstToken->stringValue == "!") {
+                    if (firstToken->tokenType == Token::TYPE_OPERATOR && firstToken->stringValue == "!") {
                         stack.pop_back();
                         stack.pop_back();
-                        stack.push_back(new BoolValue(BOOL_OPERATOR_NOT, second, nullptr));
+                        stack.push_back(new BoolValue(BoolValue::OPERATOR_NOT, second, nullptr));
                         continue;
                     }
                 }
@@ -165,7 +165,7 @@ namespace OpenLogReplicator {
                     const Token* rightToken = dynamic_cast<Token*>(right);
 
                     // ( x )
-                    if (leftToken->tokenType == TOKEN_TYPE_LEFT_PARENTHESIS && rightToken->tokenType == TOKEN_TYPE_RIGHT_PARENTHESIS) {
+                    if (leftToken->tokenType == Token::TYPE_LEFT_PARENTHESIS && rightToken->tokenType == Token::TYPE_RIGHT_PARENTHESIS) {
                         stack.pop_back();
                         stack.pop_back();
                         stack.pop_back();
@@ -183,7 +183,7 @@ namespace OpenLogReplicator {
                         stack.pop_back();
                         stack.pop_back();
                         stack.pop_back();
-                        stack.push_back(new BoolValue(BOOL_OPERATOR_EQUAL, left, right));
+                        stack.push_back(new BoolValue(BoolValue::OPERATOR_EQUAL, left, right));
                         continue;
                     }
 
@@ -192,7 +192,7 @@ namespace OpenLogReplicator {
                         stack.pop_back();
                         stack.pop_back();
                         stack.pop_back();
-                        stack.push_back(new BoolValue(BOOL_OPERATOR_NOT_EQUAL, left, right));
+                        stack.push_back(new BoolValue(BoolValue::OPERATOR_NOT_EQUAL, left, right));
                         continue;
                     }
                 }
@@ -205,7 +205,7 @@ namespace OpenLogReplicator {
                         stack.pop_back();
                         stack.pop_back();
                         stack.pop_back();
-                        stack.push_back(new BoolValue(BOOL_OPERATOR_AND, left, right));
+                        stack.push_back(new BoolValue(BoolValue::OPERATOR_AND, left, right));
                         continue;
                     }
 
@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
                         stack.pop_back();
                         stack.pop_back();
                         stack.pop_back();
-                        stack.push_back(new BoolValue(BOOL_OPERATOR_OR, left, right));
+                        stack.push_back(new BoolValue(BoolValue::OPERATOR_OR, left, right));
                         continue;
                     }
                 }
@@ -224,26 +224,26 @@ namespace OpenLogReplicator {
                 Token* token = tokens[i++];
 
                 switch (token->tokenType) {
-                    case TOKEN_TYPE_IDENTIFIER:
+                    case Token::TYPE_IDENTIFIER:
                         if (token->stringValue == "op")
-                            stack.push_back(new StringValue(STRING_OP, token->stringValue));
+                            stack.push_back(new StringValue(StringValue::OP, token->stringValue));
                         else if (token->stringValue == "true")
-                            stack.push_back(new BoolValue(BOOL_VALUE_TRUE, nullptr, nullptr));
+                            stack.push_back(new BoolValue(BoolValue::VALUE_TRUE, nullptr, nullptr));
                         else if (token->stringValue == "false")
-                            stack.push_back(new BoolValue(BOOL_VALUE_FALSE, nullptr, nullptr));
+                            stack.push_back(new BoolValue(BoolValue::VALUE_FALSE, nullptr, nullptr));
                         else
-                            stack.push_back(new StringValue(STRING_SESSION_ATTRIBUTE, token->stringValue));
+                            stack.push_back(new StringValue(StringValue::SESSION_ATTRIBUTE, token->stringValue));
                         continue;
 
-                    case TOKEN_TYPE_LEFT_PARENTHESIS:
-                    case TOKEN_TYPE_RIGHT_PARENTHESIS:
-                    case TOKEN_TYPE_COMMA:
-                    case TOKEN_TYPE_OPERATOR:
+                    case Token::TYPE_LEFT_PARENTHESIS:
+                    case Token::TYPE_RIGHT_PARENTHESIS:
+                    case Token::TYPE_COMMA:
+                    case Token::TYPE_OPERATOR:
                         stack.push_back(token);
                         continue;
 
-                    case TOKEN_TYPE_STRING:
-                        stack.push_back(new StringValue(STRING_VALUE, token->stringValue));
+                    case Token::TYPE_STRING:
+                        stack.push_back(new StringValue(StringValue::VALUE, token->stringValue));
                         continue;
                 }
             }

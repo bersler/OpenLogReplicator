@@ -24,13 +24,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_USER_H_
 #define SYS_USER_H_
 
-#define SYS_USER_NAME_LENGTH                 128
-#define SYS_USER_SPARE1_SUPP_LOG_PRIMARY     1
-#define SYS_USER_SPARE1_SUPP_LOG_ALL         8
-
 namespace OpenLogReplicator {
     class SysUser final {
     public:
+        static constexpr uint64_t NAME_LENGTH = 128;
+        static constexpr uint64_t SPARE1_SUPP_LOG_PRIMARY = 1;
+        static constexpr uint64_t SPARE1_SUPP_LOG_ALL = 8;
+
         SysUser(typeRowId newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),
                 user(newUser),
@@ -44,11 +44,11 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isSuppLogPrimary() {
-            return spare1.isSet64(SYS_USER_SPARE1_SUPP_LOG_PRIMARY);
+            return spare1.isSet64(SPARE1_SUPP_LOG_PRIMARY);
         }
 
         [[nodiscard]] bool isSuppLogAll() {
-            return spare1.isSet64(SYS_USER_SPARE1_SUPP_LOG_ALL);
+            return spare1.isSet64(SPARE1_SUPP_LOG_ALL);
         }
 
         typeRowId rowId;

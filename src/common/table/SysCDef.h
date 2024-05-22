@@ -23,23 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_CDEF_H_
 #define SYS_CDEF_H_
 
-#define SYS_CDEF_TYPE_TABLE_CHECK               1
-#define SYS_CDEF_TYPE_PK                        2
-#define SYS_CDEF_TYPE_UNIQUE                    3
-#define SYS_CDEF_TYPE_REFERENTIAL               4
-#define SYS_CDEF_TYPE_CHECK                     5
-#define SYS_CDEF_TYPE_READ_ONLY                 6
-#define SYS_CDEF_TYPE_CHECK_CONSTR_NOT_NULL     7
-#define SYS_CDEF_TYPE_HASH                      8
-#define SYS_CDEF_TYPE_SCOPED_REF                9
-#define SYS_CDEF_TYPE_ROWID                     10
-#define SYS_CDEF_TYPE_REF_NOT_NULL              11
-#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG          12
-#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_PK       14
-#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_UNIQUE   15
-#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_FK       16
-#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_ALL      17
-
 namespace OpenLogReplicator {
     class SysCDefKey final {
     public:
@@ -64,6 +47,23 @@ namespace OpenLogReplicator {
 
     class SysCDef final {
     public:
+        static constexpr uint64_t TYPE_TABLE_CHECK = 1;
+        static constexpr uint64_t TYPE_PK = 2;
+        static constexpr uint64_t TYPE_UNIQUE = 3;
+        static constexpr uint64_t TYPE_REFERENTIAL = 4;
+        static constexpr uint64_t TYPE_CHECK = 5;
+        static constexpr uint64_t TYPE_READ_ONLY = 6;
+        static constexpr uint64_t TYPE_CHECK_CONSTR_NOT_NULL = 7;
+        static constexpr uint64_t TYPE_HASH = 8;
+        static constexpr uint64_t TYPE_SCOPED_REF = 9;
+        static constexpr uint64_t TYPE_ROWID = 10;
+        static constexpr uint64_t TYPE_REF_NOT_NULL = 11;
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG = 12;
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_PK = 14;
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_UNIQUE = 15;
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_FK = 16;
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_ALL = 17;
+
         SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, typeType newType) :
                 rowId(newRowId),
                 con(newCon),
@@ -76,19 +76,19 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isPK() const {
-            return (type == SYS_CDEF_TYPE_PK);
+            return (type == TYPE_PK);
         }
 
         [[nodiscard]] bool isSupplementalLog() const {
-            return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG);
+            return (type == TYPE_SUPPLEMENTAL_LOG);
         }
 
         [[nodiscard]] bool isSupplementalLogPK() const {
-            return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_PK);
+            return (type == TYPE_SUPPLEMENTAL_LOG_PK);
         }
 
         [[nodiscard]] bool isSupplementalLogAll() const {
-            return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_ALL);
+            return (type == TYPE_SUPPLEMENTAL_LOG_ALL);
         }
 
         typeRowId rowId;

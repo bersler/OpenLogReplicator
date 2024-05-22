@@ -388,8 +388,8 @@ namespace OpenLogReplicator {
                 }
 
                 if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
-                    debugOwner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
-                    debugTable = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
+                    debugOwner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, debugJson, "owner");
+                    debugTable = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, debugJson, "table");
 
                     ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
                 }
@@ -451,20 +451,20 @@ namespace OpenLogReplicator {
 
                 if (metricsJson.HasMember("type")) {
                     const char* metricsType = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, metricsJson, "type");
-                    uint64_t tagNames = METRICS_TAG_NAMES_NONE;
+                    uint64_t tagNames = Metrics::TAG_NAMES_NONE;
 
                     if (metricsJson.HasMember("tag-names")) {
                         const char* tagNamesStr = Ctx::getJsonFieldS(configFileName, JSON_TOPIC_LENGTH, metricsJson,
                                                                      "tag-names");
 
                         if (strcmp(tagNamesStr, "none") == 0)
-                            tagNames = METRICS_TAG_NAMES_NONE;
+                            tagNames = Metrics::TAG_NAMES_NONE;
                         else if (strcmp(tagNamesStr, "filter") == 0)
-                            tagNames = METRICS_TAG_NAMES_FILTER;
+                            tagNames = Metrics::TAG_NAMES_FILTER;
                         else if (strcmp(tagNamesStr, "sys") == 0)
-                            tagNames = METRICS_TAG_NAMES_SYS;
+                            tagNames = Metrics::TAG_NAMES_SYS;
                         else if (strcmp(tagNamesStr, "all") == 0)
-                            tagNames = METRICS_TAG_NAMES_ALL;
+                            tagNames = Metrics::TAG_NAMES_ALL;
                         else
                             throw ConfigurationException(30001, "bad JSON, invalid \"tag-names\" value: " + std::string(tagNamesStr) +
                                                                 ", expected: one of {\"all\", \"filter\", \"none\", \"sys\"}");
@@ -812,8 +812,8 @@ namespace OpenLogReplicator {
                             Ctx::checkJsonFields(configFileName, tableElementJson, tableElementNames);
                         }
 
-                        const char* owner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
-                        const char* table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
+                        const char* owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
+                        const char* table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, 0);
 
                         metadata->users.insert(owner);

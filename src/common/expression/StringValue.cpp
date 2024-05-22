@@ -36,17 +36,17 @@ namespace OpenLogReplicator {
 
     std::string StringValue::evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) {
         switch (stringType) {
-            case STRING_SESSION_ATTRIBUTE: {
+            case SESSION_ATTRIBUTE: {
                 auto attributesIt = attributes->find(stringValue);
                 if (attributesIt == attributes->end())
                     return "";
                 return attributesIt->second;
             }
 
-            case STRING_OP:
+            case OP:
                 return std::string(1, op);
 
-            case STRING_VALUE:
+            case VALUE:
                 return stringValue;
         }
 

@@ -23,16 +23,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef XDB_XQN_H_
 #define XDB_XQN_H_
 
-#define XDB_XQN_NMSPCID_LENGTH 16
-#define XDB_XQN_LOCALNAME_LENGTH 2000
-#define XDB_XQN_FLAGS_LENGTH 8
-#define XDB_XQN_ID_LENGTH 16
-
-#define XDB_XQN_FLAG_ISATTRIBUTE        1
-
 namespace OpenLogReplicator {
     class XdbXQn final {
     public:
+        static constexpr uint64_t NMSPCID_LENGTH = 16;
+        static constexpr uint64_t LOCALNAME_LENGTH = 2000;
+        static constexpr uint64_t FLAGS_LENGTH = 8;
+        static constexpr uint64_t ID_LENGTH = 16;
+        static constexpr uint64_t FLAG_ISATTRIBUTE = 1;
+
         XdbXQn(typeRowId newRowId, const char* newNmSpcId, const char* newLocalName, const char* newFlags, const char* newId) :
                 rowId(newRowId),
                 nmSpcId(newNmSpcId),

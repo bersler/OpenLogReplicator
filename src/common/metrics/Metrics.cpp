@@ -32,10 +32,10 @@ namespace OpenLogReplicator {
     }
 
     bool Metrics::isTagNamesFilter() {
-        return (tagNames & METRICS_TAG_NAMES_FILTER) != 0;
+        return (tagNames & TAG_NAMES_FILTER) != 0;
     }
 
     bool Metrics::isTagNamesSys() {
-        return (tagNames & METRICS_TAG_NAMES_SYS) != 0;
+        return (tagNames & TAG_NAMES_SYS) != 0;
     }
 }

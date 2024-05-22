@@ -27,15 +27,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef TYPE_LOBID_H_
 #define TYPE_LOBID_H_
 
-#define TYPE_LOBID_LENGTH                       10
-
 namespace OpenLogReplicator {
     class typeLobId final {
     public:
-        uint8_t data[TYPE_LOBID_LENGTH];
+        static constexpr uint64_t LENGTH = 10;
+
+        uint8_t data[LENGTH];
 
         typeLobId() {
-            memset(reinterpret_cast<void*>(data), 0, TYPE_LOBID_LENGTH);
+            memset(reinterpret_cast<void*>(data), 0, LENGTH);
         }
 
         ~typeLobId() {
@@ -43,39 +43,39 @@ namespace OpenLogReplicator {
 
         typeLobId(const typeLobId& other) {
             memcpy(reinterpret_cast<void*>(data),
-                   reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
+                   reinterpret_cast<const void*>(other.data), LENGTH);
         }
 
         explicit typeLobId(const uint8_t* newData) {
             memcpy(reinterpret_cast<void*>(data),
-                   reinterpret_cast<const void*>(newData), TYPE_LOBID_LENGTH);
+                   reinterpret_cast<const void*>(newData), LENGTH);
         }
 
         bool operator!=(const typeLobId& other) const {
-            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
+            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
             return ret != 0;
         }
 
         bool operator==(const typeLobId& other) const {
-            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
+            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
             return ret == 0;
         }
 
         bool operator<(const typeLobId& other) const {
-            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
+            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
             return ret < 0;
         }
 
         typeLobId& operator=(const typeLobId& other) {
             if (&other != this)
                 memcpy(reinterpret_cast<void*>(data),
-                       reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
+                       reinterpret_cast<const void*>(other.data), LENGTH);
             return *this;
         }
 
         void set(const uint8_t* newData) {
             memcpy(reinterpret_cast<void*>(data),
-                   reinterpret_cast<const void*>(newData), TYPE_LOBID_LENGTH);
+                   reinterpret_cast<const void*>(newData), LENGTH);
         }
 
         std::string lower() const {

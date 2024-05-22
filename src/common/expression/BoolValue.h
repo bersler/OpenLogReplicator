@@ -22,14 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef EXPRESSION_BOOL_H_
 #define EXPRESSION_BOOL_H_
 
-#define BOOL_VALUE_FALSE         0
-#define BOOL_VALUE_TRUE          1
-#define BOOL_OPERATOR_AND        2
-#define BOOL_OPERATOR_OR         3
-#define BOOL_OPERATOR_NOT        4
-#define BOOL_OPERATOR_EQUAL      5
-#define BOOL_OPERATOR_NOT_EQUAL  6
-
 namespace OpenLogReplicator {
     class BoolValue : public Expression {
     protected:
@@ -38,6 +30,14 @@ namespace OpenLogReplicator {
         Expression* right;
 
     public:
+        static constexpr uint64_t VALUE_FALSE = 0;
+        static constexpr uint64_t VALUE_TRUE = 1;
+        static constexpr uint64_t OPERATOR_AND = 2;
+        static constexpr uint64_t OPERATOR_OR = 3;
+        static constexpr uint64_t OPERATOR_NOT = 4;
+        static constexpr uint64_t OPERATOR_EQUAL = 5;
+        static constexpr uint64_t OPERATOR_NOT_EQUAL = 6;
+
         BoolValue(uint64_t newBoolType, Expression* newLeft, Expression* newRight);
         virtual ~BoolValue();
 

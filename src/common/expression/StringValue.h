@@ -22,15 +22,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STRING_VALUE_H_
 #define STRING_VALUE_H_
 
-#define STRING_SESSION_ATTRIBUTE    0
-#define STRING_OP                   1
-#define STRING_VALUE                2
-
 namespace OpenLogReplicator {
     class StringValue : public Expression {
     public:
         uint64_t stringType;
         std::string stringValue;
+
+        static constexpr uint64_t SESSION_ATTRIBUTE = 0;
+        static constexpr uint64_t OP = 1;
+        static constexpr uint64_t VALUE = 2;
 
     public:
         StringValue(uint64_t newStringType, const std::string& newStringValue);

@@ -27,11 +27,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef TYPE_ROWID_H_
 #define TYPE_ROWID_H_
 
-#define ROWID_LENGTH 18
-
 namespace OpenLogReplicator {
     class typeRowId final {
     public:
+        static constexpr uint64_t LENGTH = 18;
+
         typeDataObj dataObj;
         typeDba dba;
         typeSlot slot;

@@ -140,8 +140,8 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
 
                 if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
-                    debugOwner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
-                    debugTable = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
+                    debugOwner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, debugJson, "owner");
+                    debugTable = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, debugJson, "table");
                     ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
                 }
             }
@@ -163,8 +163,8 @@ namespace OpenLogReplicator {
                     for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {
                         const rapidjson::Value& tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
 
-                        const char* owner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
-                        const char* table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
+                        const char* owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
+                        const char* table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, 0);
 
                         users.insert(owner);

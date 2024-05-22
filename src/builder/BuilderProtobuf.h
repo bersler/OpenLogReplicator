@@ -49,22 +49,22 @@ namespace OpenLogReplicator {
                     return;
 
                 uint64_t typeNo = table->columns[col]->type;
-                if (typeNo != SYS_COL_TYPE_VARCHAR
-                    && typeNo != SYS_COL_TYPE_NUMBER
-                    && typeNo != SYS_COL_TYPE_DATE
-                    && typeNo != SYS_COL_TYPE_RAW
-                    && typeNo != SYS_COL_TYPE_CHAR
-                    && typeNo != SYS_COL_TYPE_FLOAT
-                    && typeNo != SYS_COL_TYPE_DOUBLE
-                    && (typeNo != SYS_COL_TYPE_XMLTYPE || !after)
-                    && (typeNo != SYS_COL_TYPE_JSON || !after)
-                    && (typeNo != SYS_COL_TYPE_CLOB || !after)
-                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP
-                    && typeNo != SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH
-                    && typeNo != SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND
-                    && typeNo != SYS_COL_TYPE_UROWID
-                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ)
+                if (typeNo != SysCol::TYPE_VARCHAR
+                    && typeNo != SysCol::TYPE_NUMBER
+                    && typeNo != SysCol::TYPE_DATE
+                    && typeNo != SysCol::TYPE_RAW
+                    && typeNo != SysCol::TYPE_CHAR
+                    && typeNo != SysCol::TYPE_FLOAT
+                    && typeNo != SysCol::TYPE_DOUBLE
+                    && (typeNo != SysCol::TYPE_XMLTYPE || !after)
+                    && (typeNo != SysCol::TYPE_JSON || !after)
+                    && (typeNo != SysCol::TYPE_CLOB || !after)
+                    && (typeNo != SysCol::TYPE_BLOB || !after)
+                    && typeNo != SysCol::TYPE_TIMESTAMP
+                    && typeNo != SysCol::TYPE_INTERVAL_YEAR_TO_MONTH
+                    && typeNo != SysCol::TYPE_INTERVAL_DAY_TO_SECOND
+                    && typeNo != SysCol::TYPE_UROWID
+                    && typeNo != SysCol::TYPE_TIMESTAMP_WITH_LOCAL_TZ)
                     return;
             }
 
@@ -223,82 +223,82 @@ namespace OpenLogReplicator {
                     columnPB->set_name(table->columns[column]->name);
 
                     switch (table->columns[column]->type) {
-                        case SYS_COL_TYPE_VARCHAR:
+                        case SysCol::TYPE_VARCHAR:
                             columnPB->set_type(pb::VARCHAR2);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_NUMBER:
+                        case SysCol::TYPE_NUMBER:
                             columnPB->set_type(pb::NUMBER);
                             columnPB->set_precision(static_cast<int32_t>(table->columns[column]->precision));
                             columnPB->set_scale(static_cast<int32_t>(table->columns[column]->scale));
                             break;
 
-                        case SYS_COL_TYPE_LONG:
+                        case SysCol::TYPE_LONG:
                             // Long, not supported
                             columnPB->set_type(pb::LONG);
                             break;
 
-                        case SYS_COL_TYPE_DATE:
+                        case SysCol::TYPE_DATE:
                             columnPB->set_type(pb::DATE);
                             break;
 
-                        case SYS_COL_TYPE_RAW:
+                        case SysCol::TYPE_RAW:
                             columnPB->set_type(pb::RAW);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_LONG_RAW: // Not supported
+                        case SysCol::TYPE_LONG_RAW: // Not supported
                             columnPB->set_type(pb::LONG_RAW);
                             break;
 
-                        case SYS_COL_TYPE_CHAR:
+                        case SysCol::TYPE_CHAR:
                             columnPB->set_type(pb::CHAR);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_FLOAT:
+                        case SysCol::TYPE_FLOAT:
                             columnPB->set_type(pb::BINARY_FLOAT);
                             break;
 
-                        case SYS_COL_TYPE_DOUBLE:
+                        case SysCol::TYPE_DOUBLE:
                             columnPB->set_type(pb::BINARY_DOUBLE);
                             break;
 
-                        case SYS_COL_TYPE_CLOB:
+                        case SysCol::TYPE_CLOB:
                             columnPB->set_type(pb::CLOB);
                             break;
 
-                        case SYS_COL_TYPE_BLOB:
+                        case SysCol::TYPE_BLOB:
                             columnPB->set_type(pb::BLOB);
                             break;
 
-                        case SYS_COL_TYPE_TIMESTAMP:
+                        case SysCol::TYPE_TIMESTAMP:
                             columnPB->set_type(pb::TIMESTAMP);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
+                        case SysCol::TYPE_TIMESTAMP_WITH_TZ:
                             columnPB->set_type(pb::TIMESTAMP_WITH_TZ);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                        case SysCol::TYPE_INTERVAL_YEAR_TO_MONTH:
                             columnPB->set_type(pb::INTERVAL_YEAR_TO_MONTH);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
+                        case SysCol::TYPE_INTERVAL_DAY_TO_SECOND:
                             columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_UROWID:
+                        case SysCol::TYPE_UROWID:
                             columnPB->set_type(pb::UROWID);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 
-                        case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
+                        case SysCol::TYPE_TIMESTAMP_WITH_LOCAL_TZ:
                             columnPB->set_type(pb::TIMESTAMP_WITH_LOCAL_TZ);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
