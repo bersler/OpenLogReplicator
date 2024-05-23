@@ -23,13 +23,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTER_SET_H_
 #define CHARACTER_SET_H_
 
-#define UNICODE_UNKNOWN_CHARACTER           0xFFFD
-#define MAX_CHARACTER_LENGTH                8
-
 namespace OpenLogReplicator {
     class Ctx;
 
     class CharacterSet {
+    public:
+        static constexpr uint64_t MAX_CHARACTER_LENGTH = 8;
+        static constexpr uint64_t UNICODE_UNKNOWN_CHARACTER = 0xFFFD;
+
     protected:
         [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1) const;
         [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2) const;

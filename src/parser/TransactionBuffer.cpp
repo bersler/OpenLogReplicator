@@ -150,7 +150,7 @@ namespace OpenLogReplicator {
                                           std::to_string(FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
         if (transaction->lastSplit) {
-            if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOMID) == 0)
+            if ((redoLogRecord->flg & OpCode::FLG_MULTIBLOCKUNDOMID) == 0)
                 throw RedoLogException(50041, "bad split offset: " + std::to_string(redoLogRecord->dataOffset) + " xid: " +
                                               transaction->xid.toString());
 
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
             mergeBlocks(transaction->mergeBuffer, redoLogRecord, last501);
             rollbackTransactionChunk(transaction);
         }
-        if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0)
+        if ((redoLogRecord->flg & (OpCode::FLG_MULTIBLOCKUNDOTAIL | OpCode::FLG_MULTIBLOCKUNDOMID)) != 0)
             transaction->lastSplit = true;
         else
             transaction->lastSplit = false;
@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord1->opCode) != 0x0501)
                 throw RedoLogException(50042, "split undo HEAD no 5.1 offset: " + std::to_string(redoLogRecord1->dataOffset));
 
-            if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) == 0)
+            if ((redoLogRecord1->flg & OpCode::FLG_MULTIBLOCKUNDOHEAD) == 0)
                 throw RedoLogException(50043, "bad split offset: " + std::to_string(redoLogRecord1->dataOffset) + " xid: " +
                                               transaction->xid.toString() + " second position");
 
@@ -307,8 +307,8 @@ namespace OpenLogReplicator {
         uint16_t fieldPos1;
         uint16_t fieldPos2;
 
-        if ((redoLogRecord1->flg & FLG_LASTBUFFERSPLIT) != 0) {
-            redoLogRecord1->flg &= ~FLG_LASTBUFFERSPLIT;
+        if ((redoLogRecord1->flg & OpCode::FLG_LASTBUFFERSPLIT) != 0) {
+            redoLogRecord1->flg &= ~OpCode::FLG_LASTBUFFERSPLIT;
             uint16_t length1 = ctx->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + redoLogRecord1->fieldCnt * 2);
             uint16_t length2 = ctx->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6);
             ctx->write16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6, length1 + length2);
@@ -341,8 +341,8 @@ namespace OpenLogReplicator {
         redoLogRecord1->fieldPos = fieldPos1;
         redoLogRecord1->data = mergeBuffer;
         redoLogRecord1->flg |= redoLogRecord2->flg;
-        if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
-            redoLogRecord1->flg &= ~(FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL);
+        if ((redoLogRecord1->flg & OpCode::FLG_MULTIBLOCKUNDOTAIL) != 0)
+            redoLogRecord1->flg &= ~(OpCode::FLG_MULTIBLOCKUNDOHEAD | OpCode::FLG_MULTIBLOCKUNDOMID | OpCode::FLG_MULTIBLOCKUNDOTAIL);
     }
 
     void TransactionBuffer::checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid) {
