@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
         else if (redoLogRecord->opc == 0x0B01)
             ctx->dumpStream << "KDO undo record:\n";
 
-        auto ktbOp = static_cast<int8_t>(redoLogRecord->data[fieldPos + 0]);
+        auto ktbOp = static_cast<uint8_t>(redoLogRecord->data[fieldPos + 0]);
         uint8_t flg = redoLogRecord->data[fieldPos + 1];
         uint8_t ver = flg & 0x03;
         if (ctx->dumpRedoLog >= 1) {

@@ -22,31 +22,32 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTER_SET_ZHS32GB18030_H_
 #define CHARACTER_SET_ZHS32GB18030_H_
 
-#define ZHS32GB18030_2_b1_min       0x81
-#define ZHS32GB18030_2_b1_max       0xFE
-#define ZHS32GB18030_2_b2_min       0x40
-#define ZHS32GB18030_2_b2_max       0xFE
-
-#define ZHS32GB18030_41_b1_min       0x81
-#define ZHS32GB18030_41_b1_max       0x84
-#define ZHS32GB18030_41_b2_min       0x30
-#define ZHS32GB18030_41_b2_max       0x39
-#define ZHS32GB18030_41_b3_min       0x81
-#define ZHS32GB18030_41_b3_max       0xFE
-#define ZHS32GB18030_41_b4_min       0x30
-#define ZHS32GB18030_41_b4_max       0x39
-
-#define ZHS32GB18030_42_b1_min       0x90
-#define ZHS32GB18030_42_b1_max       0xE3
-#define ZHS32GB18030_42_b2_min       0x30
-#define ZHS32GB18030_42_b2_max       0x39
-#define ZHS32GB18030_42_b3_min       0x81
-#define ZHS32GB18030_42_b3_max       0xFE
-#define ZHS32GB18030_42_b4_min       0x30
-#define ZHS32GB18030_42_b4_max       0x39
-
 namespace OpenLogReplicator {
     class CharacterSetZHS32GB18030 final : public CharacterSet {
+    public:
+        static constexpr uint64_t ZHS32GB18030_2_b1_min = 0x81;
+        static constexpr uint64_t ZHS32GB18030_2_b1_max = 0xFE;
+        static constexpr uint64_t ZHS32GB18030_2_b2_min = 0x40;
+        static constexpr uint64_t ZHS32GB18030_2_b2_max = 0xFE;
+
+        static constexpr uint64_t ZHS32GB18030_41_b1_min = 0x81;
+        static constexpr uint64_t ZHS32GB18030_41_b1_max = 0x84;
+        static constexpr uint64_t ZHS32GB18030_41_b2_min = 0x30;
+        static constexpr uint64_t ZHS32GB18030_41_b2_max = 0x39;
+        static constexpr uint64_t ZHS32GB18030_41_b3_min = 0x81;
+        static constexpr uint64_t ZHS32GB18030_41_b3_max = 0xFE;
+        static constexpr uint64_t ZHS32GB18030_41_b4_min = 0x30;
+        static constexpr uint64_t ZHS32GB18030_41_b4_max = 0x39;
+
+        static constexpr uint64_t ZHS32GB18030_42_b1_min = 0x90;
+        static constexpr uint64_t ZHS32GB18030_42_b1_max = 0xE3;
+        static constexpr uint64_t ZHS32GB18030_42_b2_min = 0x30;
+        static constexpr uint64_t ZHS32GB18030_42_b2_max = 0x39;
+        static constexpr uint64_t ZHS32GB18030_42_b3_min = 0x81;
+        static constexpr uint64_t ZHS32GB18030_42_b3_max = 0xFE;
+        static constexpr uint64_t ZHS32GB18030_42_b4_min = 0x30;
+        static constexpr uint64_t ZHS32GB18030_42_b4_max = 0x39;
+
     protected:
         static typeUnicode16 unicode_map_ZHS32GB18030_2b[(ZHS32GB18030_2_b1_max - ZHS32GB18030_2_b1_min + 1) *
                                                          (ZHS32GB18030_2_b2_max - ZHS32GB18030_2_b2_min + 1)];

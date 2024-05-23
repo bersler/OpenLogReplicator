@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <algorithm>
-
 #include "../builder/Builder.h"
 #include "../common/Clock.h"
 #include "../common/LobCtx.h"
@@ -85,6 +83,7 @@ namespace OpenLogReplicator {
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
         lwnAllocatedMax = 1;
+        lwnMembers[0] = 0;
     }
 
     Parser::~Parser() {
@@ -502,7 +501,8 @@ namespace OpenLogReplicator {
             }
 
             // UNDO - data
-            if (redoLogRecord[vectorCur].opCode == 0x0501 && (redoLogRecord[vectorCur].flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0) {
+            if (redoLogRecord[vectorCur].opCode == 0x0501 &&
+                    (redoLogRecord[vectorCur].flg & (OpCode::FLG_MULTIBLOCKUNDOTAIL | OpCode::FLG_MULTIBLOCKUNDOMID)) != 0) {
                 appendToTransaction(&redoLogRecord[vectorCur]);
                 vectorCur = -1;
                 continue;
@@ -697,7 +697,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord1->opc != 0x0A16 && redoLogRecord1->opc != 0x0B01))
             return;
 
-        if ((redoLogRecord1->flg & FLG_USERUNDODDONE) == 0)
+        if ((redoLogRecord1->flg & OpCode::FLG_USERUNDODDONE) == 0)
             return;
 
         typeXid xid(redoLogRecord1->usn, redoLogRecord1->slt, 0);
@@ -777,7 +777,7 @@ namespace OpenLogReplicator {
         transaction->commitTimestamp = lwnTimestamp;
         transaction->commitScn = redoLogRecord1->scnRecord;
         transaction->commitSequence = sequence;
-        if ((redoLogRecord1->flg & FLG_ROLLBACK_OP0504) != 0)
+        if ((redoLogRecord1->flg & OpCode::FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
 
         if ((transaction->commitScn > metadata->firstDataScn && !transaction->system) ||
@@ -1209,6 +1209,7 @@ namespace OpenLogReplicator {
 
     uint64_t Parser::parse() {
         uint64_t lwnConfirmedBlock = 2;
+        uint64_t lwnRecords = 0;
 
         if (firstScn == ZERO_SCN && nextScn == ZERO_SCN && reader->getFirstScn() != 0) {
             firstScn = reader->getFirstScn();
@@ -1277,7 +1278,6 @@ namespace OpenLogReplicator {
         uint64_t lwnEndBlock = lwnConfirmedBlock;
         uint16_t lwnNumMax = 0;
         uint16_t lwnNumCnt = 0;
-        uint32_t number = 0;
         lwnCheckpointBlock = lwnConfirmedBlock;
         bool switchRedo = false;
 
@@ -1359,15 +1359,22 @@ namespace OpenLogReplicator {
                             lwnMember->subScn = ctx->read16(redoBlock + blockOffset + 12);
                             lwnMember->block = currentBlock;
                             lwnMember->offset = blockOffset;
-                                lwnMember->length = recordLength4;
-                            lwnMember->number = number++;
+                            lwnMember->length = recordLength4;
                             if (ctx->trace & Ctx::TRACE_LWN)
                                 ctx->logTrace(Ctx::TRACE_LWN, "length: " + std::to_string(recordLength4) + " scn: " +
                                                               std::to_string(lwnMember->scn) + " subscn: " + std::to_string(lwnMember->subScn));
 
-                            lwnMembers.push_back(lwnMember);
-                            if (lwnMembers.size() >= MAX_RECORDS_IN_LWN)
-                                throw RedoLogException(50054, "all " + std::to_string(lwnMembers.size()) + " records in lwn were used");
+                            uint64_t lwnPos = lwnRecords++;
+                            if (lwnPos >= MAX_RECORDS_IN_LWN)
+                                throw RedoLogException(50054, "all " + std::to_string(lwnPos) + " records in lwn were used");
+
+                            while (lwnPos > 0 &&
+                                   (lwnMembers[lwnPos - 1]->scn > lwnMember->scn ||
+                                    (lwnMembers[lwnPos - 1]->scn == lwnMember->scn && lwnMembers[lwnPos - 1]->subScn > lwnMember->subScn))) {
+                                lwnMembers[lwnPos] = lwnMembers[lwnPos - 1];
+                                --lwnPos;
+                            }
+                            lwnMembers[lwnPos] = lwnMember;
                         }
 
                         recordLeftToCopy = recordLength4;
@@ -1404,22 +1411,9 @@ namespace OpenLogReplicator {
 
                     if (ctx->trace & Ctx::TRACE_LWN)
                         ctx->logTrace(Ctx::TRACE_LWN, "* analyze: " + std::to_string(lwnScn));
-
-                    std::sort(lwnMembers.begin(), lwnMembers.end(), [](const LwnMember* a, const LwnMember* b) {
-                        if (a->scn < b->scn)
-                            return true;
-                        if (a->scn > b->scn)
-                            return false;
-                        if (a->subScn < b->subScn)
-                            return true;
-                        if (a->subScn > b->subScn)
-                            return false;
-                        return a->number < b->number;
-                    });
-
-                    for (const auto member : lwnMembers) {
+                    for (uint64_t i = 0; i < lwnRecords; ++i) {
                         try {
-                            analyzeLwn(member);
+                            analyzeLwn(lwnMembers[i]);
                         } catch (DataException& ex) {
                             if (ctx->flagsSet(Ctx::REDO_FLAGS_IGNORE_DATA_ERRORS)) {
                                 ctx->error(ex.code, ex.msg);
@@ -1468,7 +1462,7 @@ namespace OpenLogReplicator {
 
                     lwnNumCnt = 0;
                     freeLwn();
-                    lwnMembers.clear();
+                    lwnRecords = 0;
 
                     if (ctx->metrics)
                         ctx->metrics->emitBytesParsed((currentBlock - lwnConfirmedBlock) * reader->getBlockSize());

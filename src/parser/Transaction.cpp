@@ -332,18 +332,18 @@ namespace OpenLogReplicator {
                         }
 
                         switch (redoLogRecord2->indKeyDataCode) {
-                            case KDLI_CODE_LMAP:
-                            case KDLI_CODE_LOAD_ITREE:
+                            case OpCode::KDLI_CODE_LMAP:
+                            case OpCode::KDLI_CODE_LOAD_ITREE:
                                 lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData,
                                                redoLogRecord2->indKeyDataLength);
                                 break;
 
-                            case KDLI_CODE_IMAP:
-                            case KDLI_CODE_ALMAP:
+                            case OpCode::KDLI_CODE_IMAP:
+                            case OpCode::KDLI_CODE_ALMAP:
                                 lobCtx.appendList(metadata->ctx, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData);
                                 break;
 
-                            case KDLI_CODE_FILL:
+                            case OpCode::KDLI_CODE_FILL:
                                 if (metadata->ctx->trace & Ctx::TRACE_LOB)
                                     metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() +
                                                                             " obj: " + std::to_string(redoLogRecord2->dataObj) + " op: " +

@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
         bool newTran;
         bool compressedBefore;
         bool compressedAfter;
-        uint8_t prevChars[MAX_CHARACTER_LENGTH * 2];
+        uint8_t prevChars[CharacterSet::MAX_CHARACTER_LENGTH * 2];
         uint64_t prevCharsSize;
         const std::unordered_map<std::string, std::string>* attributes;
 
@@ -1051,7 +1051,7 @@ namespace OpenLogReplicator {
 
             // Something left to parse from previous run
             if (hasPrev && prevCharsSize > 0) {
-                overlap = 2 * MAX_CHARACTER_LENGTH - prevCharsSize;
+                overlap = 2 * CharacterSet::MAX_CHARACTER_LENGTH - prevCharsSize;
                 if (overlap > length)
                     overlap = length;
                 memcpy(prevChars + prevCharsSize, data, overlap);
@@ -1061,7 +1061,7 @@ namespace OpenLogReplicator {
 
             while (parseLength > 0) {
                 // Leave for next time
-                if (hasNext && parseLength < MAX_CHARACTER_LENGTH && overlap == 0) {
+                if (hasNext && parseLength < CharacterSet::MAX_CHARACTER_LENGTH && overlap == 0) {
                     memcpy(prevChars, parseData, parseLength);
                     prevCharsSize = parseLength;
                     break;

@@ -22,48 +22,49 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTER_SET_16BIT_H_
 #define CHARACTER_SET_16BIT_H_
 
-#define JA16VMS_b1_min          0xA1
-#define JA16VMS_b1_max          0xF4
-#define JA16VMS_b2_min          0xA1
-#define JA16VMS_b2_max          0xFE
-
-#define KO16KSC5601_b1_min      0xA1
-#define KO16KSC5601_b1_max      0xFD
-#define KO16KSC5601_b2_min      0xA1
-#define KO16KSC5601_b2_max      0xFE
-
-#define KO16MSWIN949_b1_min     0x81
-#define KO16MSWIN949_b1_max     0xFE
-#define KO16MSWIN949_b2_min     0x41
-#define KO16MSWIN949_b2_max     0xFE
-
-#define ZHS16CGB231280_b1_min   0xA1
-#define ZHS16CGB231280_b1_max   0xF7
-#define ZHS16CGB231280_b2_min   0xA1
-#define ZHS16CGB231280_b2_max   0xFE
-
-#define ZHT16BIG5_b1_min        0xA1
-#define ZHT16BIG5_b1_max        0xF9
-#define ZHT16BIG5_b2_min        0x40
-#define ZHT16BIG5_b2_max        0xFE
-
-#define ZHT16CCDC_b1_min        0xA1
-#define ZHT16CCDC_b1_max        0xFB
-#define ZHT16CCDC_b2_min        0x21
-#define ZHT16CCDC_b2_max        0xFE
-
-#define ZHT16MSWIN950_b1_min    0x81
-#define ZHT16MSWIN950_b1_max    0xFE
-#define ZHT16MSWIN950_b2_min    0x40
-#define ZHT16MSWIN950_b2_max    0xFE
-
-#define ZHT16HKSCS_b1_min       0x81
-#define ZHT16HKSCS_b1_max       0xFE
-#define ZHT16HKSCS_b2_min       0x40
-#define ZHT16HKSCS_b2_max       0xFE
-
 namespace OpenLogReplicator {
     class CharacterSet16bit : public CharacterSet {
+    public:
+        static constexpr uint64_t JA16VMS_b1_min = 0xA1;
+        static constexpr uint64_t JA16VMS_b1_max = 0xF4;
+        static constexpr uint64_t JA16VMS_b2_min = 0xA1;
+        static constexpr uint64_t JA16VMS_b2_max = 0xFE;
+
+        static constexpr uint64_t KO16KSC5601_b1_min = 0xA1;
+        static constexpr uint64_t KO16KSC5601_b1_max = 0xFD;
+        static constexpr uint64_t KO16KSC5601_b2_min = 0xA1;
+        static constexpr uint64_t KO16KSC5601_b2_max = 0xFE;
+
+        static constexpr uint64_t KO16MSWIN949_b1_min = 0x81;
+        static constexpr uint64_t KO16MSWIN949_b1_max = 0xFE;
+        static constexpr uint64_t KO16MSWIN949_b2_min = 0x41;
+        static constexpr uint64_t KO16MSWIN949_b2_max = 0xFE;
+
+        static constexpr uint64_t ZHS16CGB231280_b1_min = 0xA1;
+        static constexpr uint64_t ZHS16CGB231280_b1_max = 0xF7;
+        static constexpr uint64_t ZHS16CGB231280_b2_min = 0xA1;
+        static constexpr uint64_t ZHS16CGB231280_b2_max = 0xFE;
+
+        static constexpr uint64_t ZHT16BIG5_b1_min = 0xA1;
+        static constexpr uint64_t ZHT16BIG5_b1_max = 0xF9;
+        static constexpr uint64_t ZHT16BIG5_b2_min = 0x40;
+        static constexpr uint64_t ZHT16BIG5_b2_max = 0xFE;
+
+        static constexpr uint64_t ZHT16CCDC_b1_min = 0xA1;
+        static constexpr uint64_t ZHT16CCDC_b1_max = 0xFB;
+        static constexpr uint64_t ZHT16CCDC_b2_min = 0x21;
+        static constexpr uint64_t ZHT16CCDC_b2_max = 0xFE;
+
+        static constexpr uint64_t ZHT16MSWIN950_b1_min = 0x81;
+        static constexpr uint64_t ZHT16MSWIN950_b1_max = 0xFE;
+        static constexpr uint64_t ZHT16MSWIN950_b2_min = 0x40;
+        static constexpr uint64_t ZHT16MSWIN950_b2_max = 0xFE;
+
+        static constexpr uint64_t ZHT16HKSCS_b1_min = 0x81;
+        static constexpr uint64_t ZHT16HKSCS_b1_max = 0xFE;
+        static constexpr uint64_t ZHT16HKSCS_b2_min = 0x40;
+        static constexpr uint64_t ZHT16HKSCS_b2_max = 0xFE;
+
     protected:
         const typeUnicode16* map;
         uint64_t byte1min;

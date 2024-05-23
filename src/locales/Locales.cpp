@@ -162,33 +162,40 @@ namespace OpenLogReplicator {
         characterMap[563] = new CharacterSet8bit("AR8SAKHR706", CharacterSet8bit::unicode_map_AR8SAKHR706);
         characterMap[566] = new CharacterSet8bit("AR8ARABICMACS", CharacterSet8bit::unicode_map_AR8ARABICMACS);
         characterMap[590] = new CharacterSet8bit("LA8ISO6937", CharacterSet8bit::unicode_map_LA8ISO6937);
-        characterMap[829] = new CharacterSet16bit("JA16VMS", CharacterSet16bit::unicode_map_JA16VMS, JA16VMS_b1_min, JA16VMS_b1_max, JA16VMS_b2_min,
-                                                  JA16VMS_b2_max);
+        characterMap[829] = new CharacterSet16bit("JA16VMS", CharacterSet16bit::unicode_map_JA16VMS, CharacterSet16bit::JA16VMS_b1_min,
+                                                  CharacterSet16bit::JA16VMS_b1_max, CharacterSet16bit::JA16VMS_b2_min, CharacterSet16bit::JA16VMS_b2_max);
         characterMap[830] = new CharacterSetJA16EUC();
         characterMap[831] = new CharacterSetJA16EUC("JA16EUCYEN");
         characterMap[832] = new CharacterSetJA16SJIS();
         characterMap[834] = new CharacterSetJA16SJIS("JA16SJISYEN");
         characterMap[837] = new CharacterSetJA16EUCTILDE();
         characterMap[838] = new CharacterSetJA16SJISTILDE();
-        characterMap[840] = new CharacterSet16bit("KO16KSC5601", CharacterSet16bit::unicode_map_KO16KSC5601_2b, KO16KSC5601_b1_min, KO16KSC5601_b1_max,
-                                                  KO16KSC5601_b2_min, KO16KSC5601_b2_max);
+        characterMap[840] = new CharacterSet16bit("KO16KSC5601", CharacterSet16bit::unicode_map_KO16KSC5601_2b, CharacterSet16bit::KO16KSC5601_b1_min,
+                                                  CharacterSet16bit::KO16KSC5601_b1_max, CharacterSet16bit::KO16KSC5601_b2_min,
+                                                  CharacterSet16bit::KO16KSC5601_b2_max);
         characterMap[845] = new CharacterSetKO16KSCCS();
-        characterMap[846] = new CharacterSet16bit("KO16MSWIN949", CharacterSet16bit::unicode_map_KO16MSWIN949_2b, KO16MSWIN949_b1_min, KO16MSWIN949_b1_max,
-                                                  KO16MSWIN949_b2_min, KO16MSWIN949_b2_max);
-        characterMap[850] = new CharacterSet16bit("ZHS16CGB231280", CharacterSet16bit::unicode_map_ZHS16CGB231280_2b, ZHS16CGB231280_b1_min,
-                                                  ZHS16CGB231280_b1_max, ZHS16CGB231280_b2_min, ZHS16CGB231280_b2_max);
+        characterMap[846] = new CharacterSet16bit("KO16MSWIN949", CharacterSet16bit::unicode_map_KO16MSWIN949_2b, CharacterSet16bit::KO16MSWIN949_b1_min,
+                                                  CharacterSet16bit::KO16MSWIN949_b1_max, CharacterSet16bit::KO16MSWIN949_b2_min,
+                                                  CharacterSet16bit::KO16MSWIN949_b2_max);
+        characterMap[850] = new CharacterSet16bit("ZHS16CGB231280", CharacterSet16bit::unicode_map_ZHS16CGB231280_2b, CharacterSet16bit::ZHS16CGB231280_b1_min,
+                                                  CharacterSet16bit::ZHS16CGB231280_b1_max, CharacterSet16bit::ZHS16CGB231280_b2_min,
+                                                  CharacterSet16bit::ZHS16CGB231280_b2_max);
         characterMap[852] = new CharacterSetZHS16GBK();
         characterMap[854] = new CharacterSetZHS32GB18030();
         characterMap[860] = new CharacterSetZHT32EUC();
         characterMap[863] = new CharacterSetZHT32TRIS();
-        characterMap[865] = new CharacterSet16bit("ZHT16BIG5", CharacterSet16bit::unicode_map_ZHT16BIG5_2b, ZHT16BIG5_b1_min, ZHT16BIG5_b1_max,
-                                                  ZHT16BIG5_b2_min, ZHT16BIG5_b2_max);
-        characterMap[866] = new CharacterSet16bit("ZHT16CCDC", CharacterSet16bit::unicode_map_ZHT16CCDC_2b, ZHT16CCDC_b1_min, ZHT16CCDC_b1_max,
-                                                  ZHT16CCDC_b2_min, ZHT16CCDC_b2_max);
-        characterMap[867] = new CharacterSet16bit("ZHT16MSWIN950", CharacterSet16bit::unicode_map_ZHT16MSWIN950_2b, ZHT16MSWIN950_b1_min, ZHT16MSWIN950_b1_max,
-                                                  ZHT16MSWIN950_b2_min, ZHT16MSWIN950_b2_max);
-        characterMap[868] = new CharacterSet16bit("ZHT16HKSCS", CharacterSet16bit::unicode_map_ZHT16HKSCS_2b, ZHT16HKSCS_b1_min, ZHT16HKSCS_b1_max,
-                                                  ZHT16HKSCS_b2_min, ZHT16HKSCS_b2_max);
+        characterMap[865] = new CharacterSet16bit("ZHT16BIG5", CharacterSet16bit::unicode_map_ZHT16BIG5_2b, CharacterSet16bit::ZHT16BIG5_b1_min,
+                                                  CharacterSet16bit::ZHT16BIG5_b1_max, CharacterSet16bit::ZHT16BIG5_b2_min,
+                                                  CharacterSet16bit::ZHT16BIG5_b2_max);
+        characterMap[866] = new CharacterSet16bit("ZHT16CCDC", CharacterSet16bit::unicode_map_ZHT16CCDC_2b, CharacterSet16bit::ZHT16CCDC_b1_min,
+                                                  CharacterSet16bit::ZHT16CCDC_b1_max, CharacterSet16bit::ZHT16CCDC_b2_min,
+                                                  CharacterSet16bit::ZHT16CCDC_b2_max);
+        characterMap[867] = new CharacterSet16bit("ZHT16MSWIN950", CharacterSet16bit::unicode_map_ZHT16MSWIN950_2b, CharacterSet16bit::ZHT16MSWIN950_b1_min,
+                                                  CharacterSet16bit::ZHT16MSWIN950_b1_max, CharacterSet16bit::ZHT16MSWIN950_b2_min,
+                                                  CharacterSet16bit::ZHT16MSWIN950_b2_max);
+        characterMap[868] = new CharacterSet16bit("ZHT16HKSCS", CharacterSet16bit::unicode_map_ZHT16HKSCS_2b, CharacterSet16bit::ZHT16HKSCS_b1_min,
+                                                  CharacterSet16bit::ZHT16HKSCS_b1_max, CharacterSet16bit::ZHT16HKSCS_b2_min,
+                                                  CharacterSet16bit::ZHT16HKSCS_b2_max);
         characterMap[871] = new CharacterSetUTF8();
         characterMap[873] = new CharacterSetAL32UTF8();
         characterMap[992] = new CharacterSetZHT16HKSCS31();
