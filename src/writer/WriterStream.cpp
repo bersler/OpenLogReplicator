@@ -57,13 +57,13 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_READY) {
+        if (metadata->status == Metadata::STATUS_READY) {
             ctx->logTrace(Ctx::TRACE_WRITER, "info, ready");
             response.set_code(pb::ResponseCode::READY);
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_START) {
+        if (metadata->status == Metadata::STATUS_START) {
             ctx->logTrace(Ctx::TRACE_WRITER, "info, start");
             response.set_code(pb::ResponseCode::STARTING);
         }
@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_REPLICATE) {
+        if (metadata->status == Metadata::STATUS_REPLICATE) {
             ctx->logTrace(Ctx::TRACE_WRITER, "client requested start when already started");
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
             response.set_scn(metadata->firstDataScn);
@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_START) {
+        if (metadata->status == Metadata::STATUS_START) {
             ctx->logTrace(Ctx::TRACE_WRITER, "client requested start when already starting");
             response.set_code(pb::ResponseCode::STARTING);
             return;
@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
 
         metadata->waitForReplicator();
 
-        if (metadata->status == METADATA_STATUS_REPLICATE) {
+        if (metadata->status == Metadata::STATUS_REPLICATE) {
             response.set_code(pb::ResponseCode::REPLICATE);
             response.set_scn(metadata->firstDataScn);
             response.set_c_scn(confirmedScn);

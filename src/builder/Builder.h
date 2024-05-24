@@ -41,26 +41,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef BUILDER_H_
 #define BUILDER_H_
 
-#define OUTPUT_BUFFER_DATA_SIZE                 (Ctx::MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue))
-#define OUTPUT_BUFFER_MESSAGE_ALLOCATED         0x0001
-#define OUTPUT_BUFFER_MESSAGE_CONFIRMED         0x0002
-#define OUTPUT_BUFFER_MESSAGE_CHECKPOINT        0x0004
-#define VALUE_BUFFER_MIN                        1048576
-#define VALUE_BUFFER_MAX                        4294967296
-#define BUFFER_START_UNDEFINED                  0xFFFFFFFFFFFFFFFF
-
-#define XML_PROLOG_RGUID                        0x04
-#define XML_PROLOG_DOCID                        0x08
-#define XML_PROLOG_PATHID                       0x10
-#define XML_PROLOG_BIGINT                       0x40
-
-#define XML_HEADER_STANDALONE                   0x01
-#define XML_HEADER_XMLDECL                      0x02
-#define XML_HEADER_ENCODING                     0x04
-#define XML_HEADER_VERSION                      0x08
-#define XML_HEADER_STANDALONE_YES               0x10
-#define XML_HEADER_VERSION_1_1                  0x80
-
 namespace OpenLogReplicator {
     class Ctx;
     class CharacterSet;
@@ -95,7 +75,31 @@ namespace OpenLogReplicator {
     };
 
     class Builder {
+    public:
+        static constexpr uint64_t OUTPUT_BUFFER_DATA_SIZE = Ctx::MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue);
+
+        static constexpr uint16_t OUTPUT_BUFFER_MESSAGE_ALLOCATED = 0x0001;
+        static constexpr uint16_t OUTPUT_BUFFER_MESSAGE_CONFIRMED = 0x0002;
+        static constexpr uint16_t OUTPUT_BUFFER_MESSAGE_CHECKPOINT = 0x0004;
+
     protected:
+        static constexpr uint64_t BUFFER_START_UNDEFINED = 0xFFFFFFFFFFFFFFFF;
+
+        static constexpr uint64_t VALUE_BUFFER_MIN = 1048576;
+        static constexpr uint64_t VALUE_BUFFER_MAX = 4294967296;
+
+        static constexpr uint8_t XML_HEADER_STANDALONE = 0x01;
+        static constexpr uint8_t XML_HEADER_XMLDECL = 0x02;
+        static constexpr uint8_t XML_HEADER_ENCODING = 0x04;
+        static constexpr uint8_t XML_HEADER_VERSION = 0x08;
+        static constexpr uint8_t XML_HEADER_STANDALONE_YES = 0x10;
+        static constexpr uint8_t XML_HEADER_VERSION_1_1 = 0x80;
+
+        static constexpr uint8_t XML_PROLOG_RGUID = 0x04;
+        static constexpr uint8_t XML_PROLOG_DOCID = 0x08;
+        static constexpr uint8_t XML_PROLOG_PATHID = 0x10;
+        static constexpr uint8_t XML_PROLOG_BIGINT = 0x40;
+
         Ctx* ctx;
         Locales* locales;
         Metadata* metadata;
