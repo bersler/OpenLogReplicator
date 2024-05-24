@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
     void Writer::resetMessageQueue() {
         for (uint64_t i = 0; i < currentQueueSize; ++i) {
             BuilderMsg* msg = queue[i];
-            if ((msg->flags & OUTPUT_BUFFER_MESSAGE_ALLOCATED) != 0)
+            if ((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED) != 0)
                 delete[] msg->data;
         }
         currentQueueSize = 0;
@@ -131,15 +131,15 @@ namespace OpenLogReplicator {
             msg = queue[0];
         }
 
-        msg->flags |= OUTPUT_BUFFER_MESSAGE_CONFIRMED;
-        if (msg->flags & OUTPUT_BUFFER_MESSAGE_ALLOCATED) {
+        msg->flags |= Builder::OUTPUT_BUFFER_MESSAGE_CONFIRMED;
+        if (msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED) {
             delete[] msg->data;
-            msg->flags &= ~OUTPUT_BUFFER_MESSAGE_ALLOCATED;
+            msg->flags &= ~Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED;
         }
 
         uint64_t maxId = 0;
         {
-            while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
+            while (currentQueueSize > 0 && (queue[0]->flags & Builder::OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
                 if (confirmedScn == ZERO_SCN || msg->lwnScn > confirmedScn) {
                     confirmedScn = msg->lwnScn;
@@ -230,7 +230,7 @@ namespace OpenLogReplicator {
             while (!ctx->hardShutdown) {
                 pollQueue();
 
-                if (streaming && metadata->status == METADATA_STATUS_REPLICATE)
+                if (streaming && metadata->status == Metadata::STATUS_REPLICATE)
                     break;
 
                 if (ctx->trace & Ctx::TRACE_WRITER)
@@ -289,10 +289,10 @@ namespace OpenLogReplicator {
                 oldLength += sizeof(struct BuilderMsg);
 
                 // Message in one part - send directly from buffer
-                if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
+                if (oldLength + length8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send the message to the client in one part
-                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -311,7 +311,7 @@ namespace OpenLogReplicator {
                     if (msg->data == nullptr)
                         throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->length) +
                                                       " bytes memory for: temporary buffer for JSON message");
-                    msg->flags |= OUTPUT_BUFFER_MESSAGE_ALLOCATED;
+                    msg->flags |= Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED;
 
                     uint64_t copied = 0;
                     while (msg->length > copied) {
@@ -321,7 +321,7 @@ namespace OpenLogReplicator {
                             memcpy(reinterpret_cast<void*>(msg->data + copied),
                                    reinterpret_cast<const void*>(builderQueue->data + oldLength), toCopy);
                             builderQueue = builderQueue->next;
-                            newLength = OUTPUT_BUFFER_DATA_SIZE;
+                            newLength = Builder::OUTPUT_BUFFER_DATA_SIZE;
                             oldLength = 0;
                         } else {
                             memcpy(reinterpret_cast<void*>(msg->data + copied),
@@ -333,7 +333,7 @@ namespace OpenLogReplicator {
 
                     createMessage(msg);
                     // Send only new messages to the client
-                    if (((msg->flags & OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {

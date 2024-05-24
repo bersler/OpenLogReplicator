@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
             state(nullptr),
             stateDisk(nullptr),
             serializer(nullptr),
-            status(METADATA_STATUS_READY),
+            status(STATUS_READY),
             database(newDatabase),
             startScn(newStartScn),
             startSequence(newStartSequence),
@@ -290,7 +290,7 @@ namespace OpenLogReplicator {
     void Metadata::waitForWriter() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_READY) {
+        if (status == STATUS_READY) {
             if (ctx->trace & Ctx::TRACE_SLEEP)
                 ctx->logTrace(Ctx::TRACE_SLEEP, "Metadata:waitForWriter");
             condReplicator.wait(lck);
@@ -300,7 +300,7 @@ namespace OpenLogReplicator {
     void Metadata::waitForReplicator() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_START) {
+        if (status == STATUS_START) {
             if (ctx->trace & Ctx::TRACE_SLEEP)
                 ctx->logTrace(Ctx::TRACE_SLEEP, "Metadata:waitForReplicator");
             condWriter.wait(lck);
@@ -310,7 +310,7 @@ namespace OpenLogReplicator {
     void Metadata::setStatusReady() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_READY;
+        status = STATUS_READY;
         firstDataScn = ZERO_SCN;
         firstSchemaScn = ZERO_SCN;
         checkpointScn = ZERO_SCN;
@@ -321,14 +321,14 @@ namespace OpenLogReplicator {
     void Metadata::setStatusStart() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_START;
+        status = STATUS_START;
         condReplicator.notify_all();
     }
 
     void Metadata::setStatusReplicate() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_REPLICATE;
+        status = STATUS_REPLICATE;
         condReplicator.notify_all();
         condWriter.notify_all();
     }

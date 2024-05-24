@@ -319,7 +319,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterFile::pollQueue() {
-        if (metadata->status == METADATA_STATUS_READY)
+        if (metadata->status == Metadata::STATUS_READY)
             metadata->setStatusStart();
     }
 }

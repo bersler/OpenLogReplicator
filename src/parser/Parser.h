@@ -26,8 +26,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef PARSER_H_
 #define PARSER_H_
 
-#define MAX_LWN_CHUNKS (512*2/Ctx::MEMORY_CHUNK_SIZE_MB)
-
 namespace OpenLogReplicator {
     class Builder;
     class Reader;
@@ -46,6 +44,8 @@ namespace OpenLogReplicator {
 
     class Parser final {
     protected:
+        static constexpr uint64_t MAX_LWN_CHUNKS = 512 * 2 / Ctx::MEMORY_CHUNK_SIZE_MB;
+
         Ctx* ctx;
         Builder* builder;
         Metadata* metadata;

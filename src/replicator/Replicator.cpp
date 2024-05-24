@@ -179,7 +179,7 @@ namespace OpenLogReplicator {
                     break;
                 metadata->waitForWriter();
 
-                if (metadata->status == METADATA_STATUS_READY)
+                if (metadata->status == Metadata::STATUS_READY)
                     continue;
 
                 if (ctx->softShutdown)
@@ -231,7 +231,7 @@ namespace OpenLogReplicator {
                 // Boot succeeded
                 ctx->info(0, "resume writer");
                 metadata->setStatusReplicate();
-            } while (metadata->status != METADATA_STATUS_REPLICATE);
+            } while (metadata->status != Metadata::STATUS_REPLICATE);
 
             while (!ctx->softShutdown) {
                 bool logsProcessed = false;
