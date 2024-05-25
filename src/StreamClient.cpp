@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
         if (response.code() == OpenLogReplicator::pb::ResponseCode::REPLICATE) {
             request.set_code(OpenLogReplicator::pb::RequestCode::CONTINUE);
             if (strncmp(argv[5], "next", 4) == 0) {
-                request.set_c_scn(ZERO_SCN);
+                request.set_c_scn(OpenLogReplicator::Ctx::ZERO_SCN);
                 request.set_c_idx(0);
             } else {
                 char* idxPtr;
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
             }
 
             if (strncmp(argv[5], "now", 3) == 0) {
-                request.set_scn(ZERO_SCN);
+                request.set_scn(OpenLogReplicator::Ctx::ZERO_SCN);
                 ctx.info(0, "START NOW" + paramSeq);
             } else if (strncmp(argv[5], "scn:", 4) == 0) {
                 request.set_scn(atoi(argv[5] + 4));

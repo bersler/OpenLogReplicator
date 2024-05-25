@@ -1187,7 +1187,7 @@ namespace OpenLogReplicator {
 
         typeDba nridBdba = 0;
         typeSlot nridSlot = 0;
-        if ((redoLogRecord->fb & FB_L) == 0) {
+        if ((redoLogRecord->fb & RedoLogRecord::FB_L) == 0) {
             nridBdba = ctx->read32(redoLogRecord->data + fieldPos + 28);
             nridSlot = ctx->read16(redoLogRecord->data + fieldPos + 32);
         }
@@ -1229,18 +1229,18 @@ namespace OpenLogReplicator {
             } else
                 ctx->dumpStream << '\n';
 
-            if ((redoLogRecord->fb & FB_F) != 0 && (redoLogRecord->fb & FB_H) == 0) {
+            if ((redoLogRecord->fb & RedoLogRecord::FB_F) != 0 && (redoLogRecord->fb & RedoLogRecord::FB_H) == 0) {
                 typeDba hrid1 = ctx->read32(redoLogRecord->data + fieldPos + 20);
                 typeSlot hrid2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
                 ctx->dumpStream << "hrid: 0x" << std::setfill('0') << std::setw(8) << std::hex << hrid1 << "." << std::hex << hrid2 << '\n';
             }
 
             // Next DBA/SLT
-            if ((redoLogRecord->fb & FB_L) == 0) {
+            if ((redoLogRecord->fb & RedoLogRecord::FB_L) == 0) {
                 ctx->dumpStream << "nrid:  0x" << std::setfill('0') << std::setw(8) << std::hex << nridBdba << "." << std::hex << nridSlot << '\n';
             }
 
-            if ((redoLogRecord->fb & FB_K) != 0) {
+            if ((redoLogRecord->fb & RedoLogRecord::FB_K) != 0) {
                 uint8_t curc = 0; // TODO: find field position/size
                 uint8_t comc = 0; // TODO: find field position/size
                 uint32_t pk = ctx->read32(redoLogRecord->data + fieldPos + 20);
@@ -1453,7 +1453,7 @@ namespace OpenLogReplicator {
 
         typeDba nridBdba = 0;
         typeSlot nridSlot = 0;
-        if ((redoLogRecord->fb & FB_L) == 0) {
+        if ((redoLogRecord->fb & RedoLogRecord::FB_L) == 0) {
             nridBdba = ctx->read32(redoLogRecord->data + fieldPos + 28);
             nridSlot = ctx->read16(redoLogRecord->data + fieldPos + 32);
         }
@@ -1480,7 +1480,7 @@ namespace OpenLogReplicator {
             } else
                 ctx->dumpStream << '\n';
 
-            if ((redoLogRecord->fb & FB_L) == 0) {
+            if ((redoLogRecord->fb & RedoLogRecord::FB_L) == 0) {
                 ctx->dumpStream << "nrid:  0x" << std::setfill('0') << std::setw(8) << std::hex << nridBdba << "." << std::hex << nridSlot << '\n';
             }
 
@@ -1550,95 +1550,95 @@ namespace OpenLogReplicator {
 
             const char* opCode;
             switch (redoLogRecord->op & 0x1F) {
-                case OP_IUR:
+                case RedoLogRecord::OP_IUR:
                     // Interpret Undo Redo
                     opCode = "IUR";
                     break;
 
-                case OP_IRP:
+                case RedoLogRecord::OP_IRP:
                     // Insert Row Piece
                     opCode = "IRP";
                     break;
 
-                case OP_DRP:
+                case RedoLogRecord::OP_DRP:
                     // Delete Row Piece
                     opCode = "DRP";
                     break;
 
-                case OP_LKR:
+                case RedoLogRecord::OP_LKR:
                     // LocK Row
                     opCode = "LKR";
                     break;
 
-                case OP_URP:
+                case RedoLogRecord::OP_URP:
                     // Update Row Piece
                     opCode = "URP";
                     break;
 
-                case OP_ORP:
+                case RedoLogRecord::OP_ORP:
                     // Overwrite Row Piece
                     opCode = "ORP";
                     break;
 
-                case OP_MFC:
+                case RedoLogRecord::OP_MFC:
                     // Manipulate First Column
                     opCode = "MFC";
                     break;
 
-                case OP_CFA:
+                case RedoLogRecord::OP_CFA:
                     // Change Forwarding Address
                     opCode = "CFA";
                     break;
 
-                case OP_CKI:
+                case RedoLogRecord::OP_CKI:
                     // Change Cluster key Index
                     opCode = "CKI";
                     break;
 
-                case OP_SKL:
+                case RedoLogRecord::OP_SKL:
                     // Set Key Links
                     opCode = "SKL";
                     break;
 
-                case OP_QMI:
+                case RedoLogRecord::OP_QMI:
                     // Quick Multi-row Insert
                     opCode = "QMI";
                     break;
 
-                case OP_QMD:
+                case RedoLogRecord::OP_QMD:
                     // Quick Multi-row Delete
                     opCode = "QMD";
                     break;
 
-                case OP_DSC:
+                case RedoLogRecord::OP_DSC:
                     opCode = "DSC";
                     break;
 
-                case OP_LMN:
+                case RedoLogRecord::OP_LMN:
                     opCode = "LMN";
                     break;
 
-                case OP_LLB:
+                case RedoLogRecord::OP_LLB:
                     opCode = "LLB";
                     break;
 
-                case OP_SHK:
+                case RedoLogRecord::OP_SHK:
                     opCode = "SHK";
                     break;
 
-                case OP_CMP:
+                case RedoLogRecord::OP_CMP:
                     opCode = "CMP";
                     break;
 
-                case OP_DCU:
+                case RedoLogRecord::OP_DCU:
                     opCode = "DCU";
                     break;
 
-                case OP_MRK:
+                case RedoLogRecord::OP_MRK:
                     opCode = "MRK";
                     break;
 
-                case OP_021:
+                case RedoLogRecord::OP_021:
                     opCode = " 21";
                     break;
 
@@ -1672,7 +1672,7 @@ namespace OpenLogReplicator {
                 rtype = "xtype KDO_KDOM2";
 
             const char* rowDependencies("Disabled");
-            if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0)
+            if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0)
                 rowDependencies = "Enabled";
 
             ctx->dumpStream << "KDO Op code: " << opCode << " row dependencies " << rowDependencies << '\n';
@@ -1685,7 +1685,7 @@ namespace OpenLogReplicator {
                             " maxfr: " << std::dec << static_cast<uint64_t>(maxFr) << '\n';
 
             switch ((redoLogRecord->op & 0x1F)) {
-                case OP_SKL:
+                case RedoLogRecord::OP_SKL:
                     if (fieldLength >= 32) {
                         char fwdFl = '-';
                         uint32_t fwd = (static_cast<uint32_t>(redoLogRecord->data[fieldPos + 16]) << 24) |
@@ -1720,7 +1720,7 @@ namespace OpenLogReplicator {
                     }
                     break;
 
-                case OP_DSC:
+                case RedoLogRecord::OP_DSC:
                     if (fieldLength >= 24) {
                         uint16_t slot = ctx->read16(redoLogRecord->data + fieldPos + 16);
                         uint8_t tabn = redoLogRecord->data[fieldPos + 18];
@@ -1735,36 +1735,36 @@ namespace OpenLogReplicator {
         }
 
         switch (redoLogRecord->op & 0x1F) {
-            case OP_IRP:
+            case RedoLogRecord::OP_IRP:
                 kdoOpCodeIRP(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
-            case OP_DRP:
+            case RedoLogRecord::OP_DRP:
                 kdoOpCodeDRP(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
-            case OP_LKR:
+            case RedoLogRecord::OP_LKR:
                 kdoOpCodeLKR(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
-            case OP_URP:
+            case RedoLogRecord::OP_URP:
                 kdoOpCodeURP(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
-            case OP_ORP:
+            case RedoLogRecord::OP_ORP:
                 kdoOpCodeORP(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
-            case OP_CKI:
+            case RedoLogRecord::OP_CKI:
                 kdoOpCodeSKL(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
-            case OP_CFA:
+            case RedoLogRecord::OP_CFA:
                 kdoOpCodeCFA(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
-            case OP_QMI:
-            case OP_QMD:
+            case RedoLogRecord::OP_QMI:
+            case RedoLogRecord::OP_QMD:
                 kdoOpCodeQM(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
         }
@@ -2172,7 +2172,7 @@ namespace OpenLogReplicator {
                                 " cc: " << std::dec << static_cast<uint64_t>(jcc) << '\n';
                 pos += 3;
 
-                if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
                     if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                         pos += 6;
                     else
@@ -2225,14 +2225,14 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::processFbFlags(uint8_t fb, char* fbStr) {
-        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; // The last column continues in the Next piece
-        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; // The first column continues from the Previous piece
-        if ((fb & FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; // Last ctx piece
-        if ((fb & FB_F) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; // First ctx piece
-        if ((fb & FB_D) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; // Deleted row
-        if ((fb & FB_H) != 0) fbStr[2] = 'H'; else fbStr[2] = '-'; // Head piece of row
-        if ((fb & FB_C) != 0) fbStr[1] = 'C'; else fbStr[1] = '-'; // Clustered table member
-        if ((fb & FB_K) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; // Cluster Key
+        if ((fb & RedoLogRecord::FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; // The last column continues in the Next piece
+        if ((fb & RedoLogRecord::FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; // The first column continues from the Previous piece
+        if ((fb & RedoLogRecord::FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; // Last ctx piece
+        if ((fb & RedoLogRecord::FB_F) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; // First ctx piece
+        if ((fb & RedoLogRecord::FB_D) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; // Deleted row
+        if ((fb & RedoLogRecord::FB_H) != 0) fbStr[2] = 'H'; else fbStr[2] = '-'; // Head piece of row
+        if ((fb & RedoLogRecord::FB_C) != 0) fbStr[1] = 'C'; else fbStr[1] = '-'; // Clustered table member
+        if ((fb & RedoLogRecord::FB_K) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; // Cluster Key
         fbStr[8] = 0;
     }
 }

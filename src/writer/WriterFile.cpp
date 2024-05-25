@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
             outputDes(-1),
             newLine(newNewLine),
             append(newAppend),
-            lastSequence(ZERO_SEQ),
+            lastSequence(Ctx::ZERO_SEQ),
             newLineMsg(nullptr),
             warningDisplayed(false) {
     }

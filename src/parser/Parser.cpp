@@ -72,8 +72,8 @@ namespace OpenLogReplicator {
             group(newGroup),
             path(newPath),
             sequence(0),
-            firstScn(ZERO_SCN),
-            nextScn(ZERO_SCN),
+            firstScn(Ctx::ZERO_SCN),
+            nextScn(Ctx::ZERO_SCN),
             reader(nullptr) {
 
         memset(reinterpret_cast<void*>(&zero), 0, sizeof(RedoLogRecord));
@@ -573,15 +573,15 @@ namespace OpenLogReplicator {
                 return;
             }
         } else {
-            if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if ((table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
-            if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+            if ((table->options & OracleTable::OPTIONS_SCHEMA_TABLE) != 0)
                 transaction->schema = true;
         }
 
         // Transaction size limit
         if (ctx->transactionSizeMax > 0 &&
-            transaction->size + redoLogRecord1->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+            transaction->size + redoLogRecord1->length + TransactionBuffer::ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
             transaction->purge(transactionBuffer);
@@ -629,9 +629,9 @@ namespace OpenLogReplicator {
             return;
         lastTransaction = transaction;
 
-        if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
+        if (lob->table != nullptr && (lob->table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
             transaction->system = true;
-        if (lob->table != nullptr && (lob->table->options & OPTIONS_SCHEMA_TABLE) != 0)
+        if (lob->table != nullptr && (lob->table->options & OracleTable::OPTIONS_SCHEMA_TABLE) != 0)
             transaction->schema = true;
 
         if (ctx->trace & Ctx::TRACE_LOB)
@@ -672,14 +672,14 @@ namespace OpenLogReplicator {
                 return;
             }
         } else {
-            if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if ((table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
-            if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+            if ((table->options & OracleTable::OPTIONS_SCHEMA_TABLE) != 0)
                 transaction->schema = true;
         }
 
         // Transaction size limit
-        if (ctx->transactionSizeMax > 0 && transaction->size + redoLogRecord1->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+        if (ctx->transactionSizeMax > 0 && transaction->size + redoLogRecord1->length + TransactionBuffer::ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transaction->log(ctx, "siz ", redoLogRecord1);
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
@@ -897,11 +897,11 @@ namespace OpenLogReplicator {
                         return;
                     }
                 } else {
-                    if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    if ((table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         transaction->system = true;
-                    if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+                    if ((table->options & OracleTable::OPTIONS_SCHEMA_TABLE) != 0)
                         transaction->schema = true;
-                    if ((table->options & OPTIONS_DEBUG_TABLE) != 0 && redoLogRecord2->opCode == 0x0B02 && !ctx->softShutdown)
+                    if ((table->options & OracleTable::OPTIONS_DEBUG_TABLE) != 0 && redoLogRecord2->opCode == 0x0B02 && !ctx->softShutdown)
                         transaction->shutdown = true;
                 }
             }
@@ -914,7 +914,8 @@ namespace OpenLogReplicator {
         }
 
         // Transaction size limit
-        if (ctx->transactionSizeMax > 0 && transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+        if (ctx->transactionSizeMax > 0 && transaction->size + redoLogRecord1->length + redoLogRecord2->length +
+                TransactionBuffer::ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transaction->log(ctx, "siz1", redoLogRecord1);
             transaction->log(ctx, "siz2", redoLogRecord2);
             transactionBuffer->skipXidList.insert(transaction->xid);
@@ -982,9 +983,9 @@ namespace OpenLogReplicator {
                 return;
             }
         } else {
-            if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if ((table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
-            if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+            if ((table->options & OracleTable::OPTIONS_SCHEMA_TABLE) != 0)
                 transaction->schema = true;
         }
 
@@ -1170,15 +1171,15 @@ namespace OpenLogReplicator {
         }
 
         if (lob != nullptr) {
-            if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (lob->table != nullptr && (lob->table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
-            if (lob->table != nullptr && (lob->table->options & OPTIONS_SCHEMA_TABLE) != 0)
+            if (lob->table != nullptr && (lob->table->options & OracleTable::OPTIONS_SCHEMA_TABLE) != 0)
                 transaction->schema = true;
         }
 
         // Transaction size limit
         if (ctx->transactionSizeMax > 0 &&
-            transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+            transaction->size + redoLogRecord1->length + redoLogRecord2->length + TransactionBuffer::ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
             transaction->purge(transactionBuffer);
@@ -1211,7 +1212,7 @@ namespace OpenLogReplicator {
         uint64_t lwnConfirmedBlock = 2;
         uint64_t lwnRecords = 0;
 
-        if (firstScn == ZERO_SCN && nextScn == ZERO_SCN && reader->getFirstScn() != 0) {
+        if (firstScn == Ctx::ZERO_SCN && nextScn == Ctx::ZERO_SCN && reader->getFirstScn() != 0) {
             firstScn = reader->getFirstScn();
             nextScn = reader->getNextScn();
         }
@@ -1309,7 +1310,7 @@ namespace OpenLogReplicator {
                             lwnCheckpointBlock = currentBlock;
                             lwnNumMax = ctx->read16(redoBlock + blockOffset + 26);
                             // Verify LWN header start
-                            if (lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != ZERO_SCN))
+                            if (lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != Ctx::ZERO_SCN))
                                 throw RedoLogException(50049, "invalid lwn scn: " + std::to_string(lwnScn));
                         } else {
                             uint16_t lwnNumCur = ctx->read16(redoBlock + blockOffset + 26);
@@ -1435,7 +1436,7 @@ namespace OpenLogReplicator {
                         builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
                                                    currentBlock * reader->getBlockSize(), switchRedo);
 
-                        typeSeq minSequence = ZERO_SEQ;
+                        typeSeq minSequence = Ctx::ZERO_SEQ;
                         uint64_t minOffset = -1;
                         typeXid minXid;
                         transactionBuffer->checkpoint(minSequence, minOffset, minXid);
@@ -1504,7 +1505,7 @@ namespace OpenLogReplicator {
                 reader->setRet(Reader::REDO_SHUTDOWN);
             } else {
                 if (reader->checkFinished(confirmedBufferStart)) {
-                    if (reader->getRet() == Reader::REDO_FINISHED && nextScn == ZERO_SCN && reader->getNextScn() != ZERO_SCN)
+                    if (reader->getRet() == Reader::REDO_FINISHED && nextScn == Ctx::ZERO_SCN && reader->getNextScn() != Ctx::ZERO_SCN)
                         nextScn = reader->getNextScn();
                     if (reader->getRet() == Reader::REDO_STOPPED || reader->getRet() == Reader::REDO_OVERWRITTEN)
                         metadata->offset = lwnConfirmedBlock * reader->getBlockSize();
@@ -1513,7 +1514,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (ctx->metrics && reader->getNextScn() != ZERO_SCN) {
+        if (ctx->metrics && reader->getNextScn() != Ctx::ZERO_SCN) {
             int64_t diff = ctx->clock->getTimeT() - reader->getNextTime().toEpoch(ctx->hostTimezone);
 
             if (group == 0) {
@@ -1569,6 +1570,6 @@ namespace OpenLogReplicator {
 
     std::string Parser::toString() {
         return "group: " + std::to_string(group) + " scn: " + std::to_string(firstScn) + " to " +
-               std::to_string(nextScn != ZERO_SCN ? nextScn : 0) + " seq: " + std::to_string(sequence) + " path: " + path;
+               std::to_string(nextScn != Ctx::ZERO_SCN ? nextScn : 0) + " seq: " + std::to_string(sequence) + " path: " + path;
     }
 }

@@ -235,27 +235,27 @@ namespace OpenLogReplicator {
             if (column >= valuesMax)
                 valuesMax = column + 1;
 
-            switch (fb & (FB_P | FB_N)) {
+            switch (fb & (RedoLogRecord::FB_P | RedoLogRecord::FB_N)) {
                 case 0:
                     lengths[column][type] = length;
                     values[column][type] = data;
                     break;
 
-                case FB_N:
+                case RedoLogRecord::FB_N:
                     lengthsPart[0][column][type] = length;
                     valuesPart[0][column][type] = data;
                     if ((valuesMerge[base] & mask) == 0)
                         valuesMerge[base] |= mask;
                     break;
 
-                case FB_P | FB_N:
+                case RedoLogRecord::FB_P | RedoLogRecord::FB_N:
                     lengthsPart[1][column][type] = length;
                     valuesPart[1][column][type] = data;
                     if ((valuesMerge[base] & mask) == 0)
                         valuesMerge[base] |= mask;
                     break;
 
-                case FB_P:
+                case RedoLogRecord::FB_P:
                     lengthsPart[2][column][type] = length;
                     valuesPart[2][column][type] = data;
                     if ((valuesMerge[base] & mask) == 0)

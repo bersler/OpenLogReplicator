@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/typeRowId.h"
 #include "../common/exception/ConfigurationException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/OracleTable.h"
 #include "../common/table/SysCCol.h"
 #include "../common/table/SysCDef.h"
 #include "../common/table/SysCol.h"
@@ -70,29 +71,29 @@ namespace OpenLogReplicator {
             logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
-            firstDataScn(ZERO_SCN),
-            firstSchemaScn(ZERO_SCN),
+            firstDataScn(Ctx::ZERO_SCN),
+            firstSchemaScn(Ctx::ZERO_SCN),
             resetlogs(0),
             oracleIncarnationCurrent(nullptr),
             activation(0),
-            sequence(ZERO_SEQ),
-            lastSequence(ZERO_SEQ),
+            sequence(Ctx::ZERO_SEQ),
+            lastSequence(Ctx::ZERO_SEQ),
             offset(0),
-            firstScn(ZERO_SCN),
-            nextScn(ZERO_SCN),
-            clientScn(ZERO_SCN),
+            firstScn(Ctx::ZERO_SCN),
+            nextScn(Ctx::ZERO_SCN),
+            clientScn(Ctx::ZERO_SCN),
             clientIdx(0),
             checkpoints(0),
-            checkpointScn(ZERO_SCN),
-            lastCheckpointScn(ZERO_SCN),
+            checkpointScn(Ctx::ZERO_SCN),
+            lastCheckpointScn(Ctx::ZERO_SCN),
             checkpointTime(0),
             lastCheckpointTime(),
-            checkpointSequence(ZERO_SEQ),
+            checkpointSequence(Ctx::ZERO_SEQ),
             checkpointOffset(0),
             lastCheckpointOffset(0),
             checkpointBytes(0),
             lastCheckpointBytes(0),
-            minSequence(ZERO_SEQ),
+            minSequence(Ctx::ZERO_SEQ),
             minOffset(0),
             minXid(),
             schemaInterval(0) {
@@ -254,25 +255,25 @@ namespace OpenLogReplicator {
             delete element;
         newSchemaElements.clear();
 
-        addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "LOB\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "LOBCOMPPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "LOBFRAG\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "OBJ\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TAB\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TABPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TABCOMPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TABSUBPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TS\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "XDB\\$TTSET", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "X\\$NM.*", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "X\\$PT.*", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "X\\$QN.*", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "CCOL\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "CDEF\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "COL\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "DEFERRED_STG\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "ECOL\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "LOB\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "LOBCOMPPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "LOBFRAG\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "OBJ\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TAB\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABCOMPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABSUBPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TS\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "USER\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "XDB\\$TTSET", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$NM.*", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$PT.*", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$QN.*", OracleTable::OPTIONS_SYSTEM_TABLE);
     }
 
     void Metadata::commitElements() {
@@ -311,10 +312,10 @@ namespace OpenLogReplicator {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
         status = STATUS_READY;
-        firstDataScn = ZERO_SCN;
-        firstSchemaScn = ZERO_SCN;
-        checkpointScn = ZERO_SCN;
-        schema->scn = ZERO_SCN;
+        firstDataScn = Ctx::ZERO_SCN;
+        firstSchemaScn = Ctx::ZERO_SCN;
+        checkpointScn = Ctx::ZERO_SCN;
+        schema->scn = Ctx::ZERO_SCN;
         condWriter.notify_all();
     }
 
@@ -363,7 +364,7 @@ namespace OpenLogReplicator {
                 return;
 
             // Nothing processed so far
-            if (checkpointScn == ZERO_SCN || lastCheckpointScn == checkpointScn || checkpointSequence == ZERO_SEQ)
+            if (checkpointScn == Ctx::ZERO_SCN || lastCheckpointScn == checkpointScn || checkpointSequence == Ctx::ZERO_SEQ)
                 return;
 
             if (lastSequence == sequence && !force &&
@@ -373,7 +374,7 @@ namespace OpenLogReplicator {
 
             // Schema did not change
             bool storeSchema = true;
-            if (schema->refScn != ZERO_SCN && schema->refScn >= schema->scn) {
+            if (schema->refScn != Ctx::ZERO_SCN && schema->refScn >= schema->scn) {
                 if (schemaInterval < ctx->schemaForceInterval) {
                     storeSchema = false;
                     ++schemaInterval;
@@ -433,7 +434,7 @@ namespace OpenLogReplicator {
             checkpointSchemaMap.insert_or_assign(scn, true);
         }
 
-        if (startScn != ZERO_SCN)
+        if (startScn != Ctx::ZERO_SCN)
             firstDataScn = startScn;
         else
             firstDataScn = 0;
@@ -441,12 +442,12 @@ namespace OpenLogReplicator {
         if (ctx->trace & Ctx::TRACE_CHECKPOINT)
             ctx->logTrace(Ctx::TRACE_CHECKPOINT, "scn: " + std::to_string(firstDataScn));
 
-        if (firstDataScn != ZERO_SCN && firstDataScn != 0) {
+        if (firstDataScn != Ctx::ZERO_SCN && firstDataScn != 0) {
             std::set<typeScn>::iterator it = checkpointScnList.end();
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                if (*it <= firstDataScn && (sequence == ZERO_SEQ || sequence == 0))
+                if (*it <= firstDataScn && (sequence == Ctx::ZERO_SEQ || sequence == 0))
                     readCheckpoint(*it);
             }
         }
@@ -462,7 +463,7 @@ namespace OpenLogReplicator {
             if (ctx->trace & Ctx::TRACE_CHECKPOINT)
                 ctx->logTrace(Ctx::TRACE_CHECKPOINT, "no checkpoint file found, setting unknown sequence");
 
-            sequence = ZERO_SEQ;
+            sequence = Ctx::ZERO_SEQ;
             return;
         }
         if (!serializer->deserialize(this, ss, name1, msgs, true, true)) {
@@ -478,8 +479,8 @@ namespace OpenLogReplicator {
         msgs.clear();
 
         // Schema missing
-        if (schema->scn == ZERO_SCN) {
-            if (schema->refScn == ZERO_SCN) {
+        if (schema->scn == Ctx::ZERO_SCN) {
+            if (schema->refScn == Ctx::ZERO_SCN) {
                 ctx->warning(60019, "file: " + name1 + " - load checkpoint failed, reference SCN missing");
                 return;
             }
@@ -503,7 +504,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (schema->scn != ZERO_SCN)
+        if (schema->scn != Ctx::ZERO_SCN)
             firstSchemaScn = schema->scn;
     }
 
@@ -595,7 +596,7 @@ namespace OpenLogReplicator {
     }
 
     bool Metadata::isNewData(typeScn scn, typeIdx idx) {
-        if (clientScn == ZERO_SCN)
+        if (clientScn == Ctx::ZERO_SCN)
             return true;
 
         if (clientScn < scn)

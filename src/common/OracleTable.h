@@ -36,6 +36,14 @@ namespace OpenLogReplicator {
 
     class OracleTable final {
     public:
+        static constexpr typeOptions OPTIONS_DEBUG_TABLE = 1U << 0;
+        static constexpr typeOptions OPTIONS_SYSTEM_TABLE = 1U << 1;
+        static constexpr typeOptions OPTIONS_SCHEMA_TABLE = 1U << 2;
+
+        static constexpr uint64_t VCONTEXT_LENGTH = 30;
+        static constexpr uint64_t VPARAMETER_LENGTH = 4000;
+        static constexpr uint64_t VPROPERTY_LENGTH = 4000;
+
         static constexpr uint64_t SYS_CCOL = 1;
         static constexpr uint64_t SYS_CDEF = 2;
         static constexpr uint64_t SYS_COL = 3;

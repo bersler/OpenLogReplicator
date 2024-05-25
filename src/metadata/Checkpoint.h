@@ -36,6 +36,9 @@ namespace OpenLogReplicator {
     class TransactionBuffer;
 
     class Checkpoint final : public Thread {
+    public:
+        static constexpr off_t CONFIG_FILE_MAX_SIZE = 1048576;
+
     protected:
         Metadata* metadata;
         std::mutex mtx;

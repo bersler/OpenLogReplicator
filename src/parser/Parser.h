@@ -45,6 +45,7 @@ namespace OpenLogReplicator {
     class Parser final {
     protected:
         static constexpr uint64_t MAX_LWN_CHUNKS = 512 * 2 / Ctx::MEMORY_CHUNK_SIZE_MB;
+        static constexpr uint64_t MAX_RECORDS_IN_LWN = 1048576;
 
         Ctx* ctx;
         Builder* builder;

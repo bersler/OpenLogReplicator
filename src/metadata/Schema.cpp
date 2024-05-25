@@ -55,8 +55,8 @@ namespace OpenLogReplicator {
             xdbXNmTmp(nullptr),
             xdbXPtTmp(nullptr),
             xdbXQnTmp(nullptr),
-            scn(ZERO_SCN),
-            refScn(ZERO_SCN),
+            scn(Ctx::ZERO_SCN),
+            refScn(Ctx::ZERO_SCN),
             loaded(false),
             xmlCtxDefault(nullptr),
             columnTmp(nullptr),
@@ -2614,7 +2614,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0 &&
+            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0 &&
                 !suppLogDbAll && !sysUser->isSuppLogAll()) {
 
                 SysCDefKey sysCDefKeyFirst(sysObj->obj, 0);
@@ -2739,7 +2739,7 @@ namespace OpenLogReplicator {
                 columnTmp = nullptr;
             }
 
-            if ((options & OPTIONS_SYSTEM_TABLE) == 0) {
+            if ((options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0) {
                 SysLobKey sysLobKeyFirst(sysObj->obj, 0);
                 for (auto sysLobMapKeyIt = sysLobMapKey.upper_bound(sysLobKeyFirst);
                      sysLobMapKeyIt != sysLobMapKey.end() && sysLobMapKeyIt->first.obj == sysObj->obj; ++sysLobMapKeyIt) {
@@ -2899,7 +2899,7 @@ namespace OpenLogReplicator {
             if (sysTab->isRowMovement())
                 ss << ", row movement enabled";
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0) {
+            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0) {
                 // Use a default primary key
                 if (keys.empty()) {
                     if (tableTmp->totalPk == 0)

@@ -24,30 +24,23 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/Ctx.h"
 #include "../common/LobKey.h"
+#include "../common/RedoLogRecord.h"
 #include "../common/types.h"
 #include "../common/typeXid.h"
 
 #ifndef TRANSACTION_BUFFER_H_
 #define TRANSACTION_BUFFER_H_
 
-#define ROW_HEADER_OP       (0)
-#define ROW_HEADER_REDO1    (sizeof(typeOp2))
-#define ROW_HEADER_REDO2    (sizeof(typeOp2)+sizeof(RedoLogRecord))
-#define ROW_HEADER_DATA     (sizeof(typeOp2)+sizeof(RedoLogRecord)+sizeof(RedoLogRecord))
-#define ROW_HEADER_SIZE     (sizeof(typeOp2)+sizeof(RedoLogRecord)+sizeof(RedoLogRecord))
-#define ROW_HEADER_TOTAL    (sizeof(typeOp2)+sizeof(RedoLogRecord)+sizeof(RedoLogRecord)+sizeof(uint64_t))
-
-#define FULL_BUFFER_SIZE    65536
-#define HEADER_BUFFER_SIZE  (sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint8_t*)+sizeof(TransactionChunk*)+sizeof(TransactionChunk*))
-#define DATA_BUFFER_SIZE    (FULL_BUFFER_SIZE-HEADER_BUFFER_SIZE)
-#define BUFFERS_FREE_MASK   0xFFFF
-
 namespace OpenLogReplicator {
-    class RedoLogRecord;
     class Transaction;
     class XmlCtx;
 
     struct TransactionChunk {
+        static constexpr uint64_t FULL_BUFFER_SIZE = 65536;
+        static constexpr uint64_t HEADER_BUFFER_SIZE = sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint8_t*) +
+                                                       sizeof(TransactionChunk*) + sizeof(TransactionChunk*);
+        static constexpr uint64_t DATA_BUFFER_SIZE = FULL_BUFFER_SIZE - HEADER_BUFFER_SIZE;
+
         uint64_t elements;
         uint64_t size;
         uint64_t pos;
@@ -58,9 +51,19 @@ namespace OpenLogReplicator {
     };
 
     class TransactionBuffer {
+    public:
+        static constexpr uint64_t ROW_HEADER_OP = 0;
+        static constexpr uint64_t ROW_HEADER_REDO1 = sizeof(typeOp2);
+        static constexpr uint64_t ROW_HEADER_REDO2 = sizeof(typeOp2) + sizeof(RedoLogRecord);
+        static constexpr uint64_t ROW_HEADER_DATA = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord);
+        static constexpr uint64_t ROW_HEADER_SIZE = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord);
+        static constexpr uint64_t ROW_HEADER_TOTAL = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord) + sizeof(uint64_t);
+
+        static constexpr uint64_t BUFFERS_FREE_MASK = 0xFFFF;
+
     protected:
         Ctx* ctx;
-        uint8_t buffer[DATA_BUFFER_SIZE];
+        uint8_t buffer[TransactionChunk::DATA_BUFFER_SIZE];
         std::unordered_map<uint8_t*, uint64_t> partiallyFullChunks;
 
         std::mutex mtx;

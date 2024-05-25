@@ -122,7 +122,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::positionReader() {
-        if (metadata->startSequence != ZERO_SEQ)
+        if (metadata->startSequence != Ctx::ZERO_SEQ)
             metadata->setSeqOffset(metadata->startSequence, 0);
         else
             metadata->setSeqOffset(0, 0);
@@ -188,25 +188,25 @@ namespace OpenLogReplicator {
                     printStartMsg();
                     if (metadata->resetlogs != 0)
                         ctx->info(0, "current resetlogs is: " + std::to_string(metadata->resetlogs));
-                    if (metadata->firstDataScn != ZERO_SCN)
+                    if (metadata->firstDataScn != Ctx::ZERO_SCN)
                         ctx->info(0, "first data SCN: " + std::to_string(metadata->firstDataScn));
-                    if (metadata->firstSchemaScn != ZERO_SCN)
+                    if (metadata->firstSchemaScn != Ctx::ZERO_SCN)
                         ctx->info(0, "first schema SCN: " + std::to_string(metadata->firstSchemaScn));
 
-                    if (metadata->firstDataScn == ZERO_SCN || metadata->sequence == ZERO_SEQ)
+                    if (metadata->firstDataScn == Ctx::ZERO_SCN || metadata->sequence == Ctx::ZERO_SEQ)
                         positionReader();
 
                     // No schema available?
-                    if (metadata->schema->scn == ZERO_SCN)
+                    if (metadata->schema->scn == Ctx::ZERO_SCN)
                         createSchema();
                     else
                         metadata->allowCheckpoints();
                     metadata->schema->updateXmlCtx();
 
-                    if (metadata->sequence == ZERO_SEQ)
+                    if (metadata->sequence == Ctx::ZERO_SEQ)
                         throw BootException(10028, "starting sequence is unknown");
 
-                    if (metadata->firstDataScn == ZERO_SCN)
+                    if (metadata->firstDataScn == Ctx::ZERO_SCN)
                         ctx->info(0, "last confirmed scn: <none>, starting sequence: " + std::to_string(metadata->sequence) + ", offset: " +
                                      std::to_string(metadata->offset));
                     else
@@ -419,14 +419,14 @@ namespace OpenLogReplicator {
 
     void Replicator::applyMapping(std::string& path) {
         uint64_t newPathLength = path.length();
-        char pathBuffer[MAX_PATH_LENGTH];
+        char pathBuffer[Ctx::MAX_PATH_LENGTH];
 
         for (uint64_t i = 0; i < pathMapping.size() / 2; ++i) {
             uint64_t sourceLength = pathMapping[i * 2].length();
             uint64_t targetLength = pathMapping[i * 2 + 1].length();
 
             if (sourceLength <= newPathLength &&
-                newPathLength - sourceLength + targetLength < MAX_PATH_LENGTH - 1 &&
+                newPathLength - sourceLength + targetLength < Ctx::MAX_PATH_LENGTH - 1 &&
                 memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
 
                 memcpy(reinterpret_cast<void*>(pathBuffer),
@@ -434,7 +434,7 @@ namespace OpenLogReplicator {
                 memcpy(reinterpret_cast<void*>(pathBuffer + targetLength),
                        reinterpret_cast<const void*>(path.c_str() + sourceLength), newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
-                if (newPathLength - sourceLength + targetLength >= MAX_PATH_LENGTH)
+                if (newPathLength - sourceLength + targetLength >= Ctx::MAX_PATH_LENGTH)
                     throw RuntimeException(10043, "after mapping path length (" + std::to_string(newPathLength - sourceLength +
                                                                                                  targetLength) + ") is too long for: " + pathBuffer);
                 path.assign(pathBuffer);
@@ -521,8 +521,8 @@ namespace OpenLogReplicator {
                 auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
                                          replicator->transactionBuffer, 0, fileName);
 
-                parser->firstScn = ZERO_SCN;
-                parser->nextScn = ZERO_SCN;
+                parser->firstScn = Ctx::ZERO_SCN;
+                parser->nextScn = Ctx::ZERO_SCN;
                 parser->sequence = sequence;
                 replicator->archiveRedoQueue.push(parser);
             }
@@ -541,7 +541,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::archGetLogList(Replicator* replicator) {
-        uint64_t sequenceStart = ZERO_SEQ;
+        uint64_t sequenceStart = Ctx::ZERO_SEQ;
         for (const std::string& mappedPath: replicator->redoLogsBatch) {
             if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
                 replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "checking path: " + mappedPath);
@@ -575,11 +575,11 @@ namespace OpenLogReplicator {
 
                 auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
                                          replicator->transactionBuffer, 0, mappedPath);
-                parser->firstScn = ZERO_SCN;
-                parser->nextScn = ZERO_SCN;
+                parser->firstScn = Ctx::ZERO_SCN;
+                parser->nextScn = Ctx::ZERO_SCN;
                 parser->sequence = sequence;
                 replicator->archiveRedoQueue.push(parser);
-                if (sequenceStart == ZERO_SEQ || sequenceStart > sequence)
+                if (sequenceStart == Ctx::ZERO_SEQ || sequenceStart > sequence)
                     sequenceStart = sequence;
 
             } else {
@@ -607,8 +607,8 @@ namespace OpenLogReplicator {
 
                     auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
                                              replicator->transactionBuffer, 0, fileName);
-                    parser->firstScn = ZERO_SCN;
-                    parser->nextScn = ZERO_SCN;
+                    parser->firstScn = Ctx::ZERO_SCN;
+                    parser->nextScn = Ctx::ZERO_SCN;
                     parser->sequence = sequence;
                     replicator->archiveRedoQueue.push(parser);
                 }
@@ -616,7 +616,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (sequenceStart != ZERO_SEQ && replicator->metadata->sequence == 0)
+        if (sequenceStart != Ctx::ZERO_SEQ && replicator->metadata->sequence == 0)
             replicator->metadata->setSeqOffset(sequenceStart, 0);
         replicator->redoLogsBatch.clear();
     }
@@ -669,13 +669,13 @@ namespace OpenLogReplicator {
             starting = "time: " + metadata->startTime;
         else if (metadata->startTimeRel > 0)
             starting = "time-rel: " + std::to_string(metadata->startTimeRel);
-        else if (metadata->startScn != ZERO_SCN)
+        else if (metadata->startScn != Ctx::ZERO_SCN)
             starting = "scn: " + std::to_string(metadata->startScn);
         else
             starting = "NOW";
 
         std::string startingSeq;
-        if (metadata->startSequence != ZERO_SEQ)
+        if (metadata->startSequence != Ctx::ZERO_SEQ)
             startingSeq = ", seq: " + std::to_string(metadata->startSequence);
 
         ctx->info(0, "Oracle Replicator for " + database + " in " + getModeName() + " mode is starting" + flagsStr + " from " + starting +
@@ -819,8 +819,8 @@ namespace OpenLogReplicator {
                         higher = true;
 
                     if (onlineRedo->reader->getSequence() == metadata->sequence &&
-                        (onlineRedo->reader->getNumBlocks() == ZERO_BLK || metadata->offset < onlineRedo->reader->getNumBlocks() *
-                                                                                              onlineRedo->reader->getBlockSize())) {
+                        (onlineRedo->reader->getNumBlocks() == Ctx::ZERO_BLK || metadata->offset < onlineRedo->reader->getNumBlocks() *
+                                                                                                   onlineRedo->reader->getBlockSize())) {
                         parser = onlineRedo;
                     }
 

@@ -103,16 +103,16 @@ namespace OpenLogReplicator {
             metadata->startSequence = request.seq();
             paramSeq = ", seq: " + std::to_string(request.seq());
         } else
-            metadata->startSequence = ZERO_SEQ;
+            metadata->startSequence = Ctx::ZERO_SEQ;
 
-        metadata->startScn = ZERO_SCN;
+        metadata->startScn = Ctx::ZERO_SCN;
         metadata->startTime = "";
         metadata->startTimeRel = 0;
 
         switch (request.tm_val_case()) {
             case pb::RedoRequest::TmValCase::kScn:
                 metadata->startScn = request.scn();
-                if (metadata->startScn == ZERO_SCN)
+                if (metadata->startScn == Ctx::ZERO_SCN)
                     ctx->info(0, "client requested to start from NOW" + paramSeq);
                 else
                     ctx->info(0, "client requested to start from scn: " + std::to_string(metadata->startScn) + paramSeq);

@@ -45,6 +45,8 @@ namespace OpenLogReplicator {
     class Ctx final {
     public:
         static constexpr uint64_t BAD_TIMEZONE = 0x7FFFFFFFFFFFFFFF;
+        static constexpr size_t MEMORY_ALIGNMENT = 512;
+        static constexpr uint64_t MAX_PATH_LENGTH = 2048;
 
         static constexpr uint64_t COLUMN_LIMIT = 1000;
         static constexpr uint64_t COLUMN_LIMIT_23_0 = 4096;
@@ -53,6 +55,17 @@ namespace OpenLogReplicator {
         static constexpr uint64_t DISABLE_CHECKS_SUPPLEMENTAL_LOG = 0x00000002;
         static constexpr uint64_t DISABLE_CHECKS_BLOCK_SUM = 0x00000004;
         static constexpr uint64_t DISABLE_CHECKS_JSON_TAGS = 0x00000008;
+
+        static constexpr uint64_t JSON_PARAMETER_LENGTH = 256;
+        static constexpr uint64_t JSON_BROKERS_LENGTH = 4096;
+        static constexpr uint64_t JSON_TOPIC_LENGTH = 256;
+
+        static constexpr uint64_t JSON_USERNAME_LENGTH = 128;
+        static constexpr uint64_t JSON_PASSWORD_LENGTH = 128;
+        static constexpr uint64_t JSON_SERVER_LENGTH = 4096;
+        static constexpr uint64_t JSON_KEY_LENGTH = 4096;
+        static constexpr uint64_t JSON_CONDITION_LENGTH = 16384;
+        static constexpr uint64_t JSON_XID_LENGTH = 32;
 
         static constexpr uint64_t LOG_LEVEL_SILENT = 0;
         static constexpr uint64_t LOG_LEVEL_ERROR = 1;
@@ -117,6 +130,10 @@ namespace OpenLogReplicator {
         static constexpr time_t UNIX_BC1970_01_01 = 62167132800L - 365 * 24 * 60 * 60;
         static constexpr time_t UNIX_BC4712_01_01 = -210831897600L;
         static constexpr time_t UNIX_AD9999_12_31 = 253402300799L;
+
+        static constexpr typeSeq ZERO_SEQ = 0xFFFFFFFF;
+        static constexpr typeScn ZERO_SCN = 0xFFFFFFFFFFFFFFFF;
+        static constexpr typeBlk ZERO_BLK = 0xFFFFFFFF;
 
     protected:
         bool bigEndian;

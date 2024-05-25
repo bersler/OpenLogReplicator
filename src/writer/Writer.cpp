@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
             builder(newBuilder),
             metadata(newMetadata),
             builderQueue(nullptr),
-            checkpointScn(ZERO_SCN),
+            checkpointScn(Ctx::ZERO_SCN),
             checkpointIdx(0),
             checkpointTime(time(nullptr)),
             sentMessages(0),
@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
             currentQueueSize(0),
             maxQueueSize(0),
             streaming(false),
-            confirmedScn(ZERO_SCN),
+            confirmedScn(Ctx::ZERO_SCN),
             confirmedIdx(0),
             queue(nullptr) {
     }
@@ -141,7 +141,7 @@ namespace OpenLogReplicator {
         {
             while (currentQueueSize > 0 && (queue[0]->flags & Builder::OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
-                if (confirmedScn == ZERO_SCN || msg->lwnScn > confirmedScn) {
+                if (confirmedScn == Ctx::ZERO_SCN || msg->lwnScn > confirmedScn) {
                     confirmedScn = msg->lwnScn;
                     confirmedIdx = msg->lwnIdx;
                 } else if (msg->lwnScn == confirmedScn && msg->lwnIdx > confirmedIdx)
@@ -362,11 +362,11 @@ namespace OpenLogReplicator {
 
     void Writer::writeCheckpoint(bool force) {
         // Nothing changed
-        if ((checkpointScn == confirmedScn && checkpointIdx == confirmedIdx) || confirmedScn == ZERO_SCN)
+        if ((checkpointScn == confirmedScn && checkpointIdx == confirmedIdx) || confirmedScn == Ctx::ZERO_SCN)
             return;
 
         // Force first checkpoint
-        if (checkpointScn == ZERO_SCN)
+        if (checkpointScn == Ctx::ZERO_SCN)
             force = true;
 
         // Not yet
@@ -376,7 +376,7 @@ namespace OpenLogReplicator {
             return;
 
         if (ctx->trace & Ctx::TRACE_CHECKPOINT) {
-            if (checkpointScn == ZERO_SCN)
+            if (checkpointScn == Ctx::ZERO_SCN)
                 ctx->logTrace(Ctx::TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
                                                      std::to_string(confirmedIdx));
             else
@@ -417,7 +417,7 @@ namespace OpenLogReplicator {
             Ctx::checkJsonFields(name, document, documentNames);
         }
 
-        const char* databaseJson = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
+        const char* databaseJson = Ctx::getJsonFieldS(name, Ctx::JSON_PARAMETER_LENGTH, document, "database");
         if (database != databaseJson)
             throw DataException(20001, "file: " + name + " - invalid database name: " + databaseJson);
 
@@ -433,7 +433,7 @@ namespace OpenLogReplicator {
             checkpointIdx = 0;
         metadata->clientIdx = checkpointIdx;
         metadata->startScn = checkpointScn;
-        metadata->startSequence = ZERO_SEQ;
+        metadata->startSequence = Ctx::ZERO_SEQ;
         metadata->startTime.clear();
         metadata->startTimeRel = 0;
 

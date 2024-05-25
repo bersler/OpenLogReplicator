@@ -48,6 +48,7 @@ namespace OpenLogReplicator {
     protected:
         std::condition_variable condReplicator;
         std::condition_variable condWriter;
+        static constexpr uint64_t CHECKPOINT_SCHEMA_FILE_MAX_SIZE = 2147483648;
 
     public:
         // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
