@@ -63,22 +63,6 @@ typedef uint32_t typeUnicode32;
 typedef uint64_t typeUnicode;
 typedef int64_t time_ut;
 
-#define CONFIG_SCHEMA_VERSION                   "1.5.1"
-#define CHECKPOINT_FILE_MAX_SIZE                1024
-#define CONFIG_FILE_MAX_SIZE                    1048576
-#define CHECKPOINT_SCHEMA_FILE_MAX_SIZE         2147483648
-#define ZERO_SEQ                                (static_cast<typeSeq>(0xFFFFFFFF))
-#define ZERO_SCN                                (static_cast<typeScn>(0xFFFFFFFFFFFFFFFF))
-#define ZERO_BLK                                (static_cast<typeBlk>(0xFFFFFFFF))
-#define MEMORY_ALIGNMENT                        512
-#define MAX_PATH_LENGTH                         2048
-#define MAX_TRANSACTIONS_LIMIT                  1048576
-#define MAX_RECORDS_IN_LWN                      1048576
-
-#define OPTIONS_DEBUG_TABLE                     1
-#define OPTIONS_SYSTEM_TABLE                    2
-#define OPTIONS_SCHEMA_TABLE                    4
-
 #define BLOCK(__uba)                            (static_cast<uint32_t>((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         (static_cast<uint16_t>(((static_cast<uint64_t>(__uba))>>32)&0xFFFF))
 #define RECORD(__uba)                           (static_cast<uint8_t>(((static_cast<uint64_t>(__uba))>>48)&0xFF))
@@ -88,52 +72,5 @@ typedef int64_t time_ut;
 #define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<(static_cast<uint32_t>((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
 #define PRINTSCN64D(__scn)                      "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<(static_cast<uint32_t>((__scn)>>48)&0xFFFF)<<"."<<std::setw(4)<<(static_cast<uint32_t>((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
-
-#define JSON_PARAMETER_LENGTH   256
-#define JSON_BROKERS_LENGTH     4096
-#define JSON_TOPIC_LENGTH       256
-
-#define JSON_USERNAME_LENGTH    128
-#define JSON_PASSWORD_LENGTH    128
-#define JSON_SERVER_LENGTH      4096
-#define JSON_KEY_LENGTH         4096
-#define JSON_CONDITION_LENGTH   16384
-#define JSON_XID_LENGTH         32
-
-#define FB_N                    0x01
-#define FB_P                    0x02
-#define FB_L                    0x04
-#define FB_F                    0x08
-#define FB_D                    0x10
-#define FB_H                    0x20
-#define FB_C                    0x40
-#define FB_K                    0x80
-
-#define OP_IUR                  0x01
-#define OP_IRP                  0x02
-#define OP_DRP                  0x03
-#define OP_LKR                  0x04
-#define OP_URP                  0x05
-#define OP_ORP                  0x06
-#define OP_MFC                  0x07
-#define OP_CFA                  0x08
-#define OP_CKI                  0x09
-#define OP_SKL                  0x0A
-#define OP_QMI                  0x0B
-#define OP_QMD                  0x0C
-#define OP_DSC                  0x0E
-#define OP_LMN                  0x10
-#define OP_LLB                  0x11
-#define OP_019                  0x13
-#define OP_SHK                  0x14
-#define OP_021                  0x15
-#define OP_CMP                  0x16
-#define OP_DCU                  0x17
-#define OP_MRK                  0x18
-#define OP_ROWDEPENDENCIES      0x40
-
-#define VCONTEXT_LENGTH         30
-#define VPARAMETER_LENGTH       4000
-#define VPROPERTY_LENGTH        4000
 
 #endif

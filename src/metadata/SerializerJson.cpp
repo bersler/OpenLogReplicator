@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/Ctx.h"
 #include "../common/OracleIncarnation.h"
+#include "../common/OracleTable.h"
 #include "../common/typeRowId.h"
 #include "../common/XmlCtx.h"
 #include "../common/exception/DataException.h"
@@ -64,7 +65,7 @@ namespace OpenLogReplicator {
            R"(,"time":)" << std::dec << metadata->checkpointTime.getVal() << // not read
            R"(,"seq":)" << std::dec << metadata->checkpointSequence <<
            R"(,"offset":)" << std::dec << metadata->checkpointOffset;
-        if (metadata->minSequence != ZERO_SEQ) {
+        if (metadata->minSequence != Ctx::ZERO_SEQ) {
             ss << R"(,"min-tran":{)" <<
                R"("seq":)" << std::dec << metadata->minSequence <<
                R"(,"offset":)" << std::dec << metadata->minOffset <<
@@ -144,7 +145,7 @@ namespace OpenLogReplicator {
 
         ss << "]," SERIALIZER_ENDL;
 
-        // Schema did not change since the last checkpoint file
+        // The schema has not changed since the last checkpoint file
         if (!storeSchema) {
             ss << R"("schema-ref-scn":)" << metadata->schema->refScn << "}";
             return;
@@ -558,28 +559,28 @@ namespace OpenLogReplicator {
                         throw DataException(20006, "file: " + fileName + " - invalid offset: " + std::to_string(metadata->offset) +
                                                    " is not a multiplication of 512");
 
-                    metadata->minSequence = ZERO_SEQ;
+                    metadata->minSequence = Ctx::ZERO_SEQ;
                     metadata->minOffset = 0;
                     metadata->minXid = 0;
-                    metadata->lastCheckpointScn = ZERO_SCN;
-                    metadata->lastSequence = ZERO_SEQ;
+                    metadata->lastCheckpointScn = Ctx::ZERO_SCN;
+                    metadata->lastSequence = Ctx::ZERO_SEQ;
                     metadata->lastCheckpointOffset = 0;
                     metadata->lastCheckpointTime = 0;
                     metadata->lastCheckpointBytes = 0;
 
                     if (!metadata->onlineData) {
                         // Database metadata
-                        metadata->database = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, document, "database");
+                        metadata->database = Ctx::getJsonFieldS(fileName, Ctx::JSON_PARAMETER_LENGTH, document, "database");
                         metadata->resetlogs = Ctx::getJsonFieldU32(fileName, document, "resetlogs");
                         metadata->activation = Ctx::getJsonFieldU32(fileName, document, "activation");
                         int64_t bigEndian = Ctx::getJsonFieldU64(fileName, document, "big-endian");
                         if (bigEndian == 1)
                             metadata->ctx->setBigEndian();
-                        metadata->context = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "context");
+                        metadata->context = Ctx::getJsonFieldS(fileName, OracleTable::VCONTEXT_LENGTH, document, "context");
                         metadata->conId = Ctx::getJsonFieldI16(fileName, document, "con-id");
-                        metadata->conName = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "con-name");
+                        metadata->conName = Ctx::getJsonFieldS(fileName, OracleTable::VCONTEXT_LENGTH, document, "con-name");
                         if (document.HasMember("db-timezone"))
-                            metadata->dbTimezoneStr = Ctx::getJsonFieldS(fileName, VCONTEXT_LENGTH, document, "db-timezone");
+                            metadata->dbTimezoneStr = Ctx::getJsonFieldS(fileName, OracleTable::VCONTEXT_LENGTH, document, "db-timezone");
                         else
                             metadata->dbTimezoneStr = "+00:00";
                         if (metadata->ctx->dbTimezone != Ctx::BAD_TIMEZONE) {
@@ -589,13 +590,13 @@ namespace OpenLogReplicator {
                                 throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                                            " - parse error of field \"db-timezone\", invalid value: " + metadata->dbTimezoneStr);
                         }
-                        metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
-                        metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "db-block-checksum");
+                        metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "db-recovery-file-dest");
+                        metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "db-block-checksum");
                         if (!metadata->logArchiveFormatCustom)
-                            metadata->logArchiveFormat = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "log-archive-format");
-                        metadata->logArchiveDest = Ctx::getJsonFieldS(fileName, VPARAMETER_LENGTH, document, "log-archive-dest");
-                        metadata->nlsCharacterSet = Ctx::getJsonFieldS(fileName, VPROPERTY_LENGTH, document, "nls-character-set");
-                        metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(fileName, VPROPERTY_LENGTH, document,
+                            metadata->logArchiveFormat = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "log-archive-format");
+                        metadata->logArchiveDest = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "log-archive-dest");
+                        metadata->nlsCharacterSet = Ctx::getJsonFieldS(fileName, OracleTable::VPROPERTY_LENGTH, document, "nls-character-set");
+                        metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(fileName, OracleTable::VPROPERTY_LENGTH, document,
                                                                             "nls-nchar-character-set");
                         metadata->setNlsCharset(metadata->nlsCharacterSet, metadata->nlsNcharCharacterSet);
                         metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(fileName, document, "supp-log-db-primary");
@@ -667,12 +668,12 @@ namespace OpenLogReplicator {
                 if (loadSchema) {
                     // Schema referenced to other checkpoint file
                     if (document.HasMember("schema-ref-scn")) {
-                        metadata->schema->scn = ZERO_SCN;
+                        metadata->schema->scn = Ctx::ZERO_SCN;
                         metadata->schema->refScn = Ctx::getJsonFieldU64(fileName, document, "schema-ref-scn");
 
                     } else {
                         metadata->schema->scn = Ctx::getJsonFieldU64(fileName, document, "schema-scn");
-                        metadata->schema->refScn = ZERO_SCN;
+                        metadata->schema->refScn = Ctx::ZERO_SCN;
 
                         deserializeSysUser(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-user"));
                         deserializeSysObj(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-obj"));

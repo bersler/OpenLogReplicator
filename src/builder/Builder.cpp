@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
             valueBufferLength(0),
             valueBufferOld(nullptr),
             valueLengthOld(0),
-            commitScn(ZERO_SCN),
+            commitScn(Ctx::ZERO_SCN),
             lastXid(typeXid()),
             valuesMax(0),
             mergesMax(0),
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
             buffersAllocated(0),
             firstBuilderQueue(nullptr),
             lastBuilderQueue(nullptr),
-            lwnScn(ZERO_SCN),
+            lwnScn(Ctx::ZERO_SCN),
             lwnIdx(0) {
         memset(reinterpret_cast<void*>(valuesSet), 0, sizeof(valuesSet));
         memset(reinterpret_cast<void*>(valuesMerge), 0, sizeof(valuesMerge));
@@ -763,7 +763,7 @@ namespace OpenLogReplicator {
             uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
             pos = 3;
 
-            if ((redoLogRecord2->op & OP_ROWDEPENDENCIES) != 0) {
+            if ((redoLogRecord2->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     pos += 6;
                 else
@@ -795,12 +795,12 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processInsert(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                                                  ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2),
                                                  redoLogRecord1->dataOffset);
 
-            if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
+            if ((!schema && table != nullptr && (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'i', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
                  ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
@@ -808,18 +808,20 @@ namespace OpenLogReplicator {
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsInsertOut(1);
                 }
             } else {
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsInsertSkip(1);
@@ -855,7 +857,7 @@ namespace OpenLogReplicator {
             uint8_t jcc = redoLogRecord1->data[fieldPos + pos + 2];
             pos = 3;
 
-            if ((redoLogRecord1->op & OP_ROWDEPENDENCIES) != 0) {
+            if ((redoLogRecord1->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
                     pos += 6;
                 else
@@ -887,12 +889,12 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processDelete(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                                                  ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2),
                                                  redoLogRecord1->dataOffset);
 
-            if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
+            if ((!schema && table != nullptr && (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'd', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
                  ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
@@ -900,18 +902,20 @@ namespace OpenLogReplicator {
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
                 if (ctx->metrics) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsDeleteOut(1);
                 }
             } else {
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsDeleteSkip(1);
@@ -940,7 +944,7 @@ namespace OpenLogReplicator {
         if (type == TRANSACTION_INSERT) {
             redoLogRecord2p = redoLogRecord2;
             while (redoLogRecord2p != nullptr) {
-                if ((redoLogRecord2p->fb & FB_F) != 0)
+                if ((redoLogRecord2p->fb & RedoLogRecord::FB_F) != 0)
                     break;
                 redoLogRecord2p = redoLogRecord2p->next;
             }
@@ -1052,10 +1056,10 @@ namespace OpenLogReplicator {
                     }
 
                     fb = 0;
-                    if (i == 0 && (redoLogRecord1p->fb & FB_P) != 0)
-                        fb |= FB_P;
-                    if (i == static_cast<uint64_t>(redoLogRecord1p->cc - 1) && (redoLogRecord1p->fb & FB_N) != 0)
-                        fb |= FB_N;
+                    if (i == 0 && (redoLogRecord1p->fb & RedoLogRecord::FB_P) != 0)
+                        fb |= RedoLogRecord::FB_P;
+                    if (i == static_cast<uint64_t>(redoLogRecord1p->cc - 1) && (redoLogRecord1p->fb & RedoLogRecord::FB_N) != 0)
+                        fb |= RedoLogRecord::FB_N;
 
                     if (table != nullptr) {
                         if (colNum >= table->maxSegCol) {
@@ -1146,12 +1150,12 @@ namespace OpenLogReplicator {
                         colLength = 0;
 
                     fb = 0;
-                    if (i == 0 && (redoLogRecord1p->suppLogFb & FB_P) != 0 && suppPrev) {
-                        fb |= FB_P;
+                    if (i == 0 && (redoLogRecord1p->suppLogFb & RedoLogRecord::FB_P) != 0 && suppPrev) {
+                        fb |= RedoLogRecord::FB_P;
                         suppPrev = false;
                     }
-                    if (i == static_cast<uint64_t>(redoLogRecord1p->suppLogCC - 1) && (redoLogRecord1p->suppLogFb & FB_N) != 0) {
-                        fb |= FB_N;
+                    if (i == static_cast<uint64_t>(redoLogRecord1p->suppLogCC - 1) && (redoLogRecord1p->suppLogFb & RedoLogRecord::FB_N) != 0) {
+                        fb |= RedoLogRecord::FB_N;
                         suppPrev = true;
                     }
 
@@ -1232,10 +1236,10 @@ namespace OpenLogReplicator {
                     }
 
                     fb = 0;
-                    if (i == 0 && (redoLogRecord2p->fb & FB_P) != 0)
-                        fb |= FB_P;
-                    if (i == static_cast<uint64_t>(redoLogRecord2p->cc - 1) && (redoLogRecord2p->fb & FB_N) != 0)
-                        fb |= FB_N;
+                    if (i == 0 && (redoLogRecord2p->fb & RedoLogRecord::FB_P) != 0)
+                        fb |= RedoLogRecord::FB_P;
+                    if (i == static_cast<uint64_t>(redoLogRecord2p->cc - 1) && (redoLogRecord2p->fb & RedoLogRecord::FB_N) != 0)
+                        fb |= RedoLogRecord::FB_N;
 
                     RedoLogRecord::nextField(ctx, redoLogRecord2p, fieldNum, fieldPos, fieldLength, 0x000008);
 
@@ -1527,27 +1531,29 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processUpdate(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
-            if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
+            if ((!schema && table != nullptr && (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'u', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
                     ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processUpdate(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsUpdateOut(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsUpdateOut(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsUpdateOut(1);
                 }
             } else {
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsUpdateSkip(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsUpdateSkip(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsUpdateSkip(1);
@@ -1608,27 +1614,29 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processInsert(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
-            if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
+            if ((!schema && table != nullptr && (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'i', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
                  ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsInsertOut(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsInsertOut(1);
                 }
             } else {
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsInsertSkip(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsInsertSkip(1);
@@ -1685,27 +1693,29 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processDelete(table, dataObj, bdba, slot, redoLogRecord1->dataOffset);
 
-            if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0 &&
+            if ((!schema && table != nullptr && (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0 &&
                  table->matchesCondition(ctx, 'd', attributes)) || ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) ||
                  ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
 
                 processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsDeleteOut(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsDeleteOut(1);
                 }
             } else {
                 if (ctx->metrics != nullptr) {
-                    if (ctx->metrics->isTagNamesFilter() && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0)
+                    if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
+                            (table->options & (OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_DEBUG_TABLE)) == 0)
                         ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
-                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                    else if (ctx->metrics->isTagNamesSys() && table != nullptr && (table->options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)
                         ctx->metrics->emitDmlOpsDeleteSkip(1, table->owner, table->name);
                     else
                         ctx->metrics->emitDmlOpsDeleteSkip(1);

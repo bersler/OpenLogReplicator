@@ -76,9 +76,11 @@ namespace OpenLogReplicator {
         log(ctx, "rlb2", redoLogRecord2);
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+            uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - TransactionBuffer::ROW_HEADER_TOTAL +
+                    TransactionBuffer::ROW_HEADER_SIZE));
             // auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast +
+                    TransactionBuffer::ROW_HEADER_REDO2);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -147,9 +149,12 @@ namespace OpenLogReplicator {
         log(metadata->ctx, "rlb ", redoLogRecord1);
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            uint64_t lengthLast = *(reinterpret_cast<const uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-            const auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            uint64_t lengthLast = *(reinterpret_cast<const uint64_t*>(lastTc->buffer + lastTc->size - TransactionBuffer::ROW_HEADER_TOTAL +
+                    TransactionBuffer::ROW_HEADER_SIZE));
+            const auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast +
+                    TransactionBuffer::ROW_HEADER_REDO1);
+            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast +
+                    TransactionBuffer::ROW_HEADER_REDO2);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -222,14 +227,14 @@ namespace OpenLogReplicator {
             for (uint64_t i = 0; i < tc->elements; ++i) {
                 typeOp2 op = *(reinterpret_cast<typeOp2*>(tc->buffer + pos));
 
-                RedoLogRecord* redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + ROW_HEADER_REDO1);
-                RedoLogRecord* redoLogRecord2 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + ROW_HEADER_REDO2);
+                RedoLogRecord* redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_REDO1);
+                RedoLogRecord* redoLogRecord2 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_REDO2);
                 log(metadata->ctx, "flu1", redoLogRecord1);
                 log(metadata->ctx, "flu2", redoLogRecord2);
 
-                redoLogRecord1->data = tc->buffer + pos + ROW_HEADER_DATA;
-                redoLogRecord2->data = tc->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
-                pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
+                redoLogRecord1->data = tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA;
+                redoLogRecord2->data = tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA + redoLogRecord1->length;
+                pos += redoLogRecord1->length + redoLogRecord2->length + TransactionBuffer::ROW_HEADER_TOTAL;
 
                 if (metadata->ctx->trace & Ctx::TRACE_TRANSACTION)
                     metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, std::to_string(redoLogRecord1->length) + ":" +
@@ -257,11 +262,11 @@ namespace OpenLogReplicator {
                                                                     std::to_string(redoLogRecord1->suppLogSlot) + ")");
 
                 // Cluster key
-                if ((redoLogRecord1->fb & FB_K) != 0 || (redoLogRecord2->fb & FB_K) != 0)
+                if ((redoLogRecord1->fb & RedoLogRecord::FB_K) != 0 || (redoLogRecord2->fb & RedoLogRecord::FB_K) != 0)
                     continue;
 
                 // Partition move
-                if ((redoLogRecord1->suppLogFb & FB_K) != 0 || (redoLogRecord2->suppLogFb & FB_K) != 0)
+                if ((redoLogRecord1->suppLogFb & RedoLogRecord::FB_K) != 0 || (redoLogRecord2->suppLogFb & RedoLogRecord::FB_K) != 0)
                     continue;
 
                 opFlush = false;
@@ -434,7 +439,7 @@ namespace OpenLogReplicator {
                         }
 
                         if (first1 == nullptr) {
-                            if (redoLogRecord1->suppLogBdba == 0 && op == 0x05010B16 && (redoLogRecord1->suppLogFb & FB_L) == 0) {
+                            if (redoLogRecord1->suppLogBdba == 0 && op == 0x05010B16 && (redoLogRecord1->suppLogFb & RedoLogRecord::FB_L) == 0) {
                                 log(metadata->ctx, "nul1", redoLogRecord1);
                                 log(metadata->ctx, "nul2", redoLogRecord2);
                                 // Ignore
@@ -488,7 +493,7 @@ namespace OpenLogReplicator {
                             }
                         }
 
-                        if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
+                        if ((redoLogRecord1->suppLogFb & RedoLogRecord::FB_L) != 0) {
                             builder->processDml(first2->scnRecord, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
                                                 &lobCtx, xmlCtx, first1, first2, type, system, schema, dump);
                             opFlush = true;
@@ -525,7 +530,7 @@ namespace OpenLogReplicator {
                 }
 
                 // Split very big transactions
-                if (maxMessageMb > 0 && builder->builderSize() + DATA_BUFFER_SIZE > maxMessageMb * 1024 * 1024) {
+                if (maxMessageMb > 0 && builder->builderSize() + TransactionChunk::DATA_BUFFER_SIZE > maxMessageMb * 1024 * 1024) {
                     metadata->ctx->warning(60015, "big transaction divided (forced commit after " + std::to_string(builder->builderSize()) +
                                                   " bytes), xid: " + xid.toString());
 

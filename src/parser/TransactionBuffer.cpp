@@ -112,8 +112,8 @@ namespace OpenLogReplicator {
             partiallyFullChunks.insert_or_assign(chunk, freeMap);
         }
 
-        tc = reinterpret_cast<TransactionChunk*>(chunk + FULL_BUFFER_SIZE * pos);
-        memset(reinterpret_cast<void*>(tc), 0, HEADER_BUFFER_SIZE);
+        tc = reinterpret_cast<TransactionChunk*>(chunk + TransactionChunk::FULL_BUFFER_SIZE * pos);
+        memset(reinterpret_cast<void*>(tc), 0, TransactionChunk::HEADER_BUFFER_SIZE);
         tc->header = chunk;
         tc->pos = pos;
         return tc;
@@ -145,9 +145,9 @@ namespace OpenLogReplicator {
     void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord) {
         uint64_t length = redoLogRecord->length + ROW_HEADER_TOTAL;
 
-        if (length > DATA_BUFFER_SIZE)
+        if (length > TransactionChunk::DATA_BUFFER_SIZE)
             throw RedoLogException(50040, "block size (" + std::to_string(length) + ") exceeding max block size (" +
-                                          std::to_string(FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
+                                          std::to_string(TransactionChunk::FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
         if (transaction->lastSplit) {
             if ((redoLogRecord->flg & OpCode::FLG_MULTIBLOCKUNDOMID) == 0)
@@ -175,7 +175,7 @@ namespace OpenLogReplicator {
         }
 
         // New block needed
-        if (transaction->lastTc->size + length > DATA_BUFFER_SIZE) {
+        if (transaction->lastTc->size + length > TransactionChunk::DATA_BUFFER_SIZE) {
             TransactionChunk* tcNew = newTransactionChunk();
             tcNew->prev = transaction->lastTc;
             transaction->lastTc->next = tcNew;
@@ -206,9 +206,9 @@ namespace OpenLogReplicator {
     void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2) {
         uint64_t length = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
-        if (length > DATA_BUFFER_SIZE)
+        if (length > TransactionChunk::DATA_BUFFER_SIZE)
             throw RedoLogException(50040, "block size (" + std::to_string(length) + ") exceeding max block size (" +
-                                          std::to_string(FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
+                                          std::to_string(TransactionChunk::DATA_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
         if (transaction->lastSplit) {
             if ((redoLogRecord1->opCode) != 0x0501)
@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
         }
 
         // New block needed
-        if (transaction->lastTc->size + length > DATA_BUFFER_SIZE) {
+        if (transaction->lastTc->size + length > TransactionChunk::DATA_BUFFER_SIZE) {
             TransactionChunk* tcNew = newTransactionChunk();
             tcNew->prev = transaction->lastTc;
             transaction->lastTc->next = tcNew;

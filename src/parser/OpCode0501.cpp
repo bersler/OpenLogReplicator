@@ -128,13 +128,13 @@ namespace OpenLogReplicator {
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
         if (ctx->dumpRedoLog >= 1) {
-            if ((redoLogRecord->op & 0x1F) == OP_QMD) {
+            if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMD) {
                 for (uint64_t i = 0; i < redoLogRecord->nRow; ++i)
                     ctx->dumpStream << "slot[" << i << "]: " << std::dec << ctx->read16(redoLogRecord->data + redoLogRecord->slotsDelta + i * 2) << '\n';
             }
         }
 
-        if ((redoLogRecord->op & 0x1F) == OP_URP) {
+        if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_URP) {
             RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050107);
             // Field: 5
             if (fieldLength > 0 && redoLogRecord->cc > 0) {
@@ -171,7 +171,7 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
                     RedoLogRecord::skipEmptyFields(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
                     RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010A);
                     rowDeps(ctx, redoLogRecord, fieldPos, fieldLength);
@@ -180,15 +180,15 @@ namespace OpenLogReplicator {
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
             }
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_DRP) {
-            if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+        } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_DRP) {
+            if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
                 RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010B);
                 rowDeps(ctx, redoLogRecord, fieldPos, fieldLength);
             }
 
             suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
+        } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_IRP || (redoLogRecord->op & 0x1F) == RedoLogRecord::OP_ORP) {
             if (nulls == nullptr)
                 throw RedoLogException(50063, "nulls field is missing on offset: " + std::to_string(redoLogRecord->dataOffset));
 
@@ -225,14 +225,14 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+            if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
                 RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010E);
                 rowDeps(ctx, redoLogRecord, fieldPos, fieldLength);
             }
 
             suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {
+        } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMI) {
             RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010F);
             redoLogRecord->rowLenghsDelta = fieldPos;
 
@@ -241,13 +241,13 @@ namespace OpenLogReplicator {
             if (ctx->dumpRedoLog >= 1)
                 dumpRows(ctx, redoLogRecord, redoLogRecord->data + fieldPos);
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_LMN) {
+        } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LMN) {
             suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_LKR) {
+        } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LKR) {
             suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_CFA) {
+        } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_CFA) {
             suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
         }
     }

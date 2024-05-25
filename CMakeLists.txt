@@ -23,6 +23,7 @@ project(OpenLogReplicator
         HOMEPAGE_URL "https://github.com/bersler/OpenLogReplicator"
 )
 
+set(SCHEMA_VERSION "1.5.1")
 string(TIMESTAMP CMAKE_BUILD_TIMESTAMP "%Y-%m-%d %H:%M" UTC)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)

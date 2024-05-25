@@ -729,7 +729,7 @@ namespace OpenLogReplicator {
                 throw BootException(10025, "can't find scn for " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
-        } else if (metadata->firstDataScn == ZERO_SCN || metadata->firstDataScn == 0) {
+        } else if (metadata->firstDataScn == Ctx::ZERO_SCN || metadata->firstDataScn == 0) {
             // NOW
             DatabaseStatement stmt(conn);
             if (ctx->trace & Ctx::TRACE_SQL)
@@ -744,9 +744,9 @@ namespace OpenLogReplicator {
         }
 
         // First sequence
-        if (metadata->startSequence != ZERO_SEQ) {
+        if (metadata->startSequence != Ctx::ZERO_SEQ) {
             metadata->setSeqOffset(metadata->startSequence, 0);
-            if (metadata->firstDataScn == ZERO_SCN)
+            if (metadata->firstDataScn == Ctx::ZERO_SCN)
                 metadata->firstDataScn = 0;
         } else {
             DatabaseStatement stmt(conn);
@@ -783,7 +783,7 @@ namespace OpenLogReplicator {
             ctx->info(0, "starting sequence not found - starting with new batch with seq: " + std::to_string(metadata->sequence));
         }
 
-        if (metadata->firstDataScn == ZERO_SCN)
+        if (metadata->firstDataScn == Ctx::ZERO_SCN)
             throw BootException(10031, "getting database scn");
     }
 
@@ -835,7 +835,7 @@ namespace OpenLogReplicator {
     }
 
     std::string ReplicatorOnline::getParameterValue(const char* parameter) const {
-        char value[VPARAMETER_LENGTH + 1];
+        char value[OracleTable::VPARAMETER_LENGTH + 1];
         DatabaseStatement stmt(conn);
         if (ctx->trace & Ctx::TRACE_SQL) {
             ctx->logTrace(Ctx::TRACE_SQL, SQL_GET_PARAMETER);
@@ -853,7 +853,7 @@ namespace OpenLogReplicator {
     }
 
     std::string ReplicatorOnline::getPropertyValue(const char* property) const {
-        char value[VPROPERTY_LENGTH + 1];
+        char value[OracleTable::VPROPERTY_LENGTH + 1];
         DatabaseStatement stmt(conn);
         if (ctx->trace & Ctx::TRACE_SQL) {
             ctx->logTrace(Ctx::TRACE_SQL, SQL_GET_PROPERTY);
@@ -1716,7 +1716,7 @@ namespace OpenLogReplicator {
     void ReplicatorOnline::readSystemDictionaries(Schema* schema, typeScn targetScn, const std::string& owner, const std::string& table, typeOptions options) {
         std::string ownerRegexp("^" + owner + "$");
         std::string tableRegexp("^" + table + "$");
-        bool single = ((options & OPTIONS_SYSTEM_TABLE) != 0);
+        bool single = ((options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0);
         if (ctx->trace & Ctx::TRACE_REDO)
             ctx->logTrace(Ctx::TRACE_REDO, "read dictionaries for owner: " + owner + ", table: " + table + ", options: " +
                                            std::to_string(static_cast<uint64_t>(options)));
@@ -1747,7 +1747,7 @@ namespace OpenLogReplicator {
             int64_t sysUserRet = sysUserStmt.executeQuery();
             while (sysUserRet) {
                 if (!schema->dictSysUserAdd(sysUserRowid, sysUserUser, sysUserName, sysUserSpare11, sysUserSpare12,
-                                            (options & OPTIONS_SYSTEM_TABLE) != 0)) {
+                                            (options & OracleTable::OPTIONS_SYSTEM_TABLE) != 0)) {
                     sysUserSpare11 = 0;
                     sysUserSpare12 = 0;
                     sysUserRet = sysUserStmt.next();
@@ -1756,7 +1756,7 @@ namespace OpenLogReplicator {
 
                 DatabaseStatement sysObjStmt(conn);
                 // Reading SYS.OBJ$
-                if ((options & OPTIONS_SYSTEM_TABLE) == 0) {
+                if ((options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0) {
                     if (ctx->trace & Ctx::TRACE_SQL) {
                         ctx->logTrace(Ctx::TRACE_SQL, SQL_GET_SYS_OBJ_USER);
                         ctx->logTrace(Ctx::TRACE_SQL, "PARAM1: " + std::to_string(targetScn));

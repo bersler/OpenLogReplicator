@@ -31,6 +31,8 @@ namespace OpenLogReplicator {
 
     class Writer : public Thread {
     protected:
+        static constexpr uint64_t CHECKPOINT_FILE_MAX_SIZE = 1024;
+
         std::string database;
         Builder* builder;
         Metadata* metadata;

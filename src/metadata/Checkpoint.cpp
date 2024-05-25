@@ -26,6 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Ctx.h"
 #include "../common/exception/ConfigurationException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/OracleTable.h"
 #include "../common/table/SysObj.h"
 #include "../common/table/SysUser.h"
 #include "Checkpoint.h"
@@ -108,10 +109,10 @@ namespace OpenLogReplicator {
             Ctx::checkJsonFields(configFileName, document, documentNames);
         }
 
-        const char* version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
-        if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0)
+        const char* version = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, document, "version");
+        if (strcmp(version, OpenLogReplicator_SCHEMA_VERSION) != 0)
             throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + std::string(version) + ", expected: " +
-                                                CONFIG_SCHEMA_VERSION);
+                                                OpenLogReplicator_SCHEMA_VERSION);
 
         // Iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
@@ -148,7 +149,7 @@ namespace OpenLogReplicator {
 
             std::set<std::string> users;
             if (debugOwner != nullptr && debugTable != nullptr) {
-                metadata->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
+                metadata->addElement(debugOwner, debugTable, OracleTable::OPTIONS_DEBUG_TABLE);
                 users.insert(std::string(debugOwner));
             }
             if (ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
@@ -170,7 +171,7 @@ namespace OpenLogReplicator {
                         users.insert(owner);
 
                         if (tableElementJson.HasMember("key")) {
-                            element->keysStr = Ctx::getJsonFieldS(configFileName, JSON_KEY_LENGTH, tableElementJson, "key");
+                            element->keysStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_KEY_LENGTH, tableElementJson, "key");
                             std::stringstream keyStream(element->keysStr);
 
                             while (keyStream.good()) {

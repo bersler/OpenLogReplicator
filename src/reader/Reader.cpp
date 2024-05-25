@@ -50,16 +50,16 @@ namespace OpenLogReplicator {
             reachedZero(false),
             group(newGroup),
             sequence(0),
-            numBlocksHeader(ZERO_BLK),
+            numBlocksHeader(Ctx::ZERO_BLK),
             resetlogs(0),
             activation(0),
             headerBuffer(nullptr),
             compatVsn(0),
             firstTimeHeader(0),
-            firstScn(ZERO_SCN),
-            firstScnHeader(ZERO_SCN),
-            nextScn(ZERO_SCN),
-            nextScnHeader(ZERO_SCN),
+            firstScn(Ctx::ZERO_SCN),
+            firstScnHeader(Ctx::ZERO_SCN),
+            nextScn(Ctx::ZERO_SCN),
+            nextScnHeader(Ctx::ZERO_SCN),
             nextTime(0),
             blockSize(0),
             sumRead(0),
@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
         }
 
         if (headerBuffer == nullptr) {
-            headerBuffer = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, PAGE_SIZE_MAX * 2));
+            headerBuffer = reinterpret_cast<uint8_t*>(aligned_alloc(Ctx::MEMORY_ALIGNMENT, PAGE_SIZE_MAX * 2));
             if (headerBuffer == nullptr)
                 throw RuntimeException(10016, "couldn't allocate " + std::to_string(PAGE_SIZE_MAX * 2) +
                                               " bytes memory for: read header");
@@ -300,7 +300,7 @@ namespace OpenLogReplicator {
         nextScnHeader = ctx->readScn(headerBuffer + blockSize + 192);
         nextTime = ctx->read32(headerBuffer + blockSize + 200);
 
-        if (numBlocksHeader != ZERO_BLK && fileSize > static_cast<uint64_t>(numBlocksHeader) * blockSize && group == 0) {
+        if (numBlocksHeader != Ctx::ZERO_BLK && fileSize > static_cast<uint64_t>(numBlocksHeader) * blockSize && group == 0) {
             fileSize = static_cast<uint64_t>(numBlocksHeader) * blockSize;
             ctx->info(0, "updating redo log size to: " + std::to_string(fileSize) + " for: " + fileName);
         }
@@ -352,7 +352,7 @@ namespace OpenLogReplicator {
         if (retReload != REDO_OK)
             return retReload;
 
-        if (firstScn == ZERO_SCN || status == STATUS_UPDATE) {
+        if (firstScn == Ctx::ZERO_SCN || status == STATUS_UPDATE) {
             firstScn = firstScnHeader;
             nextScn = nextScnHeader;
         } else {
@@ -364,11 +364,11 @@ namespace OpenLogReplicator {
         }
 
         // Updating nextScn if changed
-        if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
+        if (nextScn == Ctx::ZERO_SCN && nextScnHeader != Ctx::ZERO_SCN) {
             if (ctx->trace & Ctx::TRACE_DISK)
                 ctx->logTrace(Ctx::TRACE_DISK, "updating next scn to: " + std::to_string(nextScnHeader));
             nextScn = nextScnHeader;
-        } else if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
+        } else if (nextScn != Ctx::ZERO_SCN && nextScnHeader != Ctx::ZERO_SCN && nextScn != nextScnHeader) {
             ctx->error(40009, "file: " + fileName + " - invalid next scn value: " + std::to_string(nextScnHeader) + ", expected: " +
                               std::to_string(nextScn));
             return REDO_ERROR_BAD_DATA;
@@ -442,7 +442,7 @@ namespace OpenLogReplicator {
 
         // Partial online redo log file
         if (goodBlocks == 0 && group == 0) {
-            if (nextScnHeader != ZERO_SCN) {
+            if (nextScnHeader != Ctx::ZERO_SCN) {
                 ret = REDO_FINISHED;
                 nextScn = nextScnHeader;
             } else {
@@ -494,7 +494,7 @@ namespace OpenLogReplicator {
 
         // Batch mode with partial online redo log file
         if (currentRet == REDO_ERROR_SEQUENCE && group == 0) {
-            if (nextScnHeader != ZERO_SCN) {
+            if (nextScnHeader != Ctx::ZERO_SCN) {
                 ret = REDO_FINISHED;
                 nextScn = nextScnHeader;
             } else {
@@ -681,7 +681,7 @@ namespace OpenLogReplicator {
                     readTime = 0;
 
                     if (bufferEnd == fileSize) {
-                        if (nextScnHeader != ZERO_SCN) {
+                        if (nextScnHeader != Ctx::ZERO_SCN) {
                             ret = REDO_FINISHED;
                             nextScn = nextScnHeader;
                         } else {
@@ -713,8 +713,8 @@ namespace OpenLogReplicator {
                         if (!read1())
                             break;
 
-                    if (numBlocksHeader != ZERO_BLK && bufferEnd == static_cast<uint64_t>(numBlocksHeader) * blockSize) {
-                        if (nextScnHeader != ZERO_SCN) {
+                    if (numBlocksHeader != Ctx::ZERO_BLK && bufferEnd == static_cast<uint64_t>(numBlocksHeader) * blockSize) {
+                        if (nextScnHeader != Ctx::ZERO_SCN) {
                             ret = REDO_FINISHED;
                             nextScn = nextScnHeader;
                         } else {
@@ -1053,8 +1053,8 @@ namespace OpenLogReplicator {
         std::unique_lock<std::mutex> lck(mtx);
         status = STATUS_CHECK;
         sequence = 0;
-        firstScn = ZERO_SCN;
-        nextScn = ZERO_SCN;
+        firstScn = Ctx::ZERO_SCN;
+        nextScn = Ctx::ZERO_SCN;
         condBufferFull.notify_all();
         condReaderSleeping.notify_all();
 
