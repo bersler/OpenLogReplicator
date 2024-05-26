@@ -40,6 +40,22 @@ namespace OpenLogReplicator {
         typeScn scn;
         typeSubScn subScn;
         typeBlk block;
+
+        bool operator<(const LwnMember& other) const {
+            if (scn < other.scn)
+                return true;
+            if (other.scn < scn)
+                return false;
+            if (subScn < other.subScn)
+                return true;
+            if (other.subScn < subScn)
+                return false;
+            if (block < other.block)
+                return true;
+            if (block > other.block)
+                return false;
+            return (offset < other.offset);
+        }
     };
 
     class Parser final {
@@ -55,12 +71,12 @@ namespace OpenLogReplicator {
         Transaction* lastTransaction;
 
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
-        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
+        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN + 1];
         uint64_t lwnAllocated;
         uint64_t lwnAllocatedMax;
         typeTime lwnTimestamp;
         typeScn lwnScn;
-        uint64_t lwnCheckpointBlock;
+        typeBlk lwnCheckpointBlock;
 
         void freeLwn();
         void analyzeLwn(LwnMember* lwnMember);
