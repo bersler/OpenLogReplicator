@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.5.1
-:revdate: 2024-03-17
+:revnumber: 1.6.0
+:revdate: 2024-05-30
 :imagesdir: ./images
 :icons: font
 :toc: preamble
