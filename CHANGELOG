@@ -1,4 +1,4 @@
-1.5.1
+1.6.0
 - enhancement: add parameter -p
 - enhancement: performance optimizations
 - enhancement: add offset to payload for debugging purposes
