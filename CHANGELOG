@@ -15,6 +15,7 @@
 - fix: in rare cases, the AFTER value for UPDATE is missing
 - code style cleanup
 - documentation update
+- fix: welcome message
 
 1.5.0
 - code style cleanup
