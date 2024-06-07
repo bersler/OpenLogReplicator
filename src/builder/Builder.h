@@ -1169,7 +1169,8 @@ namespace OpenLogReplicator {
         virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
         virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
-                                uint16_t seq, const char* sql, uint64_t sqlLength) = 0;
+                                uint16_t seq, const char* sql, uint64_t sqlLength,
+				const char* owner, uint64_t ownerLength, const char* name, uint64_t nameLength) = 0;
         virtual void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
         bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t length, uint64_t offset);
 

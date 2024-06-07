@@ -1084,7 +1084,9 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
-                                 uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* sql, uint64_t sqlLength) {
+                                 uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* sql, uint64_t sqlLength
+				 , const char* owner, uint64_t ownerLength, const char* name, uint64_t nameLength
+				 ) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -1112,6 +1114,16 @@ namespace OpenLogReplicator {
 
         append(R"({"op":"ddl",)", sizeof(R"({"op":"ddl",)") - 1);
         appendSchema(table, obj);
+
+	if(ownerLength>0) {
+	    append(R"(,"owner":)", sizeof(R"(,"owner":)")-1);
+	    appendEscape(owner, ownerLength);
+	}
+	if(nameLength>0)  {
+	    append(R"(,"name":)",  sizeof(R"(,"name":)")-1);
+	    appendEscape(name, nameLength);
+	}
+
         append(R"(,"sql":")", sizeof(R"(,"sql":")") - 1);
         appendEscape(sql, sqlLength);
         append(R"("})", sizeof(R"("})") - 1);
