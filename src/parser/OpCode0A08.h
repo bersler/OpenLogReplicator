@@ -25,9 +25,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class OpCode0A08 final : public OpCode {
     public:
-        static void process0A08(Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process0A08(const Ctx* ctx, RedoLogRecord* redoLogRecord);
 
-        static void kdxln(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdxln(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
     };
 }
 

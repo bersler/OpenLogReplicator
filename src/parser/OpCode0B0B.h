@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class OpCode0B0B final : public OpCode {
     public:
-        static void process0B0B(Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process0B0B(const Ctx* ctx, RedoLogRecord* redoLogRecord);
     };
 }
 

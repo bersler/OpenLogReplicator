@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
                           uint64_t newByte2max);
         virtual ~CharacterSet16bit() override;
 
-        virtual typeUnicode decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
 
         static typeUnicode16 unicode_map_JA16VMS[(JA16VMS_b1_max - JA16VMS_b1_min + 1) *
                                                  (JA16VMS_b2_max - JA16VMS_b2_min + 1)];

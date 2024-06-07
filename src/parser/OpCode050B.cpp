@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode050B.h"
 
 namespace OpenLogReplicator {
-    void OpCode050B::init(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode050B::init(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         if (redoLogRecord->fieldCnt >= 1) {
             uint64_t fieldPos = redoLogRecord->fieldPos;
             uint16_t fieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode050B::process050B(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode050B::process050B(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         init(ctx, redoLogRecord);
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;

@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
         CharacterSet8bit(const char* newName, const typeUnicode16* newMap, bool newCustomAscii);
         ~CharacterSet8bit() override;
 
-        virtual typeUnicode decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
 
         static typeUnicode16 unicode_map_AR8ADOS710[128];
         static typeUnicode16 unicode_map_AR8ADOS710T[128];

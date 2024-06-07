@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         CharacterSet7bit(const char* newName, const typeUnicode16* newMap);
         ~CharacterSet7bit() override;
 
-        virtual typeUnicode decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
 
         // Conversion arrays for 7-bit character sets
         static typeUnicode16 unicode_map_D7DEC[128];

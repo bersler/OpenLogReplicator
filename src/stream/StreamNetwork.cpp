@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE;
 
-        if (getaddrinfo(host.c_str(), port.c_str(), &hints, &res) != 0)
+        if (getaddrinfo(host.c_str(), port.c_str(), &hints, &res) != 0 || res == nullptr)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (3)");
 
         serverFD = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -119,10 +119,8 @@ namespace OpenLogReplicator {
         if (listen(serverFD, 1) < 0)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (9)");
 
-        if (res != nullptr) {
-            freeaddrinfo(res);
-            res = nullptr;
-        }
+        freeaddrinfo(res);
+        res = nullptr;
     }
 
     void StreamNetwork::sendMessage(const void* msg, uint64_t length) {

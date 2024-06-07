@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode1801.h"
 
 namespace OpenLogReplicator {
-    void OpCode1801::process1801(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode1801::process1801(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         bool validDdl = false;
 
         OpCode::process(ctx, redoLogRecord);

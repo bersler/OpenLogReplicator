@@ -451,7 +451,7 @@ namespace OpenLogReplicator {
                R"(,"obj":)" << std::dec << xdbTtSet->obj << "}";
         }
 
-        for (auto schemaXmlIt: metadata->schema->schemaXmlMap) {
+        for (const auto& schemaXmlIt: metadata->schema->schemaXmlMap) {
             const XmlCtx* xmlCtx = schemaXmlIt.second;
 
             // XDB.X$NMxxx

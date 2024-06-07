@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
 
     CharacterSetZHS16GBK::~CharacterSetZHS16GBK() = default;
 
-    typeUnicode CharacterSetZHS16GBK::decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSetZHS16GBK::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)

@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Transaction.h"
 
 namespace OpenLogReplicator {
-    void OpCode0514::process0514(Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction) {
+    void OpCode0514::process0514(const Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction) {
         OpCode::process(ctx, redoLogRecord);
 
         if (transaction == nullptr) {

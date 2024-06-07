@@ -116,6 +116,8 @@ namespace OpenLogReplicator {
         memoryModulesAllocated[1] = 0;
         memoryModulesAllocated[2] = 0;
         memoryModulesAllocated[3] = 0;
+        dumpStream = std::make_unique<std::ofstream>();
+
         clock = new ClockHW();
         tzset();
         dbTimezone = BAD_TIMEZONE;
@@ -353,7 +355,7 @@ namespace OpenLogReplicator {
         return ret.GetString();
     }
 
-    bool Ctx::parseTimezone(const char* str, int64_t& out) {
+    bool Ctx::parseTimezone(const char* str, int64_t& out) const {
         uint64_t len = strlen(str);
 
         if (len == 5) {
@@ -384,7 +386,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    std::string Ctx::timezoneToString(int64_t tz) {
+    std::string Ctx::timezoneToString(int64_t tz) const {
         char result[7];
 
         if (tz < 0) {
@@ -408,7 +410,7 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    time_t Ctx::valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) {
+    time_t Ctx::valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) const {
         time_t result;
 
         if (year > 0) {
@@ -433,7 +435,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t Ctx::epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) {
+    uint64_t Ctx::epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) const {
         // (-)YYYY-MM-DD hh:mm:ss or (-)YYYY-MM-DDThh:mm:ssZ
 
         if (timestamp < UNIX_BC4712_01_01 || timestamp > UNIX_AD9999_12_31)
@@ -628,7 +630,7 @@ namespace OpenLogReplicator {
         return memoryChunksHWM * MEMORY_CHUNK_SIZE_MB;
     }
 
-    uint64_t Ctx::getFreeMemory() {
+    uint64_t Ctx::getFreeMemory() const {
         return memoryChunksFree * MEMORY_CHUNK_SIZE_MB;
     }
 
@@ -928,7 +930,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::welcome(const std::string& message) {
+    void Ctx::welcome(const std::string& message) const {
         int code = 0;
         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
             std::ostringstream s;
@@ -943,7 +945,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::hint(const std::string& message) {
+    void Ctx::hint(const std::string& message) const {
         if (logLevel < LOG_LEVEL_ERROR)
             return;
 
@@ -960,7 +962,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::error(int code, const std::string& message) {
+    void Ctx::error(int code, const std::string& message) const {
         if (logLevel < LOG_LEVEL_ERROR)
             return;
 
@@ -977,7 +979,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::warning(int code, const std::string& message) {
+    void Ctx::warning(int code, const std::string& message) const {
         if (logLevel < LOG_LEVEL_WARNING)
             return;
 
@@ -994,7 +996,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::info(int code, const std::string& message) {
+    void Ctx::info(int code, const std::string& message) const {
         if (logLevel < LOG_LEVEL_INFO)
             return;
 
@@ -1011,7 +1013,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::debug(int code, const std::string& message) {
+    void Ctx::debug(int code, const std::string& message) const {
         if (logLevel < LOG_LEVEL_DEBUG)
             return;
 
@@ -1028,7 +1030,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::logTrace(int mask, const std::string& message) {
+    void Ctx::logTrace(int mask, const std::string& message) const {
         const char* code = "XXXXX";
         if ((trace & mask) == 0)
             return;

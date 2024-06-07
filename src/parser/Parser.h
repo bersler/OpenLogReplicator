@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
         virtual ~Parser();
 
         uint64_t parse();
-        std::string toString();
+        std::string toString() const;
     };
 }
 

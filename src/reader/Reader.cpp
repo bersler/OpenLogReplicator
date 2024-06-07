@@ -980,63 +980,63 @@ namespace OpenLogReplicator {
         ss << " Enabled redo threads: " << std::dec << enabledRedoThreads << " \n";
     }
 
-    uint64_t Reader::getBlockSize() {
+    uint64_t Reader::getBlockSize() const {
         return blockSize;
     }
 
-    uint64_t Reader::getBufferStart() {
+    uint64_t Reader::getBufferStart() const {
         return bufferStart;
     }
 
-    uint64_t Reader::getBufferEnd() {
+    uint64_t Reader::getBufferEnd() const {
         return bufferEnd;
     }
 
-    uint64_t Reader::getRet() {
+    uint64_t Reader::getRet() const {
         return ret;
     }
 
-    typeScn Reader::getFirstScn() {
+    typeScn Reader::getFirstScn() const {
         return firstScn;
     }
 
-    typeScn Reader::getFirstScnHeader() {
+    typeScn Reader::getFirstScnHeader() const {
         return firstScnHeader;
     }
 
-    typeScn Reader::getNextScn() {
+    typeScn Reader::getNextScn() const {
         return nextScn;
     }
 
-    typeTime Reader::getNextTime() {
+    typeTime Reader::getNextTime() const {
         return nextTime;
     }
 
-    typeBlk Reader::getNumBlocks() {
+    typeBlk Reader::getNumBlocks() const {
         return numBlocksHeader;
     }
 
-    int64_t Reader::getGroup() {
+    int64_t Reader::getGroup() const {
         return group;
     }
 
-    typeSeq Reader::getSequence() {
+    typeSeq Reader::getSequence() const {
         return sequence;
     }
 
-    typeResetlogs Reader::getResetlogs() {
+    typeResetlogs Reader::getResetlogs() const {
         return resetlogs;
     }
 
-    typeActivation Reader::getActivation() {
+    typeActivation Reader::getActivation() const {
         return activation;
     }
 
-    uint64_t Reader::getSumRead() {
+    uint64_t Reader::getSumRead() const {
         return sumRead;
     }
 
-    uint64_t Reader::getSumTime() {
+    uint64_t Reader::getSumTime() const {
         return sumTime;
     }
 

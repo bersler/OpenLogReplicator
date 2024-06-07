@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
         uint64_t suppLogLenDelta;
         bool compressed;
 
-        static bool nextFieldOpt(Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
+        static bool nextFieldOpt(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             if (fieldNum >= redoLogRecord->fieldCnt)
                 return false;
             ++fieldNum;
@@ -175,7 +175,7 @@ namespace OpenLogReplicator {
             return true;
         };
 
-        static void nextField(Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
+        static void nextField(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             ++fieldNum;
             if (fieldNum > redoLogRecord->fieldCnt)
                 throw RedoLogException(50006, "field missing in vector, field: " + std::to_string(fieldNum) + "/" +
@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
                                               std::to_string(code));
         };
 
-        static void skipEmptyFields(Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+        static void skipEmptyFields(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
             while (fieldNum + 1 <= redoLogRecord->fieldCnt) {
                 uint16_t nextFieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (static_cast<uint64_t>(fieldNum) + 1) * 2);
                 if (nextFieldLength != 0)

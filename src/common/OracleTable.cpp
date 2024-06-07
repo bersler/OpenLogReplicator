@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
         tablePartitions.push_back(objx);
     }
 
-    bool OracleTable::matchesCondition(Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) {
+    bool OracleTable::matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) {
         bool result = true;
         if (condition != nullptr)
             result = condition->evaluateToBool(op, attributes);

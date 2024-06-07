@@ -1767,13 +1767,14 @@ namespace OpenLogReplicator {
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000011))
             return;
-        // Field: 8
-        uint64_t sqlLength = fieldLength;
-        const char* sqlText = reinterpret_cast<char*>(redoLogRecord1->data) + fieldPos;
 
-        // Track DDL
-        if (ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_DDL))
+        // Field: 8
+        if (ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_DDL)) {
+            // Track DDL
+            uint64_t sqlLength = fieldLength;
+            const char* sqlText = reinterpret_cast<char*>(redoLogRecord1->data) + fieldPos;
             processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj, redoLogRecord1->dataObj, type, seq, sqlText, sqlLength - 1);
+        }
 
         switch (type) {
             case 1:     // create table

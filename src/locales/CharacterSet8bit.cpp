@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
 
     CharacterSet8bit::~CharacterSet8bit() = default;
 
-    typeUnicode CharacterSet8bit::decode(Ctx* ctx __attribute__((unused)), typeXid xid __attribute__((unused)), const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSet8bit::decode(const Ctx* ctx __attribute__((unused)), typeXid xid __attribute__((unused)), const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
         return readMap(byte1);

@@ -28,6 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "builder/BuilderJson.h"
 #include "common/Ctx.h"
+#include "common/types.h"
 #include "common/Thread.h"
 #include "common/types.h"
 #include "common/typeTime.h"
@@ -454,8 +455,7 @@ namespace OpenLogReplicator {
                     uint64_t tagNames = Metrics::TAG_NAMES_NONE;
 
                     if (metricsJson.HasMember("tag-names")) {
-                        const char* tagNamesStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_TOPIC_LENGTH, metricsJson,
-                                                                     "tag-names");
+                        const char* tagNamesStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_TOPIC_LENGTH, metricsJson, "tag-names");
 
                         if (strcmp(tagNamesStr, "none") == 0)
                             tagNames = Metrics::TAG_NAMES_NONE;
