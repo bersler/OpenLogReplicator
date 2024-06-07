@@ -146,7 +146,7 @@ namespace OpenLogReplicator {
         Reader* onlineReader = nullptr;
 
         for (auto redoLog: metadata->redoLogs) {
-            if (redoLog->group != lastGroup) {
+            if (redoLog->group != lastGroup || onlineReader == nullptr) {
                 onlineReader = readerCreate(redoLog->group);
                 onlineReader->paths.clear();
                 lastGroup = redoLog->group;
@@ -434,9 +434,6 @@ namespace OpenLogReplicator {
                 memcpy(reinterpret_cast<void*>(pathBuffer + targetLength),
                        reinterpret_cast<const void*>(path.c_str() + sourceLength), newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
-                if (newPathLength - sourceLength + targetLength >= Ctx::MAX_PATH_LENGTH)
-                    throw RuntimeException(10043, "after mapping path length (" + std::to_string(newPathLength - sourceLength +
-                                                                                                 targetLength) + ") is too long for: " + pathBuffer);
                 path.assign(pathBuffer);
                 break;
             }
@@ -659,7 +656,7 @@ namespace OpenLogReplicator {
         metadata->wakeUp();
     }
 
-    void Replicator::printStartMsg() {
+    void Replicator::printStartMsg() const {
         std::string flagsStr;
         if (ctx->flags)
             flagsStr = " (flags: " + std::to_string(ctx->flags) + ")";
@@ -683,7 +680,7 @@ namespace OpenLogReplicator {
     }
 
     bool Replicator::processArchivedRedoLogs() {
-        uint64_t ret = Reader::REDO_OK;
+        uint64_t ret;
         Parser* parser;
         bool logsProcessed = false;
 

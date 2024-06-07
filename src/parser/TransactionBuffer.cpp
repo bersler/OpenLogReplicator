@@ -277,7 +277,9 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::rollbackTransactionChunk(Transaction* transaction) {
-        if (transaction->lastTc == nullptr || transaction->lastTc->size < ROW_HEADER_TOTAL || transaction->lastTc->elements == 0)
+        if (transaction->lastTc == nullptr)
+            throw RedoLogException(50044, "trying to remove from empty buffer size: <null> elements: <null>");
+        if (transaction->lastTc->size < ROW_HEADER_TOTAL || transaction->lastTc->elements == 0)
             throw RedoLogException(50044, "trying to remove from empty buffer size: " + std::to_string(transaction->lastTc->size) +
                                           " elements: " + std::to_string(transaction->lastTc->elements));
 

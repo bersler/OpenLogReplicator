@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         CharacterSetAL16UTF16();
         virtual ~CharacterSetAL16UTF16() override;
 
-        virtual typeUnicode decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
     };
 }
 

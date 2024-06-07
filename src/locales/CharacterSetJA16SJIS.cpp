@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    typeUnicode CharacterSetJA16SJIS::decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSetJA16SJIS::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)

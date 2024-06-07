@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
         Metrics(uint64_t newTagNames);
         virtual ~Metrics();
 
-        virtual void initialize(Ctx* ctx) = 0;
+        virtual void initialize(const Ctx* ctx) = 0;
         virtual void shutdown() = 0;
         bool isTagNamesFilter();
         bool isTagNamesSys();

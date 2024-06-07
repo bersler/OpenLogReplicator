@@ -27,7 +27,7 @@ namespace OpenLogReplicator {
 
     class OpCode0514 final : public OpCode0513 {
     public:
-        static void process0514(Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction);
+        static void process0514(const Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction);
     };
 }
 

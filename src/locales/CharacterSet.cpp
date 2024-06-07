@@ -28,38 +28,38 @@ namespace OpenLogReplicator {
 
     CharacterSet::~CharacterSet() = default;
 
-    uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1) const {
+    uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1) const {
         ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ") using character set " + name + ", xid: " +
                             xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
-    uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2) const {
+    uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2) const {
         ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2) +
                             ") using character set " + name + ", xid: " + xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
-    uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3) const {
+    uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3) const {
         ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2) + ", " +
                             std::to_string(byte3) + ") using character set " + name + ", xid: " + xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
-    uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4) const {
+    uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4) const {
         ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2) + ", " +
                             std::to_string(byte3) + ", " + std::to_string(byte4) + ") using character set " + name + ", xid: " + xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
-    uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5) const {
+    uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5) const {
         ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2) + ", " +
                             std::to_string(byte3) + ", " + std::to_string(byte4) + ", " + std::to_string(byte5) + ") using character set " + name + ", xid: " +
                             xid.toString());
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
-    uint64_t CharacterSet::badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5,
+    uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5,
                                    uint64_t byte6) const {
         ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ", " + std::to_string(byte2) + ", " +
                             std::to_string(byte3) + ", " + std::to_string(byte4) + ", " + std::to_string(byte5) + std::to_string(byte6) +

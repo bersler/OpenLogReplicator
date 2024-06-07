@@ -94,7 +94,7 @@ namespace OpenLogReplicator {
         void addColumn(OracleColumn* column);
         void addLob(OracleLob* lob);
         void addTablePartition(typeObj newObj, typeDataObj newDataObj);
-        bool matchesCondition(Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes);
+        bool matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes);
         void setConditionStr(const std::string& newConditionStr);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleTable& table);

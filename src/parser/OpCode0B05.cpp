@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B05.h"
 
 namespace OpenLogReplicator {
-    void OpCode0B05::process0B05(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0B05::process0B05(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;

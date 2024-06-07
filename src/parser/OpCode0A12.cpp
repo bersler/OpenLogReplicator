@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0A12.h"
 
 namespace OpenLogReplicator {
-    void OpCode0A12::process0A12(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0A12::process0A12(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;
@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
 
         if (ctx->dumpRedoLog >= 1) {
             uint64_t count = redoLogRecord->fieldCnt;
-            ctx->dumpStream << "index redo (kdxlup): update keydata, count=" << std::dec << count << '\n';
+            *ctx->dumpStream << "index redo (kdxlup): update keydata, count=" << std::dec << count << '\n';
         }
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A1201);
@@ -48,8 +48,8 @@ namespace OpenLogReplicator {
             uint16_t sno = ctx->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t rowSize = ctx->read16(redoLogRecord->data + fieldPos + 4);
 
-            ctx->dumpStream << "REDO: SINGLE / -- / -- \n";
-            ctx->dumpStream << "itl: " << std::dec << itl <<
+            *ctx->dumpStream << "REDO: SINGLE / -- / -- \n";
+            *ctx->dumpStream << "itl: " << std::dec << itl <<
                             ", sno: " << std::dec << sno <<
                             ", row size " << std::dec << rowSize << '\n';
         }
@@ -62,17 +62,17 @@ namespace OpenLogReplicator {
         redoLogRecord->indKeyDataLength = fieldLength;
 
         if (ctx->dumpRedoLog >= 1) {
-            ctx->dumpStream << "keydata : (" << std::dec << fieldLength << "): ";
+            *ctx->dumpStream << "keydata : (" << std::dec << fieldLength << "): ";
 
             if (fieldLength > 20)
-                ctx->dumpStream << '\n';
+                *ctx->dumpStream << '\n';
 
             for (uint64_t j = 0; j < fieldLength; ++j) {
-                ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
+                *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
                 if ((j % 25) == 24 && j != static_cast<uint64_t>(fieldLength) - 1)
-                    ctx->dumpStream << '\n';
+                    *ctx->dumpStream << '\n';
             }
-            ctx->dumpStream << '\n';
+            *ctx->dumpStream << '\n';
         }
     }
 }

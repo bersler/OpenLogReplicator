@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
         MetricsPrometheus(uint64_t newTagNames, const char* newBind);
         virtual ~MetricsPrometheus() override;
 
-        virtual void initialize(Ctx* ctx) override;
+        virtual void initialize(const Ctx* ctx) override;
         virtual void shutdown() override;
 
         // bytes_confirmed

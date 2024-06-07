@@ -40,11 +40,11 @@ namespace OpenLogReplicator {
         std::map<LobKey, uint8_t*>* orphanedLobs;
         std::map<typeDba, uint8_t*> listMap;
 
-        void checkOrphanedLobs(Ctx* ctx, const typeLobId& lobId, typeXid xid, uint64_t offset);
-        void addLob(Ctx* ctx, const typeLobId& lobId, typeDba page, uint64_t pageOffset, uint8_t* data, typeXid xid, uint64_t offset);
+        void checkOrphanedLobs(const Ctx* ctx, const typeLobId& lobId, typeXid xid, uint64_t offset);
+        void addLob(const Ctx* ctx, const typeLobId& lobId, typeDba page, uint64_t pageOffset, uint8_t* data, typeXid xid, uint64_t offset);
         void orderList(typeDba page, typeDba next);
         void setList(typeDba page, const uint8_t* data, uint16_t length);
-        void appendList(Ctx* ctx, typeDba page, uint8_t* data);
+        void appendList(const Ctx* ctx, typeDba page, const uint8_t* data);
         void setLength(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest);
         void setPage(const typeLobId& lobId, typeDba page, uint32_t pageNo, typeXid xid, uint64_t offset);
         void purge();

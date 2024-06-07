@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B0C.h"
 
 namespace OpenLogReplicator {
-    void OpCode0B0C::process0B0C(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode0B0C::process0B0C(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         if (ctx->dumpRedoLog >= 1) {
             if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMD) {
                 for (uint64_t i = 0; i < redoLogRecord->nRow; ++i)
-                    ctx->dumpStream << "slot[" << i << "]: " << std::dec << ctx->read16(redoLogRecord->data + redoLogRecord->slotsDelta + i * 2) << '\n';
+                    *ctx->dumpStream << "slot[" << i << "]: " << std::dec << ctx->read16(redoLogRecord->data + redoLogRecord->slotsDelta + i * 2) << '\n';
             }
         }
     }
