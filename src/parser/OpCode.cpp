@@ -98,20 +98,22 @@ namespace OpenLogReplicator {
                                     " RBL:" << std::dec << redoLogRecord->rbl <<
                                     " FLG:0x" << std::setw(4) << std::hex << redoLogRecord->flgRecord << '\n';
             }
-        }
 
-        if (ctx->dumpRawData)
-            dumpHex(ctx, redoLogRecord);
+            if (ctx->dumpRawData)
+                dumpHex(ctx, redoLogRecord);
+        }
     }
 
     void OpCode::ktbRedo(const Ctx* ctx, RedoLogRecord* redoLogRecord, const uint64_t fieldPos, const uint16_t fieldLength) {
         if (fieldLength < 8)
             return;
 
-        if (redoLogRecord->opc == 0x0A16)
-            *ctx->dumpStream << "index undo for leaf key operations\n";
-        else if (redoLogRecord->opc == 0x0B01)
-            *ctx->dumpStream << "KDO undo record:\n";
+        if (ctx->dumpRedoLog >= 1) {
+            if (redoLogRecord->opc == 0x0A16)
+                *ctx->dumpStream << "index undo for leaf key operations\n";
+            else if (redoLogRecord->opc == 0x0B01)
+                *ctx->dumpStream << "KDO undo record:\n";
+        }
 
         auto ktbOp = static_cast<uint8_t>(redoLogRecord->data[fieldPos + 0]);
         uint8_t flg = redoLogRecord->data[fieldPos + 1];
@@ -1798,30 +1800,32 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
-            *ctx->dumpStream <<
-                            ktuType << " redo:" <<
-                            " slt: " << std::dec << static_cast<uint64_t>(redoLogRecord->slt) <<
-                            " rci: " << std::dec << static_cast<uint64_t>(redoLogRecord->rci) <<
-                            " opc: " << std::dec << static_cast<uint64_t>(redoLogRecord->opc >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opc & 0xFF) <<
-                            " " << prevObj << "objn: " << std::dec << redoLogRecord->obj <<
-                            " objd: " << std::dec << redoLogRecord->dataObj <<
-                            " tsn: " << std::dec << redoLogRecord->tsn << postObj << '\n';
-        } else {
-            typeDba prevDba = ctx->read32(redoLogRecord->data + fieldPos + 12);
-            uint16_t wrp = ctx->read16(redoLogRecord->data + fieldPos + 22);
+        if (ctx->dumpRedoLog >= 1) {
+            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
+                *ctx->dumpStream <<
+                                ktuType << " redo:" <<
+                                " slt: " << std::dec << static_cast<uint64_t>(redoLogRecord->slt) <<
+                                " rci: " << std::dec << static_cast<uint64_t>(redoLogRecord->rci) <<
+                                " opc: " << std::dec << static_cast<uint64_t>(redoLogRecord->opc >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opc & 0xFF) <<
+                                " " << prevObj << "objn: " << std::dec << redoLogRecord->obj <<
+                                " objd: " << std::dec << redoLogRecord->dataObj <<
+                                " tsn: " << std::dec << redoLogRecord->tsn << postObj << '\n';
+            } else {
+                typeDba prevDba = ctx->read32(redoLogRecord->data + fieldPos + 12);
+                uint16_t wrp = ctx->read16(redoLogRecord->data + fieldPos + 22);
 
-            *ctx->dumpStream <<
-                            ktuType << " redo:" <<
-                            " slt: " << std::dec << static_cast<uint64_t>(redoLogRecord->slt) <<
-                            " wrp: " << std::dec << wrp <<
-                            " flg: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord->flg <<
-                            " prev dba:  0x" << std::setfill('0') << std::setw(8) << std::hex << prevDba <<
-                            " rci: " << std::dec << static_cast<uint64_t>(redoLogRecord->rci) <<
-                            " opc: " << std::dec << static_cast<uint64_t>(redoLogRecord->opc >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opc & 0xFF) <<
-                            " [objn: " << std::dec << redoLogRecord->obj <<
-                            " objd: " << std::dec << redoLogRecord->dataObj <<
-                            " tsn: " << std::dec << redoLogRecord->tsn << "]\n";
+                *ctx->dumpStream <<
+                                ktuType << " redo:" <<
+                                " slt: " << std::dec << static_cast<uint64_t>(redoLogRecord->slt) <<
+                                " wrp: " << std::dec << wrp <<
+                                " flg: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord->flg <<
+                                " prev dba:  0x" << std::setfill('0') << std::setw(8) << std::hex << prevDba <<
+                                " rci: " << std::dec << static_cast<uint64_t>(redoLogRecord->rci) <<
+                                " opc: " << std::dec << static_cast<uint64_t>(redoLogRecord->opc >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opc & 0xFF) <<
+                                " [objn: " << std::dec << redoLogRecord->obj <<
+                                " objd: " << std::dec << redoLogRecord->dataObj <<
+                                " tsn: " << std::dec << redoLogRecord->tsn << "]\n";
+            }
         }
 
         const char* lastBufferSplit;
@@ -1916,141 +1920,147 @@ namespace OpenLogReplicator {
             }
 
             if (fieldLength == 28) {
-                uint16_t flg2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
-                auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data + fieldPos + 26));
+                if (ctx->dumpRedoLog >= 1) {
+                    uint16_t flg2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
+                    auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data + fieldPos + 26));
 
-                if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
-                    *ctx->dumpStream <<
-                                    "Undo type:  " << undoType << "  " <<
-                                    "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
-                                    "Temp Object:  " << tempObject << " \n" <<
-                                    "Tablespace Undo:  " << tablespaceUndo << " \n" <<
-                                    "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " \n";
+                    if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
+                        *ctx->dumpStream <<
+                                        "Undo type:  " << undoType << "  " <<
+                                        "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
+                                        "Temp Object:  " << tempObject << " \n" <<
+                                        "Tablespace Undo:  " << tablespaceUndo << " \n" <<
+                                        "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " \n";
 
-                    *ctx->dumpStream <<
-                                    " BuExt idx: " << std::dec << buExtIdx <<
-                                    " flg2: " << std::hex << flg2 << '\n';
-                } else {
-                    *ctx->dumpStream <<
-                                    "[Undo type  ] " << undoType << " " <<
-                                    " [User undo done   ] " << userUndoDone << " " <<
-                                    " [Last buffer split] " << lastBufferSplit << " \n" <<
-                                    "[Temp object]          " << tempObject << " " <<
-                                    " [Tablespace Undo  ] " << tablespaceUndo << " " <<
-                                    " [User only        ] " << userOnly << " \n" <<
-                                    "Begin trans    \n";
+                        *ctx->dumpStream <<
+                                        " BuExt idx: " << std::dec << buExtIdx <<
+                                        " flg2: " << std::hex << flg2 << '\n';
+                    } else {
+                        *ctx->dumpStream <<
+                                        "[Undo type  ] " << undoType << " " <<
+                                        " [User undo done   ] " << userUndoDone << " " <<
+                                        " [Last buffer split] " << lastBufferSplit << " \n" <<
+                                        "[Temp object]          " << tempObject << " " <<
+                                        " [Tablespace Undo  ] " << tablespaceUndo << " " <<
+                                        " [User only        ] " << userOnly << " \n" <<
+                                        "Begin trans    \n";
 
-                    *ctx->dumpStream <<
-                                    "BuExt idx: " << std::dec << buExtIdx <<
-                                    " flg2: " << std::hex << flg2 << '\n';
+                        *ctx->dumpStream <<
+                                        "BuExt idx: " << std::dec << buExtIdx <<
+                                        " flg2: " << std::hex << flg2 << '\n';
+                    }
                 }
             } else if (fieldLength >= 76) {
-                uint16_t flg2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
-                auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data + fieldPos + 26));
-                typeUba prevCtlUba = ctx->read56(redoLogRecord->data + fieldPos + 28);
-                typeScn prevCtlMaxCmtScn = ctx->readScn(redoLogRecord->data + fieldPos + 36);
-                typeScn prevTxCmtScn = ctx->readScn(redoLogRecord->data + fieldPos + 44);
-                typeScn txStartScn = ctx->readScn(redoLogRecord->data + fieldPos + 56);
-                uint32_t prevBrb = ctx->read32(redoLogRecord->data + fieldPos + 64);
-                uint32_t prevBcl = ctx->read32(redoLogRecord->data + fieldPos + 68);
-                uint32_t logonUser = ctx->read32(redoLogRecord->data + fieldPos + 72);
+                if (ctx->dumpRedoLog >= 1) {
+                    uint16_t flg2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
+                    auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data + fieldPos + 26));
+                    typeUba prevCtlUba = ctx->read56(redoLogRecord->data + fieldPos + 28);
+                    typeScn prevCtlMaxCmtScn = ctx->readScn(redoLogRecord->data + fieldPos + 36);
+                    typeScn prevTxCmtScn = ctx->readScn(redoLogRecord->data + fieldPos + 44);
+                    typeScn txStartScn = ctx->readScn(redoLogRecord->data + fieldPos + 56);
+                    uint32_t prevBrb = ctx->read32(redoLogRecord->data + fieldPos + 64);
+                    uint32_t prevBcl = ctx->read32(redoLogRecord->data + fieldPos + 68);
+                    uint32_t logonUser = ctx->read32(redoLogRecord->data + fieldPos + 72);
 
-                if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
-                    *ctx->dumpStream <<
-                                    "Undo type:  " << undoType << "  " <<
-                                    "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
-                                    "Temp Object:  " << tempObject << " \n" <<
-                                    "Tablespace Undo:  " << tablespaceUndo << " \n" <<
-                                    "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " " <<
-                                    " prev ctl uba: " << PRINTUBA(prevCtlUba) << " \n" <<
-                                    "prev ctl max cmt scn:  " << PRINTSCN48(prevCtlMaxCmtScn) << " " <<
-                                    " prev tx cmt scn:  " << PRINTSCN48(prevTxCmtScn) << " \n";
+                    if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
+                        *ctx->dumpStream <<
+                                        "Undo type:  " << undoType << "  " <<
+                                        "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
+                                        "Temp Object:  " << tempObject << " \n" <<
+                                        "Tablespace Undo:  " << tablespaceUndo << " \n" <<
+                                        "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " " <<
+                                        " prev ctl uba: " << PRINTUBA(prevCtlUba) << " \n" <<
+                                        "prev ctl max cmt scn:  " << PRINTSCN48(prevCtlMaxCmtScn) << " " <<
+                                        " prev tx cmt scn:  " << PRINTSCN48(prevTxCmtScn) << " \n";
 
-                    *ctx->dumpStream <<
-                                    "txn start scn:  " << PRINTSCN48(txStartScn) << " " <<
-                                    " logon user: " << std::dec << logonUser << " " <<
-                                    " prev brb: " << prevBrb << " " <<
-                                    " prev bcl: " << std::dec << prevBcl;
+                        *ctx->dumpStream <<
+                                        "txn start scn:  " << PRINTSCN48(txStartScn) << " " <<
+                                        " logon user: " << std::dec << logonUser << " " <<
+                                        " prev brb: " << prevBrb << " " <<
+                                        " prev bcl: " << std::dec << prevBcl;
 
-                    *ctx->dumpStream <<
-                                    " BuExt idx: " << std::dec << buExtIdx <<
-                                    " flg2: " << std::hex << flg2 << '\n';
-                } else if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
-                    *ctx->dumpStream <<
-                                    "Undo type:  " << undoType << "  " <<
-                                    "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
-                                    "Temp Object:  " << tempObject << " \n" <<
-                                    "Tablespace Undo:  " << tablespaceUndo << " \n" <<
-                                    "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " " <<
-                                    " prev ctl uba: " << PRINTUBA(prevCtlUba) << " \n" <<
-                                    "prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " <<
-                                    " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " \n";
+                        *ctx->dumpStream <<
+                                        " BuExt idx: " << std::dec << buExtIdx <<
+                                        " flg2: " << std::hex << flg2 << '\n';
+                    } else if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
+                        *ctx->dumpStream <<
+                                        "Undo type:  " << undoType << "  " <<
+                                        "Begin trans    Last buffer split:  " << lastBufferSplit << " \n" <<
+                                        "Temp Object:  " << tempObject << " \n" <<
+                                        "Tablespace Undo:  " << tablespaceUndo << " \n" <<
+                                        "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " " <<
+                                        " prev ctl uba: " << PRINTUBA(prevCtlUba) << " \n" <<
+                                        "prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " <<
+                                        " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " \n";
 
-                    *ctx->dumpStream <<
-                                    "txn start scn:  " << PRINTSCN64(txStartScn) << " " <<
-                                    " logon user: " << std::dec << logonUser << " " <<
-                                    " prev brb: " << prevBrb << " " <<
-                                    " prev bcl: " << std::dec << prevBcl;
+                        *ctx->dumpStream <<
+                                        "txn start scn:  " << PRINTSCN64(txStartScn) << " " <<
+                                        " logon user: " << std::dec << logonUser << " " <<
+                                        " prev brb: " << prevBrb << " " <<
+                                        " prev bcl: " << std::dec << prevBcl;
 
-                    *ctx->dumpStream <<
-                                    " BuExt idx: " << std::dec << buExtIdx <<
-                                    " flg2: " << std::hex << flg2 << '\n';
-                } else {
-                    *ctx->dumpStream <<
-                                    "[Undo type  ] " << undoType << " " <<
-                                    " [User undo done   ] " << userUndoDone << " " <<
-                                    " [Last buffer split] " << lastBufferSplit << " \n" <<
-                                    "[Temp object]          " << tempObject << " " <<
-                                    " [Tablespace Undo  ] " << tablespaceUndo << " " <<
-                                    " [User only        ] " << userOnly << " \n" <<
-                                    "Begin trans    \n" <<
-                                    " prev ctl uba: " << PRINTUBA(prevCtlUba) <<
-                                    " prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " \n" <<
-                                    " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " \n";
+                        *ctx->dumpStream <<
+                                        " BuExt idx: " << std::dec << buExtIdx <<
+                                        " flg2: " << std::hex << flg2 << '\n';
+                    } else {
+                        *ctx->dumpStream <<
+                                        "[Undo type  ] " << undoType << " " <<
+                                        " [User undo done   ] " << userUndoDone << " " <<
+                                        " [Last buffer split] " << lastBufferSplit << " \n" <<
+                                        "[Temp object]          " << tempObject << " " <<
+                                        " [Tablespace Undo  ] " << tablespaceUndo << " " <<
+                                        " [User only        ] " << userOnly << " \n" <<
+                                        "Begin trans    \n" <<
+                                        " prev ctl uba: " << PRINTUBA(prevCtlUba) <<
+                                        " prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " \n" <<
+                                        " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " \n";
 
-                    *ctx->dumpStream <<
-                                    " txn start scn:  " << PRINTSCN64(txStartScn) <<
-                                    "  logon user: " << std::dec << logonUser << '\n' <<
-                                    " prev brb:  0x" << std::setfill('0') << std::setw(8) << std::hex << prevBrb <<
-                                    "  prev bcl:  0x" << std::setfill('0') << std::setw(8) << std::hex << prevBcl << '\n';
+                        *ctx->dumpStream <<
+                                        " txn start scn:  " << PRINTSCN64(txStartScn) <<
+                                        "  logon user: " << std::dec << logonUser << '\n' <<
+                                        " prev brb:  0x" << std::setfill('0') << std::setw(8) << std::hex << prevBrb <<
+                                        "  prev bcl:  0x" << std::setfill('0') << std::setw(8) << std::hex << prevBcl << '\n';
 
-                    *ctx->dumpStream <<
-                                    "BuExt idx: " << std::dec << buExtIdx <<
-                                    " flg2: " << std::hex << flg2 << '\n';
+                        *ctx->dumpStream <<
+                                        "BuExt idx: " << std::dec << buExtIdx <<
+                                        " flg2: " << std::hex << flg2 << '\n';
+                    }
                 }
             }
         } else {
             // KTUBU
-            if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
-                *ctx->dumpStream <<
-                                "Undo type:  " << undoType << " " <<
-                                "Undo type:  ";
-                if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
-                    *ctx->dumpStream << "User undo done   ";
-                if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0)
-                    *ctx->dumpStream << " Begin trans    ";
-                *ctx->dumpStream <<
-                                "Last buffer split:  " << lastBufferSplit << " \n" <<
-                                "Tablespace Undo:  " << tablespaceUndo << " \n" <<
-                                "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << '\n';
-
-                if ((redoLogRecord->flg & FLG_BUEXT) != 0) {
-                    uint16_t flg2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
-                    auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data + fieldPos + 26));
-
+            if (ctx->dumpRedoLog >= 1) {
+                if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                     *ctx->dumpStream <<
-                                    "BuExt idx: " << std::dec << buExtIdx <<
-                                    " flg2: " << std::hex << flg2 << '\n';
-                }
+                                    "Undo type:  " << undoType << " " <<
+                                    "Undo type:  ";
+                    if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
+                        *ctx->dumpStream << "User undo done   ";
+                    if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0)
+                        *ctx->dumpStream << " Begin trans    ";
+                    *ctx->dumpStream <<
+                                    "Last buffer split:  " << lastBufferSplit << " \n" <<
+                                    "Tablespace Undo:  " << tablespaceUndo << " \n" <<
+                                    "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << '\n';
 
-            } else {
-                *ctx->dumpStream <<
-                                "[Undo type  ] " << undoType << " " <<
-                                " [User undo done   ] " << userUndoDone << " " <<
-                                " [Last buffer split] " << lastBufferSplit << " \n" <<
-                                "[Temp object]          " << tempObject << " " <<
-                                " [Tablespace Undo  ] " << tablespaceUndo << " " <<
-                                " [User only        ] " << userOnly << " \n";
+                    if ((redoLogRecord->flg & FLG_BUEXT) != 0) {
+                        uint16_t flg2 = ctx->read16(redoLogRecord->data + fieldPos + 24);
+                        auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data + fieldPos + 26));
+
+                        *ctx->dumpStream <<
+                                        "BuExt idx: " << std::dec << buExtIdx <<
+                                        " flg2: " << std::hex << flg2 << '\n';
+                    }
+
+                } else {
+                    *ctx->dumpStream <<
+                                    "[Undo type  ] " << undoType << " " <<
+                                    " [User undo done   ] " << userUndoDone << " " <<
+                                    " [Last buffer split] " << lastBufferSplit << " \n" <<
+                                    "[Temp object]          " << tempObject << " " <<
+                                    " [Tablespace Undo  ] " << tablespaceUndo << " " <<
+                                    " [User only        ] " << userOnly << " \n";
+                }
             }
         }
     }

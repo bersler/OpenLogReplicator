@@ -47,7 +47,8 @@ namespace OpenLogReplicator {
                 }
             }
 
-            *ctx->dumpStream << '\n';
+            if (ctx->dumpRedoLog >= 1)
+                *ctx->dumpStream << '\n';
         }
     }
 
@@ -125,7 +126,9 @@ namespace OpenLogReplicator {
 
         redoLogRecord->pdbId = ctx->read56(redoLogRecord->data + fieldPos + 0);
 
-        *ctx->dumpStream << "       " <<
-                        " pdbid:" << std::dec << redoLogRecord->pdbId;
+        if (ctx->dumpRedoLog >= 1) {
+            *ctx->dumpStream << "       " <<
+                            " pdbid:" << std::dec << redoLogRecord->pdbId;
+        }
     }
 }
