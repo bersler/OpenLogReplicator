@@ -1,6 +1,7 @@
 1.6.1
 - fix: welcome banner
 - code style cleanup
+- fix: diagnostic information populated when not enabled
 
 1.6.0
 - enhancement: add parameter -p

@@ -1,6 +1,6 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.6.1
+:revnumber: 1.6.13
 :revdate: 2024-06-08
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
@@ -19,6 +19,7 @@ This document describes the release notes of OpenLogReplicator.
 === Version 1.6.1
 - fix: welcome banner
 - code style cleanup
+- fix: dump information populated when not enabled
 
 === Version 1.6.0
 - enhancement: add parameter -p
