@@ -550,6 +550,8 @@ namespace OpenLogReplicator {
             payloadPB->set_op(pb::DDL);
             appendSchema(table, obj);
             payloadPB->set_ddl(sql, sqlLength);
+            payloadPB->set_owner(owner, ownerLength);
+            payloadPB->set_table(name, nameLength);
         }
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
