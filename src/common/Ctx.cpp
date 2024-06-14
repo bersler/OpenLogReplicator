@@ -35,15 +35,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "exception/RuntimeException.h"
 #include "metrics/Metrics.h"
 
-uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
+uint64_t OLR_LOCALES = OpenLogReplicator::Ctx::OLR_LOCALES_TIMESTAMP;
 
 namespace OpenLogReplicator {
-    const char Ctx::map10[11] = "0123456789";
-
-    const char Ctx::map16[17] = "0123456789abcdef";
-
-    const char Ctx::map16U[17] = "0123456789ABCDEF";
-
     const char Ctx::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     const char Ctx::map64R[256] = {
@@ -69,7 +63,7 @@ namespace OpenLogReplicator {
     const int64_t Ctx::cumDays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
     const int64_t Ctx::cumDaysLeap[12] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
 
-    typeIntX typeIntX::BASE10[TYPE_INTX_DIGITS][10];
+    typeIntX typeIntX::BASE10[typeIntX::DIGITS][10];
 
     Ctx::Ctx() :
             bigEndian(false),
@@ -117,18 +111,7 @@ namespace OpenLogReplicator {
             disableChecks(0),
             hardShutdown(false),
             softShutdown(false),
-            replicatorFinished(false),
-            read16(read16Little),
-            read32(read32Little),
-            read56(read56Little),
-            read64(read64Little),
-            readScn(readScnLittle),
-            readScnR(readScnRLittle),
-            write16(write16Little),
-            write32(write32Little),
-            write56(write56Little),
-            write64(write64Little),
-            writeScn(writeScnLittle) {
+            replicatorFinished(false) {
         memoryModulesAllocated[0] = 0;
         memoryModulesAllocated[1] = 0;
         memoryModulesAllocated[2] = 0;
@@ -166,235 +149,20 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::setBigEndian() {
-        bigEndian = true;
-        read16 = read16Big;
-        read32 = read32Big;
-        read56 = read56Big;
-        read64 = read64Big;
-        readScn = readScnBig;
-        readScnR = readScnRBig;
-        write16 = write16Big;
-        write32 = write32Big;
-        write56 = write56Big;
-        write64 = write64Big;
-        writeScn = writeScnBig;
-    }
+    void Ctx::checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const char* names[]) {
+        for (auto const& child : value.GetObject()) {
+            bool found = false;
+            for (int i = 0; names[i] != nullptr; ++i) {
+                if (strcmp(child.name.GetString(), names[i]) == 0) {
+                    found = true;
+                    break;
+                }
+            }
 
-    bool Ctx::isBigEndian() const {
-        return bigEndian;
-    }
-
-    uint16_t Ctx::read16Little(const uint8_t* buf) {
-        return static_cast<uint16_t>(buf[0]) | (static_cast<uint16_t>(buf[1]) << 8);
-    }
-
-    uint16_t Ctx::read16Big(const uint8_t* buf) {
-        return (static_cast<uint16_t>(buf[0]) << 8) | static_cast<uint16_t>(buf[1]);
-    }
-
-    uint32_t Ctx::read24Big(const uint8_t* buf) {
-        return (static_cast<uint32_t>(buf[0]) << 16) |
-               (static_cast<uint32_t>(buf[1]) << 8) | static_cast<uint32_t>(buf[2]);
-    }
-
-    uint32_t Ctx::read32Little(const uint8_t* buf) {
-        return static_cast<uint32_t>(buf[0]) | (static_cast<uint32_t>(buf[1]) << 8) |
-               (static_cast<uint32_t>(buf[2]) << 16) | (static_cast<uint32_t>(buf[3]) << 24);
-    }
-
-    uint32_t Ctx::read32Big(const uint8_t* buf) {
-        return (static_cast<uint32_t>(buf[0]) << 24) | (static_cast<uint32_t>(buf[1]) << 16) |
-               (static_cast<uint32_t>(buf[2]) << 8) | static_cast<uint32_t>(buf[3]);
-    }
-
-    uint64_t Ctx::read56Little(const uint8_t* buf) {
-        return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-               (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-               (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40) |
-               (static_cast<uint64_t>(buf[6]) << 48);
-    }
-
-    uint64_t Ctx::read56Big(const uint8_t* buf) {
-        return (static_cast<uint64_t>(buf[0]) << 24) | (static_cast<uint64_t>(buf[1]) << 16) |
-               (static_cast<uint64_t>(buf[2]) << 8) | (static_cast<uint64_t>(buf[3])) |
-               (static_cast<uint64_t>(buf[4]) << 40) | (static_cast<uint64_t>(buf[5]) << 32) |
-               (static_cast<uint64_t>(buf[6]) << 48);
-    }
-
-    uint64_t Ctx::read64Little(const uint8_t* buf) {
-        return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-               (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-               (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40) |
-               (static_cast<uint64_t>(buf[6]) << 48) | (static_cast<uint64_t>(buf[7]) << 56);
-    }
-
-    uint64_t Ctx::read64Big(const uint8_t* buf) {
-        return (static_cast<uint64_t>(buf[0]) << 56) | (static_cast<uint64_t>(buf[1]) << 48) |
-               (static_cast<uint64_t>(buf[2]) << 40) | (static_cast<uint64_t>(buf[3]) << 32) |
-               (static_cast<uint64_t>(buf[4]) << 24) | (static_cast<uint64_t>(buf[5]) << 16) |
-               (static_cast<uint64_t>(buf[6]) << 8) | static_cast<uint64_t>(buf[7]);
-    }
-
-    typeScn Ctx::readScnLittle(const uint8_t* buf) {
-        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-            return ZERO_SCN;
-        if ((buf[5] & 0x80) == 0x80)
-            return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-                   (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-                   (static_cast<uint64_t>(buf[6]) << 32) | (static_cast<uint64_t>(buf[7]) << 40) |
-                   (static_cast<uint64_t>(buf[4]) << 48) | (static_cast<uint64_t>(buf[5] & 0x7F) << 56);
-        else
-            return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-                   (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-                   (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40);
-    }
-
-    typeScn Ctx::readScnBig(const uint8_t* buf) {
-        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-            return ZERO_SCN;
-        if ((buf[4] & 0x80) == 0x80)
-            return static_cast<uint64_t>(buf[3]) | (static_cast<uint64_t>(buf[2]) << 8) |
-                   (static_cast<uint64_t>(buf[1]) << 16) | (static_cast<uint64_t>(buf[0]) << 24) |
-                   (static_cast<uint64_t>(buf[7]) << 32) | (static_cast<uint64_t>(buf[6]) << 40) |
-                   (static_cast<uint64_t>(buf[5]) << 48) | (static_cast<uint64_t>(buf[4] & 0x7F) << 56);
-        else
-            return static_cast<uint64_t>(buf[3]) | (static_cast<uint64_t>(buf[2]) << 8) |
-                   (static_cast<uint64_t>(buf[1]) << 16) | (static_cast<uint64_t>(buf[0]) << 24) |
-                   (static_cast<uint64_t>(buf[5]) << 32) | (static_cast<uint64_t>(buf[4]) << 40);
-    }
-
-    typeScn Ctx::readScnRLittle(const uint8_t* buf) {
-        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-            return ZERO_SCN;
-        if ((buf[1] & 0x80) == 0x80)
-            return static_cast<uint64_t>(buf[2]) | (static_cast<uint64_t>(buf[3]) << 8) |
-                   (static_cast<uint64_t>(buf[4]) << 16) | (static_cast<uint64_t>(buf[5]) << 24) |
-                   // (static_cast<uint64_t>(buf[6]) << 32) | (static_cast<uint64_t>(buf[7]) << 40) |
-                   (static_cast<uint64_t>(buf[0]) << 48) | (static_cast<uint64_t>(buf[1] & 0x7F) << 56);
-        else
-            return static_cast<uint64_t>(buf[2]) | (static_cast<uint64_t>(buf[3]) << 8) |
-                   (static_cast<uint64_t>(buf[4]) << 16) | (static_cast<uint64_t>(buf[5]) << 24) |
-                   (static_cast<uint64_t>(buf[0]) << 32) | (static_cast<uint64_t>(buf[1]) << 40);
-    }
-
-    typeScn Ctx::readScnRBig(const uint8_t* buf) {
-        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-            return ZERO_SCN;
-        if ((buf[0] & 0x80) == 0x80)
-            return static_cast<uint64_t>(buf[5]) | (static_cast<uint64_t>(buf[4]) << 8) |
-                   (static_cast<uint64_t>(buf[3]) << 16) | (static_cast<uint64_t>(buf[2]) << 24) |
-                   // (static_cast<uint64_t>(buf[7]) << 32) | (static_cast<uint64_t>(buf[6]) << 40) |
-                   (static_cast<uint64_t>(buf[1]) << 48) | (static_cast<uint64_t>(buf[0] & 0x7F) << 56);
-        else
-            return static_cast<uint64_t>(buf[5]) | (static_cast<uint64_t>(buf[4]) << 8) |
-                   (static_cast<uint64_t>(buf[3]) << 16) | (static_cast<uint64_t>(buf[2]) << 24) |
-                   (static_cast<uint64_t>(buf[1]) << 32) | (static_cast<uint64_t>(buf[0]) << 40);
-    }
-
-    void Ctx::write16Little(uint8_t* buf, uint16_t val) {
-        buf[0] = val & 0xFF;
-        buf[1] = (val >> 8) & 0xFF;
-    }
-
-    void Ctx::write16Big(uint8_t* buf, uint16_t val) {
-        buf[0] = (val >> 8) & 0xFF;
-        buf[1] = val & 0xFF;
-    }
-
-    void Ctx::write32Little(uint8_t* buf, uint32_t val) {
-        buf[0] = val & 0xFF;
-        buf[1] = (val >> 8) & 0xFF;
-        buf[2] = (val >> 16) & 0xFF;
-        buf[3] = (val >> 24) & 0xFF;
-    }
-
-    void Ctx::write32Big(uint8_t* buf, uint32_t val) {
-        buf[0] = (val >> 24) & 0xFF;
-        buf[1] = (val >> 16) & 0xFF;
-        buf[2] = (val >> 8) & 0xFF;
-        buf[3] = val & 0xFF;
-    }
-
-    void Ctx::write56Little(uint8_t* buf, uint64_t val) {
-        buf[0] = val & 0xFF;
-        buf[1] = (val >> 8) & 0xFF;
-        buf[2] = (val >> 16) & 0xFF;
-        buf[3] = (val >> 24) & 0xFF;
-        buf[4] = (val >> 32) & 0xFF;
-        buf[5] = (val >> 40) & 0xFF;
-        buf[6] = (val >> 48) & 0xFF;
-    }
-
-    void Ctx::write56Big(uint8_t* buf, uint64_t val) {
-        buf[0] = (val >> 24) & 0xFF;
-        buf[1] = (val >> 16) & 0xFF;
-        buf[2] = (val >> 8) & 0xFF;
-        buf[3] = val & 0xFF;
-        buf[4] = (val >> 40) & 0xFF;
-        buf[5] = (val >> 32) & 0xFF;
-        buf[6] = (val >> 48) & 0xFF;
-    }
-
-    void Ctx::write64Little(uint8_t* buf, uint64_t val) {
-        buf[0] = val & 0xFF;
-        buf[1] = (val >> 8) & 0xFF;
-        buf[2] = (val >> 16) & 0xFF;
-        buf[3] = (val >> 24) & 0xFF;
-        buf[4] = (val >> 32) & 0xFF;
-        buf[5] = (val >> 40) & 0xFF;
-        buf[6] = (val >> 48) & 0xFF;
-        buf[7] = (val >> 56) & 0xFF;
-    }
-
-    void Ctx::write64Big(uint8_t* buf, uint64_t val) {
-        buf[0] = (val >> 56) & 0xFF;
-        buf[1] = (val >> 48) & 0xFF;
-        buf[2] = (val >> 40) & 0xFF;
-        buf[3] = (val >> 32) & 0xFF;
-        buf[4] = (val >> 24) & 0xFF;
-        buf[5] = (val >> 16) & 0xFF;
-        buf[6] = (val >> 8) & 0xFF;
-        buf[7] = val & 0xFF;
-    }
-
-    void Ctx::writeScnLittle(uint8_t* buf, typeScn val) {
-        if (val < 0x800000000000) {
-            buf[0] = val & 0xFF;
-            buf[1] = (val >> 8) & 0xFF;
-            buf[2] = (val >> 16) & 0xFF;
-            buf[3] = (val >> 24) & 0xFF;
-            buf[4] = (val >> 32) & 0xFF;
-            buf[5] = (val >> 40) & 0xFF;
-        } else {
-            buf[0] = val & 0xFF;
-            buf[1] = (val >> 8) & 0xFF;
-            buf[2] = (val >> 16) & 0xFF;
-            buf[3] = (val >> 24) & 0xFF;
-            buf[4] = (val >> 48) & 0xFF;
-            buf[5] = ((val >> 56) & 0x7F) | 0x80;
-            buf[6] = (val >> 32) & 0xFF;
-            buf[7] = (val >> 40) & 0xFF;
-        }
-    }
-
-    void Ctx::writeScnBig(uint8_t* buf, typeScn val) {
-        if (val < 0x800000000000) {
-            buf[0] = (val >> 24) & 0xFF;
-            buf[1] = (val >> 16) & 0xFF;
-            buf[2] = (val >> 8) & 0xFF;
-            buf[3] = val & 0xFF;
-            buf[4] = (val >> 40) & 0xFF;
-            buf[5] = (val >> 32) & 0xFF;
-        } else {
-            buf[0] = (val >> 24) & 0xFF;
-            buf[1] = (val >> 16) & 0xFF;
-            buf[2] = (val >> 8) & 0xFF;
-            buf[3] = val & 0xFF;
-            buf[4] = ((val >> 56) & 0x7F) | 0x80;
-            buf[5] = (val >> 48) & 0xFF;
-            buf[6] = (val >> 40) & 0xFF;
-            buf[7] = (val >> 32) & 0xFF;
+            if (!found && memcmp(child.name.GetString(), "xdb-xnm", 7) != 0 &&
+                    memcmp(child.name.GetString(), "xdb-xpt", 7) != 0 &&
+                    memcmp(child.name.GetString(), "xdb-xqn", 7) != 0)
+                throw DataException(20003, "file: " + fileName + " - parse error, attribute " + child.name.GetString() + " not expected");
         }
     }
 
@@ -628,14 +396,14 @@ namespace OpenLogReplicator {
         tz /= 60;
 
         result[6] = 0;
-        result[5] = static_cast<char>('0' + (tz % 10));
+        result[5] = map10(tz % 10);
         tz /= 10;
-        result[4] = static_cast<char>('0' + (tz % 6));
+        result[4] = map10(tz % 6);
         tz /= 6;
         result[3] = ':';
-        result[2] = static_cast<char>('0' + (tz % 10));
+        result[2] = map10(tz % 10);
         tz /= 10;
-        result[1] = static_cast<char>('0' + (tz % 10));
+        result[1] = map10(tz % 10);
 
         return result;
     }
@@ -706,36 +474,36 @@ namespace OpenLogReplicator {
             ++month;
             ++day;
 
-            buffer[3] = '0' + static_cast<char>(year % 10);
+            buffer[3] = map10(year % 10);
             year /= 10;
-            buffer[2] = '0' + static_cast<char>(year % 10);
+            buffer[2] = map10(year % 10);
             year /= 10;
-            buffer[1] = '0' + static_cast<char>(year % 10);
+            buffer[1] = map10(year % 10);
             year /= 10;
-            buffer[0] = '0' + static_cast<char>(year);
+            buffer[0] = map10(year);
             buffer[4] = '-';
-            buffer[6] = '0' + static_cast<char>(month % 10);
+            buffer[6] = map10(month % 10);
             month /= 10;
-            buffer[5] = '0' + static_cast<char>(month);
+            buffer[5] = map10(month);
             buffer[7] = '-';
-            buffer[9] = '0' + static_cast<char>(day % 10);
+            buffer[9] = map10(day % 10);
             day /= 10;
-            buffer[8] = '0' + static_cast<char>(day);
+            buffer[8] = map10(day);
             if (addT)
                 buffer[10] = 'T';
             else
                 buffer[10] = ' ';
-            buffer[12] = '0' + static_cast<char>(hour % 10);
+            buffer[12] = map10(hour % 10);
             hour /= 10;
-            buffer[11] = '0' + static_cast<char>(hour);
+            buffer[11] = map10(hour);
             buffer[13] = ':';
-            buffer[15] = '0' + static_cast<char>(minute % 10);
+            buffer[15] = map10(minute % 10);
             minute /= 10;
-            buffer[14] = '0' + static_cast<char>(minute);
+            buffer[14] = map10(minute);
             buffer[16] = ':';
-            buffer[18] = '0' + static_cast<char>(second % 10);
+            buffer[18] = map10(second % 10);
             second /= 10;
-            buffer[17] = '0' + static_cast<char>(second);
+            buffer[17] = map10(second);
             if (addZ) {
                 buffer[19] = 'Z';
                 buffer[20] = 0;
@@ -784,36 +552,36 @@ namespace OpenLogReplicator {
             ++month;
             ++day;
             buffer[0] = '-';
-            buffer[4] = '0' + static_cast<char>(year % 10);
+            buffer[4] = map10(year % 10);
             year /= 10;
-            buffer[3] = '0' + static_cast<char>(year % 10);
+            buffer[3] = map10(year % 10);
             year /= 10;
-            buffer[2] = '0' + static_cast<char>(year % 10);
+            buffer[2] = map10(year % 10);
             year /= 10;
-            buffer[1] = '0' + static_cast<char>(year);
+            buffer[1] = map10(year);
             buffer[5] = '-';
-            buffer[7] = '0' + static_cast<char>(month % 10);
+            buffer[7] = map10(month % 10);
             month /= 10;
-            buffer[6] = '0' + static_cast<char>(month);
+            buffer[6] = map10(month);
             buffer[8] = '-';
-            buffer[10] = '0' + static_cast<char>(day % 10);
+            buffer[10] = map10(day % 10);
             day /= 10;
-            buffer[9] = '0' + static_cast<char>(day);
+            buffer[9] = map10(day);
             if (addT)
                 buffer[11] = 'T';
             else
                 buffer[11] = ' ';
-            buffer[13] = '0' + static_cast<char>(hour % 10);
+            buffer[13] = map10(hour % 10);
             hour /= 10;
-            buffer[12] = '0' + static_cast<char>(hour);
+            buffer[12] = map10(hour);
             buffer[14] = ':';
-            buffer[16] = '0' + static_cast<char>(minute % 10);
+            buffer[16] = map10(minute % 10);
             minute /= 10;
-            buffer[15] = '0' + static_cast<char>(minute);
+            buffer[15] = map10(minute);
             buffer[17] = ':';
-            buffer[19] = '0' + static_cast<char>(second % 10);
+            buffer[19] = map10(second % 10);
             second /= 10;
-            buffer[18] = '0' + static_cast<char>(second);
+            buffer[18] = map10(second);
             if (addZ) {
                 buffer[20] = 'Z';
                 buffer[21] = 0;
@@ -1117,7 +885,7 @@ namespace OpenLogReplicator {
             } else if (*c_str == '"' || *c_str == '\\') {
                 ss << '\\' << *c_str;
             } else if (*c_str < 32) {
-                ss << "\\u00" << map16[(*c_str >> 4) & 0x0F] << map16[*c_str & 0x0F];
+                ss << "\\u00" << Ctx::map16((*c_str >> 4) & 0x0F) << Ctx::map16(*c_str & 0x0F);
             } else {
                 ss << *c_str;
             }

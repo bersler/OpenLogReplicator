@@ -44,29 +44,29 @@ namespace OpenLogReplicator {
 
     bool BoolValue::evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) {
         switch (boolType) {
-            case BOOL_VALUE_FALSE:
+            case VALUE_FALSE:
                 return false;
 
-            case BOOL_VALUE_TRUE:
+            case VALUE_TRUE:
                 return true;
 
-            case BOOL_OPERATOR_AND:
+            case OPERATOR_AND:
                 if (!left->evaluateToBool(op, attributes))
                     return false;
                 return right->evaluateToBool(op, attributes);
 
-            case BOOL_OPERATOR_OR:
+            case OPERATOR_OR:
                 if (left->evaluateToBool(op, attributes))
                     return true;
                 return right->evaluateToBool(op, attributes);
 
-            case BOOL_OPERATOR_NOT:
+            case OPERATOR_NOT:
                 return !left->evaluateToBool(op, attributes);
 
-            case BOOL_OPERATOR_EQUAL:
+            case OPERATOR_EQUAL:
                 return (left->evaluateToString(op, attributes) == right->evaluateToString(op, attributes));
 
-            case BOOL_OPERATOR_NOT_EQUAL:
+            case OPERATOR_NOT_EQUAL:
                 return (left->evaluateToString(op, attributes) != right->evaluateToString(op, attributes));
         }
         throw RuntimeException(50066, "invalid expression evaluation: invalid bool type");

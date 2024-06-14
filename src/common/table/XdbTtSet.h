@@ -23,12 +23,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef XDB_TTSET_H_
 #define XDB_TTSET_H_
 
-#define XDB_TTSET_GUID_LENGTH 32
-#define XDB_TTSET_TOKSUF_LENGTH 26
-
 namespace OpenLogReplicator {
     class XdbTtSet final {
     public:
+        static constexpr uint64_t GUID_LENGTH = 32;
+        static constexpr uint64_t TOKSUF_LENGTH = 26;
+
         XdbTtSet(typeRowId newRowId, const char* newGuid, const char* newTokSuf, uint64_t newFlags, typeObj newObj) :
                 rowId(newRowId),
                 guid(newGuid),

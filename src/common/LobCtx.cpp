@@ -33,8 +33,8 @@ namespace OpenLogReplicator {
 
             addLob(ctx, lobId, orphanedLobsIt->first.page, 0, orphanedLobsIt->second, xid, offset);
 
-            if (ctx->trace & TRACE_LOB)
-                ctx->logTrace(TRACE_LOB, "id: " + lobId.lower() + " page: " + std::to_string(orphanedLobsIt->first.page));
+            if (ctx->trace & Ctx::TRACE_LOB)
+                ctx->logTrace(Ctx::TRACE_LOB, "id: " + lobId.lower() + " page: " + std::to_string(orphanedLobsIt->first.page));
 
             orphanedLobsIt = orphanedLobs->erase(orphanedLobsIt);
         }
@@ -53,8 +53,8 @@ namespace OpenLogReplicator {
         LobDataElement element(page, pageOffset);
         auto dataMapIt = lobData->dataMap.find(element);
         if (dataMapIt != lobData->dataMap.end()) {
-            if (ctx->trace & TRACE_LOB)
-                ctx->logTrace(TRACE_LOB, "id: " + lobId.lower() + " page: " + std::to_string(page) + " OVERWRITE");
+            if (ctx->trace & Ctx::TRACE_LOB)
+                ctx->logTrace(Ctx::TRACE_LOB, "id: " + lobId.lower() + " page: " + std::to_string(page) + " OVERWRITE");
             delete[] dataMapIt->second;
         }
 
@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
         }
 
         uint32_t pageNo = redoLogRecordLob->lobPageNo;
-        if (pageNo != INVALID_LOB_PAGE_NO) {
+        if (pageNo != RedoLogRecord::INVALID_LOB_PAGE_NO) {
             auto indexMapIt = lobData->indexMap.find(page);
             if (indexMapIt != lobData->indexMap.end()) {
                 if (indexMapIt->second != page)

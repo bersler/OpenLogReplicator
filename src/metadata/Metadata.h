@@ -33,15 +33,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef METADATA_H_
 #define METADATA_H_
 
-// Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
-#define METADATA_STATUS_READY               0
-
-// Replicator tries to start replication with given parameters.
-#define METADATA_STATUS_START               1
-
-// Replication is running. The metadata is initialized, the starting point of replication is defined.
-#define METADATA_STATUS_REPLICATE           2
-
 namespace OpenLogReplicator {
     class Ctx;
     class Locales;
@@ -57,8 +48,16 @@ namespace OpenLogReplicator {
     protected:
         std::condition_variable condReplicator;
         std::condition_variable condWriter;
+        static constexpr uint64_t CHECKPOINT_SCHEMA_FILE_MAX_SIZE = 2147483648;
 
     public:
+        // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
+        static constexpr uint64_t STATUS_READY = 0;
+        // Replicator tries to start replication with given parameters.
+        static constexpr uint64_t STATUS_START = 1;
+        // Replication is running. The metadata is initialized, the starting point of replication is defined.
+        static constexpr uint64_t STATUS_REPLICATE = 2;
+
         Schema* schema;
         Ctx* ctx;
         Locales* locales;

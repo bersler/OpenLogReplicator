@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <algorithm>
 #include <csignal>
+#include <pthread.h>
 #include <regex>
 #include <sys/utsname.h>
 #include <thread>
@@ -93,11 +94,15 @@ namespace OpenLogReplicator {
         int ret = 1;
         struct utsname name;
         if (uname(&name)) exit(-1);
+        std::string buildArch;
+        if (strlen(OpenLogReplicator_CMAKE_BUILD_TIMESTAMP) > 0)
+            buildArch = ", build-arch: " OpenLogReplicator_CPU_ARCH;
 
         mainCtx->welcome("OpenLogReplicator v" + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
                          std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
                          " (C) 2018-2024 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
-        mainCtx->welcome("arch: " + std::string(name.machine) + ", system: " + name.sysname + ", release: " + name.release + ", build: " +
+        mainCtx->welcome("arch: " + std::string(name.machine) + buildArch + ", system: " + name.sysname +
+                         ", release: " + name.release + ", build: " +
                          OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"
                          HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC);
 
@@ -112,15 +117,34 @@ namespace OpenLogReplicator {
             if (getuid() == 0)
                 throw RuntimeException(10020, "program is run as root, you should never do that");
 
-            if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
-                // Print banner and exit
-                return 0;
-            } else if (argc == 3 && (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)) {
-                // Custom config path
-                fileName = argv[2];
-            } else if (argc > 1)
+            for (int i = 1; i < argc; i++) {
+                if ((strncmp(argv[i], "-v", 2) == 0 || strncmp(argv[i], "--version", 9) == 0)) {
+                    // Print banner and exit
+                    return 0;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-f", 2) == 0 || strncmp(argv[i], "--file", 6) == 0)) {
+                    // Custom config path
+                    fileName = argv[i + 1];
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-p", 2) == 0 || strncmp(argv[i], "--process", 9) == 0)) {
+                    // Custom process name
+#if __linux__
+                    pthread_setname_np(pthread_self(), argv[i + 1]);
+#endif
+#if __APPLE__
+                    pthread_setname_np(argv[i + 1]);
+#endif
+                    ++i;
+                    continue;
+                }
+
                 throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
-                                                    " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+                                                             " [-v|--version] [-f|--file CONFIG] [-p|--process PROCESSNAME]");
+            }
         } catch (ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             return 1;
@@ -168,7 +192,7 @@ int main(int argc, char** argv) {
     if (olrLocalesStr != nullptr)
         olrLocales = olrLocalesStr;
     if (olrLocales == "MOCK")
-        OLR_LOCALES = OLR_LOCALES_MOCK;
+        OLR_LOCALES = OpenLogReplicator::Ctx::OLR_LOCALES_MOCK;
 
     int ret = OpenLogReplicator::mainFunction(argc, argv);
 

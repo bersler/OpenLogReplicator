@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.1",
   "source": [
     {
       "alias": "S1",
@@ -33,7 +33,6 @@
       "writer": {
         "type": "file",
         "output": "output-%t.json",
-        "format": "%F-%T",
         "new-line": 1,
         "max-file-size": 1073741824,
         "append": 0

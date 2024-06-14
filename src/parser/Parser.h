@@ -26,8 +26,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef PARSER_H_
 #define PARSER_H_
 
-#define MAX_LWN_CHUNKS (512*2/MEMORY_CHUNK_SIZE_MB)
-
 namespace OpenLogReplicator {
     class Builder;
     class Reader;
@@ -42,10 +40,29 @@ namespace OpenLogReplicator {
         typeScn scn;
         typeSubScn subScn;
         typeBlk block;
+
+        bool operator<(const LwnMember& other) const {
+            if (scn < other.scn)
+                return true;
+            if (other.scn < scn)
+                return false;
+            if (subScn < other.subScn)
+                return true;
+            if (other.subScn < subScn)
+                return false;
+            if (block < other.block)
+                return true;
+            if (block > other.block)
+                return false;
+            return (offset < other.offset);
+        }
     };
 
     class Parser final {
     protected:
+        static constexpr uint64_t MAX_LWN_CHUNKS = 512 * 2 / Ctx::MEMORY_CHUNK_SIZE_MB;
+        static constexpr uint64_t MAX_RECORDS_IN_LWN = 1048576;
+
         Ctx* ctx;
         Builder* builder;
         Metadata* metadata;
@@ -54,12 +71,12 @@ namespace OpenLogReplicator {
         Transaction* lastTransaction;
 
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
-        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
+        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN + 1];
         uint64_t lwnAllocated;
         uint64_t lwnAllocatedMax;
         typeTime lwnTimestamp;
         typeScn lwnScn;
-        uint64_t lwnCheckpointBlock;
+        typeBlk lwnCheckpointBlock;
 
         void freeLwn();
         void analyzeLwn(LwnMember* lwnMember);

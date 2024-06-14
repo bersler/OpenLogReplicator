@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
         fileSize = fileStat.st_size;
 
 #if __linux__
-        if (!FLAG(REDO_FLAGS_DIRECT_DISABLE))
+        if (!ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
             flags |= O_DIRECT;
 #endif
 
@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
         }
 
 #if __APPLE__
-        if (!FLAG(REDO_FLAGS_DIRECT_DISABLE)) {
+        if (!ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
             if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0)
                 ctx->error(10008, "file: " + fileName + " - set no cache returned: " + strerror(errno));
         }
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
 
     int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
-        if (ctx->trace & TRACE_PERFORMANCE)
+        if (ctx->trace & Ctx::TRACE_PERFORMANCE)
             startTime = ctx->clock->getTimeUt();
         int64_t bytes = 0;
         uint64_t tries = ctx->archReadTries;
@@ -91,9 +91,9 @@ namespace OpenLogReplicator {
             if (ctx->hardShutdown)
                 break;
             bytes = pread(fileDes, buf, size, static_cast<int64_t>(offset));
-            if (ctx->trace & TRACE_FILE)
-                ctx->logTrace(TRACE_FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
-                                          " returns " + std::to_string(bytes));
+            if (ctx->trace & Ctx::TRACE_FILE)
+                ctx->logTrace(Ctx::TRACE_FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
+                                               " returns " + std::to_string(bytes));
 
             if (bytes > 0)
                 break;
@@ -113,12 +113,12 @@ namespace OpenLogReplicator {
         }
 
         // Maybe direct IO does not work
-        if (bytes < 0 && !FLAG(REDO_FLAGS_DIRECT_DISABLE)) {
+        if (bytes < 0 && !ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
             ctx->hint("if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " +
-                      std::to_string(REDO_FLAGS_DIRECT_DISABLE));
+                      std::to_string(Ctx::REDO_FLAGS_DIRECT_DISABLE));
         }
 
-        if (ctx->trace & TRACE_PERFORMANCE) {
+        if (ctx->trace & Ctx::TRACE_PERFORMANCE) {
             if (bytes > 0)
                 sumRead += bytes;
             sumTime += ctx->clock->getTimeUt() - startTime;

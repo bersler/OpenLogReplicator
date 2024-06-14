@@ -57,18 +57,18 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_READY) {
-            ctx->logTrace(TRACE_WRITER, "info, ready");
+        if (metadata->status == Metadata::STATUS_READY) {
+            ctx->logTrace(Ctx::TRACE_WRITER, "info, ready");
             response.set_code(pb::ResponseCode::READY);
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_START) {
-            ctx->logTrace(TRACE_WRITER, "info, start");
+        if (metadata->status == Metadata::STATUS_START) {
+            ctx->logTrace(Ctx::TRACE_WRITER, "info, start");
             response.set_code(pb::ResponseCode::STARTING);
         }
 
-        ctx->logTrace(TRACE_WRITER, "info, first scn: " + std::to_string(metadata->firstDataScn));
+        ctx->logTrace(Ctx::TRACE_WRITER, "info, first scn: " + std::to_string(metadata->firstDataScn));
         response.set_code(pb::ResponseCode::REPLICATE);
         response.set_scn(metadata->firstDataScn);
         response.set_c_scn(confirmedScn);
@@ -83,8 +83,8 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_REPLICATE) {
-            ctx->logTrace(TRACE_WRITER, "client requested start when already started");
+        if (metadata->status == Metadata::STATUS_REPLICATE) {
+            ctx->logTrace(Ctx::TRACE_WRITER, "client requested start when already started");
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
             response.set_scn(metadata->firstDataScn);
             response.set_c_scn(confirmedScn);
@@ -92,8 +92,8 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (metadata->status == METADATA_STATUS_START) {
-            ctx->logTrace(TRACE_WRITER, "client requested start when already starting");
+        if (metadata->status == Metadata::STATUS_START) {
+            ctx->logTrace(Ctx::TRACE_WRITER, "client requested start when already starting");
             response.set_code(pb::ResponseCode::STARTING);
             return;
         }
@@ -103,16 +103,16 @@ namespace OpenLogReplicator {
             metadata->startSequence = request.seq();
             paramSeq = ", seq: " + std::to_string(request.seq());
         } else
-            metadata->startSequence = ZERO_SEQ;
+            metadata->startSequence = Ctx::ZERO_SEQ;
 
-        metadata->startScn = ZERO_SCN;
+        metadata->startScn = Ctx::ZERO_SCN;
         metadata->startTime = "";
         metadata->startTimeRel = 0;
 
         switch (request.tm_val_case()) {
             case pb::RedoRequest::TmValCase::kScn:
                 metadata->startScn = request.scn();
-                if (metadata->startScn == ZERO_SCN)
+                if (metadata->startScn == Ctx::ZERO_SCN)
                     ctx->info(0, "client requested to start from NOW" + paramSeq);
                 else
                     ctx->info(0, "client requested to start from scn: " + std::to_string(metadata->startScn) + paramSeq);
@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
                 break;
 
             default:
-                ctx->logTrace(TRACE_WRITER, "client requested an invalid starting point");
+                ctx->logTrace(Ctx::TRACE_WRITER, "client requested an invalid starting point");
                 response.set_code(pb::ResponseCode::INVALID_COMMAND);
                 return;
         }
@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
 
         metadata->waitForReplicator();
 
-        if (metadata->status == METADATA_STATUS_REPLICATE) {
+        if (metadata->status == Metadata::STATUS_REPLICATE) {
             response.set_code(pb::ResponseCode::REPLICATE);
             response.set_scn(metadata->firstDataScn);
             response.set_c_scn(confirmedScn);
@@ -146,7 +146,7 @@ namespace OpenLogReplicator {
             ctx->info(0, "streaming to client");
             streaming = true;
         } else {
-            ctx->logTrace(TRACE_WRITER, "starting failed");
+            ctx->logTrace(Ctx::TRACE_WRITER, "starting failed");
             response.set_code(pb::ResponseCode::FAILED_START);
         }
     }
@@ -195,10 +195,10 @@ namespace OpenLogReplicator {
         if (!stream->isConnected())
             return;
 
-        uint8_t msgR[READ_NETWORK_BUFFER];
+        uint8_t msgR[Stream::READ_NETWORK_BUFFER];
         std::string msgS;
 
-        uint64_t length = stream->receiveMessageNB(msgR, READ_NETWORK_BUFFER);
+        uint64_t length = stream->receiveMessageNB(msgR, Stream::READ_NETWORK_BUFFER);
 
         if (length > 0) {
             request.Clear();

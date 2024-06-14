@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.5.0
-:revdate: 2024-01-27
+:revnumber: 1.6.1
+:revdate: 2024-06-01
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -15,6 +15,25 @@ a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
 This document describes the release notes of OpenLogReplicator.
 
 == Major Release 1.x
+
+=== Version 1.6.1
+- fix: welcome banner
+
+=== Version 1.6.0
+- enhancement: add parameter -p
+- enhancement: performance optimizations
+- enhancement: add offset to payload for debugging purposes
+- enhancement: support UPDATE operations for NOT NULL columns with occasional NULL values (experimental)
+- enhancement: add JSON validation for invalid tags
+- fix: context field contains invalid value
+- fix: invalid tag in example json config file
+- fix: online redo log are read in rare cases for archived redo log only mode
+- fix: don't write checkpoint file until the first data chunk is processed
+- fix: minor bug related to crash with large number of columns
+- fix: error: "parse error, attribute xid: not expected"
+- fix: in rare cases, the AFTER value for UPDATE is missing
+- code style cleanup
+- documentation update
 
 === Version 1.5.0
 - code style cleanup

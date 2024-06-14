@@ -46,47 +46,47 @@ namespace OpenLogReplicator {
         if (this->owner == "SYS") {
             sys = true;
             if (this->name == "CCOL$")
-                systemTable = TABLE_SYS_CCOL;
+                systemTable = SYS_CCOL;
             else if (this->name == "CDEF$")
-                systemTable = TABLE_SYS_CDEF;
+                systemTable = SYS_CDEF;
             else if (this->name == "COL$")
-                systemTable = TABLE_SYS_COL;
+                systemTable = SYS_COL;
             else if (this->name == "DEFERRED_STG$")
-                systemTable = TABLE_SYS_DEFERRED_STG;
+                systemTable = SYS_DEFERRED_STG;
             else if (this->name == "ECOL$")
-                systemTable = TABLE_SYS_ECOL;
+                systemTable = SYS_ECOL;
             else if (this->name == "LOB$")
-                systemTable = TABLE_SYS_LOB;
+                systemTable = SYS_LOB;
             else if (this->name == "LOBCOMPPART$")
-                systemTable = TABLE_SYS_LOB_COMP_PART;
+                systemTable = SYS_LOB_COMP_PART;
             else if (this->name == "LOBFRAG$")
-                systemTable = TABLE_SYS_LOB_FRAG;
+                systemTable = SYS_LOB_FRAG;
             else if (this->name == "OBJ$")
-                systemTable = TABLE_SYS_OBJ;
+                systemTable = SYS_OBJ;
             else if (this->name == "TAB$")
-                systemTable = TABLE_SYS_TAB;
+                systemTable = SYS_TAB;
             else if (this->name == "TABPART$")
-                systemTable = TABLE_SYS_TABPART;
+                systemTable = SYS_TABPART;
             else if (this->name == "TABCOMPART$")
-                systemTable = TABLE_SYS_TABCOMPART;
+                systemTable = SYS_TABCOMPART;
             else if (this->name == "TABSUBPART$")
-                systemTable = TABLE_SYS_TABSUBPART;
+                systemTable = SYS_TABSUBPART;
             else if (this->name == "TS$")
-                systemTable = TABLE_SYS_TS;
+                systemTable = SYS_TS;
             else if (this->name == "USER$")
-                systemTable = TABLE_SYS_USER;
+                systemTable = SYS_USER;
         } else if (this->owner == "XDB") {
             sys = true;
             if (this->name == "XDB$TTSET")
-                systemTable = TABLE_XDB_TTSET;
+                systemTable = XDB_TTSET;
             else if (this->name.substr(0, 4) == "X$NM") {
-                systemTable = TABLE_XDB_XNM;
+                systemTable = XDB_XNM;
                 tokSuf = this->name.substr(4);
             } else if (this->name.substr(0, 4) == "X$PT") {
-                systemTable = TABLE_XDB_XPT;
+                systemTable = XDB_XPT;
                 tokSuf = this->name.substr(4);
             } else if (this->name.substr(0, 4) == "X$QN") {
-                systemTable = TABLE_XDB_XQN;
+                systemTable = XDB_XQN;
                 tokSuf = this->name.substr(4);
             }
         } else
@@ -152,8 +152,8 @@ namespace OpenLogReplicator {
         if (condition != nullptr)
             result = condition->evaluateToBool(op, attributes);
 
-        if (ctx->trace & TRACE_CONDITION)
-            ctx->logTrace(TRACE_CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + conditionStr + ", result: " +
+        if (ctx->trace & Ctx::TRACE_CONDITION)
+            ctx->logTrace(Ctx::TRACE_CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + conditionStr + ", result: " +
                                            std::to_string(result));
         return result;
     }

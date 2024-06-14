@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         if (transaction == nullptr) {
-            ctx->logTrace(TRACE_TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
+            ctx->logTrace(Ctx::TRACE_TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
             return;
         }
 
@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
             transaction->attributes.insert_or_assign("LogMiner internal transaction", value);
 
             if (ctx->dumpRedoLog >= 1) {
-                if (ctx->version < REDO_VERSION_19_0) {
+                if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                     ctx->dumpStream << "Logmnr Internal transaction\n";
                 } else {
                     ctx->dumpStream << "LogMiner Internal transaction\n";
@@ -208,7 +208,7 @@ namespace OpenLogReplicator {
             transaction->attributes.insert_or_assign("disabled logical repln. txn.", value);
 
             if (ctx->dumpRedoLog >= 1) {
-                if (ctx->version < REDO_VERSION_19_0) {
+                if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                     ctx->dumpStream << "Tx audit CV flags undefined\n";
                 } else {
                     ctx->dumpStream << "Disabled Logical Repln. txn.\n";
@@ -269,7 +269,7 @@ namespace OpenLogReplicator {
 
         uint16_t serialNumber = ctx->read16(redoLogRecord->data + fieldPos + 2);
         uint32_t sessionNumber;
-        if (ctx->version < REDO_VERSION_19_0)
+        if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
             sessionNumber = ctx->read16(redoLogRecord->data + fieldPos + 0);
         else {
             if (fieldLength < 8) {

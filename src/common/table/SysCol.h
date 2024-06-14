@@ -24,63 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_COL_H_
 #define SYS_COL_H_
 
-#define SYS_COL_NAME_LENGTH                             128
-#define SYS_COL_PROPERTY_ADT                            1
-#define SYS_COL_PROPERTY_OID                            2
-#define SYS_COL_PROPERTY_NESTED1                        4
-#define SYS_COL_PROPERTY_VIRTUAL1                       8
-#define SYS_COL_PROPERTY_NESTED_TABLE_SETID             16
-#define SYS_COL_PROPERTY_HIDDEN                         32
-#define SYS_COL_PROPERTY_PRIMARY_KEY_BASED_OID          64
-#define SYS_COL_PROPERTY_STORED_AS_LOB                  128
-#define SYS_COL_PROPERTY_SYSTEM_GENERATED               256
-#define SYS_COL_PROPERTY_ROWINFO_TYPED_TABLE_VIEW       512
-#define SYS_COL_PROPERTY_NESTED_TABLES_SETID            1024
-#define SYS_COL_PROPERTY_NOT_INSERTABLE                 2048
-#define SYS_COL_PROPERTY_NOT_UPDATABLE                  4096
-#define SYS_COL_PROPERTY_NOT_DELETABLE                  8192
-#define SYS_COL_PROPERTY_DROPPED                        16384
-#define SYS_COL_PROPERTY_UNUSED                         32768
-#define SYS_COL_PROPERTY_VIRTUAL2                       65536
-#define SYS_COL_PROPERTY_PLACE_DESCEND_OPERATOR_ON_TOP  131072
-#define SYS_COL_PROPERTY_VIRTUAL_IS_NLS_DEPENDENT       262144
-#define SYS_COL_PROPERTY_REF_OID_COL                    524288
-#define SYS_COL_PROPERTY_HIDDEN_SNAPSHOT_BASE_TABLE     1048576
-#define SYS_COL_PROPERTY_ATTRIBUTE_OF_USER_DEFINED_REF  2097152
-#define SYS_COL_PROPERTY_HIDDEN_RLS                     4194304
-#define SYS_COL_PROPERTY_LENGTH_IN_CHARS                8388608
-#define SYS_COL_PROPERTY_VIRTUAL_EXPRESSION_SPECIFIED   16777216
-#define SYS_COL_PROPERTY_TYPEID                         33554432
-#define SYS_COL_PROPERTY_ENCRYPTED                      67108864
-#define SYS_COL_PROPERTY_ENCRYPTED_WITHOUT_SALT         536870912
-#define SYS_COL_PROPERTY_ADDED                          1073741824
-#define SYS_COL_PROPERTY_DEFAULT_WITH_SEQUENCE          34359738368
-#define SYS_COL_PROPERTY_DEFAULT_ON_NULL                68719476736
-#define SYS_COL_PROPERTY_GENERATED_ALWAYS_IDENTITY      137438953472
-#define SYS_COL_PROPERTY_GENERATED_BY_DEFAULT_IDENTITY  274877906944
-#define SYS_COL_PROPERTY_GUARD                          549755813888
-
-#define SYS_COL_TYPE_VARCHAR                 1
-#define SYS_COL_TYPE_NUMBER                  2
-#define SYS_COL_TYPE_LONG                    8
-#define SYS_COL_TYPE_DATE                    12
-#define SYS_COL_TYPE_RAW                     23
-#define SYS_COL_TYPE_LONG_RAW                24
-#define SYS_COL_TYPE_XMLTYPE                 58
-#define SYS_COL_TYPE_CHAR                    96
-#define SYS_COL_TYPE_FLOAT                   100
-#define SYS_COL_TYPE_DOUBLE                  101
-#define SYS_COL_TYPE_CLOB                    112
-#define SYS_COL_TYPE_BLOB                    113
-#define SYS_COL_TYPE_JSON                    119
-#define SYS_COL_TYPE_TIMESTAMP               180
-#define SYS_COL_TYPE_TIMESTAMP_WITH_TZ       181
-#define SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH  182
-#define SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND  183
-#define SYS_COL_TYPE_UROWID                  208
-#define SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ 231
-#define SYS_COL_TYPE_BOOLEAN                 252
-
 namespace OpenLogReplicator {
     class SysColSeg final {
     public:
@@ -132,6 +75,63 @@ namespace OpenLogReplicator {
 
     class SysCol final {
     public:
+        static constexpr uint64_t NAME_LENGTH = 128;
+        static constexpr uint64_t PROPERTY_ADT = 1;
+        static constexpr uint64_t PROPERTY_OID = 2;
+        static constexpr uint64_t PROPERTY_NESTED1 = 4;
+        static constexpr uint64_t PROPERTY_VIRTUAL1 = 8;
+        static constexpr uint64_t PROPERTY_NESTED_TABLE_SETID = 16;
+        static constexpr uint64_t PROPERTY_HIDDEN = 32;
+        static constexpr uint64_t PROPERTY_PRIMARY_KEY_BASED_OID = 64;
+        static constexpr uint64_t PROPERTY_STORED_AS_LOB = 128;
+        static constexpr uint64_t PROPERTY_SYSTEM_GENERATED = 256;
+        static constexpr uint64_t PROPERTY_ROWINFO_TYPED_TABLE_VIEW = 512;
+        static constexpr uint64_t PROPERTY_NESTED_TABLES_SETID = 1024;
+        static constexpr uint64_t PROPERTY_NOT_INSERTABLE = 2048;
+        static constexpr uint64_t PROPERTY_NOT_UPDATABLE = 4096;
+        static constexpr uint64_t PROPERTY_NOT_DELETABLE = 8192;
+        static constexpr uint64_t PROPERTY_DROPPED = 16384;
+        static constexpr uint64_t PROPERTY_UNUSED = 32768;
+        static constexpr uint64_t PROPERTY_VIRTUAL2 = 65536;
+        static constexpr uint64_t PROPERTY_PLACE_DESCEND_OPERATOR_ON_TOP = 131072;
+        static constexpr uint64_t PROPERTY_VIRTUAL_IS_NLS_DEPENDENT = 262144;
+        static constexpr uint64_t PROPERTY_REF_OID_COL = 524288;
+        static constexpr uint64_t PROPERTY_HIDDEN_SNAPSHOT_BASE_TABLE = 1048576;
+        static constexpr uint64_t PROPERTY_ATTRIBUTE_OF_USER_DEFINED_REF = 2097152;
+        static constexpr uint64_t PROPERTY_HIDDEN_RLS = 4194304;
+        static constexpr uint64_t PROPERTY_LENGTH_IN_CHARS = 8388608;
+        static constexpr uint64_t PROPERTY_VIRTUAL_EXPRESSION_SPECIFIED = 16777216;
+        static constexpr uint64_t PROPERTY_TYPEID = 33554432;
+        static constexpr uint64_t PROPERTY_ENCRYPTED = 67108864;
+        static constexpr uint64_t PROPERTY_ENCRYPTED_WITHOUT_SALT = 536870912;
+        static constexpr uint64_t PROPERTY_ADDED = 1073741824;
+        static constexpr uint64_t PROPERTY_DEFAULT_WITH_SEQUENCE = 34359738368;
+        static constexpr uint64_t PROPERTY_DEFAULT_ON_NULL = 68719476736;
+        static constexpr uint64_t PROPERTY_GENERATED_ALWAYS_IDENTITY = 137438953472;
+        static constexpr uint64_t PROPERTY_GENERATED_BY_DEFAULT_IDENTITY = 274877906944;
+        static constexpr uint64_t PROPERTY_GUARD = 549755813888;
+
+        static constexpr uint64_t TYPE_VARCHAR = 1;
+        static constexpr uint64_t TYPE_NUMBER = 2;
+        static constexpr uint64_t TYPE_LONG = 8;
+        static constexpr uint64_t TYPE_DATE = 12;
+        static constexpr uint64_t TYPE_RAW = 23;
+        static constexpr uint64_t TYPE_LONG_RAW = 24;
+        static constexpr uint64_t TYPE_XMLTYPE = 58;
+        static constexpr uint64_t TYPE_CHAR = 96;
+        static constexpr uint64_t TYPE_FLOAT = 100;
+        static constexpr uint64_t TYPE_DOUBLE = 101;
+        static constexpr uint64_t TYPE_CLOB = 112;
+        static constexpr uint64_t TYPE_BLOB = 113;
+        static constexpr uint64_t TYPE_JSON = 119;
+        static constexpr uint64_t TYPE_TIMESTAMP = 180;
+        static constexpr uint64_t TYPE_TIMESTAMP_WITH_TZ = 181;
+        static constexpr uint64_t TYPE_INTERVAL_YEAR_TO_MONTH = 182;
+        static constexpr uint64_t TYPE_INTERVAL_DAY_TO_SECOND = 183;
+        static constexpr uint64_t TYPE_UROWID = 208;
+        static constexpr uint64_t TYPE_TIMESTAMP_WITH_LOCAL_TZ = 231;
+        static constexpr uint64_t TYPE_BOOLEAN = 252;
+
         SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
                uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
                uint64_t newProperty1, uint64_t newProperty2) :
@@ -158,7 +158,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isHidden() {
-            return property.isSet64(SYS_COL_PROPERTY_HIDDEN);
+            return property.isSet64(PROPERTY_HIDDEN);
         }
 
         [[nodiscard]] bool isNullable() {
@@ -166,31 +166,31 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isStoredAsLob() {
-            return property.isSet64(SYS_COL_PROPERTY_STORED_AS_LOB);
+            return property.isSet64(PROPERTY_STORED_AS_LOB);
         }
 
         [[nodiscard]] bool isSystemGenerated() {
-            return property.isSet64(SYS_COL_PROPERTY_SYSTEM_GENERATED);
+            return property.isSet64(PROPERTY_SYSTEM_GENERATED);
         }
 
         [[nodiscard]] bool isNested() {
-            return property.isSet64(SYS_COL_PROPERTY_NESTED_TABLES_SETID);
+            return property.isSet64(PROPERTY_NESTED_TABLES_SETID);
         }
 
         [[nodiscard]] bool isUnused() {
-            return property.isSet64(SYS_COL_PROPERTY_UNUSED);
+            return property.isSet64(PROPERTY_UNUSED);
         }
 
         [[nodiscard]] bool isAdded() {
-            return property.isSet64(SYS_COL_PROPERTY_ADDED);
+            return property.isSet64(PROPERTY_ADDED);
         }
 
         [[nodiscard]] bool isGuard() {
-            return property.isSet64(SYS_COL_PROPERTY_GUARD);
+            return property.isSet64(PROPERTY_GUARD);
         }
 
         [[nodiscard]] bool lengthInChars() {
-            return ((type == SYS_COL_TYPE_VARCHAR || type == SYS_COL_TYPE_CHAR) && property.isSet64(SYS_COL_PROPERTY_LENGTH_IN_CHARS));
+            return ((type == TYPE_VARCHAR || type == TYPE_CHAR) && property.isSet64(PROPERTY_LENGTH_IN_CHARS));
             // Else in bytes
         }
 

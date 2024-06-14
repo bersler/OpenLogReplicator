@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.5.0
-:revdate: 2024-01-27
+:revnumber: 1.6.1
+:revdate: 2024-06-01
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -19,9 +19,11 @@ This document describes configuration parameters and usage of OpenLogReplicator.
 OpenLogReplicator program is non-interactive.
 The only parameters accepted are:
 
-* `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`)
+* `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`),
 
-* `-v|--version` -- print version and exit
+* `-p <process name>` -- process name (default: `"OpenLogReplicator"`) displayed in the process list; useful when multiple instances are running,
+
+* `-v|--version` -- print version and exit.
 
 All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
 The file should be in JSON format.
@@ -216,7 +218,7 @@ The schema would update only when the program is reset, (i.e., the checkpoint fi
 |Group of options used for collecting metrics of OpenLogReplicator.
 
 |`flags` [[flags]]
-|_number_, min: 0, max: 262143, default: 0
+|_number_, min: 0, max: 524287, default: 0
 |A sum of various flags.
 Flags define various options for the program.
 
@@ -288,6 +290,8 @@ This flag overrides this number and leaves the checkpoint file.
 Refer to details in xref:../experimental-features/experimental-features.adoc#binary-xmltype[binary xmltype] chapter for details.
 
 * `0x20000` -- Pass JSON data values to output in binary format (experimental).
+
+* `0x40000` -- Support UPDATE operations for NOT NULL columns with occasional NULL values (experimental).
 
 |`memory`
 |_element_ of <<memory,memory>>
@@ -414,7 +418,7 @@ Timezone should be in format `+xx:yy` or `-xx:yy`.
 The time zone is used only as base timezone for values for TIMESTAMP WITH LOCAL TZ type.
 
 |`disable-checks`
-|_number_, min: 0, max: 7, default: 0
+|_number_, min: 0, max: 15, default: 0
 |A sum of numbers:
 
 * `0x0001` -- During startup, don't check if the database user has appropriate grants to system tables.
@@ -426,6 +430,12 @@ The time zone is used only as base timezone for values for TIMESTAMP WITH LOCAL 
 _NOTE:_ This field is valid only for `online` type.
 
 _IMPORTANT:_ This might increase performance a bit, but it is not recommended to use this option.
+
+* `0x0008` -- Don't check if JSON checkpoint and schema files and OpenLogReplicator.json configuration file contain invalid JSON tags.
+
+_NOTE:_ For performance reasons, user might disable those checks.
+They are recommended to be enabled in production environment, especially when during program upgrades, the field names change.
+Referring to old invalid field names might cause the program to fail.
 
 |`host-timezone`
 |_string_, default: time zone of OpenLogReplicator host
@@ -790,7 +800,7 @@ Possible values are:
 * `4` -- Value in string format, number of years and months separated by `"-"` -- `"val": "1-8"`.
 
 |`message` [[message]]
-|_number_, min: 0, max: 15, default: 0
+|_number_, min: 0, max: 31, default: 0
 |Message format specification.
 
 Value is a sum of:
@@ -809,6 +819,8 @@ For JSON only target, the following additional flags are available:
 * `0x0004` -- Skip begin message (when using flag `0x0001`).
 
 * `0x0008` -- Skip commit message (when using flag `0x0001`).
+
+* `0x0010` -- Add information about data offset (for debugging purpopses).
 
 |`rid` [[rid]]
 |_number_, min: 0, max: 1, default: 0

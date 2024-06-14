@@ -26,6 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Ctx.h"
 #include "../common/exception/ConfigurationException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/OracleTable.h"
 #include "../common/table/SysObj.h"
 #include "../common/table/SysUser.h"
 #include "Checkpoint.h"
@@ -89,6 +90,8 @@ namespace OpenLogReplicator {
 
         } catch (ConfigurationException& ex) {
             ctx->error(ex.code, ex.msg);
+        } catch (DataException& ex) {
+            ctx->error(ex.code, ex.msg);
         }
 
         configFileChange = configFileStat.st_mtime;
@@ -100,10 +103,16 @@ namespace OpenLogReplicator {
             throw ConfigurationException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                                 " - parse error: " + GetParseError_En(document.GetParseError()));
 
-        const char* version = Ctx::getJsonFieldS(configFileName, JSON_PARAMETER_LENGTH, document, "version");
-        if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0)
+        if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+            static const char* documentNames[] = {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace",
+                                                  "source", "target", nullptr};
+            Ctx::checkJsonFields(configFileName, document, documentNames);
+        }
+
+        const char* version = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, document, "version");
+        if (strcmp(version, OpenLogReplicator_SCHEMA_VERSION) != 0)
             throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + std::string(version) + ", expected: " +
-                                                CONFIG_SCHEMA_VERSION);
+                                                OpenLogReplicator_SCHEMA_VERSION);
 
         // Iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
@@ -115,6 +124,14 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
+            if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+                static const char* sourceNames[] = {"alias", "memory", "name", "reader", "flags", "state", "debug",
+                                                    "transaction-max-mb", "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us",
+                                                    "arch-read-tries", "redo-verify-delay-us", "refresh-interval-us", "arch",
+                                                    "filter", nullptr};
+                Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
+            }
+
             metadata->resetElements();
 
             const char* debugOwner = nullptr;
@@ -123,38 +140,38 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("debug")) {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
 
-                if (!FLAG(REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
-                    debugOwner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
-                    debugTable = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
+                if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
+                    debugOwner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, debugJson, "owner");
+                    debugTable = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, debugJson, "table");
                     ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
                 }
             }
 
             std::set<std::string> users;
             if (debugOwner != nullptr && debugTable != nullptr) {
-                metadata->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
+                metadata->addElement(debugOwner, debugTable, OracleTable::OPTIONS_DEBUG_TABLE);
                 users.insert(std::string(debugOwner));
             }
-            if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+            if (ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
                 metadata->addElement(".*", ".*", 0);
 
             if (sourceJson.HasMember("filter")) {
                 const rapidjson::Value& filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
 
-                if (filterJson.HasMember("table") && !FLAG(REDO_FLAGS_SCHEMALESS)) {
+                if (filterJson.HasMember("table") && !ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
                     const rapidjson::Value& tableArrayJson = Ctx::getJsonFieldA(configFileName, filterJson, "table");
 
                     for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {
                         const rapidjson::Value& tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
 
-                        const char* owner = Ctx::getJsonFieldS(configFileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
-                        const char* table = Ctx::getJsonFieldS(configFileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
+                        const char* owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
+                        const char* table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, 0);
 
                         users.insert(owner);
 
                         if (tableElementJson.HasMember("key")) {
-                            element->keysStr = Ctx::getJsonFieldS(configFileName, JSON_KEY_LENGTH, tableElementJson, "key");
+                            element->keysStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_KEY_LENGTH, tableElementJson, "key");
                             std::stringstream keyStream(element->keysStr);
 
                             while (keyStream.good()) {
@@ -195,7 +212,7 @@ namespace OpenLogReplicator {
 
             std::vector<std::string> msgs;
             for (const SchemaElement* element: metadata->schemaElements) {
-                if (metadata->ctx->logLevel >= LOG_LEVEL_DEBUG)
+                if (metadata->ctx->logLevel >= Ctx::LOG_LEVEL_DEBUG)
                     msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                    std::to_string(element->options));
 
@@ -212,10 +229,10 @@ namespace OpenLogReplicator {
     }
 
     void Checkpoint::run() {
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "checkpoint (" + ss.str() + ") start");
+            ctx->logTrace(Ctx::TRACE_THREADS, "checkpoint (" + ss.str() + ") start");
         }
 
         try {
@@ -232,9 +249,9 @@ namespace OpenLogReplicator {
                 trackConfigFile();
 
                 {
-                    if (ctx->trace & TRACE_SLEEP)
-                        ctx->logTrace(TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
-                                                   " checkpointScn: " + std::to_string(metadata->checkpointScn));
+                    if (ctx->trace & Ctx::TRACE_SLEEP)
+                        ctx->logTrace(Ctx::TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
+                                                        " checkpointScn: " + std::to_string(metadata->checkpointScn));
 
                     std::unique_lock<std::mutex> lck(mtx);
                     condLoop.wait_for(lck, std::chrono::milliseconds(100));
@@ -252,10 +269,10 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "checkpoint (" + ss.str() + ") stop");
+            ctx->logTrace(Ctx::TRACE_THREADS, "checkpoint (" + ss.str() + ") stop");
         }
     }
 }

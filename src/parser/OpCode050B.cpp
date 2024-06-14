@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050B01);
         // Field: 1
-        if (ctx->version < REDO_VERSION_19_0)
+        if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
             ktub(ctx, redoLogRecord, fieldPos, fieldLength, false);
         else
             ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);

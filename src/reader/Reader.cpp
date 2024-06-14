@@ -28,6 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/Clock.h"
 #include "../common/Ctx.h"
+#include "../common/RedoLogRecord.h"
 #include "../common/exception/RuntimeException.h"
 #include "../common/metrics/Metrics.h"
 #include "Reader.h"
@@ -49,16 +50,16 @@ namespace OpenLogReplicator {
             reachedZero(false),
             group(newGroup),
             sequence(0),
-            numBlocksHeader(ZERO_BLK),
+            numBlocksHeader(Ctx::ZERO_BLK),
             resetlogs(0),
             activation(0),
             headerBuffer(nullptr),
             compatVsn(0),
             firstTimeHeader(0),
-            firstScn(ZERO_SCN),
-            firstScnHeader(ZERO_SCN),
-            nextScn(ZERO_SCN),
-            nextScnHeader(ZERO_SCN),
+            firstScn(Ctx::ZERO_SCN),
+            firstScnHeader(Ctx::ZERO_SCN),
+            nextScn(Ctx::ZERO_SCN),
+            nextScnHeader(Ctx::ZERO_SCN),
             nextTime(0),
             blockSize(0),
             sumRead(0),
@@ -70,7 +71,7 @@ namespace OpenLogReplicator {
             loopTime(0),
             bufferStart(0),
             bufferEnd(0),
-            status(READER_STATUS_SLEEPING),
+            status(STATUS_SLEEPING),
             ret(REDO_OK),
             redoBufferList(nullptr) {
     }
@@ -82,9 +83,9 @@ namespace OpenLogReplicator {
         }
 
         if (headerBuffer == nullptr) {
-            headerBuffer = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, REDO_PAGE_SIZE_MAX * 2));
+            headerBuffer = reinterpret_cast<uint8_t*>(aligned_alloc(Ctx::MEMORY_ALIGNMENT, PAGE_SIZE_MAX * 2));
             if (headerBuffer == nullptr)
-                throw RuntimeException(10016, "couldn't allocate " + std::to_string(REDO_PAGE_SIZE_MAX * 2) +
+                throw RuntimeException(10016, "couldn't allocate " + std::to_string(PAGE_SIZE_MAX * 2) +
                                               " bytes memory for: read header");
         }
 
@@ -136,7 +137,7 @@ namespace OpenLogReplicator {
         typeBlk blockNumberHeader = ctx->read32(buffer + 4);
         typeSeq sequenceHeader = ctx->read32(buffer + 8);
 
-        if (sequence == 0 || status == READER_STATUS_UPDATE) {
+        if (sequence == 0 || status == STATUS_UPDATE) {
             sequence = sequenceHeader;
         } else {
             if (group == 0) {
@@ -159,7 +160,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR_BLOCK;
         }
 
-        if (!DISABLE_CHECKS(DISABLE_CHECKS_BLOCK_SUM)) {
+        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_BLOCK_SUM)) {
             typeSum chSum = ctx->read16(buffer + 14);
             typeSum chSumCalculated = calcChSum(buffer, blockSize);
             if (chSum != chSumCalculated) {
@@ -170,7 +171,7 @@ namespace OpenLogReplicator {
                     if (!hintDisplayed) {
                         if (!configuredBlockSum) {
                             ctx->hint("set DB_BLOCK_CHECKSUM = TYPICAL on the database or turn off consistency checking in OpenLogReplicator"
-                                      " setting parameter disable-checks: " + std::to_string(DISABLE_CHECKS_BLOCK_SUM) + " for the reader");
+                                      " setting parameter disable-checks: " + std::to_string(Ctx::DISABLE_CHECKS_BLOCK_SUM) + " for the reader");
                         }
                         hintDisplayed = true;
                     }
@@ -187,8 +188,8 @@ namespace OpenLogReplicator {
             return blockSize;
 
         prevRead *= 2;
-        if (prevRead > MEMORY_CHUNK_SIZE)
-            prevRead = MEMORY_CHUNK_SIZE;
+        if (prevRead > Ctx::MEMORY_CHUNK_SIZE)
+            prevRead = Ctx::MEMORY_CHUNK_SIZE;
 
         return prevRead;
     }
@@ -197,7 +198,7 @@ namespace OpenLogReplicator {
         if (ctx->softShutdown)
             return REDO_ERROR;
 
-        int64_t actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : REDO_PAGE_SIZE_MAX * 2);
+        int64_t actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : PAGE_SIZE_MAX * 2);
         if (actualRead < 512)
             return REDO_ERROR_READ;
         if (ctx->metrics)
@@ -273,7 +274,7 @@ namespace OpenLogReplicator {
         if (retReload != REDO_OK)
             return retReload;
 
-        uint64_t version;
+        uint32_t version;
         compatVsn = ctx->read32(headerBuffer + blockSize + 20);
         if (compatVsn == 0)
             return REDO_EMPTY;
@@ -299,7 +300,7 @@ namespace OpenLogReplicator {
         nextScnHeader = ctx->readScn(headerBuffer + blockSize + 192);
         nextTime = ctx->read32(headerBuffer + blockSize + 200);
 
-        if (numBlocksHeader != ZERO_BLK && fileSize > static_cast<uint64_t>(numBlocksHeader) * blockSize && group == 0) {
+        if (numBlocksHeader != Ctx::ZERO_BLK && fileSize > static_cast<uint64_t>(numBlocksHeader) * blockSize && group == 0) {
             fileSize = static_cast<uint64_t>(numBlocksHeader) * blockSize;
             ctx->info(0, "updating redo log size to: " + std::to_string(fileSize) + " for: " + fileName);
         }
@@ -310,11 +311,11 @@ namespace OpenLogReplicator {
                    reinterpret_cast<const void*>(headerBuffer + blockSize + 28), 8);
             SID[8] = 0;
             ctx->version = version;
-            if (compatVsn >= REDO_VERSION_23_0)
-                ctx->columnLimit = COLUMN_LIMIT_23_0;
+            if (compatVsn >= RedoLogRecord::REDO_VERSION_23_0)
+                ctx->columnLimit = Ctx::COLUMN_LIMIT_23_0;
             typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
 
-            if (compatVsn < REDO_VERSION_18_0) {
+            if (compatVsn < RedoLogRecord::REDO_VERSION_18_0) {
                 ctx->versionStr = std::to_string(compatVsn >> 24) + "." + std::to_string((compatVsn >> 20) & 0xF) + "." +
                                   std::to_string((compatVsn >> 16) & 0xF) + "." + std::to_string((compatVsn >> 8) & 0xFF);
             } else {
@@ -334,24 +335,24 @@ namespace OpenLogReplicator {
 
         uint64_t badBlockCrcCount = 0;
         retReload = checkBlockHeader(headerBuffer + blockSize, 1, false);
-        if (ctx->trace & TRACE_DISK)
-            ctx->logTrace(TRACE_DISK, "block: 1 check: " + std::to_string(retReload));
+        if (ctx->trace & Ctx::TRACE_DISK)
+            ctx->logTrace(Ctx::TRACE_DISK, "block: 1 check: " + std::to_string(retReload));
 
         while (retReload == REDO_ERROR_CRC) {
             ++badBlockCrcCount;
-            if (badBlockCrcCount == REDO_BAD_CDC_MAX_CNT)
+            if (badBlockCrcCount == BAD_CDC_MAX_CNT)
                 return REDO_ERROR_BAD_DATA;
 
             usleep(ctx->redoReadSleepUs);
             retReload = checkBlockHeader(headerBuffer + blockSize, 1, false);
-            if (ctx->trace & TRACE_DISK)
-                ctx->logTrace(TRACE_DISK, "block: 1 check: " + std::to_string(retReload));
+            if (ctx->trace & Ctx::TRACE_DISK)
+                ctx->logTrace(Ctx::TRACE_DISK, "block: 1 check: " + std::to_string(retReload));
         }
 
         if (retReload != REDO_OK)
             return retReload;
 
-        if (firstScn == ZERO_SCN || status == READER_STATUS_UPDATE) {
+        if (firstScn == Ctx::ZERO_SCN || status == STATUS_UPDATE) {
             firstScn = firstScnHeader;
             nextScn = nextScnHeader;
         } else {
@@ -363,11 +364,11 @@ namespace OpenLogReplicator {
         }
 
         // Updating nextScn if changed
-        if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            if (ctx->trace & TRACE_DISK)
-                ctx->logTrace(TRACE_DISK, "updating next scn to: " + std::to_string(nextScnHeader));
+        if (nextScn == Ctx::ZERO_SCN && nextScnHeader != Ctx::ZERO_SCN) {
+            if (ctx->trace & Ctx::TRACE_DISK)
+                ctx->logTrace(Ctx::TRACE_DISK, "updating next scn to: " + std::to_string(nextScnHeader));
             nextScn = nextScnHeader;
-        } else if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
+        } else if (nextScn != Ctx::ZERO_SCN && nextScnHeader != Ctx::ZERO_SCN && nextScn != nextScnHeader) {
             ctx->error(40009, "file: " + fileName + " - invalid next scn value: " + std::to_string(nextScnHeader) + ", expected: " +
                               std::to_string(nextScn));
             return REDO_ERROR_BAD_DATA;
@@ -382,10 +383,10 @@ namespace OpenLogReplicator {
         if (bufferScan + toRead > fileSize)
             toRead = fileSize - bufferScan;
 
-        uint64_t redoBufferPos = bufferScan % MEMORY_CHUNK_SIZE;
-        uint64_t redoBufferNum = (bufferScan / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
-        if (redoBufferPos + toRead > MEMORY_CHUNK_SIZE)
-            toRead = MEMORY_CHUNK_SIZE - redoBufferPos;
+        uint64_t redoBufferPos = bufferScan % Ctx::MEMORY_CHUNK_SIZE;
+        uint64_t redoBufferNum = (bufferScan / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+        if (redoBufferPos + toRead > Ctx::MEMORY_CHUNK_SIZE)
+            toRead = Ctx::MEMORY_CHUNK_SIZE - redoBufferPos;
 
         if (toRead == 0) {
             ctx->error(40010, "file: " + fileName + " - zero to read, start: " + std::to_string(bufferStart) + ", end: " +
@@ -395,14 +396,14 @@ namespace OpenLogReplicator {
         }
 
         bufferAllocate(redoBufferNum);
-        if (ctx->trace & TRACE_DISK)
-            ctx->logTrace(TRACE_DISK, "reading#1 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
-                                      std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") bytes: " + std::to_string(toRead));
+        if (ctx->trace & Ctx::TRACE_DISK)
+            ctx->logTrace(Ctx::TRACE_DISK, "reading#1 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
+                                           std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") bytes: " + std::to_string(toRead));
         int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferScan, toRead);
 
-        if (ctx->trace & TRACE_DISK)
-            ctx->logTrace(TRACE_DISK, "reading#1 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
-                                      std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
+        if (ctx->trace & Ctx::TRACE_DISK)
+            ctx->logTrace(Ctx::TRACE_DISK, "reading#1 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
+                                           std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
         if (actualRead < 0) {
             ret = REDO_ERROR_READ;
             return false;
@@ -430,9 +431,9 @@ namespace OpenLogReplicator {
         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
             currentRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
                                           ctx->redoVerifyDelayUs == 0 || group == 0);
-            if (ctx->trace & TRACE_DISK)
-                ctx->logTrace(TRACE_DISK, "block: " + std::to_string(bufferScanBlock + numBlock) + " check: " +
-                                          std::to_string(currentRet));
+            if (ctx->trace & Ctx::TRACE_DISK)
+                ctx->logTrace(Ctx::TRACE_DISK, "block: " + std::to_string(bufferScanBlock + numBlock) + " check: " +
+                                               std::to_string(currentRet));
 
             if (currentRet != REDO_OK)
                 break;
@@ -441,7 +442,7 @@ namespace OpenLogReplicator {
 
         // Partial online redo log file
         if (goodBlocks == 0 && group == 0) {
-            if (nextScnHeader != ZERO_SCN) {
+            if (nextScnHeader != Ctx::ZERO_SCN) {
                 ret = REDO_FINISHED;
                 nextScn = nextScnHeader;
             } else {
@@ -493,7 +494,7 @@ namespace OpenLogReplicator {
 
         // Batch mode with partial online redo log file
         if (currentRet == REDO_ERROR_SEQUENCE && group == 0) {
-            if (nextScnHeader != ZERO_SCN) {
+            if (nextScnHeader != Ctx::ZERO_SCN) {
                 ret = REDO_FINISHED;
                 nextScn = nextScnHeader;
             } else {
@@ -509,12 +510,12 @@ namespace OpenLogReplicator {
     bool Reader::read2() {
         uint64_t maxNumBlock = (bufferScan - bufferEnd) / blockSize;
         uint64_t goodBlocks = 0;
-        if (maxNumBlock > REDO_READ_VERIFY_MAX_BLOCKS)
-            maxNumBlock = REDO_READ_VERIFY_MAX_BLOCKS;
+        if (maxNumBlock > Ctx::MEMORY_CHUNK_SIZE / blockSize)
+            maxNumBlock = Ctx::MEMORY_CHUNK_SIZE / blockSize;
 
         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-            uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
-            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+            uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % Ctx::MEMORY_CHUNK_SIZE;
+            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
 
             const auto readTimeP = reinterpret_cast<const time_ut*>(redoBufferList[redoBufferNum] + redoBufferPos);
             if (*readTimeP + static_cast<time_ut>(ctx->redoVerifyDelayUs) < loopTime) {
@@ -530,11 +531,11 @@ namespace OpenLogReplicator {
             if (toRead > goodBlocks * blockSize)
                 toRead = goodBlocks * blockSize;
 
-            uint64_t redoBufferPos = bufferEnd % MEMORY_CHUNK_SIZE;
-            uint64_t redoBufferNum = (bufferEnd / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+            uint64_t redoBufferPos = bufferEnd % Ctx::MEMORY_CHUNK_SIZE;
+            uint64_t redoBufferNum = (bufferEnd / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
 
-            if (redoBufferPos + toRead > MEMORY_CHUNK_SIZE)
-                toRead = MEMORY_CHUNK_SIZE - redoBufferPos;
+            if (redoBufferPos + toRead > Ctx::MEMORY_CHUNK_SIZE)
+                toRead = Ctx::MEMORY_CHUNK_SIZE - redoBufferPos;
 
             if (toRead == 0) {
                 ctx->error(40011, "zero to read (start: " + std::to_string(bufferStart) + ", end: " + std::to_string(bufferEnd) +
@@ -543,14 +544,14 @@ namespace OpenLogReplicator {
                 return false;
             }
 
-            if (ctx->trace & TRACE_DISK)
-                ctx->logTrace(TRACE_DISK, "reading#2 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
-                                          std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") bytes: " + std::to_string(toRead));
+            if (ctx->trace & Ctx::TRACE_DISK)
+                ctx->logTrace(Ctx::TRACE_DISK, "reading#2 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
+                                               std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") bytes: " + std::to_string(toRead));
             int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferEnd, toRead);
 
-            if (ctx->trace & TRACE_DISK)
-                ctx->logTrace(TRACE_DISK, "reading#2 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
-                                          std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
+            if (ctx->trace & Ctx::TRACE_DISK)
+                ctx->logTrace(Ctx::TRACE_DISK, "reading#2 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
+                                               std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
 
             if (actualRead < 0) {
                 ret = REDO_ERROR_READ;
@@ -579,9 +580,9 @@ namespace OpenLogReplicator {
             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                 currentRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize,
                                               bufferEndBlock + numBlock, true);
-                if (ctx->trace & TRACE_DISK)
-                    ctx->logTrace(TRACE_DISK, "block: " + std::to_string(bufferEndBlock + numBlock) + " check: " +
-                                              std::to_string(currentRet));
+                if (ctx->trace & Ctx::TRACE_DISK)
+                    ctx->logTrace(Ctx::TRACE_DISK, "block: " + std::to_string(bufferEndBlock + numBlock) + " check: " +
+                                                   std::to_string(currentRet));
 
                 if (currentRet != REDO_OK)
                     break;
@@ -613,14 +614,14 @@ namespace OpenLogReplicator {
                 std::unique_lock<std::mutex> lck(mtx);
                 condParserSleeping.notify_all();
 
-                if (status == READER_STATUS_SLEEPING && !ctx->softShutdown) {
-                    if (ctx->trace & TRACE_SLEEP)
-                        ctx->logTrace(TRACE_SLEEP, "Reader:mainLoop:sleep");
+                if (status == STATUS_SLEEPING && !ctx->softShutdown) {
+                    if (ctx->trace & Ctx::TRACE_SLEEP)
+                        ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:sleep");
                     condReaderSleeping.wait(lck);
-                } else if (status == READER_STATUS_READ && !ctx->softShutdown && ctx->buffersFree == 0 && (bufferEnd % MEMORY_CHUNK_SIZE) == 0) {
+                } else if (status == STATUS_READ && !ctx->softShutdown && ctx->buffersFree == 0 && (bufferEnd % Ctx::MEMORY_CHUNK_SIZE) == 0) {
                     // Buffer full
-                    if (ctx->trace & TRACE_SLEEP)
-                        ctx->logTrace(TRACE_SLEEP, "Reader:mainLoop:buffer");
+                    if (ctx->trace & Ctx::TRACE_SLEEP)
+                        ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:buffer");
                     condBufferFull.wait(lck);
                 }
             }
@@ -628,20 +629,20 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 break;
 
-            if (status == READER_STATUS_CHECK) {
-                if (ctx->trace & TRACE_FILE)
-                    ctx->logTrace(TRACE_FILE, "trying to open: " + fileName);
+            if (status == STATUS_CHECK) {
+                if (ctx->trace & Ctx::TRACE_FILE)
+                    ctx->logTrace(Ctx::TRACE_FILE, "trying to open: " + fileName);
                 redoClose();
                 uint64_t currentRet = redoOpen();
                 {
                     std::unique_lock<std::mutex> lck(mtx);
                     ret = currentRet;
-                    status = READER_STATUS_SLEEPING;
+                    status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
                 continue;
 
-            } else if (status == READER_STATUS_UPDATE) {
+            } else if (status == STATUS_UPDATE) {
                 if (fileCopyDes != -1) {
                     close(fileCopyDes);
                     fileCopyDes = -1;
@@ -661,26 +662,26 @@ namespace OpenLogReplicator {
                 {
                     std::unique_lock<std::mutex> lck(mtx);
                     ret = currentRet;
-                    status = READER_STATUS_SLEEPING;
+                    status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
-            } else if (status == READER_STATUS_READ) {
-                if (ctx->trace & TRACE_DISK)
-                    ctx->logTrace(TRACE_DISK, "reading " + fileName + " at (" + std::to_string(bufferStart) + "/" +
-                                              std::to_string(bufferEnd) + ") at size: " + std::to_string(fileSize));
+            } else if (status == STATUS_READ) {
+                if (ctx->trace & Ctx::TRACE_DISK)
+                    ctx->logTrace(Ctx::TRACE_DISK, "reading " + fileName + " at (" + std::to_string(bufferStart) + "/" +
+                                                   std::to_string(bufferEnd) + ") at size: " + std::to_string(fileSize));
                 lastRead = blockSize;
                 lastReadTime = 0;
                 readTime = 0;
                 bufferScan = bufferEnd;
                 reachedZero = false;
 
-                while (!ctx->softShutdown && status == READER_STATUS_READ) {
+                while (!ctx->softShutdown && status == STATUS_READ) {
                     loopTime = ctx->clock->getTimeUt();
                     readBlocks = false;
                     readTime = 0;
 
                     if (bufferEnd == fileSize) {
-                        if (nextScnHeader != ZERO_SCN) {
+                        if (nextScnHeader != Ctx::ZERO_SCN) {
                             ret = REDO_FINISHED;
                             nextScn = nextScnHeader;
                         } else {
@@ -695,8 +696,8 @@ namespace OpenLogReplicator {
                     if (bufferStart + ctx->bufferSizeMax == bufferEnd) {
                         std::unique_lock<std::mutex> lck(mtx);
                         if (!ctx->softShutdown && bufferStart + ctx->bufferSizeMax == bufferEnd) {
-                            if (ctx->trace & TRACE_SLEEP)
-                                ctx->logTrace(TRACE_SLEEP, "Reader:mainLoop:bufferFull");
+                            if (ctx->trace & Ctx::TRACE_SLEEP)
+                                ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:bufferFull");
                             condBufferFull.wait(lck);
                             continue;
                         }
@@ -707,13 +708,13 @@ namespace OpenLogReplicator {
                             break;
 
                     // #1 read
-                    if (bufferScan < fileSize && (ctx->buffersFree > 0 || (bufferScan % MEMORY_CHUNK_SIZE) > 0)
+                    if (bufferScan < fileSize && (ctx->buffersFree > 0 || (bufferScan % Ctx::MEMORY_CHUNK_SIZE) > 0)
                         && (!reachedZero || lastReadTime + static_cast<time_t>(ctx->redoReadSleepUs) < loopTime))
                         if (!read1())
                             break;
 
-                    if (numBlocksHeader != ZERO_BLK && bufferEnd == static_cast<uint64_t>(numBlocksHeader) * blockSize) {
-                        if (nextScnHeader != ZERO_SCN) {
+                    if (numBlocksHeader != Ctx::ZERO_BLK && bufferEnd == static_cast<uint64_t>(numBlocksHeader) * blockSize) {
+                        if (nextScnHeader != Ctx::ZERO_SCN) {
                             ret = REDO_FINISHED;
                             nextScn = nextScnHeader;
                         } else {
@@ -742,7 +743,7 @@ namespace OpenLogReplicator {
 
                 {
                     std::unique_lock<std::mutex> lck(mtx);
-                    status = READER_STATUS_SLEEPING;
+                    status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
             }
@@ -763,10 +764,10 @@ namespace OpenLogReplicator {
     }
 
     void Reader::run() {
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "reader (" + ss.str() + ") start");
+            ctx->logTrace(Ctx::TRACE_THREADS, "reader (" + ss.str() + ") start");
         }
 
         try {
@@ -785,18 +786,18 @@ namespace OpenLogReplicator {
             fileCopyDes = -1;
         }
 
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "reader (" + ss.str() + ") stop");
+            ctx->logTrace(Ctx::TRACE_THREADS, "reader (" + ss.str() + ") stop");
         }
     }
 
     void Reader::bufferAllocate(uint64_t num) {
         if (redoBufferList[num] == nullptr) {
-            redoBufferList[num] = ctx->getMemoryChunk(MEMORY_MODULE_READER, false);
+            redoBufferList[num] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_READER, false);
             if (ctx->buffersFree == 0)
-                throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE) +
+                throw RuntimeException(10016, "couldn't allocate " + std::to_string(Ctx::MEMORY_CHUNK_SIZE) +
                                               " bytes memory for: read buffer");
 
             ctx->allocateBuffer();
@@ -805,7 +806,7 @@ namespace OpenLogReplicator {
 
     void Reader::bufferFree(uint64_t num) {
         if (redoBufferList[num] != nullptr) {
-            ctx->freeMemoryChunk(MEMORY_MODULE_READER, redoBufferList[num], false);
+            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_READER, redoBufferList[num], false);
             redoBufferList[num] = nullptr;
             ctx->releaseBuffer();
         }
@@ -818,13 +819,13 @@ namespace OpenLogReplicator {
         SID[8] = 0;
 
         ss << "DUMP OF REDO FROM FILE '" << path << "'\n";
-        if (ctx->version >= REDO_VERSION_12_2)
+        if (ctx->version >= RedoLogRecord::REDO_VERSION_12_2)
             ss << " Container ID: 0\n Container UID: 0\n";
         ss << " Opcodes *.*\n";
-        if (ctx->version >= REDO_VERSION_12_2)
+        if (ctx->version >= RedoLogRecord::REDO_VERSION_12_2)
             ss << " Container ID: 0\n Container UID: 0\n";
         ss << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff\n";
-        if (ctx->version < REDO_VERSION_12_2)
+        if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
             ss << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff\n";
         else
             ss << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff\n";
@@ -874,7 +875,7 @@ namespace OpenLogReplicator {
         typeSum chSum = ctx->read16(headerBuffer + blockSize + 14);
         typeSum chSum2 = calcChSum(headerBuffer + blockSize, blockSize);
 
-        if (ctx->version < REDO_VERSION_12_2) {
+        if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
             ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN48(resetlogsScn) <<
                " (" << std::dec << resetlogsScn << ")\n" <<
                " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) <<
@@ -909,35 +910,35 @@ namespace OpenLogReplicator {
 
         uint32_t miscFlags = ctx->read32(headerBuffer + blockSize + 236);
         const char* endOfRedo;
-        if ((miscFlags & REDO_END) != 0)
+        if ((miscFlags & FLAGS_END) != 0)
             endOfRedo = "Yes";
         else
             endOfRedo = "No";
-        if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
+        if ((miscFlags & FLAGS_CLOSEDTHREAD) != 0)
             ss << " FailOver End-of-redo stream : " << endOfRedo << '\n';
         else
             ss << " End-of-redo stream : " << endOfRedo << '\n';
 
-        if ((miscFlags & REDO_ASYNC) != 0)
+        if ((miscFlags & FLAGS_ASYNC) != 0)
             ss << " Archivelog created using asynchronous network transmittal" << '\n';
 
-        if ((miscFlags & REDO_NODATALOSS) != 0)
+        if ((miscFlags & FLAGS_NODATALOSS) != 0)
             ss << " No ctx-loss mode\n";
 
-        if ((miscFlags & REDO_RESYNC) != 0)
+        if ((miscFlags & FLAGS_RESYNC) != 0)
             ss << " Resynchronization mode\n";
         else
             ss << " Unprotected mode\n";
 
-        if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
+        if ((miscFlags & FLAGS_CLOSEDTHREAD) != 0)
             ss << " Closed thread archival\n";
 
-        if ((miscFlags & REDO_MAXPERFORMANCE) != 0)
+        if ((miscFlags & FLAGS_MAXPERFORMANCE) != 0)
             ss << " Maximize performance mode\n";
 
         ss << " Miscellaneous flags: 0x" << std::hex << miscFlags << '\n';
 
-        if (ctx->version >= REDO_VERSION_12_2) {
+        if (ctx->version >= RedoLogRecord::REDO_VERSION_12_2) {
             uint32_t miscFlags2 = ctx->read32(headerBuffer + blockSize + 296);
             ss << " Miscellaneous second flags: 0x" << std::hex << miscFlags2 << '\n';
         }
@@ -947,7 +948,7 @@ namespace OpenLogReplicator {
         typeScn scn2 = ctx->readScn(headerBuffer + blockSize + 440);
         uint8_t zeroBlocks = headerBuffer[blockSize + 206];
         uint8_t formatId = headerBuffer[blockSize + 207];
-        if (ctx->version < REDO_VERSION_12_2)
+        if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                " seq: " << std::dec << seq2 <<
                " scn: " << PRINTSCN48(scn2) << '\n' <<
@@ -1050,18 +1051,18 @@ namespace OpenLogReplicator {
 
     bool Reader::checkRedoLog() {
         std::unique_lock<std::mutex> lck(mtx);
-        status = READER_STATUS_CHECK;
+        status = STATUS_CHECK;
         sequence = 0;
-        firstScn = ZERO_SCN;
-        nextScn = ZERO_SCN;
+        firstScn = Ctx::ZERO_SCN;
+        nextScn = Ctx::ZERO_SCN;
         condBufferFull.notify_all();
         condReaderSleeping.notify_all();
 
-        while (status == READER_STATUS_CHECK) {
+        while (status == STATUS_CHECK) {
             if (ctx->softShutdown)
                 break;
-            if (ctx->trace & TRACE_SLEEP)
-                ctx->logTrace(TRACE_SLEEP, "Reader:checkRedoLog");
+            if (ctx->trace & Ctx::TRACE_SLEEP)
+                ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:checkRedoLog");
             condParserSleeping.wait(lck);
         }
         if (ret == REDO_OK)
@@ -1073,15 +1074,15 @@ namespace OpenLogReplicator {
     bool Reader::updateRedoLog() {
         for (;;) {
             std::unique_lock<std::mutex> lck(mtx);
-            status = READER_STATUS_UPDATE;
+            status = STATUS_UPDATE;
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
 
-            while (status == READER_STATUS_UPDATE) {
+            while (status == STATUS_UPDATE) {
                 if (ctx->softShutdown)
                     break;
-                if (ctx->trace & TRACE_SLEEP)
-                    ctx->logTrace(TRACE_SLEEP, "Reader:updateRedoLog");
+                if (ctx->trace & Ctx::TRACE_SLEEP)
+                    ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:updateRedoLog");
                 condParserSleeping.wait(lck);
             }
 
@@ -1099,7 +1100,7 @@ namespace OpenLogReplicator {
 
     void Reader::setStatusRead() {
         std::unique_lock<std::mutex> lck(mtx);
-        status = READER_STATUS_READ;
+        status = STATUS_READ;
         condBufferFull.notify_all();
         condReaderSleeping.notify_all();
     }
@@ -1107,7 +1108,7 @@ namespace OpenLogReplicator {
     void Reader::confirmReadData(uint64_t confirmedBufferStart) {
         std::unique_lock<std::mutex> lck(mtx);
         bufferStart = confirmedBufferStart;
-        if (status == READER_STATUS_READ) {
+        if (status == STATUS_READ) {
             condBufferFull.notify_all();
         }
     }
@@ -1119,10 +1120,10 @@ namespace OpenLogReplicator {
 
         // All work done
         if (confirmedBufferStart == bufferEnd) {
-            if (ret == REDO_STOPPED || ret == REDO_OVERWRITTEN || ret == REDO_FINISHED || status == READER_STATUS_SLEEPING)
+            if (ret == REDO_STOPPED || ret == REDO_OVERWRITTEN || ret == REDO_FINISHED || status == STATUS_SLEEPING)
                 return true;
-            if (ctx->trace & TRACE_SLEEP)
-                ctx->logTrace(TRACE_SLEEP, "Reader:checkFinished");
+            if (ctx->trace & Ctx::TRACE_SLEEP)
+                ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:checkFinished");
             condParserSleeping.wait(lck);
         }
         return false;

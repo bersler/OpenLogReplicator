@@ -22,15 +22,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTER_SET_JA16EUC_H_
 #define CHARACTER_SET_JA16EUC_H_
 
-#define JA16EUC_b1_min      0x8E
-#define JA16EUC_b1_max      0xFE
-#define JA16EUC_b2_min      0xA1
-#define JA16EUC_b2_max      0xFE
-#define JA16EUC_b3_min      0xA1
-#define JA16EUC_b3_max      0xFE
-
 namespace OpenLogReplicator {
     class CharacterSetJA16EUC : public CharacterSet {
+    public:
+        static constexpr uint64_t JA16EUC_b1_min = 0x8E;
+        static constexpr uint64_t JA16EUC_b1_max = 0xFE;
+        static constexpr uint64_t JA16EUC_b2_min = 0xA1;
+        static constexpr uint64_t JA16EUC_b2_max = 0xFE;
+        static constexpr uint64_t JA16EUC_b3_min = 0xA1;
+        static constexpr uint64_t JA16EUC_b3_max = 0xFE;
+
     protected:
         [[nodiscard]] virtual bool validCode(uint64_t byte1, uint64_t byte2) const;
         [[nodiscard]] virtual typeUnicode readMap2(uint64_t byte1, uint64_t byte2) const;

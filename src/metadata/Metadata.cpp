@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/typeRowId.h"
 #include "../common/exception/ConfigurationException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/OracleTable.h"
 #include "../common/table/SysCCol.h"
 #include "../common/table/SysCDef.h"
 #include "../common/table/SysCol.h"
@@ -53,7 +54,7 @@ namespace OpenLogReplicator {
             state(nullptr),
             stateDisk(nullptr),
             serializer(nullptr),
-            status(METADATA_STATUS_READY),
+            status(STATUS_READY),
             database(newDatabase),
             startScn(newStartScn),
             startSequence(newStartSequence),
@@ -70,29 +71,29 @@ namespace OpenLogReplicator {
             logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
-            firstDataScn(ZERO_SCN),
-            firstSchemaScn(ZERO_SCN),
+            firstDataScn(Ctx::ZERO_SCN),
+            firstSchemaScn(Ctx::ZERO_SCN),
             resetlogs(0),
             oracleIncarnationCurrent(nullptr),
             activation(0),
-            sequence(ZERO_SEQ),
-            lastSequence(ZERO_SEQ),
+            sequence(Ctx::ZERO_SEQ),
+            lastSequence(Ctx::ZERO_SEQ),
             offset(0),
-            firstScn(ZERO_SCN),
-            nextScn(ZERO_SCN),
-            clientScn(ZERO_SCN),
+            firstScn(Ctx::ZERO_SCN),
+            nextScn(Ctx::ZERO_SCN),
+            clientScn(Ctx::ZERO_SCN),
             clientIdx(0),
             checkpoints(0),
-            checkpointScn(ZERO_SCN),
-            lastCheckpointScn(ZERO_SCN),
+            checkpointScn(Ctx::ZERO_SCN),
+            lastCheckpointScn(Ctx::ZERO_SCN),
             checkpointTime(0),
             lastCheckpointTime(),
-            checkpointSequence(ZERO_SEQ),
+            checkpointSequence(Ctx::ZERO_SEQ),
             checkpointOffset(0),
             lastCheckpointOffset(0),
             checkpointBytes(0),
             lastCheckpointBytes(0),
-            minSequence(ZERO_SEQ),
+            minSequence(Ctx::ZERO_SEQ),
             minOffset(0),
             minXid(),
             schemaInterval(0) {
@@ -189,9 +190,9 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setSeqOffset(typeSeq newSequence, uint64_t newOffset) {
-        if (ctx->trace & TRACE_CHECKPOINT)
-            ctx->logTrace(TRACE_CHECKPOINT, "setting sequence to: " + std::to_string(newSequence) + ", offset: " +
-                                            std::to_string(newOffset));
+        if (ctx->trace & Ctx::TRACE_CHECKPOINT)
+            ctx->logTrace(Ctx::TRACE_CHECKPOINT, "setting sequence to: " + std::to_string(newSequence) + ", offset: " +
+                                                 std::to_string(newOffset));
 
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
@@ -254,25 +255,25 @@ namespace OpenLogReplicator {
             delete element;
         newSchemaElements.clear();
 
-        addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
-        addElement("SYS", "LOB\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "LOBCOMPPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "LOBFRAG\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "OBJ\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TAB\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TABPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TABCOMPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TABSUBPART\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "TS\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "XDB\\$TTSET", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "X\\$NM.*", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "X\\$PT.*", OPTIONS_SYSTEM_TABLE);
-        addElement("XDB", "X\\$QN.*", OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "CCOL\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "CDEF\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "COL\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "DEFERRED_STG\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "ECOL\\$", OracleTable::OPTIONS_SYSTEM_TABLE | OracleTable::OPTIONS_SCHEMA_TABLE);
+        addElement("SYS", "LOB\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "LOBCOMPPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "LOBFRAG\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "OBJ\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TAB\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABCOMPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TABSUBPART\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "TS\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("SYS", "USER\\$", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "XDB\\$TTSET", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$NM.*", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$PT.*", OracleTable::OPTIONS_SYSTEM_TABLE);
+        addElement("XDB", "X\\$QN.*", OracleTable::OPTIONS_SYSTEM_TABLE);
     }
 
     void Metadata::commitElements() {
@@ -290,9 +291,9 @@ namespace OpenLogReplicator {
     void Metadata::waitForWriter() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_READY) {
-            if (ctx->trace & TRACE_SLEEP)
-                ctx->logTrace(TRACE_SLEEP, "Metadata:waitForWriter");
+        if (status == STATUS_READY) {
+            if (ctx->trace & Ctx::TRACE_SLEEP)
+                ctx->logTrace(Ctx::TRACE_SLEEP, "Metadata:waitForWriter");
             condReplicator.wait(lck);
         }
     }
@@ -300,9 +301,9 @@ namespace OpenLogReplicator {
     void Metadata::waitForReplicator() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        if (status == METADATA_STATUS_START) {
-            if (ctx->trace & TRACE_SLEEP)
-                ctx->logTrace(TRACE_SLEEP, "Metadata:waitForReplicator");
+        if (status == STATUS_START) {
+            if (ctx->trace & Ctx::TRACE_SLEEP)
+                ctx->logTrace(Ctx::TRACE_SLEEP, "Metadata:waitForReplicator");
             condWriter.wait(lck);
         }
     }
@@ -310,25 +311,25 @@ namespace OpenLogReplicator {
     void Metadata::setStatusReady() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_READY;
-        firstDataScn = ZERO_SCN;
-        firstSchemaScn = ZERO_SCN;
-        checkpointScn = ZERO_SCN;
-        schema->scn = ZERO_SCN;
+        status = STATUS_READY;
+        firstDataScn = Ctx::ZERO_SCN;
+        firstSchemaScn = Ctx::ZERO_SCN;
+        checkpointScn = Ctx::ZERO_SCN;
+        schema->scn = Ctx::ZERO_SCN;
         condWriter.notify_all();
     }
 
     void Metadata::setStatusStart() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_START;
+        status = STATUS_START;
         condReplicator.notify_all();
     }
 
     void Metadata::setStatusReplicate() {
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
-        status = METADATA_STATUS_REPLICATE;
+        status = STATUS_REPLICATE;
         condReplicator.notify_all();
         condWriter.notify_all();
     }
@@ -363,7 +364,7 @@ namespace OpenLogReplicator {
                 return;
 
             // Nothing processed so far
-            if (checkpointScn == ZERO_SCN || lastCheckpointScn == checkpointScn)
+            if (checkpointScn == Ctx::ZERO_SCN || lastCheckpointScn == checkpointScn || checkpointSequence == Ctx::ZERO_SEQ)
                 return;
 
             if (lastSequence == sequence && !force &&
@@ -373,7 +374,7 @@ namespace OpenLogReplicator {
 
             // Schema did not change
             bool storeSchema = true;
-            if (schema->refScn != ZERO_SCN && schema->refScn >= schema->scn) {
+            if (schema->refScn != Ctx::ZERO_SCN && schema->refScn >= schema->scn) {
                 if (schemaInterval < ctx->schemaForceInterval) {
                     storeSchema = false;
                     ++schemaInterval;
@@ -396,18 +397,18 @@ namespace OpenLogReplicator {
 
         std::string checkpointName = database + "-chkpt-" + std::to_string(lastCheckpointScn);
 
-        if (ctx->trace & TRACE_CHECKPOINT)
-            ctx->logTrace(TRACE_CHECKPOINT, "write scn: " + std::to_string(lastCheckpointScn) + " time: " +
-                                            std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
-                                            std::to_string(lastCheckpointOffset) + " name: " + checkpointName);
+        if (ctx->trace & Ctx::TRACE_CHECKPOINT)
+            ctx->logTrace(Ctx::TRACE_CHECKPOINT, "write scn: " + std::to_string(lastCheckpointScn) + " time: " +
+                                                 std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
+                                                 std::to_string(lastCheckpointOffset) + " name: " + checkpointName);
 
         if (!stateWrite(checkpointName, lastCheckpointScn, ss))
             ctx->warning(60018, "file: " + checkpointName + " - couldn't write checkpoint");
     }
 
     void Metadata::readCheckpoints() {
-        if (ctx->trace & TRACE_CHECKPOINT)
-            ctx->logTrace(TRACE_CHECKPOINT, "searching for previous checkpoint information");
+        if (ctx->trace & Ctx::TRACE_CHECKPOINT)
+            ctx->logTrace(Ctx::TRACE_CHECKPOINT, "searching for previous checkpoint information");
 
         std::set<std::string> namesList;
         state->list(namesList);
@@ -426,27 +427,27 @@ namespace OpenLogReplicator {
                 continue;
             }
 
-            if (ctx->trace & TRACE_CHECKPOINT)
-                ctx->logTrace(TRACE_CHECKPOINT, "found: " + name + " scn: " + std::to_string(scn));
+            if (ctx->trace & Ctx::TRACE_CHECKPOINT)
+                ctx->logTrace(Ctx::TRACE_CHECKPOINT, "found: " + name + " scn: " + std::to_string(scn));
 
             checkpointScnList.insert(scn);
             checkpointSchemaMap.insert_or_assign(scn, true);
         }
 
-        if (startScn != ZERO_SCN)
+        if (startScn != Ctx::ZERO_SCN)
             firstDataScn = startScn;
         else
             firstDataScn = 0;
 
-        if (ctx->trace & TRACE_CHECKPOINT)
-            ctx->logTrace(TRACE_CHECKPOINT, "scn: " + std::to_string(firstDataScn));
+        if (ctx->trace & Ctx::TRACE_CHECKPOINT)
+            ctx->logTrace(Ctx::TRACE_CHECKPOINT, "scn: " + std::to_string(firstDataScn));
 
-        if (firstDataScn != ZERO_SCN && firstDataScn != 0) {
+        if (firstDataScn != Ctx::ZERO_SCN && firstDataScn != 0) {
             std::set<typeScn>::iterator it = checkpointScnList.end();
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                if (*it <= firstDataScn && (sequence == ZERO_SEQ || sequence == 0))
+                if (*it <= firstDataScn && (sequence == Ctx::ZERO_SEQ || sequence == 0))
                     readCheckpoint(*it);
             }
         }
@@ -459,10 +460,10 @@ namespace OpenLogReplicator {
 
         std::string name1(database + "-chkpt-" + std::to_string(scn));
         if (!stateRead(name1, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss)) {
-            if (ctx->trace & TRACE_CHECKPOINT)
-                ctx->logTrace(TRACE_CHECKPOINT, "no checkpoint file found, setting unknown sequence");
+            if (ctx->trace & Ctx::TRACE_CHECKPOINT)
+                ctx->logTrace(Ctx::TRACE_CHECKPOINT, "no checkpoint file found, setting unknown sequence");
 
-            sequence = ZERO_SEQ;
+            sequence = Ctx::ZERO_SEQ;
             return;
         }
         if (!serializer->deserialize(this, ss, name1, msgs, true, true)) {
@@ -478,8 +479,8 @@ namespace OpenLogReplicator {
         msgs.clear();
 
         // Schema missing
-        if (schema->scn == ZERO_SCN) {
-            if (schema->refScn == ZERO_SCN) {
+        if (schema->scn == Ctx::ZERO_SCN) {
+            if (schema->refScn == Ctx::ZERO_SCN) {
                 ctx->warning(60019, "file: " + name1 + " - load checkpoint failed, reference SCN missing");
                 return;
             }
@@ -503,14 +504,14 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (schema->scn != ZERO_SCN)
+        if (schema->scn != Ctx::ZERO_SCN)
             firstSchemaScn = schema->scn;
     }
 
     void Metadata::deleteOldCheckpoints() {
         std::set<typeScn> scnToDrop;
 
-        if (FLAG(REDO_FLAGS_CHECKPOINT_KEEP))
+        if (ctx->flagsSet(Ctx::REDO_FLAGS_CHECKPOINT_KEEP))
             return;
 
         {
@@ -587,15 +588,15 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::allowCheckpoints() {
-        if (ctx->trace & TRACE_CHECKPOINT)
-            ctx->logTrace(TRACE_CHECKPOINT, "allowing checkpoints");
+        if (ctx->trace & Ctx::TRACE_CHECKPOINT)
+            ctx->logTrace(Ctx::TRACE_CHECKPOINT, "allowing checkpoints");
 
         std::unique_lock<std::mutex> lck(mtxCheckpoint);
         allowedCheckpoints = true;
     }
 
     bool Metadata::isNewData(typeScn scn, typeIdx idx) {
-        if (clientScn == ZERO_SCN)
+        if (clientScn == Ctx::ZERO_SCN)
             return true;
 
         if (clientScn < scn)

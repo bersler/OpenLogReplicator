@@ -119,9 +119,9 @@ namespace OpenLogReplicator {
 
     void WriterKafka::logger_cb(const rd_kafka_t* rkCb, int level, const char* fac, const char* buf) {
         WriterKafka* writer = reinterpret_cast<WriterKafka*>(rd_kafka_opaque(rkCb));
-        if (writer->ctx->trace & TRACE_WRITER)
-            writer->ctx->logTrace(TRACE_WRITER, std::to_string(level) + ", rk: " + (rkCb ? rd_kafka_name(rkCb) : nullptr) +
-                                                ", fac: " + fac + ", err: " + buf);
+        if (writer->ctx->trace & Ctx::TRACE_WRITER)
+            writer->ctx->logTrace(Ctx::TRACE_WRITER, std::to_string(level) + ", rk: " + (rkCb ? rd_kafka_name(rkCb) : nullptr) +
+                                                     ", fac: " + fac + ", err: " + buf);
     }
 
     void WriterKafka::sendMessage(BuilderMsg* msg) {
@@ -152,7 +152,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::pollQueue() {
-        if (metadata->status == METADATA_STATUS_READY)
+        if (metadata->status == Metadata::STATUS_READY)
             metadata->setStatusStart();
 
         if (currentQueueSize > 0)

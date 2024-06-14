@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.1",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "dump-path": "/opt/dump",
@@ -60,8 +60,7 @@
         "table": "OPENLOGREPLICATOR",
         "stop-log-switches": 0,
         "stop-checkpoints": 0,
-        "stop-transactions": 0,
-        "stop-dmls": 0
+        "stop-transactions": 0
       },
       "arch": "online",
       "flags": 0,

@@ -32,10 +32,10 @@ namespace OpenLogReplicator {
     Thread::~Thread() = default;
 
     void Thread::wakeUp() {
-        if (ctx->trace & TRACE_THREADS) {
+        if (ctx->trace & Ctx::TRACE_THREADS) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(TRACE_THREADS, "thread (" + ss.str() + ") wake up");
+            ctx->logTrace(Ctx::TRACE_THREADS, "thread (" + ss.str() + ") wake up");
         }
     }
 

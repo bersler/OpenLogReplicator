@@ -27,39 +27,24 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef READER_H_
 #define READER_H_
 
-#define READER_STATUS_SLEEPING  0
-#define READER_STATUS_CHECK     1
-#define READER_STATUS_UPDATE    2
-#define READER_STATUS_READ      3
-
-#define REDO_END                0x0008
-#define REDO_ASYNC              0x0100
-#define REDO_NODATALOSS         0x0200
-#define REDO_RESYNC             0x0800
-#define REDO_CLOSEDTHREAD       0x1000
-#define REDO_MAXPERFORMANCE     0x2000
-
-#define REDO_OK                 0
-#define REDO_OVERWRITTEN        1
-#define REDO_FINISHED           2
-#define REDO_STOPPED            3
-#define REDO_SHUTDOWN           4
-#define REDO_EMPTY              5
-#define REDO_ERROR_READ         6
-#define REDO_ERROR_WRITE        7
-#define REDO_ERROR_SEQUENCE     8
-#define REDO_ERROR_CRC          9
-#define REDO_ERROR_BLOCK       10
-#define REDO_ERROR_BAD_DATA    11
-#define REDO_ERROR             12
-
-#define REDO_PAGE_SIZE_MAX      4096
-#define REDO_BAD_CDC_MAX_CNT    20
-#define REDO_READ_VERIFY_MAX_BLOCKS (MEMORY_CHUNK_SIZE/blockSize)
-
 namespace OpenLogReplicator {
     class Reader : public Thread {
     protected:
+        static constexpr uint64_t FLAGS_END = 0x0008;
+        static constexpr uint64_t FLAGS_ASYNC = 0x0100;
+        static constexpr uint64_t FLAGS_NODATALOSS = 0x0200;
+        static constexpr uint64_t FLAGS_RESYNC = 0x0800;
+        static constexpr uint64_t FLAGS_CLOSEDTHREAD = 0x1000;
+        static constexpr uint64_t FLAGS_MAXPERFORMANCE = 0x2000;
+
+        static constexpr uint64_t STATUS_SLEEPING = 0;
+        static constexpr uint64_t STATUS_CHECK = 1;
+        static constexpr uint64_t STATUS_UPDATE = 2;
+        static constexpr uint64_t STATUS_READ = 3;
+
+        static constexpr uint64_t PAGE_SIZE_MAX = 4096;
+        static constexpr uint64_t BAD_CDC_MAX_CNT = 20;
+
         std::string database;
         int fileCopyDes;
         uint64_t fileSize;
@@ -112,6 +97,20 @@ namespace OpenLogReplicator {
         void mainLoop();
 
     public:
+        static constexpr uint64_t REDO_OK = 0;
+        static constexpr uint64_t REDO_OVERWRITTEN = 1;
+        static constexpr uint64_t REDO_FINISHED = 2;
+        static constexpr uint64_t REDO_STOPPED = 3;
+        static constexpr uint64_t REDO_SHUTDOWN = 4;
+        static constexpr uint64_t REDO_EMPTY = 5;
+        static constexpr uint64_t REDO_ERROR_READ = 6;
+        static constexpr uint64_t REDO_ERROR_WRITE = 7;
+        static constexpr uint64_t REDO_ERROR_SEQUENCE = 8;
+        static constexpr uint64_t REDO_ERROR_CRC = 9;
+        static constexpr uint64_t REDO_ERROR_BLOCK = 10;
+        static constexpr uint64_t REDO_ERROR_BAD_DATA = 11;
+        static constexpr uint64_t REDO_ERROR = 12;
+
         const static char* REDO_CODE[13];
         uint8_t** redoBufferList;
         std::vector<std::string> paths;

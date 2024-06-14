@@ -1,3 +1,22 @@
+1.6.1
+
+1.6.0
+- enhancement: add parameter -p
+- enhancement: performance optimizations
+- enhancement: add offset to payload for debugging purposes
+- enhancement: support UPDATE operations for NOT NULL columns with occasional NULL values (experimental)
+- enhancement: add JSON validation for invalid tags
+- fix: context field contains invalid value
+- fix: invalid tag in example json config file
+- fix: online redo log are read in rare cases for archived redo log only mode
+- fix: don't write checkpoint file until the first data chunk is processed
+- fix: minor bug related to crash with large number of columns
+- fix: error: "parse error, attribute xid: not expected"
+- fix: in rare cases, the AFTER value for UPDATE is missing
+- code style cleanup
+- documentation update
+- fix: welcome message
+
 1.5.0
 - code style cleanup
 - enhancement: new writer type: discard
@@ -54,7 +73,8 @@
 - enhancement: added options interval-ytm and interval-dts to control interval type output format
 - fix: minor style fixes
 - fix: network client date was not consistent when reconnected
-- fix: scn information inconsistency in transaction fix
+- fix: scn informatio
+n inconsistency in transaction fix
 - enhancement: added flag 2 for "scn" field type to control scn values
 - enhancement: changed checkpointing mechanism to allow more frequent checkpoints
 - experimental: added partial support for binary XMLType data

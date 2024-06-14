@@ -26,18 +26,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef TOKEN_H_
 #define TOKEN_H_
 
-#define TOKEN_TYPE_NONE                 0
-#define TOKEN_TYPE_IDENTIFIER           1
-#define TOKEN_TYPE_LEFT_PARENTHESIS     2
-#define TOKEN_TYPE_RIGHT_PARENTHESIS    3
-#define TOKEN_TYPE_COMMA                4
-#define TOKEN_TYPE_OPERATOR             5
-#define TOKEN_TYPE_NUMBER               6
-#define TOKEN_TYPE_STRING               7
-
 namespace OpenLogReplicator {
     class Token : public Expression {
     public:
+        static constexpr uint64_t TYPE_NONE = 0;
+        static constexpr uint64_t TYPE_IDENTIFIER = 1;
+        static constexpr uint64_t TYPE_LEFT_PARENTHESIS = 2;
+        static constexpr uint64_t TYPE_RIGHT_PARENTHESIS = 3;
+        static constexpr uint64_t TYPE_COMMA = 4;
+        static constexpr uint64_t TYPE_OPERATOR = 5;
+        static constexpr uint64_t TYPE_NUMBER = 6;
+        static constexpr uint64_t TYPE_STRING = 7;
+
         uint64_t tokenType;
         std::string stringValue;
 

@@ -22,13 +22,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTER_SET_ZHT16HKSCS31_H_
 #define CHARACTER_SET_ZHT16HKSCS31_H_
 
-#define ZHT16HKSCS31_b1_min     0x81
-#define ZHT16HKSCS31_b1_max     0xFE
-#define ZHT16HKSCS31_b2_min     0x40
-#define ZHT16HKSCS31_b2_max     0xFE
-
 namespace OpenLogReplicator {
     class CharacterSetZHT16HKSCS31 final : public CharacterSet16bit {
+    public:
+        static constexpr uint64_t ZHT16HKSCS31_b1_min = 0x81;
+        static constexpr uint64_t ZHT16HKSCS31_b1_max = 0xFE;
+        static constexpr uint64_t ZHT16HKSCS31_b2_min = 0x40;
+        static constexpr uint64_t ZHT16HKSCS31_b2_max = 0xFE;
+
     protected:
         static typeUnicode32 unicode_map_ZHT16HKSCS31_2b[(ZHT16HKSCS31_b1_max - ZHT16HKSCS31_b1_min + 1) *
                                                          (ZHT16HKSCS31_b2_max - ZHT16HKSCS31_b2_min + 1)];

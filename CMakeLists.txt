@@ -18,11 +18,12 @@
 
 cmake_minimum_required(VERSION 3.16)
 project(OpenLogReplicator
-        VERSION 1.5.0
+        VERSION 1.6.1
         DESCRIPTION "OpenLogReplicator, Open Source Oracle database CDC"
         HOMEPAGE_URL "https://github.com/bersler/OpenLogReplicator"
 )
 
+set(SCHEMA_VERSION "1.6.1")
 string(TIMESTAMP CMAKE_BUILD_TIMESTAMP "%Y-%m-%d %H:%M" UTC)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)
@@ -39,6 +40,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -O3 -Wall -Wextra -Ws
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wmisleading-indentation -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -pedantic -fsanitize=address")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 configure_file(config.h.in ../config.h)
+
+if (CPU_ARCH)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=${CPU_ARCH} -mtune=${CPU_ARCH}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -march=${CPU_ARCH} -mtune=${CPU_ARCH}")
+    add_compile_definitions(CPU_ARCH=${CPU_ARCH})
+endif()
 
 find_package(Threads REQUIRED)
 

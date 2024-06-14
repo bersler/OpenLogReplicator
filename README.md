@@ -41,10 +41,10 @@ Use the following table to find out which version of OpenLogReplicator is compat
 
 | Debezium | OLR minimal version | OLR recommended  version |
 |:--------:|:-------------------:|:------------------------:|
-|  2.4.0   |        1.3.0        |          1.5.0           |
-|  2.5.0   |        1.3.0        |          1.5.0           |
-|  2.6.0   |        1.3.0        |          1.5.0           |
-
+|   2.4    |        1.3.0        |          1.6.0           |
+|   2.5    |        1.3.0        |          1.6.0           |
+|   2.6    |        1.3.0        |          1.6.0           |
+|   2.7    |        1.3.0        |          1.6.0           |
 
 ## Sponsoring the Project
 
