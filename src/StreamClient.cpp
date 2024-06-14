@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
             uint64_t cIdx;
             if (formatProtobuf) {
                 if (response.payload_size() == 1) {
-                    const char* msg = "UNKNOWN";
+                    const char* msg;
                     switch (response.payload(0).op()) {
                         case OpenLogReplicator::pb::BEGIN:
                             msg = "BEGIN";

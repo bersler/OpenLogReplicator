@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
 
     CharacterSetUTF8::~CharacterSetUTF8() = default;
 
-    typeUnicode CharacterSetUTF8::decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSetUTF8::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
 
@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
                 return badChar(ctx, xid, byte1, byte2, byte3, byte4, byte5, byte6);
 
             typeUnicode character = (((byte2 & 0x0F) << 16) | ((byte3 & 0x3F) << 10) | ((byte5 & 0x0F) << 6) | (byte6 & 0x3F)) + 0x10000;
-            if (character <= 0x10FFFF && (character < 0xD800 || character > 0xDFFF))
+            if (character <= 0x10FFFF)
                 return character;
 
             return badChar(ctx, xid, byte1, byte2, byte3, byte4, byte5, byte6);

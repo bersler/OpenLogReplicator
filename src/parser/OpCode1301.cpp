@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode1301.h"
 
 namespace OpenLogReplicator {
-    void OpCode1301::process1301(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+    void OpCode1301::process1301(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         uint64_t fieldPos = 0;
         typeField fieldNum = 0;
         uint16_t fieldLength = 0;
@@ -46,21 +46,21 @@ namespace OpenLogReplicator {
             uint16_t v1 = ctx->read16(redoLogRecord->data + fieldPos + 20);
             typeDba dba = ctx->read32(redoLogRecord->data + fieldPos + 28);
 
-            ctx->dumpStream << "Direct Loader block redo entry\n";
-            ctx->dumpStream << "Long field block dump:\n";
-            ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->dataObj << " \n";
-            ctx->dumpStream << "LobId: " << redoLogRecord->lobId.narrow() <<
+            *ctx->dumpStream << "Direct Loader block redo entry\n";
+            *ctx->dumpStream << "Long field block dump:\n";
+            *ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->dataObj << " \n";
+            *ctx->dumpStream << "LobId: " << redoLogRecord->lobId.narrow() <<
                             " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " \n";
-            ctx->dumpStream << "Version: 0x" << std::setfill('0') << std::setw(4) << std::hex << v1 <<
+            *ctx->dumpStream << "Version: 0x" << std::setfill('0') << std::setw(4) << std::hex << v1 <<
                             "." << std::setfill('0') << std::setw(8) << std::hex << v2 <<
                             "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
 
             for (uint64_t j = 0; j < static_cast<uint64_t>(fieldLength - 36); ++j) {
-                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j + 36]) << " ";
+                *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j + 36]) << " ";
                 if ((j % 24) == 23 && j != static_cast<uint64_t>(fieldLength) - 1)
-                    ctx->dumpStream << "\n    ";
+                    *ctx->dumpStream << "\n    ";
             }
-            ctx->dumpStream << '\n';
+            *ctx->dumpStream << '\n';
         }
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x130102);

@@ -130,16 +130,16 @@ namespace OpenLogReplicator {
 
         if (ctx->dumpRedoLog >= 1) {
             uint16_t thread = 1; // TODO: verify field length/position
-            ctx->dumpStream << " \n";
+            *ctx->dumpStream << " \n";
 
             if (ctx->version < RedoLogRecord::REDO_VERSION_12_1)
-                ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
+                *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
                                 std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                                 std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength << " VLD: 0x" <<
                                 std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << '\n';
             else {
                 uint32_t conUid = ctx->read32(data + 16);
-                ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence <<
+                *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence <<
                                 "." << std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                                 std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength << " VLD: 0x" <<
                                 std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << " CON_UID: " << std::dec << conUid << '\n';
@@ -148,41 +148,41 @@ namespace OpenLogReplicator {
             if (ctx->dumpRawData > 0) {
                 std::string header = "## H: [" + std::to_string(static_cast<uint64_t>(lwnMember->block) * reader->getBlockSize() + lwnMember->offset) + "] " +
                                      std::to_string(headerLength);
-                ctx->dumpStream << header;
+                *ctx->dumpStream << header;
                 if (header.length() < 36)
-                    ctx->dumpStream << std::string(36 - header.length(), ' ');
+                    *ctx->dumpStream << std::string(36 - header.length(), ' ');
 
                 for (uint64_t j = 0; j < headerLength; ++j)
-                    ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
-                ctx->dumpStream << '\n';
+                    *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
+                *ctx->dumpStream << '\n';
             }
 
             if (headerLength == 68) {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
-                    ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                     lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
-                    ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                     lwnMember->subScn << " " << lwnTimestamp << '\n';
                 uint16_t lwnNst = ctx->read16(data + 26);
                 uint32_t lwnLen = ctx->read32(data + 32);
 
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
-                    ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
+                    *ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
                                     std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) << std::hex <<
                                     lwnMember->offset << " LEN: " << std::setfill('0') << std::setw(4) << std::dec << lwnLen << " NST: " <<
                                     std::setfill('0') << std::setw(4) << std::dec << lwnNst << " SCN: " << PRINTSCN48(lwnScn) << ")" << '\n';
                 else
-                    ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
+                    *ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
                                     std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) << std::hex <<
                                     lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(8) << std::hex << lwnLen << " NST: 0x" <<
                                     std::setfill('0') << std::setw(4) << std::hex << lwnNst << " SCN: " << PRINTSCN64(lwnScn) << ")" << '\n';
             } else {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
-                    ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                     lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
-                    ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                     lwnMember->subScn << " " << lwnTimestamp << '\n';
             }
         }
@@ -233,7 +233,7 @@ namespace OpenLogReplicator {
                                               ") outside of record, length: " + std::to_string(recordLength));
             }
 
-            uint8_t* fieldList = data + offset + fieldOffset;
+            const uint8_t* fieldList = data + offset + fieldOffset;
 
             redoLogRecord[vectorCur].opCode = (static_cast<typeOp1>(data[offset + 0]) << 8) | data[offset + 1];
             redoLogRecord[vectorCur].length = fieldOffset + ((ctx->read16(fieldList) + 2) & 0xFFFC);
@@ -1221,15 +1221,15 @@ namespace OpenLogReplicator {
         if (reader->getBufferStart() == reader->getBlockSize() * 2) {
             if (ctx->dumpRedoLog >= 1) {
                 std::string fileName = ctx->dumpPath + "/" + std::to_string(sequence) + ".olr";
-                ctx->dumpStream.open(fileName);
-                if (!ctx->dumpStream.is_open()) {
+                ctx->dumpStream->open(fileName);
+                if (!ctx->dumpStream->is_open()) {
                     ctx->error(10006, "file: " + fileName + " - open for write returned: " + strerror(errno));
                     ctx->warning(60012, "aborting log dump");
                     ctx->dumpRedoLog = 0;
                 }
                 std::ostringstream ss;
                 reader->printHeaderInfo(ss, path);
-                ctx->dumpStream << ss.str();
+                *ctx->dumpStream << ss.str();
             }
         }
 
@@ -1586,16 +1586,16 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (ctx->dumpRedoLog >= 1 && ctx->dumpStream.is_open()) {
-            ctx->dumpStream << "END OF REDO DUMP\n";
-            ctx->dumpStream.close();
+        if (ctx->dumpRedoLog >= 1 && ctx->dumpStream->is_open()) {
+            *ctx->dumpStream << "END OF REDO DUMP\n";
+            ctx->dumpStream->close();
         }
 
         freeLwn();
         return reader->getRet();
     }
 
-    std::string Parser::toString() {
+    std::string Parser::toString() const {
         return "group: " + std::to_string(group) + " scn: " + std::to_string(firstScn) + " to " +
                std::to_string(nextScn != Ctx::ZERO_SCN ? nextScn : 0) + " seq: " + std::to_string(sequence) + " path: " + path;
     }

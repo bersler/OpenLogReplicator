@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
 
     CharacterSetJA16EUC::~CharacterSetJA16EUC() = default;
 
-    uint64_t CharacterSetJA16EUC::decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
+    uint64_t CharacterSetJA16EUC::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)

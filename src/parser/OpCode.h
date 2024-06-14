@@ -111,47 +111,46 @@ namespace OpenLogReplicator {
 
         static constexpr uint8_t OPFLAG_BEGIN_TRANS = 0x01;
 
-        static void ktbRedo(Ctx* ctx, RedoLogRecord* redoLogRecord, const uint64_t fieldPos, const uint16_t fieldLength);
-        static void kdli(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdliInfo(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, const uint16_t fieldLength, uint8_t code);
-        static void kdliLoadCommon(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliLoadData(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliZero(Ctx* ctx, const RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliFill(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliLmap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliLmapx(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliSuplog(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliGmap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliFpload(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliLoadLhb(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliAlmap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliAlmapx(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliLoadItree(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliImap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliImapx(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
-        static void kdliDataLoad(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdliCommon(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCode(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeIRP(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeDRP(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeLKR(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeURP(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeORP(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeCFA(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeSKL(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void kdoOpCodeQM(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void ktub(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, bool isKtubl);
-        static void dumpMemory(Ctx* ctx, const RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void dumpCols(Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, uint64_t colNum, uint16_t fieldLength, uint8_t isNull);
-        static void dumpColVector(Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, uint64_t colNum);
-        static void dumpCompressed(Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, uint16_t fieldLength);
-        static void dumpRows(Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data);
-        static void dumpHex(Ctx* ctx, const RedoLogRecord* redoLogRecord);
+        static void ktbRedo(const Ctx* ctx, RedoLogRecord* redoLogRecord, const uint64_t fieldPos, const uint16_t fieldLength);
+        static void kdli(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdliInfo(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, const uint16_t fieldLength, uint8_t code);
+        static void kdliLoadCommon(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliLoadData(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliZero(const Ctx* ctx, const RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliFill(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliLmap(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliLmapx(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliSuplog(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliGmap(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliFpload(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliLoadLhb(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliAlmap(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliAlmapx(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliLoadItree(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliImap(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliImapx(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, uint8_t code);
+        static void kdliDataLoad(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdliCommon(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCode(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeIRP(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeDRP(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeLKR(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeURP(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeORP(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeCFA(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeSKL(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdoOpCodeQM(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void ktub(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, bool isKtubl);
+        static void dumpMemory(const Ctx* ctx, const RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void dumpCols(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, uint64_t colNum, uint16_t fieldLength, uint8_t isNull);
+        static void dumpColVector(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, uint64_t colNum);
+        static void dumpCompressed(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, uint16_t fieldLength);
+        static void dumpRows(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data);
+        static void dumpHex(const Ctx* ctx, const RedoLogRecord* redoLogRecord);
         static void processFbFlags(uint8_t fb, char* fbStr);
 
     public:
-
-        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process(const Ctx* ctx, RedoLogRecord* redoLogRecord);
     };
 }
 

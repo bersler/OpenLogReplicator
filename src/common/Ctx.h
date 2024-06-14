@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <atomic>
 #include <condition_variable>
 #include <fstream>
+#include <memory>
 #include <mutex>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
@@ -156,7 +157,7 @@ namespace OpenLogReplicator {
         std::set<Thread*> threads;
         pthread_t mainThread;
 
-        inline int64_t yearToDays(int64_t year, int64_t month) {
+        inline int64_t yearToDays(int64_t year, int64_t month) const {
             int64_t result = year * 365 + year / 4 - year / 100 + year / 400;
             if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month < 2)
                 --result;
@@ -164,7 +165,7 @@ namespace OpenLogReplicator {
             return result;
         }
 
-        inline int64_t yearToDaysBC(int64_t year, int64_t month) {
+        inline int64_t yearToDaysBC(int64_t year, int64_t month) const {
             int64_t result = (year * 365) + (year / 4) - (year / 100) + (year / 400);
             if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month >= 2)
                 --result;
@@ -178,7 +179,7 @@ namespace OpenLogReplicator {
             return (flags & mask) != 0;
         }
 
-        bool disableChecksSet(uint64_t mask) {
+        bool disableChecksSet(uint64_t mask) const {
             return (disableChecks & mask) != 0;
         }
 
@@ -196,7 +197,7 @@ namespace OpenLogReplicator {
         std::string versionStr;
         std::atomic<uint64_t> dumpRedoLog;
         std::atomic<uint64_t> dumpRawData;
-        std::ofstream dumpStream;
+        std::unique_ptr<std::ofstream> dumpStream;
         int64_t dbTimezone;
         int64_t hostTimezone;
         int64_t logTimezone;
@@ -578,16 +579,16 @@ namespace OpenLogReplicator {
         [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field,
                                                        uint64_t num);
 
-        bool parseTimezone(const char* str, int64_t& out);
-        std::string timezoneToString(int64_t tz);
-        time_t valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz);
-        uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ);
+        bool parseTimezone(const char* str, int64_t& out) const;
+        std::string timezoneToString(int64_t tz) const;
+        time_t valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) const;
+        uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) const;
 
         void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
         void wakeAllOutOfMemory();
         [[nodiscard]] uint64_t getMaxUsedMemory() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;
-        [[nodiscard]] uint64_t getFreeMemory();
+        [[nodiscard]] uint64_t getFreeMemory() const;
         [[nodiscard]] uint8_t* getMemoryChunk(uint64_t module, bool reusable);
         void freeMemoryChunk(uint64_t module, uint8_t* chunk, bool reusable);
         void stopHard();
@@ -606,13 +607,13 @@ namespace OpenLogReplicator {
         void allocateBuffer();
         void signalDump();
 
-        void welcome(const std::string& message);
-        void hint(const std::string& message);
-        void error(int code, const std::string& message);
-        void warning(int code, const std::string& message);
-        void info(int code, const std::string& message);
-        void debug(int code, const std::string& message);
-        void logTrace(int mask, const std::string& message);
+        void welcome(const std::string& message) const;
+        void hint(const std::string& message) const;
+        void error(int code, const std::string& message) const;
+        void warning(int code, const std::string& message) const;
+        void info(int code, const std::string& message) const;
+        void debug(int code, const std::string& message) const;
+        void logTrace(int mask, const std::string& message) const;
     };
 }
 

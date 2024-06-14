@@ -260,8 +260,6 @@ namespace OpenLogReplicator {
                     ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(msgR[i]) << " ";
                 ctx->warning(60033, ss.str());
             }
-        } else if (length == 0) {
-            // No request
         } else if (errno != EAGAIN)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno));
     }

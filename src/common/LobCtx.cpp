@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
     LobCtx::~LobCtx() {
     }
 
-    void LobCtx::checkOrphanedLobs(Ctx* ctx, const typeLobId& lobId, typeXid xid, uint64_t offset) {
+    void LobCtx::checkOrphanedLobs(const Ctx* ctx, const typeLobId& lobId, typeXid xid, uint64_t offset) {
         LobKey lobKey(lobId, 0);
         for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
              orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId;) {
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void LobCtx::addLob(Ctx* ctx, const typeLobId& lobId, typeDba page, uint64_t pageOffset, uint8_t* data, typeXid xid, uint64_t offset) {
+    void LobCtx::addLob(const Ctx* ctx, const typeLobId& lobId, typeDba page, uint64_t pageOffset, uint8_t* data, typeXid xid, uint64_t offset) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -119,7 +119,7 @@ namespace OpenLogReplicator {
         listMap.insert_or_assign(page, newData);
     }
 
-    void LobCtx::appendList(Ctx* ctx, typeDba page, uint8_t* data) {
+    void LobCtx::appendList(const Ctx* ctx, typeDba page, const uint8_t* data) {
         uint32_t aSiz;
         uint32_t nEnt = ctx->read32(data + 4);
         uint32_t sIdx = ctx->read32(data + 8);

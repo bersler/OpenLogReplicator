@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
         void applyMapping(std::string& path);
         void updateResetlogs();
         void wakeUp() override;
-        void printStartMsg();
+        void printStartMsg() const;
         bool processArchivedRedoLogs();
         bool processOnlineRedoLogs();
 

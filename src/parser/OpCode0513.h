@@ -27,15 +27,15 @@ namespace OpenLogReplicator {
 
     class OpCode0513 : public OpCode {
     protected:
-        static void attribute(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, const char* header,
+        static void attribute(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, const char* header,
                               const char* name, Transaction* transaction);
-        static void attributeSessionSerial(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
-        static void attributeFlags(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
-        static void attributeVersion(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
-        static void attributeAuditSessionId(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
+        static void attributeSessionSerial(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
+        static void attributeFlags(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
+        static void attributeVersion(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
+        static void attributeAuditSessionId(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength, Transaction* transaction);
 
     public:
-        static void process0513(Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction);
+        static void process0513(const Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction);
     };
 }
 
