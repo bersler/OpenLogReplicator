@@ -23,23 +23,23 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     void OpCode0B0C::process0B0C(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0C01);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0C01);
         // Field: 1
-        ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
+        ktbRedo(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0C02))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0C02))
             return;
         // Field: 2
-        kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
+        kdoOpCode(ctx, redoLogRecord, fieldPos, fieldSize);
 
         if (ctx->dumpRedoLog >= 1) {
             if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMD) {
-                for (uint64_t i = 0; i < redoLogRecord->nRow; ++i)
-                    *ctx->dumpStream << "slot[" << i << "]: " << std::dec << ctx->read16(redoLogRecord->data + redoLogRecord->slotsDelta + i * 2) << '\n';
+                for (typeCC i = 0; i < redoLogRecord->nRow; ++i)
+                    *ctx->dumpStream << "slot[" << i << "]: " << std::dec << ctx->read16(redoLogRecord->data() + redoLogRecord->slotsDelta + i * 2) << '\n';
             }
         }
     }

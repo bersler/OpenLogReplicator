@@ -38,17 +38,13 @@ namespace OpenLogReplicator {
            " rdataObj: " << std::dec << redo.recordDataObj <<
            " nrow: " << std::dec << static_cast<uint64_t>(redo.nRow) <<
            " afn: " << std::dec << redo.afn <<
-           " length: " << std::dec << redo.length <<
+           " size: " << std::dec << redo.size <<
            " dba: 0x" << std::hex << redo.dba <<
            " bdba: 0x" << std::hex << redo.bdba <<
            " obj: " << std::dec << redo.obj <<
            " dataobj: " << std::dec << redo.dataObj <<
-           " tsn: " << std::dec << redo.tsn <<
-           " undo: " << std::dec << redo.undo <<
            " usn: " << std::dec << redo.usn <<
-           " uba: " << PRINTUBA(redo.uba) <<
            " slt: " << std::dec << static_cast<uint64_t>(redo.slt) <<
-           " rci: " << std::dec << static_cast<uint64_t>(redo.rci) <<
            " flg: " << std::dec << static_cast<uint64_t>(redo.flg) <<
            " opc: 0x" << std::hex << redo.opc <<
            " op: " << std::dec << static_cast<uint64_t>(redo.op) <<

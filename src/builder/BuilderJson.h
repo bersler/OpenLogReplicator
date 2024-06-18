@@ -507,83 +507,83 @@ namespace OpenLogReplicator {
             append(Ctx::map16(value & 0xF));
         }
 
-        inline void appendDec(uint64_t value, uint64_t length) {
+        inline void appendDec(uint64_t value, uint64_t size) {
             char buffer[21];
 
-            for (uint64_t i = 0; i < length; ++i) {
+            for (uint64_t i = 0; i < size; ++i) {
                 buffer[i] = Ctx::map10(value % 10);
                 value /= 10;
             }
 
-            if (lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE) {
-                uint8_t *ptr = lastBuilderQueue->data + lastBuilderQueue->length + messagePosition;
-                for (uint64_t i = 0; i < length; ++i)
-                    *ptr++ = buffer[length - i - 1];
-                messagePosition += length;
+            if (lastBuilderQueue->size + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE) {
+                uint8_t *ptr = lastBuilderQueue->data + lastBuilderQueue->size + messagePosition;
+                for (uint64_t i = 0; i < size; ++i)
+                    *ptr++ = buffer[size - i - 1];
+                messagePosition += size;
             } else {
-                for (uint64_t i = 0; i < length; ++i)
-                    append(buffer[length - i - 1]);
+                for (uint64_t i = 0; i < size; ++i)
+                    append(buffer[size - i - 1]);
             }
         }
 
         inline void appendDec(uint64_t value) {
             char buffer[21];
-            uint64_t length = 0;
+            uint64_t size = 0;
 
             if (value == 0) {
                 buffer[0] = '0';
-                length = 1;
+                size = 1;
             } else {
                 while (value > 0) {
-                    buffer[length++] = Ctx::map10(value % 10);
+                    buffer[size++] = Ctx::map10(value % 10);
                     value /= 10;
                 }
             }
 
-            if (lastBuilderQueue->length + messagePosition + length < OUTPUT_BUFFER_DATA_SIZE) {
-                uint8_t* ptr = lastBuilderQueue->data + lastBuilderQueue->length + messagePosition;
-                for (uint64_t i = 0; i < length; ++i)
-                    *ptr++ = buffer[length - i - 1];
-                messagePosition += length;
+            if (lastBuilderQueue->size + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE) {
+                uint8_t* ptr = lastBuilderQueue->data + lastBuilderQueue->size + messagePosition;
+                for (uint64_t i = 0; i < size; ++i)
+                    *ptr++ = buffer[size - i - 1];
+                messagePosition += size;
             } else {
-                for (uint64_t i = 0; i < length; ++i)
-                    append(buffer[length - i - 1]);
+                for (uint64_t i = 0; i < size; ++i)
+                    append(buffer[size - i - 1]);
             }
         }
 
         inline void appendSDec(int64_t value) {
             char buffer[22];
-            uint64_t length = 0;
+            uint64_t size = 0;
 
             if (value == 0) {
                 buffer[0] = '0';
-                length = 1;
+                size = 1;
             } else {
                 if (value < 0) {
                     value = -value;
                     while (value > 0) {
-                        buffer[length++] = Ctx::map10(value % 10);
+                        buffer[size++] = Ctx::map10(value % 10);
                         value /= 10;
                     }
-                    buffer[length++] = '-';
+                    buffer[size++] = '-';
                 } else {
                     while (value > 0) {
-                        buffer[length++] = Ctx::map10(value % 10);
+                        buffer[size++] = Ctx::map10(value % 10);
                         value /= 10;
                     }
                 }
             }
 
-            for (uint64_t i = 0; i < length; ++i)
-                append(buffer[length - i - 1]);
+            for (uint64_t i = 0; i < size; ++i)
+                append(buffer[size - i - 1]);
         }
 
         inline void appendEscape(const std::string& str) {
             appendEscape(str.c_str(), str.length());
         }
 
-        inline void appendEscape(const char* str, uint64_t length) {
-            while (length > 0) {
+        inline void appendEscape(const char* str, uint64_t size) {
+            while (size > 0) {
                 if (*str == '\t') {
                     append("\\t", sizeof("\\t") - 1);
                 } else if (*str == '\r') {
@@ -603,7 +603,7 @@ namespace OpenLogReplicator {
                     append(*str);
                 }
                 ++str;
-                --length;
+                --size;
             }
         }
 
@@ -614,8 +614,8 @@ namespace OpenLogReplicator {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
-                        if (lengths[column][VALUE_AFTER] > 0)
-                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], offset, true,
+                        if (sizes[column][VALUE_AFTER] > 0)
+                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], sizes[column][VALUE_AFTER], offset, true,
                                          compressedAfter);
                         else
                             columnNull(table, column, true);
@@ -632,8 +632,8 @@ namespace OpenLogReplicator {
                             continue;
 
                         if (values[column][VALUE_AFTER] != nullptr) {
-                            if (lengths[column][VALUE_AFTER] > 0)
-                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], offset,
+                            if (sizes[column][VALUE_AFTER] > 0)
+                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], sizes[column][VALUE_AFTER], offset,
                                              true, compressedAfter);
                             else
                                 columnNull(table, column, true);
@@ -651,8 +651,8 @@ namespace OpenLogReplicator {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
-                        if (lengths[column][VALUE_BEFORE] > 0)
-                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], offset,
+                        if (sizes[column][VALUE_BEFORE] > 0)
+                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], sizes[column][VALUE_BEFORE], offset,
                                          false, compressedBefore);
                         else
                             columnNull(table, column, false);
@@ -669,8 +669,8 @@ namespace OpenLogReplicator {
                             continue;
 
                         if (values[column][VALUE_BEFORE] != nullptr) {
-                            if (lengths[column][VALUE_BEFORE] > 0)
-                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], offset,
+                            if (sizes[column][VALUE_BEFORE] > 0)
+                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], sizes[column][VALUE_BEFORE], offset,
                                              false, compressedBefore);
                             else
                                 columnNull(table, column, false);
@@ -686,7 +686,7 @@ namespace OpenLogReplicator {
         virtual void columnDouble(const std::string& columnName, long double value) override;
         virtual void columnString(const std::string& columnName) override;
         virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) override;
-        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) override;
+        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) override;
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
         virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const char* tz) override;
@@ -697,7 +697,7 @@ namespace OpenLogReplicator {
         virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
         virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
-                                uint16_t seq, const char* sql, uint64_t sqlLength) override;
+                                uint16_t seq, const char* sql, uint64_t sqlSize) override;
         virtual void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
 
     public:

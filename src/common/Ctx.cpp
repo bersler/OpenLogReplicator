@@ -533,9 +533,6 @@ namespace OpenLogReplicator {
                 ++year;
                 day = yearToDaysBC(year, 0);
             }
-            if (year == 3013 || year == 3009) {
-                std::cerr << "year: " << year << ", day: " << day << ", timestamp: " << timestamp << std::endl;
-            }
             day -= timestamp;
 
             int64_t month = day / 27;
@@ -789,7 +786,7 @@ namespace OpenLogReplicator {
             Thread* thread;
             {
                 std::unique_lock<std::mutex> lck(mtx);
-                thread = *(threads.begin());
+                thread = *(threads.cbegin());
             }
             finishThread(thread);
         }

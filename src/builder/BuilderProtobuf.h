@@ -317,10 +317,10 @@ namespace OpenLogReplicator {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
-                        if (lengths[column][VALUE_AFTER] > 0) {
+                        if (sizes[column][VALUE_AFTER] > 0) {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], offset,
+                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], sizes[column][VALUE_AFTER], offset,
                                          true, compressedAfter);
                         } else {
                             payloadPB->add_after();
@@ -340,10 +340,10 @@ namespace OpenLogReplicator {
                             continue;
 
                         if (values[column][VALUE_AFTER] != nullptr) {
-                            if (lengths[column][VALUE_AFTER] > 0) {
+                            if (sizes[column][VALUE_AFTER] > 0) {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], offset,
+                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_AFTER], sizes[column][VALUE_AFTER], offset,
                                              true, compressedAfter);
                             } else {
                                 payloadPB->add_after();
@@ -360,10 +360,10 @@ namespace OpenLogReplicator {
             if (columnFormat > 0 && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
-                        if (lengths[column][VALUE_BEFORE] > 0) {
+                        if (sizes[column][VALUE_BEFORE] > 0) {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], offset,
+                            processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], sizes[column][VALUE_BEFORE], offset,
                                          false, compressedBefore);
                         } else {
                             payloadPB->add_before();
@@ -383,10 +383,10 @@ namespace OpenLogReplicator {
                             continue;
 
                         if (values[column][VALUE_BEFORE] != nullptr) {
-                            if (lengths[column][VALUE_BEFORE] > 0) {
+                            if (sizes[column][VALUE_BEFORE] > 0) {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], offset,
+                                processValue(lobCtx, xmlCtx, table, column, values[column][VALUE_BEFORE], sizes[column][VALUE_BEFORE], offset,
                                              false, compressedBefore);
                             } else {
                                 payloadPB->add_before();
@@ -405,20 +405,20 @@ namespace OpenLogReplicator {
             redoResponsePB = new pb::RedoResponse;
         }
 
-        void numToString(uint64_t value, char* buf, uint64_t length) {
-            uint64_t j = (length - 1) * 4;
-            for (uint64_t i = 0; i < length; ++i) {
+        void numToString(uint64_t value, char* buf, uint64_t size) {
+            uint64_t j = (size - 1) * 4;
+            for (uint64_t i = 0; i < size; ++i) {
                 buf[i] = Ctx::map16((value >> j) & 0xF);
                 j -= 4;
             }
-            buf[length] = 0;
+            buf[size] = 0;
         }
 
         virtual void columnFloat(const std::string& columnName, double value) override;
         virtual void columnDouble(const std::string& columnName, long double value) override;
         virtual void columnString(const std::string& columnName) override;
         virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) override;
-        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) override;
+        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) override;
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
         virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const char* tz) override;
@@ -429,7 +429,7 @@ namespace OpenLogReplicator {
         virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
         virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const OracleTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
-                                uint16_t seq, const char* sql, uint64_t sqlLength) override;
+                                uint16_t seq, const char* sql, uint64_t sqlSize) override;
         void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
 
     public:

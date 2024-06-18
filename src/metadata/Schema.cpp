@@ -1195,7 +1195,7 @@ namespace OpenLogReplicator {
                                              ", INTCOL#: " + std::to_string(sysCol->intCol) +
                                              ", NAME: '" + sysCol->name +
                                              "', TYPE#: " + std::to_string(sysCol->type) +
-                                             ", LENGTH: " + std::to_string(sysCol->length) +
+                                             ", SIZE: " + std::to_string(sysCol->length) +
                                              ", PRECISION#: " + std::to_string(sysCol->precision) +
                                              ", SCALE: " + std::to_string(sysCol->scale) +
                                              ", CHARSETFORM: " + std::to_string(sysCol->charsetForm) +
@@ -1604,7 +1604,7 @@ namespace OpenLogReplicator {
                                              ", INTCOL#: " + std::to_string(sysCol->intCol) +
                                              ", NAME: '" + sysCol->name +
                                              "', TYPE#: " + std::to_string(sysCol->type) +
-                                             ", LENGTH: " + std::to_string(sysCol->length) +
+                                             ", SIZE: " + std::to_string(sysCol->length) +
                                              ", PRECISION#: " + std::to_string(sysCol->precision) +
                                              ", SCALE: " + std::to_string(sysCol->scale) +
                                              ", CHARSETFORM: " + std::to_string(sysCol->charsetForm) +
@@ -2472,8 +2472,8 @@ namespace OpenLogReplicator {
     void Schema::updateXmlCtx() {
         if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
             xmlCtxDefault = nullptr;
-            auto schemaXmlMapIt = schemaXmlMap.begin();
-            while (schemaXmlMapIt != schemaXmlMap.end()) {
+            auto schemaXmlMapIt = schemaXmlMap.cbegin();
+            while (schemaXmlMapIt != schemaXmlMap.cend()) {
                 if (schemaXmlMapIt->second->flags == 0) {
                     xmlCtxDefault = schemaXmlMapIt->second;
                     break;
@@ -2923,10 +2923,10 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint16_t Schema::getLobBlockSize(typeTs ts) {
+    uint16_t Schema::getLobBlockSize(typeTs ts) const {
         auto sysTsMapTsIt = sysTsMapTs.find(ts);
         if (sysTsMapTsIt != sysTsMapTs.end()) {
-            uint32_t pageSize = sysTsMapTsIt->second->blockSize;
+            typeDba pageSize = sysTsMapTsIt->second->blockSize;
             if (pageSize == 8192)
                 return 8132;
             else if (pageSize == 16384)

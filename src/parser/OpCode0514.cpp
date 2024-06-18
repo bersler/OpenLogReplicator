@@ -29,46 +29,46 @@ namespace OpenLogReplicator {
             ctx->logTrace(Ctx::TRACE_TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
             return;
         }
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051401);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051401);
         // Field: 1
-        attributeSessionSerial(ctx, redoLogRecord, fieldPos, fieldLength, transaction);
+        attributeSessionSerial(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051402))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051402))
             return;
         // Field: 2
-        attribute(ctx, redoLogRecord, fieldPos, fieldLength, "transaction name = ", "transaction name", transaction);
+        attribute(ctx, redoLogRecord, fieldPos, fieldSize, "transaction name = ", "transaction name", transaction);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051403))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051403))
             return;
         // Field: 3
-        attributeFlags(ctx, redoLogRecord, fieldPos, fieldLength, transaction);
+        attributeFlags(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051404))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051404))
             return;
         // Field: 4
-        attributeVersion(ctx, redoLogRecord, fieldPos, fieldLength, transaction);
+        attributeVersion(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051405))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051405))
             return;
         // Field: 5
-        attributeAuditSessionId(ctx, redoLogRecord, fieldPos, fieldLength, transaction);
+        attributeAuditSessionId(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051406))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051406))
             return;
         // Field: 6
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051407))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051407))
             return;
         // Field: 7
-        attribute(ctx, redoLogRecord, fieldPos, fieldLength, "Client Id = ", "client id", transaction);
+        attribute(ctx, redoLogRecord, fieldPos, fieldSize, "Client Id = ", "client id", transaction);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051408))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051408))
             return;
         // Field: 8
-        attribute(ctx, redoLogRecord, fieldPos, fieldLength, "login   username = ", "login username", transaction);
+        attribute(ctx, redoLogRecord, fieldPos, fieldSize, "login   username = ", "login username", transaction);
     }
 }

@@ -57,6 +57,10 @@ typedef uint32_t typeTs;
 typedef uint32_t typeUser;
 typedef uint8_t typeOptions;
 typedef uint16_t typeField;
+typedef uint16_t typePos;
+typedef uint16_t typeSize;
+typedef uint8_t typeCC;
+typedef uint16_t typeCCExt;
 
 typedef uint16_t typeUnicode16;
 typedef uint32_t typeUnicode32;

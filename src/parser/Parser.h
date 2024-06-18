@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
     struct LwnMember {
         uint64_t offset;
-        uint64_t length;
+        uint32_t size;
         typeScn scn;
         typeSubScn subScn;
         typeBlk block;
@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
         void appendToTransactionRollback(RedoLogRecord* redoLogRecord1);
         void appendToTransaction(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void appendToTransactionRollback(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
-        void dumpRedoVector(uint8_t* data, uint64_t recordLength4) const;
+        void dumpRedoVector(const uint8_t* data, typeSize recordSize) const;
 
     public:
         int64_t group;

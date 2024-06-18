@@ -221,9 +221,9 @@ namespace OpenLogReplicator {
         OCIParam* paramdp;
         conn->env->checkErr(conn->errhp, OCIParamGet(stmthp, OCI_HTYPE_STMT, conn->errhp,
                                                      reinterpret_cast<void**>(&paramdp), col));
-        uint32_t fieldLength = 0;
-        conn->env->checkErr(conn->errhp, OCIAttrGet(paramdp, OCI_DTYPE_PARAM, reinterpret_cast<dvoid*>(&fieldLength), nullptr,
+        uint32_t fieldSize = 0;
+        conn->env->checkErr(conn->errhp, OCIAttrGet(paramdp, OCI_DTYPE_PARAM, reinterpret_cast<dvoid*>(&fieldSize), nullptr,
                                                     OCI_ATTR_DATA_SIZE, conn->errhp));
-        return (fieldLength == 0);
+        return (fieldSize == 0);
     }
 }

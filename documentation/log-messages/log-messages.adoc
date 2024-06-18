@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-01
+:revdate: 2024-06-18
 :imagesdir: ./images
 :toc: preamble
 
@@ -307,7 +307,7 @@ Verify if the table definition is correct.
 Character set defined in the database is invalid.
 Please report this issue.
 
-==== code 10043: "after mapping path length (<length>) is too long for: <path>"
+==== code 10043: "after mapping path length (<number>) is too long for: <path>"
 
 Provided configuration for a mapping path is too long.
 Verify if the path is correct.
@@ -647,13 +647,13 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50004: "duplicate index lobid: <lobid>, page: <number>, already set to: <number>, xid: <xid>, offset: <number>"
 
-==== code 50005: "field length out of vector, field: <number>/<number>, pos: <number>, length: <number>, max: <number>, code: <number>"
+==== code 50005: "field size out of vector, field: <number>/<number>, pos: <number>, size: <number>, max: <number>, code: <number>"
 
 ==== code 50006: "field missing in vector, field: <number>/<number>, ctx: <number>, obj: <number>, dataobj: <number>, op: <code>, cc: <number>, suppCC: <number>, fieldLength: <number>, code: <number>"
 
-==== code 50007: "field length out of vector, field: <number>/<number>, pos: <number>, length: <number>, max: <number>, code: <number>"
+==== code 50007: "field size out of vector, field: <number>/<number>, pos: <number>, size: <number>, max: <number>, code: <number>"
 
-==== code 50008: "field length out of vector: field: <number>/<number>, pos: <number>, length: <number>, max: <number>"
+==== code 50008: "field size out of vector: field: <number>/<number>, pos: <number>, size: <number>, max: <number>"
 
 ==== code 50009: "error parsing numeric value at offset: <number>"
 
@@ -717,7 +717,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50039: "transaction <xid>> conflicts with <xid>"
 
-==== code 50040: "block size (<length>) exceeding max block size (<length>), try increasing the FULL_BUFFER_SIZE parameter"
+==== code 50040: "block size (<number>) exceeding max block size (<number>), try increasing the FULL_BUFFER_SIZE parameter"
 
 ==== code 50041: "bad split offset: <number> xid: <xid>"
 
@@ -743,7 +743,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50052: "all <number> lwn buffers allocated"
 
-==== code 50053: "too big redo log record, length: <length>"
+==== code 50053: "too big redo log record, length: <number>"
 
 ==== code 50054: "all <number> records in lwn were used"
 

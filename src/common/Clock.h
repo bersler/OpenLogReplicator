@@ -30,8 +30,8 @@ namespace OpenLogReplicator {
     public:
         virtual ~Clock() = default;
 
-        virtual time_ut getTimeUt() = 0;
-        virtual time_t getTimeT() = 0;
+        virtual time_ut getTimeUt() const = 0;
+        virtual time_t getTimeT() const = 0;
     };
 }
 

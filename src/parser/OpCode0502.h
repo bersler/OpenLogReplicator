@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
 
     class OpCode0502 final : public OpCode {
     protected:
-        static void kteop(const Ctx* ctx, const RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void ktudh(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
-        static void pdb(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kteop(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
+        static void ktudh(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
+        static void pdb(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
 
     public:
         static void process0502(const Ctx* ctx, RedoLogRecord* redoLogRecord);

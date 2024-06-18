@@ -23,29 +23,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     void OpCode0A02::process0A02(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
         if (ctx->dumpRedoLog >= 1) {
             *ctx->dumpStream << "index redo (kdxlin):  insert leaf row\n";
         }
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0201);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A0201);
         // Field: 1
-        ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
+        ktbRedo(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0202))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A0202))
             return;
         // Field: 2
 
         if (ctx->dumpRedoLog >= 1) {
-            if (fieldLength < 6)
+            if (fieldSize < 6)
                 return;
 
-            uint8_t itl = redoLogRecord->data[fieldPos];
-            uint16_t sno = ctx->read16(redoLogRecord->data + fieldPos + 2);
-            uint16_t rowSize = ctx->read16(redoLogRecord->data + fieldPos + 4);
+            const uint8_t itl = redoLogRecord->data()[fieldPos];
+            const uint16_t sno = ctx->read16(redoLogRecord->data() + fieldPos + 2);
+            const uint16_t rowSize = ctx->read16(redoLogRecord->data() + fieldPos + 4);
 
             *ctx->dumpStream << "REDO: SINGLE / -- / -- " << '\n';
             *ctx->dumpStream << "itl: " << std::dec << static_cast<uint64_t>(itl) <<
@@ -53,43 +53,43 @@ namespace OpenLogReplicator {
                             ", row size " << std::dec << rowSize << '\n';
         }
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0202))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A0202))
             return;
         // Field: 3
 
         redoLogRecord->indKey = fieldPos;
-        redoLogRecord->indKeyLength = fieldLength;
+        redoLogRecord->indKeySize = fieldSize;
 
         if (ctx->dumpRedoLog >= 1) {
-            *ctx->dumpStream << "insert key: (" << std::dec << fieldLength << "): ";
+            *ctx->dumpStream << "insert key: (" << std::dec << fieldSize << "): ";
 
-            if (fieldLength > 20)
+            if (fieldSize > 20)
                 *ctx->dumpStream << '\n';
 
-            for (uint64_t j = 0; j < fieldLength; ++j) {
-                *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
-                if ((j % 25) == 24 && j != static_cast<uint64_t>(fieldLength) - 1)
+            for (typeSize j = 0; j < fieldSize; ++j) {
+                *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data()[fieldPos + j]);
+                if ((j % 25) == 24 && j != fieldSize - 1U)
                     *ctx->dumpStream << '\n';
             }
             *ctx->dumpStream << '\n';
         }
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A0202))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A0202))
             return;
         // Field: 4
 
         redoLogRecord->indKeyData = fieldPos;
-        redoLogRecord->indKeyDataLength = fieldLength;
+        redoLogRecord->indKeyDataSize = fieldSize;
 
         if (ctx->dumpRedoLog >= 1) {
-            *ctx->dumpStream << "keydata: (" << std::dec << fieldLength << "): ";
+            *ctx->dumpStream << "keydata: (" << std::dec << fieldSize << "): ";
 
-            if (fieldLength > 20)
+            if (fieldSize > 20)
                 *ctx->dumpStream << '\n';
 
-            for (uint64_t j = 0; j < fieldLength; ++j) {
-                *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
-                if ((j % 25) == 24 && j != static_cast<uint64_t>(fieldLength) - 1)
+            for (typeSize j = 0; j < fieldSize; ++j) {
+                *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data()[fieldPos + j]);
+                if ((j % 25) == 24 && j != fieldSize - 1U)
                     *ctx->dumpStream << '\n';
             }
             *ctx->dumpStream << '\n';

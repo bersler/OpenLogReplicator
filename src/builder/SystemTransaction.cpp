@@ -170,15 +170,15 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->lengths[column][Builder::Builder::VALUE_AFTER], offset);
-            builder->valueBuffer[builder->valueLength] = 0;
+            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->sizes[column][Builder::Builder::VALUE_AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
             auto newVal = static_cast<int16_t>(strtol(builder->valueBuffer, &retPtr, 10));
             if (ctx->trace & Ctx::TRACE_SYSTEM)
                 ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
@@ -192,7 +192,7 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -200,9 +200,9 @@ namespace OpenLogReplicator {
                                               std::to_string(offset));
 
             builder->parseNumber(builder->values[column][Builder::Builder::Builder::VALUE_AFTER],
-                                 builder->lengths[column][Builder::Builder::Builder::VALUE_AFTER], offset);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
+                                 builder->sizes[column][Builder::Builder::Builder::VALUE_AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
+            if (builder->valueSize == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
@@ -219,16 +219,16 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
+            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
+            if (builder->valueSize == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
@@ -245,16 +245,16 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0)
+            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
+            if (builder->valueSize == 0)
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
@@ -271,16 +271,16 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
+            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
+            if (builder->valueSize == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
@@ -297,21 +297,21 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateNumberXu(typeIntX& val, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
             if (table->columns[column]->type != 2)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || builder->valueBuffer[0] == '-')
+            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
+            if (builder->valueSize == 0 || builder->valueBuffer[0] == '-')
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             typeIntX newVal(0);
             std::string err;
-            newVal.setStr(builder->valueBuffer, builder->valueLength, err);
+            newVal.setStr(builder->valueBuffer, builder->valueSize, err);
             if (err != "")
                 ctx->error(50021, err);
 
@@ -326,17 +326,17 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateRaw(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
             if (table->columns[column]->type != SysCol::TYPE_RAW)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseRaw(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER], offset);
-            std::string newVal(builder->valueBuffer, builder->valueLength);
-            if (builder->valueLength > maxLength)
+            builder->parseRaw(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            std::string newVal(builder->valueBuffer, builder->valueSize);
+            if (builder->valueSize > maxLength)
                 throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
-                                              table->columns[column]->name + ", length " + std::to_string(builder->valueLength) + " offset: " +
+                                              table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
                                               std::to_string(offset));
 
             if (ctx->trace & Ctx::TRACE_SYSTEM)
@@ -350,18 +350,18 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->lengths[column][Builder::VALUE_AFTER] > 0) {
+        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
             if (table->columns[column]->type != SysCol::TYPE_VARCHAR && table->columns[column]->type != SysCol::TYPE_CHAR)
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseString(builder->values[column][Builder::VALUE_AFTER], builder->lengths[column][Builder::VALUE_AFTER],
+            builder->parseString(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER],
                                  table->columns[column]->charsetId, offset, false, false, false, true);
-            std::string newVal(builder->valueBuffer, builder->valueLength);
-            if (builder->valueLength > maxLength)
+            std::string newVal(builder->valueBuffer, builder->valueSize);
+            if (builder->valueSize > maxLength)
                 throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
-                                              table->columns[column]->name + ", length " + std::to_string(builder->valueLength) + " offset: " +
+                                              table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
                                               std::to_string(offset));
 
             if (ctx->trace & Ctx::TRACE_SYSTEM)
@@ -477,7 +477,7 @@ namespace OpenLogReplicator {
                     updateString(sysColTmp->name, SysCol::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysColTmp->type, 0, column, table, offset);
-                } else if (table->columns[column]->name == "LENGTH") {
+                } else if (table->columns[column]->name == "SIZE") {
                     updateNumber64u(sysColTmp->length, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PRECISION#") {
                     updateNumber64(sysColTmp->precision, -1, column, table, offset);
@@ -1249,7 +1249,7 @@ namespace OpenLogReplicator {
                     updateString(sysColTmp->name, SysCol::NAME_LENGTH, column, table, offset);
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysColTmp->type, 0, column, table, offset);
-                } else if (table->columns[column]->name == "LENGTH") {
+                } else if (table->columns[column]->name == "SIZE") {
                     updateNumber64u(sysColTmp->length, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PRECISION#") {
                     updateNumber64(sysColTmp->precision, -1, column, table, offset);

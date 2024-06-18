@@ -23,31 +23,31 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     void OpCode0B0B::process0B0B(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         OpCode::process(ctx, redoLogRecord);
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B01);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0B01);
         // Field: 1
-        ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
+        ktbRedo(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B02))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0B02))
             return;
         // Field: 2
-        kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
+        kdoOpCode(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B03))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0B03))
             return;
         // Field: 3
-        redoLogRecord->rowLenghsDelta = fieldPos;
-        if (fieldLength < redoLogRecord->nRow * 2)
-            throw RedoLogException(50061, "too short field 11.11.3: " + std::to_string(fieldLength) + " offset: " +
+        redoLogRecord->rowSizesDelta = fieldPos;
+        if (fieldSize < static_cast<typeSize>(redoLogRecord->nRow) * 2)
+            throw RedoLogException(50061, "too short field 11.11.3: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B04))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0B04))
             return;
         // Field: 4
         redoLogRecord->rowData = fieldNum;
-        dumpRows(ctx, redoLogRecord, redoLogRecord->data + fieldPos);
+        dumpRows(ctx, redoLogRecord, redoLogRecord->data() + fieldPos);
     }
 }
