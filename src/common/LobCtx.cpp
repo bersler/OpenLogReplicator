@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint32_t pageNo = redoLogRecordLob->lobPageNo;
+        typeDba pageNo = redoLogRecordLob->lobPageNo;
         if (pageNo != RedoLogRecord::INVALID_LOB_PAGE_NO) {
             auto indexMapIt = lobData->indexMap.find(page);
             if (indexMapIt != lobData->indexMap.end()) {
@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void LobCtx::setList(typeDba page, const uint8_t* data, uint16_t length) {
+    void LobCtx::setList(typeDba page, const uint8_t* data, uint16_t size) {
         typeDba nextPage = 0;
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
@@ -111,18 +111,18 @@ namespace OpenLogReplicator {
             delete[] oldData;
         }
 
-        uint8_t* newData = new uint8_t[length];
+        uint8_t* newData = new uint8_t[size];
         typeDba* newPage = reinterpret_cast<typeDba*>(newData);
         *newPage = nextPage;
-        memcpy(newData + 4, data + 4, length - 4);
+        memcpy(newData + 4, data + 4, size - 4U);
 
         listMap.insert_or_assign(page, newData);
     }
 
     void LobCtx::appendList(const Ctx* ctx, typeDba page, const uint8_t* data) {
         uint32_t aSiz;
-        uint32_t nEnt = ctx->read32(data + 4);
-        uint32_t sIdx = ctx->read32(data + 8);
+        const uint32_t nEnt = ctx->read32(data + 4);
+        const uint32_t sIdx = ctx->read32(data + 8);
         uint8_t* newData = new uint8_t[8 + (sIdx + nEnt) * 8];
 
         auto listMapIt = listMap.find(page);
@@ -150,7 +150,7 @@ namespace OpenLogReplicator {
         listMap.insert_or_assign(page, newData);
     }
 
-    void LobCtx::setLength(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest) {
+    void LobCtx::setSize(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
         lobData->sizeRest = sizeRest;
     }
 
-    void LobCtx::setPage(const typeLobId& lobId, typeDba page, uint32_t pageNo, typeXid xid, uint64_t offset) {
+    void LobCtx::setPage(const typeLobId& lobId, typeDba page, typeDba pageNo, typeXid xid, uint64_t offset) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {

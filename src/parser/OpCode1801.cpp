@@ -25,21 +25,21 @@ namespace OpenLogReplicator {
         bool validDdl = false;
 
         OpCode::process(ctx, redoLogRecord);
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180101);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180101);
         // Field: 1
-        if (fieldLength < 18)
+        if (fieldSize < 18)
             throw RedoLogException(50061, "too short field 24.1.1: " +
-                                          std::to_string(fieldLength) + " offset: " + std::to_string(redoLogRecord->dataOffset));
+                                          std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
-        redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 4)),
-                                     ctx->read16(redoLogRecord->data + fieldPos + 6),
-                                     ctx->read32(redoLogRecord->data + fieldPos + 8));
+        redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data() + fieldPos + 4)),
+                                     ctx->read16(redoLogRecord->data() + fieldPos + 6),
+                                     ctx->read32(redoLogRecord->data() + fieldPos + 8));
         // uint16_t type = ctx->read16(redoLogRecord->ctx + fieldPos + 12);
-        uint16_t ddlType = ctx->read16(redoLogRecord->data + fieldPos + 16);
+        const uint16_t ddlType = ctx->read16(redoLogRecord->data() + fieldPos + 16);
         // uint16_t seq = ctx->read16(redoLogRecord->ctx + fieldPos + 18);
         // uint16_t cnt = ctx->read16(redoLogRecord->ctx + fieldPos + 20);
 
@@ -47,51 +47,51 @@ namespace OpenLogReplicator {
         if (ddlType != 4 && ddlType != 5 && ddlType != 6 && ddlType != 8 && ddlType != 9 && ddlType != 10)
             validDdl = true;
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180102))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180102))
             return;
         // Field: 2
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180103))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180103))
             return;
         // Field: 3
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180104))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180104))
             return;
         // Field: 4
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180105))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180105))
             return;
         // Field: 5
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180106))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180106))
             return;
         // Field: 6
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180107))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180107))
             return;
         // Field: 7
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180108))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180108))
             return;
         // Field: 8
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180109))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180109))
             return;
         // Field: 9
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x18010A))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x18010A))
             return;
         // Field: 10
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x18010B))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x18010B))
             return;
         // Field: 11
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x18010C))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x18010C))
             return;
         // Field: 12
 
         if (validDdl)
-            redoLogRecord->obj = ctx->read32(redoLogRecord->data + fieldPos + 0);
+            redoLogRecord->obj = ctx->read32(redoLogRecord->data() + fieldPos + 0);
     }
 }

@@ -22,53 +22,53 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     void OpCode1A06::process1A06(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0601);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0601);
         // Field: 1
-        if (fieldLength < 12)
-            throw RedoLogException(50061, "too short field 26.6.1: " + std::to_string(fieldLength) + " offset: " +
+        if (fieldSize < 12)
+            throw RedoLogException(50061, "too short field 26.6.1: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0602);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0602);
         // Field: 2
-        if (fieldLength < 32)
-            throw RedoLogException(50061, "too short field 26.6.2: " + std::to_string(fieldLength) + " offset: " +
+        if (fieldSize < 32)
+            throw RedoLogException(50061, "too short field 26.6.2: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        redoLogRecord->recordDataObj = ctx->read32(redoLogRecord->data + fieldPos + 24);
+        redoLogRecord->recordDataObj = ctx->read32(redoLogRecord->data() + fieldPos + 24);
 
         OpCode::process(ctx, redoLogRecord);
         fieldPos = 0;
         fieldNum = 0;
-        fieldLength = 0;
+        fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0603);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0603);
         // Field: 1
-        kdliCommon(ctx, redoLogRecord, fieldPos, fieldLength);
+        kdliCommon(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0604);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0604);
         // Field: 2
-        kdli(ctx, redoLogRecord, fieldPos, fieldLength);
+        kdli(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0605);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0605);
         // Field: 3
-        kdli(ctx, redoLogRecord, fieldPos, fieldLength);
+        kdli(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0606))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0606))
             return;
         // Field: 4
 
         if (redoLogRecord->opc == KDLI_OP_BIMG) {
-            kdliDataLoad(ctx, redoLogRecord, fieldPos, fieldLength);
+            kdliDataLoad(ctx, redoLogRecord, fieldPos, fieldSize);
 
-            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0607))
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0607))
                 return;
         }
 
         // Field: 4/5 - suplog?
-        kdli(ctx, redoLogRecord, fieldPos, fieldLength);
+        kdli(ctx, redoLogRecord, fieldPos, fieldSize);
     }
 }

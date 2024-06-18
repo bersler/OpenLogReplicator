@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
         append('"');
         appendEscape(columnName);
         append(R"(":")", sizeof(R"(":")") - 1);
-        appendEscape(valueBuffer, valueLength);
+        appendEscape(valueBuffer, valueSize);
         append('"');
     }
 
@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
         append('"');
         appendEscape(columnName);
         append(R"(":)", sizeof(R"(":)") - 1);
-        append(valueBuffer, valueLength);
+        append(valueBuffer, valueSize);
     }
 
     void BuilderJson::columnRowId(const std::string& columnName, typeRowId rowId) {
@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
         append('"');
     }
 
-    void BuilderJson::columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) {
+    void BuilderJson::columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) {
         if (hasPreviousColumn)
             append(',');
         else
@@ -116,7 +116,7 @@ namespace OpenLogReplicator {
         append('"');
         appendEscape(columnName);
         append(R"(":")", sizeof(R"(":")") - 1);
-        for (uint64_t j = 0; j < length; ++j)
+        for (uint64_t j = 0; j < size; ++j)
             appendHex2(*(data + j));
         append('"');
     }
@@ -672,7 +672,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const OracleTable* table, typeObj obj, typeDataObj dataObj __attribute__((unused)),
-                                 uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* sql, uint64_t sqlLength) {
+                                 uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* sql, uint64_t sqlSize) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -701,7 +701,7 @@ namespace OpenLogReplicator {
         append(R"({"op":"ddl",)", sizeof(R"({"op":"ddl",)") - 1);
         appendSchema(table, obj);
         append(R"(,"sql":")", sizeof(R"(,"sql":")") - 1);
-        appendEscape(sql, sqlLength);
+        appendEscape(sql, sqlSize);
         append(R"("})", sizeof(R"("})") - 1);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {

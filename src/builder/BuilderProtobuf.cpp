@@ -62,12 +62,12 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::columnString(const std::string& columnName) {
         valuePB->set_name(columnName);
-        valuePB->set_value_string(valueBuffer, valueLength);
+        valuePB->set_value_string(valueBuffer, valueSize);
     }
 
     void BuilderProtobuf::columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) {
         valuePB->set_name(columnName);
-        valueBuffer[valueLength] = 0;
+        valueBuffer[valueSize] = 0;
         char* retPtr;
 
         if (scale == 0 && precision <= 17) {
@@ -80,7 +80,7 @@ namespace OpenLogReplicator {
             double value = strtod(valueBuffer, &retPtr);
             valuePB->set_value_double(value);
         } else {
-            valuePB->set_value_string(valueBuffer, valueLength);
+            valuePB->set_value_string(valueBuffer, valueSize);
         }
     }
 
@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         valuePB->set_value_string(str, 18);
     }
 
-    void BuilderProtobuf::columnRaw(const std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t length __attribute__((unused))) {
+    void BuilderProtobuf::columnRaw(const std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t size __attribute__((unused))) {
         valuePB->set_name(columnName);
         // TODO: implement
     }
@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const OracleTable* table __attribute__((unused)), typeObj obj,
                                      typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)),
-                                     const char* sql, uint64_t sqlLength) {
+                                     const char* sql, uint64_t sqlSize) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -261,7 +261,7 @@ namespace OpenLogReplicator {
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::DDL);
             appendSchema(table, obj);
-            payloadPB->set_ddl(sql, sqlLength);
+            payloadPB->set_ddl(sql, sqlSize);
         }
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {

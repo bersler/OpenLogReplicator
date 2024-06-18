@@ -95,7 +95,6 @@ namespace OpenLogReplicator {
                          " suppcc: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogCC)) +
                          " dba: " + std::to_string(redoLogRecord1->dba) +
                          " slt: " + std::to_string(redoLogRecord1->slt) +
-                         " rci: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->rci)) +
                          " seq: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->seq)) +
                          " flg: " + std::to_string(redoLogRecord1->flg) +
                          " split: " + std::to_string(lastSplit) +

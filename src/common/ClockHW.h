@@ -27,8 +27,8 @@ namespace OpenLogReplicator {
     public:
         virtual ~ClockHW() = default;
 
-        virtual time_ut getTimeUt() override;
-        virtual time_t getTimeT() override;
+        virtual time_ut getTimeUt() const override;
+        virtual time_t getTimeT() const override;
     };
 }
 

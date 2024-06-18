@@ -27,7 +27,7 @@ namespace OpenLogReplicator {
     public:
         static void process0A08(const Ctx* ctx, RedoLogRecord* redoLogRecord);
 
-        static void kdxln(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void kdxln(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
     };
 }
 

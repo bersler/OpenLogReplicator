@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class OpCode0506 final : public OpCode {
     protected:
-        static void ktuxvoff(const Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint16_t fieldLength);
+        static void ktuxvoff(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
         static void init(const Ctx* ctx, RedoLogRecord* redoLogRecord);
 
     public:

@@ -116,7 +116,7 @@ namespace OpenLogReplicator {
         bool compareXdbXPt(Schema* otherSchema, std::string& msgs) const;
         void addTableToDict(OracleTable* table);
         void removeTableFromDict(OracleTable* table);
-        uint16_t getLobBlockSize(typeTs ts);
+        uint16_t getLobBlockSize(typeTs ts) const;
 
     public:
         typeScn scn;

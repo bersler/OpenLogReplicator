@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
             checkpointIdx(0),
             checkpointTime(time(nullptr)),
             sentMessages(0),
-            oldLength(0),
+            oldSize(0),
             currentQueueSize(0),
             maxQueueSize(0),
             streaming(false),
@@ -112,12 +112,12 @@ namespace OpenLogReplicator {
         }
         currentQueueSize = 0;
 
-        oldLength = builderQueue->start;
+        oldSize = builderQueue->start;
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
         if (ctx->metrics && msg != nullptr) {
-            ctx->metrics->emitBytesConfirmed(msg->length);
+            ctx->metrics->emitBytesConfirmed(msg->size);
             ctx->metrics->emitMessagesConfirmed(1);
         }
 
@@ -186,7 +186,7 @@ namespace OpenLogReplicator {
             // Before anything, read the latest checkpoint
             readCheckpoint();
             builderQueue = builder->firstBuilderQueue;
-            oldLength = 0;
+            oldSize = 0;
             currentQueueSize = 0;
 
             // External loop for client disconnection
@@ -221,7 +221,7 @@ namespace OpenLogReplicator {
 
     void Writer::mainLoop() {
         BuilderMsg* msg;
-        uint64_t newLength = 0;
+        uint64_t newSize = 0;
         currentQueueSize = 0;
 
         // Start streaming
@@ -248,15 +248,15 @@ namespace OpenLogReplicator {
 
                 // Next buffer
                 if (builderQueue->next != nullptr)
-                    if (builderQueue->length == oldLength) {
+                    if (builderQueue->size == oldSize) {
                         builderQueue = builderQueue->next;
-                        oldLength = 0;
+                        oldSize = 0;
                     }
 
                 // Found something
-                msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldLength);
-                if (builderQueue->length > oldLength + sizeof(struct BuilderMsg) && msg->length > 0) {
-                    newLength = builderQueue->length;
+                msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldSize);
+                if (builderQueue->size > oldSize + sizeof(struct BuilderMsg) && msg->size > 0) {
+                    newSize = builderQueue->size;
                     break;
                 }
 
@@ -266,9 +266,9 @@ namespace OpenLogReplicator {
             }
 
             // Send the message
-            while (oldLength + sizeof(struct BuilderMsg) < newLength && !ctx->hardShutdown) {
-                msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldLength);
-                if (msg->length == 0)
+            while (oldSize + sizeof(struct BuilderMsg) < newSize && !ctx->hardShutdown) {
+                msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldSize);
+                if (msg->size == 0)
                     break;
 
                 // The queue is full
@@ -285,48 +285,48 @@ namespace OpenLogReplicator {
                 if (ctx->hardShutdown)
                     break;
 
-                uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
-                oldLength += sizeof(struct BuilderMsg);
+                uint64_t size8 = (msg->size + 7) & 0xFFFFFFFFFFFFFFF8;
+                oldSize += sizeof(struct BuilderMsg);
 
                 // Message in one part - send directly from buffer
-                if (oldLength + length8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
+                if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send the message to the client in one part
                     if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
-                        uint64_t msgLength = msg->length;
+                        uint64_t msgSize = msg->size;
                         sendMessage(msg);
                         if (ctx->metrics) {
-                            ctx->metrics->emitBytesSent(msgLength);
+                            ctx->metrics->emitBytesSent(msgSize);
                             ctx->metrics->emitMessagesSent(1);
                         }
                     }
-                    oldLength += length8;
+                    oldSize += size8;
 
                 } else {
                     // The message is split to many parts - merge & copy
-                    msg->data = new uint8_t[msg->length];
+                    msg->data = new uint8_t[msg->size];
                     if (msg->data == nullptr)
-                        throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->length) +
+                        throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->size) +
                                                       " bytes memory for: temporary buffer for JSON message");
                     msg->flags |= Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED;
 
                     uint64_t copied = 0;
-                    while (msg->length > copied) {
-                        uint64_t toCopy = msg->length - copied;
-                        if (toCopy > newLength - oldLength) {
-                            toCopy = newLength - oldLength;
+                    while (msg->size > copied) {
+                        uint64_t toCopy = msg->size - copied;
+                        if (toCopy > newSize - oldSize) {
+                            toCopy = newSize - oldSize;
                             memcpy(reinterpret_cast<void*>(msg->data + copied),
-                                   reinterpret_cast<const void*>(builderQueue->data + oldLength), toCopy);
+                                   reinterpret_cast<const void*>(builderQueue->data + oldSize), toCopy);
                             builderQueue = builderQueue->next;
-                            newLength = Builder::OUTPUT_BUFFER_DATA_SIZE;
-                            oldLength = 0;
+                            newSize = Builder::OUTPUT_BUFFER_DATA_SIZE;
+                            oldSize = 0;
                         } else {
                             memcpy(reinterpret_cast<void*>(msg->data + copied),
-                                   reinterpret_cast<const void*>(builderQueue->data + oldLength), toCopy);
-                            oldLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
+                                   reinterpret_cast<const void*>(builderQueue->data + oldSize), toCopy);
+                            oldSize += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
                         }
                         copied += toCopy;
                     }
@@ -337,10 +337,10 @@ namespace OpenLogReplicator {
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
-                        uint64_t msgLength = msg->length;
+                        uint64_t msgSize = msg->size;
                         sendMessage(msg);
                         if (ctx->metrics) {
-                            ctx->metrics->emitBytesSent(msgLength);
+                            ctx->metrics->emitBytesSent(msgSize);
                             ctx->metrics->emitMessagesSent(1);
                         }
                     }
@@ -351,7 +351,7 @@ namespace OpenLogReplicator {
             // All work done?
             if (ctx->softShutdown && ctx->replicatorFinished) {
                 // Is there still some data to send?
-                if (builderQueue->length != oldLength || builderQueue->next != nullptr)
+                if (builderQueue->size != oldSize || builderQueue->next != nullptr)
                     continue;
                 break;
             }

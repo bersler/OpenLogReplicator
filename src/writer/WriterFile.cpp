@@ -200,19 +200,19 @@ namespace OpenLogReplicator {
         }
     }
 
-    void WriterFile::checkFile(typeScn scn __attribute__((unused)), typeSeq sequence, uint64_t length) {
+    void WriterFile::checkFile(typeScn scn __attribute__((unused)), typeSeq sequence, uint64_t size) {
         if (mode == MODE_STDOUT) {
             return;
         } else if (mode == MODE_NO_ROTATE) {
             fullFileName = pathName + "/" + fileNameMask;
         } else if (mode == MODE_NUM) {
-            if (fileSize + length > maxFileSize) {
+            if (fileSize + size > maxFileSize) {
                 closeFile();
                 ++fileNameNum;
                 fileSize = 0;
             }
-            if (length > maxFileSize)
-                ctx->warning(60029, "message size (" + std::to_string(length) + ") will exceed 'max-file' size (" +
+            if (size > maxFileSize)
+                ctx->warning(60029, "message size (" + std::to_string(size) + ") will exceed 'max-file' size (" +
                                     std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1) {
@@ -225,11 +225,11 @@ namespace OpenLogReplicator {
             }
         } else if (mode == MODE_TIMESTAMP) {
             bool shouldSwitch = false;
-            if (fileSize + length > maxFileSize)
+            if (fileSize + size > maxFileSize)
                 shouldSwitch = true;
 
-            if (length > maxFileSize)
-                ctx->warning(60029, "message size (" + std::to_string(length) + ") will exceed 'max-file' size (" +
+            if (size > maxFileSize)
+                ctx->warning(60029, "message size (" + std::to_string(size) + ") will exceed 'max-file' size (" +
                                     std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1 || shouldSwitch) {
@@ -289,14 +289,14 @@ namespace OpenLogReplicator {
 
     void WriterFile::sendMessage(BuilderMsg* msg) {
         if (newLine > 0)
-            checkFile(msg->scn, msg->sequence, msg->length + 1);
+            checkFile(msg->scn, msg->sequence, msg->size + 1);
         else
-            checkFile(msg->scn, msg->sequence, msg->length);
+            checkFile(msg->scn, msg->sequence, msg->size);
 
-        int64_t bytesWritten = write(outputDes, reinterpret_cast<const char*>(msg->data), msg->length);
-        if (static_cast<uint64_t>(bytesWritten) != msg->length)
+        int64_t bytesWritten = write(outputDes, reinterpret_cast<const char*>(msg->data), msg->size);
+        if (static_cast<uint64_t>(bytesWritten) != msg->size)
             throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                          std::to_string(msg->length) + ", code returned: " + strerror(errno));
+                                          std::to_string(msg->size) + ", code returned: " + strerror(errno));
 
         fileSize += bytesWritten;
 
@@ -304,7 +304,7 @@ namespace OpenLogReplicator {
             bytesWritten = write(outputDes, newLineMsg, newLine);
             if (static_cast<uint64_t>(bytesWritten) != newLine)
                 throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                              std::to_string(msg->length) + ", code returned: " + strerror(errno));
+                                              std::to_string(msg->size) + ", code returned: " + strerror(errno));
             fileSize += bytesWritten;
         }
 

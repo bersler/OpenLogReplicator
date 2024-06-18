@@ -127,9 +127,9 @@ namespace OpenLogReplicator {
     void WriterKafka::sendMessage(BuilderMsg* msg) {
         msg->ptr = reinterpret_cast<void*>(this);
         for (;;) {
-            rd_kafka_resp_err_t err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic.c_str()), RD_KAFKA_V_VALUE(msg->data, msg->length),
+            rd_kafka_resp_err_t err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic.c_str()), RD_KAFKA_V_VALUE(msg->data, msg->size),
                                                         RD_KAFKA_V_OPAQUE(msg), RD_KAFKA_V_END);
-            // rd_kafka_resp_err_t err = (rd_kafka_resp_err_t)rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, 0, msg->decoder, msg->length, nullptr, 0, msg);
+            // rd_kafka_resp_err_t err = (rd_kafka_resp_err_t)rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, 0, msg->decoder, msg->size, nullptr, 0, msg);
 
             if (err) {
                 ctx->warning(60031, "failed to produce to topic " + topic + ", message: " + rd_kafka_err2str(err));

@@ -23,29 +23,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     void OpCode050B::init(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         if (redoLogRecord->fieldCnt >= 1) {
-            uint64_t fieldPos = redoLogRecord->fieldPos;
-            uint16_t fieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
-            if (fieldLength < 8)
-                throw RedoLogException(50061, "too short field 5.11: " + std::to_string(fieldLength) + " offset: " +
+            typePos fieldPos = redoLogRecord->fieldPos;
+            typeSize fieldSize = ctx->read16(redoLogRecord->data() + redoLogRecord->fieldSizesDelta + 1 * 2);
+            if (fieldSize < 8)
+                throw RedoLogException(50061, "too short field 5.11: " + std::to_string(fieldSize) + " offset: " +
                                               std::to_string(redoLogRecord->dataOffset));
 
-            redoLogRecord->obj = ctx->read32(redoLogRecord->data + fieldPos + 0);
-            redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 4);
+            redoLogRecord->obj = ctx->read32(redoLogRecord->data() + fieldPos + 0);
+            redoLogRecord->dataObj = ctx->read32(redoLogRecord->data() + fieldPos + 4);
         }
     }
 
     void OpCode050B::process050B(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         init(ctx, redoLogRecord);
         OpCode::process(ctx, redoLogRecord);
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050B01);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x050B01);
         // Field: 1
         if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
-            ktub(ctx, redoLogRecord, fieldPos, fieldLength, false);
+            ktub(ctx, redoLogRecord, fieldPos, fieldSize, false);
         else
-            ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);
+            ktub(ctx, redoLogRecord, fieldPos, fieldSize, true);
     }
 }

@@ -443,9 +443,9 @@ namespace OpenLogReplicator {
             ctx->logTrace(Ctx::TRACE_CHECKPOINT, "scn: " + std::to_string(firstDataScn));
 
         if (firstDataScn != Ctx::ZERO_SCN && firstDataScn != 0) {
-            std::set<typeScn>::iterator it = checkpointScnList.end();
+            std::set<typeScn>::iterator it = checkpointScnList.cend();
 
-            while (it != checkpointScnList.begin()) {
+            while (it != checkpointScnList.cbegin()) {
                 --it;
                 if (*it <= firstDataScn && (sequence == Ctx::ZERO_SEQ || sequence == 0))
                     readCheckpoint(*it);
@@ -525,8 +525,8 @@ namespace OpenLogReplicator {
 
             bool foundSchema = false;
             uint64_t num = 0;
-            std::set<typeScn>::iterator it = checkpointScnList.end();
-            while (it != checkpointScnList.begin()) {
+            std::set<typeScn>::iterator it = checkpointScnList.cend();
+            while (it != checkpointScnList.cbegin()) {
                 --it;
                 ++num;
 

@@ -22,29 +22,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     void OpCode1301::process1301(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
-        uint64_t fieldPos = 0;
+        typePos fieldPos = 0;
         typeField fieldNum = 0;
-        uint16_t fieldLength = 0;
+        typeSize fieldSize = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x130101);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x130101);
         // Field: 1
 
-        if (fieldLength < 36)
-            throw RedoLogException(50061, "too short field 19.1.1: " + std::to_string(fieldLength) + " offset: " +
+        if (fieldSize < 36)
+            throw RedoLogException(50061, "too short field 19.1.1: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->dataObj = ctx->read32(redoLogRecord->data() + fieldPos + 0);
         redoLogRecord->recordDataObj = redoLogRecord->dataObj;
-        redoLogRecord->lobId.set(redoLogRecord->data + fieldPos + 4);
-        redoLogRecord->lobPageNo = ctx->read32(redoLogRecord->data + fieldPos + 24);
+        redoLogRecord->lobId.set(redoLogRecord->data() + fieldPos + 4);
+        redoLogRecord->lobPageNo = ctx->read32(redoLogRecord->data() + fieldPos + 24);
         redoLogRecord->lobData = fieldPos + 36;
-        redoLogRecord->lobDataLength = fieldLength - 36;
+        redoLogRecord->lobDataSize = fieldSize - 36;
         OpCode::process(ctx, redoLogRecord);
 
         if (ctx->dumpRedoLog >= 1) {
-            uint32_t v2 = ctx->read32(redoLogRecord->data + fieldPos + 16);
-            uint16_t v1 = ctx->read16(redoLogRecord->data + fieldPos + 20);
-            typeDba dba = ctx->read32(redoLogRecord->data + fieldPos + 28);
+            const uint32_t v2 = ctx->read32(redoLogRecord->data() + fieldPos + 16);
+            const uint16_t v1 = ctx->read16(redoLogRecord->data() + fieldPos + 20);
+            const typeDba dba = ctx->read32(redoLogRecord->data() + fieldPos + 28);
 
             *ctx->dumpStream << "Direct Loader block redo entry\n";
             *ctx->dumpStream << "Long field block dump:\n";
@@ -55,16 +55,16 @@ namespace OpenLogReplicator {
                             "." << std::setfill('0') << std::setw(8) << std::hex << v2 <<
                             "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
 
-            for (uint64_t j = 0; j < static_cast<uint64_t>(fieldLength - 36); ++j) {
-                *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j + 36]) << " ";
-                if ((j % 24) == 23 && j != static_cast<uint64_t>(fieldLength) - 1)
+            for (typeSize j = 0; j < fieldSize - 36U; ++j) {
+                *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data()[fieldPos + j + 36]) << " ";
+                if ((j % 24) == 23 && j != fieldSize - 1U)
                     *ctx->dumpStream << "\n    ";
             }
             *ctx->dumpStream << '\n';
         }
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x130102);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x130102);
         // Field: 2
-        dumpMemory(ctx, redoLogRecord, fieldPos, fieldLength);
+        dumpMemory(ctx, redoLogRecord, fieldPos, fieldSize);
     }
 }
