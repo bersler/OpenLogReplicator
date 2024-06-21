@@ -187,12 +187,12 @@ namespace OpenLogReplicator {
                 if (after) {
                     if (parseLob(lobCtx, data, size, 0, table->obj, offset, false, table->sys)) {
                         if (column->xmlType && ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
-                            if (parseXml(xmlCtx, reinterpret_cast<uint8_t*>(valueBuffer), valueSize, offset))
+                            if (parseXml(xmlCtx, reinterpret_cast<const uint8_t*>(valueBuffer), valueSize, offset))
                                 columnString(column->name);
                             else
-                                columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBufferOld), valueSizeOld);
+                                columnRaw(column->name, reinterpret_cast<const uint8_t*>(valueBufferOld), valueSizeOld);
                         } else
-                            columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueSize);
+                            columnRaw(column->name, reinterpret_cast<const uint8_t*>(valueBuffer), valueSize);
                     }
                 }
                 break;
@@ -200,7 +200,7 @@ namespace OpenLogReplicator {
             case SysCol::TYPE_JSON:
                 if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_JSON))
                     if (parseLob(lobCtx, data, size, 0, table->obj, offset, false, table->sys))
-                        columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueSize);
+                        columnRaw(column->name, reinterpret_cast<const uint8_t*>(valueBuffer), valueSize);
                 break;
 
             case SysCol::TYPE_CLOB:
@@ -1365,7 +1365,7 @@ namespace OpenLogReplicator {
                         if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < sizes[guardPos][VALUE_BEFORE]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_BEFORE][column2 / 8] & (1 << (column2 & 7))) != 0) {
-                                values[column][VALUE_BEFORE] = reinterpret_cast<uint8_t*>(1);
+                                values[column][VALUE_BEFORE] = reinterpret_cast<const uint8_t*>(1);
                                 sizes[column][VALUE_BEFORE] = 0;
                             }
                         }
@@ -1385,7 +1385,7 @@ namespace OpenLogReplicator {
                         if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < sizes[guardPos][VALUE_AFTER]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_AFTER][column2 / 8] & (1 << (column2 & 7))) != 0) {
-                                values[column][VALUE_AFTER] = reinterpret_cast<uint8_t*>(1);
+                                values[column][VALUE_AFTER] = reinterpret_cast<const uint8_t*>(1);
                                 sizes[column][VALUE_AFTER] = 0;
                             }
                         }
@@ -1530,12 +1530,12 @@ namespace OpenLogReplicator {
 
                         // For update assume null for missing columns
                         if (values[column][VALUE_BEFORE] != nullptr && values[column][VALUE_AFTER] == nullptr) {
-                            values[column][VALUE_AFTER] = reinterpret_cast<uint8_t*>(1);
+                            values[column][VALUE_AFTER] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][VALUE_AFTER] = 0;
                         }
 
                         if (values[column][VALUE_AFTER] != nullptr && values[column][VALUE_BEFORE] == nullptr) {
-                            values[column][VALUE_BEFORE] = reinterpret_cast<uint8_t*>(1);
+                            values[column][VALUE_BEFORE] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][VALUE_BEFORE] = 0;
                         }
                     }
@@ -1581,7 +1581,7 @@ namespace OpenLogReplicator {
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][VALUE_AFTER] = reinterpret_cast<uint8_t*>(1);
+                            values[column][VALUE_AFTER] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][VALUE_AFTER] = 0;
                             if (static_cast<uint64_t>(column) >= valuesMax)
                                 valuesMax = column + 1;
@@ -1616,7 +1616,7 @@ namespace OpenLogReplicator {
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][VALUE_AFTER] = reinterpret_cast<uint8_t*>(1);
+                            values[column][VALUE_AFTER] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][VALUE_AFTER] = 0;
                             if (static_cast<uint64_t>(column) >= valuesMax)
                                 valuesMax = column + 1;
@@ -1664,7 +1664,7 @@ namespace OpenLogReplicator {
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][VALUE_BEFORE] = reinterpret_cast<uint8_t*>(1);
+                            values[column][VALUE_BEFORE] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][VALUE_BEFORE] = 0;
                         }
                     }
@@ -1697,7 +1697,7 @@ namespace OpenLogReplicator {
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][VALUE_BEFORE] = reinterpret_cast<uint8_t*>(1);
+                            values[column][VALUE_BEFORE] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][VALUE_BEFORE] = 0;
                         }
                     }

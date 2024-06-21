@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
         void purge(TransactionBuffer* transactionBuffer);
 
         void log(const Ctx* ctx, const char* msg, const RedoLogRecord* redoLogRecord1) const {
-            if (!dump || (ctx->trace & Ctx::TRACE_DUMP) != 0)
+            if (!dump && (ctx->trace & Ctx::TRACE_DUMP) == 0)
                 return;
 
             ctx->info(0, std::string(msg) + " xid: " + xid.toString() +

@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
+                ssize_t r = write(socketFD, (reinterpret_cast<const uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                     if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                         r = 0;
@@ -168,7 +168,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
+                ssize_t r = write(socketFD, (reinterpret_cast<const uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                     if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                         r = 0;
@@ -190,7 +190,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length)) + sent, sizeof(uint64_t) - sent);
+                ssize_t r = write(socketFD, (reinterpret_cast<const uint8_t*>(&length)) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
                     if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                         r = 0;
@@ -252,7 +252,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
+        uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
         if (newLength < 0xFFFFFFFF) {
             // 32-bit message length
             if (length < newLength)
@@ -284,7 +284,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            newLength = *(reinterpret_cast<uint32_t*>(msg));
+            newLength = *reinterpret_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");
@@ -342,9 +342,9 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (*(reinterpret_cast<uint32_t*>(msg)) < 0xFFFFFFFF) {
+        if (*reinterpret_cast<const uint32_t*>(msg) < 0xFFFFFFFF) {
             // 32-bit message length
-            uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
+            uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");
@@ -378,7 +378,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            uint32_t newLength = *(reinterpret_cast<uint32_t*>(msg));
+            uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");

@@ -377,7 +377,7 @@ namespace OpenLogReplicator {
         orphanedLobs.insert_or_assign(lobKey, allocateLob(redoLogRecord1));
     }
 
-    uint8_t* TransactionBuffer::allocateLob(RedoLogRecord* redoLogRecord1) {
+    uint8_t* TransactionBuffer::allocateLob(const RedoLogRecord* redoLogRecord1) const {
         uint64_t lobSize = redoLogRecord1->size + sizeof(RedoLogRecord) + sizeof(uint64_t);
         uint8_t* data = new uint8_t[lobSize];
         *(reinterpret_cast<uint64_t*>(data)) = lobSize;
@@ -385,8 +385,8 @@ namespace OpenLogReplicator {
                reinterpret_cast<const void*>(redoLogRecord1), sizeof(RedoLogRecord));
         memcpy(reinterpret_cast<void*>(data + sizeof(uint64_t) + sizeof(RedoLogRecord)),
                reinterpret_cast<const void*>(redoLogRecord1->data()), redoLogRecord1->size);
-        redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t));
-        redoLogRecord1->dataExt = data + sizeof(uint64_t) + sizeof(RedoLogRecord);
+        RedoLogRecord* redoLogRecord1new = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t));
+        redoLogRecord1new->dataExt = data + sizeof(uint64_t) + sizeof(RedoLogRecord);
 
         return data;
     }

@@ -755,7 +755,7 @@ namespace OpenLogReplicator {
         uint64_t sum = 0;
 
         for (uint64_t i = 0; i < size / 8; ++i, buffer += 8)
-            sum ^= *(reinterpret_cast<uint64_t*>(buffer));
+            sum ^= *(reinterpret_cast<const uint64_t*>(buffer));
         sum ^= (sum >> 32);
         sum ^= (sum >> 16);
         sum ^= oldChSum;

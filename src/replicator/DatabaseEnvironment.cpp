@@ -56,10 +56,10 @@ namespace OpenLogReplicator {
             case OCI_SUCCESS_WITH_INFO:
                 OCIErrorGet(errhp, 1, nullptr, &errcode1, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
                 if (errcode1 != 100)
-                    ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)));
+                    ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<const char*>(errbuf1)));
                 OCIErrorGet(errhp, 2, nullptr, &errcode2, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
                 if (errcode2 != 100)
-                    ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<char*>(errbuf1)));
+                    ctx->warning(70006, "OCI: " + std::string(reinterpret_cast<const char*>(errbuf1)));
                 break;
 
             case OCI_NEED_DATA:
@@ -73,18 +73,18 @@ namespace OpenLogReplicator {
                 // Fetched column value is NULL
                 if (errcode1 == 1405)
                     return;
-                len = strlen(reinterpret_cast<char*>(errbuf1));
+                len = strlen(reinterpret_cast<const char*>(errbuf1));
                 if (len > 0 && errbuf1[len - 1] == '\n')
                     errbuf1[len - 1] = 0;
 
                 OCIErrorGet(errhp, 2, nullptr, &errcode2, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
-                len = strlen(reinterpret_cast<char*>(errbuf2));
+                len = strlen(reinterpret_cast<const char*>(errbuf2));
                 if (len > 0 && errbuf2[len - 1] == '\n')
                     errbuf2[len - 1] = 0;
 
                 if (errcode2 != 100)
-                    ctx->error(10051, "OCI: [" + std::string(reinterpret_cast<char*>(errbuf2)) + "]");
-                throw RuntimeException(10051, "OCI: [" + std::string(reinterpret_cast<char*>(errbuf1)) + "]", errcode1);
+                    ctx->error(10051, "OCI: [" + std::string(reinterpret_cast<const char*>(errbuf2)) + "]");
+                throw RuntimeException(10051, "OCI: [" + std::string(reinterpret_cast<const char*>(errbuf1)) + "]", errcode1);
 
             case OCI_INVALID_HANDLE:
                 throw RuntimeException(10051, "OCI: OCI_INVALID_HANDLE");
