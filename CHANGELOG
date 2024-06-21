@@ -3,6 +3,7 @@
 - code style cleanup
 - fix: diagnostic information populated when not enabled
 - enhancement: add dictionary values for TIMEZONE database parameter
+- enhancement: add parameter -r|--root to disable root check on startup
 
 1.6.0
 - enhancement: add parameter -p

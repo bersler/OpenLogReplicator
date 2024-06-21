@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-01
+:revdate: 2024-06-22
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -22,6 +22,8 @@ The only parameters accepted are:
 * `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`),
 
 * `-p <process name>` -- process name (default: `"OpenLogReplicator"`) displayed in the process list; useful when multiple instances are running,
+
+* `-r|--root` -- disable root check on startup (default: root check is enabled); allow running the program as root, which is not recommended and should be used only in special cases,
 
 * `-v|--version` -- print version and exit.
 
