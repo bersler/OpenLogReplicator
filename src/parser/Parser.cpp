@@ -746,7 +746,7 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionCommit(RedoLogRecord* redoLogRecord1) {
-        // Clean LOB's if used
+        // Clean LOBs if used
         for (auto lobIdToXidMapIt = ctx->lobIdToXidMap.cbegin(); lobIdToXidMapIt != ctx->lobIdToXidMap.cend();) {
             if (lobIdToXidMapIt->second == redoLogRecord1->xid) {
                 lobIdToXidMapIt = ctx->lobIdToXidMap.erase(lobIdToXidMapIt);
@@ -1152,7 +1152,7 @@ namespace OpenLogReplicator {
                 ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->data()[redoLogRecord1->indKey + i]);
             if (redoLogRecord2->indKeySize > 0)
                 ss << " 0x";
-            for (typeSize  i = 0; i < redoLogRecord2->indKeySize; ++i)
+            for (typeSize i = 0; i < redoLogRecord2->indKeySize; ++i)
                 ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey + i]);
 
             ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + redoLogRecord1->xid.toString() + " obj: " +

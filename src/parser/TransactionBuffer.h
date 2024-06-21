@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
         void addOrphanedLob(RedoLogRecord* redoLogRecord1);
-        uint8_t* allocateLob(RedoLogRecord* redoLogRecord1);
+        uint8_t* allocateLob(const RedoLogRecord* redoLogRecord1) const;
     };
 }
 
