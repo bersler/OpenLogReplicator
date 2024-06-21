@@ -2,6 +2,7 @@
 - fix: welcome banner
 - code style cleanup
 - fix: diagnostic information populated when not enabled
+- enhancement: add dictionary values for TIMEZONE database parameter
 
 1.6.0
 - enhancement: add parameter -p
