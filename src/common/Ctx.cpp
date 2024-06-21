@@ -356,6 +356,64 @@ namespace OpenLogReplicator {
     }
 
     bool Ctx::parseTimezone(const char* str, int64_t& out) const {
+        if (strcmp(str, "Etc/GMT-14") == 0) str = "-14:00";
+        if (strcmp(str, "Etc/GMT-13") == 0) str = "-13:00";
+        if (strcmp(str, "Etc/GMT-12") == 0) str = "-12:00";
+        if (strcmp(str, "Etc/GMT-11") == 0) str = "-11:00";
+        if (strcmp(str, "HST") == 0) str = "-10:00";
+        if (strcmp(str, "Etc/GMT-10") == 0) str = "-10:00";
+        if (strcmp(str, "Etc/GMT-9") == 0) str = "-09:00";
+        if (strcmp(str, "PST") == 0) str = "-08:00";
+        if (strcmp(str, "PST8PDT") == 0) str = "-08:00";
+        if (strcmp(str, "Etc/GMT-8") == 0) str = "-08:00";
+        if (strcmp(str, "MST") == 0) str = "-07:00";
+        if (strcmp(str, "MST7MDT") == 0) str = "-07:00";
+        if (strcmp(str, "Etc/GMT-7") == 0) str = "-07:00";
+        if (strcmp(str, "CST") == 0) str = "-06:00";
+        if (strcmp(str, "CST6CDT") == 0) str = "-06:00";
+        if (strcmp(str, "Etc/GMT-6") == 0) str = "-06:00";
+        if (strcmp(str, "EST") == 0) str = "-05:00";
+        if (strcmp(str, "EST5EDT") == 0) str = "-05:00";
+        if (strcmp(str, "Etc/GMT-5") == 0) str = "-05:00";
+        if (strcmp(str, "Etc/GMT-4") == 0) str = "-04:00";
+        if (strcmp(str, "Etc/GMT-3") == 0) str = "-03:00";
+        if (strcmp(str, "Etc/GMT-2") == 0) str = "-02:00";
+        if (strcmp(str, "Etc/GMT-1") == 0) str = "-01:00";
+        if (strcmp(str, "GMT") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/GMT") == 0) str = "+00:00";
+        if (strcmp(str, "Greenwich") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/Greenwich") == 0) str = "+00:00";
+        if (strcmp(str, "GMT0") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/GMT0") == 0) str = "+00:00";
+        if (strcmp(str, "GMT+0") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/GMT-0") == 0) str = "+00:00";
+        if (strcmp(str, "GMT+0") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/GMT+0") == 0) str = "+00:00";
+        if (strcmp(str, "UTC") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/UTC") == 0) str = "+00:00";
+        if (strcmp(str, "UCT") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/UCT") == 0) str = "+00:00";
+        if (strcmp(str, "Universal") == 0) str = "+00:00";
+        if (strcmp(str, "Etc/Universal") == 0) str = "+00:00";
+        if (strcmp(str, "WET") == 0) str = "+00:00";
+        if (strcmp(str, "MET") == 0) str = "+01:00";
+        if (strcmp(str, "CET") == 0) str = "+01:00";
+        if (strcmp(str, "Etc/GMT+1") == 0) str = "+01:00";
+        if (strcmp(str, "EET") == 0) str = "+02:00";
+        if (strcmp(str, "Etc/GMT+2") == 0) str = "+02:00";
+        if (strcmp(str, "Etc/GMT+3") == 0) str = "+03:00";
+        if (strcmp(str, "Etc/GMT+4") == 0) str = "+04:00";
+        if (strcmp(str, "Etc/GMT+5") == 0) str = "+05:00";
+        if (strcmp(str, "Etc/GMT+6") == 0) str = "+06:00";
+        if (strcmp(str, "Etc/GMT+7") == 0) str = "+07:00";
+        if (strcmp(str, "PRC") == 0) str = "+08:00";
+        if (strcmp(str, "ROC") == 0) str = "+08:00";
+        if (strcmp(str, "Etc/GMT+8") == 0) str = "+08:00";
+        if (strcmp(str, "Etc/GMT+9") == 0) str = "+09:00";
+        if (strcmp(str, "Etc/GMT+10") == 0) str = "+10:00";
+        if (strcmp(str, "Etc/GMT+11") == 0) str = "+11:00";
+        if (strcmp(str, "Etc/GMT+12") == 0) str = "+12:00";
+
         uint64_t len = strlen(str);
 
         if (len == 5) {
