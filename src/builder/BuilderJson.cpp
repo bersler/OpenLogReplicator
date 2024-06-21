@@ -700,16 +700,7 @@ namespace OpenLogReplicator {
         }
 
         append(R"({"op":"ddl",)", sizeof(R"({"op":"ddl",)") - 1);
-        appendSchema(table, obj);
-
-        append(R"(,"owner":")", sizeof(R"(,"owner":")")-1);
-        appendEscape(owner, ownerLength);
-        append(R"(")", sizeof(R"(")")-1);
-
-        append(R"(,"table":)",  sizeof(R"(,"table":)")-1);
-        appendEscape(name, nameLength);
-        append(R"(")", sizeof(R"(")")-1);
-
+        appendSchema(table, obj, owner, ownerLength, name, nameLength);
         append(R"(,"sql":")", sizeof(R"(,"sql":")") - 1);
         appendEscape(sql, sqlLength);
         append(R"("})", sizeof(R"("})") - 1);

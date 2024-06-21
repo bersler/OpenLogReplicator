@@ -297,7 +297,8 @@ namespace OpenLogReplicator {
             append("},", 2);
         }
 
-        inline void appendSchema(const OracleTable* table, typeObj obj) {
+        inline void appendSchema(const OracleTable* table, typeObj obj, const char *owner, uint64_t ownerLength,
+                                 const char *name, uint64_t nameLength) {
             if (table == nullptr) {
                 std::string ownerName;
                 std::string tableName;
@@ -307,6 +308,12 @@ namespace OpenLogReplicator {
                     appendEscape(ownerName);
                     append(R"(","table":")", sizeof(R"(","table":")") - 1);
                     appendEscape(tableName);
+                    append('"');
+                } else if (owner != nullptr && name != nullptr && ownerLength > 0 && nameLength > 0) {
+                    append(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
+                    appendEscape(owner, ownerLength);
+                    append(R"(","table":")", sizeof(R"(","table":")") - 1);
+                    appendEscape(name, nameLength);
                     append('"');
                 } else {
                     append(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
@@ -457,6 +464,10 @@ namespace OpenLogReplicator {
             }
 
             append('}');
+        }
+
+        inline void appendSchema(const OracleTable* table, typeObj obj) {
+            appendSchema(table, obj, nullptr, 0, nullptr, 0);
         }
 
         inline void appendHex2(uint8_t value) {
