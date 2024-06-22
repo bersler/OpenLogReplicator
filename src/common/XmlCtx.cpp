@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
 
     void XmlCtx::dictXdbXNmAdd(XdbXNm* xdbXNm) {
         auto xdbXNmMapIdIt = xdbXNmMapId.find(xdbXNm->id);
-        if (xdbXNmMapIdIt != xdbXNmMapId.end())
+        if (unlikely(xdbXNmMapIdIt != xdbXNmMapId.end()))
             throw DataException(50024, "duplicate XDB.X$NM" + tokSuf + " value for unique (ID: '" + xdbXNm->id + "')");
 
         xdbXNmMapRowId.insert_or_assign(xdbXNm->rowId, xdbXNm);
@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
 
     void XmlCtx::dictXdbXPtAdd(XdbXPt* xdbXPt) {
         auto xdbXPtMapIdIt = xdbXPtMapId.find(xdbXPt->id);
-        if (xdbXPtMapIdIt != xdbXPtMapId.end())
+        if (unlikely(xdbXPtMapIdIt != xdbXPtMapId.end()))
             throw DataException(50024, "duplicate XDB.X$PT" + tokSuf + " value for unique (ID: '" + xdbXPt->id + "')");
 
         xdbXPtMapRowId.insert_or_assign(xdbXPt->rowId, xdbXPt);
@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
 
     void XmlCtx::dictXdbXQnAdd(XdbXQn* xdbXQn) {
         auto xdbXQnMapIdIt = xdbXQnMapId.find(xdbXQn->id);
-        if (xdbXQnMapIdIt != xdbXQnMapId.end())
+        if (unlikely(xdbXQnMapIdIt != xdbXQnMapId.end()))
             throw DataException(50024, "duplicate XDB.X$QN" + tokSuf + " value for unique (ID: '" + xdbXQn->id + "')");
 
         xdbXQnMapRowId.insert_or_assign(xdbXQn->rowId, xdbXQn);

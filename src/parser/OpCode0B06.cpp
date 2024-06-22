@@ -44,16 +44,16 @@ namespace OpenLogReplicator {
             return;
         if (fieldSize == redoLogRecord->sizeDelt && (redoLogRecord->cc > 1 || redoLogRecord->cc == 0)) {
             redoLogRecord->compressed = true;
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 dumpCompressed(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, fieldSize);
         } else {
             // Fields: 3 to 3 + cc - 1
             for (typeCC i = 0; i < redoLogRecord->cc; ++i) {
-                if (fieldSize > 0 && (*nulls & bits) != 0)
+                if (unlikely(fieldSize > 0 && (*nulls & bits) != 0))
                     throw RedoLogException(50061, "too short field 11.6." + std::to_string(fieldNum) + ": " +
                                                   std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
-                if (ctx->dumpRedoLog >= 1)
+                if (unlikely(ctx->dumpRedoLog >= 1))
                     dumpCols(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, i, fieldSize, *nulls & bits);
                 bits <<= 1;
                 if (bits == 0) {

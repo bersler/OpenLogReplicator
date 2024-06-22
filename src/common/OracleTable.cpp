@@ -119,7 +119,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleTable::addColumn(OracleColumn* column) {
-        if (column->segCol != static_cast<typeCol>(columns.size() + 1))
+        if (unlikely(column->segCol != static_cast<typeCol>(columns.size() + 1)))
             throw RuntimeException(50002, "trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) +
                                           ", dataobj: " + std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) +
                                           ", segcol#: " + std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
@@ -152,7 +152,7 @@ namespace OpenLogReplicator {
         if (condition != nullptr)
             result = condition->evaluateToBool(op, attributes);
 
-        if (ctx->trace & Ctx::TRACE_CONDITION)
+        if (unlikely(ctx->trace & Ctx::TRACE_CONDITION))
             ctx->logTrace(Ctx::TRACE_CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + conditionStr + ", result: " +
                                            std::to_string(result));
         return result;

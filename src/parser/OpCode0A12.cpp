@@ -27,7 +27,7 @@ namespace OpenLogReplicator {
         typeField fieldNum = 0;
         typeSize fieldSize = 0;
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             typeField count = redoLogRecord->fieldCnt;
             *ctx->dumpStream << "index redo (kdxlup): update keydata, count=" << std::dec << count << '\n';
         }
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
             return;
         // Field: 2
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             if (fieldSize < 6)
                 return;
 
@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
         redoLogRecord->indKeyData = fieldPos;
         redoLogRecord->indKeyDataSize = fieldSize;
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "keydata : (" << std::dec << fieldSize << "): ";
 
             if (fieldSize > 20)

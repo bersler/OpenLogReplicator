@@ -47,17 +47,17 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << '\n';
         }
     }
 
     void OpCode0502::kteop(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
-        if (fieldSize < 36)
+        if (unlikely(fieldSize < 36))
             throw RedoLogException(50061, "too short field kteop: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             const uint32_t highwater = ctx->read32(redoLogRecord->data() + fieldPos + 16);
             const uint32_t ext = ctx->read32(redoLogRecord->data() + fieldPos + 4);
             const typeBlk blk = 0; // TODO: find field position/size
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0502::ktudh(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
-        if (fieldSize < 32)
+        if (unlikely(fieldSize < 32))
             throw RedoLogException(50061, "too short field ktudh: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
                                      ctx->read32(redoLogRecord->data() + fieldPos + 4));
         redoLogRecord->flg = ctx->read16(redoLogRecord->data() + fieldPos + 16);
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             const typeUba uba = ctx->read56(redoLogRecord->data() + fieldPos + 8);
             const uint8_t fbi = redoLogRecord->data()[fieldPos + 20];
             const uint16_t siz = ctx->read16(redoLogRecord->data() + fieldPos + 18);
@@ -120,11 +120,11 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0502::pdb(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
-        if (fieldSize < 4)
+        if (unlikely(fieldSize < 4))
             throw RedoLogException(50061, "too short field pdb: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             const uint32_t pdbId = ctx->read32(redoLogRecord->data() + fieldPos + 0);
 
             *ctx->dumpStream << "       " <<

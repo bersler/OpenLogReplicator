@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
             RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0504);
             // Field: 4
             redoLogRecord->rowData = fieldNum;
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 dumpColVector(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, ctx->read16(colNums));
         } else if (colNums != nullptr) {
             redoLogRecord->rowData = fieldNum + 1;
@@ -63,11 +63,11 @@ namespace OpenLogReplicator {
                 if (i < redoLogRecord->ccData)
                     RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0506);
 
-                if (fieldSize > 0 && (*nulls & bits) != 0 && i < redoLogRecord->ccData)
+                if (unlikely(fieldSize > 0 && (*nulls & bits) != 0 && i < redoLogRecord->ccData))
                     throw RedoLogException(50061, "too short field 11.5." + std::to_string(fieldNum) + ": " +
                                                   std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
-                if (ctx->dumpRedoLog >= 1)
+                if (unlikely(ctx->dumpRedoLog >= 1))
                     dumpCols(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, ctx->read16(colNums), fieldSize, *nulls & bits);
 
                 bits <<= 1;

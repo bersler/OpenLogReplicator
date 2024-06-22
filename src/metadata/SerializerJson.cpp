@@ -517,7 +517,7 @@ namespace OpenLogReplicator {
                                      bool loadSchema) {
         try {
             rapidjson::Document document;
-            if (ss.length() == 0 || document.Parse(ss.c_str()).HasParseError())
+            if (unlikely(ss.length() == 0 || document.Parse(ss.c_str()).HasParseError()))
                 throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                            " - parse error: " + GetParseError_En(document.GetParseError()));
 
@@ -555,7 +555,7 @@ namespace OpenLogReplicator {
                         metadata->offset = Ctx::getJsonFieldU64(fileName, document, "offset");
                     }
 
-                    if ((metadata->offset & 511) != 0)
+                    if (unlikely((metadata->offset & 511) != 0))
                         throw DataException(20006, "file: " + fileName + " - invalid offset: " + std::to_string(metadata->offset) +
                                                    " is not a multiplication of 512");
 
@@ -586,7 +586,7 @@ namespace OpenLogReplicator {
                         if (metadata->ctx->dbTimezone != Ctx::BAD_TIMEZONE) {
                             metadata->dbTimezone = metadata->ctx->dbTimezone;
                         } else {
-                            if (!metadata->ctx->parseTimezone(metadata->dbTimezoneStr.c_str(), metadata->dbTimezone))
+                            if (unlikely(!metadata->ctx->parseTimezone(metadata->dbTimezoneStr.c_str(), metadata->dbTimezone)))
                                 throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                                            " - parse error of field \"db-timezone\", invalid value: " + metadata->dbTimezoneStr);
                         }
@@ -654,11 +654,11 @@ namespace OpenLogReplicator {
                         }
 
                         for (auto& user: metadata->users) {
-                            if (users.find(user) == users.end())
+                            if (unlikely(users.find(user) == users.end()))
                                 throw DataException(20007, "file: " + fileName + " - " + user + " is missing");
                         }
                         for (auto& user: users) {
-                            if (metadata->users.find(user) == metadata->users.end())
+                            if (unlikely(metadata->users.find(user) == metadata->users.end()))
                                 throw DataException(20007, "file: " + fileName + " - " + user + " is redundant");
                         }
                         users.clear();
@@ -741,7 +741,7 @@ namespace OpenLogReplicator {
             typeCol intCol = Ctx::getJsonFieldI16(fileName, sysCColJson[i], "int-col");
             typeObj obj = Ctx::getJsonFieldU32(fileName, sysCColJson[i], "obj");
             const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(fileName, sysCColJson[i], "spare1");
-            if (spare1Json.Size() != 2)
+            if (unlikely(spare1Json.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - spare1 should be an array with 2 elements");
             uint64_t spare11 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 0);
             uint64_t spare12 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 1);
@@ -789,7 +789,7 @@ namespace OpenLogReplicator {
             uint64_t charsetId = Ctx::getJsonFieldU64(fileName, sysColJson[i], "charset-id");
             int64_t null_ = Ctx::getJsonFieldI64(fileName, sysColJson[i], "null");
             const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(fileName, sysColJson[i], "property");
-            if (propertyJson.Size() != 2)
+            if (unlikely(propertyJson.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - property should be an array with 2 elements");
             uint64_t property1 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 0);
             uint64_t property2 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 1);
@@ -810,7 +810,7 @@ namespace OpenLogReplicator {
             typeObj obj = Ctx::getJsonFieldU32(fileName, sysDeferredStgJson[i], "obj");
 
             const rapidjson::Value& flagsStgJson = Ctx::getJsonFieldA(fileName, sysDeferredStgJson[i], "flags-stg");
-            if (flagsStgJson.Size() != 2)
+            if (unlikely(flagsStgJson.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - flags-stg should be an array with 2 elements");
             uint64_t flagsStg1 = Ctx::getJsonFieldU64(fileName, flagsStgJson, "flags-stg", 0);
             uint64_t flagsStg2 = Ctx::getJsonFieldU64(fileName, flagsStgJson, "flags-stg", 1);
@@ -900,7 +900,7 @@ namespace OpenLogReplicator {
             const char* name_ = Ctx::getJsonFieldS(fileName, SysObj::NAME_LENGTH, sysObjJson[i], "name");
 
             const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(fileName, sysObjJson[i], "flags");
-            if (flagsJson.Size() != 2)
+            if (unlikely(flagsJson.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - flags should be an array with 2 elements");
             uint64_t flags1 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 0);
             uint64_t flags2 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 1);
@@ -928,13 +928,13 @@ namespace OpenLogReplicator {
             typeCol cluCols = Ctx::getJsonFieldI16(fileName, sysTabJson[i], "clu-cols");
 
             const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(fileName, sysTabJson[i], "flags");
-            if (flagsJson.Size() != 2)
+            if (unlikely(flagsJson.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - flags should be an array with 2 elements");
             uint64_t flags1 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 0);
             uint64_t flags2 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 1);
 
             const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(fileName, sysTabJson[i], "property");
-            if (propertyJson.Size() != 2)
+            if (unlikely(propertyJson.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - property should be an array with 2 elements");
             uint64_t property1 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 0);
             uint64_t property2 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 1);
@@ -1019,7 +1019,7 @@ namespace OpenLogReplicator {
             const char* name_ = Ctx::getJsonFieldS(fileName, SysUser::NAME_LENGTH, sysUserJson[i], "name");
 
             const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(fileName, sysUserJson[i], "spare1");
-            if (spare1Json.Size() != 2)
+            if (unlikely(spare1Json.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - spare1 should be an array with 2 elements");
             uint64_t spare11 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 0);
             uint64_t spare12 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 1);

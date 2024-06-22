@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         if (value != "")
             transaction->attributes.insert_or_assign(name, value);
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << header << value << '\n';
         }
     }
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         typeField fieldNum = 0;
         typeSize fieldSize = 0;
 
-        if (transaction == nullptr) {
+        if (unlikely(transaction == nullptr)) {
             ctx->logTrace(Ctx::TRACE_TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
             return;
         }
@@ -115,7 +115,7 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0513::attributeFlags(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
-        if (fieldSize < 2)
+        if (unlikely(fieldSize < 2))
             throw RedoLogException(50061, "too short field 5.13.11: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
@@ -125,28 +125,28 @@ namespace OpenLogReplicator {
         if ((flags & 0x0001) != 0) {
             transaction->attributes.insert_or_assign("DDL transaction", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "DDL transaction\n";
         }
 
         if ((flags & 0x0002) != 0) {
             transaction->attributes.insert_or_assign("space management transaction", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "Space Management transaction\n";
         }
 
         if ((flags & 0x0004) != 0) {
             transaction->attributes.insert_or_assign("recursive transaction", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "Recursive transaction\n";
         }
 
         if ((flags & 0x0008) != 0) {
             transaction->attributes.insert_or_assign("LogMiner internal transaction", value);
 
-            if (ctx->dumpRedoLog >= 1) {
+            if (unlikely(ctx->dumpRedoLog >= 1)) {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                     *ctx->dumpStream << "Logmnr Internal transaction\n";
                 } else {
@@ -158,56 +158,56 @@ namespace OpenLogReplicator {
         if ((flags & 0x0010) != 0) {
             transaction->attributes.insert_or_assign("DB open in migrate mode", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "DB Open in Migrate Mode\n";
         }
 
         if ((flags & 0x0020) != 0) {
             transaction->attributes.insert_or_assign("LSBY ignore", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "LSBY ignore\n";
         }
 
         if ((flags & 0x0040) != 0) {
             transaction->attributes.insert_or_assign("LogMiner no tx chunking", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "LogMiner no tx chunking\n";
         }
 
         if ((flags & 0x0080) != 0) {
             transaction->attributes.insert_or_assign("LogMiner stealth transaction", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "LogMiner Stealth transaction\n";
         }
 
         if ((flags & 0x0100) != 0) {
             transaction->attributes.insert_or_assign("LSBY preserve", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "LSBY preserve\n";
         }
 
         if ((flags & 0x0200) != 0) {
             transaction->attributes.insert_or_assign("LogMiner marker transaction", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "LogMiner Marker transaction\n";
         }
 
         if ((flags & 0x0400) != 0) {
             transaction->attributes.insert_or_assign("transaction in pragama'ed plsql", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "Transaction in pragama'ed plsql\n";
         }
 
         if ((flags & 0x0800) != 0) {
             transaction->attributes.insert_or_assign("disabled logical repln. txn.", value);
 
-            if (ctx->dumpRedoLog >= 1) {
+            if (unlikely(ctx->dumpRedoLog >= 1)) {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                     *ctx->dumpStream << "Tx audit CV flags undefined\n";
                 } else {
@@ -219,14 +219,14 @@ namespace OpenLogReplicator {
         if ((flags & 0x1000) != 0) {
             transaction->attributes.insert_or_assign("datapump import txn", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "Datapump import txn\n";
         }
 
         if ((flags & 0x8000) != 0) {
             transaction->attributes.insert_or_assign("txn audit CV flags undefined", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "Tx audit CV flags undefined\n";
         }
 
@@ -234,34 +234,34 @@ namespace OpenLogReplicator {
         if ((flags2 & 0x0001) != 0) {
             transaction->attributes.insert_or_assign("federation PDB replay", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "Federation PDB replay\n";
         }
 
         if ((flags2 & 0x0002) != 0) {
             transaction->attributes.insert_or_assign("PDB DDL replay", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "PDB DDL replay\n";
         }
 
         if ((flags2 & 0x0004) != 0) {
             transaction->attributes.insert_or_assign("LogMiner skip transaction", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "LogMiner SKIP transaction\n";
         }
 
         if ((flags2 & 0x0008) != 0) {
             transaction->attributes.insert_or_assign("SEQ$ update transaction", value);
 
-            if (ctx->dumpRedoLog >= 1)
+            if (unlikely(ctx->dumpRedoLog >= 1))
                 *ctx->dumpStream << "SEQ$ update transaction\n";
         }
     }
 
     void OpCode0513::attributeSessionSerial(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
-        if (fieldSize < 4) {
+        if (unlikely(fieldSize < 4)) {
             ctx->warning(70001, "too short field session serial: " + std::to_string(fieldSize) + " offset: " +
                                 std::to_string(redoLogRecord->dataOffset));
             return;
@@ -288,7 +288,7 @@ namespace OpenLogReplicator {
         if (value != "")
             transaction->attributes.insert_or_assign("serial number", value);
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream <<
                             "session number   = " << std::dec << sessionNumber << '\n' <<
                             "serial  number   = " << std::dec << serialNumber << '\n';
@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0513::attributeVersion(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
-        if (fieldSize < 4)
+        if (unlikely(fieldSize < 4))
             throw RedoLogException(50061, "too short field 5.13.12: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
@@ -305,13 +305,13 @@ namespace OpenLogReplicator {
         if (value != "")
             transaction->attributes.insert_or_assign("version", value);
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "version " << std::dec << version << '\n';
         }
     }
 
     void OpCode0513::attributeAuditSessionId(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
-        if (fieldSize < 4)
+        if (unlikely(fieldSize < 4))
             throw RedoLogException(50061, "too short field 5.13.13: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
@@ -320,7 +320,7 @@ namespace OpenLogReplicator {
         if (value != "")
             transaction->attributes.insert_or_assign("audit sessionid", value);
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "audit sessionid " << auditSessionid << '\n';
         }
     }

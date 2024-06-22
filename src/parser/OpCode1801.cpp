@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x180101);
         // Field: 1
-        if (fieldSize < 18)
+        if (unlikely(fieldSize < 18))
             throw RedoLogException(50061, "too short field 24.1.1: " +
                                           std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 

@@ -27,7 +27,7 @@ namespace OpenLogReplicator {
         typeField fieldNum = 0;
         typeSize fieldSize = 0;
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "index redo (kdxlin):  insert leaf row\n";
         }
 
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
             return;
         // Field: 2
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             if (fieldSize < 6)
                 return;
 
@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
         redoLogRecord->indKey = fieldPos;
         redoLogRecord->indKeySize = fieldSize;
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "insert key: (" << std::dec << fieldSize << "): ";
 
             if (fieldSize > 20)
@@ -81,7 +81,7 @@ namespace OpenLogReplicator {
         redoLogRecord->indKeyData = fieldPos;
         redoLogRecord->indKeyDataSize = fieldSize;
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "keydata: (" << std::dec << fieldSize << "): ";
 
             if (fieldSize > 20)

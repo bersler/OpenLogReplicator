@@ -24,7 +24,7 @@ namespace OpenLogReplicator {
     void OpCode0506::init(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
         typePos fieldPos = redoLogRecord->fieldPos;
         typeSize fieldSize = ctx->read16(redoLogRecord->data() + redoLogRecord->fieldSizesDelta + 1 * 2);
-        if (fieldSize < 8)
+        if (unlikely(fieldSize < 8))
             throw RedoLogException(50061, "too short field 5.6: " +
                                           std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
@@ -50,11 +50,11 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0506::ktuxvoff(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
-        if (fieldSize < 8)
+        if (unlikely(fieldSize < 8))
             throw RedoLogException(50061, "too short field ktuxvoff: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             const uint16_t off = ctx->read16(redoLogRecord->data() + fieldPos + 0);
             const uint16_t flg = ctx->read16(redoLogRecord->data() + fieldPos + 4);
 

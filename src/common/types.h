@@ -67,6 +67,9 @@ typedef uint32_t typeUnicode32;
 typedef uint64_t typeUnicode;
 typedef int64_t time_ut;
 
+#define likely(x)                               __builtin_expect(!!(x),1)
+#define unlikely(x)                             __builtin_expect(!!(x),0)
+
 #define BLOCK(__uba)                            (static_cast<uint32_t>((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         (static_cast<uint16_t>(((static_cast<uint64_t>(__uba))>>32)&0xFFFF))
 #define RECORD(__uba)                           (static_cast<uint8_t>(((static_cast<uint64_t>(__uba))>>48)&0xFF))

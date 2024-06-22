@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
         localess.push_back(locales);
         locales->initialize();
 
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "main (" + ss.str() + ") start");
@@ -1018,7 +1018,7 @@ namespace OpenLogReplicator {
 
         ctx->mainLoop();
 
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "main (" + ss.str() + ") stop");

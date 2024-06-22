@@ -124,7 +124,7 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret)
+            if (unlikely(!ret))
                 throw RuntimeException(50017, "PB begin processing failed, error serializing to string");
             append(output);
             builderCommit(false);
@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
             processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr)
+            if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB insert processing failed, a message is missing");
         } else {
             builderBegin(scn, sequence, obj, 0);
@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret)
+            if (unlikely(!ret))
                 throw RuntimeException(50017, "PB insert processing failed, error serializing to string");
             append(output);
             builderCommit(false);
@@ -174,7 +174,7 @@ namespace OpenLogReplicator {
             processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr)
+            if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB update processing failed, a message is missing");
         } else {
             builderBegin(scn, sequence, obj, 0);
@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret)
+            if (unlikely(!ret))
                 throw RuntimeException(50017, "PB update processing failed, error serializing to string");
             append(output);
             builderCommit(false);
@@ -212,7 +212,7 @@ namespace OpenLogReplicator {
             processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr)
+            if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB delete processing failed, a message is missing");
         } else {
             builderBegin(scn, sequence, obj, 0);
@@ -235,7 +235,7 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret)
+            if (unlikely(!ret))
                 throw RuntimeException(50017, "PB delete processing failed, error serializing to string");
             append(output);
             builderCommit(false);
@@ -250,7 +250,7 @@ namespace OpenLogReplicator {
             processBeginMessage(scn, sequence, timestamp);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr)
+            if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
             builderBegin(scn, sequence, obj, 0);
@@ -270,7 +270,7 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret)
+            if (unlikely(!ret))
                 throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
             append(output);
             builderCommit(true);
@@ -292,7 +292,7 @@ namespace OpenLogReplicator {
         }
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr)
+            if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
             builderBegin(scn, sequence, 0, 0);
@@ -309,7 +309,7 @@ namespace OpenLogReplicator {
         delete redoResponsePB;
         redoResponsePB = nullptr;
 
-        if (!ret)
+        if (unlikely(!ret))
             throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
         append(output);
         builderCommit(true);
@@ -339,7 +339,7 @@ namespace OpenLogReplicator {
         delete redoResponsePB;
         redoResponsePB = nullptr;
 
-        if (!ret)
+        if (unlikely(!ret))
             throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
         append(output);
         builderCommit(true);

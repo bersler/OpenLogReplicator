@@ -157,7 +157,7 @@ namespace OpenLogReplicator {
         if (column->unused && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_UNUSED_COLUMNS))
             return;
 
-        if (size == 0)
+        if (unlikely(size == 0))
             throw RedoLogException(50013, "trying to output null data for column: " + column->name + ", offset: " +
                                           std::to_string(offset));
 
@@ -1002,7 +1002,7 @@ namespace OpenLogReplicator {
 
             // UNDO
             if (redoLogRecord1p->rowData > 0) {
-                if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
+                if (unlikely((ctx->trace & Ctx::TRACE_DML) != 0 || dump)) {
                     ctx->logTrace(Ctx::TRACE_DML, "UNDO");
                 }
 
@@ -1020,7 +1020,7 @@ namespace OpenLogReplicator {
                 } else {
                     colNums = nullptr;
                 }
-                if (colShift >= ctx->columnLimit)
+                if (unlikely(colShift >= ctx->columnLimit))
                     throw RedoLogException(50059, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                                   std::to_string(redoLogRecord1p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
                                                   ", before: " + std::to_string(redoLogRecord1p->suppLogBefore) + ", xid: " + lastXid.toString() +
@@ -1045,7 +1045,7 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (fieldNum + 1U > redoLogRecord1p->fieldCnt) {
+                    if (unlikely(fieldNum + 1U > redoLogRecord1p->fieldCnt)) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Undo): " +
                                                           std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
@@ -1069,14 +1069,14 @@ namespace OpenLogReplicator {
 
                     if (table != nullptr) {
                         if (colNum >= table->maxSegCol) {
-                            if (!schema)
+                            if (unlikely(!schema))
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
                                                               ": referring to invalid column id(" + std::to_string(colNum) + ", xid: " + lastXid.toString() +
                                                               "), offset: " + std::to_string(redoLogRecord1p->dataOffset));
                             break;
                         }
                     } else {
-                        if (colNum >= ctx->columnLimit)
+                        if (unlikely(colNum >= ctx->columnLimit))
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                                           std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
                                                           std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
@@ -1103,7 +1103,7 @@ namespace OpenLogReplicator {
 
             // Supplemental columns
             if (redoLogRecord1p->suppLogRowData > 0) {
-                if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
+                if (unlikely((ctx->trace & Ctx::TRACE_DML) != 0 || dump)) {
                     ctx->logTrace(Ctx::TRACE_DML, "UNDO SUP");
                 }
 
@@ -1115,7 +1115,7 @@ namespace OpenLogReplicator {
 
                 for (uint16_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
                     colNum = ctx->read16(colNums) - 1;
-                    if (fieldNum + 1U > redoLogRecord1p->fieldCnt) {
+                    if (unlikely(fieldNum + 1U > redoLogRecord1p->fieldCnt)) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (supp): " +
                                                           std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
@@ -1135,14 +1135,14 @@ namespace OpenLogReplicator {
 
                     if (table != nullptr) {
                         if (colNum >= table->maxSegCol) {
-                            if (!schema)
+                            if (unlikely(!schema))
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
                                                               ": referring to invalid column id(" + std::to_string(colNum) + "), xid: " + lastXid.toString() +
                                                               ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                             break;
                         }
                     } else {
-                        if (colNum >= ctx->columnLimit)
+                        if (unlikely(colNum >= ctx->columnLimit))
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                                           std::to_string(redoLogRecord1p->dataObj) + "): referring to invalid column id(" +
                                                           std::to_string(colNum) + "), xid: " + lastXid.toString() + ", offset: " +
@@ -1181,7 +1181,7 @@ namespace OpenLogReplicator {
 
             // REDO
             if (redoLogRecord2p->rowData > 0) {
-                if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
+                if (unlikely((ctx->trace & Ctx::TRACE_DML) != 0 || dump)) {
                     ctx->logTrace(Ctx::TRACE_DML, "REDO");
                 }
 
@@ -1202,7 +1202,7 @@ namespace OpenLogReplicator {
                 } else {
                     colNums = nullptr;
                 }
-                if (colShift >= ctx->columnLimit) {
+                if (unlikely(colShift >= ctx->columnLimit)) {
                     throw RedoLogException(50059, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
                                                   std::to_string(redoLogRecord2p->dataObj) + "): invalid column shift: " + std::to_string(colShift) +
                                                   ", before: " + std::to_string(redoLogRecord2p->suppLogBefore) + ", xid: " + lastXid.toString() +
@@ -1223,7 +1223,7 @@ namespace OpenLogReplicator {
                     compressedAfter = false;
 
                 for (typeCC i = 0; i < cc; ++i) {
-                    if (fieldNum + 1U > redoLogRecord2p->fieldCnt) {
+                    if (unlikely(fieldNum + 1U > redoLogRecord2p->fieldCnt)) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Redo): " +
                                                           std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord2p->cc)) + ", " +
@@ -1256,7 +1256,7 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (table != nullptr) {
-                        if (colNum >= table->maxSegCol) {
+                        if (unlikely(colNum >= table->maxSegCol)) {
                             if (!schema)
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
                                                               ": referring to invalid column id(" + std::to_string(colNum) +
@@ -1264,7 +1264,7 @@ namespace OpenLogReplicator {
                             break;
                         }
                     } else {
-                        if (colNum >= ctx->columnLimit)
+                        if (unlikely(colNum >= ctx->columnLimit))
                             throw RedoLogException(50060, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
                                                           std::to_string(redoLogRecord2p->dataObj) + "): referring to invalid column id(" +
                                                           std::to_string(colNum) + "), xid: " + lastXid.toString() + "), offset: " +
@@ -1324,7 +1324,7 @@ namespace OpenLogReplicator {
                         if (mergeSize == 0)
                             continue;
 
-                        if (values[column][j] != nullptr)
+                        if (unlikely(values[column][j] != nullptr))
                             throw RedoLogException(50015, "value for " + std::to_string(column) + "/" + std::to_string(j) +
                                                           " is already set when merging, xid: " + lastXid.toString() + ", offset: " +
                                                           std::to_string(redoLogRecord1->dataOffset));
@@ -1399,7 +1399,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if ((ctx->trace & Ctx::TRACE_DML) != 0 || dump) {
+        if (unlikely((ctx->trace & Ctx::TRACE_DML) != 0 || dump)) {
             if (table != nullptr) {
                 ctx->logTrace(Ctx::TRACE_DML, "tab: " + table->owner + "." + table->name + " type: " + std::to_string(type) + " columns: " +
                                               std::to_string(valuesMax));
@@ -2354,7 +2354,7 @@ namespace OpenLogReplicator {
     }
 
     void Builder::sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds) {
-        if (ctx->trace & Ctx::TRACE_SLEEP)
+        if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
             ctx->logTrace(Ctx::TRACE_SLEEP, "Builder:sleepForWriterWork");
 
         std::unique_lock<std::mutex> lck(mtx);

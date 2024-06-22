@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         }
 
         explicit typeRowId(const char* rowid) {
-            if (strlen(rowid) != 18)
+            if (unlikely(strlen(rowid) != 18))
                 throw DataException(20008, "row ID incorrect size: " + std::string(rowid));
 
             dataObj = (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
