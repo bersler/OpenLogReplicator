@@ -400,7 +400,7 @@ namespace OpenLogReplicator {
         }
 
         inline void createResponse() {
-            if (redoResponsePB != nullptr)
+            if (unlikely(redoResponsePB != nullptr))
                 throw RuntimeException(50016, "PB commit processing failed, message already exists");
             redoResponsePB = new pb::RedoResponse;
         }

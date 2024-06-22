@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
         auto xidTransactionMapIt = xidTransactionMap.find(xidMap);
         if (xidTransactionMapIt != xidTransactionMap.end()) {
             transaction = xidTransactionMapIt->second;
-            if (!rollback && (!old || transaction->xid != xid))
+            if (unlikely(!rollback && (!old || transaction->xid != xid)))
                 throw RedoLogException(50039, "transaction " + xid.toString() + " conflicts with " + transaction->xid.toString());
         } else {
             if (!add)
@@ -145,12 +145,12 @@ namespace OpenLogReplicator {
     void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord) {
         uint64_t chunkSize = redoLogRecord->size + ROW_HEADER_TOTAL;
 
-        if (chunkSize > TransactionChunk::DATA_BUFFER_SIZE)
+        if (unlikely(chunkSize > TransactionChunk::DATA_BUFFER_SIZE))
             throw RedoLogException(50040, "block size (" + std::to_string(chunkSize) + ") exceeding max block size (" +
                                           std::to_string(TransactionChunk::FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
         if (transaction->lastSplit) {
-            if ((redoLogRecord->flg & OpCode::FLG_MULTIBLOCKUNDOMID) == 0)
+            if (unlikely((redoLogRecord->flg & OpCode::FLG_MULTIBLOCKUNDOMID) == 0))
                 throw RedoLogException(50041, "bad split offset: " + std::to_string(redoLogRecord->dataOffset) + " xid: " +
                                               transaction->xid.toString());
 
@@ -206,15 +206,15 @@ namespace OpenLogReplicator {
     void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2) {
         uint64_t chunkSize = redoLogRecord1->size + redoLogRecord2->size + ROW_HEADER_TOTAL;
 
-        if (chunkSize > TransactionChunk::DATA_BUFFER_SIZE)
+        if (unlikely(chunkSize > TransactionChunk::DATA_BUFFER_SIZE))
             throw RedoLogException(50040, "block size (" + std::to_string(chunkSize) + ") exceeding max block size (" +
                                           std::to_string(TransactionChunk::DATA_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
         if (transaction->lastSplit) {
-            if ((redoLogRecord1->opCode) != 0x0501)
+            if (unlikely((redoLogRecord1->opCode) != 0x0501))
                 throw RedoLogException(50042, "split undo HEAD no 5.1 offset: " + std::to_string(redoLogRecord1->dataOffset));
 
-            if ((redoLogRecord1->flg & OpCode::FLG_MULTIBLOCKUNDOHEAD) == 0)
+            if (unlikely((redoLogRecord1->flg & OpCode::FLG_MULTIBLOCKUNDOHEAD) == 0))
                 throw RedoLogException(50043, "bad split offset: " + std::to_string(redoLogRecord1->dataOffset) + " xid: " +
                                               transaction->xid.toString() + " second position");
 
@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
         }
 
         // New block needed
-        if (transaction->lastTc->size + chunkSize > TransactionChunk::DATA_BUFFER_SIZE) {
+        if (unlikely(transaction->lastTc->size + chunkSize > TransactionChunk::DATA_BUFFER_SIZE)) {
             TransactionChunk* tcNew = newTransactionChunk();
             tcNew->prev = transaction->lastTc;
             transaction->lastTc->next = tcNew;
@@ -277,9 +277,9 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::rollbackTransactionChunk(Transaction* transaction) {
-        if (transaction->lastTc == nullptr)
+        if (unlikely(transaction->lastTc == nullptr))
             throw RedoLogException(50044, "trying to remove from empty buffer size: <null> elements: <null>");
-        if (transaction->lastTc->size < ROW_HEADER_TOTAL || transaction->lastTc->elements == 0)
+        if (unlikely(transaction->lastTc->size < ROW_HEADER_TOTAL || transaction->lastTc->elements == 0))
             throw RedoLogException(50044, "trying to remove from empty buffer size: " + std::to_string(transaction->lastTc->size) +
                                           " elements: " + std::to_string(transaction->lastTc->elements));
 
@@ -288,7 +288,7 @@ namespace OpenLogReplicator {
         --transaction->lastTc->elements;
         transaction->size -= chunkSize;
 
-        if (transaction->lastTc->elements == 0) {
+        if (unlikely(transaction->lastTc->elements == 0)) {
             TransactionChunk* tc = transaction->lastTc;
             transaction->lastTc = tc->prev;
 
@@ -362,7 +362,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
-        if (ctx->trace & Ctx::TRACE_LOB)
+        if (unlikely(ctx->trace & Ctx::TRACE_LOB))
             ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
                                           " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
 

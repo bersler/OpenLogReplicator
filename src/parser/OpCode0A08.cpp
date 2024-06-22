@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A0801);
         // Field: 1
         if (fieldSize > 0) {
-            if (ctx->dumpRedoLog >= 1) {
+            if (unlikely(ctx->dumpRedoLog >= 1)) {
                 *ctx->dumpStream << "index redo (kdxlne): (count=" << std::dec << redoLogRecord->fieldCnt << ") init header of newly allocated leaf block\n";
             }
 
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
             // Field: 2
             kdxln(ctx, redoLogRecord, fieldPos, fieldSize);
         } else {
-            if (ctx->dumpRedoLog >= 1) {
+            if (unlikely(ctx->dumpRedoLog >= 1)) {
                 *ctx->dumpStream << "index redo (kdxlne): (count=" << std::dec << redoLogRecord->fieldCnt << ") init leaf block being split\n";
             }
 
@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
                 return;
             }
 
-            if (ctx->dumpRedoLog >= 1) {
+            if (unlikely(ctx->dumpRedoLog >= 1)) {
                 uint32_t kdxlenxt = ctx->read32(redoLogRecord->data() + fieldPos + 0);
                 *ctx->dumpStream << "zeroed lock count and free space, kdxlenxt = 0x" << std::hex << kdxlenxt << '\n';
             }
@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A0804);
         // Field: 3
         typeSize rows = fieldSize / 2 - 1;
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "new block has " << std::dec << rows << " rows\n";
             *ctx->dumpStream << "dumping row index\n";
         }
@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
             redoLogRecord->indKeySize = fieldSize;
         }
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "dumping rows\n";
         }
         dumpMemory(ctx, redoLogRecord, fieldPos, fieldSize);
@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             const auto itl = static_cast<uint8_t>(redoLogRecord->data()[fieldPos]);
             const auto nco = static_cast<uint8_t>(redoLogRecord->data()[fieldPos + 1]);
             const auto dsz = static_cast<uint8_t>(redoLogRecord->data()[fieldPos + 2]);

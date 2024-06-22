@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
         // Field: 2
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldSize);
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMD) {
                 for (typeCC i = 0; i < redoLogRecord->nRow; ++i)
                     *ctx->dumpStream << "slot[" << i << "]: " << std::dec << ctx->read16(redoLogRecord->data() + redoLogRecord->slotsDelta + i * 2) << '\n';

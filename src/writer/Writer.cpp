@@ -174,7 +174,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::run() {
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "writer (" + ss.str() + ") start");
@@ -212,7 +212,7 @@ namespace OpenLogReplicator {
         }
 
         ctx->info(0, "writer is stopping: " + getName() + ", max queue size: " + std::to_string(maxQueueSize));
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "writer (" + ss.str() + ") stop");
@@ -233,7 +233,7 @@ namespace OpenLogReplicator {
                 if (streaming && metadata->status == Metadata::STATUS_REPLICATE)
                     break;
 
-                if (ctx->trace & Ctx::TRACE_WRITER)
+                if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
                     ctx->logTrace(Ctx::TRACE_WRITER, "waiting for client");
                 usleep(ctx->pollIntervalUs);
             }
@@ -274,7 +274,7 @@ namespace OpenLogReplicator {
                 // The queue is full
                 pollQueue();
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
-                    if (ctx->trace & Ctx::TRACE_WRITER)
+                    if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
                         ctx->logTrace(Ctx::TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
                                                          " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     usleep(ctx->pollIntervalUs);
@@ -308,7 +308,7 @@ namespace OpenLogReplicator {
                 } else {
                     // The message is split to many parts - merge & copy
                     msg->data = new uint8_t[msg->size];
-                    if (msg->data == nullptr)
+                    if (unlikely(msg->data == nullptr))
                         throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->size) +
                                                       " bytes memory for: temporary buffer for JSON message");
                     msg->flags |= Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED;
@@ -375,7 +375,7 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
-        if (ctx->trace & Ctx::TRACE_CHECKPOINT) {
+        if (unlikely(ctx->trace & Ctx::TRACE_CHECKPOINT)) {
             if (checkpointScn == Ctx::ZERO_SCN)
                 ctx->logTrace(Ctx::TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
                                                      std::to_string(confirmedIdx));
@@ -408,7 +408,7 @@ namespace OpenLogReplicator {
         if (!metadata->stateRead(name, CHECKPOINT_FILE_MAX_SIZE, checkpoint))
             return;
 
-        if (checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError())
+        if (unlikely(checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError()))
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
                                        " - parse error: " + GetParseError_En(document.GetParseError()));
 
@@ -418,7 +418,7 @@ namespace OpenLogReplicator {
         }
 
         const char* databaseJson = Ctx::getJsonFieldS(name, Ctx::JSON_PARAMETER_LENGTH, document, "database");
-        if (database != databaseJson)
+        if (unlikely(database != databaseJson))
             throw DataException(20001, "file: " + name + " - invalid database name: " + databaseJson);
 
         metadata->setResetlogs(Ctx::getJsonFieldU32(name, document, "resetlogs"));

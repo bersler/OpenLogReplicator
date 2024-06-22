@@ -202,13 +202,13 @@ namespace OpenLogReplicator {
 
         if (opCodes == 0 || rollback)
             return;
-        if (metadata->ctx->trace & Ctx::TRACE_TRANSACTION)
+        if (unlikely(metadata->ctx->trace & Ctx::TRACE_TRANSACTION))
             metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, toString());
 
         if (system) {
             lckSchema.lock();
 
-            if (builder->systemTransaction != nullptr)
+            if (unlikely(builder->systemTransaction != nullptr))
                 throw RedoLogException(50056, "system transaction already active");
             builder->systemTransaction = new SystemTransaction(builder, metadata);
             metadata->schema->scn = commitScn;
@@ -234,7 +234,7 @@ namespace OpenLogReplicator {
                 redoLogRecord2->dataExt = tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA + redoLogRecord1->size;
                 pos += redoLogRecord1->size + redoLogRecord2->size + TransactionBuffer::ROW_HEADER_TOTAL;
 
-                if (metadata->ctx->trace & Ctx::TRACE_TRANSACTION)
+                if (unlikely(metadata->ctx->trace & Ctx::TRACE_TRANSACTION))
                     metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, std::to_string(redoLogRecord1->size) + ":" +
                                                                     std::to_string(redoLogRecord2->size) + " fb: " +
                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
@@ -279,7 +279,7 @@ namespace OpenLogReplicator {
                         // LOB idx
                         const OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
-                            if (metadata->ctx->trace & Ctx::TRACE_LOB)
+                            if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
                                 metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() +
                                                                         " obj: " + std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
                                                                         std::to_string(redoLogRecord1->dba) + " page: " + std::to_string(redoLogRecord1->lobPageNo) +
@@ -294,7 +294,7 @@ namespace OpenLogReplicator {
                         // LOB data
                         const OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
-                            if (metadata->ctx->trace & Ctx::TRACE_LOB)
+                            if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
                                 metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() + " obj: " +
                                                                         std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
                                                                         std::to_string(redoLogRecord1->dba) + " page: " + std::to_string(redoLogRecord1->lobPageNo) +
@@ -307,7 +307,7 @@ namespace OpenLogReplicator {
 
                     case 0x05011A02:
                         // LOB index 12+ and LOB redo
-                        if (metadata->ctx->trace & Ctx::TRACE_LOB_DATA) {
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB_DATA)) {
                             std::ostringstream ss;
                             for (typeSize j = 0; j < redoLogRecord2->indKeyDataSize; ++j) {
                                 ss << " " << std::setfill('0') << std::setw(2) << std::hex <<
@@ -346,7 +346,7 @@ namespace OpenLogReplicator {
                                 break;
 
                             case OpCode::KDLI_CODE_FILL:
-                                if (metadata->ctx->trace & Ctx::TRACE_LOB)
+                                if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
                                     metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() +
                                                                             " obj: " + std::to_string(redoLogRecord2->dataObj) + " op: " +
                                                                             std::to_string(redoLogRecord2->opCode) + "     dba: " +
@@ -393,7 +393,7 @@ namespace OpenLogReplicator {
                             lobCtx.setSize(redoLogRecord2->lobId, redoLogRecord2->lobSizePages, redoLogRecord2->lobSizeRest);
                         }
 
-                        if (metadata->ctx->trace & Ctx::TRACE_LOB)
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
                             metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() + " obj: " +
                                                                     std::to_string(redoLogRecord1->obj) + " op: " + std::to_string(op) + " dba: " +
                                                                     std::to_string(redoLogRecord2->dba) + " page: " + std::to_string(redoLogRecord2->lobPageNo) +
@@ -513,13 +513,13 @@ namespace OpenLogReplicator {
                                                   " bytes), xid: " + xid.toString());
 
                     if (system) {
-                        if (metadata->ctx->trace & Ctx::TRACE_SYSTEM)
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_SYSTEM))
                             metadata->ctx->logTrace(Ctx::TRACE_SYSTEM, "commit");
                         builder->systemTransaction->commit(commitScn);
                         delete builder->systemTransaction;
                         builder->systemTransaction = nullptr;
 
-                        if (metadata->ctx->trace & Ctx::TRACE_SYSTEM)
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_SYSTEM))
                             metadata->ctx->logTrace(Ctx::TRACE_SYSTEM, "begin");
                         builder->systemTransaction = new SystemTransaction(builder, metadata);
                     }

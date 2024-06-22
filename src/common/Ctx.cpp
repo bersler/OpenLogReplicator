@@ -161,104 +161,104 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (!found && memcmp(child.name.GetString(), "xdb-xnm", 7) != 0 &&
+            if (unlikely(!found && memcmp(child.name.GetString(), "xdb-xnm", 7) != 0 &&
                     memcmp(child.name.GetString(), "xdb-xpt", 7) != 0 &&
-                    memcmp(child.name.GetString(), "xdb-xqn", 7) != 0)
+                    memcmp(child.name.GetString(), "xdb-xqn", 7) != 0))
                 throw DataException(20003, "file: " + fileName + " - parse error, attribute " + child.name.GetString() + " not expected");
         }
     }
 
     const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsArray())
+        if (unlikely(!ret.IsArray()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an array");
         return ret;
     }
 
     uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsUint64())
+        if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
-        if (val > 0xFFFF)
+        if (unlikely(val > 0xFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return val;
     }
 
     int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsInt64())
+        if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
+        if (unlikely((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<int16_t>(val);
     }
 
     uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsUint64())
+        if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
-        if (val > 0xFFFFFFFF)
+        if (unlikely(val > 0xFFFFFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
     }
 
     int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsInt64())
+        if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
+        if (unlikely((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<int32_t>(val);
     }
 
     uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsUint64())
+        if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
         return ret.GetUint64();
     }
 
     int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsInt64())
+        if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
         return ret.GetInt64();
     }
 
     const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsObject())
+        if (unlikely(!ret.IsObject()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an object");
         return ret;
     }
 
     const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
-        if (!value.HasMember(field))
+        if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
-        if (!ret.IsString())
+        if (unlikely(!ret.IsString()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a string");
-        if (ret.GetStringLength() > maxLength)
+        if (unlikely(ret.GetStringLength() > maxLength))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too long (" +
                                        std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return ret.GetString();
@@ -266,7 +266,7 @@ namespace OpenLogReplicator {
 
     const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsArray())
+        if (unlikely(!ret.IsArray()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not an array");
         return ret;
@@ -274,11 +274,11 @@ namespace OpenLogReplicator {
 
     uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsUint64())
+        if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
-        if (val > 0xFFFF)
+        if (unlikely(val > 0xFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
         return val;
@@ -286,11 +286,11 @@ namespace OpenLogReplicator {
 
     int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsInt64())
+        if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
+        if (unlikely((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
         return static_cast<int16_t>(val);
@@ -298,11 +298,11 @@ namespace OpenLogReplicator {
 
     uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsUint64())
+        if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
-        if (val > 0xFFFFFFFF)
+        if (unlikely(val > 0xFFFFFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
@@ -310,11 +310,11 @@ namespace OpenLogReplicator {
 
     int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsInt64())
+        if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
+        if (unlikely((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
         return static_cast<int32_t>(val);
@@ -322,7 +322,7 @@ namespace OpenLogReplicator {
 
     uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsUint64())
+        if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not an unsigned 64-bit number");
         return ret.GetUint64();
@@ -330,7 +330,7 @@ namespace OpenLogReplicator {
 
     int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsInt64())
+        if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not a signed 64-bit number");
         return ret.GetInt64();
@@ -338,7 +338,7 @@ namespace OpenLogReplicator {
 
     const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsObject())
+        if (unlikely(!ret.IsObject()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not an object");
         return ret;
@@ -346,10 +346,10 @@ namespace OpenLogReplicator {
 
     const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
-        if (!ret.IsString())
+        if (unlikely(!ret.IsString()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not a string");
-        if (ret.GetStringLength() > maxLength)
+        if (unlikely(ret.GetStringLength() > maxLength))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too long (" + std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return ret.GetString();
@@ -496,7 +496,7 @@ namespace OpenLogReplicator {
     uint64_t Ctx::epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) const {
         // (-)YYYY-MM-DD hh:mm:ss or (-)YYYY-MM-DDThh:mm:ssZ
 
-        if (timestamp < UNIX_BC4712_01_01 || timestamp > UNIX_AD9999_12_31)
+        if (unlikely(timestamp < UNIX_BC4712_01_01 || timestamp > UNIX_AD9999_12_31))
             throw RuntimeException(10069, "invalid timestamp value: " + std::to_string(timestamp));
 
         timestamp += UNIX_AD1970_01_01;
@@ -662,7 +662,7 @@ namespace OpenLogReplicator {
         memoryChunks = new uint8_t* [memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
         for (uint64_t i = 0; i < memoryChunksMin; ++i) {
             memoryChunks[i] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
-            if (memoryChunks[i] == nullptr)
+            if (unlikely(memoryChunks[i] == nullptr))
                 throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
                                               " bytes memory for: memory chunks#2");
             ++memoryChunksAllocated;
@@ -698,10 +698,10 @@ namespace OpenLogReplicator {
 
         if (memoryChunksFree == 0) {
             while (memoryChunksAllocated == memoryChunksMax && !softShutdown) {
-                if (memoryChunksReusable > 1) {
+                if (likely(memoryChunksReusable > 1)) {
                     warning(10067, "out of memory, but there are reusable memory chunks, trying to reuse some memory");
 
-                    if (trace & TRACE_SLEEP)
+                    if (unlikely(trace & TRACE_SLEEP))
                         logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
                     condOutOfMemory.wait(lck);
                 } else {
@@ -713,7 +713,7 @@ namespace OpenLogReplicator {
 
             if (memoryChunksFree == 0) {
                 memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
-                if (memoryChunks[0] == nullptr) {
+                if (unlikely(memoryChunks[0] == nullptr)) {
                     throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
                                                   " bytes memory for: " + memoryModules[module]);
                 }
@@ -760,7 +760,7 @@ namespace OpenLogReplicator {
     void Ctx::freeMemoryChunk(uint64_t module, uint8_t* chunk, bool reusable) {
         std::unique_lock<std::mutex> lck(memoryMtx);
 
-        if (memoryChunksFree == memoryChunksAllocated)
+        if (unlikely(memoryChunksFree == memoryChunksAllocated))
             throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[module]);
 
         // Keep memoryChunksMin reserved
@@ -858,7 +858,7 @@ namespace OpenLogReplicator {
         {
             std::unique_lock<std::mutex> lck(mtx);
             if (!hardShutdown) {
-                if (trace & TRACE_SLEEP)
+                if (unlikely(trace & TRACE_SLEEP))
                     logTrace(TRACE_SLEEP, "Ctx:mainLoop");
                 condMainLoop.wait(lck);
             }
@@ -908,7 +908,7 @@ namespace OpenLogReplicator {
     void Ctx::spawnThread(Thread* thread) {
         logTrace(TRACE_THREADS, "spawn: " + thread->alias);
 
-        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(thread)))
+        if (unlikely(pthread_create(&thread->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(thread))))
             throw RuntimeException(10013, "spawning thread: " + thread->alias);
         {
             std::unique_lock<std::mutex> lck(mtx);
@@ -957,7 +957,7 @@ namespace OpenLogReplicator {
             if (islower(static_cast<unsigned char>(*(name + num))))
                 return false;
 
-            if (num == 1024)
+            if (unlikely(num == 1024))
                 throw DataException(20004, "identifier '" + std::string(name) + "' is too long");
             ++num;
         }
@@ -1087,7 +1087,7 @@ namespace OpenLogReplicator {
 
     void Ctx::logTrace(int mask, const std::string& message) const {
         const char* code = "XXXXX";
-        if ((trace & mask) == 0)
+        if (likely((trace & mask) == 0))
             return;
 
         switch (mask) {

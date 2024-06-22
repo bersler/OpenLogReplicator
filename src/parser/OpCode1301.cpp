@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x130101);
         // Field: 1
 
-        if (fieldSize < 36)
+        if (unlikely(fieldSize < 36))
             throw RedoLogException(50061, "too short field 19.1.1: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         redoLogRecord->lobDataSize = fieldSize - 36;
         OpCode::process(ctx, redoLogRecord);
 
-        if (ctx->dumpRedoLog >= 1) {
+        if (unlikely(ctx->dumpRedoLog >= 1)) {
             const uint32_t v2 = ctx->read32(redoLogRecord->data() + fieldPos + 16);
             const uint16_t v1 = ctx->read16(redoLogRecord->data() + fieldPos + 20);
             const typeDba dba = ctx->read32(redoLogRecord->data() + fieldPos + 28);

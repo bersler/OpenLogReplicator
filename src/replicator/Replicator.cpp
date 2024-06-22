@@ -158,7 +158,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::run() {
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "replicator (" + ss.str() + ") start");
@@ -273,7 +273,7 @@ namespace OpenLogReplicator {
         ctx->info(0, "Oracle replicator for: " + database + " allocated at most " + std::to_string(ctx->getMaxUsedMemory()) +
                      "MB memory, max disk read buffer: " + std::to_string(ctx->buffersMaxUsed * Ctx::MEMORY_CHUNK_SIZE_MB) + "MB");
 
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "replicator (" + ss.str() + ") stop");
@@ -405,7 +405,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::addPathMapping(const char* source, const char* target) {
-        if (ctx->trace & Ctx::TRACE_FILE)
+        if (unlikely(ctx->trace & Ctx::TRACE_FILE))
             ctx->logTrace(Ctx::TRACE_FILE, "added mapping [" + std::string(source) + "] -> [" + target + "]");
         std::string sourceMapping(source);
         std::string targetMapping(target);
@@ -461,7 +461,7 @@ namespace OpenLogReplicator {
 
         std::string mappedPath(replicator->metadata->dbRecoveryFileDest + "/" + replicator->metadata->context + "/archivelog");
         replicator->applyMapping(mappedPath);
-        if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+        if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
             replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "checking path: " + mappedPath);
 
         DIR* dir;
@@ -488,7 +488,7 @@ namespace OpenLogReplicator {
             if (replicator->lastCheckedDay.length() == 0 && replicator->lastCheckedDay == ent->d_name)
                 continue;
 
-            if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+            if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                 replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "checking path: " + mappedPath + "/" + ent->d_name);
 
             std::string mappedPathWithFile(mappedPath + "/" + ent->d_name);
@@ -504,12 +504,12 @@ namespace OpenLogReplicator {
                     continue;
 
                 std::string fileName(mappedPath + "/" + ent->d_name + "/" + ent2->d_name);
-                if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+                if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                     replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "checking path: " + fileName);
 
                 uint64_t sequence = getSequenceFromFileName(replicator, ent2->d_name);
 
-                if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+                if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                     replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "found seq: " + std::to_string(sequence));
 
                 if (sequence == 0 || sequence < replicator->metadata->sequence)
@@ -531,7 +531,7 @@ namespace OpenLogReplicator {
         closedir(dir);
 
         if (newLastCheckedDay.length() != 0 || (replicator->lastCheckedDay.length() > 0 && replicator->lastCheckedDay.compare(newLastCheckedDay) < 0)) {
-            if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+            if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                 replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "updating last checked day to: " + newLastCheckedDay);
             replicator->lastCheckedDay = newLastCheckedDay;
         }
@@ -540,7 +540,7 @@ namespace OpenLogReplicator {
     void Replicator::archGetLogList(Replicator* replicator) {
         uint64_t sequenceStart = Ctx::ZERO_SEQ;
         for (const std::string& mappedPath: replicator->redoLogsBatch) {
-            if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+            if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                 replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "checking path: " + mappedPath);
 
             struct stat fileStat;
@@ -551,7 +551,7 @@ namespace OpenLogReplicator {
 
             // Single file
             if (!S_ISDIR(fileStat.st_mode)) {
-                if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+                if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                     replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "checking path: " + mappedPath);
 
                 // Getting file name from the path
@@ -564,7 +564,7 @@ namespace OpenLogReplicator {
                 }
                 uint64_t sequence = getSequenceFromFileName(replicator, fileName + j);
 
-                if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+                if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                     replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "found seq: " + std::to_string(sequence));
 
                 if (sequence == 0 || sequence < replicator->metadata->sequence)
@@ -591,12 +591,12 @@ namespace OpenLogReplicator {
                         continue;
 
                     std::string fileName(mappedPath + "/" + ent->d_name);
-                    if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+                    if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                         replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "checking path: " + fileName);
 
                     uint64_t sequence = getSequenceFromFileName(replicator, ent->d_name);
 
-                    if (replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+                    if (unlikely(replicator->ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                         replicator->ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "found seq: " + std::to_string(sequence));
 
                     if (sequence == 0 || sequence < replicator->metadata->sequence)
@@ -685,14 +685,14 @@ namespace OpenLogReplicator {
         bool logsProcessed = false;
 
         while (!ctx->softShutdown) {
-            if (ctx->trace & Ctx::TRACE_REDO)
+            if (unlikely(ctx->trace & Ctx::TRACE_REDO))
                 ctx->logTrace(Ctx::TRACE_REDO, "checking archived redo logs, seq: " + std::to_string(metadata->sequence));
             updateResetlogs();
             archGetLog(this);
 
             if (archiveRedoQueue.empty()) {
                 if (ctx->flagsSet(Ctx::REDO_FLAGS_ARCH_ONLY)) {
-                    if (ctx->trace & Ctx::TRACE_ARCHIVE_LIST)
+                    if (unlikely(ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                         ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "archived redo log missing for seq: " + std::to_string(metadata->sequence) +
                                                                ", sleeping");
                     usleep(ctx->archReadSleepUs);
@@ -701,14 +701,14 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (ctx->trace & Ctx::TRACE_THREADS) {
+            if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
                 std::ostringstream ss;
                 ss << std::this_thread::get_id();
                 ctx->logTrace(Ctx::TRACE_REDO, "searching archived redo log for seq: " + std::to_string(metadata->sequence));
             }
             while (!archiveRedoQueue.empty() && !ctx->softShutdown) {
                 parser = archiveRedoQueue.top();
-                if (ctx->trace & Ctx::TRACE_REDO)
+                if (unlikely(ctx->trace & Ctx::TRACE_REDO))
                     ctx->logTrace(Ctx::TRACE_REDO, parser->path + " is seq: " + std::to_string(parser->sequence) + ", scn: " +
                                                    std::to_string(parser->firstScn));
 
@@ -796,14 +796,14 @@ namespace OpenLogReplicator {
         Parser* parser;
         bool logsProcessed = false;
 
-        if (ctx->trace & Ctx::TRACE_REDO)
+        if (unlikely(ctx->trace & Ctx::TRACE_REDO))
             ctx->logTrace(Ctx::TRACE_REDO, "checking online redo logs, seq: " + std::to_string(metadata->sequence));
         updateResetlogs();
         updateOnlineLogs();
 
         while (!ctx->softShutdown) {
             parser = nullptr;
-            if (ctx->trace & Ctx::TRACE_REDO)
+            if (unlikely(ctx->trace & Ctx::TRACE_REDO))
                 ctx->logTrace(Ctx::TRACE_REDO, "searching online redo log for seq: " + std::to_string(metadata->sequence));
 
             // Keep reading online redo logs while it is possible
@@ -821,7 +821,7 @@ namespace OpenLogReplicator {
                         parser = onlineRedo;
                     }
 
-                    if (ctx->trace & Ctx::TRACE_REDO && ctx->logLevel >= Ctx::LOG_LEVEL_DEBUG)
+                    if (unlikely(ctx->trace & Ctx::TRACE_REDO && ctx->logLevel >= Ctx::LOG_LEVEL_DEBUG))
                         ctx->logTrace(Ctx::TRACE_REDO, onlineRedo->path + " is seq: " + std::to_string(onlineRedo->sequence) +
                                                        ", scn: " + std::to_string(onlineRedo->firstScn) + ", blocks: " +
                                                        std::to_string(onlineRedo->reader->getNumBlocks()));
@@ -838,7 +838,7 @@ namespace OpenLogReplicator {
 
                 time_ut endTime = ctx->clock->getTimeUt();
                 if (beginTime + static_cast<time_ut>(ctx->refreshIntervalUs) < endTime) {
-                    if (ctx->trace & Ctx::TRACE_REDO)
+                    if (unlikely(ctx->trace & Ctx::TRACE_REDO))
                         ctx->logTrace(Ctx::TRACE_REDO, "refresh interval reached, checking online redo logs again");
 
                     updateOnlineRedoLogData();
@@ -868,7 +868,7 @@ namespace OpenLogReplicator {
                 // verifySchema(metadata->nextScn);
                 metadata->setNextSequence();
             } else if (ret == Reader::REDO_STOPPED || ret == Reader::REDO_OK) {
-                if (ctx->trace & Ctx::TRACE_REDO)
+                if (unlikely(ctx->trace & Ctx::TRACE_REDO))
                     ctx->logTrace(Ctx::TRACE_REDO, "updating redo log files, return code: " + std::to_string(ret) + ", sequence: " +
                                                    std::to_string(metadata->sequence) + ", first scn: " + std::to_string(metadata->firstScn) + ", next scn: " +
                                                    std::to_string(metadata->nextScn));

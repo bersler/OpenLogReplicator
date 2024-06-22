@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
             // UUUUSSSSQQQQQQQQ
             if (length == 16) {
                 for (uint64_t i = 0; i < 16; ++i)
-                    if (!isxdigit(str[i]))
+                    if (unlikely(!isxdigit(str[i])))
                         throw DataException(20002, "bad XID value: " + std::string(str));
                 usn_.assign(str, 4);
                 slt_.assign(str + 4, 4);
@@ -58,9 +58,9 @@ namespace OpenLogReplicator {
             } else if (length == 17) {
                 // UUUU.SSS.QQQQQQQQ
                 for (uint64_t i = 0; i < 17; ++i)
-                    if (!isxdigit(str[i]) && i != 4 && i != 8)
+                    if (unlikely(!isxdigit(str[i]) && i != 4 && i != 8))
                         throw DataException(20002, "bad XID value: " + std::string(str));
-                if (str[4] != '.' || str[8] != '.')
+                if (unlikely(str[4] != '.' || str[8] != '.'))
                     throw DataException(20002, "bad XID value: " + std::string(str));
                 usn_.assign(str, 4);
                 slt_.assign(str + 5, 3);
@@ -68,9 +68,9 @@ namespace OpenLogReplicator {
             } else if (length == 18) {
                 // UUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 0; i < 18; ++i)
-                    if (!isxdigit(str[i]) && i != 4 && i != 9)
+                    if (unlikely(!isxdigit(str[i]) && i != 4 && i != 9))
                         throw DataException(20002, "bad XID value: " + std::string(str));
-                if (str[4] != '.' || str[9] != '.')
+                if (unlikely(str[4] != '.' || str[9] != '.'))
                     throw DataException(20002, "bad XID value: " + std::string(str));
                 usn_.assign(str, 4);
                 slt_.assign(str + 5, 4);
@@ -78,9 +78,9 @@ namespace OpenLogReplicator {
             } else if (length == 19) {
                 // 0xUUUU.SSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 19; ++i)
-                    if (!isxdigit(str[i]) && i != 6 && i != 10)
+                    if (unlikely(!isxdigit(str[i]) && i != 6 && i != 10))
                         throw DataException(20002, "bad XID value: " + std::string(str));
-                if (str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[10] != '.')
+                if (unlikely(str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[10] != '.'))
                     throw DataException(20002, "bad XID value: " + std::string(str));
                 usn_.assign(str + 2, 4);
                 slt_.assign(str + 7, 3);
@@ -88,9 +88,9 @@ namespace OpenLogReplicator {
             } else if (length == 20) {
                 // 0xUUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 20; ++i)
-                    if (!isxdigit(str[i]) && i != 6 && i != 11)
+                    if (unlikely(!isxdigit(str[i]) && i != 6 && i != 11))
                         throw DataException(20002, "bad XID value: " + std::string(str));
-                if (str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[11] != '.')
+                if (unlikely(str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[11] != '.'))
                     throw DataException(20002, "bad XID value: " + std::string(str));
                 usn_.assign(str + 2, 4);
                 slt_.assign(str + 7, 4);

@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
 
     void Checkpoint::trackConfigFile() {
         struct stat configFileStat;
-        if (stat(configFileName.c_str(), &configFileStat) != 0)
+        if (unlikely(stat(configFileName.c_str(), &configFileStat) != 0))
             throw RuntimeException(10003, "file: " + configFileName + " - stat returned: " + strerror(errno));
 
         if (configFileStat.st_mtime == configFileChange)
@@ -66,10 +66,10 @@ namespace OpenLogReplicator {
 
         try {
             int fid = open(configFileName.c_str(), O_RDONLY);
-            if (fid == -1)
+            if (unlikely(fid == -1))
                 throw ConfigurationException(10001, "file: " + configFileName + " - open returned: " + strerror(errno));
 
-            if (configFileStat.st_size > CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0)
+            if (unlikely(configFileStat.st_size > CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0))
                 throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " +
                                                     std::to_string(configFileStat.st_size));
 
@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
 
             configFileBuffer = new char[configFileStat.st_size + 1];
             uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
-            if (bytesRead != static_cast<uint64_t>(configFileStat.st_size))
+            if (unlikely(bytesRead != static_cast<uint64_t>(configFileStat.st_size)))
                 throw ConfigurationException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) +
                                                     " bytes read instead of " + std::to_string(configFileStat.st_size));
             configFileBuffer[configFileStat.st_size] = 0;
@@ -99,7 +99,7 @@ namespace OpenLogReplicator {
 
     void Checkpoint::updateConfigFile() {
         rapidjson::Document document;
-        if (document.Parse(configFileBuffer).HasParseError())
+        if (unlikely(document.Parse(configFileBuffer).HasParseError()))
             throw ConfigurationException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                                 " - parse error: " + GetParseError_En(document.GetParseError()));
 
@@ -110,13 +110,13 @@ namespace OpenLogReplicator {
         }
 
         const char* version = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, document, "version");
-        if (strcmp(version, OpenLogReplicator_SCHEMA_VERSION) != 0)
+        if (unlikely(strcmp(version, OpenLogReplicator_SCHEMA_VERSION) != 0))
             throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + std::string(version) + ", expected: " +
                                                 OpenLogReplicator_SCHEMA_VERSION);
 
         // Iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
-        if (sourceArrayJson.Size() != 1) {
+        if (unlikely(sourceArrayJson.Size() != 1)) {
             throw ConfigurationException(30001, "bad JSON, invalid 'source' value: " + std::to_string(sourceArrayJson.Size()) +
                                                 " elements, expected: 1 element");
         }
@@ -186,11 +186,11 @@ namespace OpenLogReplicator {
                     }
 
                     for (auto& user: metadata->users) {
-                        if (users.find(user) == users.end())
+                        if (unlikely(users.find(user) == users.end()))
                             throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is missing");
                     }
                     for (auto& user: users) {
-                        if (metadata->users.find(user) == metadata->users.end())
+                        if (unlikely(metadata->users.find(user) == metadata->users.end()))
                             throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is redundant");
                     }
 
@@ -229,7 +229,7 @@ namespace OpenLogReplicator {
     }
 
     void Checkpoint::run() {
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "checkpoint (" + ss.str() + ") start");
@@ -249,7 +249,7 @@ namespace OpenLogReplicator {
                 trackConfigFile();
 
                 {
-                    if (ctx->trace & Ctx::TRACE_SLEEP)
+                    if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                         ctx->logTrace(Ctx::TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
                                                         " checkpointScn: " + std::to_string(metadata->checkpointScn));
 
@@ -269,7 +269,7 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        if (ctx->trace & Ctx::TRACE_THREADS) {
+        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE_THREADS, "checkpoint (" + ss.str() + ") stop");
