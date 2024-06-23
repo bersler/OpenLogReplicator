@@ -27,6 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types.h"
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
+#include "TransactionBuffer.h"
 
 #ifndef TRANSACTION_H_
 #define TRANSACTION_H_
@@ -38,9 +39,63 @@ namespace OpenLogReplicator {
     struct TransactionChunk;
     class XmlCtx;
 
+    class TransactionMemoryChunks {
+    protected:
+        std::vector<TransactionChunk*> chunks;
+        typeXid xid;
+
+    public:
+        TransactionMemoryChunks(typeXid newXid) :
+                xid(newXid) {
+        };
+
+        uint64_t size() const {
+            return chunks.size();
+        };
+
+        TransactionChunk* last() const {
+            return chunks.back();
+        };
+
+        TransactionChunk* get(uint64_t index) {
+            return chunks.at(index);
+        };
+
+        void release(Ctx* ctx, uint64_t i) {
+            TransactionChunk* tc = chunks.at(i);
+            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_TRANSACTIONS, reinterpret_cast<uint8_t*>(tc), false);
+            chunks[i] = nullptr;
+        }
+
+        void grow(Ctx* ctx) {
+            TransactionChunk* tc = reinterpret_cast<TransactionChunk*>(ctx->getMemoryChunk(Ctx::MEMORY_MODULE_TRANSACTIONS, false));
+            tc->elements = 0;
+            tc->size = 0;
+            chunks.push_back(tc);
+        };
+
+        void shrink(Ctx* ctx) {
+            TransactionChunk* tc = chunks.back();
+            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_TRANSACTIONS, reinterpret_cast<uint8_t*>(tc), false);
+            chunks.pop_back();
+        };
+
+        void clear() {
+            for (auto tc: chunks) {
+                if (tc != nullptr)
+                    delete tc;
+            }
+            chunks.clear();
+        };
+
+        void flush() {
+            // nothing here
+        };
+    };
+
     class Transaction final {
     protected:
-        TransactionChunk* deallocTc;
+        std::vector<uint64_t> deallocChunks;
         uint64_t opCodes;
 
     public:
@@ -52,8 +107,7 @@ namespace OpenLogReplicator {
         uint64_t firstOffset;
         typeSeq commitSequence;
         typeScn commitScn;
-        TransactionChunk* firstTc;
-        TransactionChunk* lastTc;
+        TransactionMemoryChunks memoryChunks;
         typeTime commitTimestamp;
         bool begin;
         bool rollback;
@@ -62,7 +116,7 @@ namespace OpenLogReplicator {
         bool shutdown;
         bool lastSplit;
         bool dump;
-        uint64_t size;
+        typeTransactionSize size;
 
         // Attributes
         std::unordered_map<std::string, std::string> attributes;
@@ -71,10 +125,11 @@ namespace OpenLogReplicator {
 
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
-        void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
+        void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1,
+                            const RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1);
         void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn);
-        void purge(TransactionBuffer* transactionBuffer);
+        void purge(Ctx* ctx);
 
         inline void log(const Ctx* ctx, const char* msg, const RedoLogRecord* redoLogRecord1) const {
             if (likely(!dump && (ctx->trace & Ctx::TRACE_DUMP) == 0))

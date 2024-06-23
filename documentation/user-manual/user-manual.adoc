@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-01
+:revdate: 2024-06-24
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -82,7 +82,27 @@ image:memory-management.png[Memory management big picture,,,]
 
 HINT: Use the xref:../metrics/metrics.adoc[metrics module] to dynamically observe memory usage.
 
-==== Sizing memory allocation
+==== Memory swapping
+
+For best performance run OpenLogReplicator on a host with sufficient physical memory, so that swapping is not needed.
+If this is not possible, allow the program to decide itself when to swap data to disk.
+
+Using operating system memory swapping is not recommended on host, where OpenLogReplicator is running, however, it is fully supported.
+By design, the program should fully work in memory, to achive best performance and lowest, near real time delay.
+If memory is not sufficient, it is best to move OpenLogReplicator to hardware with more memory.
+
+IMPORTANT: Only the transaction data can be swapped to disk when low memory.
+The metadata is always kept in memory.
+The read buffers are always kept in memory.
+
+When sapping is used, first blocks for longest inactive transactions are swapped to disk.
+However, for every open transaction, at least one block (the last one - which is currently used to append new redo log vectors) is kept in memory.
+Thus, when N transactions are open, at least N blocks are kept in memory (+ memory used by other modules).
+
+.Memory swapping
+image:memory-swapping.png[Memory swapping,,,]
+
+==== Sizing memory size
 
 There is no single rule for calculating the memory size.
 The size of used memory depends on many factors:

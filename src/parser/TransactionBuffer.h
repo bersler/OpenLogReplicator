@@ -36,35 +36,26 @@ namespace OpenLogReplicator {
     class XmlCtx;
 
     struct TransactionChunk {
-        static constexpr uint64_t FULL_BUFFER_SIZE = 65536;
-        static constexpr uint64_t HEADER_BUFFER_SIZE = sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint8_t*) +
-                                                       sizeof(TransactionChunk*) + sizeof(TransactionChunk*);
-        static constexpr uint64_t DATA_BUFFER_SIZE = FULL_BUFFER_SIZE - HEADER_BUFFER_SIZE;
+        static constexpr uint32_t FULL_BUFFER_SIZE = Ctx::MEMORY_CHUNK_SIZE;
+        static constexpr uint32_t HEADER_BUFFER_SIZE = sizeof(uint64_t) + sizeof(uint32_t);
+        static constexpr uint32_t DATA_BUFFER_SIZE = FULL_BUFFER_SIZE - HEADER_BUFFER_SIZE;
 
         uint64_t elements;
-        uint64_t size;
-        uint64_t pos;
-        uint8_t* header;
-        TransactionChunk* prev;
-        TransactionChunk* next;
-        uint8_t buffer[DATA_BUFFER_SIZE];
+        uint32_t size;
+        uint8_t buffer[1];
     };
 
     class TransactionBuffer {
     public:
-        static constexpr uint64_t ROW_HEADER_OP = 0;
-        static constexpr uint64_t ROW_HEADER_REDO1 = sizeof(typeOp2);
-        static constexpr uint64_t ROW_HEADER_REDO2 = sizeof(typeOp2) + sizeof(RedoLogRecord);
-        static constexpr uint64_t ROW_HEADER_DATA = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord);
-        static constexpr uint64_t ROW_HEADER_SIZE = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord);
-        static constexpr uint64_t ROW_HEADER_TOTAL = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord) + sizeof(uint64_t);
-
-        static constexpr uint64_t BUFFERS_FREE_MASK = 0xFFFF;
+        static constexpr uint32_t ROW_HEADER_OP = 0;
+        static constexpr uint32_t ROW_HEADER_DATA0 = sizeof(typeOp2);
+        static constexpr uint32_t ROW_HEADER_DATA1 = sizeof(typeOp2) + sizeof(RedoLogRecord);
+        static constexpr uint32_t ROW_HEADER_DATA2 = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord);
+        static constexpr uint32_t ROW_HEADER_TOTAL = sizeof(typeOp2) + sizeof(RedoLogRecord) + sizeof(RedoLogRecord) + sizeof(typeChunkSize);
 
     protected:
         Ctx* ctx;
         uint8_t buffer[TransactionChunk::DATA_BUFFER_SIZE];
-        std::unordered_map<uint8_t*, uint64_t> partiallyFullChunks;
 
         std::mutex mtx;
         std::unordered_map<typeXidMap, Transaction*> xidTransactionMap;
@@ -85,9 +76,6 @@ namespace OpenLogReplicator {
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void rollbackTransactionChunk(Transaction* transaction);
-        [[nodiscard]] TransactionChunk* newTransactionChunk();
-        void deleteTransactionChunk(TransactionChunk* tc);
-        void deleteTransactionChunks(TransactionChunk* tc);
         void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
         void addOrphanedLob(RedoLogRecord* redoLogRecord1);

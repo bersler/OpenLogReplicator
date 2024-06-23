@@ -589,7 +589,6 @@ namespace OpenLogReplicator {
                     }
 
                     RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                    redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
 
                     valueBufferCheck(chunkSize * 4, offset);
                     addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset, appendData, isClob,
@@ -679,7 +678,6 @@ namespace OpenLogReplicator {
 
                         while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
                             RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                            redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                             if (j < pageCnt)
                                 chunkSize = redoLogRecordLob->lobDataSize;
                             else
@@ -860,7 +858,6 @@ namespace OpenLogReplicator {
 
                                     while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
                                         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                                        redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkSize = redoLogRecordLob->lobDataSize;
                                         if (i == lobPages - 1U && j == pageCnt - 1U)
                                             hasNext = false;
@@ -895,7 +892,7 @@ namespace OpenLogReplicator {
                                 }
 
                                 const uint8_t* dataLob = listMapIt->second;
-                                listPage = *(reinterpret_cast<const typeDba*>(dataLob));
+                                listPage = *reinterpret_cast<const typeDba*>(dataLob);
                                 uint32_t aSiz = ctx->read32(dataLob + 4);
 
                                 for (uint64_t i = 0; i < aSiz; ++i) {
@@ -907,9 +904,9 @@ namespace OpenLogReplicator {
                                         auto dataMapIt = lobData->dataMap.find(element);
                                         if (unlikely(dataMapIt == lobData->dataMap.end())) {
                                             if (unlikely(ctx->trace & Ctx::TRACE_LOB_DATA)) {
-                                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB data (new in-value 12+) for xid: " +
-                                                                                   lastXid.toString() + " LOB: " + lobId.lower() + " page: " + std::to_string(page) +
-                                                                                   " obj: " + std::to_string(obj));
+                                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB data (new in-value 12+) for xid: " + lastXid.toString() +
+                                                                                   " LOB: " + lobId.lower() + " page: " + std::to_string(page) + " obj: " +
+                                                                                   std::to_string(obj));
                                                 ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " +
                                                                                    dumpLob(dataLob, size));
                                             }
@@ -917,7 +914,6 @@ namespace OpenLogReplicator {
                                         }
 
                                         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                                        redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkSize = redoLogRecordLob->lobDataSize;
                                         if (listPage == 0 && i == aSiz - 1U && j == pageCnt - 1U)
                                             hasNext = false;
@@ -998,7 +994,6 @@ namespace OpenLogReplicator {
                                 }
 
                                 RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                                redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                 chunkSize = redoLogRecordLob->lobDataSize;
                                 if (i == lobPages - 1U && j == pageCnt - 1U)
                                     hasNext = false;

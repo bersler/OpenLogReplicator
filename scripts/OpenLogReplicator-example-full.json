@@ -67,6 +67,8 @@
       "memory": {
         "min-mb": 64,
         "max-mb": 1024,
+        "swap-mb" : 768,
+        "swap-path": "./tmp",
         "read-buffer-max-mb": 256
       },
       "redo-read-sleep-us": 250000,

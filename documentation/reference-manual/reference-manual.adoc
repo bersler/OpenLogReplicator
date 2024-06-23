@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-22
+:revdate: 2024-06-24
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -364,6 +364,27 @@ If memory is dynamically allocated in greater amount, it will be released as soo
 See notes for `max-mb` about memory for Kafka buffer.
 
 Number in megabytes.
+
+|`swap-mb`
+|_number_, min: 0, max: `max-mb` - 1, default: 3/4 of `max-mb`
+|The amount of memory, switch activates swapping.
+
+When the memory usage reaches this value, the program would start swapping transaction data to disk.
+Refer to xref:../user-manual/user-manual.adoc#memory-allocation[Memory Allocation] chapter for details regarding memory management.
+
+Number in megabytes.
+
+_IMPORTANT:_ Swapping is enabled by default.
+To disable swapping to disk, set the value for this parameter to 0.
+
+|`swap-path`
+|_string_, max length: 256, default: `"./tmp"`
+|Location for swapping transaction data to disk.
+OpenLogReplicator swaps every transaction in a different file.
+The file name contains the transaction ID and is in format `<swap-path>/<database>-<xid>.swap`.
+
+_IMPORTANT:_ The path should be accessible for writing by the user which runs the program.
+When swapping is disabled (i.e., `swap-mb` is set to `0`), the path is ignored.
 
 |`read-buffer-max-mb`
 |_number_, min: 1, max: `max-mb`, default: min(`max-mb` / 4, 32)

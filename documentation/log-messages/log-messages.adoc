@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-18
+:revdate: 2024-06-24
 :imagesdir: ./images
 :toc: preamble
 
@@ -307,14 +307,6 @@ Verify if the table definition is correct.
 Character set defined in the database is invalid.
 Please report this issue.
 
-==== code 10043: "after mapping path length (<number>) is too long for: <path>"
-
-Provided configuration for a mapping path is too long.
-Verify if the path is correct.
-Verify `path-mapping` configuration parameter.
-
-TIP: If still the problem persists and just you expect to have a so extraordinary long path which would exceed the limit of length, please report this issue.
-
 ==== code 10044: "missing location of archived redo logs for offline mode"
 
 When starting with offline mode, it is expected that the checkpoint file contains the location of archived redo logs.
@@ -507,10 +499,10 @@ If replication is stopped, the configuration file should not be altered and new 
 If such an event happens, replication can't start, and the following message is printed.
 This error reports that either a schema is missing or is redundant compared to the main configuration file (OpenLogReplicator.json).
 
-==== code 20008: "row ID incorrect length: <number>"
+==== code 20008: "row ID incorrect, size: <number>"
 
 Row ID is in incorrect format.
-The length of the row ID is not correct.
+The size of the row ID is not correct.
 Verify if the row ID is correct.
 
 === Configuration errors (3xxxx)
@@ -649,7 +641,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50005: "field size out of vector, field: <number>/<number>, pos: <number>, size: <number>, max: <number>, code: <number>"
 
-==== code 50006: "field missing in vector, field: <number>/<number>, ctx: <number>, obj: <number>, dataobj: <number>, op: <code>, cc: <number>, suppCC: <number>, fieldLength: <number>, code: <number>"
+==== code 50006: "field missing in vector, field: <number>/<number>, ctx: <number>, obj: <number>, dataobj: <number>, op: <code>, cc: <number>, suppCC: <number>, fieldSize: <number>, code: <number>"
 
 ==== code 50007: "field size out of vector, field: <number>/<number>, pos: <number>, size: <number>, max: <number>, code: <number>"
 
@@ -717,7 +709,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50039: "transaction <xid>> conflicts with <xid>"
 
-==== code 50040: "block size (<number>) exceeding max block size (<number>), try increasing the FULL_BUFFER_SIZE parameter"
+==== code 50040: "block size (<number>) exceeding max block size (<number>), please report this issue"
 
 ==== code 50041: "bad split offset: <number> xid: <xid>"
 
@@ -731,7 +723,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50046: "block: <block>, offset: <number>: <message>"
 
-==== code 50047: "incorrect offset start: <number> - not a multiplication of block size: <size>"
+==== code 50047: "incorrect offset start: <number> - not a multiplication of block size: <number>"
 
 ==== code 50048: "invalid resetlogs value (found: <value>, expected: <value>): <file name>"
 
@@ -743,7 +735,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50052: "all <number> lwn buffers allocated"
 
-==== code 50053: "too big redo log record, length: <number>"
+==== code 50053: "too big redo log record, size: <number>"
 
 ==== code 50054: "all <number> records in lwn were used"
 
