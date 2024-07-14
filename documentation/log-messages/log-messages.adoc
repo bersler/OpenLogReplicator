@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-18
+:revdate: 2024-07-15
 :imagesdir: ./images
 :toc: preamble
 
@@ -454,6 +454,10 @@ Timestamp value is invalid. Please report this issue.
 ==== code 10070: "invalid environment variable OLR_LOG_TIMEZONE value: <value>"
 
 The value of environment variable `OLR_LOG_TIMEZONE` is invalid.
+
+==== code 10071: "file: <file name> size is not a multiplication of <number>, reading only <number> bytes"
+
+The redo log file size should be a multiplication of <number> bytes. If the file size is not a multiplication of <number> bytes, the file is read partially.
 
 === Data exceptions (2xxxx)
 

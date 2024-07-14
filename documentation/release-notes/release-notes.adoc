@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-07-14
+:revdate: 2024-07-15
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -23,6 +23,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: add dictionary values for TIMEZONE database parameter
 - enhancement: add parameter -r|--root to disable root check on startup
 - fix: in rare cases column value is null instead of actual value
+- fix: when redo log file is truncated, read error might appear
 
 === Version 1.6.0
 - enhancement: add parameter -p

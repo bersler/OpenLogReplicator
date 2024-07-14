@@ -58,6 +58,11 @@ namespace OpenLogReplicator {
 
         flags = O_RDONLY;
         fileSize = fileStat.st_size;
+        if ((fileSize & (Ctx::MEMORY_ALIGNMENT - 1)) != 0) {
+            fileSize &= ~(Ctx::MEMORY_ALIGNMENT - 1);
+            ctx->warning(10071, "file: " + fileName + " size is not a multiplication of " + std::to_string(Ctx::MEMORY_ALIGNMENT) + ", reading only " +
+                    std::to_string(fileSize) + " bytes ");
+        }
 
 #if __linux__
         if (!ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
