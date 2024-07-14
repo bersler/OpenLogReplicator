@@ -199,8 +199,10 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
 
         int64_t actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : PAGE_SIZE_MAX * 2);
-        if (actualRead < 512)
+        if (actualRead < 512) {
+            ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
             return REDO_ERROR_READ;
+        }
         if (ctx->metrics)
             ctx->metrics->emitBytesRead(actualRead);
 
@@ -405,6 +407,7 @@ namespace OpenLogReplicator {
             ctx->logTrace(Ctx::TRACE_DISK, "reading#1 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
                                            std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
         if (actualRead < 0) {
+            ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
             ret = REDO_ERROR_READ;
             return false;
         }
@@ -554,6 +557,7 @@ namespace OpenLogReplicator {
                                                std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
 
             if (actualRead < 0) {
+                ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
                 ret = REDO_ERROR_READ;
                 return false;
             }
