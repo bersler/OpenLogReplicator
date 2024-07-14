@@ -4,6 +4,7 @@
 - fix: diagnostic information populated when not enabled
 - enhancement: add dictionary values for TIMEZONE database parameter
 - enhancement: add parameter -r|--root to disable root check on startup
+- fix: in rare cases column value is null instead of actual value
 
 1.6.0
 - enhancement: add parameter -p
