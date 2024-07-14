@@ -2642,7 +2642,7 @@ namespace OpenLogReplicator {
                 typeCol numSup = 0;
                 typeCol guardSeg = -1;
 
-                SysEColKey sysEColKey(sysObj->obj, sysCol->segCol);
+                SysEColKey sysEColKey(sysObj->obj, sysCol->intCol);
                 auto sysEColIt = sysEColMapKey.find(sysEColKey);
                 if (sysEColIt != sysEColMapKey.end())
                     guardSeg = sysEColIt->second->guardId;

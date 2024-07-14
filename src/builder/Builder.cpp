@@ -1375,6 +1375,9 @@ namespace OpenLogReplicator {
                         values[column][VALUE_BEFORE] = values[column][VALUE_BEFORE_SUPP];
                         sizes[column][VALUE_BEFORE] = sizes[column][VALUE_BEFORE_SUPP];
                     }
+                } else if (sizes[column][VALUE_BEFORE] == 0 && values[column][VALUE_BEFORE_SUPP] != nullptr) {
+                    values[column][VALUE_BEFORE] = values[column][VALUE_BEFORE_SUPP];
+                    sizes[column][VALUE_BEFORE] = sizes[column][VALUE_BEFORE_SUPP];
                 }
 
                 if (values[column][VALUE_AFTER] == nullptr) {
@@ -1395,6 +1398,9 @@ namespace OpenLogReplicator {
                         values[column][VALUE_AFTER] = values[column][VALUE_AFTER_SUPP];
                         sizes[column][VALUE_AFTER] = sizes[column][VALUE_AFTER_SUPP];
                     }
+                } else if (sizes[column][VALUE_AFTER] == 0 && values[column][VALUE_AFTER_SUPP] != nullptr) {
+                    values[column][VALUE_AFTER] = values[column][VALUE_AFTER_SUPP];
+                    sizes[column][VALUE_AFTER] = sizes[column][VALUE_AFTER_SUPP];
                 }
             }
         }
