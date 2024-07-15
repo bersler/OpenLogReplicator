@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-22
+:revdate: 2024-07-16
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -403,6 +403,15 @@ Example config file: `OpenLogReplicator.json.example-offline`.
 * `batch` -– Process only redo log files provided as a list and then stop.
 
 Example config file: `OpenLogReplicator.json.example-batch`.
+
+_IMPORTANT:_ Batch mode is intended to be used only for testing and troubleshooting purpopses.
+Using this mode for continues replication might lead to errors.
+It is not guaranteed that after the batch completion, the checkpoint file contains a proper schema which could be used for further processing.
+Using the checkpoint files which are created at the end of batch processing for `online`, `offline` or `batch` mode leads to schema inconsistency errors.
+
+_CAUTION_: Providing one by one redo log files and running the program in batch mode is different from running `online` or `offline` mode.
+It would produce different output and might lead to errors.
+Transactions that span multiple redo log fiels would not be sent to output, and system transactions that span multiple redo log files would be ignored leading to schema inconsistency errors.
 
 |`con-id`
 |signed _number_, min: -32768, max: 32767, default: -1
