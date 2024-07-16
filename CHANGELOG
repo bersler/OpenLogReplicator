@@ -6,6 +6,7 @@
 - enhancement: add parameter -r|--root to disable root check on startup
 - fix: in rare cases column value is null instead of actual value
 - fix: when redo log file is truncated, read error might appear
+- documentation update
 
 1.6.0
 - enhancement: add parameter -p
@@ -23,7 +24,6 @@
 - code style cleanup
 - documentation update
 - fix: welcome message
-- documentation update
 
 1.5.0
 - code style cleanup

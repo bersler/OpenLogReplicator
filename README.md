@@ -45,6 +45,7 @@ Use the following table to find out which version of OpenLogReplicator is compat
 |   2.5    |        1.3.0        |          1.6.0           |
 |   2.6    |        1.3.0        |          1.6.0           |
 |   2.7    |        1.3.0        |          1.6.0           |
+|   3.0    |        1.3.0        |          1.6.0           |
 
 ## Sponsoring the Project
 
