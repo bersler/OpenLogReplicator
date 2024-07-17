@@ -451,6 +451,11 @@ The value of environment variable `OLR_LOG_TIMEZONE` is invalid.
 
 The redo log file size should be a multiplication of <number> bytes. If the file size is not a multiplication of <number> bytes, the file is read partially.
 
+==== code 10072: "deleting old swap file from previous execution: <path>"
+
+Most likely previous execution of OpenLogreplicator left a file in the swap directory.
+The file has been deleted.
+
 === Data exceptions (2xxxx)
 
 Errors related to syntax and content of configuration file and checkpoint files.
@@ -775,6 +780,12 @@ If you encounter any of these errors, please report this issue.
 
 The experimental feature to decode binary xmldata has been turned on, but the metdata contains no xml dictionary data.
 Please consider recreating schema checkpoint files: stop replication, delele content of checkpoint folder, and restart to recreate the schema file.
+
+==== code 50070: "swap chunk not found for xid: <xid> during <operation>"
+
+==== code 50071: "unswap page not swapped for xid: <xid>"
+
+==== code 50072: "swap file: <file> - <message>"
 
 == Warnings Messages
 

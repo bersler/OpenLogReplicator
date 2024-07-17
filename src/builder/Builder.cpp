@@ -119,7 +119,7 @@ namespace OpenLogReplicator {
 
     void Builder::initialize() {
         buffersAllocated = 1;
-        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, true));
+        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, true, false));
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
         firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);

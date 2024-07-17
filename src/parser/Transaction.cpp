@@ -33,7 +33,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Transaction::Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx) :
-            deallocTc(nullptr),
             opCodes(0),
             mergeBuffer(nullptr),
             xmlCtx(newXmlCtx),
@@ -42,8 +41,6 @@ namespace OpenLogReplicator {
             firstOffset(0),
             commitSequence(0),
             commitScn(0),
-            firstTc(nullptr),
-            lastTc(nullptr),
             commitTimestamp(0),
             begin(false),
             rollback(false),
@@ -75,12 +72,12 @@ namespace OpenLogReplicator {
         log(ctx, "rlb1", redoLogRecord1);
         log(ctx, "rlb2", redoLogRecord2);
 
-        while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            const uint64_t sizeLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - TransactionBuffer::ROW_HEADER_TOTAL +
-                    TransactionBuffer::ROW_HEADER_SIZE));
-            // auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast + ROW_HEADER_REDO1);
-            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
-                    TransactionBuffer::ROW_HEADER_REDO2);
+        while (ctx->swappedMemorySize(xid) > 0) {
+            auto lastTc = reinterpret_cast<TransactionChunk*>(ctx->swappedMemoryLast(xid));
+            auto sizeLast = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
+            auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast + TransactionBuffer::ROW_HEADER_DATA0);
+            auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast + TransactionBuffer::ROW_HEADER_DATA1 +
+                    lastRedoLogRecord1->size);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -148,13 +145,13 @@ namespace OpenLogReplicator {
     void Transaction::rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1) {
         log(metadata->ctx, "rlb ", redoLogRecord1);
 
-        while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            const uint64_t sizeLast = *(reinterpret_cast<const uint64_t*>(lastTc->buffer + lastTc->size - TransactionBuffer::ROW_HEADER_TOTAL +
-                    TransactionBuffer::ROW_HEADER_SIZE));
-            const auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
-                    TransactionBuffer::ROW_HEADER_REDO1);
-            const auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
-                    TransactionBuffer::ROW_HEADER_REDO2);
+        while (metadata->ctx->swappedMemorySize(xid) > 0) {
+            auto lastTc = reinterpret_cast<TransactionChunk*>(metadata->ctx->swappedMemoryLast(xid));
+            auto sizeLast = *reinterpret_cast<const typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
+            auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
+                    TransactionBuffer::ROW_HEADER_DATA0);
+            auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
+                    TransactionBuffer::ROW_HEADER_DATA1 + lastRedoLogRecord1->size);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -194,8 +191,8 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn) {
+        metadata->ctx->swappedMemoryFlush(xid);
         bool opFlush;
-        deallocTc = nullptr;
         uint64_t maxMessageMb = builder->getMaxMessageMb();
         std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
         std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema, std::defer_lock);
@@ -203,7 +200,7 @@ namespace OpenLogReplicator {
         if (opCodes == 0 || rollback)
             return;
         if (unlikely(metadata->ctx->trace & Ctx::TRACE_TRANSACTION))
-            metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, toString());
+            metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, toString(metadata->ctx));
 
         if (system) {
             lckSchema.lock();
@@ -219,32 +216,29 @@ namespace OpenLogReplicator {
         std::deque<const RedoLogRecord*> redo1;
         std::deque<const RedoLogRecord*> redo2;
 
-        TransactionChunk* tc = firstTc;
-        while (tc != nullptr) {
+        for (uint64_t m = 0; m < metadata->ctx->swappedMemorySize(xid); ++m) {
+            auto tc = reinterpret_cast<TransactionChunk*>(metadata->ctx->swappedMemoryGet(xid, m));
             uint64_t pos = 0;
             for (uint64_t i = 0; i < tc->elements; ++i) {
-                typeOp2 op = *(reinterpret_cast<typeOp2*>(tc->buffer + pos));
+                typeOp2 op = *reinterpret_cast<typeOp2*>(tc->buffer + pos);
 
-                RedoLogRecord* redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_REDO1);
-                RedoLogRecord* redoLogRecord2 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_REDO2);
+                auto redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA0);
+                auto redoLogRecord2 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA1 + redoLogRecord1->size);
+
                 log(metadata->ctx, "flu1", redoLogRecord1);
                 log(metadata->ctx, "flu2", redoLogRecord2);
 
-                redoLogRecord1->dataExt = tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA;
-                redoLogRecord2->dataExt = tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA + redoLogRecord1->size;
                 pos += redoLogRecord1->size + redoLogRecord2->size + TransactionBuffer::ROW_HEADER_TOTAL;
 
                 if (unlikely(metadata->ctx->trace & Ctx::TRACE_TRANSACTION))
-                    metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, std::to_string(redoLogRecord1->size) + ":" +
-                                                                    std::to_string(redoLogRecord2->size) + " fb: " +
-                                                                    std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
+                    metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, std::to_string(redoLogRecord1->size) + ":" + std::to_string(redoLogRecord2->size) +
+                                                                    " fb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord2->fb)) + " op: " + std::to_string(op) +
                                                                     " scn: " + std::to_string(redoLogRecord1->scn) + " subscn: " +
                                                                     std::to_string(redoLogRecord1->subScn) + " scnrecord: " +
-                                                                    std::to_string(redoLogRecord1->scnRecord) + " obj: " +
-                                                                    std::to_string(redoLogRecord1->obj) + " dataobj: " + std::to_string(redoLogRecord1->dataObj) +
-                                                                    " flg1: " + std::to_string(redoLogRecord1->flg) + " flg2: " +
-                                                                    std::to_string(redoLogRecord2->flg) +
+                                                                    std::to_string(redoLogRecord1->scnRecord) + " obj: " + std::to_string(redoLogRecord1->obj) +
+                                                                    " dataobj: " + std::to_string(redoLogRecord1->dataObj) + " flg1: " +
+                                                                    std::to_string(redoLogRecord1->flg) + " flg2: " + std::to_string(redoLogRecord2->flg) +
                                                                     // " uba1: " + PRINTUBA(redoLogRecord1->uba) +
                                                                     // " uba2: " + PRINTUBA(redoLogRecord2->uba) <<
                                                                     " bdba1: " + std::to_string(redoLogRecord1->bdba) + "." +
@@ -535,29 +529,19 @@ namespace OpenLogReplicator {
                     redo2.clear();
                     type = 0;
 
-                    while (deallocTc != nullptr) {
-                        TransactionChunk* nextTc = deallocTc->next;
-                        transactionBuffer->deleteTransactionChunk(deallocTc);
-                        deallocTc = nextTc;
-                    }
+                    for (auto k : deallocChunks)
+                        metadata->ctx->swappedMemoryRelease(xid, k);
+                    deallocChunks.clear();
                 }
             }
 
-            TransactionChunk* nextTc = tc->next;
-            tc->next = deallocTc;
-            deallocTc = tc;
-            tc = nextTc;
-            firstTc = tc;
+            deallocChunks.push_back(m);
         }
 
-        while (deallocTc != nullptr) {
-            TransactionChunk* nextTc = deallocTc->next;
-            transactionBuffer->deleteTransactionChunk(deallocTc);
-            deallocTc = nextTc;
-        }
+        for (auto k : deallocChunks)
+            metadata->ctx->swappedMemoryRelease(xid, k);
+        deallocChunks.clear();
 
-        firstTc = nullptr;
-        lastTc = nullptr;
         opCodes = 0;
 
         if (system) {
@@ -572,19 +556,9 @@ namespace OpenLogReplicator {
         builder->processCommit(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
     }
 
-    void Transaction::purge(TransactionBuffer* transactionBuffer) {
-        if (firstTc != nullptr) {
-            transactionBuffer->deleteTransactionChunks(firstTc);
-            firstTc = nullptr;
-            lastTc = nullptr;
-        }
-
-        while (deallocTc != nullptr) {
-            TransactionChunk* nextTc = deallocTc->next;
-            transactionBuffer->deleteTransactionChunk(deallocTc);
-            deallocTc = nextTc;
-        }
-        deallocTc = nullptr;
+    void Transaction::purge(Ctx* ctx) {
+        ctx->swappedMemoryRemove(xid);
+        deallocChunks.clear();
 
         if (mergeBuffer != nullptr) {
             delete[] mergeBuffer;
@@ -597,14 +571,7 @@ namespace OpenLogReplicator {
         opCodes = 0;
     }
 
-    std::string Transaction::toString() const {
-        uint64_t tcCount = 0;
-        TransactionChunk* tc = firstTc;
-        while (tc != nullptr) {
-            ++tcCount;
-            tc = tc->next;
-        }
-
+    std::string Transaction::toString(Ctx* ctx) const {
         std::ostringstream ss;
         ss << "scn: " << std::dec << commitScn <<
            " seq: " << std::dec << firstSequence <<
@@ -612,7 +579,7 @@ namespace OpenLogReplicator {
            " xid: " << xid.toString() <<
            " flags: " << std::dec << begin << "/" << rollback << "/" << system <<
            " op: " << std::dec << opCodes <<
-           " chunks: " << std::dec << tcCount <<
+           " chunks: " << std::dec << ctx->swappedMemorySize(xid) <<
            " sz: " << std::dec << size;
         return ss.str();
     }

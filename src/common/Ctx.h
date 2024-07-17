@@ -27,6 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <set>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include "typeLobId.h"
 #include "typeXid.h"
@@ -42,6 +43,20 @@ namespace OpenLogReplicator {
     class Clock;
     class Metrics;
     class Thread;
+
+    class SwapChunk final {
+    public:
+        std::vector<uint8_t*> chunks;
+        int64_t swappedMin;
+        int64_t swappedMax;
+        int64_t lockedChunk;
+        bool release;
+        bool breakLock;
+
+        SwapChunk() :
+            swappedMin(-1), swappedMax(-1), lockedChunk(0), release(false), breakLock(false) {};
+    };
+
 
     class Ctx final {
     public:
@@ -140,12 +155,15 @@ namespace OpenLogReplicator {
         bool bigEndian;
         std::atomic<uint64_t> memoryMinMb;
         std::atomic<uint64_t> memoryMaxMb;
+        std::atomic<uint64_t> memoryReserveMb;
+        std::atomic<uint64_t> memorySwapMb;
 
         std::atomic<uint8_t**> memoryChunks;
         std::atomic<uint64_t> memoryChunksMin;
         std::atomic<uint64_t> memoryChunksAllocated;
         std::atomic<uint64_t> memoryChunksFree;
         std::atomic<uint64_t> memoryChunksMax;
+        std::atomic<uint64_t> memoryChunksMaxReserve;
         std::atomic<uint64_t> memoryChunksHWM;
         std::atomic<uint64_t> memoryChunksReusable;
         uint64_t memoryModulesAllocated[MEMORY_MODULES_NUM];
@@ -236,7 +254,7 @@ namespace OpenLogReplicator {
         uint64_t stopLogSwitches;
         uint64_t stopCheckpoints;
         uint64_t stopTransactions;
-        uint64_t transactionSizeMax;
+        typeTransactionSize transactionSizeMax;
         std::atomic<uint64_t> logLevel;
         std::atomic<uint64_t> trace;
         std::atomic<uint64_t> flags;
@@ -245,6 +263,14 @@ namespace OpenLogReplicator {
         std::atomic<bool> softShutdown;
         std::atomic<bool> replicatorFinished;
         std::unordered_map<typeLobId, typeXid> lobIdToXidMap;
+
+        std::unordered_map<typeXid, SwapChunk*> swapChunks;
+        std::vector<typeXid> commitedXids;
+        std::condition_variable chunksMemoryManager;
+        std::condition_variable chunksTransaction;
+        typeXid swappedFlushXid;
+        typeXid swappedShrinkXid;
+        mutable std::mutex swapMtx;
 
         Ctx();
         virtual ~Ctx();
@@ -584,13 +610,25 @@ namespace OpenLogReplicator {
         time_t valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) const;
         uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) const;
 
-        void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
+        void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newMemoryReserveMb, uint64_t newMemorySwapMb, uint64_t newReadBufferMax);
         void wakeAllOutOfMemory();
         [[nodiscard]] uint64_t getMaxUsedMemory() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;
+        [[nodiscard]] uint64_t getSwapMemory() const;
+        [[nodiscard]] uint64_t getUsedMemory() const;
         [[nodiscard]] uint64_t getFreeMemory() const;
-        [[nodiscard]] uint8_t* getMemoryChunk(uint64_t module, bool reusable);
+        [[nodiscard]] uint8_t* getMemoryChunk(uint64_t module, bool reusable, bool reserve, bool soft = false);
         void freeMemoryChunk(uint64_t module, uint8_t* chunk, bool reusable);
+        void swappedMemoryInit(typeXid xid);
+        [[nodiscard]] uint64_t swappedMemorySize(typeXid xid) const;
+        [[nodiscard]] uint8_t* swappedMemoryLast(typeXid xid) const;
+        [[nodiscard]] uint8_t* swappedMemoryGet(typeXid xid, int64_t index);
+        void swappedMemoryRelease(typeXid xid, int64_t index);
+        void swappedMemoryGrow(typeXid xid);
+        void swappedMemoryShrink(typeXid xid);
+        void swappedMemoryFlush(typeXid xid);
+        void swappedMemoryRemove(typeXid xid);
+
         void stopHard();
         void stopSoft();
         void mainLoop();

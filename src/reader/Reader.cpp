@@ -799,7 +799,7 @@ namespace OpenLogReplicator {
 
     void Reader::bufferAllocate(uint64_t num) {
         if (redoBufferList[num] == nullptr) {
-            redoBufferList[num] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_READER, false);
+            redoBufferList[num] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_READER, false, false);
             if (unlikely(ctx->buffersFree == 0))
                 throw RuntimeException(10016, "couldn't allocate " + std::to_string(Ctx::MEMORY_CHUNK_SIZE) +
                                               " bytes memory for: read buffer");
