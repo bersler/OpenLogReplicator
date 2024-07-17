@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, (reinterpret_cast<const uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
+                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                     if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                         r = 0;
@@ -168,7 +168,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, (reinterpret_cast<const uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
+                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                     if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                         r = 0;
@@ -190,7 +190,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, (reinterpret_cast<const uint8_t*>(&length)) + sent, sizeof(uint64_t) - sent);
+                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
                     if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                         r = 0;

@@ -153,7 +153,7 @@ namespace OpenLogReplicator {
 
                 std::string fileNameFull(pathName + "/" + ent->d_name);
                 if (stat(fileNameFull.c_str(), &fileStat) != 0) {
-                    ctx->warning(60034, "file: " + fileNameFull + " - stat returned: " + strerror(errno));
+                    ctx->warning(10003, "file: " + fileNameFull + " - get metadata returned: " + strerror(errno));
                     continue;
                 }
 
@@ -270,7 +270,7 @@ namespace OpenLogReplicator {
             if (stat(fullFileName.c_str(), &fileStat) == 0) {
                 // File already exists, append?
                 if (append == 0)
-                    throw RuntimeException(10003, "file: " + fullFileName + " - stat returned: " + strerror(errno));
+                    throw RuntimeException(10003, "file: " + fullFileName + " - get metadata returned: " + strerror(errno));
 
                 fileSize = fileStat.st_size;
             } else

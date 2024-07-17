@@ -477,7 +477,7 @@ namespace OpenLogReplicator {
             struct stat fileStat;
             std::string mappedSubPath(mappedPath + "/" + ent->d_name);
             if (stat(mappedSubPath.c_str(), &fileStat) != 0) {
-                replicator->ctx->warning(60034, "file: " + mappedSubPath + " - stat returned: " + strerror(errno));
+                replicator->ctx->warning(10003, "file: " + mappedSubPath + " - get metadata returned: " + strerror(errno));
                 continue;
             }
 
@@ -545,7 +545,7 @@ namespace OpenLogReplicator {
 
             struct stat fileStat;
             if (stat(mappedPath.c_str(), &fileStat) != 0) {
-                replicator->ctx->warning(60034, "file: " + mappedPath + " - stat returned: " + strerror(errno));
+                replicator->ctx->warning(10003, "file: " + mappedPath + " - get metadata returned: " + strerror(errno));
                 continue;
             }
 

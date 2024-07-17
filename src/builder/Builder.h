@@ -895,7 +895,7 @@ namespace OpenLogReplicator {
                                 }
 
                                 const uint8_t* dataLob = listMapIt->second;
-                                listPage = *(reinterpret_cast<const typeDba*>(dataLob));
+                                listPage = *reinterpret_cast<const typeDba*>(dataLob);
                                 uint32_t aSiz = ctx->read32(dataLob + 4);
 
                                 for (uint64_t i = 0; i < aSiz; ++i) {
@@ -907,9 +907,9 @@ namespace OpenLogReplicator {
                                         auto dataMapIt = lobData->dataMap.find(element);
                                         if (unlikely(dataMapIt == lobData->dataMap.end())) {
                                             if (unlikely(ctx->trace & Ctx::TRACE_LOB_DATA)) {
-                                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB data (new in-value 12+) for xid: " +
-                                                                                   lastXid.toString() + " LOB: " + lobId.lower() + " page: " + std::to_string(page) +
-                                                                                   " obj: " + std::to_string(obj));
+                                                ctx->logTrace(Ctx::TRACE_LOB_DATA, "missing LOB data (new in-value 12+) for xid: " + lastXid.toString() +
+                                                                                   " LOB: " + lobId.lower() + " page: " + std::to_string(page) + " obj: " +
+                                                                                   std::to_string(obj));
                                                 ctx->logTrace(Ctx::TRACE_LOB_DATA, "dump LOB: " + lobId.lower() + " data: " +
                                                                                    dumpLob(dataLob, size));
                                             }

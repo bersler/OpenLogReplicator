@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
         struct stat fileStat;
 
         if (stat(fileName.c_str(), &fileStat) != 0) {
-            ctx->error(10003, "file: " + fileName + " - stat returned: " + strerror(errno));
+            ctx->error(10003, "file: " + fileName + " - get metadata returned: " + strerror(errno));
             return REDO_ERROR;
         }
 
@@ -71,14 +71,14 @@ namespace OpenLogReplicator {
 
         fileDes = open(fileName.c_str(), flags);
         if (fileDes == -1) {
-            ctx->error(10001, "file: " + fileName + " - open returned: " + strerror(errno));
+            ctx->error(10001, "file: " + fileName + " - open for read returned: " + strerror(errno));
             return REDO_ERROR;
         }
 
 #if __APPLE__
         if (!ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
             if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0)
-                ctx->error(10008, "file: " + fileName + " - set no cache returned: " + strerror(errno));
+                ctx->error(10008, "file: " + fileName + " - set no cache for file returned: " + strerror(errno));
         }
 #endif
 

@@ -282,9 +282,10 @@ namespace OpenLogReplicator {
                             if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
                                 metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() +
                                                                         " obj: " + std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
-                                                                        std::to_string(redoLogRecord1->dba) + " page: " + std::to_string(redoLogRecord1->lobPageNo) +
-                                                                        " col: " + std::to_string(lob->intCol) + " table: " + lob->table->owner + "." +
-                                                                        lob->table->name + " lobj: " + std::to_string(lob->lObj) + " IDX");
+                                                                        std::to_string(redoLogRecord1->dba) + " page: " +
+                                                                        std::to_string(redoLogRecord1->lobPageNo) + " col: " + std::to_string(lob->intCol) +
+                                                                        " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
+                                                                        std::to_string(lob->lObj) + " IDX");
                         }
                     }
                         break;
@@ -297,10 +298,10 @@ namespace OpenLogReplicator {
                             if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
                                 metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() + " obj: " +
                                                                         std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
-                                                                        std::to_string(redoLogRecord1->dba) + " page: " + std::to_string(redoLogRecord1->lobPageNo) +
-                                                                        " col: " + std::to_string(lob->intCol) + " table: " + lob->table->owner + "." +
-                                                                        lob->table->name +
-                                                                        " lobj: " + std::to_string(lob->lObj));
+                                                                        std::to_string(redoLogRecord1->dba) + " page: " +
+                                                                        std::to_string(redoLogRecord1->lobPageNo) + " col: " + std::to_string(lob->intCol) +
+                                                                        " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
+                                                                        std::to_string(lob->lObj));
                         }
                     }
                         break;
@@ -396,10 +397,11 @@ namespace OpenLogReplicator {
                         if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
                             metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() + " obj: " +
                                                                     std::to_string(redoLogRecord1->obj) + " op: " + std::to_string(op) + " dba: " +
-                                                                    std::to_string(redoLogRecord2->dba) + " page: " + std::to_string(redoLogRecord2->lobPageNo) +
-                                                                    " col: " + std::to_string(lob->intCol) + " table: " + lob->table->owner + "." +
-                                                                    lob->table->name + " lobj: " + std::to_string(lob->lObj) + " - INDEX: " + pages.str() +
-                                                                    " PAGES: " + std::to_string(redoLogRecord2->lobSizePages) + " REST: " +
+                                                                    std::to_string(redoLogRecord2->dba) + " page: " +
+                                                                    std::to_string(redoLogRecord2->lobPageNo) + " col: " + std::to_string(lob->intCol) +
+                                                                    " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
+                                                                    std::to_string(lob->lObj) + " - INDEX: " + pages.str() + " PAGES: " +
+                                                                    std::to_string(redoLogRecord2->lobSizePages) + " REST: " +
                                                                     std::to_string(redoLogRecord2->lobSizeRest));
                         break;
                     }

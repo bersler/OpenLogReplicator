@@ -137,13 +137,13 @@ namespace OpenLogReplicator {
         struct stat configFileStat;
         fid = open(configFileName.c_str(), O_RDONLY);
         if (fid == -1)
-            throw RuntimeException(10001, "file: " + configFileName + " - open returned: " + strerror(errno));
+            throw RuntimeException(10001, "file: " + configFileName + " - open for read returned: " + strerror(errno));
 
         if (flock(fid, LOCK_EX | LOCK_NB))
-            throw RuntimeException(10002, "file: " + configFileName + " - lock returned: " + strerror(errno));
+            throw RuntimeException(10002, "file: " + configFileName + " - lock operation returned: " + strerror(errno));
 
         if (stat(configFileName.c_str(), &configFileStat) != 0)
-            throw RuntimeException(10003, "file: " + configFileName + " - stat returned: " + strerror(errno));
+            throw RuntimeException(10003, "file: " + configFileName + " - get metadata returned: " + strerror(errno));
 
         if (configFileStat.st_size > Checkpoint::CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0)
             throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " + std::to_string(configFileStat.st_size));
