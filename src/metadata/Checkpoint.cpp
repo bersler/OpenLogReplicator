@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
     void Checkpoint::trackConfigFile() {
         struct stat configFileStat;
         if (unlikely(stat(configFileName.c_str(), &configFileStat) != 0))
-            throw RuntimeException(10003, "file: " + configFileName + " - stat returned: " + strerror(errno));
+            throw RuntimeException(10003, "file: " + configFileName + " - get metadata returned: " + strerror(errno));
 
         if (configFileStat.st_mtime == configFileChange)
             return;
@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
         try {
             int fid = open(configFileName.c_str(), O_RDONLY);
             if (unlikely(fid == -1))
-                throw ConfigurationException(10001, "file: " + configFileName + " - open returned: " + strerror(errno));
+                throw ConfigurationException(10001, "file: " + configFileName + " - open for read returned: " + strerror(errno));
 
             if (unlikely(configFileStat.st_size > CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0))
                 throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " +

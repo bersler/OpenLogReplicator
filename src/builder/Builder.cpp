@@ -1424,9 +1424,9 @@ namespace OpenLogReplicator {
                         ctx->logTrace(Ctx::TRACE_DML, "DML: " + std::to_string(column + 1) + ":  B(" +
                                                       std::to_string(values[column][VALUE_BEFORE] != nullptr ? sizes[column][VALUE_BEFORE] : -1) + ") A(" +
                                                       std::to_string(values[column][VALUE_AFTER] != nullptr ? sizes[column][VALUE_AFTER] : -1) + ") BS(" +
-                                                      std::to_string(values[column][VALUE_BEFORE_SUPP] != nullptr ? sizes[column][VALUE_BEFORE_SUPP] : -1) + ")" +
-                                                      " AS(" + std::to_string(values[column][VALUE_AFTER_SUPP] != nullptr ? sizes[column][VALUE_AFTER_SUPP] : -1) +
-                                                      ") pk: " + std::to_string(table->columns[column]->numPk));
+                                                      std::to_string(values[column][VALUE_BEFORE_SUPP] != nullptr ? sizes[column][VALUE_BEFORE_SUPP] : -1) +
+                                                      ") AS(" + std::to_string(values[column][VALUE_AFTER_SUPP] != nullptr ? sizes[column][VALUE_AFTER_SUPP] :
+                                                      -1) + ") pk: " + std::to_string(table->columns[column]->numPk));
                     }
                 }
             } else {
@@ -1471,7 +1471,7 @@ namespace OpenLogReplicator {
                                 sizes[column][VALUE_BEFORE] == 0 && sizes[column][VALUE_AFTER] > 0) {
                                 if (!table->columns[column]->nullWarning) {
                                     table->columns[column]->nullWarning = true;
-                                    ctx->warning(60037, "observed UPDATE operation for NOT NULL column with NULL value for table " +
+                                    ctx->warning(60034, "observed UPDATE operation for NOT NULL column with NULL value for table " +
                                             table->owner + "." + table->name + " column " + table->columns[column]->name);
                                 }
                                 if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING)) {
