@@ -723,7 +723,7 @@ namespace OpenLogReplicator {
                     throw RuntimeException(10017, "out of memory");
                 }
 
-                warning(10067, "out of memory, but there are reusable memory chunks, trying to reuse some memory");
+                //warning(10067, "out of memory, but there are reusable memory chunks, trying to reuse some memory");
 
                 if (unlikely(trace & TRACE_SLEEP))
                     logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
@@ -846,6 +846,7 @@ namespace OpenLogReplicator {
     }
 
     uint8_t* Ctx::swappedMemoryGet(typeXid xid, int64_t index) {
+        info(0, "Ctx::swappedMemoryGet xid:" + xid.toString() + " index:" + std::to_string(index));
         std::unique_lock<std::mutex> lck(swapMtx);
         auto it = swapChunks.find(xid);
         if (unlikely(it == swapChunks.end()))
@@ -854,8 +855,10 @@ namespace OpenLogReplicator {
 
         if (index == sc->lockedChunk) {
             sc->breakLock = true;
-            while (index == sc->lockedChunk)
+            while (index == sc->lockedChunk) {
+                info(0, "Ctx::swappedMemoryGet - locked, sleep");
                 chunksTransaction.wait(lck);
+            }
         }
 
         while (!hardShutdown) {
@@ -863,6 +866,7 @@ namespace OpenLogReplicator {
                 return sc->chunks.at(index);
 
             chunksMemoryManager.notify_all();
+            info(0, "Ctx::swappedMemoryGet - swapped(" + std::to_string(sc->swappedMin) + "-" + std::to_string(sc->swappedMax) + "), sleep");
             chunksTransaction.wait(lck);
         }
 
@@ -906,6 +910,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::swappedMemoryShrink(typeXid xid) {
+        info(0, "Ctx::swappedMemoryShrink xid:" + xid.toString());
         SwapChunk* sc;
         uint8_t* tc;
         bool reusable;
@@ -920,8 +925,10 @@ namespace OpenLogReplicator {
 
             if (static_cast<int64_t>(sc->chunks.size() - 1) == sc->lockedChunk) {
                 sc->breakLock = true;
-                while (static_cast<int64_t>(sc->chunks.size() - 1) == sc->lockedChunk)
+                while (static_cast<int64_t>(sc->chunks.size() - 1) == sc->lockedChunk) {
+                    info(0, "Ctx::swappedMemoryShrink - locked(" + std::to_string(sc->lockedChunk) +  "), sleep");
                     chunksTransaction.wait(lck);
+                }
             }
         }
 
@@ -940,6 +947,7 @@ namespace OpenLogReplicator {
                     break;
 
                 chunksMemoryManager.notify_all();
+                info(0, "Ctx::swappedMemoryShrink - swapped(" + std::to_string(sc->swappedMin) + "-" + std::to_string(sc->swappedMax) + "), sleep");
                 chunksTransaction.wait(lck);
             }
             swappedShrinkXid = 0;

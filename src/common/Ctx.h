@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         bool breakLock;
 
         SwapChunk() :
-            swappedMin(-1), swappedMax(-1), lockedChunk(0), release(false), breakLock(false) {};
+            swappedMin(-1), swappedMax(-1), lockedChunk(-1), release(false), breakLock(false) {};
     };
 
 
