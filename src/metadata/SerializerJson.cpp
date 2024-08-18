@@ -570,7 +570,14 @@ namespace OpenLogReplicator {
 
                     if (!metadata->onlineData) {
                         // Database metadata
-                        metadata->database = Ctx::getJsonFieldS(fileName, Ctx::JSON_PARAMETER_LENGTH, document, "database");
+                        const std::string newDatabase = Ctx::getJsonFieldS(fileName, Ctx::JSON_PARAMETER_LENGTH, document, "database");
+                        if (metadata->database == "") {
+                            metadata->database = newDatabase;
+                        } else if (metadata->database != newDatabase) {
+                            throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
+                                                       " - parse error of field \"database\", invalid value: " + newDatabase + ", expected value: " +
+                                                       metadata->database);
+                        }
                         metadata->resetlogs = Ctx::getJsonFieldU32(fileName, document, "resetlogs");
                         metadata->activation = Ctx::getJsonFieldU32(fileName, document, "activation");
                         int64_t bigEndian = Ctx::getJsonFieldU64(fileName, document, "big-endian");

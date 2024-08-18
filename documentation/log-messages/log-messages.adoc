@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-07-18
+:revdate: 2024-08-18
 :imagesdir: ./images
 :toc: preamble
 
@@ -711,7 +711,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50038: "can't remove table (obj: <number>, dataobj: <number>)"
 
-==== code 50039: "transaction <xid>> conflicts with <xid>"
+==== code 50039: "transaction <xid> conflicts with <xid>"
 
 ==== code 50040: "block size (<number>) exceeding max block size (<number>), please report this issue"
 
@@ -849,11 +849,11 @@ See comment for warning 60002.
 
 A huge transaction has exceeded provided maximum size for transactions.
 
-==== code 60016: "LOB is null for (obj: <number>, dataobj: <number>), offset: <number>>, xid: <xid>"
+==== code 60016: "LOB is null for (obj: <number>, dataobj: <number>), offset: <number>, xid: <xid>"
 
 See comment for warning 60002.
 
-==== code 60017: "minimal supplemental log missing or redo log inconsistency for transaction <xid>"
+==== code 60017: "minimal supplemental log missing or redo log inconsistency for transaction <xid>, offset: <number>"
 
 Verify if supplemental logging is enabled for the database.
 If it is, and even after log switch the warning appears, please report this issue.

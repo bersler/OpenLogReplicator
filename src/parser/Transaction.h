@@ -81,7 +81,8 @@ namespace OpenLogReplicator {
                 return;
 
             ctx->info(0, std::string(msg) + " xid: " + xid.toString() +
-                         " OP: " + std::to_string(redoLogRecord1->opCode) +
+                         " OP: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->opCode >> 8)) +
+                         "." + std::to_string(static_cast<uint64_t>(redoLogRecord1->opCode & 0xFF)) +
                          " opc: " + std::to_string(redoLogRecord1->opc) +
                          " obj: " + std::to_string(redoLogRecord1->obj) +
                          " dataobj: " + std::to_string(redoLogRecord1->dataObj) +
