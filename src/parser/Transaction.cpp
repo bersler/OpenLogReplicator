@@ -469,7 +469,7 @@ namespace OpenLogReplicator {
                                 }
                             } else {
                                 metadata->ctx->warning(60017, "minimal supplemental log missing or redo log inconsistency for transaction " +
-                                                              xid.toString());
+                                                              xid.toString() + ", offset: " + std::to_string(redoLogRecord1->dataOffset));
                             }
                         }
 

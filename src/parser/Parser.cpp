@@ -480,7 +480,8 @@ namespace OpenLogReplicator {
                         appendToTransaction(&redoLogRecord[vectorPrev]);
                         continue;
                     } else if (redoLogRecord[vectorPrev].opc == 0x0B01)
-                        ctx->warning(70010, "unknown undo OP: " + std::to_string(redoLogRecord[vectorCur].opCode) + ", opc: " +
+                        ctx->warning(70010, "unknown undo OP: " + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode >> 8)) +
+                                            "." + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode & 0xFF)) + ", opc: " +
                                             std::to_string(redoLogRecord[vectorPrev].opc));
 
                     vectorCur = -1;
@@ -491,8 +492,9 @@ namespace OpenLogReplicator {
                     if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00)
                         appendToTransactionRollback(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     else if (redoLogRecord[vectorCur].opc == 0x0B01)
-                        ctx->warning(70011, "unknown rollback OP: " + std::to_string(redoLogRecord[vectorPrev].opCode) + ", opc: " +
-                                            std::to_string(redoLogRecord[vectorCur].opc));
+                        ctx->warning(70011, "unknown rollback OP: " + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode >> 8)) +
+                                            "." + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode & 0xFF)) + ", opc: " +
+                                            std::to_string(redoLogRecord[vectorPrev].opc));
 
                     vectorCur = -1;
                     continue;
@@ -1083,7 +1085,7 @@ namespace OpenLogReplicator {
                 redoLogRecord2->indKeyData = redoLogRecord2->indKey + 2;
                 redoLogRecord2->indKeyDataSize = 32;
             } else {
-                ctx->warning(60014, "verify redo log file for OP:10.8, len: " + std::to_string(redoLogRecord2->indKeySize) +
+                ctx->warning(60014, "verify redo log file for OP: 10.8, len: " + std::to_string(redoLogRecord2->indKeySize) +
                                     ", data = [" + std::to_string(static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey])) + ", " +
                                     std::to_string(static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey + 1])) + ", " +
                                     std::to_string(static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey + 34])) + ", " +
