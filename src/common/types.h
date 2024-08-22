@@ -21,6 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstdint>
 
 #include "../../config.h"
 
