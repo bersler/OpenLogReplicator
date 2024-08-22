@@ -36,7 +36,149 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Locales.h"
 
 namespace OpenLogReplicator {
-    Locales::Locales() = default;
+    Locales::Locales() :
+            timeZoneMap({{0x80a8, "Africa/Abidjan"}, {0x80c8, "Africa/Accra"}, {0x80a8, "Africa/Abidjan"}, {0x80c8, "Africa/Accra"},
+                         {0x80bc, "Africa/Addis_Ababa"}, {0x8078, "Africa/Algiers"}, {0x80b8, "Africa/Asmara"}, {0x88b8, "Africa/Asmera"},
+                         {0x80e8, "Africa/Bamako"}, {0x8094, "Africa/Bangui"}, {0x80c4, "Africa/Banjul"}, {0x80d0, "Africa/Bissau"},
+                         {0x80e4, "Africa/Blantyre"}, {0x80a4, "Africa/Brazzaville"}, {0x808c, "Africa/Bujumbura"}, {0x80b0, "Africa/Cairo"},
+                         {0x80f4, "Africa/Casablanca"}, {0x8144, "Africa/Ceuta"}, {0x80cc, "Africa/Conakry"}, {0x8114, "Africa/Dakar"},
+                         {0x812c, "Africa/Dar_es_Salaam"}, {0x80ac, "Africa/Djibouti"}, {0x8090, "Africa/Douala"}, {0x80f8, "Africa/El_Aaiun"},
+                         {0x8118, "Africa/Freetown"}, {0x8084, "Africa/Gaborone"}, {0x8140, "Africa/Harare"}, {0x8120, "Africa/Johannesburg"},
+                         {0x8504, "Africa/Juba"}, {0x8138, "Africa/Kampala"}, {0x8124, "Africa/Khartoum"}, {0x810c, "Africa/Kigali"},
+                         {0x809c, "Africa/Kinshasa"}, {0x8108, "Africa/Lagos"}, {0x80c0, "Africa/Libreville"}, {0x8130, "Africa/Lome"},
+                         {0x807c, "Africa/Luanda"}, {0x80a0, "Africa/Lubumbashi"}, {0x813c, "Africa/Lusaka"}, {0x80b4, "Africa/Malabo"},
+                         {0x80fc, "Africa/Maputo"}, {0x80d8, "Africa/Maseru"}, {0x8128, "Africa/Mbabane"}, {0x811c, "Africa/Mogadishu"},
+                         {0x80dc, "Africa/Monrovia"}, {0x80d4, "Africa/Nairobi"}, {0x8098, "Africa/Ndjamena"}, {0x8104, "Africa/Niamey"},
+                         {0x80f0, "Africa/Nouakchott"}, {0x8088, "Africa/Ouagadougou"}, {0x8080, "Africa/Porto-Novo"}, {0x8110, "Africa/Sao_Tome"},
+                         {0x88e8, "Africa/Timbuktu"}, {0x80e0, "Africa/Tripoli"}, {0x8134, "Africa/Tunis"}, {0x8100, "Africa/Windhoek"},
+                         {0x81b0, "America/Adak"}, {0x81a8, "America/Anchorage"}, {0x8248, "America/Anguilla"}, {0x824c, "America/Antigua"},
+                         {0x82e8, "America/Araguaina"}, {0x8abc, "America/Argentina/Buenos_Aires"}, {0x8acc, "America/Argentina/Catamarca"},
+                         {0x92cc, "America/Argentina/ComodRivadavia"}, {0x8ac4, "America/Argentina/Cordoba"}, {0x8ac8, "America/Argentina/Jujuy"},
+                         {0x818c, "America/Argentina/La_Rioja"}, {0x8ad0, "America/Argentina/Mendoza"}, {0x8188, "America/Argentina/Rio_Gallegos"},
+                         {0x83b4, "America/Argentina/Salta"}, {0x8394, "America/Argentina/San_Juan"}, {0x8184, "America/Argentina/San_Luis"},
+                         {0x8390, "America/Argentina/Tucuman"}, {0x82c0, "America/Argentina/Ushuaia"}, {0x82d4, "America/Aruba"}, {0x8320, "America/Asuncion"},
+                         {0x8374, "America/Atikokan"}, {0x89b0, "America/Atka"}, {0x8168, "America/Bahia"}, {0x817c, "America/Bahia_Banderas"},
+                         {0x8254, "America/Barbados"}, {0x82e0, "America/Belem"}, {0x8258, "America/Belize"}, {0x8380, "America/Blanc-Sablon"},
+                         {0x82fc, "America/Boa_Vista"}, {0x830c, "America/Bogota"}, {0x81b8, "America/Boise"}, {0x82bc, "America/Buenos_Aires"},
+                         {0x821c, "America/Cambridge_Bay"}, {0x8378, "America/Campo_Grande"}, {0x8230, "America/Cancun"}, {0x8334, "America/Caracas"},
+                         {0x82cc, "America/Catamarca"}, {0x8318, "America/Cayenne"}, {0x825c, "America/Cayman"}, {0x8194, "America/Chicago"},
+                         {0x8238, "America/Chihuahua"}, {0x8b74, "America/Coral_Harbour"}, {0x82c4, "America/Cordoba"}, {0x8260, "America/Costa_Rica"},
+                         {0x8514, "America/Creston"}, {0x82f4, "America/Cuiaba"}, {0x8310, "America/Curacao"}, {0x837c, "America/Danmarkshavn"},
+                         {0x822c, "America/Dawson"}, {0x820c, "America/Dawson_Creek"}, {0x8198, "America/Denver"}, {0x81d0, "America/Detroit"},
+                         {0x8268, "America/Dominica"}, {0x8204, "America/Edmonton"}, {0x8384, "America/Eirunepe"}, {0x8270, "America/El_Salvador"},
+                         {0x8a44, "America/Ensenada"}, {0x82e4, "America/Fortaleza"}, {0x855c, "America/Fort_Nelson"}, {0x89bc, "America/Fort_Wayne"},
+                         {0x81e4, "America/Glace_Bay"}, {0x833c, "America/Godthab"}, {0x81dc, "America/Goose_Bay"}, {0x82b0, "America/Grand_Turk"},
+                         {0x8274, "America/Grenada"}, {0x8278, "America/Guadeloupe"}, {0x827c, "America/Guatemala"}, {0x8314, "America/Guayaquil"},
+                         {0x831c, "America/Guyana"}, {0x81e0, "America/Halifax"}, {0x8264, "America/Havana"}, {0x823c, "America/Hermosillo"},
+                         {0x99bc, "America/Indiana/Indianapolis"}, {0x81c4, "America/Indiana/Knox"}, {0x81c0, "America/Indiana/Marengo"},
+                         {0x8348, "America/Indiana/Petersburg"}, {0x81bc, "America/Indianapolis"}, {0x8178, "America/Indiana/Tell_City"},
+                         {0x81c8, "America/Indiana/Vevay"}, {0x8344, "America/Indiana/Vincennes"}, {0x8368, "America/Indiana/Winamac"},
+                         {0x8224, "America/Inuvik"}, {0x8214, "America/Iqaluit"}, {0x8288, "America/Jamaica"}, {0x82c8, "America/Jujuy"},
+                         {0x81a0, "America/Juneau"}, {0x89cc, "America/Kentucky/Louisville"}, {0x816c, "America/Kentucky/Monticello"},
+                         {0x89c4, "America/Knox_IN"}, {0x850c, "America/Kralendijk"}, {0x82d8, "America/La_Paz"}, {0x8324, "America/Lima"},
+                         {0x819c, "America/Los_Angeles"}, {0x81cc, "America/Louisville"}, {0x8508, "America/Lower_Princes"}, {0x82ec, "America/Maceio"},
+                         {0x8294, "America/Managua"}, {0x8300, "America/Manaus"}, {0x8a78, "America/Marigot"}, {0x828c, "America/Martinique"},
+                         {0x815c, "America/Matamoros"}, {0x8240, "America/Mazatlan"}, {0x82d0, "America/Mendoza"}, {0x81d4, "America/Menominee"},
+                         {0x8388, "America/Merida"}, {0x84fc, "America/Metlakatla"}, {0x8234, "America/Mexico_City"}, {0x82a8, "America/Miquelon"},
+                         {0x8170, "America/Moncton"}, {0x838c, "America/Monterrey"}, {0x8330, "America/Montevideo"}, {0x81e8, "America/Montreal"},
+                         {0x8290, "America/Montserrat"}, {0x8250, "America/Nassau"}, {0x8190, "America/New_York"}, {0x81f0, "America/Nipigon"},
+                         {0x81ac, "America/Nome"}, {0x82dc, "America/Noronha"}, {0x8500, "America/North_Dakota/Beulah"},
+                         {0x8160, "America/North_Dakota/Center"}, {0x8164, "America/North_Dakota/New_Salem"}, {0x8174, "America/Ojinaga"},
+                         {0x8298, "America/Panama"}, {0x8210, "America/Pangnirtung"}, {0x8328, "America/Paramaribo"}, {0x81b4, "America/Phoenix"},
+                         {0x8280, "America/Port-au-Prince"}, {0x8304, "America/Porto_Acre"}, {0x832c, "America/Port_of_Spain"}, {0x82f8, "America/Porto_Velho"},
+                         {0x829c, "America/Puerto_Rico"}, {0x8628, "America/Punta_Arenas"}, {0x81f4, "America/Rainy_River"}, {0x8218, "America/Rankin_Inlet"},
+                         {0x8158, "America/Recife"}, {0x81fc, "America/Regina"}, {0x836c, "America/Resolute"}, {0x9304, "America/Rio_Branco"},
+                         {0x92c4, "America/Rosario"}, {0x8180, "America/Santa_Isabel"}, {0x814c, "America/Santarem"}, {0x8308, "America/Santiago"},
+                         {0x826c, "America/Santo_Domingo"}, {0x82f0, "America/Sao_Paulo"}, {0x8338, "America/Scoresbysund"}, {0x9998, "America/Shiprock"},
+                         {0x84f8, "America/Sitka"}, {0x9278, "America/St_Barthelemy"}, {0x81d8, "America/St_Johns"}, {0x82a0, "America/St_Kitts"},
+                         {0x82a4, "America/St_Lucia"}, {0x82b8, "America/St_Thomas"}, {0x82ac, "America/St_Vincent"}, {0x8200, "America/Swift_Current"},
+                         {0x8284, "America/Tegucigalpa"}, {0x8340, "America/Thule"}, {0x81ec, "America/Thunder_Bay"}, {0x8244, "America/Tijuana"},
+                         {0x8370, "America/Toronto"}, {0x82b4, "America/Tortola"}, {0x8208, "America/Vancouver"}, {0x8ab8, "America/Virgin"},
+                         {0x8228, "America/Whitehorse"}, {0x81f8, "America/Winnipeg"}, {0x81a4, "America/Yakutat"}, {0x8220, "America/Yellowknife"},
+                         {0x8398, "Antarctica/Casey"}, {0x839c, "Antarctica/Davis"}, {0x83a4, "Antarctica/DumontDUrville"}, {0x8154, "Antarctica/Macquarie"},
+                         {0x83a0, "Antarctica/Mawson"}, {0x83b0, "Antarctica/McMurdo"}, {0x83ac, "Antarctica/Palmer"}, {0x8148, "Antarctica/Rothera"},
+                         {0x8bb0, "Antarctica/South_Pole"}, {0x83a8, "Antarctica/Syowa"}, {0x8524, "Antarctica/Troll"}, {0x80ec, "Antarctica/Vostok"},
+                         {0x8e34, "Arctic/Longyearbyen"}, {0x84b8, "Asia/Aden"}, {0x8434, "Asia/Almaty"}, {0x8430, "Asia/Amman"}, {0x84e0, "Asia/Anadyr"},
+                         {0x843c, "Asia/Aqtau"}, {0x8438, "Asia/Aqtobe"}, {0x84a4, "Asia/Ashgabat"}, {0x8ca4, "Asia/Ashkhabad"}, {0x85ac, "Asia/Atyrau"},
+                         {0x8424, "Asia/Baghdad"}, {0x83cc, "Asia/Bahrain"}, {0x83c8, "Asia/Baku"}, {0x84a0, "Asia/Bangkok"}, {0x859c, "Asia/Barnaul"},
+                         {0x8454, "Asia/Beirut"}, {0x8440, "Asia/Bishkek"}, {0x83d8, "Asia/Brunei"}, {0x8410, "Asia/Calcutta"}, {0x853c, "Asia/Chita"},
+                         {0x84f0, "Asia/Choibalsan"}, {0x8bec, "Asia/Chongqing"}, {0x83ec, "Asia/Chungking"}, {0x8494, "Asia/Colombo"}, {0x83d0, "Asia/Dacca"},
+                         {0x8498, "Asia/Damascus"}, {0x8bd0, "Asia/Dhaka"}, {0x840c, "Asia/Dili"}, {0x84a8, "Asia/Dubai"}, {0x849c, "Asia/Dushanbe"},
+                         {0x85a8, "Asia/Famagusta"}, {0x8474, "Asia/Gaza"}, {0x83e4, "Asia/Harbin"}, {0x8510, "Asia/Hebron"}, {0x8cb4, "Asia/Ho_Chi_Minh"},
+                         {0x83f8, "Asia/Hong_Kong"}, {0x8460, "Asia/Hovd"}, {0x84cc, "Asia/Irkutsk"}, {0x965c, "Asia/Istanbul"}, {0x8414, "Asia/Jakarta"},
+                         {0x841c, "Asia/Jayapura"}, {0x8428, "Asia/Jerusalem"}, {0x83c0, "Asia/Kabul"}, {0x84dc, "Asia/Kamchatka"}, {0x8470, "Asia/Karachi"},
+                         {0x83f4, "Asia/Kashgar"}, {0x8c74, "Asia/Kathmandu"}, {0x8468, "Asia/Katmandu"}, {0x8518, "Asia/Khandyga"}, {0x8c10, "Asia/Kolkata"},
+                         {0x84c8, "Asia/Krasnoyarsk"}, {0x8458, "Asia/Kuala_Lumpur"}, {0x845c, "Asia/Kuching"}, {0x844c, "Asia/Kuwait"}, {0x8400, "Asia/Macao"},
+                         {0x8c00, "Asia/Macau"}, {0x84d8, "Asia/Magadan"}, {0x8c18, "Asia/Makassar"}, {0x8478, "Asia/Manila"}, {0x846c, "Asia/Muscat"},
+                         {0x8404, "Asia/Nicosia"}, {0x8150, "Asia/Novokuznetsk"}, {0x84c4, "Asia/Novosibirsk"}, {0x84c0, "Asia/Omsk"}, {0x84ec, "Asia/Oral"},
+                         {0x83e0, "Asia/Phnom_Penh"}, {0x84e4, "Asia/Pontianak"}, {0x8448, "Asia/Pyongyang"}, {0x847c, "Asia/Qatar"},
+                         {0x84e8, "Asia/Qyzylorda"}, {0x83dc, "Asia/Rangoon"}, {0x8480, "Asia/Riyadh"}, {0x84b4, "Asia/Saigon"}, {0x84f4, "Asia/Sakhalin"},
+                         {0x84ac, "Asia/Samarkand"}, {0x8444, "Asia/Seoul"}, {0x83e8, "Asia/Shanghai"}, {0x8490, "Asia/Singapore"},
+                         {0x8554, "Asia/Srednekolymsk"}, {0x83fc, "Asia/Taipei"}, {0x84b0, "Asia/Tashkent"}, {0x8408, "Asia/Tbilisi"}, {0x8420, "Asia/Tehran"},
+                         {0x8c28, "Asia/Tel_Aviv"}, {0x8bd4, "Asia/Thimbu"}, {0x83d4, "Asia/Thimphu"}, {0x842c, "Asia/Tokyo"}, {0x85a0, "Asia/Tomsk"},
+                         {0x8418, "Asia/Ujung_Pandang"}, {0x8464, "Asia/Ulaanbaatar"}, {0x8c64, "Asia/Ulan_Bator"}, {0x83f0, "Asia/Urumqi"},
+                         {0x851c, "Asia/Ust-Nera"}, {0x8450, "Asia/Vientiane"}, {0x84d4, "Asia/Vladivostok"}, {0x84d0, "Asia/Yakutsk"},
+                         {0x85a4, "Asia/Yangon"}, {0x84bc, "Asia/Yekaterinburg"}, {0x83c4, "Asia/Yerevan"}, {0x8540, "Atlantic/Azores"},
+                         {0x8528, "Atlantic/Bermuda"}, {0x8548, "Atlantic/Canary"}, {0x854c, "Atlantic/Cape_Verde"}, {0x8d34, "Atlantic/Faeroe"},
+                         {0x8534, "Atlantic/Faroe"}, {0x9634, "Atlantic/Jan_Mayen"}, {0x8544, "Atlantic/Madeira"}, {0x8538, "Atlantic/Reykjavik"},
+                         {0x8530, "Atlantic/South_Georgia"}, {0x852c, "Atlantic/Stanley"}, {0x8550, "Atlantic/St_Helena"}, {0x8d80, "Australia/ACT"},
+                         {0x8574, "Australia/Adelaide"}, {0x856c, "Australia/Brisbane"}, {0x8584, "Australia/Broken_Hill"}, {0x9580, "Australia/Canberra"},
+                         {0x858c, "Australia/Currie"}, {0x8564, "Australia/Darwin"}, {0x8590, "Australia/Eucla"}, {0x8578, "Australia/Hobart"},
+                         {0x8d88, "Australia/LHI"}, {0x8570, "Australia/Lindeman"}, {0x8588, "Australia/Lord_Howe"}, {0x857c, "Australia/Melbourne"},
+                         {0x8d64, "Australia/North"}, {0x9d80, "Australia/NSW"}, {0x8568, "Australia/Perth"}, {0x8d6c, "Australia/Queensland"},
+                         {0x8d74, "Australia/South"}, {0x8580, "Australia/Sydney"}, {0x8d78, "Australia/Tasmania"}, {0x8d7c, "Australia/Victoria"},
+                         {0x8d68, "Australia/West"}, {0x8d84, "Australia/Yancowinna"}, {0x8b04, "Brazil/Acre"}, {0x8adc, "Brazil/DeNoronha"},
+                         {0x8af0, "Brazil/East"}, {0x8b00, "Brazil/West"}, {0x89e0, "Canada/Atlantic"}, {0x89f8, "Canada/Central"}, {0x89e8, "Canada/Eastern"},
+                         {0x89fc, "Canada/East-Saskatchewan"}, {0x8a04, "Canada/Mountain"}, {0x89d8, "Canada/Newfoundland"}, {0x8a08, "Canada/Pacific"},
+                         {0x91fc, "Canada/Saskatchewan"}, {0x8a28, "Canada/Yukon"}, {0x85b8, "CET"}, {0x8b08, "Chile/Continental"},
+                         {0x8f0c, "Chile/EasterIsland"}, {0x9994, "CST"}, {0x835c, "CST6CDT"}, {0x8a64, "Cuba"}, {0x85c0, "EET"}, {0x88b0, "Egypt"},
+                         {0x8dcc, "Eire"}, {0x834c, "EST"}, {0x8358, "EST5EDT"}, {0x9004, "Etc/GMT+0"}, {0xa004, "Etc/GMT-0"}, {0xb004, "Etc/GMT0"},
+                         {0x8004, "Etc/GMT"}, {0x8018, "Etc/GMT-10"}, {0x8064, "Etc/GMT+10"}, {0x803c, "Etc/GMT-1"}, {0x8040, "Etc/GMT+1"},
+                         {0x8014, "Etc/GMT-11"}, {0x8068, "Etc/GMT+11"}, {0x8010, "Etc/GMT-12"}, {0x806c, "Etc/GMT+12"}, {0x800c, "Etc/GMT-13"},
+                         {0x8008, "Etc/GMT-14"}, {0x8038, "Etc/GMT-2"}, {0x8044, "Etc/GMT+2"}, {0x8034, "Etc/GMT-3"}, {0x8048, "Etc/GMT+3"},
+                         {0x8030, "Etc/GMT-4"}, {0x804c, "Etc/GMT+4"}, {0x802c, "Etc/GMT-5"}, {0x8050, "Etc/GMT+5"}, {0x8028, "Etc/GMT-6"},
+                         {0x8054, "Etc/GMT+6"}, {0x8024, "Etc/GMT-7"}, {0x8058, "Etc/GMT+7"}, {0x8020, "Etc/GMT-8"}, {0x805c, "Etc/GMT+8"},
+                         {0x801c, "Etc/GMT-9"}, {0x8060, "Etc/GMT+9"}, {0xc004, "Etc/Greenwich"}, {0x8074, "Etc/UCT"}, {0x8870, "Etc/Universal"},
+                         {0x8070, "Etc/UTC"}, {0x9870, "Etc/Zulu"}, {0x8630, "Europe/Amsterdam"}, {0x85d4, "Europe/Andorra"}, {0x8560, "Europe/Astrakhan"},
+                         {0x8604, "Europe/Athens"}, {0x85c8, "Europe/Belfast"}, {0x8670, "Europe/Belgrade"}, {0x85fc, "Europe/Berlin"},
+                         {0x8de8, "Europe/Bratislava"}, {0x85e0, "Europe/Brussels"}, {0x8640, "Europe/Bucharest"}, {0x8608, "Europe/Budapest"},
+                         {0x8520, "Europe/Busingen"}, {0x8624, "Europe/Chisinau"}, {0x85ec, "Europe/Copenhagen"}, {0x85cc, "Europe/Dublin"},
+                         {0x8600, "Europe/Gibraltar"}, {0xa5c4, "Europe/Guernsey"}, {0x85f4, "Europe/Helsinki"}, {0xadc4, "Europe/Isle_of_Man"},
+                         {0x865c, "Europe/Istanbul"}, {0x9dc4, "Europe/Jersey"}, {0x8644, "Europe/Kaliningrad"}, {0x8660, "Europe/Kiev"},
+                         {0x8594, "Europe/Kirov"}, {0x863c, "Europe/Lisbon"}, {0x8e70, "Europe/Ljubljana"}, {0x85c4, "Europe/London"},
+                         {0x861c, "Europe/Luxembourg"}, {0x8650, "Europe/Madrid"}, {0x8620, "Europe/Malta"}, {0x8df4, "Europe/Mariehamn"},
+                         {0x85dc, "Europe/Minsk"}, {0x862c, "Europe/Monaco"}, {0x8648, "Europe/Moscow"}, {0x8c04, "Europe/Nicosia"}, {0x8634, "Europe/Oslo"},
+                         {0x85f8, "Europe/Paris"}, {0xae70, "Europe/Podgorica"}, {0x85e8, "Europe/Prague"}, {0x8610, "Europe/Riga"}, {0x860c, "Europe/Rome"},
+                         {0x864c, "Europe/Samara"}, {0x960c, "Europe/San_Marino"}, {0x9670, "Europe/Sarajevo"}, {0x85b0, "Europe/Saratov"},
+                         {0x866c, "Europe/Simferopol"}, {0x9e70, "Europe/Skopje"}, {0x85e4, "Europe/Sofia"}, {0x8654, "Europe/Stockholm"},
+                         {0x85f0, "Europe/Tallinn"}, {0x85d0, "Europe/Tirane"}, {0x8e24, "Europe/Tiraspol"}, {0x8598, "Europe/Ulyanovsk"},
+                         {0x8664, "Europe/Uzhgorod"}, {0x8614, "Europe/Vaduz"}, {0x8e0c, "Europe/Vatican"}, {0x85d8, "Europe/Vienna"},
+                         {0x8618, "Europe/Vilnius"}, {0x8674, "Europe/Volgograd"}, {0x8638, "Europe/Warsaw"}, {0xa670, "Europe/Zagreb"},
+                         {0x8668, "Europe/Zaporozhye"}, {0x8658, "Europe/Zurich"}, {0x8dc4, "GB"}, {0x95c4, "GB-Eire"}, {0x9804, "GMT+0"},
+                         {0xa804, "GMT-0"}, {0xb804, "GMT0"}, {0x8804, "GMT"}, {0xc804, "Greenwich"}, {0x8bf8, "Hongkong"}, {0x8354, "HST"},
+                         {0x8d38, "Iceland"}, {0x86d8, "Indian/Antananarivo"}, {0x86d0, "Indian/Chagos"}, {0x86dc, "Indian/Christmas"},
+                         {0x86e0, "Indian/Cocos"}, {0x86e4, "Indian/Comoro"}, {0x86cc, "Indian/Kerguelen"}, {0x86e8, "Indian/Mahe"},
+                         {0x86d4, "Indian/Maldives"}, {0x86ec, "Indian/Mauritius"}, {0x86f0, "Indian/Mayotte"}, {0x86f4, "Indian/Reunion"},
+                         {0x8c20, "Iran"}, {0x9428, "Israel"}, {0x8a88, "Jamaica"}, {0x8c2c, "Japan"}, {0x8f40, "Kwajalein"}, {0x88e0, "Libya"},
+                         {0x85bc, "MET"}, {0x9244, "Mexico/BajaNorte"}, {0x8a40, "Mexico/BajaSur"}, {0x8a34, "Mexico/General"}, {0x8350, "MST"},
+                         {0x8360, "MST7MDT"}, {0x8998, "Navajo"}, {0x8f5c, "NZ"}, {0x8f60, "NZ-CHAT"}, {0x877c, "Pacific/Apia"}, {0x875c, "Pacific/Auckland"},
+                         {0x8558, "Pacific/Bougainville"}, {0x8760, "Pacific/Chatham"}, {0x83b8, "Pacific/Chuuk"}, {0x870c, "Pacific/Easter"},
+                         {0x87a0, "Pacific/Efate"}, {0x8730, "Pacific/Enderbury"}, {0x8788, "Pacific/Fakaofo"}, {0x8718, "Pacific/Fiji"},
+                         {0x8790, "Pacific/Funafuti"}, {0x8710, "Pacific/Galapagos"}, {0x871c, "Pacific/Gambier"}, {0x8784, "Pacific/Guadalcanal"},
+                         {0x8728, "Pacific/Guam"}, {0x8708, "Pacific/Honolulu"}, {0x8794, "Pacific/Johnston"}, {0x8734, "Pacific/Kiritimati"},
+                         {0x8750, "Pacific/Kosrae"}, {0x8740, "Pacific/Kwajalein"}, {0x873c, "Pacific/Majuro"}, {0x8720, "Pacific/Marquesas"},
+                         {0x8798, "Pacific/Midway"}, {0x8754, "Pacific/Nauru"}, {0x8764, "Pacific/Niue"}, {0x8768, "Pacific/Norfolk"},
+                         {0x8758, "Pacific/Noumea"}, {0x8778, "Pacific/Pago_Pago"}, {0x876c, "Pacific/Palau"}, {0x8774, "Pacific/Pitcairn"},
+                         {0x83bc, "Pacific/Pohnpei"}, {0x874c, "Pacific/Ponape"}, {0x8770, "Pacific/Port_Moresby"}, {0x8714, "Pacific/Rarotonga"},
+                         {0x8738, "Pacific/Saipan"}, {0x9778, "Pacific/Samoa"}, {0x8724, "Pacific/Tahiti"}, {0x872c, "Pacific/Tarawa"},
+                         {0x878c, "Pacific/Tongatapu"}, {0x8748, "Pacific/Truk"}, {0x879c, "Pacific/Wake"}, {0x87a4, "Pacific/Wallis"},
+                         {0x8f48, "Pacific/Yap"}, {0x8e38, "Poland"}, {0x8e3c, "Portugal"}, {0x8be8, "PRC"}, {0xa19c, "PST"}, {0x8364, "PST8PDT"},
+                         {0x8bfc, "ROC"}, {0x8c44, "ROK"}, {0x8c90, "Singapore"}, {0x8e5c, "Turkey"}, {0x8874, "UCT"}, {0x9070, "Universal"},
+                         {0x89a8, "US/Alaska"}, {0x91b0, "US/Aleutian"}, {0x89b4, "US/Arizona"}, {0x8994, "US/Central"}, {0x8990, "US/Eastern"},
+                         {0x91bc, "US/East-Indiana"}, {0x8f08, "US/Hawaii"}, {0x91c4, "US/Indiana-Starke"}, {0x89d0, "US/Michigan"}, {0x9198, "US/Mountain"},
+                         {0x899c, "US/Pacific"}, {0x999c, "US/Pacific-New"}, {0x8f78, "US/Samoa"}, {0xd004, "UTC"}, {0x85b4, "WET"}, {0x8e48, "W-SU"},
+                         {0xa070, "Zulu"}}) {
+    };
 
     Locales::~Locales() {
         for (auto characterMapIt: Locales::characterMap) {
@@ -201,601 +343,5 @@ namespace OpenLogReplicator {
         characterMap[992] = new CharacterSetZHT16HKSCS31();
         characterMap[1002] = new CharacterSet8bit("TIMESTEN8", CharacterSet8bit::unicode_map_TIMESTEN8);
         characterMap[2000] = new CharacterSetAL16UTF16();
-
-        timeZoneMap[0x80a8] = "Africa/Abidjan";
-        timeZoneMap[0x80c8] = "Africa/Accra";
-        timeZoneMap[0x80bc] = "Africa/Addis_Ababa";
-        timeZoneMap[0x8078] = "Africa/Algiers";
-        timeZoneMap[0x80b8] = "Africa/Asmara";
-        timeZoneMap[0x88b8] = "Africa/Asmera";
-        timeZoneMap[0x80e8] = "Africa/Bamako";
-        timeZoneMap[0x8094] = "Africa/Bangui";
-        timeZoneMap[0x80c4] = "Africa/Banjul";
-        timeZoneMap[0x80d0] = "Africa/Bissau";
-        timeZoneMap[0x80e4] = "Africa/Blantyre";
-        timeZoneMap[0x80a4] = "Africa/Brazzaville";
-        timeZoneMap[0x808c] = "Africa/Bujumbura";
-        timeZoneMap[0x80b0] = "Africa/Cairo";
-        timeZoneMap[0x80f4] = "Africa/Casablanca";
-        timeZoneMap[0x8144] = "Africa/Ceuta";
-        timeZoneMap[0x80cc] = "Africa/Conakry";
-        timeZoneMap[0x8114] = "Africa/Dakar";
-        timeZoneMap[0x812c] = "Africa/Dar_es_Salaam";
-        timeZoneMap[0x80ac] = "Africa/Djibouti";
-        timeZoneMap[0x8090] = "Africa/Douala";
-        timeZoneMap[0x80f8] = "Africa/El_Aaiun";
-        timeZoneMap[0x8118] = "Africa/Freetown";
-        timeZoneMap[0x8084] = "Africa/Gaborone";
-        timeZoneMap[0x8140] = "Africa/Harare";
-        timeZoneMap[0x8120] = "Africa/Johannesburg";
-        timeZoneMap[0x8504] = "Africa/Juba";
-        timeZoneMap[0x8138] = "Africa/Kampala";
-        timeZoneMap[0x8124] = "Africa/Khartoum";
-        timeZoneMap[0x810c] = "Africa/Kigali";
-        timeZoneMap[0x809c] = "Africa/Kinshasa";
-        timeZoneMap[0x8108] = "Africa/Lagos";
-        timeZoneMap[0x80c0] = "Africa/Libreville";
-        timeZoneMap[0x8130] = "Africa/Lome";
-        timeZoneMap[0x807c] = "Africa/Luanda";
-        timeZoneMap[0x80a0] = "Africa/Lubumbashi";
-        timeZoneMap[0x813c] = "Africa/Lusaka";
-        timeZoneMap[0x80b4] = "Africa/Malabo";
-        timeZoneMap[0x80fc] = "Africa/Maputo";
-        timeZoneMap[0x80d8] = "Africa/Maseru";
-        timeZoneMap[0x8128] = "Africa/Mbabane";
-        timeZoneMap[0x811c] = "Africa/Mogadishu";
-        timeZoneMap[0x80dc] = "Africa/Monrovia";
-        timeZoneMap[0x80d4] = "Africa/Nairobi";
-        timeZoneMap[0x8098] = "Africa/Ndjamena";
-        timeZoneMap[0x8104] = "Africa/Niamey";
-        timeZoneMap[0x80f0] = "Africa/Nouakchott";
-        timeZoneMap[0x8088] = "Africa/Ouagadougou";
-        timeZoneMap[0x8080] = "Africa/Porto-Novo";
-        timeZoneMap[0x8110] = "Africa/Sao_Tome";
-        timeZoneMap[0x88e8] = "Africa/Timbuktu";
-        timeZoneMap[0x80e0] = "Africa/Tripoli";
-        timeZoneMap[0x8134] = "Africa/Tunis";
-        timeZoneMap[0x8100] = "Africa/Windhoek";
-        timeZoneMap[0x81b0] = "America/Adak";
-        timeZoneMap[0x81a8] = "America/Anchorage";
-        timeZoneMap[0x8248] = "America/Anguilla";
-        timeZoneMap[0x824c] = "America/Antigua";
-        timeZoneMap[0x82e8] = "America/Araguaina";
-        timeZoneMap[0x8abc] = "America/Argentina/Buenos_Aires";
-        timeZoneMap[0x8acc] = "America/Argentina/Catamarca";
-        timeZoneMap[0x92cc] = "America/Argentina/ComodRivadavia";
-        timeZoneMap[0x8ac4] = "America/Argentina/Cordoba";
-        timeZoneMap[0x8ac8] = "America/Argentina/Jujuy";
-        timeZoneMap[0x818c] = "America/Argentina/La_Rioja";
-        timeZoneMap[0x8ad0] = "America/Argentina/Mendoza";
-        timeZoneMap[0x8188] = "America/Argentina/Rio_Gallegos";
-        timeZoneMap[0x83b4] = "America/Argentina/Salta";
-        timeZoneMap[0x8394] = "America/Argentina/San_Juan";
-        timeZoneMap[0x8184] = "America/Argentina/San_Luis";
-        timeZoneMap[0x8390] = "America/Argentina/Tucuman";
-        timeZoneMap[0x82c0] = "America/Argentina/Ushuaia";
-        timeZoneMap[0x82d4] = "America/Aruba";
-        timeZoneMap[0x8320] = "America/Asuncion";
-        timeZoneMap[0x8374] = "America/Atikokan";
-        timeZoneMap[0x89b0] = "America/Atka";
-        timeZoneMap[0x8168] = "America/Bahia";
-        timeZoneMap[0x817c] = "America/Bahia_Banderas";
-        timeZoneMap[0x8254] = "America/Barbados";
-        timeZoneMap[0x82e0] = "America/Belem";
-        timeZoneMap[0x8258] = "America/Belize";
-        timeZoneMap[0x8380] = "America/Blanc-Sablon";
-        timeZoneMap[0x82fc] = "America/Boa_Vista";
-        timeZoneMap[0x830c] = "America/Bogota";
-        timeZoneMap[0x81b8] = "America/Boise";
-        timeZoneMap[0x82bc] = "America/Buenos_Aires";
-        timeZoneMap[0x821c] = "America/Cambridge_Bay";
-        timeZoneMap[0x8378] = "America/Campo_Grande";
-        timeZoneMap[0x8230] = "America/Cancun";
-        timeZoneMap[0x8334] = "America/Caracas";
-        timeZoneMap[0x82cc] = "America/Catamarca";
-        timeZoneMap[0x8318] = "America/Cayenne";
-        timeZoneMap[0x825c] = "America/Cayman";
-        timeZoneMap[0x8194] = "America/Chicago";
-        timeZoneMap[0x8238] = "America/Chihuahua";
-        timeZoneMap[0x8b74] = "America/Coral_Harbour";
-        timeZoneMap[0x82c4] = "America/Cordoba";
-        timeZoneMap[0x8260] = "America/Costa_Rica";
-        timeZoneMap[0x8514] = "America/Creston";
-        timeZoneMap[0x82f4] = "America/Cuiaba";
-        timeZoneMap[0x8310] = "America/Curacao";
-        timeZoneMap[0x837c] = "America/Danmarkshavn";
-        timeZoneMap[0x822c] = "America/Dawson";
-        timeZoneMap[0x820c] = "America/Dawson_Creek";
-        timeZoneMap[0x8198] = "America/Denver";
-        timeZoneMap[0x81d0] = "America/Detroit";
-        timeZoneMap[0x8268] = "America/Dominica";
-        timeZoneMap[0x8204] = "America/Edmonton";
-        timeZoneMap[0x8384] = "America/Eirunepe";
-        timeZoneMap[0x8270] = "America/El_Salvador";
-        timeZoneMap[0x8a44] = "America/Ensenada";
-        timeZoneMap[0x82e4] = "America/Fortaleza";
-        timeZoneMap[0x855c] = "America/Fort_Nelson";
-        timeZoneMap[0x89bc] = "America/Fort_Wayne";
-        timeZoneMap[0x81e4] = "America/Glace_Bay";
-        timeZoneMap[0x833c] = "America/Godthab";
-        timeZoneMap[0x81dc] = "America/Goose_Bay";
-        timeZoneMap[0x82b0] = "America/Grand_Turk";
-        timeZoneMap[0x8274] = "America/Grenada";
-        timeZoneMap[0x8278] = "America/Guadeloupe";
-        timeZoneMap[0x827c] = "America/Guatemala";
-        timeZoneMap[0x8314] = "America/Guayaquil";
-        timeZoneMap[0x831c] = "America/Guyana";
-        timeZoneMap[0x81e0] = "America/Halifax";
-        timeZoneMap[0x8264] = "America/Havana";
-        timeZoneMap[0x823c] = "America/Hermosillo";
-        timeZoneMap[0x99bc] = "America/Indiana/Indianapolis";
-        timeZoneMap[0x81c4] = "America/Indiana/Knox";
-        timeZoneMap[0x81c0] = "America/Indiana/Marengo";
-        timeZoneMap[0x8348] = "America/Indiana/Petersburg";
-        timeZoneMap[0x81bc] = "America/Indianapolis";
-        timeZoneMap[0x8178] = "America/Indiana/Tell_City";
-        timeZoneMap[0x81c8] = "America/Indiana/Vevay";
-        timeZoneMap[0x8344] = "America/Indiana/Vincennes";
-        timeZoneMap[0x8368] = "America/Indiana/Winamac";
-        timeZoneMap[0x8224] = "America/Inuvik";
-        timeZoneMap[0x8214] = "America/Iqaluit";
-        timeZoneMap[0x8288] = "America/Jamaica";
-        timeZoneMap[0x82c8] = "America/Jujuy";
-        timeZoneMap[0x81a0] = "America/Juneau";
-        timeZoneMap[0x89cc] = "America/Kentucky/Louisville";
-        timeZoneMap[0x816c] = "America/Kentucky/Monticello";
-        timeZoneMap[0x89c4] = "America/Knox_IN";
-        timeZoneMap[0x850c] = "America/Kralendijk";
-        timeZoneMap[0x82d8] = "America/La_Paz";
-        timeZoneMap[0x8324] = "America/Lima";
-        timeZoneMap[0x819c] = "America/Los_Angeles";
-        timeZoneMap[0x81cc] = "America/Louisville";
-        timeZoneMap[0x8508] = "America/Lower_Princes";
-        timeZoneMap[0x82ec] = "America/Maceio";
-        timeZoneMap[0x8294] = "America/Managua";
-        timeZoneMap[0x8300] = "America/Manaus";
-        timeZoneMap[0x8a78] = "America/Marigot";
-        timeZoneMap[0x828c] = "America/Martinique";
-        timeZoneMap[0x815c] = "America/Matamoros";
-        timeZoneMap[0x8240] = "America/Mazatlan";
-        timeZoneMap[0x82d0] = "America/Mendoza";
-        timeZoneMap[0x81d4] = "America/Menominee";
-        timeZoneMap[0x8388] = "America/Merida";
-        timeZoneMap[0x84fc] = "America/Metlakatla";
-        timeZoneMap[0x8234] = "America/Mexico_City";
-        timeZoneMap[0x82a8] = "America/Miquelon";
-        timeZoneMap[0x8170] = "America/Moncton";
-        timeZoneMap[0x838c] = "America/Monterrey";
-        timeZoneMap[0x8330] = "America/Montevideo";
-        timeZoneMap[0x81e8] = "America/Montreal";
-        timeZoneMap[0x8290] = "America/Montserrat";
-        timeZoneMap[0x8250] = "America/Nassau";
-        timeZoneMap[0x8190] = "America/New_York";
-        timeZoneMap[0x81f0] = "America/Nipigon";
-        timeZoneMap[0x81ac] = "America/Nome";
-        timeZoneMap[0x82dc] = "America/Noronha";
-        timeZoneMap[0x8500] = "America/North_Dakota/Beulah";
-        timeZoneMap[0x8160] = "America/North_Dakota/Center";
-        timeZoneMap[0x8164] = "America/North_Dakota/New_Salem";
-        timeZoneMap[0x8174] = "America/Ojinaga";
-        timeZoneMap[0x8298] = "America/Panama";
-        timeZoneMap[0x8210] = "America/Pangnirtung";
-        timeZoneMap[0x8328] = "America/Paramaribo";
-        timeZoneMap[0x81b4] = "America/Phoenix";
-        timeZoneMap[0x8280] = "America/Port-au-Prince";
-        timeZoneMap[0x8304] = "America/Porto_Acre";
-        timeZoneMap[0x832c] = "America/Port_of_Spain";
-        timeZoneMap[0x82f8] = "America/Porto_Velho";
-        timeZoneMap[0x829c] = "America/Puerto_Rico";
-        timeZoneMap[0x8628] = "America/Punta_Arenas";
-        timeZoneMap[0x81f4] = "America/Rainy_River";
-        timeZoneMap[0x8218] = "America/Rankin_Inlet";
-        timeZoneMap[0x8158] = "America/Recife";
-        timeZoneMap[0x81fc] = "America/Regina";
-        timeZoneMap[0x836c] = "America/Resolute";
-        timeZoneMap[0x9304] = "America/Rio_Branco";
-        timeZoneMap[0x92c4] = "America/Rosario";
-        timeZoneMap[0x8180] = "America/Santa_Isabel";
-        timeZoneMap[0x814c] = "America/Santarem";
-        timeZoneMap[0x8308] = "America/Santiago";
-        timeZoneMap[0x826c] = "America/Santo_Domingo";
-        timeZoneMap[0x82f0] = "America/Sao_Paulo";
-        timeZoneMap[0x8338] = "America/Scoresbysund";
-        timeZoneMap[0x9998] = "America/Shiprock";
-        timeZoneMap[0x84f8] = "America/Sitka";
-        timeZoneMap[0x9278] = "America/St_Barthelemy";
-        timeZoneMap[0x81d8] = "America/St_Johns";
-        timeZoneMap[0x82a0] = "America/St_Kitts";
-        timeZoneMap[0x82a4] = "America/St_Lucia";
-        timeZoneMap[0x82b8] = "America/St_Thomas";
-        timeZoneMap[0x82ac] = "America/St_Vincent";
-        timeZoneMap[0x8200] = "America/Swift_Current";
-        timeZoneMap[0x8284] = "America/Tegucigalpa";
-        timeZoneMap[0x8340] = "America/Thule";
-        timeZoneMap[0x81ec] = "America/Thunder_Bay";
-        timeZoneMap[0x8244] = "America/Tijuana";
-        timeZoneMap[0x8370] = "America/Toronto";
-        timeZoneMap[0x82b4] = "America/Tortola";
-        timeZoneMap[0x8208] = "America/Vancouver";
-        timeZoneMap[0x8ab8] = "America/Virgin";
-        timeZoneMap[0x8228] = "America/Whitehorse";
-        timeZoneMap[0x81f8] = "America/Winnipeg";
-        timeZoneMap[0x81a4] = "America/Yakutat";
-        timeZoneMap[0x8220] = "America/Yellowknife";
-        timeZoneMap[0x8398] = "Antarctica/Casey";
-        timeZoneMap[0x839c] = "Antarctica/Davis";
-        timeZoneMap[0x83a4] = "Antarctica/DumontDUrville";
-        timeZoneMap[0x8154] = "Antarctica/Macquarie";
-        timeZoneMap[0x83a0] = "Antarctica/Mawson";
-        timeZoneMap[0x83b0] = "Antarctica/McMurdo";
-        timeZoneMap[0x83ac] = "Antarctica/Palmer";
-        timeZoneMap[0x8148] = "Antarctica/Rothera";
-        timeZoneMap[0x8bb0] = "Antarctica/South_Pole";
-        timeZoneMap[0x83a8] = "Antarctica/Syowa";
-        timeZoneMap[0x8524] = "Antarctica/Troll";
-        timeZoneMap[0x80ec] = "Antarctica/Vostok";
-        timeZoneMap[0x8e34] = "Arctic/Longyearbyen";
-        timeZoneMap[0x84b8] = "Asia/Aden";
-        timeZoneMap[0x8434] = "Asia/Almaty";
-        timeZoneMap[0x8430] = "Asia/Amman";
-        timeZoneMap[0x84e0] = "Asia/Anadyr";
-        timeZoneMap[0x843c] = "Asia/Aqtau";
-        timeZoneMap[0x8438] = "Asia/Aqtobe";
-        timeZoneMap[0x84a4] = "Asia/Ashgabat";
-        timeZoneMap[0x8ca4] = "Asia/Ashkhabad";
-        timeZoneMap[0x85ac] = "Asia/Atyrau";
-        timeZoneMap[0x8424] = "Asia/Baghdad";
-        timeZoneMap[0x83cc] = "Asia/Bahrain";
-        timeZoneMap[0x83c8] = "Asia/Baku";
-        timeZoneMap[0x84a0] = "Asia/Bangkok";
-        timeZoneMap[0x859c] = "Asia/Barnaul";
-        timeZoneMap[0x8454] = "Asia/Beirut";
-        timeZoneMap[0x8440] = "Asia/Bishkek";
-        timeZoneMap[0x83d8] = "Asia/Brunei";
-        timeZoneMap[0x8410] = "Asia/Calcutta";
-        timeZoneMap[0x853c] = "Asia/Chita";
-        timeZoneMap[0x84f0] = "Asia/Choibalsan";
-        timeZoneMap[0x8bec] = "Asia/Chongqing";
-        timeZoneMap[0x83ec] = "Asia/Chungking";
-        timeZoneMap[0x8494] = "Asia/Colombo";
-        timeZoneMap[0x83d0] = "Asia/Dacca";
-        timeZoneMap[0x8498] = "Asia/Damascus";
-        timeZoneMap[0x8bd0] = "Asia/Dhaka";
-        timeZoneMap[0x840c] = "Asia/Dili";
-        timeZoneMap[0x84a8] = "Asia/Dubai";
-        timeZoneMap[0x849c] = "Asia/Dushanbe";
-        timeZoneMap[0x85a8] = "Asia/Famagusta";
-        timeZoneMap[0x8474] = "Asia/Gaza";
-        timeZoneMap[0x83e4] = "Asia/Harbin";
-        timeZoneMap[0x8510] = "Asia/Hebron";
-        timeZoneMap[0x8cb4] = "Asia/Ho_Chi_Minh";
-        timeZoneMap[0x83f8] = "Asia/Hong_Kong";
-        timeZoneMap[0x8460] = "Asia/Hovd";
-        timeZoneMap[0x84cc] = "Asia/Irkutsk";
-        timeZoneMap[0x965c] = "Asia/Istanbul";
-        timeZoneMap[0x8414] = "Asia/Jakarta";
-        timeZoneMap[0x841c] = "Asia/Jayapura";
-        timeZoneMap[0x8428] = "Asia/Jerusalem";
-        timeZoneMap[0x83c0] = "Asia/Kabul";
-        timeZoneMap[0x84dc] = "Asia/Kamchatka";
-        timeZoneMap[0x8470] = "Asia/Karachi";
-        timeZoneMap[0x83f4] = "Asia/Kashgar";
-        timeZoneMap[0x8c74] = "Asia/Kathmandu";
-        timeZoneMap[0x8468] = "Asia/Katmandu";
-        timeZoneMap[0x8518] = "Asia/Khandyga";
-        timeZoneMap[0x8c10] = "Asia/Kolkata";
-        timeZoneMap[0x84c8] = "Asia/Krasnoyarsk";
-        timeZoneMap[0x8458] = "Asia/Kuala_Lumpur";
-        timeZoneMap[0x845c] = "Asia/Kuching";
-        timeZoneMap[0x844c] = "Asia/Kuwait";
-        timeZoneMap[0x8400] = "Asia/Macao";
-        timeZoneMap[0x8c00] = "Asia/Macau";
-        timeZoneMap[0x84d8] = "Asia/Magadan";
-        timeZoneMap[0x8c18] = "Asia/Makassar";
-        timeZoneMap[0x8478] = "Asia/Manila";
-        timeZoneMap[0x846c] = "Asia/Muscat";
-        timeZoneMap[0x8404] = "Asia/Nicosia";
-        timeZoneMap[0x8150] = "Asia/Novokuznetsk";
-        timeZoneMap[0x84c4] = "Asia/Novosibirsk";
-        timeZoneMap[0x84c0] = "Asia/Omsk";
-        timeZoneMap[0x84ec] = "Asia/Oral";
-        timeZoneMap[0x83e0] = "Asia/Phnom_Penh";
-        timeZoneMap[0x84e4] = "Asia/Pontianak";
-        timeZoneMap[0x8448] = "Asia/Pyongyang";
-        timeZoneMap[0x847c] = "Asia/Qatar";
-        timeZoneMap[0x84e8] = "Asia/Qyzylorda";
-        timeZoneMap[0x83dc] = "Asia/Rangoon";
-        timeZoneMap[0x8480] = "Asia/Riyadh";
-        timeZoneMap[0x84b4] = "Asia/Saigon";
-        timeZoneMap[0x84f4] = "Asia/Sakhalin";
-        timeZoneMap[0x84ac] = "Asia/Samarkand";
-        timeZoneMap[0x8444] = "Asia/Seoul";
-        timeZoneMap[0x83e8] = "Asia/Shanghai";
-        timeZoneMap[0x8490] = "Asia/Singapore";
-        timeZoneMap[0x8554] = "Asia/Srednekolymsk";
-        timeZoneMap[0x83fc] = "Asia/Taipei";
-        timeZoneMap[0x84b0] = "Asia/Tashkent";
-        timeZoneMap[0x8408] = "Asia/Tbilisi";
-        timeZoneMap[0x8420] = "Asia/Tehran";
-        timeZoneMap[0x8c28] = "Asia/Tel_Aviv";
-        timeZoneMap[0x8bd4] = "Asia/Thimbu";
-        timeZoneMap[0x83d4] = "Asia/Thimphu";
-        timeZoneMap[0x842c] = "Asia/Tokyo";
-        timeZoneMap[0x85a0] = "Asia/Tomsk";
-        timeZoneMap[0x8418] = "Asia/Ujung_Pandang";
-        timeZoneMap[0x8464] = "Asia/Ulaanbaatar";
-        timeZoneMap[0x8c64] = "Asia/Ulan_Bator";
-        timeZoneMap[0x83f0] = "Asia/Urumqi";
-        timeZoneMap[0x851c] = "Asia/Ust-Nera";
-        timeZoneMap[0x8450] = "Asia/Vientiane";
-        timeZoneMap[0x84d4] = "Asia/Vladivostok";
-        timeZoneMap[0x84d0] = "Asia/Yakutsk";
-        timeZoneMap[0x85a4] = "Asia/Yangon";
-        timeZoneMap[0x84bc] = "Asia/Yekaterinburg";
-        timeZoneMap[0x83c4] = "Asia/Yerevan";
-        timeZoneMap[0x8540] = "Atlantic/Azores";
-        timeZoneMap[0x8528] = "Atlantic/Bermuda";
-        timeZoneMap[0x8548] = "Atlantic/Canary";
-        timeZoneMap[0x854c] = "Atlantic/Cape_Verde";
-        timeZoneMap[0x8d34] = "Atlantic/Faeroe";
-        timeZoneMap[0x8534] = "Atlantic/Faroe";
-        timeZoneMap[0x9634] = "Atlantic/Jan_Mayen";
-        timeZoneMap[0x8544] = "Atlantic/Madeira";
-        timeZoneMap[0x8538] = "Atlantic/Reykjavik";
-        timeZoneMap[0x8530] = "Atlantic/South_Georgia";
-        timeZoneMap[0x852c] = "Atlantic/Stanley";
-        timeZoneMap[0x8550] = "Atlantic/St_Helena";
-        timeZoneMap[0x8d80] = "Australia/ACT";
-        timeZoneMap[0x8574] = "Australia/Adelaide";
-        timeZoneMap[0x856c] = "Australia/Brisbane";
-        timeZoneMap[0x8584] = "Australia/Broken_Hill";
-        timeZoneMap[0x9580] = "Australia/Canberra";
-        timeZoneMap[0x858c] = "Australia/Currie";
-        timeZoneMap[0x8564] = "Australia/Darwin";
-        timeZoneMap[0x8590] = "Australia/Eucla";
-        timeZoneMap[0x8578] = "Australia/Hobart";
-        timeZoneMap[0x8d88] = "Australia/LHI";
-        timeZoneMap[0x8570] = "Australia/Lindeman";
-        timeZoneMap[0x8588] = "Australia/Lord_Howe";
-        timeZoneMap[0x857c] = "Australia/Melbourne";
-        timeZoneMap[0x8d64] = "Australia/North";
-        timeZoneMap[0x9d80] = "Australia/NSW";
-        timeZoneMap[0x8568] = "Australia/Perth";
-        timeZoneMap[0x8d6c] = "Australia/Queensland";
-        timeZoneMap[0x8d74] = "Australia/South";
-        timeZoneMap[0x8580] = "Australia/Sydney";
-        timeZoneMap[0x8d78] = "Australia/Tasmania";
-        timeZoneMap[0x8d7c] = "Australia/Victoria";
-        timeZoneMap[0x8d68] = "Australia/West";
-        timeZoneMap[0x8d84] = "Australia/Yancowinna";
-        timeZoneMap[0x8b04] = "Brazil/Acre";
-        timeZoneMap[0x8adc] = "Brazil/DeNoronha";
-        timeZoneMap[0x8af0] = "Brazil/East";
-        timeZoneMap[0x8b00] = "Brazil/West";
-        timeZoneMap[0x89e0] = "Canada/Atlantic";
-        timeZoneMap[0x89f8] = "Canada/Central";
-        timeZoneMap[0x89e8] = "Canada/Eastern";
-        timeZoneMap[0x89fc] = "Canada/East-Saskatchewan";
-        timeZoneMap[0x8a04] = "Canada/Mountain";
-        timeZoneMap[0x89d8] = "Canada/Newfoundland";
-        timeZoneMap[0x8a08] = "Canada/Pacific";
-        timeZoneMap[0x91fc] = "Canada/Saskatchewan";
-        timeZoneMap[0x8a28] = "Canada/Yukon";
-        timeZoneMap[0x85b8] = "CET";
-        timeZoneMap[0x8b08] = "Chile/Continental";
-        timeZoneMap[0x8f0c] = "Chile/EasterIsland";
-        timeZoneMap[0x9994] = "CST";
-        timeZoneMap[0x835c] = "CST6CDT";
-        timeZoneMap[0x8a64] = "Cuba";
-        timeZoneMap[0x85c0] = "EET";
-        timeZoneMap[0x88b0] = "Egypt";
-        timeZoneMap[0x8dcc] = "Eire";
-        timeZoneMap[0x834c] = "EST";
-        timeZoneMap[0x8358] = "EST5EDT";
-        timeZoneMap[0x9004] = "Etc/GMT+0";
-        timeZoneMap[0xa004] = "Etc/GMT-0";
-        timeZoneMap[0xb004] = "Etc/GMT0";
-        timeZoneMap[0x8004] = "Etc/GMT";
-        timeZoneMap[0x8018] = "Etc/GMT-10";
-        timeZoneMap[0x8064] = "Etc/GMT+10";
-        timeZoneMap[0x803c] = "Etc/GMT-1";
-        timeZoneMap[0x8040] = "Etc/GMT+1";
-        timeZoneMap[0x8014] = "Etc/GMT-11";
-        timeZoneMap[0x8068] = "Etc/GMT+11";
-        timeZoneMap[0x8010] = "Etc/GMT-12";
-        timeZoneMap[0x806c] = "Etc/GMT+12";
-        timeZoneMap[0x800c] = "Etc/GMT-13";
-        timeZoneMap[0x8008] = "Etc/GMT-14";
-        timeZoneMap[0x8038] = "Etc/GMT-2";
-        timeZoneMap[0x8044] = "Etc/GMT+2";
-        timeZoneMap[0x8034] = "Etc/GMT-3";
-        timeZoneMap[0x8048] = "Etc/GMT+3";
-        timeZoneMap[0x8030] = "Etc/GMT-4";
-        timeZoneMap[0x804c] = "Etc/GMT+4";
-        timeZoneMap[0x802c] = "Etc/GMT-5";
-        timeZoneMap[0x8050] = "Etc/GMT+5";
-        timeZoneMap[0x8028] = "Etc/GMT-6";
-        timeZoneMap[0x8054] = "Etc/GMT+6";
-        timeZoneMap[0x8024] = "Etc/GMT-7";
-        timeZoneMap[0x8058] = "Etc/GMT+7";
-        timeZoneMap[0x8020] = "Etc/GMT-8";
-        timeZoneMap[0x805c] = "Etc/GMT+8";
-        timeZoneMap[0x801c] = "Etc/GMT-9";
-        timeZoneMap[0x8060] = "Etc/GMT+9";
-        timeZoneMap[0xc004] = "Etc/Greenwich";
-        timeZoneMap[0x8074] = "Etc/UCT";
-        timeZoneMap[0x8870] = "Etc/Universal";
-        timeZoneMap[0x8070] = "Etc/UTC";
-        timeZoneMap[0x9870] = "Etc/Zulu";
-        timeZoneMap[0x8630] = "Europe/Amsterdam";
-        timeZoneMap[0x85d4] = "Europe/Andorra";
-        timeZoneMap[0x8560] = "Europe/Astrakhan";
-        timeZoneMap[0x8604] = "Europe/Athens";
-        timeZoneMap[0x85c8] = "Europe/Belfast";
-        timeZoneMap[0x8670] = "Europe/Belgrade";
-        timeZoneMap[0x85fc] = "Europe/Berlin";
-        timeZoneMap[0x8de8] = "Europe/Bratislava";
-        timeZoneMap[0x85e0] = "Europe/Brussels";
-        timeZoneMap[0x8640] = "Europe/Bucharest";
-        timeZoneMap[0x8608] = "Europe/Budapest";
-        timeZoneMap[0x8520] = "Europe/Busingen";
-        timeZoneMap[0x8624] = "Europe/Chisinau";
-        timeZoneMap[0x85ec] = "Europe/Copenhagen";
-        timeZoneMap[0x85cc] = "Europe/Dublin";
-        timeZoneMap[0x8600] = "Europe/Gibraltar";
-        timeZoneMap[0xa5c4] = "Europe/Guernsey";
-        timeZoneMap[0x85f4] = "Europe/Helsinki";
-        timeZoneMap[0xadc4] = "Europe/Isle_of_Man";
-        timeZoneMap[0x865c] = "Europe/Istanbul";
-        timeZoneMap[0x9dc4] = "Europe/Jersey";
-        timeZoneMap[0x8644] = "Europe/Kaliningrad";
-        timeZoneMap[0x8660] = "Europe/Kiev";
-        timeZoneMap[0x8594] = "Europe/Kirov";
-        timeZoneMap[0x863c] = "Europe/Lisbon";
-        timeZoneMap[0x8e70] = "Europe/Ljubljana";
-        timeZoneMap[0x85c4] = "Europe/London";
-        timeZoneMap[0x861c] = "Europe/Luxembourg";
-        timeZoneMap[0x8650] = "Europe/Madrid";
-        timeZoneMap[0x8620] = "Europe/Malta";
-        timeZoneMap[0x8df4] = "Europe/Mariehamn";
-        timeZoneMap[0x85dc] = "Europe/Minsk";
-        timeZoneMap[0x862c] = "Europe/Monaco";
-        timeZoneMap[0x8648] = "Europe/Moscow";
-        timeZoneMap[0x8c04] = "Europe/Nicosia";
-        timeZoneMap[0x8634] = "Europe/Oslo";
-        timeZoneMap[0x85f8] = "Europe/Paris";
-        timeZoneMap[0xae70] = "Europe/Podgorica";
-        timeZoneMap[0x85e8] = "Europe/Prague";
-        timeZoneMap[0x8610] = "Europe/Riga";
-        timeZoneMap[0x860c] = "Europe/Rome";
-        timeZoneMap[0x864c] = "Europe/Samara";
-        timeZoneMap[0x960c] = "Europe/San_Marino";
-        timeZoneMap[0x9670] = "Europe/Sarajevo";
-        timeZoneMap[0x85b0] = "Europe/Saratov";
-        timeZoneMap[0x866c] = "Europe/Simferopol";
-        timeZoneMap[0x9e70] = "Europe/Skopje";
-        timeZoneMap[0x85e4] = "Europe/Sofia";
-        timeZoneMap[0x8654] = "Europe/Stockholm";
-        timeZoneMap[0x85f0] = "Europe/Tallinn";
-        timeZoneMap[0x85d0] = "Europe/Tirane";
-        timeZoneMap[0x8e24] = "Europe/Tiraspol";
-        timeZoneMap[0x8598] = "Europe/Ulyanovsk";
-        timeZoneMap[0x8664] = "Europe/Uzhgorod";
-        timeZoneMap[0x8614] = "Europe/Vaduz";
-        timeZoneMap[0x8e0c] = "Europe/Vatican";
-        timeZoneMap[0x85d8] = "Europe/Vienna";
-        timeZoneMap[0x8618] = "Europe/Vilnius";
-        timeZoneMap[0x8674] = "Europe/Volgograd";
-        timeZoneMap[0x8638] = "Europe/Warsaw";
-        timeZoneMap[0xa670] = "Europe/Zagreb";
-        timeZoneMap[0x8668] = "Europe/Zaporozhye";
-        timeZoneMap[0x8658] = "Europe/Zurich";
-        timeZoneMap[0x8dc4] = "GB";
-        timeZoneMap[0x95c4] = "GB-Eire";
-        timeZoneMap[0x9804] = "GMT+0";
-        timeZoneMap[0xa804] = "GMT-0";
-        timeZoneMap[0xb804] = "GMT0";
-        timeZoneMap[0x8804] = "GMT";
-        timeZoneMap[0xc804] = "Greenwich";
-        timeZoneMap[0x8bf8] = "Hongkong";
-        timeZoneMap[0x8354] = "HST";
-        timeZoneMap[0x8d38] = "Iceland";
-        timeZoneMap[0x86d8] = "Indian/Antananarivo";
-        timeZoneMap[0x86d0] = "Indian/Chagos";
-        timeZoneMap[0x86dc] = "Indian/Christmas";
-        timeZoneMap[0x86e0] = "Indian/Cocos";
-        timeZoneMap[0x86e4] = "Indian/Comoro";
-        timeZoneMap[0x86cc] = "Indian/Kerguelen";
-        timeZoneMap[0x86e8] = "Indian/Mahe";
-        timeZoneMap[0x86d4] = "Indian/Maldives";
-        timeZoneMap[0x86ec] = "Indian/Mauritius";
-        timeZoneMap[0x86f0] = "Indian/Mayotte";
-        timeZoneMap[0x86f4] = "Indian/Reunion";
-        timeZoneMap[0x8c20] = "Iran";
-        timeZoneMap[0x9428] = "Israel";
-        timeZoneMap[0x8a88] = "Jamaica";
-        timeZoneMap[0x8c2c] = "Japan";
-        timeZoneMap[0x8f40] = "Kwajalein";
-        timeZoneMap[0x88e0] = "Libya";
-        timeZoneMap[0x85bc] = "MET";
-        timeZoneMap[0x9244] = "Mexico/BajaNorte";
-        timeZoneMap[0x8a40] = "Mexico/BajaSur";
-        timeZoneMap[0x8a34] = "Mexico/General";
-        timeZoneMap[0x8350] = "MST";
-        timeZoneMap[0x8360] = "MST7MDT";
-        timeZoneMap[0x8998] = "Navajo";
-        timeZoneMap[0x8f5c] = "NZ";
-        timeZoneMap[0x8f60] = "NZ-CHAT";
-        timeZoneMap[0x877c] = "Pacific/Apia";
-        timeZoneMap[0x875c] = "Pacific/Auckland";
-        timeZoneMap[0x8558] = "Pacific/Bougainville";
-        timeZoneMap[0x8760] = "Pacific/Chatham";
-        timeZoneMap[0x83b8] = "Pacific/Chuuk";
-        timeZoneMap[0x870c] = "Pacific/Easter";
-        timeZoneMap[0x87a0] = "Pacific/Efate";
-        timeZoneMap[0x8730] = "Pacific/Enderbury";
-        timeZoneMap[0x8788] = "Pacific/Fakaofo";
-        timeZoneMap[0x8718] = "Pacific/Fiji";
-        timeZoneMap[0x8790] = "Pacific/Funafuti";
-        timeZoneMap[0x8710] = "Pacific/Galapagos";
-        timeZoneMap[0x871c] = "Pacific/Gambier";
-        timeZoneMap[0x8784] = "Pacific/Guadalcanal";
-        timeZoneMap[0x8728] = "Pacific/Guam";
-        timeZoneMap[0x8708] = "Pacific/Honolulu";
-        timeZoneMap[0x8794] = "Pacific/Johnston";
-        timeZoneMap[0x8734] = "Pacific/Kiritimati";
-        timeZoneMap[0x8750] = "Pacific/Kosrae";
-        timeZoneMap[0x8740] = "Pacific/Kwajalein";
-        timeZoneMap[0x873c] = "Pacific/Majuro";
-        timeZoneMap[0x8720] = "Pacific/Marquesas";
-        timeZoneMap[0x8798] = "Pacific/Midway";
-        timeZoneMap[0x8754] = "Pacific/Nauru";
-        timeZoneMap[0x8764] = "Pacific/Niue";
-        timeZoneMap[0x8768] = "Pacific/Norfolk";
-        timeZoneMap[0x8758] = "Pacific/Noumea";
-        timeZoneMap[0x8778] = "Pacific/Pago_Pago";
-        timeZoneMap[0x876c] = "Pacific/Palau";
-        timeZoneMap[0x8774] = "Pacific/Pitcairn";
-        timeZoneMap[0x83bc] = "Pacific/Pohnpei";
-        timeZoneMap[0x874c] = "Pacific/Ponape";
-        timeZoneMap[0x8770] = "Pacific/Port_Moresby";
-        timeZoneMap[0x8714] = "Pacific/Rarotonga";
-        timeZoneMap[0x8738] = "Pacific/Saipan";
-        timeZoneMap[0x9778] = "Pacific/Samoa";
-        timeZoneMap[0x8724] = "Pacific/Tahiti";
-        timeZoneMap[0x872c] = "Pacific/Tarawa";
-        timeZoneMap[0x878c] = "Pacific/Tongatapu";
-        timeZoneMap[0x8748] = "Pacific/Truk";
-        timeZoneMap[0x879c] = "Pacific/Wake";
-        timeZoneMap[0x87a4] = "Pacific/Wallis";
-        timeZoneMap[0x8f48] = "Pacific/Yap";
-        timeZoneMap[0x8e38] = "Poland";
-        timeZoneMap[0x8e3c] = "Portugal";
-        timeZoneMap[0x8be8] = "PRC";
-        timeZoneMap[0xa19c] = "PST";
-        timeZoneMap[0x8364] = "PST8PDT";
-        timeZoneMap[0x8bfc] = "ROC";
-        timeZoneMap[0x8c44] = "ROK";
-        timeZoneMap[0x8c90] = "Singapore";
-        timeZoneMap[0x8e5c] = "Turkey";
-        timeZoneMap[0x8874] = "UCT";
-        timeZoneMap[0x9070] = "Universal";
-        timeZoneMap[0x89a8] = "US/Alaska";
-        timeZoneMap[0x91b0] = "US/Aleutian";
-        timeZoneMap[0x89b4] = "US/Arizona";
-        timeZoneMap[0x8994] = "US/Central";
-        timeZoneMap[0x8990] = "US/Eastern";
-        timeZoneMap[0x91bc] = "US/East-Indiana";
-        timeZoneMap[0x8f08] = "US/Hawaii";
-        timeZoneMap[0x91c4] = "US/Indiana-Starke";
-        timeZoneMap[0x89d0] = "US/Michigan";
-        timeZoneMap[0x9198] = "US/Mountain";
-        timeZoneMap[0x899c] = "US/Pacific";
-        timeZoneMap[0x999c] = "US/Pacific-New";
-        timeZoneMap[0x8f78] = "US/Samoa";
-        timeZoneMap[0xd004] = "UTC";
-        timeZoneMap[0x85b4] = "WET";
-        timeZoneMap[0x8e48] = "W-SU";
-        timeZoneMap[0xa070] = "Zulu";
     }
 }

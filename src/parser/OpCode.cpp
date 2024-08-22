@@ -182,7 +182,7 @@ namespace OpenLogReplicator {
                     lkc = redoLogRecord->data()[fieldPos + startPos + 16];
                     flag = redoLogRecord->data()[fieldPos + startPos + 17];
                 }
-                char flagStr[5] = "----";
+                char flagStr[5] {"----"};
                 if ((flag & 0x10) != 0) flagStr[3] = 'T';
                 if ((flag & 0x20) != 0) flagStr[2] = 'U';
                 if ((flag & 0x40) != 0) flagStr[1] = 'B';
@@ -221,7 +221,7 @@ namespace OpenLogReplicator {
                                              ctx->read32(redoLogRecord->data() + fieldPos + startPos + 12 + 4 + i * 24));
 
                     const typeUba itcUba = ctx->read56(redoLogRecord->data() + fieldPos + startPos + 12 + 8 + i * 24);
-                    char flagsStr[5] = "----";
+                    char flagsStr[5] {"----"};
                     typeScn scnfsc;
                     const char* scnfscStr = "fsc";
                     uint16_t lck = ctx->read16(redoLogRecord->data() + fieldPos + startPos + 12 + 16 + i * 24);
@@ -1216,7 +1216,7 @@ namespace OpenLogReplicator {
                             " slot: " << std::dec << static_cast<uint64_t>(redoLogRecord->slot) << "(0x" << std::hex << redoLogRecord->slot << ")" <<
                             " size/delt: " << std::dec << redoLogRecord->sizeDelt << '\n';
 
-            char fbStr[9] = "--------";
+            char fbStr[9] {"--------"};
             processFbFlags(redoLogRecord->fb, fbStr);
             const uint8_t lb = redoLogRecord->data()[fieldPos + 17];
 
@@ -1387,7 +1387,7 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = redoLogRecord->data()[fieldPos + 27];
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            char flagStr[3] = "--";
+            char flagStr[3] {"--"};
             const uint8_t lock = redoLogRecord->data()[fieldPos + 29];
             const uint8_t flag = redoLogRecord->data()[fieldPos + 28];
             if ((flag & 0x01) != 0) flagStr[0] = 'F';
@@ -1467,7 +1467,7 @@ namespace OpenLogReplicator {
                             "(0x" << std::hex << static_cast<uint64_t>(redoLogRecord->slot) << ")" <<
                             " size/delt: " << std::dec << redoLogRecord->sizeDelt << '\n';
 
-            char fbStr[9] = "--------";
+            char fbStr[9] {"--------"};
             processFbFlags(redoLogRecord->fb, fbStr);
             uint8_t lb = redoLogRecord->data()[fieldPos + 17];
 
@@ -2165,7 +2165,7 @@ namespace OpenLogReplicator {
     void OpCode::dumpRows(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data) {
         if (unlikely(ctx->dumpRedoLog >= 1)) {
             uint64_t pos = 0;
-            char fbStr[9] = "--------";
+            char fbStr[9] {"--------"};
 
             for (typeCC r = 0; r < redoLogRecord->nRow; ++r) {
                 *ctx->dumpStream << "slot[" << std::dec << r << "]: " << std::dec << ctx->read16(redoLogRecord->data() + redoLogRecord->slotsDelta + r * 2) <<

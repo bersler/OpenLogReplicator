@@ -2490,7 +2490,7 @@ namespace OpenLogReplicator {
                            uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
         std::regex regexOwner(owner);
         std::regex regexTable(table);
-        char sysLobConstraintName[26] = "SYS_LOB0000000000C00000$$";
+        char sysLobConstraintName[26] {"SYS_LOB0000000000C00000$$"};
 
         for (auto obj: identifiersTouched) {
             auto sysObjMapObjTouchedIt = sysObjMapObj.find(obj);
