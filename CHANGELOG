@@ -7,6 +7,7 @@
 - fix: in rare cases column value is null instead of actual value
 - fix: when redo log file is truncated, read error might appear
 - documentation update
+- fix: missing include for some systems
 
 1.6.0
 - enhancement: add parameter -p
