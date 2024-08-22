@@ -104,8 +104,8 @@ namespace OpenLogReplicator {
                                                 " - parse error: " + GetParseError_En(document.GetParseError()));
 
         if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-            static const char* documentNames[] = {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace",
-                                                  "source", "target", nullptr};
+            static const char* documentNames[] {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace",
+                                                "source", "target", nullptr};
             Ctx::checkJsonFields(configFileName, document, documentNames);
         }
 
@@ -125,10 +125,10 @@ namespace OpenLogReplicator {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
             if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sourceNames[] = {"alias", "memory", "name", "reader", "flags", "state", "debug",
-                                                    "transaction-max-mb", "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us",
-                                                    "arch-read-tries", "redo-verify-delay-us", "refresh-interval-us", "arch",
-                                                    "filter", nullptr};
+                static const char* sourceNames[] {"alias", "memory", "name", "reader", "flags", "state", "debug",
+                                                  "transaction-max-mb", "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us",
+                                                  "arch-read-tries", "redo-verify-delay-us", "refresh-interval-us", "arch",
+                                                  "filter", nullptr};
                 Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
             }
 

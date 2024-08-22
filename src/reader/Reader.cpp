@@ -34,9 +34,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Reader.h"
 
 namespace OpenLogReplicator {
-    const char* Reader::REDO_CODE[] = {"OK", "OVERWRITTEN", "FINISHED", "STOPPED", "SHUTDOWN", "EMPTY", "READ ERROR",
-                                       "WRITE ERROR", "SEQUENCE ERROR", "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR",
-                                       "OTHER ERROR"};
+    const char* Reader::REDO_CODE[] {"OK", "OVERWRITTEN", "FINISHED", "STOPPED", "SHUTDOWN", "EMPTY", "READ ERROR",
+                                     "WRITE ERROR", "SEQUENCE ERROR", "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR",
+                                     "OTHER ERROR"};
 
     Reader::Reader(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
             Thread(newCtx, newAlias),
