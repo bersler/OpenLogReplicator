@@ -133,7 +133,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::createSchema() {
-        if (ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
+        if (ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
             metadata->allowCheckpoints();
             return;
         }
@@ -169,7 +169,7 @@ namespace OpenLogReplicator {
 
             loadDatabaseMetadata();
             metadata->readCheckpoints();
-            if (!ctx->flagsSet(Ctx::REDO_FLAGS_ARCH_ONLY))
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ARCH_ONLY))
                 updateOnlineRedoLogData();
             ctx->info(0, "timezone: " + ctx->timezoneToString(-timezone) + ", db-timezone: " + ctx->timezoneToString(metadata->dbTimezone) +
                          ", log-timezone: " + ctx->timezoneToString(ctx->logTimezone) + ", host-timezone: " + ctx->timezoneToString(ctx->hostTimezone));
@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     break;
 
-                if (!ctx->flagsSet(Ctx::REDO_FLAGS_ARCH_ONLY))
+                if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ARCH_ONLY))
                     logsProcessed |= processOnlineRedoLogs();
                 if (ctx->softShutdown)
                     break;
@@ -691,7 +691,7 @@ namespace OpenLogReplicator {
             archGetLog(this);
 
             if (archiveRedoQueue.empty()) {
-                if (ctx->flagsSet(Ctx::REDO_FLAGS_ARCH_ONLY)) {
+                if (ctx->isFlagSet(Ctx::REDO_FLAGS_ARCH_ONLY)) {
                     if (unlikely(ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                         ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "archived redo log missing for seq: " + std::to_string(metadata->sequence) +
                                                                ", sleeping");

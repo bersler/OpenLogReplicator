@@ -287,7 +287,7 @@ namespace OpenLogReplicator {
                 if (ctx->flags > 524287)
                     throw ConfigurationException(30001, "bad JSON, invalid \"flags\" value: " + std::to_string(ctx->flags) +
                                                         ", expected: one of {0 .. 524287}");
-                if (ctx->flagsSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
+                if (ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
                     ctx->redoVerifyDelayUs = 500000;
             }
 
@@ -388,7 +388,7 @@ namespace OpenLogReplicator {
                     ctx->info(0, "will shutdown after " + std::to_string(ctx->stopTransactions) + " transactions");
                 }
 
-                if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
+                if (!ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
                     debugOwner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, debugJson, "owner");
                     debugTable = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, debugJson, "table");
 
@@ -422,7 +422,7 @@ namespace OpenLogReplicator {
 
             if (debugOwner != nullptr && debugTable != nullptr)
                 metadata->addElement(debugOwner, debugTable, OracleTable::OPTIONS_DEBUG_TABLE);
-            if (ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
+            if (ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
                 metadata->addElement(".*", ".*", 0);
 
             if (stateType == State::TYPE_DISK) {
@@ -631,7 +631,7 @@ namespace OpenLogReplicator {
                     throw ConfigurationException(30001, "bad JSON, invalid \"column\" value: " + std::to_string(columnFormat) +
                                                         ", expected: one of {0 .. 2}");
 
-                if (ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS) && columnFormat != 0)
+                if (ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS) && columnFormat != 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"column\" value: " + std::to_string(columnFormat) +
                                                         ", expected: not used when flags has set schemaless mode (flags: " + std::to_string(ctx->flags) + ")");
             }
@@ -801,7 +801,7 @@ namespace OpenLogReplicator {
                     Ctx::checkJsonFields(configFileName, filterJson, filterNames);
                 }
 
-                if (filterJson.HasMember("table") && !ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
+                if (filterJson.HasMember("table") && !ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
                     const rapidjson::Value& tableArrayJson = Ctx::getJsonFieldA(configFileName, filterJson, "table");
 
                     for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {

@@ -925,7 +925,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::verifySchema(typeScn currentScn) {
-        if (!ctx->flagsSet(Ctx::REDO_FLAGS_VERIFY_SCHEMA))
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_VERIFY_SCHEMA))
             return;
         if (!checkConnection())
             return;

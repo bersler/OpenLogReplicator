@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorBatch::createSchema() {
-        if (ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS))
+        if (ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS))
             return;
 
         ctx->hint("if you don't have earlier schema, try with schemaless mode ('flags': 2)");

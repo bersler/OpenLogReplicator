@@ -2307,7 +2307,7 @@ namespace OpenLogReplicator {
         }
 
         // SYS.OBJ$
-        if (!ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
             // delete objects owned by users that are not in the list of users
             for (auto sysObj: sysObjSetTouched) {
                 auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
@@ -2470,7 +2470,7 @@ namespace OpenLogReplicator {
     }
 
     void Schema::updateXmlCtx() {
-        if (ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
+        if (ctx->isFlagSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)) {
             xmlCtxDefault = nullptr;
             auto schemaXmlMapIt = schemaXmlMap.cbegin();
             while (schemaXmlMapIt != schemaXmlMap.cend()) {
@@ -2504,7 +2504,7 @@ namespace OpenLogReplicator {
             SysUser* sysUser = nullptr;
             auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
             if (sysUserMapUserIt == sysUserMapUser.end()) {
-                if (!ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
+                if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
                     continue;
                 sysUserAdaptive.name = "USER_" + std::to_string(sysObj->obj);
                 sysUser = &sysUserAdaptive;
@@ -2731,7 +2731,7 @@ namespace OpenLogReplicator {
                 columnTmp = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, columnName,
                                              sysCol->type, sysCol->length, sysCol->precision, sysCol->scale,
                                              numPk, charmapId, sysCol->isNullable(), sysCol->isHidden() &&
-                                                                                     !(xmlType && ctx->flagsSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)),
+                                                                                     !(xmlType && ctx->isFlagSet(Ctx::REDO_FLAGS_EXPERIMENTAL_XMLTYPE)),
                                              sysCol->isStoredAsLob(), sysCol->isSystemGenerated(), sysCol->isNested(),
                                              sysCol->isUnused(), sysCol->isAdded(), sysCol->isGuard(), xmlType);
 
