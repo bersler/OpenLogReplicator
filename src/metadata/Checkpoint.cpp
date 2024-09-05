@@ -140,7 +140,7 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("debug")) {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
 
-                if (!ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
+                if (!ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
                     debugOwner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, debugJson, "owner");
                     debugTable = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, debugJson, "table");
                     ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
@@ -152,13 +152,13 @@ namespace OpenLogReplicator {
                 metadata->addElement(debugOwner, debugTable, OracleTable::OPTIONS_DEBUG_TABLE);
                 users.insert(std::string(debugOwner));
             }
-            if (ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
+            if (ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA))
                 metadata->addElement(".*", ".*", 0);
 
             if (sourceJson.HasMember("filter")) {
                 const rapidjson::Value& filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
 
-                if (filterJson.HasMember("table") && !ctx->flagsSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
+                if (filterJson.HasMember("table") && !ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
                     const rapidjson::Value& tableArrayJson = Ctx::getJsonFieldA(configFileName, filterJson, "table");
 
                     for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {

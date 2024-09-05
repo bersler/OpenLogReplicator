@@ -175,7 +175,7 @@ namespace OpenLogReplicator {
 
     public:
 
-        bool flagsSet(uint64_t mask) const {
+        bool isFlagSet(uint64_t mask) const {
             return (flags & mask) != 0;
         }
 

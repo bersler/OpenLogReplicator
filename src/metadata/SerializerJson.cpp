@@ -652,7 +652,7 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    if (!metadata->ctx->flagsSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                    if (!metadata->ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
                         std::set<std::string> users;
                         const rapidjson::Value& usersJson = Ctx::getJsonFieldA(fileName, document, "users");
                         for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {

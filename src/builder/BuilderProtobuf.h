@@ -39,13 +39,13 @@ namespace OpenLogReplicator {
                 OracleColumn* column = table->columns[col];
                 if (column->storedAsLob)
                     return;
-                if (column->guard && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_GUARD_COLUMNS))
+                if (column->guard && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_GUARD_COLUMNS))
                     return;
-                if (column->nested && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_NESTED_COLUMNS))
+                if (column->nested && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_NESTED_COLUMNS))
                     return;
-                if (column->hidden && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_HIDDEN_COLUMNS))
+                if (column->hidden && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_HIDDEN_COLUMNS))
                     return;
-                if (column->unused && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_UNUSED_COLUMNS))
+                if (column->unused && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_UNUSED_COLUMNS))
                     return;
 
                 uint64_t typeNo = table->columns[col]->type;
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
                     return;
             }
 
-            if (table == nullptr || ctx->flagsSet(Ctx::REDO_FLAGS_RAW_COLUMN_DATA)) {
+            if (table == nullptr || ctx->isFlagSet(Ctx::REDO_FLAGS_RAW_COLUMN_DATA)) {
                 std::string columnName("COL_" + std::to_string(col));
                 valuePB->set_name(columnName);
                 return;

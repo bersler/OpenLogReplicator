@@ -292,7 +292,7 @@ namespace OpenLogReplicator {
                 if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send the message to the client in one part
-                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -333,7 +333,7 @@ namespace OpenLogReplicator {
 
                     createMessage(msg);
                     // Send only new messages to the client
-                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->flagsSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
