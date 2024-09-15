@@ -78,7 +78,8 @@ namespace OpenLogReplicator {
 
         memset(reinterpret_cast<void*>(&zero), 0, sizeof(RedoLogRecord));
 
-        lwnChunks[0] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_PARSER, false);
+        lwnChunks[0] = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, false);
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
         auto size = reinterpret_cast<uint64_t*>(lwnChunks[0]);
         *size = sizeof(uint64_t);
         lwnAllocated = 1;
@@ -88,13 +89,13 @@ namespace OpenLogReplicator {
 
     Parser::~Parser() {
         while (lwnAllocated > 0) {
-            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
         }
     }
 
     void Parser::freeLwn() {
         while (lwnAllocated > 1) {
-            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
         }
 
         auto size = reinterpret_cast<uint64_t*>(lwnChunks[0]);
@@ -564,9 +565,11 @@ namespace OpenLogReplicator {
 
         const OracleTable* table;
         {
+            ctx->parserThread->perfSet(Thread::PERF_TRAN);
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
 
         if (table == nullptr) {
             if (!ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS) && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_DDL)) {
@@ -597,10 +600,12 @@ namespace OpenLogReplicator {
 
     void Parser::appendToTransactionLob(RedoLogRecord* redoLogRecord1) {
         OracleLob* lob;
+        ctx->parserThread->perfSet(Thread::PERF_TRAN);
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
         }
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
 
         if (lob == nullptr) {
             if (unlikely(ctx->trace & Ctx::TRACE_LOB))
@@ -662,10 +667,12 @@ namespace OpenLogReplicator {
         }
 
         const OracleTable* table;
+        ctx->parserThread->perfSet(Thread::PERF_TRAN);
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
 
         if (table == nullptr) {
             if (!ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
@@ -718,10 +725,12 @@ namespace OpenLogReplicator {
         lastTransaction = transaction;
 
         const OracleTable* table;
+        ctx->parserThread->perfSet(Thread::PERF_TRAN);
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
 
         if (table == nullptr) {
             if (!ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
@@ -786,6 +795,7 @@ namespace OpenLogReplicator {
 
             if (transaction->begin) {
                 transaction->flush(metadata, transactionBuffer, builder, lwnScn);
+                ctx->parserThread->perfSet(Thread::PERF_CPU);
                 if (ctx->metrics != nullptr) {
                     if (transaction->rollback)
                         ctx->metrics->emitTransactionsRollbackOut(1);
@@ -886,10 +896,12 @@ namespace OpenLogReplicator {
             case 0x0B16: {
                 // Logminer support - KDOCMP
                 const OracleTable* table;
+                ctx->parserThread->perfSet(Thread::PERF_TRAN);
                 {
                     std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
                     table = metadata->schema->checkTableDict(obj);
                 }
+                ctx->parserThread->perfSet(Thread::PERF_CPU);
 
                 if (table == nullptr) {
                     if (!ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
@@ -972,10 +984,12 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
 
         const OracleTable* table;
+        ctx->parserThread->perfSet(Thread::PERF_TRAN);
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(obj);
         }
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
 
         if (table == nullptr) {
             if (!ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS)) {
@@ -1050,10 +1064,12 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
 
         const OracleLob* lob;
+        ctx->parserThread->perfSet(Thread::PERF_TRAN);
         {
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobIndexDict(dataObj);
         }
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
 
         if (lob == nullptr && redoLogRecord2->opCode != 0x1A02) {
             if (unlikely(ctx->trace & Ctx::TRACE_LOB))
@@ -1344,7 +1360,8 @@ namespace OpenLogReplicator {
                                 if (unlikely(lwnAllocated == MAX_LWN_CHUNKS))
                                     throw RedoLogException(50052, "all " + std::to_string(MAX_LWN_CHUNKS) + " lwn buffers allocated");
 
-                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_PARSER, false);
+                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, false);
+                                ctx->parserThread->perfSet(Thread::PERF_CPU);
                                 if (lwnAllocated > lwnAllocatedMax)
                                     lwnAllocatedMax = lwnAllocated;
                                 recordSize = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
@@ -1469,7 +1486,7 @@ namespace OpenLogReplicator {
                         transactionBuffer->checkpoint(minSequence, minOffset, minXid);
                         if (unlikely(ctx->trace & Ctx::TRACE_LWN))
                             ctx->logTrace(Ctx::TRACE_LWN, "* checkpoint: " + std::to_string(lwnScn));
-                        metadata->checkpoint(lwnScn, lwnTimestamp, sequence,
+                        metadata->checkpoint(ctx->parserThread, lwnScn, lwnTimestamp, sequence,
                                              static_cast<uint64_t>(currentBlock) * reader->getBlockSize(),
                                              static_cast<uint64_t>(currentBlock - lwnConfirmedBlock) * reader->getBlockSize(), minSequence,
                                              minOffset, minXid);

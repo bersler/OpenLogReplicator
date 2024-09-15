@@ -50,8 +50,12 @@ namespace OpenLogReplicator {
     }
 
     void Checkpoint::wakeUp() {
-        std::unique_lock<std::mutex> lck(mtx);
-        condLoop.notify_all();
+        {
+            perfSet(Thread::PERF_MUTEX);
+            std::unique_lock<std::mutex> lck(mtx);
+            condLoop.notify_all();
+        }
+        perfSet(Thread::PERF_CPU);
     }
 
     void Checkpoint::trackConfigFile() {
@@ -202,6 +206,7 @@ namespace OpenLogReplicator {
         ctx->info(0, "scanning objects which match the configuration file");
         // Suspend transaction processing for the schema update
         {
+            perfSet(Thread::PERF_TRAN);
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             metadata->commitElements();
             metadata->schema->purgeMetadata();
@@ -226,6 +231,7 @@ namespace OpenLogReplicator {
 
             metadata->schema->resetTouched();
         }
+        perfSet(Thread::PERF_CPU);
     }
 
     void Checkpoint::run() {
@@ -237,8 +243,8 @@ namespace OpenLogReplicator {
 
         try {
             while (!ctx->hardShutdown) {
-                metadata->writeCheckpoint(false);
-                metadata->deleteOldCheckpoints();
+                metadata->writeCheckpoint(this, false);
+                metadata->deleteOldCheckpoints(this);
 
                 if (ctx->hardShutdown)
                     break;
@@ -253,13 +259,16 @@ namespace OpenLogReplicator {
                         ctx->logTrace(Ctx::TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
                                                         " checkpointScn: " + std::to_string(metadata->checkpointScn));
 
+                    perfSet(Thread::PERF_MUTEX);
                     std::unique_lock<std::mutex> lck(mtx);
+                    perfSet(Thread::PERF_WAIT);
                     condLoop.wait_for(lck, std::chrono::milliseconds(100));
                 }
+                perfSet(Thread::PERF_CPU);
             }
 
             if (ctx->softShutdown)
-                metadata->writeCheckpoint(true);
+                metadata->writeCheckpoint(this, true);
 
         } catch (RuntimeException& ex) {
             ctx->error(ex.code, ex.msg);

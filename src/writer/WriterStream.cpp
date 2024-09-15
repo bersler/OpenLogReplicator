@@ -30,6 +30,7 @@ namespace OpenLogReplicator {
             Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
             stream(newStream) {
         metadata->bootFailsafe = true;
+        ctx->parserThread = this;
     }
 
     WriterStream::~WriterStream() {
@@ -133,9 +134,10 @@ namespace OpenLogReplicator {
                 response.set_code(pb::ResponseCode::INVALID_COMMAND);
                 return;
         }
-        metadata->setStatusStart();
+        metadata->setStatusStart(this);
 
-        metadata->waitForReplicator();
+        perfSet(PERF_SLEEP);
+        metadata->waitForReplicator(this);
 
         if (metadata->status == Metadata::STATUS_REPLICATE) {
             response.set_code(pb::ResponseCode::REPLICATE);

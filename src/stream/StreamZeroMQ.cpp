@@ -21,6 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <zmq.h>
 
 #include "../common/Ctx.h"
+#include "../common/Thread.h"
 #include "../common/exception/NetworkException.h"
 #include "../common/exception/RuntimeException.h"
 #include "StreamZeroMQ.h"
@@ -69,7 +70,9 @@ namespace OpenLogReplicator {
                 return;
 
             if (ret < 0 && errno == EAGAIN) {
+                ctx->writerThread->perfSet(Thread::PERF_SLEEP);
                 usleep(ctx->pollIntervalUs);
+                ctx->writerThread->perfSet(Thread::PERF_CPU);
                 continue;
             }
 

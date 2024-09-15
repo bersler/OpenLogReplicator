@@ -245,6 +245,8 @@ namespace OpenLogReplicator {
         std::atomic<bool> softShutdown;
         std::atomic<bool> replicatorFinished;
         std::unordered_map<typeLobId, typeXid> lobIdToXidMap;
+        Thread* parserThread;
+        Thread* writerThread;
 
         Ctx();
         virtual ~Ctx();
@@ -589,8 +591,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getMaxUsedMemory() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;
         [[nodiscard]] uint64_t getFreeMemory() const;
-        [[nodiscard]] uint8_t* getMemoryChunk(uint64_t module, bool reusable);
-        void freeMemoryChunk(uint64_t module, uint8_t* chunk, bool reusable);
+        [[nodiscard]] uint8_t* getMemoryChunk(Thread* t, uint64_t module, bool reusable);
+        void freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk, bool reusable);
         void stopHard();
         void stopSoft();
         void mainLoop();
@@ -599,12 +601,12 @@ namespace OpenLogReplicator {
         void signalHandler(int s);
 
         bool wakeThreads();
-        void spawnThread(Thread* thread);
-        void finishThread(Thread* thread);
+        void spawnThread(Thread* t);
+        void finishThread(Thread* t);
         static std::ostringstream& writeEscapeValue(std::ostringstream& ss, const std::string& str);
         static bool checkNameCase(const char* name);
-        void releaseBuffer();
-        void allocateBuffer();
+        void releaseBuffer(Thread* t);
+        void allocateBuffer(Thread* t);
         void signalDump();
 
         void welcome(const std::string& message) const;

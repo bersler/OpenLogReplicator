@@ -8,6 +8,7 @@
 - fix: when redo log file is truncated, read error might appear
 - documentation update
 - fix: missing include for some systems
+- enhancement: thread performance information
 
 1.6.0
 - enhancement: add parameter -p

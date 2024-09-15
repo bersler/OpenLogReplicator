@@ -31,6 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/LobData.h"
 #include "../common/LobKey.h"
 #include "../common/RedoLogRecord.h"
+#include "../common/Thread.h"
 #include "../common/types.h"
 #include "../common/typeLobId.h"
 #include "../common/typeRowId.h"
@@ -161,7 +162,8 @@ namespace OpenLogReplicator {
         long double decodeDouble(const uint8_t* data);
 
         inline void builderRotate(bool copy) {
-            auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, true));
+            auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, true));
+            ctx->parserThread->perfSet(Thread::PERF_TRAN);
             nextBuffer->next = nullptr;
             nextBuffer->id = lastBuilderQueue->id + 1;
             nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
@@ -181,11 +183,13 @@ namespace OpenLogReplicator {
             nextBuffer->size = 0;
 
             {
+                ctx->parserThread->perfSet(Thread::PERF_MUTEX);
                 std::unique_lock<std::mutex> lck(mtx);
                 lastBuilderQueue->next = nextBuffer;
                 ++buffersAllocated;
                 lastBuilderQueue = nextBuffer;
             }
+            ctx->parserThread->perfSet(Thread::PERF_TRAN);
         }
 
         void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeCol col, const uint8_t* data, uint32_t size, uint64_t offset,
@@ -314,9 +318,11 @@ namespace OpenLogReplicator {
 
             if (force || flushBuffer == 0 || unconfirmedSize > flushBuffer) {
                 {
+                    ctx->parserThread->perfSet(Thread::PERF_MUTEX);
                     std::unique_lock<std::mutex> lck(mtx);
                     condNoWriterWork.notify_all();
                 }
+                ctx->parserThread->perfSet(Thread::PERF_TRAN);
                 unconfirmedSize = 0;
             }
             msg = nullptr;
@@ -1340,8 +1346,8 @@ namespace OpenLogReplicator {
         virtual void initialize();
         virtual void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
         virtual void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) = 0;
-        void releaseBuffers(uint64_t maxId);
-        void sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds);
+        void releaseBuffers(Thread* t, uint64_t maxId);
+        void sleepForWriterWork(Thread* t, uint64_t queueSize, uint64_t nanoseconds);
         void wakeUp();
 
         friend class SystemTransaction;

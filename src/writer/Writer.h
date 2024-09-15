@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         uint64_t sentMessages;
         uint64_t oldSize;
         uint64_t currentQueueSize;
-        uint64_t maxQueueSize;
+        uint64_t hwmQueueSize;
         bool streaming;
 
         std::mutex mtx;

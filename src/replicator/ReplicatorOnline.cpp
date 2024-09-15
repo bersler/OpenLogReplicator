@@ -813,7 +813,9 @@ namespace OpenLogReplicator {
                     stmt.executeQuery();
                 } catch (RuntimeException& ex) {
                     conn->disconnect();
+                    perfSet(PERF_SLEEP);
                     usleep(ctx->redoReadSleepUs);
+                    perfSet(PERF_CPU);
                     ctx->info(0, "reconnecting to Oracle instance of " + database + " to " + conn->connectString);
                     continue;
                 }
@@ -823,7 +825,9 @@ namespace OpenLogReplicator {
 
             if (unlikely(ctx->trace & Ctx::TRACE_REDO))
                 ctx->logTrace(Ctx::TRACE_REDO, "cannot connect to database, retry in 5 sec.");
+            perfSet(PERF_SLEEP);
             sleep(5);
+            perfSet(PERF_CPU);
         }
 
         return false;
@@ -958,6 +962,7 @@ namespace OpenLogReplicator {
 
         std::vector<std::string> msgs;
         {
+            perfSet(PERF_MUTEX);
             std::unique_lock<std::mutex> lck(metadata->mtxSchema);
             metadata->schema->purgeMetadata();
             metadata->schema->purgeDicts();
@@ -974,6 +979,7 @@ namespace OpenLogReplicator {
                 metadata->ctx->logTrace(Ctx::TRACE_CHECKPOINT, "schema creation completed, allowing checkpoints");
             metadata->allowCheckpoints();
         }
+        perfSet(PERF_CPU);
 
         for (const auto& msg: msgs) {
             ctx->info(0, "- found: " + msg);
@@ -1845,6 +1851,7 @@ namespace OpenLogReplicator {
         if (!checkConnection())
             return;
 
+        perfSet(PERF_CHKPT);
         std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
 
         // Reload incarnation ctx
@@ -1959,6 +1966,7 @@ namespace OpenLogReplicator {
             }
         }
         checkOnlineRedoLogs();
+        perfSet(PERF_CPU);
     }
 
     void ReplicatorOnline::archGetLogOnline(Replicator* replicator) {

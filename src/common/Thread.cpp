@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
 
     void* Thread::runStatic(void* voidThread) {
         Thread* thread = reinterpret_cast<Thread*>(voidThread);
-        thread->run();
+        thread->perfRun();
         thread->finished = true;
         return nullptr;
     }

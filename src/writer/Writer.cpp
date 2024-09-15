@@ -42,11 +42,12 @@ namespace OpenLogReplicator {
             sentMessages(0),
             oldSize(0),
             currentQueueSize(0),
-            maxQueueSize(0),
+            hwmQueueSize(0),
             streaming(false),
             confirmedScn(Ctx::ZERO_SCN),
             confirmedIdx(0),
             queue(nullptr) {
+        ctx->writerThread = this;
     }
 
     Writer::~Writer() {
@@ -66,8 +67,8 @@ namespace OpenLogReplicator {
         ++sentMessages;
 
         queue[currentQueueSize++] = msg;
-        if (currentQueueSize > maxQueueSize)
-            maxQueueSize = currentQueueSize;
+        if (currentQueueSize > hwmQueueSize)
+            hwmQueueSize = currentQueueSize;
     }
 
     void Writer::sortQueue() {
@@ -121,11 +122,13 @@ namespace OpenLogReplicator {
             ctx->metrics->emitMessagesConfirmed(1);
         }
 
+        perfSet(PERF_MUTEX);
         std::unique_lock<std::mutex> lck(mtx);
 
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
                 ctx->warning(70007, "trying to confirm an empty message");
+                perfSet(PERF_CPU);
                 return;
             }
             msg = queue[0];
@@ -170,7 +173,8 @@ namespace OpenLogReplicator {
             }
         }
 
-        builder->releaseBuffers(maxId);
+        builder->releaseBuffers(this, maxId);
+        perfSet(PERF_CPU);
     }
 
     void Writer::run() {
@@ -211,7 +215,7 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        ctx->info(0, "writer is stopping: " + getName() + ", max queue size: " + std::to_string(maxQueueSize));
+        ctx->info(0, "writer is stopping: " + getName() + ", hwm queue size: " + std::to_string(hwmQueueSize));
         if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
@@ -235,7 +239,9 @@ namespace OpenLogReplicator {
 
                 if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
                     ctx->logTrace(Ctx::TRACE_WRITER, "waiting for client");
+                perfSet(PERF_SLEEP);
                 usleep(ctx->pollIntervalUs);
+                perfSet(PERF_CPU);
             }
 
             // Get a message to send
@@ -262,7 +268,7 @@ namespace OpenLogReplicator {
 
                 if (ctx->softShutdown && ctx->replicatorFinished)
                     break;
-                builder->sleepForWriterWork(currentQueueSize, ctx->pollIntervalUs);
+                builder->sleepForWriterWork(this, currentQueueSize, ctx->pollIntervalUs);
             }
 
             // Send the message
@@ -277,7 +283,9 @@ namespace OpenLogReplicator {
                     if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
                         ctx->logTrace(Ctx::TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
                                                          " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
+                    perfSet(PERF_SLEEP);
                     usleep(ctx->pollIntervalUs);
+                    perfSet(PERF_CPU);
                     pollQueue();
                 }
 
@@ -439,7 +447,7 @@ namespace OpenLogReplicator {
 
         ctx->info(0, "checkpoint - all confirmed till scn: " + std::to_string(checkpointScn) + ", idx: " +
                      std::to_string(checkpointIdx));
-        metadata->setStatusReplicate();
+        metadata->setStatusReplicate(this);
     }
 
     void Writer::wakeUp() {

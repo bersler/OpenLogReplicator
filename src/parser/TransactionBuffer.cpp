@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <cstring>
 
 #include "../common/RedoLogRecord.h"
+#include "../common/Thread.h"
 #include "../common/exception/RedoLogException.h"
 #include "OpCode0501.h"
 #include "OpCode050B.h"
@@ -71,9 +72,11 @@ namespace OpenLogReplicator {
 
             transaction = new Transaction(xid, &orphanedLobs, xmlCtx);
             {
+                ctx->parserThread->perfSet(Thread::PERF_MUTEX);
                 std::unique_lock<std::mutex> lck(mtx);
                 xidTransactionMap.insert_or_assign(xidMap, transaction);
             }
+            ctx->parserThread->perfSet(Thread::PERF_CPU);
 
             if (dumpXidList.find(xid) != dumpXidList.end())
                 transaction->dump = true;
@@ -85,9 +88,11 @@ namespace OpenLogReplicator {
     void TransactionBuffer::dropTransaction(typeXid xid, typeConId conId) {
         typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(conId) << 32);
         {
+            ctx->parserThread->perfSet(Thread::PERF_MUTEX);
             std::unique_lock<std::mutex> lck(mtx);
             xidTransactionMap.erase(xidMap);
         }
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
     }
 
     TransactionChunk* TransactionBuffer::newTransactionChunk() {
@@ -106,7 +111,8 @@ namespace OpenLogReplicator {
             else
                 partiallyFullChunks.insert_or_assign(chunk, freeMap);
         } else {
-            chunk = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_TRANSACTIONS, false);
+            chunk = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_TRANSACTIONS, false);
+            ctx->parserThread->perfSet(Thread::PERF_CPU);
             pos = 0;
             freeMap = BUFFERS_FREE_MASK & (~1);
             partiallyFullChunks.insert_or_assign(chunk, freeMap);
@@ -127,7 +133,7 @@ namespace OpenLogReplicator {
         freeMap |= (1 << pos);
 
         if (freeMap == BUFFERS_FREE_MASK) {
-            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_TRANSACTIONS, chunk, false);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_TRANSACTIONS, chunk, false);
             partiallyFullChunks.erase(chunk);
         } else
             partiallyFullChunks.insert_or_assign(chunk, freeMap);

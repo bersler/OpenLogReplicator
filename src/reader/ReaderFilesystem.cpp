@@ -43,7 +43,9 @@ namespace OpenLogReplicator {
 
     void ReaderFilesystem::redoClose() {
         if (fileDes != -1) {
+            perfSet(PERF_OS);
             close(fileDes);
+            perfSet(PERF_CPU);
             fileDes = -1;
         }
     }
@@ -51,7 +53,10 @@ namespace OpenLogReplicator {
     uint64_t ReaderFilesystem::redoOpen() {
         struct stat fileStat;
 
-        if (stat(fileName.c_str(), &fileStat) != 0) {
+        perfSet(PERF_OS);
+        int statRet = stat(fileName.c_str(), &fileStat);
+        perfSet(PERF_CPU);
+        if (statRet != 0) {
             ctx->error(10003, "file: " + fileName + " - get metadata returned: " + strerror(errno));
             return REDO_ERROR;
         }
@@ -69,7 +74,9 @@ namespace OpenLogReplicator {
             flags |= O_DIRECT;
 #endif
 
+        perfSet(PERF_OS);
         fileDes = open(fileName.c_str(), flags);
+        perfSet(PERF_CPU);
         if (fileDes == -1) {
             ctx->error(10001, "file: " + fileName + " - open for read returned: " + strerror(errno));
             return REDO_ERROR;
@@ -77,7 +84,10 @@ namespace OpenLogReplicator {
 
 #if __APPLE__
         if (!ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
-            if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0)
+            perfSet(PERF_OS);
+            int fcntlRet = fcntl(fileDes, F_GLOBAL_NOCACHE, 1);
+            perfSet(PERF_CPU);
+            if (fcntlRet < 0)
                 ctx->error(10008, "file: " + fileName + " - set no cache for file returned: " + strerror(errno));
         }
 #endif
@@ -95,7 +105,9 @@ namespace OpenLogReplicator {
         while (tries > 0) {
             if (ctx->hardShutdown)
                 break;
+            perfSet(PERF_OS);
             bytes = pread(fileDes, buf, size, static_cast<int64_t>(offset));
+            perfSet(PERF_CPU);
             if (unlikely(ctx->trace & Ctx::TRACE_FILE))
                 ctx->logTrace(Ctx::TRACE_FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
                                                " returns " + std::to_string(bytes));
@@ -113,7 +125,9 @@ namespace OpenLogReplicator {
                 break;
 
             ctx->info(0, "sleeping " + std::to_string(ctx->archReadSleepUs) + " us before retrying read");
+            perfSet(PERF_SLEEP);
             usleep(ctx->archReadSleepUs);
+            perfSet(PERF_CPU);
             --tries;
         }
 

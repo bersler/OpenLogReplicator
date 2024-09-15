@@ -111,7 +111,9 @@ namespace OpenLogReplicator {
             disableChecks(0),
             hardShutdown(false),
             softShutdown(false),
-            replicatorFinished(false) {
+            replicatorFinished(false),
+            parserThread(nullptr),
+            writerThread(nullptr) {
         memoryModulesAllocated[0] = 0;
         memoryModulesAllocated[1] = 0;
         memoryModulesAllocated[2] = 0;
@@ -693,7 +695,8 @@ namespace OpenLogReplicator {
         return memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB;
     }
 
-    uint8_t* Ctx::getMemoryChunk(uint64_t module, bool reusable) {
+    uint8_t* Ctx::getMemoryChunk(Thread* t, uint64_t module, bool reusable) {
+        t->perfSet(Thread::PERF_MEM);
         std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (memoryChunksFree == 0) {
@@ -703,7 +706,9 @@ namespace OpenLogReplicator {
 
                     if (unlikely(trace & TRACE_SLEEP))
                         logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
+                    t->perfSet(Thread::PERF_WAIT);
                     condOutOfMemory.wait(lck);
+                    t->perfSet(Thread::PERF_MEM);
                 } else {
                     hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
                          "transaction would be skipped");
@@ -712,7 +717,9 @@ namespace OpenLogReplicator {
             }
 
             if (memoryChunksFree == 0) {
+                t->perfSet(Thread::PERF_OS);
                 memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
+                t->perfSet(Thread::PERF_MEM);
                 if (unlikely(memoryChunks[0] == nullptr)) {
                     throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
                                                   " bytes memory for: " + memoryModules[module]);
@@ -757,49 +764,55 @@ namespace OpenLogReplicator {
         return memoryChunks[memoryChunksFree];
     }
 
-    void Ctx::freeMemoryChunk(uint64_t module, uint8_t* chunk, bool reusable) {
-        std::unique_lock<std::mutex> lck(memoryMtx);
+    void Ctx::freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk, bool reusable) {
+        t->perfSet(Thread::PERF_MEM);
+        {
+            std::unique_lock<std::mutex> lck(memoryMtx);
 
-        if (unlikely(memoryChunksFree == memoryChunksAllocated))
-            throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[module]);
+            if (unlikely(memoryChunksFree == memoryChunksAllocated))
+                throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[module]);
 
-        // Keep memoryChunksMin reserved
-        if (memoryChunksFree >= memoryChunksMin) {
-            free(chunk);
-            --memoryChunksAllocated;
-            if (metrics)
-                metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
-        } else {
-            memoryChunks[memoryChunksFree] = chunk;
-            ++memoryChunksFree;
-        }
-        if (reusable)
-            --memoryChunksReusable;
+            // Keep memoryChunksMin reserved
+            if (memoryChunksFree >= memoryChunksMin) {
+                t->perfSet(Thread::PERF_OS);
+                free(chunk);
+                t->perfSet(Thread::PERF_MEM);
+                --memoryChunksAllocated;
+                if (metrics)
+                    metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
+            } else {
+                memoryChunks[memoryChunksFree] = chunk;
+                ++memoryChunksFree;
+            }
+            if (reusable)
+                --memoryChunksReusable;
 
-        condOutOfMemory.notify_all();
+            condOutOfMemory.notify_all();
 
-        --memoryModulesAllocated[module];
+            --memoryModulesAllocated[module];
 
-        if (metrics) {
-            metrics->emitMemoryUsedTotalMb(memoryChunksAllocated - memoryChunksFree);
+            if (metrics) {
+                metrics->emitMemoryUsedTotalMb(memoryChunksAllocated - memoryChunksFree);
 
-            switch (module) {
-                case MEMORY_MODULE_BUILDER:
-                    metrics->emitMemoryUsedMbBuilder(memoryModulesAllocated[module]);
-                    break;
+                switch (module) {
+                    case MEMORY_MODULE_BUILDER:
+                        metrics->emitMemoryUsedMbBuilder(memoryModulesAllocated[module]);
+                        break;
 
-                case MEMORY_MODULE_PARSER:
-                    metrics->emitMemoryUsedMbParser(memoryModulesAllocated[module]);
-                    break;
+                    case MEMORY_MODULE_PARSER:
+                        metrics->emitMemoryUsedMbParser(memoryModulesAllocated[module]);
+                        break;
 
-                case MEMORY_MODULE_READER:
-                    metrics->emitMemoryUsedMbReader(memoryModulesAllocated[module]);
-                    break;
+                    case MEMORY_MODULE_READER:
+                        metrics->emitMemoryUsedMbReader(memoryModulesAllocated[module]);
+                        break;
 
-                case MEMORY_MODULE_TRANSACTIONS:
-                    metrics->emitMemoryUsedMbTransactions(memoryModulesAllocated[module]);
+                    case MEMORY_MODULE_TRANSACTIONS:
+                        metrics->emitMemoryUsedMbTransactions(memoryModulesAllocated[module]);
+                }
             }
         }
+        t->perfSet(Thread::PERF_CPU);
     }
 
     void Ctx::stopHard() {
@@ -905,25 +918,25 @@ namespace OpenLogReplicator {
         return wakingUp;
     }
 
-    void Ctx::spawnThread(Thread* thread) {
-        logTrace(TRACE_THREADS, "spawn: " + thread->alias);
+    void Ctx::spawnThread(Thread* t) {
+        logTrace(TRACE_THREADS, "spawn: " + t->alias);
 
-        if (unlikely(pthread_create(&thread->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(thread))))
-            throw RuntimeException(10013, "spawning thread: " + thread->alias);
+        if (unlikely(pthread_create(&t->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(t))))
+            throw RuntimeException(10013, "spawning thread: " + t->alias);
         {
             std::unique_lock<std::mutex> lck(mtx);
-            threads.insert(thread);
+            threads.insert(t);
         }
     }
 
-    void Ctx::finishThread(Thread* thread) {
-        logTrace(TRACE_THREADS, "finish: " + thread->alias);
+    void Ctx::finishThread(Thread* t) {
+        logTrace(TRACE_THREADS, "finish: " + t->alias);
 
         std::unique_lock<std::mutex> lck(mtx);
-        if (threads.find(thread) == threads.end())
+        if (threads.find(t) == threads.end())
             return;
-        threads.erase(thread);
-        pthread_join(thread->pthread, nullptr);
+        threads.erase(t);
+        pthread_join(t->pthread, nullptr);
     }
 
     std::ostringstream& Ctx::writeEscapeValue(std::ostringstream& ss, const std::string& str) {
@@ -965,12 +978,14 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void Ctx::releaseBuffer() {
+    void Ctx::releaseBuffer(Thread* t) {
+        t->perfSet(Thread::PERF_MEM);
         std::unique_lock<std::mutex> lck(memoryMtx);
         ++buffersFree;
     }
 
-    void Ctx::allocateBuffer() {
+    void Ctx::allocateBuffer(Thread* t) {
+        t->perfSet(Thread::PERF_MEM);
         std::unique_lock<std::mutex> lck(memoryMtx);
         --buffersFree;
         if (readBufferMax - buffersFree > buffersMaxUsed)
@@ -978,11 +993,12 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::signalDump() {
-        if (mainThread == pthread_self()) {
-            std::unique_lock<std::mutex> lck(mtx);
-            for (Thread* thread: threads)
-                pthread_kill(thread->pthread, SIGUSR1);
-        }
+        if (mainThread != pthread_self())
+            return;
+
+        std::unique_lock<std::mutex> lck(mtx);
+        for (Thread* thread: threads)
+            pthread_kill(thread->pthread, SIGUSR1);
     }
 
     void Ctx::welcome(const std::string& message) const {
