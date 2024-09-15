@@ -26,6 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/XmlCtx.h"
 #include "../common/metrics/Metrics.h"
 #include "../common/table/SysCol.h"
+#include "../common/Thread.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 #include "Builder.h"
@@ -96,7 +97,7 @@ namespace OpenLogReplicator {
 
         while (firstBuilderQueue != nullptr) {
             BuilderQueue* nextBuffer = firstBuilderQueue->next;
-            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
             firstBuilderQueue = nextBuffer;
             --buffersAllocated;
         }
@@ -119,7 +120,8 @@ namespace OpenLogReplicator {
 
     void Builder::initialize() {
         buffersAllocated = 1;
-        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, true));
+        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, true));
+        ctx->parserThread->perfSet(Thread::PERF_CPU);
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
         firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
@@ -2339,9 +2341,10 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void Builder::releaseBuffers(uint64_t maxId) {
+    void Builder::releaseBuffers(Thread* t, uint64_t maxId) {
         BuilderQueue* builderQueue;
         {
+            t->perfSet(Thread::PERF_MUTEX);
             std::unique_lock<std::mutex> lck(mtx);
             builderQueue = firstBuilderQueue;
             while (firstBuilderQueue->id < maxId) {
@@ -2349,25 +2352,31 @@ namespace OpenLogReplicator {
                 --buffersAllocated;
             }
         }
+        t->perfSet(Thread::PERF_CPU);
 
         if (builderQueue != nullptr) {
             while (builderQueue->id < maxId) {
                 BuilderQueue* nextBuffer = builderQueue->next;
-                ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
+                ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
                 builderQueue = nextBuffer;
             }
         }
     }
 
-    void Builder::sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds) {
+    void Builder::sleepForWriterWork(Thread* t, uint64_t queueSize, uint64_t nanoseconds) {
         if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
             ctx->logTrace(Ctx::TRACE_SLEEP, "Builder:sleepForWriterWork");
 
-        std::unique_lock<std::mutex> lck(mtx);
-        if (queueSize > 0)
-            condNoWriterWork.wait_for(lck, std::chrono::nanoseconds(nanoseconds));
-        else
-            condNoWriterWork.wait_for(lck, std::chrono::seconds(5));
+        {
+            t->perfSet(Thread::PERF_MUTEX);
+            std::unique_lock<std::mutex> lck(mtx);
+            t->perfSet(Thread::PERF_WAIT);
+            if (queueSize > 0)
+                condNoWriterWork.wait_for(lck, std::chrono::nanoseconds(nanoseconds));
+            else
+                condNoWriterWork.wait_for(lck, std::chrono::seconds(5));
+        }
+        t->perfSet(Thread::PERF_CPU);
     }
 
     void Builder::wakeUp() {

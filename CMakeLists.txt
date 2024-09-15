@@ -47,6 +47,10 @@ if (CPU_ARCH)
     add_compile_definitions(CPU_ARCH=${CPU_ARCH})
 endif()
 
+if (THREAD_INFO)
+    add_compile_definitions(THREAD_INFO)
+endif()
+
 find_package(Threads REQUIRED)
 
 # RapidJSON

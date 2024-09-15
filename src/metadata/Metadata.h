@@ -43,6 +43,7 @@ namespace OpenLogReplicator {
     class Serializer;
     class State;
     class StateDisk;
+    class Thread;
 
     class Metadata final {
     protected:
@@ -157,18 +158,18 @@ namespace OpenLogReplicator {
         void resetElements();
         void commitElements();
 
-        void waitForWriter();
-        void waitForReplicator();
-        void setStatusReady();
-        void setStatusStart();
-        void setStatusReplicate();
-        void wakeUp();
-        void checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
+        void waitForWriter(Thread* t);
+        void waitForReplicator(Thread* t);
+        void setStatusReady(Thread* t);
+        void setStatusStart(Thread* t);
+        void setStatusReplicate(Thread* t);
+        void wakeUp(Thread* t);
+        void checkpoint(Thread* t, typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
                         uint64_t newCheckpointBytes, typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid);
-        void writeCheckpoint(bool force);
+        void writeCheckpoint(Thread* t, bool force);
         void readCheckpoints();
         void readCheckpoint(typeScn scn);
-        void deleteOldCheckpoints();
+        void deleteOldCheckpoints(Thread* t);
         void loadAdaptiveSchema();
         void allowCheckpoints();
         bool isNewData(typeScn scn, typeIdx idx);

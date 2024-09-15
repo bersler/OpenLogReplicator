@@ -67,7 +67,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define HAS_STATIC " static"
 #else
 #define HAS_STATIC ""
-#endif /* LINK_LIBRARY_OCI */
+#endif /* LINK_STATIC */
+
+#ifdef THREAD_INFO
+#define HAS_THREAD_INFO " thread-info"
+#else
+#define HAS_THREAD_INFO ""
+#endif /* THREAD_INFO */
 
 namespace OpenLogReplicator {
     Ctx* mainCtx = nullptr;
@@ -104,7 +110,7 @@ namespace OpenLogReplicator {
         mainCtx->welcome("arch: " + std::string(name.machine) + buildArch + ", system: " + name.sysname +
                          ", release: " + name.release + ", build: " +
                          OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"
-                         HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC);
+                         HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC HAS_THREAD_INFO);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {

@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "../common/Ctx.h"
+#include "../common/Thread.h"
 #include "../common/exception/ConfigurationException.h"
 #include "../common/exception/NetworkException.h"
 #include "../common/exception/RuntimeException.h"
@@ -335,9 +336,11 @@ namespace OpenLogReplicator {
                 if (recvd == 0)
                     return 0;
 
-                if (errno == EWOULDBLOCK || errno == EAGAIN)
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                    ctx->writerThread->perfSet(Thread::PERF_SLEEP);
                     usleep(ctx->pollIntervalUs);
-                else
+                    ctx->writerThread->perfSet(Thread::PERF_CPU);
+                } else
                     return 0;
             }
         }
@@ -371,9 +374,11 @@ namespace OpenLogReplicator {
                     if (recvd == 0)
                         return 0;
 
-                    if (errno == EWOULDBLOCK || errno == EAGAIN)
+                    if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                        ctx->writerThread->perfSet(Thread::PERF_SLEEP);
                         usleep(ctx->pollIntervalUs);
-                    else
+                        ctx->writerThread->perfSet(Thread::PERF_CPU);
+                    } else
                         return 0;
                 }
             }
@@ -397,9 +402,11 @@ namespace OpenLogReplicator {
                 socketFD = -1;
                 throw NetworkException(10056, "host disconnected");
             } else {
-                if (errno == EWOULDBLOCK || errno == EAGAIN)
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                    ctx->writerThread->perfSet(Thread::PERF_SLEEP);
                     usleep(ctx->pollIntervalUs);
-                else
+                    ctx->writerThread->perfSet(Thread::PERF_CPU);
+                } else
                     return 0;
             }
         }

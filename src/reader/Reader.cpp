@@ -96,10 +96,14 @@ namespace OpenLogReplicator {
     }
 
     void Reader::wakeUp() {
-        std::unique_lock<std::mutex> lck(mtx);
-        condBufferFull.notify_all();
-        condReaderSleeping.notify_all();
-        condParserSleeping.notify_all();
+        perfSet(PERF_MUTEX);
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+            condBufferFull.notify_all();
+            condReaderSleeping.notify_all();
+            condParserSleeping.notify_all();
+        }
+        perfSet(PERF_CPU);
     }
 
     Reader::~Reader() {
@@ -345,7 +349,9 @@ namespace OpenLogReplicator {
             if (badBlockCrcCount == BAD_CDC_MAX_CNT)
                 return REDO_ERROR_BAD_DATA;
 
+            perfSet(PERF_SLEEP);
             usleep(ctx->redoReadSleepUs);
+            perfSet(PERF_CPU);
             retReload = checkBlockHeader(headerBuffer + blockSize, 1, false);
             if (unlikely(ctx->trace & Ctx::TRACE_DISK))
                 ctx->logTrace(Ctx::TRACE_DISK, "block: 1 check: " + std::to_string(retReload));
@@ -488,10 +494,14 @@ namespace OpenLogReplicator {
                     *readTimeP = lastReadTime;
                 }
             } else {
-                std::unique_lock<std::mutex> lck(mtx);
-                bufferEnd += goodBlocks * blockSize;
-                bufferScan = bufferEnd;
-                condParserSleeping.notify_all();
+                {
+                    perfSet(PERF_MUTEX);
+                    std::unique_lock<std::mutex> lck(mtx);
+                    bufferEnd += goodBlocks * blockSize;
+                    bufferScan = bufferEnd;
+                    condParserSleeping.notify_all();
+                }
+                perfSet(PERF_CPU);
             }
         }
 
@@ -603,10 +613,12 @@ namespace OpenLogReplicator {
             }
 
             {
+                perfSet(PERF_MUTEX);
                 std::unique_lock<std::mutex> lck(mtx);
                 bufferEnd += actualRead;
                 condParserSleeping.notify_all();
             }
+            perfSet(PERF_CPU);
         }
 
         return true;
@@ -615,20 +627,26 @@ namespace OpenLogReplicator {
     void Reader::mainLoop() {
         while (!ctx->softShutdown) {
             {
+                perfSet(PERF_MUTEX);
                 std::unique_lock<std::mutex> lck(mtx);
                 condParserSleeping.notify_all();
 
                 if (status == STATUS_SLEEPING && !ctx->softShutdown) {
                     if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                         ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:sleep");
+                    perfSet(PERF_WAIT);
                     condReaderSleeping.wait(lck);
+                    perfSet(PERF_MUTEX);
                 } else if (status == STATUS_READ && !ctx->softShutdown && ctx->buffersFree == 0 && (bufferEnd % Ctx::MEMORY_CHUNK_SIZE) == 0) {
                     // Buffer full
                     if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                         ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:buffer");
+                    perfSet(PERF_WAIT);
                     condBufferFull.wait(lck);
+                    perfSet(PERF_MUTEX);
                 }
             }
+            perfSet(PERF_CPU);
 
             if (ctx->softShutdown)
                 break;
@@ -639,11 +657,13 @@ namespace OpenLogReplicator {
                 redoClose();
                 uint64_t currentRet = redoOpen();
                 {
+                    perfSet(PERF_MUTEX);
                     std::unique_lock<std::mutex> lck(mtx);
                     ret = currentRet;
                     status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
+                perfSet(PERF_CPU);
                 continue;
 
             } else if (status == STATUS_UPDATE) {
@@ -664,11 +684,13 @@ namespace OpenLogReplicator {
                     bufferFree(num);
 
                 {
+                    perfSet(PERF_MUTEX);
                     std::unique_lock<std::mutex> lck(mtx);
                     ret = currentRet;
                     status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
+                perfSet(PERF_CPU);
             } else if (status == STATUS_READ) {
                 if (unlikely(ctx->trace & Ctx::TRACE_DISK))
                     ctx->logTrace(Ctx::TRACE_DISK, "reading " + fileName + " at (" + std::to_string(bufferStart) + "/" +
@@ -698,11 +720,14 @@ namespace OpenLogReplicator {
 
                     // Buffer full?
                     if (bufferStart + ctx->bufferSizeMax == bufferEnd) {
+                        perfSet(PERF_MUTEX);
                         std::unique_lock<std::mutex> lck(mtx);
                         if (!ctx->softShutdown && bufferStart + ctx->bufferSizeMax == bufferEnd) {
                             if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                                 ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:bufferFull");
+                            perfSet(PERF_WAIT);
                             condBufferFull.wait(lck);
+                            perfSet(PERF_CPU);
                             continue;
                         }
                     }
@@ -732,24 +757,33 @@ namespace OpenLogReplicator {
                     // Sleep some time
                     if (!readBlocks) {
                         if (readTime == 0) {
+                            perfSet(PERF_SLEEP);
                             usleep(ctx->redoReadSleepUs);
+                            perfSet(PERF_CPU);
                         } else {
                             time_ut nowTime = ctx->clock->getTimeUt();
                             if (readTime > nowTime) {
-                                if (static_cast<time_ut>(ctx->redoReadSleepUs) < readTime - nowTime)
+                                if (static_cast<time_ut>(ctx->redoReadSleepUs) < readTime - nowTime) {
+                                    perfSet(PERF_SLEEP);
                                     usleep(ctx->redoReadSleepUs);
-                                else
+                                    perfSet(PERF_CPU);
+                                } else {
+                                    perfSet(PERF_SLEEP);
                                     usleep(readTime - nowTime);
+                                    perfSet(PERF_CPU);
+                                }
                             }
                         }
                     }
                 }
 
                 {
+                    perfSet(PERF_MUTEX);
                     std::unique_lock<std::mutex> lck(mtx);
                     status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
+                perfSet(PERF_CPU);
             }
         }
     }
@@ -799,20 +833,23 @@ namespace OpenLogReplicator {
 
     void Reader::bufferAllocate(uint64_t num) {
         if (redoBufferList[num] == nullptr) {
-            redoBufferList[num] = ctx->getMemoryChunk(Ctx::MEMORY_MODULE_READER, false);
+            redoBufferList[num] = ctx->getMemoryChunk(this, Ctx::MEMORY_MODULE_READER, false);
+            perfSet(PERF_CPU);
             if (unlikely(ctx->buffersFree == 0))
                 throw RuntimeException(10016, "couldn't allocate " + std::to_string(Ctx::MEMORY_CHUNK_SIZE) +
                                               " bytes memory for: read buffer");
 
-            ctx->allocateBuffer();
+            ctx->allocateBuffer(this);
+            perfSet(PERF_CPU);
         }
     }
 
     void Reader::bufferFree(uint64_t num) {
         if (redoBufferList[num] != nullptr) {
-            ctx->freeMemoryChunk(Ctx::MEMORY_MODULE_READER, redoBufferList[num], false);
+            ctx->freeMemoryChunk(this, Ctx::MEMORY_MODULE_READER, redoBufferList[num], false);
             redoBufferList[num] = nullptr;
-            ctx->releaseBuffer();
+            ctx->releaseBuffer(this);
+            perfSet(PERF_CPU);
         }
     }
 
@@ -1054,6 +1091,7 @@ namespace OpenLogReplicator {
     }
 
     bool Reader::checkRedoLog() {
+        perfSet(PERF_MUTEX);
         std::unique_lock<std::mutex> lck(mtx);
         status = STATUS_CHECK;
         sequence = 0;
@@ -1067,16 +1105,16 @@ namespace OpenLogReplicator {
                 break;
             if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                 ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:checkRedoLog");
+            perfSet(PERF_WAIT);
             condParserSleeping.wait(lck);
         }
-        if (ret == REDO_OK)
-            return true;
-        else
-            return false;
+        perfSet(PERF_CPU);
+        return (ret == REDO_OK);
     }
 
     bool Reader::updateRedoLog() {
         for (;;) {
+            perfSet(PERF_MUTEX);
             std::unique_lock<std::mutex> lck(mtx);
             status = STATUS_UPDATE;
             condBufferFull.notify_all();
@@ -1087,49 +1125,66 @@ namespace OpenLogReplicator {
                     break;
                 if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                     ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:updateRedoLog");
+                perfSet(PERF_WAIT);
                 condParserSleeping.wait(lck);
+                perfSet(PERF_MUTEX);
             }
 
             if (ret == REDO_EMPTY) {
-                usleep(ctx->redoReadSleepUs);
+                perfSet(PERF_WAIT);
+                condParserSleeping.wait_for(lck, std::chrono::microseconds(ctx->redoReadSleepUs));
+                perfSet(PERF_MUTEX);
                 continue;
             }
 
-            if (ret == REDO_OK)
-                return true;
-            else
-                return false;
+            perfSet(PERF_CPU);
+            return (ret == REDO_OK);
         }
     }
 
     void Reader::setStatusRead() {
-        std::unique_lock<std::mutex> lck(mtx);
-        status = STATUS_READ;
-        condBufferFull.notify_all();
-        condReaderSleeping.notify_all();
+        {
+            perfSet(PERF_MUTEX);
+            std::unique_lock<std::mutex> lck(mtx);
+            status = STATUS_READ;
+            condBufferFull.notify_all();
+            condReaderSleeping.notify_all();
+        }
+        perfSet(PERF_CPU);
     }
 
     void Reader::confirmReadData(uint64_t confirmedBufferStart) {
-        std::unique_lock<std::mutex> lck(mtx);
-        bufferStart = confirmedBufferStart;
-        if (status == STATUS_READ) {
-            condBufferFull.notify_all();
+        perfSet(PERF_MUTEX);
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+            bufferStart = confirmedBufferStart;
+            if (status == STATUS_READ) {
+                condBufferFull.notify_all();
+            }
         }
+        perfSet(PERF_CPU);
     }
 
     bool Reader::checkFinished(uint64_t confirmedBufferStart) {
-        std::unique_lock<std::mutex> lck(mtx);
-        if (bufferStart < confirmedBufferStart)
-            bufferStart = confirmedBufferStart;
+        perfSet(PERF_MUTEX);
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+            if (bufferStart < confirmedBufferStart)
+                bufferStart = confirmedBufferStart;
 
-        // All work done
-        if (confirmedBufferStart == bufferEnd) {
-            if (ret == REDO_STOPPED || ret == REDO_OVERWRITTEN || ret == REDO_FINISHED || status == STATUS_SLEEPING)
-                return true;
-            if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
-                ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:checkFinished");
-            condParserSleeping.wait(lck);
+            // All work done
+            if (confirmedBufferStart == bufferEnd) {
+                if (ret == REDO_STOPPED || ret == REDO_OVERWRITTEN || ret == REDO_FINISHED || status == STATUS_SLEEPING) {
+                    perfSet(PERF_CPU);
+                    return true;
+                }
+                if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
+                    ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:checkFinished");
+                perfSet(PERF_WAIT);
+                condParserSleeping.wait(lck);
+            }
         }
+        perfSet(PERF_CPU);
         return false;
     }
 }

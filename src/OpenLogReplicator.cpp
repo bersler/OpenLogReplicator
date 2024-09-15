@@ -92,13 +92,13 @@ namespace OpenLogReplicator {
             delete writer;
         writers.clear();
 
-        for (Replicator* replicatorTmp: replicators)
-            delete replicatorTmp;
-        replicators.clear();
-
         for (Builder* builder: builders)
             delete builder;
         builders.clear();
+
+        for (Replicator* replicatorTmp: replicators)
+            delete replicatorTmp;
+        replicators.clear();
 
         for (Checkpoint* checkpoint: checkpoints)
             delete checkpoint;
@@ -674,7 +674,6 @@ namespace OpenLogReplicator {
                 throw ConfigurationException(30001, "bad JSON, invalid \"format\" value: " + std::string(formatType) +
                                                     ", expected: \"protobuf\" or \"json\"");
             builders.push_back(builder);
-            builder->initialize();
 
             // READER
             const char* readerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "type");
@@ -750,6 +749,7 @@ namespace OpenLogReplicator {
                 replicator = new ReplicatorOnline(ctx, archGetLog, builder, metadata,
                                                   transactionBuffer, alias, name, user, password,
                                                   server, keepConnection);
+                builder->initialize();
                 replicator->initialize();
                 mainProcessMapping(readerJson);
 #else
@@ -767,6 +767,7 @@ namespace OpenLogReplicator {
 
                 replicator = new Replicator(ctx, archGetLog, builder, metadata, transactionBuffer,
                                             alias, name);
+                builder->initialize();
                 replicator->initialize();
                 mainProcessMapping(readerJson);
 
@@ -781,6 +782,7 @@ namespace OpenLogReplicator {
                 archGetLog = Replicator::archGetLogList;
                 replicator = new ReplicatorBatch(ctx, archGetLog, builder, metadata,
                                                  transactionBuffer, alias, name);
+                builder->initialize();
                 replicator->initialize();
 
                 const rapidjson::Value& redoLogBatchArrayJson = Ctx::getJsonFieldA(configFileName, readerJson, "redo-log");
