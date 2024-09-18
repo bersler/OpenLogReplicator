@@ -47,8 +47,14 @@ Use the following table to find out which version of OpenLogReplicator is compat
 |   2.7    |        1.3.0        |          1.6.0           |
 |   3.0    |        1.3.0        |          1.6.0           |
 
-## Sponsoring the Project
+## Supporting the Author
 
-If you (or your company) are benefiting from the project and would like to support the contributor, kindly support the project.
+If you feel that I should receive some feedback from the world to continue with my hard work - feel free to make a **donation** to me.
+
+Remember, it will never be required to pay money to use, study, distribute or develop OpenLogReplicator. Donations, however, help the process of development to dedicate time and resources to make the project grow faster and further.
+
+I am very grateful for any amount you donate.
+
+<a href="https://liberapay.com/bersler/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
 
 <a href="https://www.buymeacoffee.com/bersler" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 160px !important;" ></a>
