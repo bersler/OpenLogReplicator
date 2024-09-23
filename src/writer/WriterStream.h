@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         pb::RedoRequest request;
         pb::RedoResponse response;
 
-        std::string getName() const override;
+        std::string getType() const override;
         void processInfo();
         void processStart();
         void processContinue();

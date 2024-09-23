@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         confirmMessage(msg);
     }
 
-    std::string WriterDiscard::getName() const {
+    std::string WriterDiscard::getType() const {
         return "discard";
     }
 

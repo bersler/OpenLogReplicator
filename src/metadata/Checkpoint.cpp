@@ -51,11 +51,11 @@ namespace OpenLogReplicator {
 
     void Checkpoint::wakeUp() {
         {
-            perfSet(Thread::PERF_MUTEX);
+            contextSet(Thread::CONTEXT_MUTEX, Thread::CHECKPOINT_WAKEUP);
             std::unique_lock<std::mutex> lck(mtx);
             condLoop.notify_all();
         }
-        perfSet(Thread::PERF_CPU);
+        contextSet(Thread::CONTEXT_CPU);
     }
 
     void Checkpoint::trackConfigFile() {
@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
             throw ConfigurationException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                                 " - parse error: " + GetParseError_En(document.GetParseError()));
 
-        if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+        if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
             static const char* documentNames[] {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace",
                                                 "source", "target", nullptr};
             Ctx::checkJsonFields(configFileName, document, documentNames);
@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
-            if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                 static const char* sourceNames[] {"alias", "memory", "name", "reader", "flags", "state", "debug",
                                                   "transaction-max-mb", "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us",
                                                   "arch-read-tries", "redo-verify-delay-us", "refresh-interval-us", "arch",
@@ -206,7 +206,7 @@ namespace OpenLogReplicator {
         ctx->info(0, "scanning objects which match the configuration file");
         // Suspend transaction processing for the schema update
         {
-            perfSet(Thread::PERF_TRAN);
+            contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             metadata->commitElements();
             metadata->schema->purgeMetadata();
@@ -231,7 +231,7 @@ namespace OpenLogReplicator {
 
             metadata->schema->resetTouched();
         }
-        perfSet(Thread::PERF_CPU);
+        contextSet(Thread::CONTEXT_CPU);
     }
 
     void Checkpoint::run() {
@@ -259,12 +259,12 @@ namespace OpenLogReplicator {
                         ctx->logTrace(Ctx::TRACE_SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
                                                         " checkpointScn: " + std::to_string(metadata->checkpointScn));
 
-                    perfSet(Thread::PERF_MUTEX);
+                    contextSet(Thread::CONTEXT_MUTEX, Thread::CHECKPOINT_RUN);
                     std::unique_lock<std::mutex> lck(mtx);
-                    perfSet(Thread::PERF_WAIT);
+                    contextSet(Thread::CONTEXT_WAIT, CHECKPOINT_NO_WORK);
                     condLoop.wait_for(lck, std::chrono::milliseconds(100));
                 }
-                perfSet(Thread::PERF_CPU);
+                contextSet(Thread::CONTEXT_CPU);
             }
 
             if (ctx->softShutdown)

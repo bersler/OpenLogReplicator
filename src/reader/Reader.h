@@ -148,7 +148,11 @@ namespace OpenLogReplicator {
         bool updateRedoLog();
         void setStatusRead();
         void confirmReadData(uint64_t confirmedBufferStart);
-        [[nodiscard]] bool checkFinished(uint64_t confirmedBufferStart);
+        [[nodiscard]] bool checkFinished(Thread* t, uint64_t confirmedBufferStart);
+
+        const std::string getName() const override {
+            return std::string{"Reader: " + fileName};
+        };
     };
 }
 

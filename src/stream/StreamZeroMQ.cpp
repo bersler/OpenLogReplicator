@@ -70,9 +70,9 @@ namespace OpenLogReplicator {
                 return;
 
             if (ret < 0 && errno == EAGAIN) {
-                ctx->writerThread->perfSet(Thread::PERF_SLEEP);
+                ctx->writerThread->contextSet(Thread::CONTEXT_SLEEP);
                 usleep(ctx->pollIntervalUs);
-                ctx->writerThread->perfSet(Thread::PERF_CPU);
+                ctx->writerThread->contextSet(Thread::CONTEXT_CPU);
                 continue;
             }
 

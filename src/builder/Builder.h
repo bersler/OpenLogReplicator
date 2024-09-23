@@ -72,7 +72,6 @@ namespace OpenLogReplicator {
         uint8_t* data;
         typeSeq sequence;
         typeObj obj;
-        uint16_t pos;
         uint16_t flags;
     };
 
@@ -163,10 +162,11 @@ namespace OpenLogReplicator {
 
         inline void builderRotate(bool copy) {
             auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, true));
-            ctx->parserThread->perfSet(Thread::PERF_TRAN);
+            ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
             nextBuffer->next = nullptr;
             nextBuffer->id = lastBuilderQueue->id + 1;
             nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
+            nextBuffer->size = 0;
 
             // Message could potentially fit in one buffer
             if (likely(copy && msg != nullptr && messageSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE)) {
@@ -180,16 +180,15 @@ namespace OpenLogReplicator {
                 messagePosition = 0;
                 nextBuffer->start = BUFFER_START_UNDEFINED;
             }
-            nextBuffer->size = 0;
 
             {
-                ctx->parserThread->perfSet(Thread::PERF_MUTEX);
+                ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::BUILDER_ROTATE);
                 std::unique_lock<std::mutex> lck(mtx);
                 lastBuilderQueue->next = nextBuffer;
                 ++buffersAllocated;
                 lastBuilderQueue = nextBuffer;
             }
-            ctx->parserThread->perfSet(Thread::PERF_TRAN);
+            ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
         }
 
         void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const OracleTable* table, typeCol col, const uint8_t* data, uint32_t size, uint64_t offset,
@@ -298,7 +297,6 @@ namespace OpenLogReplicator {
             msg->size = 0;
             msg->id = id++;
             msg->obj = obj;
-            msg->pos = 0;
             msg->flags = flags;
             msg->data = lastBuilderQueue->data + lastBuilderQueue->size + sizeof(struct BuilderMsg);
         };
@@ -318,22 +316,22 @@ namespace OpenLogReplicator {
 
             if (force || flushBuffer == 0 || unconfirmedSize > flushBuffer) {
                 {
-                    ctx->parserThread->perfSet(Thread::PERF_MUTEX);
+                    ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX);
                     std::unique_lock<std::mutex> lck(mtx);
                     condNoWriterWork.notify_all();
                 }
-                ctx->parserThread->perfSet(Thread::PERF_TRAN);
+                ctx->parserThread->contextSet(Thread::CONTEXT_TRAN);
                 unconfirmedSize = 0;
             }
             msg = nullptr;
         };
 
-        void append(char character) {
+        inline void append(char character) {
             lastBuilderQueue->data[lastBuilderQueue->size + messagePosition] = character;
             builderShift(true);
         };
 
-        void append(const char* str, uint64_t size) {
+        inline void append(const char* str, uint64_t size) {
             if (unlikely(lastBuilderQueue->size + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
                 memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderQueue->size + messagePosition),
                        reinterpret_cast<const void*>(str), size);

@@ -104,9 +104,9 @@ namespace OpenLogReplicator {
             }
             if (!wakingUp)
                 break;
-            perfSet(PERF_SLEEP);
+            contextSet(CONTEXT_SLEEP);
             usleep(1000);
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
         }
 
         while (!readers.empty()) {
@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
                         ctx->info(0, "last confirmed scn: " + std::to_string(metadata->firstDataScn) + ", starting sequence: " +
                                      std::to_string(metadata->sequence) + ", offset: " + std::to_string(metadata->offset));
 
-                    if ((metadata->dbBlockChecksum == "OFF" || metadata->dbBlockChecksum == "FALSE") && !ctx->disableChecksSet(Ctx::DISABLE_CHECKS_BLOCK_SUM)) {
+                    if ((metadata->dbBlockChecksum == "OFF" || metadata->dbBlockChecksum == "FALSE") && !ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_BLOCK_SUM)) {
                         ctx->hint("set DB_BLOCK_CHECKSUM = TYPICAL on the database or turn off consistency checking in OpenLogReplicator "
                                   "setting parameter disable-checks: " + std::to_string(Ctx::DISABLE_CHECKS_BLOCK_SUM) + " for the reader");
                     }
@@ -254,9 +254,9 @@ namespace OpenLogReplicator {
                     break;
 
                 if (!logsProcessed) {
-                    perfSet(PERF_SLEEP);
+                    contextSet(CONTEXT_SLEEP);
                     usleep(ctx->redoReadSleepUs);
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                 }
             }
         } catch (DataException& ex) {
@@ -629,7 +629,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::updateResetlogs() {
-        perfSet(PERF_MUTEX);
+        contextSet(CONTEXT_MUTEX, REPLICATOR_UPDATE);
         std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
 
         for (OracleIncarnation* oi: metadata->oracleIncarnations) {
@@ -648,21 +648,21 @@ namespace OpenLogReplicator {
                 metadata->setResetlogs(oi->resetlogs);
                 metadata->sequence = 0;
                 metadata->offset = 0;
-                perfSet(PERF_CPU);
+                contextSet(CONTEXT_CPU);
                 return;
             }
         }
 
         if (metadata->oracleIncarnations.empty()) {
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
             return;
         }
 
         if (metadata->oracleIncarnationCurrent == nullptr) {
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
             throw RuntimeException(10045, "resetlogs (" + std::to_string(metadata->resetlogs) + ") not found in incarnation list");
         }
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
     }
 
     void Replicator::wakeUp() {
@@ -708,9 +708,9 @@ namespace OpenLogReplicator {
                     if (unlikely(ctx->trace & Ctx::TRACE_ARCHIVE_LIST))
                         ctx->logTrace(Ctx::TRACE_ARCHIVE_LIST, "archived redo log missing for seq: " + std::to_string(metadata->sequence) +
                                                                ", sleeping");
-                    perfSet(PERF_SLEEP);
+                    contextSet(CONTEXT_SLEEP);
                     usleep(ctx->archReadSleepUs);
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                 } else {
                     break;
                 }
@@ -729,10 +729,10 @@ namespace OpenLogReplicator {
 
                 // When no metadata exists, start processing from the first file
                 if (metadata->sequence == 0) {
-                    perfSet(PERF_MUTEX);
+                    contextSet(CONTEXT_MUTEX, REPLICATOR_ARCH);
                     std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
                     metadata->sequence = parser->sequence;
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                 }
 
                 // Skip older archived redo logs
@@ -743,9 +743,9 @@ namespace OpenLogReplicator {
                 } else if (parser->sequence > metadata->sequence) {
                     ctx->warning(60027, "couldn't find archive log for seq: " + std::to_string(metadata->sequence) + ", found: " +
                                         std::to_string(parser->sequence) + ", sleeping " + std::to_string(ctx->archReadSleepUs) + " us");
-                    perfSet(PERF_SLEEP);
+                    contextSet(CONTEXT_SLEEP);
                     usleep(ctx->archReadSleepUs);
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                     cleanArchList();
                     archGetLog(this);
                     continue;
@@ -768,9 +768,9 @@ namespace OpenLogReplicator {
 
                     ctx->info(0, "archived redo log " + parser->path + " is not ready for read, sleeping " +
                                  std::to_string(ctx->archReadSleepUs) + " us");
-                    perfSet(PERF_SLEEP);
+                    contextSet(CONTEXT_SLEEP);
                     usleep(ctx->archReadSleepUs);
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                     --retry;
                 }
 
@@ -850,9 +850,9 @@ namespace OpenLogReplicator {
 
                 // All so far read, waiting for switch
                 if (parser == nullptr && !higher) {
-                    perfSet(PERF_SLEEP);
+                    contextSet(CONTEXT_SLEEP);
                     usleep(ctx->redoReadSleepUs);
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                 } else
                     break;
 

@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
         stream->initializeServer();
     }
 
-    std::string WriterStream::getName() const {
+    std::string WriterStream::getType() const {
         return stream->getName();
     }
 
@@ -136,7 +136,7 @@ namespace OpenLogReplicator {
         }
         metadata->setStatusStart(this);
 
-        perfSet(PERF_SLEEP);
+        contextSet(CONTEXT_SLEEP);
         metadata->waitForReplicator(this);
 
         if (metadata->status == Metadata::STATUS_REPLICATE) {

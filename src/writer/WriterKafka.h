@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         static void logger_cb(const rd_kafka_t* rkCb, int level, const char* fac, const char* buf);
 
         void sendMessage(BuilderMsg* msg) override;
-        std::string getName() const override;
+        std::string getType() const override;
         void pollQueue() override;
 
     public:
