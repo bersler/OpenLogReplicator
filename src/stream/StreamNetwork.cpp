@@ -337,9 +337,9 @@ namespace OpenLogReplicator {
                     return 0;
 
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                    ctx->writerThread->perfSet(Thread::PERF_SLEEP);
+                    ctx->writerThread->contextSet(Thread::CONTEXT_SLEEP);
                     usleep(ctx->pollIntervalUs);
-                    ctx->writerThread->perfSet(Thread::PERF_CPU);
+                    ctx->writerThread->contextSet(Thread::CONTEXT_CPU);
                 } else
                     return 0;
             }
@@ -375,9 +375,9 @@ namespace OpenLogReplicator {
                         return 0;
 
                     if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                        ctx->writerThread->perfSet(Thread::PERF_SLEEP);
+                        ctx->writerThread->contextSet(Thread::CONTEXT_SLEEP);
                         usleep(ctx->pollIntervalUs);
-                        ctx->writerThread->perfSet(Thread::PERF_CPU);
+                        ctx->writerThread->contextSet(Thread::CONTEXT_CPU);
                     } else
                         return 0;
                 }
@@ -403,9 +403,9 @@ namespace OpenLogReplicator {
                 throw NetworkException(10056, "host disconnected");
             } else {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                    ctx->writerThread->perfSet(Thread::PERF_SLEEP);
+                    ctx->writerThread->contextSet(Thread::CONTEXT_SLEEP);
                     usleep(ctx->pollIntervalUs);
-                    ctx->writerThread->perfSet(Thread::PERF_CPU);
+                    ctx->writerThread->contextSet(Thread::CONTEXT_CPU);
                 } else
                     return 0;
             }

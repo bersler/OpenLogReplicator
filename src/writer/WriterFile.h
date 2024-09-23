@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
         void closeFile();
         void checkFile(typeScn scn, typeSeq sequence, uint64_t size);
         void sendMessage(BuilderMsg* msg) override;
-        std::string getName() const override;
+        std::string getType() const override;
         void pollQueue() override;
 
     public:

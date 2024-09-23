@@ -96,14 +96,14 @@ namespace OpenLogReplicator {
     }
 
     void Reader::wakeUp() {
-        perfSet(PERF_MUTEX);
+        contextSet(CONTEXT_MUTEX, READER_WAKE_UP);
         {
             std::unique_lock<std::mutex> lck(mtx);
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
             condParserSleeping.notify_all();
         }
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
     }
 
     Reader::~Reader() {
@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR_BLOCK;
         }
 
-        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_BLOCK_SUM)) {
+        if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_BLOCK_SUM)) {
             typeSum chSum = ctx->read16(buffer + 14);
             typeSum chSumCalculated = calcChSum(buffer, blockSize);
             if (chSum != chSumCalculated) {
@@ -349,9 +349,9 @@ namespace OpenLogReplicator {
             if (badBlockCrcCount == BAD_CDC_MAX_CNT)
                 return REDO_ERROR_BAD_DATA;
 
-            perfSet(PERF_SLEEP);
+            contextSet(CONTEXT_SLEEP);
             usleep(ctx->redoReadSleepUs);
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
             retReload = checkBlockHeader(headerBuffer + blockSize, 1, false);
             if (unlikely(ctx->trace & Ctx::TRACE_DISK))
                 ctx->logTrace(Ctx::TRACE_DISK, "block: 1 check: " + std::to_string(retReload));
@@ -495,13 +495,13 @@ namespace OpenLogReplicator {
                 }
             } else {
                 {
-                    perfSet(PERF_MUTEX);
+                    contextSet(CONTEXT_MUTEX, READER_READ1);
                     std::unique_lock<std::mutex> lck(mtx);
                     bufferEnd += goodBlocks * blockSize;
                     bufferScan = bufferEnd;
                     condParserSleeping.notify_all();
                 }
-                perfSet(PERF_CPU);
+                contextSet(CONTEXT_CPU);
             }
         }
 
@@ -613,12 +613,12 @@ namespace OpenLogReplicator {
             }
 
             {
-                perfSet(PERF_MUTEX);
+                contextSet(CONTEXT_MUTEX, READER_READ2);
                 std::unique_lock<std::mutex> lck(mtx);
                 bufferEnd += actualRead;
                 condParserSleeping.notify_all();
             }
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
         }
 
         return true;
@@ -627,26 +627,26 @@ namespace OpenLogReplicator {
     void Reader::mainLoop() {
         while (!ctx->softShutdown) {
             {
-                perfSet(PERF_MUTEX);
+                contextSet(CONTEXT_MUTEX, READER_MAIN1);
                 std::unique_lock<std::mutex> lck(mtx);
                 condParserSleeping.notify_all();
 
                 if (status == STATUS_SLEEPING && !ctx->softShutdown) {
                     if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                         ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:sleep");
-                    perfSet(PERF_WAIT);
+                    contextSet(CONTEXT_WAIT, READER_NO_WORK);
                     condReaderSleeping.wait(lck);
-                    perfSet(PERF_MUTEX);
+                    contextSet(CONTEXT_MUTEX, READER_MAIN2);
                 } else if (status == STATUS_READ && !ctx->softShutdown && ctx->buffersFree == 0 && (bufferEnd % Ctx::MEMORY_CHUNK_SIZE) == 0) {
                     // Buffer full
                     if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                         ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:buffer");
-                    perfSet(PERF_WAIT);
+                    contextSet(CONTEXT_WAIT);
                     condBufferFull.wait(lck);
-                    perfSet(PERF_MUTEX);
+                    contextSet(CONTEXT_MUTEX);
                 }
             }
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
 
             if (ctx->softShutdown)
                 break;
@@ -657,13 +657,13 @@ namespace OpenLogReplicator {
                 redoClose();
                 uint64_t currentRet = redoOpen();
                 {
-                    perfSet(PERF_MUTEX);
+                    contextSet(CONTEXT_MUTEX, READER_CHECK_STATUS);
                     std::unique_lock<std::mutex> lck(mtx);
                     ret = currentRet;
                     status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
-                perfSet(PERF_CPU);
+                contextSet(CONTEXT_CPU);
                 continue;
 
             } else if (status == STATUS_UPDATE) {
@@ -684,13 +684,13 @@ namespace OpenLogReplicator {
                     bufferFree(num);
 
                 {
-                    perfSet(PERF_MUTEX);
+                    contextSet(CONTEXT_MUTEX, READER_SLEEP1);
                     std::unique_lock<std::mutex> lck(mtx);
                     ret = currentRet;
                     status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
-                perfSet(PERF_CPU);
+                contextSet(CONTEXT_CPU);
             } else if (status == STATUS_READ) {
                 if (unlikely(ctx->trace & Ctx::TRACE_DISK))
                     ctx->logTrace(Ctx::TRACE_DISK, "reading " + fileName + " at (" + std::to_string(bufferStart) + "/" +
@@ -720,14 +720,14 @@ namespace OpenLogReplicator {
 
                     // Buffer full?
                     if (bufferStart + ctx->bufferSizeMax == bufferEnd) {
-                        perfSet(PERF_MUTEX);
+                        contextSet(CONTEXT_MUTEX, READER_FULL);
                         std::unique_lock<std::mutex> lck(mtx);
                         if (!ctx->softShutdown && bufferStart + ctx->bufferSizeMax == bufferEnd) {
                             if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                                 ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:bufferFull");
-                            perfSet(PERF_WAIT);
+                            contextSet(CONTEXT_WAIT, READER_BUFFER_FULL);
                             condBufferFull.wait(lck);
-                            perfSet(PERF_CPU);
+                            contextSet(CONTEXT_CPU);
                             continue;
                         }
                     }
@@ -757,20 +757,20 @@ namespace OpenLogReplicator {
                     // Sleep some time
                     if (!readBlocks) {
                         if (readTime == 0) {
-                            perfSet(PERF_SLEEP);
+                            contextSet(CONTEXT_SLEEP);
                             usleep(ctx->redoReadSleepUs);
-                            perfSet(PERF_CPU);
+                            contextSet(CONTEXT_CPU);
                         } else {
                             time_ut nowTime = ctx->clock->getTimeUt();
                             if (readTime > nowTime) {
                                 if (static_cast<time_ut>(ctx->redoReadSleepUs) < readTime - nowTime) {
-                                    perfSet(PERF_SLEEP);
+                                    contextSet(CONTEXT_SLEEP);
                                     usleep(ctx->redoReadSleepUs);
-                                    perfSet(PERF_CPU);
+                                    contextSet(CONTEXT_CPU);
                                 } else {
-                                    perfSet(PERF_SLEEP);
+                                    contextSet(CONTEXT_SLEEP);
                                     usleep(readTime - nowTime);
-                                    perfSet(PERF_CPU);
+                                    contextSet(CONTEXT_CPU);
                                 }
                             }
                         }
@@ -778,12 +778,12 @@ namespace OpenLogReplicator {
                 }
 
                 {
-                    perfSet(PERF_MUTEX);
+                    contextSet(CONTEXT_MUTEX, READER_SLEEP2);
                     std::unique_lock<std::mutex> lck(mtx);
                     status = STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
-                perfSet(PERF_CPU);
+                contextSet(CONTEXT_CPU);
             }
         }
     }
@@ -834,13 +834,13 @@ namespace OpenLogReplicator {
     void Reader::bufferAllocate(uint64_t num) {
         if (redoBufferList[num] == nullptr) {
             redoBufferList[num] = ctx->getMemoryChunk(this, Ctx::MEMORY_MODULE_READER, false);
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
             if (unlikely(ctx->buffersFree == 0))
                 throw RuntimeException(10016, "couldn't allocate " + std::to_string(Ctx::MEMORY_CHUNK_SIZE) +
                                               " bytes memory for: read buffer");
 
             ctx->allocateBuffer(this);
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
         }
     }
 
@@ -849,7 +849,7 @@ namespace OpenLogReplicator {
             ctx->freeMemoryChunk(this, Ctx::MEMORY_MODULE_READER, redoBufferList[num], false);
             redoBufferList[num] = nullptr;
             ctx->releaseBuffer(this);
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
         }
     }
 
@@ -1091,7 +1091,7 @@ namespace OpenLogReplicator {
     }
 
     bool Reader::checkRedoLog() {
-        perfSet(PERF_MUTEX);
+        contextSet(CONTEXT_MUTEX, READER_CHECK_REDO);
         std::unique_lock<std::mutex> lck(mtx);
         status = STATUS_CHECK;
         sequence = 0;
@@ -1105,16 +1105,16 @@ namespace OpenLogReplicator {
                 break;
             if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                 ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:checkRedoLog");
-            perfSet(PERF_WAIT);
+            contextSet(CONTEXT_WAIT, READER_CHECK);
             condParserSleeping.wait(lck);
         }
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
         return (ret == REDO_OK);
     }
 
     bool Reader::updateRedoLog() {
         for (;;) {
-            perfSet(PERF_MUTEX);
+            contextSet(CONTEXT_MUTEX, READER_UPDATE_REDO1);
             std::unique_lock<std::mutex> lck(mtx);
             status = STATUS_UPDATE;
             condBufferFull.notify_all();
@@ -1125,36 +1125,36 @@ namespace OpenLogReplicator {
                     break;
                 if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                     ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:updateRedoLog");
-                perfSet(PERF_WAIT);
+                contextSet(CONTEXT_WAIT);
                 condParserSleeping.wait(lck);
-                perfSet(PERF_MUTEX);
+                contextSet(CONTEXT_MUTEX, READER_UPDATE_REDO2);
             }
 
             if (ret == REDO_EMPTY) {
-                perfSet(PERF_WAIT);
+                contextSet(CONTEXT_WAIT, READER_EMPTY);
                 condParserSleeping.wait_for(lck, std::chrono::microseconds(ctx->redoReadSleepUs));
-                perfSet(PERF_MUTEX);
+                contextSet(CONTEXT_MUTEX, READER_UPDATE_REDO3);
                 continue;
             }
 
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
             return (ret == REDO_OK);
         }
     }
 
     void Reader::setStatusRead() {
         {
-            perfSet(PERF_MUTEX);
+            contextSet(CONTEXT_MUTEX, READER_SET_READ);
             std::unique_lock<std::mutex> lck(mtx);
             status = STATUS_READ;
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
         }
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
     }
 
     void Reader::confirmReadData(uint64_t confirmedBufferStart) {
-        perfSet(PERF_MUTEX);
+        contextSet(CONTEXT_MUTEX, READER_CONFIRM);
         {
             std::unique_lock<std::mutex> lck(mtx);
             bufferStart = confirmedBufferStart;
@@ -1162,11 +1162,11 @@ namespace OpenLogReplicator {
                 condBufferFull.notify_all();
             }
         }
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
     }
 
-    bool Reader::checkFinished(uint64_t confirmedBufferStart) {
-        perfSet(PERF_MUTEX);
+    bool Reader::checkFinished(Thread* t, uint64_t confirmedBufferStart) {
+        t->contextSet(CONTEXT_MUTEX, READER_CHECK_FINISHED);
         {
             std::unique_lock<std::mutex> lck(mtx);
             if (bufferStart < confirmedBufferStart)
@@ -1175,16 +1175,16 @@ namespace OpenLogReplicator {
             // All work done
             if (confirmedBufferStart == bufferEnd) {
                 if (ret == REDO_STOPPED || ret == REDO_OVERWRITTEN || ret == REDO_FINISHED || status == STATUS_SLEEPING) {
-                    perfSet(PERF_CPU);
+                    t->contextSet(CONTEXT_CPU);
                     return true;
                 }
                 if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
                     ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:checkFinished");
-                perfSet(PERF_WAIT);
+                t->contextSet(CONTEXT_WAIT, READER_FINISHED);
                 condParserSleeping.wait(lck);
             }
         }
-        perfSet(PERF_CPU);
+        t->contextSet(CONTEXT_CPU);
         return false;
     }
 }

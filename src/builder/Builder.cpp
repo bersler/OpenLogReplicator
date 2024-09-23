@@ -121,7 +121,7 @@ namespace OpenLogReplicator {
     void Builder::initialize() {
         buffersAllocated = 1;
         firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, true));
-        ctx->parserThread->perfSet(Thread::PERF_CPU);
+        ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
         firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
@@ -2344,7 +2344,7 @@ namespace OpenLogReplicator {
     void Builder::releaseBuffers(Thread* t, uint64_t maxId) {
         BuilderQueue* builderQueue;
         {
-            t->perfSet(Thread::PERF_MUTEX);
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::BUILDER_RELEASE);
             std::unique_lock<std::mutex> lck(mtx);
             builderQueue = firstBuilderQueue;
             while (firstBuilderQueue->id < maxId) {
@@ -2352,14 +2352,15 @@ namespace OpenLogReplicator {
                 --buffersAllocated;
             }
         }
-        t->perfSet(Thread::PERF_CPU);
+        t->contextSet(Thread::CONTEXT_CPU);
 
-        if (builderQueue != nullptr) {
-            while (builderQueue->id < maxId) {
-                BuilderQueue* nextBuffer = builderQueue->next;
-                ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
-                builderQueue = nextBuffer;
-            }
+        if (builderQueue == nullptr)
+            return;
+
+        while (builderQueue->id < maxId) {
+            BuilderQueue* nextBuffer = builderQueue->next;
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
+            builderQueue = nextBuffer;
         }
     }
 
@@ -2368,15 +2369,15 @@ namespace OpenLogReplicator {
             ctx->logTrace(Ctx::TRACE_SLEEP, "Builder:sleepForWriterWork");
 
         {
-            t->perfSet(Thread::PERF_MUTEX);
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::WRITER_DONE);
             std::unique_lock<std::mutex> lck(mtx);
-            t->perfSet(Thread::PERF_WAIT);
+            t->contextSet(Thread::CONTEXT_WAIT, Thread::WRITER_NO_WORK);
             if (queueSize > 0)
                 condNoWriterWork.wait_for(lck, std::chrono::nanoseconds(nanoseconds));
             else
                 condNoWriterWork.wait_for(lck, std::chrono::seconds(5));
         }
-        t->perfSet(Thread::PERF_CPU);
+        t->contextSet(Thread::CONTEXT_CPU);
     }
 
     void Builder::wakeUp() {

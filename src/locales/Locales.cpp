@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
                          {0x91bc, "US/East-Indiana"}, {0x8f08, "US/Hawaii"}, {0x91c4, "US/Indiana-Starke"}, {0x89d0, "US/Michigan"}, {0x9198, "US/Mountain"},
                          {0x899c, "US/Pacific"}, {0x999c, "US/Pacific-New"}, {0x8f78, "US/Samoa"}, {0xd004, "UTC"}, {0x85b4, "WET"}, {0x8e48, "W-SU"},
                          {0xa070, "Zulu"}}) {
-    };
+    }
 
     Locales::~Locales() {
         for (auto characterMapIt: Locales::characterMap) {

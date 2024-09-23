@@ -72,11 +72,11 @@ namespace OpenLogReplicator {
 
             transaction = new Transaction(xid, &orphanedLobs, xmlCtx);
             {
-                ctx->parserThread->perfSet(Thread::PERF_MUTEX);
+                ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::TRANSACTION_FIND);
                 std::unique_lock<std::mutex> lck(mtx);
                 xidTransactionMap.insert_or_assign(xidMap, transaction);
             }
-            ctx->parserThread->perfSet(Thread::PERF_CPU);
+            ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
 
             if (dumpXidList.find(xid) != dumpXidList.end())
                 transaction->dump = true;
@@ -88,11 +88,11 @@ namespace OpenLogReplicator {
     void TransactionBuffer::dropTransaction(typeXid xid, typeConId conId) {
         typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(conId) << 32);
         {
-            ctx->parserThread->perfSet(Thread::PERF_MUTEX);
+            ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::TRANSACTION_DROP);
             std::unique_lock<std::mutex> lck(mtx);
             xidTransactionMap.erase(xidMap);
         }
-        ctx->parserThread->perfSet(Thread::PERF_CPU);
+        ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
     }
 
     TransactionChunk* TransactionBuffer::newTransactionChunk() {
@@ -112,7 +112,7 @@ namespace OpenLogReplicator {
                 partiallyFullChunks.insert_or_assign(chunk, freeMap);
         } else {
             chunk = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_TRANSACTIONS, false);
-            ctx->parserThread->perfSet(Thread::PERF_CPU);
+            ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
             pos = 0;
             freeMap = BUFFERS_FREE_MASK & (~1);
             partiallyFullChunks.insert_or_assign(chunk, freeMap);
@@ -155,7 +155,7 @@ namespace OpenLogReplicator {
             throw RedoLogException(50040, "block size (" + std::to_string(chunkSize) + ") exceeding max block size (" +
                                           std::to_string(TransactionChunk::FULL_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
-        if (transaction->lastSplit) {
+        if (unlikely(transaction->lastSplit)) {
             if (unlikely((redoLogRecord->flg & OpCode::FLG_MULTIBLOCKUNDOMID) == 0))
                 throw RedoLogException(50041, "bad split offset: " + std::to_string(redoLogRecord->dataOffset) + " xid: " +
                                               transaction->xid.toString());
@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
             throw RedoLogException(50040, "block size (" + std::to_string(chunkSize) + ") exceeding max block size (" +
                                           std::to_string(TransactionChunk::DATA_BUFFER_SIZE) + "), try increasing the FULL_BUFFER_SIZE parameter");
 
-        if (transaction->lastSplit) {
+        if (unlikely(transaction->lastSplit)) {
             if (unlikely((redoLogRecord1->opCode) != 0x0501))
                 throw RedoLogException(50042, "split undo HEAD no 5.1 offset: " + std::to_string(redoLogRecord1->dataOffset));
 

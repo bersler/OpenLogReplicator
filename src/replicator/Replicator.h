@@ -98,6 +98,9 @@ namespace OpenLogReplicator {
 
         friend class OpenLogReplicator;
         friend class ReplicatorOnline;
+        const std::string getName() const override {
+            return std::string{"Replicator: " + alias};
+        };
     };
 }
 

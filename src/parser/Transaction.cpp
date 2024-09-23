@@ -197,21 +197,21 @@ namespace OpenLogReplicator {
         bool opFlush;
         deallocTc = nullptr;
         uint64_t maxMessageMb = builder->getMaxMessageMb();
-        metadata->ctx->parserThread->perfSet(Thread::PERF_TRAN);
+        metadata->ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
         std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
         std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema, std::defer_lock);
 
         if (opCodes == 0 || rollback) {
-            metadata->ctx->parserThread->perfSet(Thread::PERF_CPU);
+            metadata->ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
             return;
         }
         if (unlikely(metadata->ctx->trace & Ctx::TRACE_TRANSACTION))
             metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, toString());
 
         if (system) {
-            metadata->ctx->parserThread->perfSet(Thread::PERF_MUTEX);
+            metadata->ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::TRANSACTION_SYSTEM);
             lckSchema.lock();
-            metadata->ctx->parserThread->perfSet(Thread::PERF_TRAN);
+            metadata->ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
 
             if (unlikely(builder->systemTransaction != nullptr))
                 throw RedoLogException(50056, "system transaction already active");
@@ -575,7 +575,7 @@ namespace OpenLogReplicator {
             lckSchema.unlock();
         }
         builder->processCommit(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
-        metadata->ctx->parserThread->perfSet(Thread::PERF_CPU);
+        metadata->ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
     }
 
     void Transaction::purge(TransactionBuffer* transactionBuffer) {

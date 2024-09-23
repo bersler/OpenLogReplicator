@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
             throw DataException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                        " - parse error: " + GetParseError_En(document.GetParseError()));
 
-        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+        if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
             static const char* documentNames[] {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace",
                                                 "source", "target", nullptr};
             Ctx::checkJsonFields(configFileName, document, documentNames);
@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                 static const char* sourceNames[] {"alias", "memory", "name", "reader", "flags", "state", "debug",
                                                   "transaction-max-mb", "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us",
                                                   "arch-read-tries", "redo-verify-delay-us", "refresh-interval-us", "arch",
@@ -233,7 +233,7 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("memory")) {
                 const rapidjson::Value& memoryJson = Ctx::getJsonFieldO(configFileName, sourceJson, "memory");
 
-                if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+                if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                     static const char* memoryNames[] {"min-mb", "max-mb", "read-buffer-max-mb", nullptr};
                     Ctx::checkJsonFields(configFileName, memoryJson, memoryNames);
                 }
@@ -274,7 +274,7 @@ namespace OpenLogReplicator {
             const char* name = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, sourceJson, "name");
             const rapidjson::Value& readerJson = Ctx::getJsonFieldO(configFileName, sourceJson, "reader");
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                 static const char* readerNames[] {"disable-checks", "start-scn", "start-seq", "start-time-rel", "start-time",
                                                   "con-id", "type", "redo-copy-path", "db-timezone", "host-timezone", "log-timezone",
                                                   "user", "password", "server", "redo-log", "path-mapping", "log-archive-format",
@@ -331,7 +331,7 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("state")) {
                 const rapidjson::Value& stateJson = Ctx::getJsonFieldO(configFileName, sourceJson, "state");
 
-                if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+                if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                     static const char* stateNames[] {"type", "path", "interval-s", "interval-mb", "keep-checkpoints",
                                                      "schema-force-interval", nullptr};
                     Ctx::checkJsonFields(configFileName, stateJson, stateNames);
@@ -367,7 +367,7 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("debug")) {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
 
-                if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+                if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                     static const char* debugNames[] {"stop-log-switches", "stop-checkpoints", "stop-transactions", "owner", "table",
                                                      nullptr};
                     Ctx::checkJsonFields(configFileName, debugJson, debugNames);
@@ -445,7 +445,7 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("metrics")) {
                 const rapidjson::Value& metricsJson = Ctx::getJsonFieldO(configFileName, sourceJson, "metrics");
 
-                if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+                if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                     static const char* metricsNames[] {"type", "bind", "tag-names", nullptr};
                     Ctx::checkJsonFields(configFileName, metricsJson, metricsNames);
                 }
@@ -490,7 +490,7 @@ namespace OpenLogReplicator {
             // FORMAT
             const rapidjson::Value& formatJson = Ctx::getJsonFieldO(configFileName, sourceJson, "format");
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                 static const char* formatNames[] {"db", "attributes", "interval-dts", "interval-ytm", "message", "rid", "xid",
                                                   "timestamp", "timestamp-tz", "timestamp-all", "char", "scn", "scn-all",
                                                   "unknown", "schema", "column", "unknown-type", "flush-buffer", "type",
@@ -798,7 +798,7 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("filter")) {
                 const rapidjson::Value& filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
 
-                if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+                if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                     static const char* filterNames[] {"table", "skip-xid", "dump-xid", nullptr};
                     Ctx::checkJsonFields(configFileName, filterJson, filterNames);
                 }
@@ -809,7 +809,7 @@ namespace OpenLogReplicator {
                     for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {
                         const rapidjson::Value& tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
 
-                        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+                        if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                             static const char* tableElementNames[] {"owner", "table", "key", "condition", nullptr};
                             Ctx::checkJsonFields(configFileName, tableElementJson, tableElementNames);
                         }
@@ -898,7 +898,7 @@ namespace OpenLogReplicator {
             const rapidjson::Value& writerJson = Ctx::getJsonFieldO(configFileName, targetJson, "writer");
             const char* writerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "type");
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
                 static const char* writerNames[] {"type", "poll-interval-us", "queue-size", "max-file-size", "timestamp-format",
                                                   "output", "new-line", "append", "max-message-mb", "topic", "properties",
                                                   "uri", nullptr};

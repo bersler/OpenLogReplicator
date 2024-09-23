@@ -551,7 +551,7 @@ namespace OpenLogReplicator {
             return;
 
         typeScn currentScn;
-        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_GRANTS)) {
+        if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_GRANTS)) {
             checkTableForGrants("SYS.V_$ARCHIVED_LOG");
             checkTableForGrants("SYS.V_$DATABASE");
             checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
@@ -646,7 +646,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_GRANTS) && !standby) {
+        if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_GRANTS) && !standby) {
             checkTableForGrantsFlashback("SYS.CCOL$", currentScn);
             checkTableForGrantsFlashback("SYS.CDEF$", currentScn);
             checkTableForGrantsFlashback("SYS.COL$", currentScn);
@@ -813,9 +813,9 @@ namespace OpenLogReplicator {
                     stmt.executeQuery();
                 } catch (RuntimeException& ex) {
                     conn->disconnect();
-                    perfSet(PERF_SLEEP);
+                    contextSet(CONTEXT_SLEEP);
                     usleep(ctx->redoReadSleepUs);
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                     ctx->info(0, "reconnecting to Oracle instance of " + database + " to " + conn->connectString);
                     continue;
                 }
@@ -825,9 +825,9 @@ namespace OpenLogReplicator {
 
             if (unlikely(ctx->trace & Ctx::TRACE_REDO))
                 ctx->logTrace(Ctx::TRACE_REDO, "cannot connect to database, retry in 5 sec.");
-            perfSet(PERF_SLEEP);
+            contextSet(CONTEXT_SLEEP);
             sleep(5);
-            perfSet(PERF_CPU);
+            contextSet(CONTEXT_CPU);
         }
 
         return false;
@@ -962,7 +962,7 @@ namespace OpenLogReplicator {
 
         std::vector<std::string> msgs;
         {
-            perfSet(PERF_MUTEX);
+            contextSet(CONTEXT_MUTEX, REPLICATOR_SCHEMA);
             std::unique_lock<std::mutex> lck(metadata->mtxSchema);
             metadata->schema->purgeMetadata();
             metadata->schema->purgeDicts();
@@ -979,7 +979,7 @@ namespace OpenLogReplicator {
                 metadata->ctx->logTrace(Ctx::TRACE_CHECKPOINT, "schema creation completed, allowing checkpoints");
             metadata->allowCheckpoints();
         }
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
 
         for (const auto& msg: msgs) {
             ctx->info(0, "- found: " + msg);
@@ -1851,7 +1851,7 @@ namespace OpenLogReplicator {
         if (!checkConnection())
             return;
 
-        perfSet(PERF_CHKPT);
+        contextSet(CONTEXT_CHKPT, REASON_CHKPT);
         std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
 
         // Reload incarnation ctx
@@ -1966,7 +1966,7 @@ namespace OpenLogReplicator {
             }
         }
         checkOnlineRedoLogs();
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
     }
 
     void ReplicatorOnline::archGetLogOnline(Replicator* replicator) {

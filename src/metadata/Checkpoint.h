@@ -56,6 +56,10 @@ namespace OpenLogReplicator {
 
         void wakeUp() override;
         void run() override;
+
+        const std::string getName() const override {
+            return std::string{"Checkpoint"};
+        };
     };
 }
 

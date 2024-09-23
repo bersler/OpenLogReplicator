@@ -2614,7 +2614,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0 &&
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0 &&
                 !suppLogDbAll && !sysUser->isSuppLogAll()) {
 
                 SysCDefKey sysCDefKeyFirst(sysObj->obj, 0);
@@ -2899,7 +2899,7 @@ namespace OpenLogReplicator {
             if (sysTab->isRowMovement())
                 ss << ", row movement enabled";
 
-            if (!ctx->disableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0) {
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OracleTable::OPTIONS_SYSTEM_TABLE) == 0) {
                 // Use a default primary key
                 if (keys.empty()) {
                     if (tableTmp->totalPk == 0)

@@ -696,7 +696,7 @@ namespace OpenLogReplicator {
     }
 
     uint8_t* Ctx::getMemoryChunk(Thread* t, uint64_t module, bool reusable) {
-        t->perfSet(Thread::PERF_MEM);
+        t->contextSet(Thread::CONTEXT_MEM);
         std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (memoryChunksFree == 0) {
@@ -706,9 +706,9 @@ namespace OpenLogReplicator {
 
                     if (unlikely(trace & TRACE_SLEEP))
                         logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
-                    t->perfSet(Thread::PERF_WAIT);
+                    t->contextSet(Thread::CONTEXT_WAIT);
                     condOutOfMemory.wait(lck);
-                    t->perfSet(Thread::PERF_MEM);
+                    t->contextSet(Thread::CONTEXT_MEM);
                 } else {
                     hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
                          "transaction would be skipped");
@@ -717,9 +717,9 @@ namespace OpenLogReplicator {
             }
 
             if (memoryChunksFree == 0) {
-                t->perfSet(Thread::PERF_OS);
+                t->contextSet(Thread::CONTEXT_OS);
                 memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
-                t->perfSet(Thread::PERF_MEM);
+                t->contextSet(Thread::CONTEXT_MEM);
                 if (unlikely(memoryChunks[0] == nullptr)) {
                     throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
                                                   " bytes memory for: " + memoryModules[module]);
@@ -765,7 +765,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk, bool reusable) {
-        t->perfSet(Thread::PERF_MEM);
+        t->contextSet(Thread::CONTEXT_MEM);
         {
             std::unique_lock<std::mutex> lck(memoryMtx);
 
@@ -774,9 +774,9 @@ namespace OpenLogReplicator {
 
             // Keep memoryChunksMin reserved
             if (memoryChunksFree >= memoryChunksMin) {
-                t->perfSet(Thread::PERF_OS);
+                t->contextSet(Thread::CONTEXT_OS);
                 free(chunk);
-                t->perfSet(Thread::PERF_MEM);
+                t->contextSet(Thread::CONTEXT_MEM);
                 --memoryChunksAllocated;
                 if (metrics)
                     metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
@@ -812,7 +812,7 @@ namespace OpenLogReplicator {
                 }
             }
         }
-        t->perfSet(Thread::PERF_CPU);
+        t->contextSet(Thread::CONTEXT_CPU);
     }
 
     void Ctx::stopHard() {
@@ -883,13 +883,26 @@ namespace OpenLogReplicator {
     void Ctx::printStacktrace() {
         void* array[128];
         int size;
-        error(10014, "stacktrace for thread: " + std::to_string(reinterpret_cast<uint64_t>(pthread_self())));
+        std::stringstream result;
+        result << "stacktrace for thread: " + std::to_string(reinterpret_cast<uint64_t>(pthread_self())) + "\n";
         {
             std::unique_lock<std::mutex> lck(mtx);
             size = backtrace(array, 128);
         }
-        backtrace_symbols_fd(array, size, STDERR_FILENO);
-        error(10014, "stacktrace for thread: completed");
+        char** ptr = backtrace_symbols(array, size);
+
+        if (ptr == nullptr) {
+            result << "empty";
+            error(10014, result.str());
+            return;
+        }
+
+        for (int i = 0; i < size; ++i)
+            result << ptr[i] << "\n";
+
+        free(ptr);
+
+        error(10014, result.str());
     }
 
     void Ctx::signalHandler(int s) {
@@ -979,13 +992,13 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::releaseBuffer(Thread* t) {
-        t->perfSet(Thread::PERF_MEM);
+        t->contextSet(Thread::CONTEXT_MEM);
         std::unique_lock<std::mutex> lck(memoryMtx);
         ++buffersFree;
     }
 
     void Ctx::allocateBuffer(Thread* t) {
-        t->perfSet(Thread::PERF_MEM);
+        t->contextSet(Thread::CONTEXT_MEM);
         std::unique_lock<std::mutex> lck(memoryMtx);
         --buffersFree;
         if (readBufferMax - buffersFree > buffersMaxUsed)
@@ -997,8 +1010,12 @@ namespace OpenLogReplicator {
             return;
 
         std::unique_lock<std::mutex> lck(mtx);
-        for (Thread* thread: threads)
+        for (Thread* thread: threads) {
+            error(10014, "Dump: " + thread->getName() + " " + std::to_string(reinterpret_cast<uint64_t>(thread->pthread)) + " context: " +
+                    std::to_string(thread->curContext) + " reason: " + std::to_string(thread->curReason) + " switches: " +
+                    std::to_string(thread->contextSwitches));
             pthread_kill(thread->pthread, SIGUSR1);
+        }
     }
 
     void Ctx::welcome(const std::string& message) const {

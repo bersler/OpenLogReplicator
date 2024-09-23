@@ -179,7 +179,7 @@ namespace OpenLogReplicator {
             return (flags & mask) != 0;
         }
 
-        bool disableChecksSet(uint64_t mask) const {
+        bool isDisableChecksSet(uint64_t mask) const {
             return (disableChecks & mask) != 0;
         }
 

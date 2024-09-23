@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
     class WriterDiscard final : public Writer {
     protected:
         void sendMessage(BuilderMsg* msg) override;
-        std::string getName() const override;
+        std::string getType() const override;
         void pollQueue() override;
 
     public:

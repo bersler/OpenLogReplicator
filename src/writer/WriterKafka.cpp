@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
         rd_kafka_poll(rk, 0);
     }
 
-    std::string WriterKafka::getName() const {
+    std::string WriterKafka::getType() const {
         return "Kafka:" + topic;
     }
 

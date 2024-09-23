@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
 
         void createMessage(BuilderMsg* msg);
         virtual void sendMessage(BuilderMsg* msg) = 0;
-        virtual std::string getName() const = 0;
+        virtual std::string getType() const = 0;
         virtual void pollQueue() = 0;
         void run() override;
         void mainLoop();
@@ -71,6 +71,10 @@ namespace OpenLogReplicator {
         virtual void initialize();
         void confirmMessage(BuilderMsg* msg);
         void wakeUp() override;
+
+        const std::string getName() const override {
+            return std::string{"Writer: " + getType()};
+        };
     };
 }
 

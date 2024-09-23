@@ -122,13 +122,13 @@ namespace OpenLogReplicator {
             ctx->metrics->emitMessagesConfirmed(1);
         }
 
-        perfSet(PERF_MUTEX);
+        contextSet(CONTEXT_MUTEX, WRITER_CONFIRM);
         std::unique_lock<std::mutex> lck(mtx);
 
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
                 ctx->warning(70007, "trying to confirm an empty message");
-                perfSet(PERF_CPU);
+                contextSet(CONTEXT_CPU);
                 return;
             }
             msg = queue[0];
@@ -174,7 +174,7 @@ namespace OpenLogReplicator {
         }
 
         builder->releaseBuffers(this, maxId);
-        perfSet(PERF_CPU);
+        contextSet(CONTEXT_CPU);
     }
 
     void Writer::run() {
@@ -215,7 +215,7 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        ctx->info(0, "writer is stopping: " + getName() + ", hwm queue size: " + std::to_string(hwmQueueSize));
+        ctx->info(0, "writer is stopping: " + getType() + ", hwm queue size: " + std::to_string(hwmQueueSize));
         if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
@@ -239,9 +239,9 @@ namespace OpenLogReplicator {
 
                 if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
                     ctx->logTrace(Ctx::TRACE_WRITER, "waiting for client");
-                perfSet(PERF_SLEEP);
+                contextSet(CONTEXT_SLEEP);
                 usleep(ctx->pollIntervalUs);
-                perfSet(PERF_CPU);
+                contextSet(CONTEXT_CPU);
             }
 
             // Get a message to send
@@ -283,9 +283,9 @@ namespace OpenLogReplicator {
                     if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
                         ctx->logTrace(Ctx::TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
                                                          " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
-                    perfSet(PERF_SLEEP);
+                    contextSet(CONTEXT_SLEEP);
                     usleep(ctx->pollIntervalUs);
-                    perfSet(PERF_CPU);
+                    contextSet(CONTEXT_CPU);
                     pollQueue();
                 }
 
@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
                 uint64_t size8 = (msg->size + 7) & 0xFFFFFFFFFFFFFFF8;
                 oldSize += sizeof(struct BuilderMsg);
 
-                // Message in one part - send directly from buffer
+                // Message in one part - sent directly from buffer
                 if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send the message to the client in one part
@@ -312,7 +312,6 @@ namespace OpenLogReplicator {
                         }
                     }
                     oldSize += size8;
-
                 } else {
                     // The message is split to many parts - merge & copy
                     msg->data = new uint8_t[msg->size];
@@ -420,7 +419,7 @@ namespace OpenLogReplicator {
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
                                        " - parse error: " + GetParseError_En(document.GetParseError()));
 
-        if (!metadata->ctx->disableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
+        if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
             static const char* documentNames[] {"database", "resetlogs", "activation", "scn", "idx", nullptr};
             Ctx::checkJsonFields(name, document, documentNames);
         }
