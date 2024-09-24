@@ -78,8 +78,8 @@ namespace OpenLogReplicator {
 
     void Reader::initialize() {
         if (redoBufferList == nullptr) {
-            redoBufferList = new uint8_t* [ctx->readBufferMax];
-            memset(reinterpret_cast<void*>(redoBufferList), 0, ctx->readBufferMax * sizeof(uint8_t*));
+            redoBufferList = new uint8_t* [ctx->memoryChunksReadBufferMax];
+            memset(reinterpret_cast<void*>(redoBufferList), 0, ctx->memoryChunksReadBufferMax * sizeof(uint8_t*));
         }
 
         if (headerBuffer == nullptr) {
@@ -107,8 +107,8 @@ namespace OpenLogReplicator {
     }
 
     Reader::~Reader() {
-        for (uint64_t num = 0; num < ctx->readBufferMax; ++num)
-            bufferFree(num);
+        for (uint64_t num = 0; num < ctx->memoryChunksReadBufferMax; ++num)
+            bufferFree(this, num);
 
         if (redoBufferList != nullptr) {
             delete[] redoBufferList;
@@ -392,7 +392,7 @@ namespace OpenLogReplicator {
             toRead = fileSize - bufferScan;
 
         uint64_t redoBufferPos = bufferScan % Ctx::MEMORY_CHUNK_SIZE;
-        uint64_t redoBufferNum = (bufferScan / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+        uint64_t redoBufferNum = (bufferScan / Ctx::MEMORY_CHUNK_SIZE) % ctx->memoryChunksReadBufferMax;
         if (redoBufferPos + toRead > Ctx::MEMORY_CHUNK_SIZE)
             toRead = Ctx::MEMORY_CHUNK_SIZE - redoBufferPos;
 
@@ -528,7 +528,7 @@ namespace OpenLogReplicator {
 
         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
             uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % Ctx::MEMORY_CHUNK_SIZE;
-            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / Ctx::MEMORY_CHUNK_SIZE) % ctx->memoryChunksReadBufferMax;
 
             const auto readTimeP = reinterpret_cast<const time_ut*>(redoBufferList[redoBufferNum] + redoBufferPos);
             if (*readTimeP + static_cast<time_ut>(ctx->redoVerifyDelayUs) < loopTime) {
@@ -545,7 +545,7 @@ namespace OpenLogReplicator {
                 toRead = goodBlocks * blockSize;
 
             uint64_t redoBufferPos = bufferEnd % Ctx::MEMORY_CHUNK_SIZE;
-            uint64_t redoBufferNum = (bufferEnd / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+            uint64_t redoBufferNum = (bufferEnd / Ctx::MEMORY_CHUNK_SIZE) % ctx->memoryChunksReadBufferMax;
 
             if (redoBufferPos + toRead > Ctx::MEMORY_CHUNK_SIZE)
                 toRead = Ctx::MEMORY_CHUNK_SIZE - redoBufferPos;
@@ -637,13 +637,8 @@ namespace OpenLogReplicator {
                     contextSet(CONTEXT_WAIT, READER_NO_WORK);
                     condReaderSleeping.wait(lck);
                     contextSet(CONTEXT_MUTEX, READER_MAIN2);
-                } else if (status == STATUS_READ && !ctx->softShutdown && ctx->buffersFree == 0 && (bufferEnd % Ctx::MEMORY_CHUNK_SIZE) == 0) {
-                    // Buffer full
-                    if (unlikely(ctx->trace & Ctx::TRACE_SLEEP))
-                        ctx->logTrace(Ctx::TRACE_SLEEP, "Reader:mainLoop:buffer");
-                    contextSet(CONTEXT_WAIT);
-                    condBufferFull.wait(lck);
-                    contextSet(CONTEXT_MUTEX);
+                } else if (status == STATUS_READ && !ctx->softShutdown && (bufferEnd % Ctx::MEMORY_CHUNK_SIZE) == 0) {
+                    ctx->warning(0, "buffer full?");
                 }
             }
             contextSet(CONTEXT_CPU);
@@ -680,8 +675,8 @@ namespace OpenLogReplicator {
                     bufferEnd = blockSize * 2;
                 }
 
-                for (uint64_t num = 0; num < ctx->readBufferMax; ++num)
-                    bufferFree(num);
+                for (uint64_t num = 0; num < ctx->memoryChunksReadBufferMax; ++num)
+                    bufferFree(this, num);
 
                 {
                     contextSet(CONTEXT_MUTEX, READER_SLEEP1);
@@ -737,8 +732,8 @@ namespace OpenLogReplicator {
                             break;
 
                     // #1 read
-                    if (bufferScan < fileSize && (ctx->buffersFree > 0 || (bufferScan % Ctx::MEMORY_CHUNK_SIZE) > 0)
-                        && (!reachedZero || lastReadTime + static_cast<time_t>(ctx->redoReadSleepUs) < loopTime))
+                    if (bufferScan < fileSize && (bufferIsFree() || (bufferScan % Ctx::MEMORY_CHUNK_SIZE) > 0)
+                            && (!reachedZero || lastReadTime + static_cast<time_t>(ctx->redoReadSleepUs) < loopTime))
                         if (!read1())
                             break;
 
@@ -832,25 +827,54 @@ namespace OpenLogReplicator {
     }
 
     void Reader::bufferAllocate(uint64_t num) {
-        if (redoBufferList[num] == nullptr) {
-            redoBufferList[num] = ctx->getMemoryChunk(this, Ctx::MEMORY_MODULE_READER, false);
-            contextSet(CONTEXT_CPU);
-            if (unlikely(ctx->buffersFree == 0))
-                throw RuntimeException(10016, "couldn't allocate " + std::to_string(Ctx::MEMORY_CHUNK_SIZE) +
-                                              " bytes memory for: read buffer");
-
-            ctx->allocateBuffer(this);
-            contextSet(CONTEXT_CPU);
+        {
+            contextSet(CONTEXT_MUTEX, READER_ALLOCATE1);
+            std::unique_lock<std::mutex> lck(mtx);
+            if (redoBufferList[num] != nullptr) {
+                contextSet(CONTEXT_CPU);
+                return;
+            }
         }
+        contextSet(CONTEXT_CPU);
+
+        uint8_t* buffer = ctx->getMemoryChunk(this, Ctx::MEMORY_MODULE_READER);
+
+        {
+            contextSet(CONTEXT_MUTEX, READER_ALLOCATE2);
+            std::unique_lock<std::mutex> lck(mtx);
+            redoBufferList[num] = buffer;
+            --ctx->bufferSizeFree;
+        }
+        contextSet(CONTEXT_CPU);
     }
 
-    void Reader::bufferFree(uint64_t num) {
-        if (redoBufferList[num] != nullptr) {
-            ctx->freeMemoryChunk(this, Ctx::MEMORY_MODULE_READER, redoBufferList[num], false);
+    void Reader::bufferFree(Thread* t, uint64_t num) {
+        uint8_t* buffer;
+        {
+            t->contextSet(CONTEXT_MUTEX, READER_FREE);
+            std::unique_lock<std::mutex> lck(mtx);
+            if (redoBufferList[num] == nullptr) {
+                t->contextSet(CONTEXT_CPU);
+                return;
+            }
+            buffer = redoBufferList[num];
             redoBufferList[num] = nullptr;
-            ctx->releaseBuffer(this);
-            contextSet(CONTEXT_CPU);
+            ++ctx->bufferSizeFree;
         }
+        t->contextSet(CONTEXT_CPU);
+
+        ctx->freeMemoryChunk(this, Ctx::MEMORY_MODULE_READER, buffer);
+    }
+
+    bool Reader::bufferIsFree() {
+        bool isFree;
+        {
+            contextSet(CONTEXT_MUTEX, READER_CHECK_FREE);
+            std::unique_lock<std::mutex> lck(mtx);
+            isFree = (ctx->bufferSizeFree > 0);
+        }
+        contextSet(CONTEXT_CPU);
+        return isFree;
     }
 
     void Reader::printHeaderInfo(std::ostringstream& ss, const std::string& path) const {

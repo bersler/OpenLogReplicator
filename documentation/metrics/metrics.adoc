@@ -1,7 +1,7 @@
 = Metrics
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-01
+:revdate: 2024-09-24
 :imagesdir: ./images
 :toc: preamble
 
@@ -125,6 +125,23 @@ The following modules are available:
 | counter
 |
 | Number of messages bytes sent to output, for example, to Kafka or network writer.
+
+| swap_operations_mb
+| counter
+| type={discard,read,write}
+| Operations on swap space in MB.
+Types:
+
+* discard -- 1MB block has been written (swapped) to disk but not read, since it was not needed (for example, because of rollback);
+
+* read -- 1MB block has been read from disk to memory;
+
+* write -- 1MB block has been written to disk.
+
+| swap_usage_mb
+| gauge
+|
+| Swap usage in MB.
 
 | transactions
 | counter

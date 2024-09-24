@@ -123,7 +123,8 @@ namespace OpenLogReplicator {
         void wakeUp() override;
         void run() override;
         void bufferAllocate(uint64_t num);
-        void bufferFree(uint64_t num);
+        void bufferFree(Thread* t, uint64_t num);
+        bool bufferIsFree();
         typeSum calcChSum(uint8_t* buffer, uint64_t size) const;
         void printHeaderInfo(std::ostringstream& ss, const std::string& path) const;
         [[nodiscard]] uint64_t getBlockSize() const;

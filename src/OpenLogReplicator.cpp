@@ -28,6 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "builder/BuilderJson.h"
 #include "common/Ctx.h"
+#include "common/MemoryManager.h"
 #include "common/types.h"
 #include "common/Thread.h"
 #include "common/types.h"
@@ -115,6 +116,10 @@ namespace OpenLogReplicator {
         for (Locales* locales: localess)
             delete locales;
         localess.clear();
+
+        for (MemoryManager* memoryManager: memoryManagers)
+            delete memoryManager;
+        memoryManagers.clear();
 
         if (fid != -1)
             close(fid);
@@ -226,15 +231,22 @@ namespace OpenLogReplicator {
             ctx->info(0, "adding source: " + std::string(alias));
 
             uint64_t memoryMinMb = 32;
-            uint64_t memoryMaxMb = 1024;
-            uint64_t readBufferMax = memoryMaxMb / 4 / Ctx::MEMORY_CHUNK_SIZE_MB;
+            uint64_t memoryMaxMb = 2048;
+            uint64_t memoryReadBufferMaxMb = 128;
+            uint64_t memoryReadBufferMinMb = 4;
+            uint64_t memorySwapMb = memoryMaxMb * 3 / 4;
+            const char *memorySwapPath {"."};
+            uint64_t memoryUnswapBufferMinMb = 4;
+            uint64_t memoryWriteBufferMaxMb = memoryMaxMb;
+            uint64_t memoryWriteBufferMinMb = 4;
 
             // MEMORY
             if (sourceJson.HasMember("memory")) {
                 const rapidjson::Value& memoryJson = Ctx::getJsonFieldO(configFileName, sourceJson, "memory");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                    static const char* memoryNames[] {"min-mb", "max-mb", "read-buffer-max-mb", nullptr};
+                    static const char* memoryNames[] {"min-mb", "max-mb", "read-buffer-max-mb", "read-buffer-min-mb", "swap-mb", "swap-path",
+                                                      "unswap-buffer-min-mb", "write-buffer-max-mb", "write-buffer-min-mb", nullptr};
                     Ctx::checkJsonFields(configFileName, memoryJson, memoryNames);
                 }
 
@@ -253,22 +265,86 @@ namespace OpenLogReplicator {
                         throw ConfigurationException(30001, "bad JSON, invalid \"max-mb\" value: " + std::to_string(memoryMaxMb) +
                                                             ", expected: at least like \"min-mb\" value (" + std::to_string(memoryMinMb) + ")");
 
-                    readBufferMax = memoryMaxMb / 4 / Ctx::MEMORY_CHUNK_SIZE_MB;
-                    if (readBufferMax > 32 / Ctx::MEMORY_CHUNK_SIZE_MB)
-                        readBufferMax = 32 / Ctx::MEMORY_CHUNK_SIZE_MB;
+                    memoryReadBufferMaxMb = memoryMaxMb / 8;
+                    if (memoryReadBufferMaxMb > 128)
+                        memoryReadBufferMaxMb = 128;
+                    memoryWriteBufferMaxMb = memoryMaxMb;
+                    if (memoryWriteBufferMaxMb > 2048)
+                        memoryWriteBufferMaxMb = 2048;
+                    memorySwapMb = memoryMaxMb * 3 / 4 ;
+                }
+
+                if (memoryJson.HasMember("unswap-buffer-min-mb")) {
+                    memoryUnswapBufferMinMb = Ctx::getJsonFieldU64(configFileName, memoryJson, "unswap-buffer-min-mb");
+                    memoryUnswapBufferMinMb = (memoryUnswapBufferMinMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
+                }
+
+                if (memoryJson.HasMember("swap-mb")) {
+                    memorySwapMb = Ctx::getJsonFieldU64(configFileName, memoryJson, "swap-mb");
+                    memorySwapMb = (memorySwapMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
+                    if (memorySwapMb > memoryMaxMb - 4)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"swap-mb\" value: " + std::to_string(memorySwapMb) +
+                                                            ", expected maximum \"max-mb\"-1 value (" + std::to_string(memoryMaxMb - 4) + ")");
+                }
+
+                if (memoryJson.HasMember("read-buffer-min-mb")) {
+                    memoryReadBufferMinMb = Ctx::getJsonFieldU64(configFileName, memoryJson, "read-buffer-min-mb");
+                    memoryReadBufferMinMb = (memoryReadBufferMinMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
+                    if (memoryReadBufferMinMb > memoryMaxMb)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-min-mb\" value: " +
+                                                            std::to_string(memoryReadBufferMaxMb) +
+                                                            ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
+                    if (memoryReadBufferMinMb < 4)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-min-mb\" value: " +
+                                                            std::to_string(memoryReadBufferMaxMb) + ", expected: at least: 4");
                 }
 
                 if (memoryJson.HasMember("read-buffer-max-mb")) {
-                    readBufferMax = Ctx::getJsonFieldU64(configFileName, memoryJson, "read-buffer-max-mb") / Ctx::MEMORY_CHUNK_SIZE_MB;
-                    if (readBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB > memoryMaxMb)
+                    memoryReadBufferMaxMb = Ctx::getJsonFieldU64(configFileName, memoryJson, "read-buffer-max-mb");
+                    memoryReadBufferMaxMb = (memoryReadBufferMaxMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
+                    if (memoryReadBufferMaxMb > memoryMaxMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-max-mb\" value: " +
-                                                            std::to_string(readBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB) +
+                                                            std::to_string(memoryReadBufferMaxMb) +
                                                             ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
-                    if (readBufferMax <= 1)
+                    if (memoryReadBufferMaxMb < memoryReadBufferMinMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-max-mb\" value: " +
-                                                            std::to_string(readBufferMax) + ", expected: at least: " +
-                                                            std::to_string(Ctx::MEMORY_CHUNK_SIZE_MB * 2));
+                                                            std::to_string(memoryReadBufferMaxMb) + ", expected: at least: \"read-buffer-min-mb\" value (" +
+                                                            std::to_string(memoryReadBufferMinMb) + ")");
                 }
+
+                if (memoryJson.HasMember("write-buffer-min-mb")) {
+                    memoryWriteBufferMinMb = Ctx::getJsonFieldU64(configFileName, memoryJson, "write-buffer-min-mb");
+                    memoryWriteBufferMinMb = (memoryWriteBufferMinMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
+                    if (memoryWriteBufferMinMb > memoryMaxMb)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-min-mb\" value: " +
+                                                            std::to_string(memoryWriteBufferMinMb) +
+                                                            ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
+                    if (memoryWriteBufferMinMb < 4)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-min-mb\" value: " +
+                                                            std::to_string(memoryWriteBufferMinMb) + ", expected: at least: 4");
+                }
+
+                if (memoryJson.HasMember("write-buffer-max-mb")) {
+                    memoryWriteBufferMaxMb = Ctx::getJsonFieldU64(configFileName, memoryJson, "write-buffer-max-mb");
+                    memoryWriteBufferMaxMb = (memoryWriteBufferMaxMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
+                    if (memoryWriteBufferMaxMb > memoryMaxMb)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-max-mb\" value: " +
+                                                            std::to_string(memoryWriteBufferMaxMb) +
+                                                            ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
+                    if (memoryWriteBufferMaxMb < memoryWriteBufferMinMb)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-max-mb\" value: " +
+                                                            std::to_string(memoryWriteBufferMaxMb) + ", expected: at least: \"write-buffer-min-mb\" value (" +
+                                                            std::to_string(memoryWriteBufferMinMb) + ")");
+                }
+
+                if (memoryJson.HasMember("swap-path") && memorySwapMb > 0)
+                    memorySwapPath = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, memoryJson, "swap-path");
+
+                if (memoryUnswapBufferMinMb + memoryReadBufferMinMb + memoryWriteBufferMinMb + 4 > memoryMaxMb)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"unswap-buffer-min-mb\" + \"read-buffer-min-mb\" + \"write-buffer-min-mb\" + 4 (" +
+                                                        std::to_string(memoryUnswapBufferMinMb) + " + " + std::to_string(memoryReadBufferMinMb) +
+                                                        " + " + std::to_string(memoryWriteBufferMinMb) + " + 4) is greater than \"max-mb\" value (" +
+                                                        std::to_string(memoryMaxMb) + ")");
             }
 
             const char* name = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, sourceJson, "name");
@@ -410,7 +486,8 @@ namespace OpenLogReplicator {
             }
 
             // MEMORY MANAGER
-            ctx->initialize(memoryMinMb, memoryMaxMb, readBufferMax);
+            ctx->initialize(memoryMinMb, memoryMaxMb, memoryReadBufferMaxMb, memoryReadBufferMinMb, memorySwapMb, memoryUnswapBufferMinMb,
+                            memoryWriteBufferMaxMb, memoryWriteBufferMinMb);
 
             // METADATA
             Metadata* metadata = new Metadata(ctx, locales, name, conId, startScn,
@@ -436,6 +513,12 @@ namespace OpenLogReplicator {
                                              configFileStat.st_mtime);
             checkpoints.push_back(checkpoint);
             ctx->spawnThread(checkpoint);
+
+            // MEMORY MANAGER
+            auto memoryManager = new MemoryManager(ctx, std::string(alias) + "-memory-manager", memorySwapPath);
+            memoryManager->initialize();
+            memoryManagers.push_back(memoryManager);
+            ctx->spawnThread(memoryManager);
 
             // TRANSACTION BUFFER
             TransactionBuffer* transactionBuffer = new TransactionBuffer(ctx);

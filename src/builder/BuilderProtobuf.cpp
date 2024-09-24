@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
             if (unlikely(!ret))
                 throw RuntimeException(50017, "PB begin processing failed, error serializing to string");
             append(output);
-            builderCommit(false);
+            builderCommit();
         }
     }
 
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
             if (unlikely(!ret))
                 throw RuntimeException(50017, "PB insert processing failed, error serializing to string");
             append(output);
-            builderCommit(false);
+            builderCommit();
         }
         ++num;
     }
@@ -201,7 +201,7 @@ namespace OpenLogReplicator {
             if (unlikely(!ret))
                 throw RuntimeException(50017, "PB update processing failed, error serializing to string");
             append(output);
-            builderCommit(false);
+            builderCommit();
         }
         ++num;
     }
@@ -238,7 +238,7 @@ namespace OpenLogReplicator {
             if (unlikely(!ret))
                 throw RuntimeException(50017, "PB delete processing failed, error serializing to string");
             append(output);
-            builderCommit(false);
+            builderCommit();
         }
         ++num;
     }
@@ -273,7 +273,7 @@ namespace OpenLogReplicator {
             if (unlikely(!ret))
                 throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
             append(output);
-            builderCommit(true);
+            builderCommit();
         }
         ++num;
     }
@@ -312,7 +312,7 @@ namespace OpenLogReplicator {
         if (unlikely(!ret))
             throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
         append(output);
-        builderCommit(true);
+        builderCommit();
 
         num = 0;
     }
@@ -342,6 +342,6 @@ namespace OpenLogReplicator {
         if (unlikely(!ret))
             throw RuntimeException(50017, "PB commit processing failed, error serializing to string");
         append(output);
-        builderCommit(true);
+        builderCommit();
     }
 }

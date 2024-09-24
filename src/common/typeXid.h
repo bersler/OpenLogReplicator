@@ -153,4 +153,12 @@ namespace OpenLogReplicator {
     };
 }
 
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::typeXid> {
+        size_t operator()(const OpenLogReplicator::typeXid& xid) const {
+            return hash<size_t>()(xid.getData());
+        }
+    };
+}
 #endif

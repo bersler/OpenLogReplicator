@@ -27,6 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types.h"
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
+#include "TransactionBuffer.h"
 
 #ifndef TRANSACTION_H_
 #define TRANSACTION_H_
@@ -40,7 +41,7 @@ namespace OpenLogReplicator {
 
     class Transaction final {
     protected:
-        TransactionChunk* deallocTc;
+        std::vector<uint64_t> deallocChunks;
         uint64_t opCodes;
 
     public:
@@ -52,7 +53,6 @@ namespace OpenLogReplicator {
         uint64_t firstOffset;
         typeSeq commitSequence;
         typeScn commitScn;
-        TransactionChunk* firstTc;
         TransactionChunk* lastTc;
         typeTime commitTimestamp;
         bool begin;
@@ -62,7 +62,8 @@ namespace OpenLogReplicator {
         bool shutdown;
         bool lastSplit;
         bool dump;
-        uint64_t size;
+        bool swap;
+        typeTransactionSize size;
 
         // Attributes
         std::unordered_map<std::string, std::string> attributes;
@@ -71,10 +72,11 @@ namespace OpenLogReplicator {
 
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
-        void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
+        void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1,
+                            const RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1);
         void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn);
-        void purge(TransactionBuffer* transactionBuffer);
+        void purge(Ctx* ctx);
 
         inline void log(const Ctx* ctx, const char* msg, const RedoLogRecord* redoLogRecord1) const {
             if (likely(!dump && (ctx->trace & Ctx::TRACE_DUMP) == 0))
@@ -102,7 +104,7 @@ namespace OpenLogReplicator {
                          " offset: " + std::to_string(redoLogRecord1->dataOffset));
         }
 
-        std::string toString() const;
+        std::string toString(const Ctx* ctx) const;
     };
 }
 

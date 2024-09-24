@@ -110,6 +110,14 @@ namespace OpenLogReplicator {
         // messages sent
         virtual void emitMessagesSent(uint64_t counter) = 0;
 
+        // swap_operations
+        virtual void emitSwapOperationsMbDiscard(uint64_t counter) = 0;
+        virtual void emitSwapOperationsMbRead(uint64_t counter) = 0;
+        virtual void emitSwapOperationsMbWrite(uint64_t counter) = 0;
+
+        // swap_usage_mb
+        virtual void emitSwapUsageMb(int64_t gauge) = 0;
+
         // transactions
         virtual void emitTransactionsCommitOut(uint64_t counter) = 0;
         virtual void emitTransactionsRollbackOut(uint64_t counter) = 0;

@@ -62,6 +62,10 @@ typedef uint16_t typePos;
 typedef uint16_t typeSize;
 typedef uint8_t typeCC;
 typedef uint16_t typeCCExt;
+typedef uint16_t typeLwn;
+typedef uint64_t typeLwnSize;
+typedef uint64_t typeTransactionSize;
+typedef uint32_t typeChunkSize;
 
 typedef uint16_t typeUnicode16;
 typedef uint32_t typeUnicode32;

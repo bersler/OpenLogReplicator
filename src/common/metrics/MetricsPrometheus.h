@@ -116,6 +116,16 @@ namespace OpenLogReplicator {
         prometheus::Family<prometheus::Counter>* messagesSent;
         prometheus::Counter* messagesSentCounter;
 
+        // swap_operations
+        prometheus::Family<prometheus::Counter>* swapOperationsMb;
+        prometheus::Counter* swapOperationsMbDiscardCounter;
+        prometheus::Counter* swapOperationsMbReadCounter;
+        prometheus::Counter* swapOperationsMbWriteCounter;
+
+        // swap_usage_mb
+        prometheus::Family<prometheus::Gauge>* swapUsageMb;
+        prometheus::Gauge* swapUsageMbGauge;
+
         // transactions
         prometheus::Family<prometheus::Counter>* transactions;
         prometheus::Counter* transactionsCommitOutCounter;
@@ -198,6 +208,14 @@ namespace OpenLogReplicator {
 
         // messages sent
         virtual void emitMessagesSent(uint64_t counter) override;
+
+        // swap_operations
+        virtual void emitSwapOperationsMbDiscard(uint64_t counter) override;
+        virtual void emitSwapOperationsMbRead(uint64_t counter) override;
+        virtual void emitSwapOperationsMbWrite(uint64_t counter) override;
+
+        // swap_usage_mb
+        virtual void emitSwapUsageMb(int64_t gauge) override;
 
         // transactions
         virtual void emitTransactionsCommitOut(uint64_t counter) override;

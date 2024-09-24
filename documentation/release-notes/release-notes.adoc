@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-09-15
+:revdate: 2024-09-24
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -27,6 +27,7 @@ This document describes the release notes of OpenLogReplicator.
 - documentation update
 - fix: missing include for some systems
 - enhancement: thread performance information
+- enhancement: swap memory to disk in low memory situations
 
 === Version 1.6.0
 - enhancement: add parameter -p

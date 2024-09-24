@@ -71,6 +71,12 @@ namespace OpenLogReplicator {
             messagesConfirmedCounter(nullptr),
             messagesSent(nullptr),
             messagesSentCounter(nullptr),
+            swapOperationsMb(nullptr),
+            swapOperationsMbDiscardCounter(nullptr),
+            swapOperationsMbReadCounter(nullptr),
+            swapOperationsMbWriteCounter(nullptr),
+            swapUsageMb(nullptr),
+            swapUsageMbGauge(nullptr),
             transactions(nullptr),
             transactionsCommitOutCounter(nullptr),
             transactionsRollbackOutCounter(nullptr),
@@ -175,6 +181,19 @@ namespace OpenLogReplicator {
         messagesSent = &prometheus::BuildCounter().Name("messages_sent").Help("Number of messages sent to output (for example to Kafka or network writer)")
                 .Register(*registry);
         messagesSentCounter = &messagesSent->Add({});
+
+        // swap_operations_mb
+        swapOperationsMb = &prometheus::BuildCounter().Name("swap_operations_mb").Help("Operations on swap space in MB").Register(*registry);
+        swapOperationsMbDiscardCounter = &swapOperationsMb->Add({{"type", "discard"}});
+        swapOperationsMbReadCounter = &swapOperationsMb->Add({{"type", "read"}});
+        swapOperationsMbWriteCounter = &swapOperationsMb->Add({{"type", "write"}});
+
+        // swap_usage_mb
+        swapUsageMb = &prometheus::BuildGauge().Name("swap_usage_mb").Help("Swap usage in MB").Register(*registry);
+        swapUsageMbGauge = &swapUsageMb->Add({});
+
+        memoryUsedTotalMb = &prometheus::BuildGauge().Name("memory_used_total_mb").Help("Total used memory").Register(*registry);
+        memoryUsedTotalMbGauge = &memoryUsedTotalMb->Add({});
 
         // transactions
         transactions = &prometheus::BuildCounter().Name("dml_ops").Help("Number of transactions").Register(*registry);
@@ -430,6 +449,24 @@ namespace OpenLogReplicator {
     // messages_sent
     void MetricsPrometheus::emitMessagesSent(uint64_t counter) {
         messagesSentCounter->Increment(counter);
+    }
+
+    // swap_operations_mb
+    void MetricsPrometheus::emitSwapOperationsMbDiscard(uint64_t counter) {
+        swapOperationsMbDiscardCounter->Increment(counter);
+    }
+
+    void MetricsPrometheus::emitSwapOperationsMbRead(uint64_t counter) {
+        swapOperationsMbReadCounter->Increment(counter);
+    }
+
+    void MetricsPrometheus::emitSwapOperationsMbWrite(uint64_t counter) {
+        swapOperationsMbWriteCounter->Increment(counter);
+    }
+
+    // swap_usage_mb
+    void MetricsPrometheus::emitSwapUsageMb(int64_t gauge) {
+        swapUsageMbGauge->Set(gauge);
     }
 
     // transactions

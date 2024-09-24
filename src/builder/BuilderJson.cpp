@@ -500,7 +500,7 @@ namespace OpenLogReplicator {
             append(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         } else {
             append(R"("payload":[{"op":"begin"}]})", sizeof(R"("payload":[{"op":"begin"}]})") - 1);
-            builderCommit(false);
+            builderCommit();
         }
     }
 
@@ -513,7 +513,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             append("]}", sizeof("]}") - 1);
-            builderCommit(true);
+            builderCommit();
         } else if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
             builderBegin(scn, sequence, 0, 0);
             append('{');
@@ -530,7 +530,7 @@ namespace OpenLogReplicator {
                 appendAttributes();
 
             append(R"("payload":[{"op":"commit"}]})", sizeof(R"("payload":[{"op":"commit"}]})") - 1);
-            builderCommit(true);
+            builderCommit();
         }
         num = 0;
     }
@@ -575,7 +575,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             append("]}", sizeof("]}") - 1);
-            builderCommit(false);
+            builderCommit();
         }
         ++num;
     }
@@ -621,7 +621,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             append("]}", sizeof("]}") - 1);
-            builderCommit(false);
+            builderCommit();
         }
         ++num;
     }
@@ -666,7 +666,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             append("]}", sizeof("]}") - 1);
-            builderCommit(false);
+            builderCommit();
         }
         ++num;
     }
@@ -707,7 +707,7 @@ namespace OpenLogReplicator {
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             append("]}", sizeof("]}") - 1);
-            builderCommit(true);
+            builderCommit();
         }
         ++num;
     }
@@ -735,6 +735,6 @@ namespace OpenLogReplicator {
         if (redo)
             append(R"(,"redo":true)", sizeof(R"(,"redo":true)") - 1);
         append("}]}", sizeof("}]}") - 1);
-        builderCommit(true);
+        builderCommit();
     }
 }

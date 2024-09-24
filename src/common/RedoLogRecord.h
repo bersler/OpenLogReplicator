@@ -153,8 +153,10 @@ namespace OpenLogReplicator {
         uint8_t seq;
         bool compressed;
 
-        inline uint8_t* data() const {
-            return dataExt;
+        inline const uint8_t* data() const {
+            if (dataExt != nullptr)
+                return dataExt;
+            return reinterpret_cast<const uint8_t*>(this) + sizeof(RedoLogRecord);
         }
 
         static bool nextFieldOpt(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize, uint32_t code) {
