@@ -9,6 +9,7 @@
 - documentation update
 - fix: missing include for some systems
 - enhancement: thread performance information
+- enhancement: swap memory to disk in low memory situations
 
 1.6.0
 - enhancement: add parameter -p

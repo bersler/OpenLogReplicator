@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
         while (firstBuilderQueue != nullptr) {
             BuilderQueue* nextBuffer = firstBuilderQueue->next;
-            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(firstBuilderQueue));
             firstBuilderQueue = nextBuffer;
             --buffersAllocated;
         }
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
 
     void Builder::initialize() {
         buffersAllocated = 1;
-        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, true));
+        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER));
         ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
@@ -2359,7 +2359,7 @@ namespace OpenLogReplicator {
 
         while (builderQueue->id < maxId) {
             BuilderQueue* nextBuffer = builderQueue->next;
-            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue), true);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, reinterpret_cast<uint8_t*>(builderQueue));
             builderQueue = nextBuffer;
         }
     }

@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.6.1
-:revdate: 2024-06-01
+:revdate: 2024-09-24
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -82,26 +82,50 @@ image:memory-management.png[Memory management big picture,,,]
 
 HINT: Use the xref:../metrics/metrics.adoc[metrics module] to dynamically observe memory usage.
 
-==== Sizing memory allocation
+==== Memory swapping
 
-There is no single rule for calculating the memory size.
-The size of used memory depends on many factors:
+For best performance run OpenLogReplicator on a host with sufficient physical memory, so that swapping is not needed.
+If this is not possible, allow the program to decide itself when to swap data to disk.
 
-* characteristics of schema (number of columns, number of rows, size of rows);
+Using operating system memory swapping is not recommended on host, where OpenLogReplicator is running, however, it is fully supported.
+By design, the program should fully work in memory, to achive best performance and lowest, near real time delay.
+If memory is not sufficient, it is best to move OpenLogReplicator to hardware with more memory.
 
-* characteristics of DML operations;
+IMPORTANT: Only the transaction data can be swapped to disk when low memory.
+The metadata is always kept in memory.
+The read buffers are always kept in memory.
 
-* size of transactions;
+When sapping is used, first blocks for longest inactive transactions are swapped to disk.
+However, for every open transaction, at least one block (the last one - which is currently used to append new redo log vectors) is kept in memory.
+Thus, when N transactions are open, at least N blocks are kept in memory (+ memory used by other modules).
 
-* length (in time) of transactions;
+.Memory swapping
+image:memory-swapping.png[Memory swapping,,,]
 
-* number of transactions;
+==== Sizing memory
 
-* location of OpenLogReplicator, together with oter applications, on the same host;
+It is highly recommended to allow OpenLogReplicator working fully in memory.
 
-* hardware configuration, amount of available memory;
+If this is not possible, or there could appear a situation when memory is not enough, the program can swap data to disk.
+In any case, avoid automatic swapping by Operating System, as this would lead to unpredictable performance.
 
-* etc.
+Please follow the steps below to calculate the memory size:
+
+1. Define the minimum of memory which OpenLogReplicator would allow to use.
+This is the amount of memory reserved only for the program and is guaranteed to be available.
+This is the `min-mb` parameter.
+
+2. Define the maximum of memory which OpenLogReplicator would be allowed to use.
+This is the amount of physical memory on the host which is available for the program.
+This is the `max-mb` parameter.
+
+IMPORTANT: Define the size of the `max-mb` parameter at least to 110% of size of the maximum expected LOB object size.
+If you expect LOB to be 1GB big, define the value to 1.1GB at least.
+Otherwise, you might hit error 10072.
+
+3. Define the amount of memory which would activate the swapping mechanism.
+This is the `swap-mb` parameter.
+The program would try to keep the memory usage below this value, but this happens in an async way and the memory usage may be higher than this value.
 
 For best results, performance tests should be made.
 

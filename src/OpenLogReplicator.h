@@ -29,6 +29,7 @@ namespace OpenLogReplicator {
     class Ctx;
     class Checkpoint;
     class Locales;
+    class MemoryManager;
     class Metadata;
     class Replicator;
     class TransactionBuffer;
@@ -41,6 +42,7 @@ namespace OpenLogReplicator {
         std::vector<Locales*> localess;
         std::vector<Builder*> builders;
         std::vector<Metadata*> metadatas;
+        std::vector<MemoryManager*> memoryManagers;
         std::vector<TransactionBuffer*> transactionBuffers;
         std::vector<Writer*> writers;
         Replicator* replicator;

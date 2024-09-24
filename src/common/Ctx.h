@@ -27,6 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <set>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include "typeLobId.h"
 #include "typeXid.h"
@@ -42,6 +43,20 @@ namespace OpenLogReplicator {
     class Clock;
     class Metrics;
     class Thread;
+
+    class SwapChunk final {
+    public:
+        std::vector<uint8_t*> chunks;
+        int64_t swappedMin;
+        int64_t swappedMax;
+        int64_t lockedChunk;
+        bool release;
+        bool breakLock;
+
+        SwapChunk() :
+            swappedMin(-1), swappedMax(-1), lockedChunk(-1), release(false), breakLock(false) {};
+    };
+
 
     class Ctx final {
     public:
@@ -82,7 +97,7 @@ namespace OpenLogReplicator {
 
         static constexpr uint64_t MEMORY_CHUNK_SIZE_MB = 1;
         static constexpr uint64_t MEMORY_CHUNK_SIZE = MEMORY_CHUNK_SIZE_MB * 1024 * 1024;
-        static constexpr uint64_t MEMORY_CHUNK_MIN_MB = 16;
+        static constexpr uint64_t MEMORY_CHUNK_MIN_MB = 32;
 
         static constexpr uint64_t OLR_LOCALES_TIMESTAMP = 0;
         static constexpr uint64_t OLR_LOCALES_MOCK = 1;
@@ -138,51 +153,26 @@ namespace OpenLogReplicator {
 
     protected:
         bool bigEndian;
-        std::atomic<uint64_t> memoryMinMb;
-        std::atomic<uint64_t> memoryMaxMb;
 
-        std::atomic<uint8_t**> memoryChunks;
-        std::atomic<uint64_t> memoryChunksMin;
-        std::atomic<uint64_t> memoryChunksAllocated;
-        std::atomic<uint64_t> memoryChunksFree;
-        std::atomic<uint64_t> memoryChunksMax;
-        std::atomic<uint64_t> memoryChunksHWM;
-        std::atomic<uint64_t> memoryChunksReusable;
-        uint64_t memoryModulesAllocated[MEMORY_MODULES_NUM];
-
-        std::condition_variable condMainLoop;
+        mutable std::mutex memoryMtx;
         std::condition_variable condOutOfMemory;
+        uint8_t** memoryChunks;
+        uint64_t memoryChunksMin;
+        uint64_t memoryChunksMax;
+        uint64_t memoryChunksSwap;
+        uint64_t memoryChunksAllocated;
+        uint64_t memoryChunksFree;
+        uint64_t memoryChunksHWM;
+        uint64_t memoryModulesAllocated[MEMORY_MODULES_NUM];
+        bool outOfMemoryParser;
+
         std::mutex mtx;
-        std::mutex memoryMtx;
+        std::condition_variable condMainLoop;
         std::set<Thread*> threads;
         pthread_t mainThread;
 
-        inline int64_t yearToDays(int64_t year, int64_t month) const {
-            int64_t result = year * 365 + year / 4 - year / 100 + year / 400;
-            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month < 2)
-                --result;
-
-            return result;
-        }
-
-        inline int64_t yearToDaysBC(int64_t year, int64_t month) const {
-            int64_t result = (year * 365) + (year / 4) - (year / 100) + (year / 400);
-            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month >= 2)
-                --result;
-
-            return result;
-        }
-
     public:
-
-        bool isFlagSet(uint64_t mask) const {
-            return (flags & mask) != 0;
-        }
-
-        bool isDisableChecksSet(uint64_t mask) const {
-            return (disableChecks & mask) != 0;
-        }
-
+        uint64_t memoryModulesHWM[MEMORY_MODULES_NUM];
         static const char map64[65];
         static const char map64R[256];
         static const std::string memoryModules[MEMORY_MODULES_NUM];
@@ -202,20 +192,18 @@ namespace OpenLogReplicator {
         int64_t hostTimezone;
         int64_t logTimezone;
 
-        inline void setBigEndian() {
-            bigEndian = true;
-        }
-
-        [[nodiscard]] inline bool isBigEndian() const {
-            return bigEndian;
-        }
+        // Memory buffers
+        uint64_t memoryChunksReadBufferMax;
+        uint64_t memoryChunksReadBufferMin;
+        uint64_t memoryChunksUnswapBufferMin;
+        uint64_t memoryChunksWriteBufferMax;
+        uint64_t memoryChunksWriteBufferMin;
 
         // Disk read buffers
-        std::atomic<uint64_t> readBufferMax;
-        std::atomic<uint64_t> buffersFree;
-        std::atomic<uint64_t> bufferSizeMax;
-        std::atomic<uint64_t> buffersMaxUsed;
-        std::atomic<uint64_t> suppLogSize;
+        uint64_t bufferSizeMax;
+        uint64_t bufferSizeFree;
+        uint64_t bufferSizeHWM;
+        uint64_t suppLogSize;
         // Checkpoint
         uint64_t checkpointIntervalS;
         uint64_t checkpointIntervalMb;
@@ -236,7 +224,7 @@ namespace OpenLogReplicator {
         uint64_t stopLogSwitches;
         uint64_t stopCheckpoints;
         uint64_t stopTransactions;
-        uint64_t transactionSizeMax;
+        typeTransactionSize transactionSizeMax;
         std::atomic<uint64_t> logLevel;
         std::atomic<uint64_t> trace;
         std::atomic<uint64_t> flags;
@@ -248,8 +236,51 @@ namespace OpenLogReplicator {
         Thread* parserThread;
         Thread* writerThread;
 
+        std::unordered_map<typeXid, SwapChunk*> swapChunks;
+        std::vector<typeXid> commitedXids;
+        std::condition_variable chunksMemoryManager;
+        std::condition_variable chunksTransaction;
+        uint64_t swappedMB;
+        typeXid swappedFlushXid;
+        typeXid swappedShrinkXid;
+        mutable std::mutex swapMtx;
+
         Ctx();
         virtual ~Ctx();
+
+    protected:
+        inline int64_t yearToDays(int64_t year, int64_t month) const {
+            int64_t result = year * 365 + year / 4 - year / 100 + year / 400;
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month < 2)
+                --result;
+
+            return result;
+        }
+
+        inline int64_t yearToDaysBC(int64_t year, int64_t month) const {
+            int64_t result = (year * 365) + (year / 4) - (year / 100) + (year / 400);
+            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month >= 2)
+                --result;
+
+            return result;
+        }
+
+    public:
+        bool isFlagSet(uint64_t mask) const {
+            return (flags & mask) != 0;
+        }
+
+        bool isDisableChecksSet(uint64_t mask) const {
+            return (disableChecks & mask) != 0;
+        }
+
+        inline void setBigEndian() {
+            bigEndian = true;
+        }
+
+        [[nodiscard]] inline bool isBigEndian() const {
+            return bigEndian;
+        }
 
         static inline char map10(uint64_t x) {
             return static_cast<char>('0' + x);
@@ -586,13 +617,27 @@ namespace OpenLogReplicator {
         time_t valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) const;
         uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) const;
 
-        void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
+        void initialize(uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t memoryReadBufferMaxMb, uint64_t memoryReadBufferMinMb, uint64_t memorySwapMb,
+                        uint64_t memoryUnswapBufferMinMb, uint64_t memoryWriteBufferMaxMb, uint64_t memoryWriteBufferMinMb);
         void wakeAllOutOfMemory();
-        [[nodiscard]] uint64_t getMaxUsedMemory() const;
+        [[nodiscard]] bool nothingToSwap(Thread* t) const;
+        [[nodiscard]] uint64_t getMemoryHWM() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;
-        [[nodiscard]] uint64_t getFreeMemory() const;
-        [[nodiscard]] uint8_t* getMemoryChunk(Thread* t, uint64_t module, bool reusable);
-        void freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk, bool reusable);
+        [[nodiscard]] uint64_t getSwapMemory(Thread* t) const;
+        [[nodiscard]] uint64_t getUsedMemory(Thread* t) const;
+        [[nodiscard]] uint64_t getFreeMemory(Thread* t) const;
+        [[nodiscard]] uint8_t* getMemoryChunk(Thread* t, uint64_t module, bool swap = false);
+        void freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk);
+        void swappedMemoryInit(Thread* t, typeXid xid);
+        [[nodiscard]] uint64_t swappedMemorySize(Thread* t, typeXid xid) const;
+        [[nodiscard]] uint8_t* swappedMemoryGet(Thread* t, typeXid xid, int64_t index);
+        void swappedMemoryRelease(Thread* t, typeXid xid, int64_t index);
+        [[nodiscard]] uint8_t* swappedMemoryGrow(Thread* t, typeXid xid);
+        [[nodiscard]] uint8_t* swappedMemoryShrink(Thread* t, typeXid xid);
+        void swappedMemoryFlush(Thread* t, typeXid xid);
+        void swappedMemoryRemove(Thread* t, typeXid xid);
+        void wontSwap(Thread* t);
+
         void stopHard();
         void stopSoft();
         void mainLoop();
@@ -605,8 +650,6 @@ namespace OpenLogReplicator {
         void finishThread(Thread* t);
         static std::ostringstream& writeEscapeValue(std::ostringstream& ss, const std::string& str);
         static bool checkNameCase(const char* name);
-        void releaseBuffer(Thread* t);
-        void allocateBuffer(Thread* t);
         void signalDump();
 
         void welcome(const std::string& message) const;
@@ -616,6 +659,8 @@ namespace OpenLogReplicator {
         void info(int code, const std::string& message) const;
         void debug(int code, const std::string& message) const;
         void logTrace(int mask, const std::string& message) const;
+        void printMemoryUsageHWM() const;
+        void printMemoryUsageCurrent() const;
     };
 }
 

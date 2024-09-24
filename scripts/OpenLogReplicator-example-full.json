@@ -67,7 +67,13 @@
       "memory": {
         "min-mb": 64,
         "max-mb": 1024,
-        "read-buffer-max-mb": 256
+        "read-buffer-max-mb": 64,
+        "read-buffer-min-mb": 4,
+        "swap-mb" : 768,
+        "swap-path": ".",
+        "unswap-buffer-min-mb": 4,
+        "write-buffer-max-mb": 64,
+        "write-buffer-min-mb": 4
       },
       "redo-read-sleep-us": 250000,
       "arch-read-sleep-us": 10000000,

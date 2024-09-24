@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
 
         memset(reinterpret_cast<void*>(&zero), 0, sizeof(RedoLogRecord));
 
-        lwnChunks[0] = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, false);
+        lwnChunks[0] = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER);
         ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
         auto size = reinterpret_cast<uint64_t*>(lwnChunks[0]);
         *size = sizeof(uint64_t);
@@ -89,13 +89,13 @@ namespace OpenLogReplicator {
 
     Parser::~Parser() {
         while (lwnAllocated > 0) {
-            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated]);
         }
     }
 
     void Parser::freeLwn() {
         while (lwnAllocated > 1) {
-            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated], false);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, lwnChunks[--lwnAllocated]);
         }
 
         auto size = reinterpret_cast<uint64_t*>(lwnChunks[0]);
@@ -588,7 +588,7 @@ namespace OpenLogReplicator {
             transaction->size + redoLogRecord1->size + TransactionBuffer::ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
-            transaction->purge(transactionBuffer);
+            transaction->purge(ctx);
             if (transaction == lastTransaction)
                 lastTransaction = nullptr;
             delete transaction;
@@ -691,7 +691,7 @@ namespace OpenLogReplicator {
             transaction->log(ctx, "siz ", redoLogRecord1);
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
-            transaction->purge(transactionBuffer);
+            transaction->purge(ctx);
             if (transaction == lastTransaction)
                 lastTransaction = nullptr;
             delete transaction;
@@ -823,7 +823,7 @@ namespace OpenLogReplicator {
                     else
                         ctx->metrics->emitTransactionsCommitPartial(1);
                 }
-                ctx->warning(60011, "skipping transaction with no beginning: " + transaction->toString());
+                ctx->warning(60011, "skipping transaction with no beginning: " + transaction->toString(ctx));
             }
         } else {
             if (ctx->metrics != nullptr) {
@@ -833,11 +833,11 @@ namespace OpenLogReplicator {
                     ctx->metrics->emitTransactionsCommitSkip(1);
             }
             if (unlikely(ctx->trace & Ctx::TRACE_TRANSACTION))
-                ctx->logTrace(Ctx::TRACE_TRANSACTION, "skipping transaction already committed: " + transaction->toString());
+                ctx->logTrace(Ctx::TRACE_TRANSACTION, "skipping transaction already committed: " + transaction->toString(ctx));
         }
 
         transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
-        transaction->purge(transactionBuffer);
+        transaction->purge(ctx);
         lastTransaction = nullptr;
         delete transaction;
     }
@@ -933,7 +933,7 @@ namespace OpenLogReplicator {
             transaction->log(ctx, "siz2", redoLogRecord2);
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
-            transaction->purge(transactionBuffer);
+            transaction->purge(ctx);
             if (transaction == lastTransaction)
                 lastTransaction = nullptr;
             delete transaction;
@@ -1199,7 +1199,7 @@ namespace OpenLogReplicator {
             transaction->size + redoLogRecord1->size + redoLogRecord2->size + TransactionBuffer::ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
-            transaction->purge(transactionBuffer);
+            transaction->purge(ctx);
             if (transaction == lastTransaction)
                 lastTransaction = nullptr;
             delete transaction;
@@ -1288,14 +1288,14 @@ namespace OpenLogReplicator {
         LwnMember* lwnMember;
         uint64_t blockOffset;
         uint64_t confirmedBufferStart = reader->getBufferStart();
-        uint64_t recordSize4;
         uint64_t recordPos = 0;
-        uint64_t recordLeftToCopy = 0;
+        uint32_t recordSize4;
+        uint32_t recordLeftToCopy = 0;
         typeBlk startBlock = lwnConfirmedBlock;
         typeBlk currentBlock = lwnConfirmedBlock;
         typeBlk lwnEndBlock = lwnConfirmedBlock;
-        uint16_t lwnNumMax = 0;
-        uint16_t lwnNumCnt = 0;
+        typeLwn lwnNumMax = 0;
+        typeLwn lwnNumCnt = 0;
         lwnCheckpointBlock = lwnConfirmedBlock;
         bool switchRedo = false;
 
@@ -1303,7 +1303,7 @@ namespace OpenLogReplicator {
             // There is some work to do
             while (confirmedBufferStart < reader->getBufferEnd()) {
                 uint64_t redoBufferPos = (static_cast<uint64_t>(currentBlock) * reader->getBlockSize()) % Ctx::MEMORY_CHUNK_SIZE;
-                uint64_t redoBufferNum = ((static_cast<uint64_t>(currentBlock) * reader->getBlockSize()) / Ctx::MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
+                uint64_t redoBufferNum = ((static_cast<uint64_t>(currentBlock) * reader->getBlockSize()) / Ctx::MEMORY_CHUNK_SIZE) % ctx->memoryChunksReadBufferMax;
                 const uint8_t* redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
 
                 blockOffset = 16;
@@ -1330,7 +1330,7 @@ namespace OpenLogReplicator {
                             if (unlikely(lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != Ctx::ZERO_SCN)))
                                 throw RedoLogException(50049, "invalid lwn scn: " + std::to_string(lwnScn));
                         } else {
-                            uint16_t lwnNumCur = ctx->read16(redoBlock + blockOffset + 26);
+                            typeLwn lwnNumCur = ctx->read16(redoBlock + blockOffset + 26);
                             if (unlikely(lwnNumCur != lwnNumMax))
                                 throw RedoLogException(50050, "invalid lwn max: " + std::to_string(lwnNum) + "/" +
                                                               std::to_string(lwnNumCur) + "/" + std::to_string(lwnNumMax));
@@ -1360,7 +1360,7 @@ namespace OpenLogReplicator {
                                 if (unlikely(lwnAllocated == MAX_LWN_CHUNKS))
                                     throw RedoLogException(50052, "all " + std::to_string(MAX_LWN_CHUNKS) + " lwn buffers allocated");
 
-                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER, false);
+                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_PARSER);
                                 ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
                                 if (lwnAllocated > lwnAllocatedMax)
                                     lwnAllocatedMax = lwnAllocated;
@@ -1402,7 +1402,7 @@ namespace OpenLogReplicator {
                     if (recordLeftToCopy == 0)
                         break;
 
-                    uint64_t toCopy;
+                    uint32_t toCopy;
                     if (blockOffset + recordLeftToCopy > reader->getBlockSize())
                         toCopy = reader->getBlockSize() - blockOffset;
                     else
@@ -1516,7 +1516,7 @@ namespace OpenLogReplicator {
 
                 // Free memory
                 if (redoBufferPos == Ctx::MEMORY_CHUNK_SIZE) {
-                    reader->bufferFree(redoBufferNum);
+                    reader->bufferFree(ctx->parserThread, redoBufferNum);
                     reader->confirmReadData(confirmedBufferStart);
                 }
             }
@@ -1609,6 +1609,7 @@ namespace OpenLogReplicator {
             ctx->dumpStream->close();
         }
 
+        builder->flush();
         freeLwn();
         return reader->getRet();
     }

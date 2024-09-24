@@ -67,16 +67,17 @@ namespace OpenLogReplicator {
 
     Ctx::Ctx() :
             bigEndian(false),
-            memoryMinMb(0),
-            memoryMaxMb(0),
             memoryChunks(nullptr),
             memoryChunksMin(0),
+            memoryChunksMax(0),
+            memoryChunksSwap(0),
             memoryChunksAllocated(0),
             memoryChunksFree(0),
-            memoryChunksMax(0),
             memoryChunksHWM(0),
-            memoryChunksReusable(0),
+            memoryModulesAllocated{0, 0, 0, 0},
+            outOfMemoryParser(false),
             mainThread(pthread_self()),
+            memoryModulesHWM{0, 0, 0, 0},
             metrics(nullptr),
             clock(nullptr),
             version12(false),
@@ -84,10 +85,16 @@ namespace OpenLogReplicator {
             columnLimit(COLUMN_LIMIT),
             dumpRedoLog(0),
             dumpRawData(0),
-            readBufferMax(0),
-            buffersFree(0),
+            dumpStream(std::make_unique<std::ofstream>()),
+
+            memoryChunksReadBufferMax(0),
+            memoryChunksReadBufferMin(0),
+            memoryChunksUnswapBufferMin(0),
+            memoryChunksWriteBufferMin(0),
+
             bufferSizeMax(0),
-            buffersMaxUsed(0),
+            bufferSizeFree(0),
+            bufferSizeHWM(0),
             suppLogSize(0),
             checkpointIntervalS(600),
             checkpointIntervalMb(500),
@@ -113,13 +120,10 @@ namespace OpenLogReplicator {
             softShutdown(false),
             replicatorFinished(false),
             parserThread(nullptr),
-            writerThread(nullptr) {
-        memoryModulesAllocated[0] = 0;
-        memoryModulesAllocated[1] = 0;
-        memoryModulesAllocated[2] = 0;
-        memoryModulesAllocated[3] = 0;
-        dumpStream = std::make_unique<std::ofstream>();
-
+            writerThread(nullptr) ,
+            swappedMB(0),
+            swappedFlushXid(0, 0, 0),
+            swappedShrinkXid(0, 0, 0) {
         clock = new ClockHW();
         tzset();
         dbTimezone = BAD_TIMEZONE;
@@ -652,25 +656,33 @@ namespace OpenLogReplicator {
         };
     }
 
-    void Ctx::initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax) {
-        memoryMinMb = newMemoryMinMb;
-        memoryMaxMb = newMemoryMaxMb;
-        memoryChunksMin = (memoryMinMb / MEMORY_CHUNK_SIZE_MB);
-        memoryChunksMax = memoryMaxMb / MEMORY_CHUNK_SIZE_MB;
-        readBufferMax = newReadBufferMax;
-        buffersFree = newReadBufferMax;
-        bufferSizeMax = readBufferMax * MEMORY_CHUNK_SIZE;
+    void Ctx::initialize(uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t memoryReadBufferMaxMb, uint64_t memoryReadBufferMinMb, uint64_t memorySwapMb,
+                         uint64_t memoryUnswapBufferMinMb, uint64_t memoryWriteBufferMaxMb, uint64_t memoryWriteBufferMinMb) {
+        {
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            memoryChunksMin = memoryMinMb / MEMORY_CHUNK_SIZE_MB;
+            memoryChunksMax = memoryMaxMb / MEMORY_CHUNK_SIZE_MB;
+            memoryChunksSwap = memorySwapMb / MEMORY_CHUNK_SIZE_MB;
 
-        memoryChunks = new uint8_t* [memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
-        for (uint64_t i = 0; i < memoryChunksMin; ++i) {
-            memoryChunks[i] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
-            if (unlikely(memoryChunks[i] == nullptr))
-                throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                              " bytes memory for: memory chunks#2");
-            ++memoryChunksAllocated;
-            ++memoryChunksFree;
+            memoryChunksReadBufferMax = memoryReadBufferMaxMb / MEMORY_CHUNK_SIZE_MB;
+            memoryChunksReadBufferMin = memoryReadBufferMinMb / MEMORY_CHUNK_SIZE_MB;
+            memoryChunksUnswapBufferMin = memoryUnswapBufferMinMb / MEMORY_CHUNK_SIZE_MB;
+            memoryChunksWriteBufferMax = memoryWriteBufferMaxMb / MEMORY_CHUNK_SIZE_MB;
+            memoryChunksWriteBufferMin = memoryWriteBufferMinMb / MEMORY_CHUNK_SIZE_MB;
+            bufferSizeMax = memoryReadBufferMaxMb * 1024 * 1024;
+            bufferSizeFree = memoryReadBufferMaxMb / MEMORY_CHUNK_SIZE_MB;
+
+            memoryChunks = new uint8_t* [memoryChunksMax];
+            for (uint64_t i = 0; i < memoryChunksMin; ++i) {
+                memoryChunks[i] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
+                if (unlikely(memoryChunks[i] == nullptr))
+                    throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
+                                                  " bytes memory for: memory chunks#2");
+                ++memoryChunksAllocated;
+                ++memoryChunksFree;
+            }
+            memoryChunksHWM = memoryChunksMin;
         }
-        memoryChunksHWM = static_cast<uint64_t>(memoryChunksMin);
 
         if (metrics) {
             metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
@@ -683,89 +695,161 @@ namespace OpenLogReplicator {
         condOutOfMemory.notify_all();
     }
 
-    uint64_t Ctx::getMaxUsedMemory() const {
+    bool Ctx::nothingToSwap(Thread* t) const {
+        bool ret;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_NOTHING_TO_SWAP);
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            ret = memoryChunksSwap == 0 || (memoryChunksAllocated - memoryChunksFree < memoryChunksSwap);
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+        return ret;
+    }
+
+    uint64_t Ctx::getMemoryHWM() const {
+        std::unique_lock<std::mutex> lck(memoryMtx);
         return memoryChunksHWM * MEMORY_CHUNK_SIZE_MB;
     }
 
-    uint64_t Ctx::getFreeMemory() const {
-        return memoryChunksFree * MEMORY_CHUNK_SIZE_MB;
+    uint64_t Ctx::getFreeMemory(Thread* t) const {
+        uint64_t ret;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_FREE_MEMORY);
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            ret = memoryChunksFree * MEMORY_CHUNK_SIZE_MB;
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+        return ret;
     }
 
     uint64_t Ctx::getAllocatedMemory() const {
+        std::unique_lock<std::mutex> lck(memoryMtx);
         return memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB;
     }
 
-    uint8_t* Ctx::getMemoryChunk(Thread* t, uint64_t module, bool reusable) {
-        t->contextSet(Thread::CONTEXT_MEM);
-        std::unique_lock<std::mutex> lck(memoryMtx);
-
-        if (memoryChunksFree == 0) {
-            while (memoryChunksAllocated == memoryChunksMax && !softShutdown) {
-                if (likely(memoryChunksReusable > 1)) {
-                    warning(10067, "out of memory, but there are reusable memory chunks, trying to reuse some memory");
-
-                    if (unlikely(trace & TRACE_SLEEP))
-                        logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
-                    t->contextSet(Thread::CONTEXT_WAIT);
-                    condOutOfMemory.wait(lck);
-                    t->contextSet(Thread::CONTEXT_MEM);
-                } else {
-                    hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
-                         "transaction would be skipped");
-                    throw RuntimeException(10017, "out of memory");
-                }
-            }
-
-            if (memoryChunksFree == 0) {
-                t->contextSet(Thread::CONTEXT_OS);
-                memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
-                t->contextSet(Thread::CONTEXT_MEM);
-                if (unlikely(memoryChunks[0] == nullptr)) {
-                    throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                                  " bytes memory for: " + memoryModules[module]);
-                }
-                ++memoryChunksFree;
-                ++memoryChunksAllocated;
-
-                if (metrics)
-                    metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
-            }
-
-            if (memoryChunksAllocated > memoryChunksHWM)
-                memoryChunksHWM = static_cast<uint64_t>(memoryChunksAllocated);
+    uint64_t Ctx::getSwapMemory(Thread* t) const {
+        uint64_t ret;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_GET_SWAP);
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            ret = memoryChunksSwap * MEMORY_CHUNK_SIZE_MB;
         }
+        t->contextSet(Thread::CONTEXT_CPU);
+        return ret;
+    }
 
-        --memoryChunksFree;
-        if (reusable)
-            ++memoryChunksReusable;
-        ++memoryModulesAllocated[module];
+    uint64_t Ctx::getUsedMemory(Thread* t) const {
+        uint64_t ret;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_GET_USED);
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            ret = (memoryChunksAllocated - memoryChunksFree) * MEMORY_CHUNK_SIZE_MB;
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+        return ret;
+    }
+
+    uint8_t* Ctx::getMemoryChunk(Thread* t, uint64_t module, bool swap) {
+        uint64_t allocatedModule = 0, usedTotal = 0, allocatedTotal = 0;
+        uint8_t* chunk = nullptr;
+
+        t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
+        {
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            while (true) {
+                if (module == MEMORY_MODULE_READER) {
+                    if (memoryModulesAllocated[MEMORY_MODULE_READER] < memoryChunksReadBufferMin)
+                        break;
+                } else if (module == MEMORY_MODULE_BUILDER) {
+                    if (memoryModulesAllocated[MEMORY_MODULE_BUILDER] < memoryChunksWriteBufferMin)
+                        break;
+                }
+
+                uint64_t reservedChunks = 0;
+                if (memoryModulesAllocated[MEMORY_MODULE_READER] < memoryChunksReadBufferMin)
+                    reservedChunks += memoryChunksReadBufferMin - memoryModulesAllocated[MEMORY_MODULE_READER];
+                if (memoryModulesAllocated[MEMORY_MODULE_BUILDER] < memoryChunksWriteBufferMin)
+                    reservedChunks += memoryChunksWriteBufferMin - memoryModulesAllocated[MEMORY_MODULE_BUILDER];
+                if (!swap)
+                    reservedChunks += memoryChunksUnswapBufferMin;
+
+                if (memoryChunksFree > reservedChunks)
+                    break;
+
+                if (memoryChunksAllocated < memoryChunksMax &&
+                        (module != MEMORY_MODULE_BUILDER || memoryModulesAllocated[MEMORY_MODULE_BUILDER] < memoryChunksWriteBufferMax)) {
+                    t->contextSet(Thread::CONTEXT_OS, Thread::REASON_OS);
+                    memoryChunks[memoryChunksFree] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
+                    t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
+                    if (unlikely(memoryChunks[memoryChunksFree] == nullptr))
+                        throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
+                                                      " bytes memory for: " + memoryModules[module]);
+                    ++memoryChunksFree;
+                    allocatedTotal = ++memoryChunksAllocated;
+
+                    if (memoryChunksAllocated > memoryChunksHWM)
+                        memoryChunksHWM = memoryChunksAllocated;
+                    break;
+                }
+
+                if (module == MEMORY_MODULE_PARSER)
+                    outOfMemoryParser = true;
+
+                if (hardShutdown)
+                    return nullptr;
+
+                if (unlikely(trace & TRACE_SLEEP))
+                    logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
+                t->contextSet(Thread::CONTEXT_WAIT, Thread::MEMORY_EXHAUSTED);
+                condOutOfMemory.wait(lck);
+                t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
+            }
+
+            if (module == MEMORY_MODULE_PARSER)
+                outOfMemoryParser = false;
+
+            --memoryChunksFree;
+            usedTotal = memoryChunksAllocated - memoryChunksFree;
+            allocatedModule = ++memoryModulesAllocated[module];
+            if (memoryModulesAllocated[module] > memoryModulesHWM[module])
+                memoryModulesHWM[module] = memoryModulesAllocated[module];
+            chunk = memoryChunks[memoryChunksFree];
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+
+        if (unlikely(hardShutdown))
+            throw RuntimeException(10018, "shutdown during memory allocation");
 
         if (metrics) {
-            metrics->emitMemoryUsedTotalMb(memoryChunksAllocated - memoryChunksFree);
+            if (allocatedTotal > 0)
+                metrics->emitMemoryAllocatedMb(allocatedTotal * MEMORY_CHUNK_SIZE_MB);
+
+            metrics->emitMemoryUsedTotalMb(usedTotal * MEMORY_CHUNK_SIZE_MB);
 
             switch (module) {
                 case MEMORY_MODULE_BUILDER:
-                    metrics->emitMemoryUsedMbBuilder(memoryModulesAllocated[module]);
+                    metrics->emitMemoryUsedMbBuilder(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
                 case MEMORY_MODULE_PARSER:
-                    metrics->emitMemoryUsedMbParser(memoryModulesAllocated[module]);
+                    metrics->emitMemoryUsedMbParser(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
                 case MEMORY_MODULE_READER:
-                    metrics->emitMemoryUsedMbReader(memoryModulesAllocated[module]);
+                    metrics->emitMemoryUsedMbReader(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
                 case MEMORY_MODULE_TRANSACTIONS:
-                    metrics->emitMemoryUsedMbTransactions(memoryModulesAllocated[module]);
+                    metrics->emitMemoryUsedMbTransactions(allocatedModule * MEMORY_CHUNK_SIZE_MB);
             }
         }
 
-        return memoryChunks[memoryChunksFree];
+        return chunk;
     }
 
-    void Ctx::freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk, bool reusable) {
-        t->contextSet(Thread::CONTEXT_MEM);
+    void Ctx::freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk) {
+        uint64_t allocatedModule = 0, usedTotal = 0, allocatedTotal = 0;
+        t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
         {
             std::unique_lock<std::mutex> lck(memoryMtx);
 
@@ -773,46 +857,249 @@ namespace OpenLogReplicator {
                 throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[module]);
 
             // Keep memoryChunksMin reserved
-            if (memoryChunksFree >= memoryChunksMin) {
-                t->contextSet(Thread::CONTEXT_OS);
-                free(chunk);
-                t->contextSet(Thread::CONTEXT_MEM);
-                --memoryChunksAllocated;
-                if (metrics)
-                    metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
-            } else {
-                memoryChunks[memoryChunksFree] = chunk;
-                ++memoryChunksFree;
+            if (memoryChunksFree >= memoryChunksMin)
+                allocatedTotal = --memoryChunksAllocated;
+            else {
+                memoryChunks[memoryChunksFree++] = chunk;
+                chunk = nullptr;
             }
-            if (reusable)
-                --memoryChunksReusable;
+
+            usedTotal = memoryChunksAllocated - memoryChunksFree;
+            allocatedModule = --memoryModulesAllocated[module];
 
             condOutOfMemory.notify_all();
+        }
 
-            --memoryModulesAllocated[module];
+        if (chunk != nullptr) {
+            t->contextSet(Thread::CONTEXT_OS, Thread::REASON_OS);
+            free(chunk);
+        }
 
-            if (metrics) {
-                metrics->emitMemoryUsedTotalMb(memoryChunksAllocated - memoryChunksFree);
+        t->contextSet(Thread::CONTEXT_CPU);
+        if (metrics) {
+            if (allocatedTotal > 0)
+                metrics->emitMemoryAllocatedMb(allocatedTotal * MEMORY_CHUNK_SIZE_MB);
 
-                switch (module) {
-                    case MEMORY_MODULE_BUILDER:
-                        metrics->emitMemoryUsedMbBuilder(memoryModulesAllocated[module]);
-                        break;
+            metrics->emitMemoryUsedTotalMb(usedTotal * MEMORY_CHUNK_SIZE_MB);
 
-                    case MEMORY_MODULE_PARSER:
-                        metrics->emitMemoryUsedMbParser(memoryModulesAllocated[module]);
-                        break;
+            switch (module) {
+                case MEMORY_MODULE_BUILDER:
+                    metrics->emitMemoryUsedMbBuilder(allocatedModule * MEMORY_CHUNK_SIZE_MB);
+                    break;
 
-                    case MEMORY_MODULE_READER:
-                        metrics->emitMemoryUsedMbReader(memoryModulesAllocated[module]);
-                        break;
+                case MEMORY_MODULE_PARSER:
+                    metrics->emitMemoryUsedMbParser(allocatedModule * MEMORY_CHUNK_SIZE_MB);
+                    break;
 
-                    case MEMORY_MODULE_TRANSACTIONS:
-                        metrics->emitMemoryUsedMbTransactions(memoryModulesAllocated[module]);
-                }
+                case MEMORY_MODULE_READER:
+                    metrics->emitMemoryUsedMbReader(allocatedModule * MEMORY_CHUNK_SIZE_MB);
+                    break;
+
+                case MEMORY_MODULE_TRANSACTIONS:
+                    metrics->emitMemoryUsedMbTransactions(allocatedModule * MEMORY_CHUNK_SIZE_MB);
             }
         }
+    }
+
+    void Ctx::swappedMemoryInit(Thread* t, typeXid xid) {
+        SwapChunk* sc = new SwapChunk();
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_MEMORY_INIT);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            swapChunks.insert_or_assign(xid, sc);
+        }
         t->contextSet(Thread::CONTEXT_CPU);
+    }
+
+    uint64_t Ctx::swappedMemorySize(Thread* t, typeXid xid) const {
+        uint64_t ret;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_SIZE);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            auto it = swapChunks.find(xid);
+            if (unlikely(it == swapChunks.end()))
+                throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory size");
+            SwapChunk* sc = it->second;
+            ret = sc->chunks.size();
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+        return ret;
+    }
+
+    uint8_t* Ctx::swappedMemoryGet(Thread* t, typeXid xid, int64_t index) {
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_GET);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            auto it = swapChunks.find(xid);
+            if (unlikely(it == swapChunks.end()))
+                throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory get");
+            SwapChunk* sc = it->second;
+
+            if (index == sc->lockedChunk) {
+                sc->breakLock = true;
+                while (index == sc->lockedChunk)
+                    chunksTransaction.wait(lck);
+            }
+
+            while (!hardShutdown) {
+                if (index < sc->swappedMin || index > sc->swappedMax) {
+                    t->contextSet(Thread::CONTEXT_CPU);
+                    return sc->chunks.at(index);
+                }
+
+                chunksMemoryManager.notify_all();
+                chunksTransaction.wait(lck);
+            }
+        }
+
+        t->contextSet(Thread::CONTEXT_CPU);
+        return nullptr;
+    }
+
+    void Ctx::swappedMemoryRelease(Thread* t, typeXid xid, int64_t index) {
+        uint8_t* tc;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_RELEASE);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            auto it = swapChunks.find(xid);
+            if (unlikely(it == swapChunks.end()))
+                throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory release");
+            SwapChunk* sc = it->second;
+            tc = sc->chunks.at(index);
+            sc->chunks[index] = nullptr;
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+
+        freeMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS, tc);
+    }
+
+    [[nodiscard]] uint8_t* Ctx::swappedMemoryGrow(Thread* t, typeXid xid) {
+        SwapChunk* sc;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_GROW1);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            auto it = swapChunks.find(xid);
+            if (unlikely(it == swapChunks.end()))
+                throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory grow");
+            sc = it->second;
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+
+        uint8_t* tc = getMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS);
+        memset(tc, 0, sizeof(uint64_t) + sizeof(uint32_t));
+
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_GROW2);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            sc->chunks.push_back(tc);
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+        return tc;
+    }
+
+    uint8_t* Ctx::swappedMemoryShrink(Thread* t, typeXid xid) {
+        SwapChunk* sc;
+        uint8_t* tc;
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_SHRINK1);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            auto it = swapChunks.find(xid);
+            if (unlikely(it == swapChunks.end()))
+                throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory shrink");
+            sc = it->second;
+            tc = sc->chunks.back();
+
+            if (static_cast<int64_t>(sc->chunks.size() - 1) == sc->lockedChunk) {
+                sc->breakLock = true;
+                while (static_cast<int64_t>(sc->chunks.size() - 1) == sc->lockedChunk)
+                    chunksTransaction.wait(lck);
+            }
+        }
+
+        freeMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS, tc);
+
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_SHRINK2);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            sc->chunks.pop_back();
+            if (sc->chunks.size() <= 0) {
+                t->contextSet(Thread::CONTEXT_CPU);
+                return nullptr;
+            }
+            int64_t index = sc->chunks.size() - 1;
+
+            swappedShrinkXid = xid;
+            while (!hardShutdown) {
+                if (index < sc->swappedMin || index > sc->swappedMax)
+                    break;
+
+                chunksMemoryManager.notify_all();
+                chunksTransaction.wait(lck);
+            }
+            swappedShrinkXid = 0;
+            tc = sc->chunks.back();
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+        return tc;
+    }
+
+    void Ctx::swappedMemoryFlush(Thread* t, typeXid xid) {
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_FLUSH1);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            swappedFlushXid = xid;
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+    }
+
+    void Ctx::swappedMemoryRemove(Thread* t, typeXid xid) {
+        SwapChunk* sc;
+        {
+            t->contextSet(Thread::CONTEXT_CPU);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            auto it = swapChunks.find(xid);
+            if (unlikely(it == swapChunks.end()))
+                throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory remove");
+            sc = it->second;
+            sc->release = true;
+            swappedFlushXid = 0;
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+
+        for (auto tc: sc->chunks)
+            if (tc != nullptr)
+                freeMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS, tc);
+
+        {
+            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_FLUSH2);
+            std::unique_lock<std::mutex> lck(swapMtx);
+            sc->chunks.clear();
+            commitedXids.push_back(xid);
+            chunksMemoryManager.notify_all();
+        }
+        t->contextSet(Thread::CONTEXT_CPU);
+    }
+
+    void Ctx::wontSwap(Thread* t) {
+        t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_WONT);
+        std::unique_lock<std::mutex> lck(memoryMtx);
+
+        if (!outOfMemoryParser) {
+            t->contextSet(Thread::CONTEXT_CPU);
+            return;
+        }
+
+        if (memoryModulesAllocated[MEMORY_MODULE_BUILDER] > memoryChunksWriteBufferMin) {
+            t->contextSet(Thread::CONTEXT_CPU);
+            return;
+        }
+
+        hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
+             "transaction would be skipped");
+        if (memoryModulesAllocated[MEMORY_MODULE_READER] > 5)
+            hint("amount of disk buffer is too high, try to decrease 'memory-read-buffer-max-mb' parameter, current utilization: " +
+                 std::to_string(memoryModulesAllocated[MEMORY_MODULE_READER] * MEMORY_CHUNK_SIZE_MB) + "MB");
+        throw RuntimeException(10017, "out of memory");
     }
 
     void Ctx::stopHard() {
@@ -991,25 +1278,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void Ctx::releaseBuffer(Thread* t) {
-        t->contextSet(Thread::CONTEXT_MEM);
-        std::unique_lock<std::mutex> lck(memoryMtx);
-        ++buffersFree;
-    }
-
-    void Ctx::allocateBuffer(Thread* t) {
-        t->contextSet(Thread::CONTEXT_MEM);
-        std::unique_lock<std::mutex> lck(memoryMtx);
-        --buffersFree;
-        if (readBufferMax - buffersFree > buffersMaxUsed)
-            buffersMaxUsed = readBufferMax - buffersFree;
-    }
-
     void Ctx::signalDump() {
         if (mainThread != pthread_self())
             return;
 
         std::unique_lock<std::mutex> lck(mtx);
+        printMemoryUsageCurrent();
         for (Thread* thread: threads) {
             error(10014, "Dump: " + thread->getName() + " " + std::to_string(reinterpret_cast<uint64_t>(thread->pthread)) + " context: " +
                     std::to_string(thread->curContext) + " reason: " + std::to_string(thread->curReason) + " switches: " +
@@ -1208,5 +1482,25 @@ namespace OpenLogReplicator {
             s << "TRACE " << code << " " << message << '\n';
             std::cerr << s.str();
         }
+    }
+
+    void Ctx::printMemoryUsageHWM() const {
+        info(0, "Memory HWM: " + std::to_string(getMemoryHWM()) + "MB"
+                ", builder HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", parser HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", disk read buffer HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_READER] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", transaction HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", swapped: " + std::to_string(swappedMB) + "MB");
+    }
+
+    void Ctx::printMemoryUsageCurrent() const {
+        info(0, "Memory current swap: " + std::to_string(memoryChunksSwap * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", allocated: " + std::to_string(memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", free: " + std::to_string(memoryChunksFree * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", memory builder: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", parser: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", disk read buffer: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_READER] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", transaction: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB"
+                ", swapped: " + std::to_string(swappedMB) + "MB");
     }
 }

@@ -161,7 +161,11 @@ namespace OpenLogReplicator {
         long double decodeDouble(const uint8_t* data);
 
         inline void builderRotate(bool copy) {
-            auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER, true));
+            if (messageSize > ctx->memoryChunksWriteBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
+                throw RedoLogException(10072, "writer buffer (parameter \"write-buffer-max-mb\" = " +
+                        std::to_string(ctx->memoryChunksWriteBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB) + ") is too small to fit a message with size: " +
+                        std::to_string(messageSize));
+            auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY_MODULE_BUILDER));
             ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
             nextBuffer->next = nullptr;
             nextBuffer->id = lastBuilderQueue->id + 1;
@@ -301,7 +305,7 @@ namespace OpenLogReplicator {
             msg->data = lastBuilderQueue->data + lastBuilderQueue->size + sizeof(struct BuilderMsg);
         };
 
-        inline void builderCommit(bool force) {
+        inline void builderCommit() {
             messageSize += messagePosition;
             if (unlikely(messageSize == sizeof(struct BuilderMsg)))
                 throw RedoLogException(50058, "output buffer - commit of empty transaction");
@@ -310,20 +314,13 @@ namespace OpenLogReplicator {
             builderShiftFast((8 - (messagePosition & 7)) & 7);
             unconfirmedSize += messageSize;
             msg->size = messageSize - sizeof(struct BuilderMsg);
+            msg = nullptr;
             lastBuilderQueue->size += messagePosition;
             if (lastBuilderQueue->start == BUFFER_START_UNDEFINED)
                 lastBuilderQueue->start = static_cast<uint64_t>(lastBuilderQueue->size);
 
-            if (force || flushBuffer == 0 || unconfirmedSize > flushBuffer) {
-                {
-                    ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX);
-                    std::unique_lock<std::mutex> lck(mtx);
-                    condNoWriterWork.notify_all();
-                }
-                ctx->parserThread->contextSet(Thread::CONTEXT_TRAN);
-                unconfirmedSize = 0;
-            }
-            msg = nullptr;
+            if (flushBuffer == 0 || unconfirmedSize > flushBuffer)
+                flush();
         };
 
         inline void append(char character) {
@@ -593,7 +590,6 @@ namespace OpenLogReplicator {
                     }
 
                     RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                    redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
 
                     valueBufferCheck(chunkSize * 4, offset);
                     addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset, appendData, isClob,
@@ -683,7 +679,6 @@ namespace OpenLogReplicator {
 
                         while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
                             RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                            redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                             if (j < pageCnt)
                                 chunkSize = redoLogRecordLob->lobDataSize;
                             else
@@ -864,7 +859,6 @@ namespace OpenLogReplicator {
 
                                     while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
                                         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                                        redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkSize = redoLogRecordLob->lobDataSize;
                                         if (i == lobPages - 1U && j == pageCnt - 1U)
                                             hasNext = false;
@@ -921,7 +915,6 @@ namespace OpenLogReplicator {
                                         }
 
                                         RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                                        redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkSize = redoLogRecordLob->lobDataSize;
                                         if (listPage == 0 && i == aSiz - 1U && j == pageCnt - 1U)
                                             hasNext = false;
@@ -1002,7 +995,6 @@ namespace OpenLogReplicator {
                                 }
 
                                 RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
-                                redoLogRecordLob->dataExt = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                 chunkSize = redoLogRecordLob->lobDataSize;
                                 if (i == lobPages - 1U && j == pageCnt - 1U)
                                     hasNext = false;
@@ -1347,6 +1339,17 @@ namespace OpenLogReplicator {
         void releaseBuffers(Thread* t, uint64_t maxId);
         void sleepForWriterWork(Thread* t, uint64_t queueSize, uint64_t nanoseconds);
         void wakeUp();
+
+        inline void flush() {
+            {
+                ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::BUILDER_COMMIT);
+                std::unique_lock<std::mutex> lck(mtx);
+                condNoWriterWork.notify_all();
+            }
+            ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
+            unconfirmedSize = 0;
+        };
+
 
         friend class SystemTransaction;
     };
