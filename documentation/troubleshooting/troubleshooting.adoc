@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.6.1
-:revdate: 2024-06-01
+:revnumber: 1.7.0
+:revdate: 2024-09-30
 :imagesdir: ./images
 :toc: preamble
 
