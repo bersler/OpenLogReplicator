@@ -48,6 +48,8 @@ namespace OpenLogReplicator {
     public:
         CharacterSetZHT32EUC();
         ~CharacterSetZHT32EUC() override;
+        CharacterSetZHT32EUC(const CharacterSetZHT32EUC&) = delete;
+        CharacterSetZHT32EUC& operator=(const CharacterSetZHT32EUC&) = delete;
 
         virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
     };

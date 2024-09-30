@@ -105,9 +105,9 @@ namespace OpenLogReplicator {
                 throw RedoLogException(50041, "bad split offset: " + std::to_string(redoLogRecord->dataOffset) + " xid: " +
                                               transaction->xid.toString());
 
-            auto lastTc = transaction->lastTc;
+            const auto lastTc = transaction->lastTc;
             auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
-            auto last501 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
+            const auto last501 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
 
             uint32_t mergeSize = last501->size + redoLogRecord->size;
             transaction->mergeBuffer = new uint8_t[mergeSize];
@@ -161,8 +161,8 @@ namespace OpenLogReplicator {
                 throw RedoLogException(50043, "bad split offset: " + std::to_string(redoLogRecord1->dataOffset) + " xid: " +
                                               transaction->xid.toString() + " second position");
 
-            auto lastTc = transaction->lastTc ;
-            auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
+            const auto lastTc = transaction->lastTc ;
+            const auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
             auto last501 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
 
             uint32_t mergeSize = last501->size + redoLogRecord1->size;

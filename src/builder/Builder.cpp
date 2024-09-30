@@ -931,7 +931,7 @@ namespace OpenLogReplicator {
     }
 
     void Builder::processDml(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx,
-                             std::deque<const RedoLogRecord*>& redo1, std::deque<const RedoLogRecord*>& redo2,
+                             const std::deque<const RedoLogRecord*>& redo1, const std::deque<const RedoLogRecord*>& redo2,
                              uint64_t type, bool system, bool schema, bool dump) {
         uint8_t fb;
         typeObj obj;

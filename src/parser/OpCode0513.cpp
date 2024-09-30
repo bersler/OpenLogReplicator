@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Transaction.h"
 
 namespace OpenLogReplicator {
-    void OpCode0513::attribute(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, const char* header,
+    void OpCode0513::attribute(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, const char* header,
                                const char* name, Transaction* transaction) {
         std::string value(reinterpret_cast<const char*>(redoLogRecord->data() + fieldPos), fieldSize);
         if (value != "")

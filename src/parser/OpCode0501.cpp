@@ -403,7 +403,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::kdilk(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
+    void OpCode0501::kdilk(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
         if (unlikely(fieldSize < 20))
             throw RedoLogException(50061, "too short field kdilk: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));

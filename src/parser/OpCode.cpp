@@ -1897,7 +1897,7 @@ namespace OpenLogReplicator {
                 tablespaceUndo = " No";
         }
 
-        const char* userOnly(" No");
+        const char* userOnly;
         if ((redoLogRecord->flg & FLG_USERONLY) != 0)
             userOnly = "Yes";
         else {

@@ -1950,7 +1950,7 @@ namespace OpenLogReplicator {
                     onlineReader->paths.clear();
                     lastGroup = group;
                 }
-                std::string path = pathStr;
+                std::string path(pathStr);
                 onlineReader->paths.push_back(path);
                 auto redoLog = new RedoLog(group, pathStr);
                 metadata->redoLogs.insert(redoLog);

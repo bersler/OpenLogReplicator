@@ -56,6 +56,8 @@ namespace OpenLogReplicator {
     public:
         SerializerJson();
         ~SerializerJson() override;
+        SerializerJson(const SerializerJson&) = delete;
+        SerializerJson& operator=(const SerializerJson&) = delete;
 
         [[nodiscard]] bool deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::vector<std::string>& msgs,
                                        bool loadMetadata, bool storeSchema) override;

@@ -36,6 +36,8 @@ namespace OpenLogReplicator {
         explicit RedoLogException(int newCode, std::string newMsg);
         explicit RedoLogException(int newCode, const char* newMsg);
         ~RedoLogException() override;
+        RedoLogException(const RedoLogException&) = delete;
+        RedoLogException& operator=(const RedoLogException&) = delete;
 
         friend std::ostream& operator<<(std::ostream& os, const RedoLogException& exception);
     };
