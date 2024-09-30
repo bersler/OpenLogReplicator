@@ -1,4 +1,4 @@
-1.6.1
+1.7.0
 - fix: welcome banner
 - code style cleanup
 - fix: diagnostic information populated when not enabled
