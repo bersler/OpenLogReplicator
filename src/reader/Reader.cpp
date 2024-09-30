@@ -243,7 +243,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR_READ;
         }
 
-        if (actualRead > 0 && ctx->redoCopyPath.length() > 0) {
+        if (ctx->redoCopyPath.length() > 0) {
             if (static_cast<uint64_t>(actualRead) > blockSize * 2)
                 actualRead = static_cast<int64_t>(blockSize * 2);
 
@@ -465,7 +465,7 @@ namespace OpenLogReplicator {
         if (currentRet == REDO_ERROR_CRC && ctx->redoVerifyDelayUs > 0 && group != 0)
             currentRet = REDO_EMPTY;
 
-        if (goodBlocks == 0 && currentRet != REDO_OK && (currentRet != REDO_EMPTY || group == 0)) {
+        if (goodBlocks == 0 && currentRet != REDO_OK && currentRet != REDO_EMPTY) {
             ret = currentRet;
             return false;
         }

@@ -35,6 +35,8 @@ namespace OpenLogReplicator {
 
         Stream(Ctx* newCtx, const char* newUri);
         virtual ~Stream();
+        Stream(const Stream&) = delete;
+        Stream& operator=(const Stream&) = delete;
 
         [[nodiscard]] virtual std::string getName() const = 0;
         virtual void initializeClient() = 0;

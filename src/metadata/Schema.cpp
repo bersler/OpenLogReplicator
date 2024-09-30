@@ -1148,7 +1148,7 @@ namespace OpenLogReplicator {
                                              ", OBJ#: " + std::to_string(sysCCol->obj) +
                                              ", SPARE1: " + sysCCol->spare1.toString() + ")");
 
-        SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
+        SysCColKey sysCColKey(sysCCol->obj, sysCCol->con, sysCCol->intCol);
         auto sysCColMapKeyIt = sysCColMapKey.find(sysCColKey);
         if (unlikely(sysCColMapKeyIt != sysCColMapKey.end()))
             throw DataException(50024, "duplicate SYS.CCOL$ value for unique (OBJ#: " + std::to_string(sysCCol->obj) + ", INTCOL#: " +
@@ -1554,7 +1554,7 @@ namespace OpenLogReplicator {
             return;
         sysCColMapRowId.erase(sysCColMapRowIdIt);
 
-        SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
+        SysCColKey sysCColKey(sysCCol->obj, sysCCol->con, sysCCol->intCol);
         auto sysCColMapKeyIt = sysCColMapKey.find(sysCColKey);
         if (sysCColMapKeyIt != sysCColMapKey.end())
             sysCColMapKey.erase(sysCColMapKeyIt);
@@ -2666,7 +2666,7 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                SysCColKey sysCColKeyFirst(sysObj->obj, sysCol->intCol, 0);
+                SysCColKey sysCColKeyFirst(sysObj->obj, 0, sysCol->intCol);
                 for (auto sysCColMapKeyIt = sysCColMapKey.upper_bound(sysCColKeyFirst);
                      sysCColMapKeyIt != sysCColMapKey.end() && sysCColMapKeyIt->first.obj == sysObj->obj && sysCColMapKeyIt->first.intCol == sysCol->intCol;
                      ++sysCColMapKeyIt) {

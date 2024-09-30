@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
         dumpMemory(ctx, redoLogRecord, fieldPos, fieldSize);
     }
 
-    void OpCode0A08::kdxln(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
+    void OpCode0A08::kdxln(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
         if (fieldSize < 16) {
             ctx->warning(70001, "too short field kdxln: " + std::to_string(fieldSize) + " offset: " +
                                 std::to_string(redoLogRecord->dataOffset));

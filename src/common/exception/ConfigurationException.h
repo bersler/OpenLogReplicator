@@ -36,6 +36,8 @@ namespace OpenLogReplicator {
         explicit ConfigurationException(int newCode, const std::string& newMsg);
         explicit ConfigurationException(int newCode, const char* newMsg);
         ~ConfigurationException() override;
+        ConfigurationException(const ConfigurationException&) = delete;
+        ConfigurationException& operator=(const ConfigurationException&) = delete;
 
         friend std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception);
     };

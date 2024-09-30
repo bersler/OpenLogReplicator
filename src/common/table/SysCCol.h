@@ -27,13 +27,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysCColKey final {
     public:
-        SysCColKey(typeObj newObj, typeCol newIntCol, typeCon newCon) :
+        SysCColKey(typeObj newObj, typeCon newCon, typeCol newIntCol) :
                 obj(newObj),
-                intCol(newIntCol),
-                con(newCon) {
+                con(newCon),
+                intCol(newIntCol) {
         }
 
-        bool operator<(const SysCColKey& other) const {
+        bool operator<(const SysCColKey other) const {
             if (obj < other.obj)
                 return true;
             if (other.obj < obj)
@@ -48,8 +48,8 @@ namespace OpenLogReplicator {
         }
 
         typeObj obj;
-        typeCol intCol;
         typeCon con;
+        typeCol intCol;
     };
 
     class SysCCol final {

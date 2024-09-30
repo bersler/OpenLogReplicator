@@ -30,6 +30,8 @@ namespace OpenLogReplicator {
     public:
         CharacterSetJA16EUCTILDE();
         ~CharacterSetJA16EUCTILDE() override;
+        CharacterSetJA16EUCTILDE(const CharacterSetJA16EUCTILDE&) = delete;
+        CharacterSetJA16EUCTILDE& operator=(const CharacterSetJA16EUCTILDE&) = delete;
     };
 }
 

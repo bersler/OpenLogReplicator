@@ -30,6 +30,8 @@ namespace OpenLogReplicator {
     public:
         explicit StateDisk(Ctx* newCtx, const char* newPath);
         ~StateDisk() override;
+        StateDisk(const StateDisk&) = delete;
+        StateDisk& operator=(const StateDisk&) = delete;
 
         void list(std::set<std::string>& namesList) const override;
         [[nodiscard]] bool read(const std::string& name, uint64_t maxSize, std::string& in) override;

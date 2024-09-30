@@ -31,6 +31,8 @@ namespace OpenLogReplicator {
     public:
         StreamZeroMQ(Ctx* newCtx, const char* newUri);
         virtual ~StreamZeroMQ() override;
+        StreamZeroMQ(const StreamZeroMQ&) = delete;
+        StreamZeroMQ& operator=(const StreamZeroMQ&) = delete;
 
         void initialize() override;
         [[nodiscard]] std::string getName() const override;

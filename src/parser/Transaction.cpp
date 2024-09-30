@@ -226,7 +226,7 @@ namespace OpenLogReplicator {
             const auto tc = reinterpret_cast<TransactionChunk*>(metadata->ctx->swappedMemoryGet(metadata->ctx->parserThread, xid, m));
             uint64_t pos = 0;
             for (uint64_t i = 0; i < tc->elements; ++i) {
-                typeOp2 op = *reinterpret_cast<typeOp2*>(tc->buffer + pos);
+                typeOp2 op = *reinterpret_cast<const typeOp2*>(tc->buffer + pos);
 
                 auto redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA0);
                 auto redoLogRecord2 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + TransactionBuffer::ROW_HEADER_DATA1 + redoLogRecord1->size);

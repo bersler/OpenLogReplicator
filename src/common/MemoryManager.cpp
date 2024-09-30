@@ -307,7 +307,6 @@ namespace OpenLogReplicator {
             throw RuntimeException(50072, "swap file: " + fileName + " - unswapping: " + std::to_string(index) + " not in range " +
                     std::to_string(sc->swappedMin) + "-" + std::to_string(sc->swappedMax));
         }
-        contextSet(CONTEXT_CPU);
     }
 
     bool MemoryManager::swap(typeXid xid, int64_t index) {
@@ -326,8 +325,13 @@ namespace OpenLogReplicator {
                 return false;
             }
 
-            sc->lockedChunk = index;
             tc = sc->chunks[index];
+
+            sc->swappedMax = index;
+            if (sc->swappedMin == -1)
+                sc->swappedMin = sc->swappedMax;
+
+            sc->chunks[index] = nullptr;
         }
         contextSet(CONTEXT_CPU);
 
@@ -365,21 +369,18 @@ namespace OpenLogReplicator {
             contextSet(CONTEXT_MUTEX, MEMORY_SWAP2);
             std::unique_lock<std::mutex> lck(ctx->swapMtx);
 
-            sc->lockedChunk = -1;
-            if (sc->release || sc->breakLock) {
-                sc->breakLock = false;
-                if (sc->swappedMax == -1)
-                    remove = true;
-                else
-                    truncateSize = (sc->swappedMax + 1) * Ctx::MEMORY_CHUNK_SIZE;
-            } else {
-                sc->swappedMax = index;
-                if (sc->swappedMin == -1)
-                    sc->swappedMin = sc->swappedMax;
+            if (ctx->swappedShrinkXid == xid) {
+                sc->chunks[index] = tc;
 
-                sc->chunks[index] = nullptr;
+                if (sc->swappedMax == 0) {
+                    sc->swappedMin = sc->swappedMax = -1;
+                    remove = true;
+                } else {
+                    --sc->swappedMax;
+                    truncateSize = (sc->swappedMax + 1) * Ctx::MEMORY_CHUNK_SIZE;
+                }
+                ctx->chunksTransaction.notify_all();
             }
-            ctx->chunksTransaction.notify_all();
         }
         contextSet(CONTEXT_CPU);
 

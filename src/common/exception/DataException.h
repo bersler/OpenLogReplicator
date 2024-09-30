@@ -32,6 +32,8 @@ namespace OpenLogReplicator {
         explicit DataException(int newCode, const std::string& newMsg);
         explicit DataException(int newCode, const char* newMsg);
         ~DataException() override;
+        DataException(const DataException&) = delete;
+        DataException& operator=(const DataException&) = delete;
 
         friend std::ostream& operator<<(std::ostream& os, const DataException& exception);
     };

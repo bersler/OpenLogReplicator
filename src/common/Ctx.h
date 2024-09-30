@@ -51,10 +51,9 @@ namespace OpenLogReplicator {
         int64_t swappedMax;
         int64_t lockedChunk;
         bool release;
-        bool breakLock;
 
         SwapChunk() :
-            swappedMin(-1), swappedMax(-1), lockedChunk(-1), release(false), breakLock(false) {};
+            swappedMin(-1), swappedMax(-1), lockedChunk(-1), release(false) {};
     };
 
 
@@ -624,7 +623,6 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getMemoryHWM() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;
         [[nodiscard]] uint64_t getSwapMemory(Thread* t) const;
-        [[nodiscard]] uint64_t getUsedMemory(Thread* t) const;
         [[nodiscard]] uint64_t getFreeMemory(Thread* t) const;
         [[nodiscard]] uint8_t* getMemoryChunk(Thread* t, uint64_t module, bool swap = false);
         void freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk);

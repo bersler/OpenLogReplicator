@@ -36,6 +36,8 @@ namespace OpenLogReplicator {
         explicit NetworkException(int newCode, const std::string& newMsg);
         explicit NetworkException(int newCode, const char* newMsg);
         ~NetworkException() override;
+        NetworkException(const NetworkException&) = delete;
+        NetworkException& operator=(const NetworkException&) = delete;
 
         friend std::ostream& operator<<(std::ostream& os, const NetworkException& exception);
     };
