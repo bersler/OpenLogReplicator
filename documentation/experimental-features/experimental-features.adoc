@@ -1,7 +1,7 @@
 = Experimental Features
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.7.0
-:revdate: 2024-09-30
+:revnumber: 1.7.1
+:revdate: 2024-10-02
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :toc: preamble
