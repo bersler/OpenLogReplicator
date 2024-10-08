@@ -30,10 +30,10 @@ namespace OpenLogReplicator {
         uint64_t tagNames;
 
     public:
-        static constexpr uint64_t TAG_NAMES_NONE = 0;
-        static constexpr uint64_t TAG_NAMES_FILTER = 1;
-        static constexpr uint64_t TAG_NAMES_SYS = 2;
-        static constexpr uint64_t TAG_NAMES_ALL = 3;
+        static constexpr uint64_t TAG_NAMES_NONE{0};
+        static constexpr uint64_t TAG_NAMES_FILTER{1};
+        static constexpr uint64_t TAG_NAMES_SYS{2};
+        static constexpr uint64_t TAG_NAMES_ALL{3};
 
         Metrics(uint64_t newTagNames);
         virtual ~Metrics();

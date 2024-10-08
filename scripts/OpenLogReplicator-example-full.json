@@ -39,7 +39,7 @@
         "timestamp-all": 0,
         "char": 0,
         "scn": 0,
-        "scn-all": 0,
+        "scn-type": 0,
         "rid": 0,
         "unknown": 0,
         "schema": 0,
@@ -89,6 +89,15 @@
         ],
         "skip-xid": ["1234.ABC.12345678", "1234.0ABC.12345678", "09000D001D050000"],
         "dump-xid": ["1234.ABC.12345679", "1234.0ABC.12345679", "09000D001D050001"]
+      },
+      "key": {
+        "separator": ";",
+        "table": [
+          {"owner": "OWNER1", "table": "K.*", "columns": "[ui]"},
+          {"owner": "OWNER1", "table": "L.*", "columns": "[pk]"},
+          {"owner": "OWNER1", "table": "M.*", "columns": "a,b,c"},
+          {"owner": "OWNER1", "table": ".*", "columns": "[all]"}
+        ]
       }
     }
   ],

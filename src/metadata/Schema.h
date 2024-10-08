@@ -53,10 +53,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Ctx;
+    class DbColumn;
+    class DbLob;
+    class DbTable;
     class Locales;
-    class OracleColumn;
-    class OracleLob;
-    class OracleTable;
     class SchemaElement;
     class SysDeferredStg;
     class SysTab;
@@ -114,8 +114,8 @@ namespace OpenLogReplicator {
         bool compareXdbXNm(Schema* otherSchema, std::string& msgs) const;
         bool compareXdbXQn(Schema* otherSchema, std::string& msgs) const;
         bool compareXdbXPt(Schema* otherSchema, std::string& msgs) const;
-        void addTableToDict(OracleTable* table);
-        void removeTableFromDict(OracleTable* table);
+        void addTableToDict(DbTable* table);
+        void removeTableFromDict(DbTable* table);
         uint16_t getLobBlockSize(typeTs ts) const;
 
     public:
@@ -123,15 +123,15 @@ namespace OpenLogReplicator {
         typeScn refScn;
         bool loaded;
 
-        std::unordered_map<typeDataObj, OracleLob*> lobPartitionMap;
-        std::unordered_map<typeDataObj, OracleLob*> lobIndexMap;
-        std::unordered_map<typeObj, OracleTable*> tableMap;
-        std::unordered_map<typeObj, OracleTable*> tablePartitionMap;
+        std::unordered_map<typeDataObj, DbLob*> lobPartitionMap;
+        std::unordered_map<typeDataObj, DbLob*> lobIndexMap;
+        std::unordered_map<typeObj, DbTable*> tableMap;
+        std::unordered_map<typeObj, DbTable*> tablePartitionMap;
         XmlCtx* xmlCtxDefault;
-        OracleColumn* columnTmp;
-        OracleLob* lobTmp;
-        OracleTable* tableTmp;
-        std::set<OracleTable*> tablesTouched;
+        DbColumn* columnTmp;
+        DbLob* lobTmp;
+        DbTable* tableTmp;
+        std::set<DbTable*> tablesTouched;
         std::set<typeObj> identifiersTouched;
         bool touched;
 
@@ -311,10 +311,10 @@ namespace OpenLogReplicator {
         [[nodiscard]] XdbXQn* dictXdbXQnFind(const std::string& tokSuf, typeRowId rowId);
 
         void touchTable(typeObj obj);
-        [[nodiscard]] OracleTable* checkTableDict(typeObj obj) const;
+        [[nodiscard]] DbTable* checkTableDict(typeObj obj) const;
         [[nodiscard]] bool checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table) const;
-        [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj) const;
-        [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj) const;
+        [[nodiscard]] DbLob* checkLobDict(typeDataObj dataObj) const;
+        [[nodiscard]] DbLob* checkLobIndexDict(typeDataObj dataObj) const;
         void dropUnusedMetadata(const std::set<std::string>& users, const std::vector<SchemaElement*>& schemaElements, std::vector<std::string>& msgs);
         void buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
                        const std::string& conditionStr, typeOptions options, std::vector<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,

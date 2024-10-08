@@ -6,7 +6,7 @@
       "name": "O112A",
       "reader": {
         "type": "batch",
-        "redo-log": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"],
+        "redo-log": ["/db/arch/o1_mf_1_1991_hkb9y64l_.arc", "/db/arch/o1_mf_1_1992_hkb9y93r_.arc", "/db/otherDir"],
         "log-archive-format": ""
       },
       "format": {

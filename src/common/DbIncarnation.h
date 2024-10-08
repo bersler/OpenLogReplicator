@@ -1,4 +1,4 @@
-/* Header for OracleIncarnation class
+/* Header for DbIncarnation class
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -19,11 +19,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifndef ORACLE_INCARNATION_H_
-#define ORACLE_INCARNATION_H_
+#ifndef DB_INCARNATION_H_
+#define DB_INCARNATION_H_
 
 namespace OpenLogReplicator {
-    class OracleIncarnation {
+    class DbIncarnation {
     public:
         uint32_t incarnation;
         typeScn resetlogsScn;
@@ -34,10 +34,10 @@ namespace OpenLogReplicator {
 
         bool current;
 
-        OracleIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus, typeResetlogs newResetlogs,
-                          uint32_t newPriorIncarnation);
+        DbIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus, typeResetlogs newResetlogs,
+                      uint32_t newPriorIncarnation);
 
-        friend std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i);
+        friend std::ostream& operator<<(std::ostream& os, const DbIncarnation& i);
     };
 }
 

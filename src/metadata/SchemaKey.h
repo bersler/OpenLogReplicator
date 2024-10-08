@@ -1,4 +1,4 @@
-/* Definition of schema XDB.X$NMxxx
+/* Header for SchemaKey class
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,31 +17,25 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include <vector>
+#include "../common/types.h"
 
-#ifndef XDB_XNM_H_
-#define XDB_XNM_H_
+#ifndef SCHEMA_KEY_H_
+#define SCHEMA_KEY_H_
 
 namespace OpenLogReplicator {
-    class XdbXNm final {
+    class SchemaKey final {
     public:
-        static constexpr uint64_t NMSPCURI_LENGTH{2000};
-        static constexpr uint64_t ID_LENGTH{16};
+        enum TYPE {
+            ALL, UI, PK, LIST
+        };
 
-        XdbXNm(typeRowId newRowId, const char* newNmSpcUri, const char* newId) :
-                rowId(newRowId),
-                nmSpcUri(newNmSpcUri),
-                id(newId) {
-        }
+        std::string owner;
+        std::string table;
+        std::vector<std::string> columnList;
+        TYPE type;
 
-        bool operator!=(const XdbXNm& other) const {
-            return (other.rowId != rowId) || (other.nmSpcUri != nmSpcUri) || (other.id != id);
-        }
-
-        typeRowId rowId;
-        std::string nmSpcUri;
-        std::string id;
+        SchemaKey(const char* newOwner, const char* newTable, const char* newColumns);
     };
 }
 

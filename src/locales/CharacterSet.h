@@ -28,8 +28,8 @@ namespace OpenLogReplicator {
 
     class CharacterSet {
     public:
-        static constexpr uint64_t MAX_CHARACTER_LENGTH = 8;
-        static constexpr uint64_t UNICODE_UNKNOWN_CHARACTER = 0xFFFD;
+        static constexpr uint64_t MAX_CHARACTER_LENGTH{8};
+        static constexpr uint64_t UNICODE_UNKNOWN_CHARACTER{0xFFFD};
 
     protected:
         [[nodiscard]] uint64_t badChar(const Ctx* ctx, typeXid xid, uint64_t byte1) const;

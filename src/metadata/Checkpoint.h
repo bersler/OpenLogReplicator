@@ -32,7 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Metadata;
-    class OracleIncarnation;
+    class DbIncarnation;
     class TransactionBuffer;
 
     class Checkpoint final : public Thread {

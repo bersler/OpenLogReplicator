@@ -1,4 +1,4 @@
-/* Header for OracleColumn class
+/* Header for DbColumn class
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -19,11 +19,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifndef ORACLE_COLUMN_H_
-#define ORACLE_COLUMN_H_
+#ifndef DB_COLUMN_H_
+#define DB_COLUMN_H_
 
 namespace OpenLogReplicator {
-    class OracleColumn final {
+    class DbColumn final {
     public:
         typeCol col;
         typeCol guardSeg;
@@ -46,11 +46,11 @@ namespace OpenLogReplicator {
         bool xmlType;
         bool nullWarning;
 
-        OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
-                     int64_t newPrecision, int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newHidden,
-                     bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType);
+        DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
+                 int64_t newPrecision, int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newHidden,
+                 bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType);
 
-        friend std::ostream& operator<<(std::ostream& os, const OracleColumn& column);
+        friend std::ostream& operator<<(std::ostream& os, const DbColumn& column);
     };
 }
 

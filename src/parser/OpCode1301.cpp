@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 19.1
+/* Redo log OpCode: 19.1
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -50,10 +50,10 @@ namespace OpenLogReplicator {
             *ctx->dumpStream << "Long field block dump:\n";
             *ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->dataObj << " \n";
             *ctx->dumpStream << "LobId: " << redoLogRecord->lobId.narrow() <<
-                            " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " \n";
+                             " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " \n";
             *ctx->dumpStream << "Version: 0x" << std::setfill('0') << std::setw(4) << std::hex << v1 <<
-                            "." << std::setfill('0') << std::setw(8) << std::hex << v2 <<
-                            "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
+                             "." << std::setfill('0') << std::setw(8) << std::hex << v2 <<
+                             "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
 
             for (typeSize j = 0; j < fieldSize - 36U; ++j) {
                 *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data()[fieldPos + j + 36]) << " ";
