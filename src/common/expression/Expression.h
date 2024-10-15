@@ -31,8 +31,8 @@ namespace OpenLogReplicator {
 
     class Expression {
     public:
-        static void buildTokens(const std::string& conditionStr, std::vector<Token*>& tokens);
-        static BoolValue* buildCondition(const std::string& conditionStr, std::vector<Token*>& tokens, std::vector<Expression*>& stack);
+        static void buildTokens(const std::string& condition, std::vector<Token*>& tokens);
+        static BoolValue* buildCondition(const std::string& condition, std::vector<Token*>& tokens, std::vector<Expression*>& stack);
 
         Expression();
         virtual ~Expression();

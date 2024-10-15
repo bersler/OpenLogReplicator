@@ -47,22 +47,22 @@ namespace OpenLogReplicator {
 
     class SysCDef final {
     public:
-        static constexpr uint64_t TYPE_TABLE_CHECK = 1;
-        static constexpr uint64_t TYPE_PK = 2;
-        static constexpr uint64_t TYPE_UNIQUE = 3;
-        static constexpr uint64_t TYPE_REFERENTIAL = 4;
-        static constexpr uint64_t TYPE_CHECK = 5;
-        static constexpr uint64_t TYPE_READ_ONLY = 6;
-        static constexpr uint64_t TYPE_CHECK_CONSTR_NOT_NULL = 7;
-        static constexpr uint64_t TYPE_HASH = 8;
-        static constexpr uint64_t TYPE_SCOPED_REF = 9;
-        static constexpr uint64_t TYPE_ROWID = 10;
-        static constexpr uint64_t TYPE_REF_NOT_NULL = 11;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG = 12;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_PK = 14;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_UNIQUE = 15;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_FK = 16;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_ALL = 17;
+        static constexpr uint64_t TYPE_TABLE_CHECK{1};
+        static constexpr uint64_t TYPE_PK{2};
+        static constexpr uint64_t TYPE_UNIQUE{3};
+        static constexpr uint64_t TYPE_REFERENTIAL{4};
+        static constexpr uint64_t TYPE_CHECK{5};
+        static constexpr uint64_t TYPE_READ_ONLY{6};
+        static constexpr uint64_t TYPE_CHECK_CONSTR_NOT_NULL{7};
+        static constexpr uint64_t TYPE_HASH{8};
+        static constexpr uint64_t TYPE_SCOPED_REF{9};
+        static constexpr uint64_t TYPE_ROWID{10};
+        static constexpr uint64_t TYPE_REF_NOT_NULL{11};
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG{12};
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_PK{14};
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_UNIQUE{15};
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_FK{16};
+        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_ALL{17};
 
         SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, typeType newType) :
                 rowId(newRowId),

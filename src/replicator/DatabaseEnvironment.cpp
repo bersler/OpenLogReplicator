@@ -1,4 +1,4 @@
-/* Class to handle oracle connection environment
+/* Class to handle database connection environment
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
 
         if (envhp == nullptr)
-            throw RuntimeException(10050, "can't initialize oracle environment (OCI)");
+            throw RuntimeException(10050, "can't initialize databadse environment (OCI)");
     }
 
     void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) {

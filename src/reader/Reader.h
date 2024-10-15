@@ -30,20 +30,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Reader : public Thread {
     protected:
-        static constexpr uint64_t FLAGS_END = 0x0008;
-        static constexpr uint64_t FLAGS_ASYNC = 0x0100;
-        static constexpr uint64_t FLAGS_NODATALOSS = 0x0200;
-        static constexpr uint64_t FLAGS_RESYNC = 0x0800;
-        static constexpr uint64_t FLAGS_CLOSEDTHREAD = 0x1000;
-        static constexpr uint64_t FLAGS_MAXPERFORMANCE = 0x2000;
+        static constexpr uint64_t FLAGS_END{0x0008};
+        static constexpr uint64_t FLAGS_ASYNC{0x0100};
+        static constexpr uint64_t FLAGS_NODATALOSS{0x0200};
+        static constexpr uint64_t FLAGS_RESYNC{0x0800};
+        static constexpr uint64_t FLAGS_CLOSEDTHREAD{0x1000};
+        static constexpr uint64_t FLAGS_MAXPERFORMANCE{0x2000};
 
-        static constexpr uint64_t STATUS_SLEEPING = 0;
-        static constexpr uint64_t STATUS_CHECK = 1;
-        static constexpr uint64_t STATUS_UPDATE = 2;
-        static constexpr uint64_t STATUS_READ = 3;
+        enum STATUS {
+            SLEEPING, CHECK, UPDATE, READ
+        };
 
-        static constexpr uint64_t PAGE_SIZE_MAX = 4096;
-        static constexpr uint64_t BAD_CDC_MAX_CNT = 20;
+        static constexpr uint64_t PAGE_SIZE_MAX{4096};
+        static constexpr uint64_t BAD_CDC_MAX_CNT{20};
 
         std::string database;
         int fileCopyDes;
@@ -79,7 +78,7 @@ namespace OpenLogReplicator {
         std::mutex mtx;
         std::atomic<uint64_t> bufferStart;
         std::atomic<uint64_t> bufferEnd;
-        std::atomic<uint64_t> status;
+        std::atomic<STATUS> status;
         std::atomic<uint64_t> ret;
         std::condition_variable condBufferFull;
         std::condition_variable condReaderSleeping;
@@ -97,19 +96,19 @@ namespace OpenLogReplicator {
         void mainLoop();
 
     public:
-        static constexpr uint64_t REDO_OK = 0;
-        static constexpr uint64_t REDO_OVERWRITTEN = 1;
-        static constexpr uint64_t REDO_FINISHED = 2;
-        static constexpr uint64_t REDO_STOPPED = 3;
-        static constexpr uint64_t REDO_SHUTDOWN = 4;
-        static constexpr uint64_t REDO_EMPTY = 5;
-        static constexpr uint64_t REDO_ERROR_READ = 6;
-        static constexpr uint64_t REDO_ERROR_WRITE = 7;
-        static constexpr uint64_t REDO_ERROR_SEQUENCE = 8;
-        static constexpr uint64_t REDO_ERROR_CRC = 9;
-        static constexpr uint64_t REDO_ERROR_BLOCK = 10;
-        static constexpr uint64_t REDO_ERROR_BAD_DATA = 11;
-        static constexpr uint64_t REDO_ERROR = 12;
+        static constexpr uint64_t REDO_OK{0};
+        static constexpr uint64_t REDO_OVERWRITTEN{1};
+        static constexpr uint64_t REDO_FINISHED{2};
+        static constexpr uint64_t REDO_STOPPED{3};
+        static constexpr uint64_t REDO_SHUTDOWN{4};
+        static constexpr uint64_t REDO_EMPTY{5};
+        static constexpr uint64_t REDO_ERROR_READ{6};
+        static constexpr uint64_t REDO_ERROR_WRITE{7};
+        static constexpr uint64_t REDO_ERROR_SEQUENCE{8};
+        static constexpr uint64_t REDO_ERROR_CRC{9};
+        static constexpr uint64_t REDO_ERROR_BLOCK{10};
+        static constexpr uint64_t REDO_ERROR_BAD_DATA{11};
+        static constexpr uint64_t REDO_ERROR{12};
 
         const static char* REDO_CODE[13];
         uint8_t** redoBufferList;

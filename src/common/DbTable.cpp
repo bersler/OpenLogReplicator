@@ -1,4 +1,4 @@
-/* Table from Oracle Database
+/* Table from the database
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -18,16 +18,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "Ctx.h"
-#include "OracleColumn.h"
-#include "OracleLob.h"
-#include "OracleTable.h"
+#include "DbColumn.h"
+#include "DbLob.h"
+#include "DbTable.h"
 #include "exception/RuntimeException.h"
 #include "expression/BoolValue.h"
 #include "expression/Token.h"
 
 namespace OpenLogReplicator {
-    OracleTable::OracleTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, const std::string& newOwner,
-                             const std::string& newName) :
+    DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, const std::string& newOwner,
+                     const std::string& newName) :
             obj(newObj),
             dataObj(newDataObj),
             user(newUser),
@@ -39,68 +39,68 @@ namespace OpenLogReplicator {
             guardSegNo(-1),
             owner(newOwner),
             name(newName),
-            conditionStr(""),
-            condition(nullptr) {
+            condition(""),
+            conditionValue(nullptr) {
 
-        systemTable = 0;
+        systemTable = TABLE::NONE;
         if (this->owner == "SYS") {
             sys = true;
             if (this->name == "CCOL$")
-                systemTable = SYS_CCOL;
+                systemTable = TABLE::SYS_CCOL;
             else if (this->name == "CDEF$")
-                systemTable = SYS_CDEF;
+                systemTable = TABLE::SYS_CDEF;
             else if (this->name == "COL$")
-                systemTable = SYS_COL;
+                systemTable = TABLE::SYS_COL;
             else if (this->name == "DEFERRED_STG$")
-                systemTable = SYS_DEFERRED_STG;
+                systemTable = TABLE::SYS_DEFERRED_STG;
             else if (this->name == "ECOL$")
-                systemTable = SYS_ECOL;
+                systemTable = TABLE::SYS_ECOL;
             else if (this->name == "LOB$")
-                systemTable = SYS_LOB;
+                systemTable = TABLE::SYS_LOB;
             else if (this->name == "LOBCOMPPART$")
-                systemTable = SYS_LOB_COMP_PART;
+                systemTable = TABLE::SYS_LOB_COMP_PART;
             else if (this->name == "LOBFRAG$")
-                systemTable = SYS_LOB_FRAG;
+                systemTable = TABLE::SYS_LOB_FRAG;
             else if (this->name == "OBJ$")
-                systemTable = SYS_OBJ;
+                systemTable = TABLE::SYS_OBJ;
             else if (this->name == "TAB$")
-                systemTable = SYS_TAB;
+                systemTable = TABLE::SYS_TAB;
             else if (this->name == "TABPART$")
-                systemTable = SYS_TABPART;
+                systemTable = TABLE::SYS_TABPART;
             else if (this->name == "TABCOMPART$")
-                systemTable = SYS_TABCOMPART;
+                systemTable = TABLE::SYS_TABCOMPART;
             else if (this->name == "TABSUBPART$")
-                systemTable = SYS_TABSUBPART;
+                systemTable = TABLE::SYS_TABSUBPART;
             else if (this->name == "TS$")
-                systemTable = SYS_TS;
+                systemTable = TABLE::SYS_TS;
             else if (this->name == "USER$")
-                systemTable = SYS_USER;
+                systemTable = TABLE::SYS_USER;
         } else if (this->owner == "XDB") {
             sys = true;
             if (this->name == "XDB$TTSET")
-                systemTable = XDB_TTSET;
+                systemTable = TABLE::XDB_TTSET;
             else if (this->name.substr(0, 4) == "X$NM") {
-                systemTable = XDB_XNM;
+                systemTable = TABLE::XDB_XNM;
                 tokSuf = this->name.substr(4);
             } else if (this->name.substr(0, 4) == "X$PT") {
-                systemTable = XDB_XPT;
+                systemTable = TABLE::XDB_XPT;
                 tokSuf = this->name.substr(4);
             } else if (this->name.substr(0, 4) == "X$QN") {
-                systemTable = XDB_XQN;
+                systemTable = TABLE::XDB_XQN;
                 tokSuf = this->name.substr(4);
             }
         } else
             sys = false;
     }
 
-    OracleTable::~OracleTable() {
-        for (OracleColumn* column: columns)
+    DbTable::~DbTable() {
+        for (DbColumn* column: columns)
             delete column;
         pk.clear();
         columns.clear();
         tablePartitions.clear();
 
-        for (OracleLob* lob: lobs)
+        for (DbLob* lob: lobs)
             delete lob;
         lobs.clear();
 
@@ -113,12 +113,12 @@ namespace OpenLogReplicator {
             delete token;
         tokens.clear();
 
-        if (condition != nullptr)
-            delete condition;
-        condition = nullptr;
+        if (conditionValue != nullptr)
+            delete conditionValue;
+        conditionValue = nullptr;
     }
 
-    void OracleTable::addColumn(OracleColumn* column) {
+    void DbTable::addColumn(DbColumn* column) {
         if (unlikely(column->segCol != static_cast<typeCol>(columns.size() + 1)))
             throw RuntimeException(50002, "trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) +
                                           ", dataobj: " + std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) +
@@ -137,40 +137,40 @@ namespace OpenLogReplicator {
         columns.push_back(column);
     }
 
-    void OracleTable::addLob(OracleLob* lob) {
+    void DbTable::addLob(DbLob* lob) {
         ++totalLobs;
         lobs.push_back(lob);
     }
 
-    void OracleTable::addTablePartition(typeObj newObj, typeDataObj newDataObj) {
+    void DbTable::addTablePartition(typeObj newObj, typeDataObj newDataObj) {
         typeObj2 objx = (static_cast<typeObj2>(newObj) << 32) | static_cast<typeObj2>(newDataObj);
         tablePartitions.push_back(objx);
     }
 
-    bool OracleTable::matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) {
+    bool DbTable::matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) {
         bool result = true;
-        if (condition != nullptr)
-            result = condition->evaluateToBool(op, attributes);
+        if (conditionValue != nullptr)
+            result = conditionValue->evaluateToBool(op, attributes);
 
-        if (unlikely(ctx->trace & Ctx::TRACE_CONDITION))
-            ctx->logTrace(Ctx::TRACE_CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + conditionStr + ", result: " +
-                                           std::to_string(result));
+        if (unlikely(ctx->trace & Ctx::TRACE::CONDITION))
+            ctx->logTrace(Ctx::TRACE::CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + condition + ", result: " +
+                                                 std::to_string(result));
         return result;
     }
 
-    void OracleTable::setConditionStr(const std::string& newConditionStr) {
-        this->conditionStr = newConditionStr;
-        if (newConditionStr == "")
+    void DbTable::setCondition(const std::string& newCondition) {
+        this->condition = newCondition;
+        if (newCondition == "")
             return;
 
-        Expression::buildTokens(newConditionStr, tokens);
-        condition = Expression::buildCondition(newConditionStr, tokens, stack);
+        Expression::buildTokens(newCondition, tokens);
+        conditionValue = Expression::buildCondition(newCondition, tokens, stack);
     }
 
-    std::ostream& operator<<(std::ostream& os, const OracleTable& table) {
+    std::ostream& operator<<(std::ostream& os, const DbTable& table) {
         os << "('" << table.owner << "'.'" << table.name << "', " << std::dec << table.obj << ", " << table.dataObj << ", " << table.cluCols << ", " <<
            table.maxSegCol << ")\n";
-        for (const OracleColumn* column: table.columns)
+        for (const DbColumn* column: table.columns)
             os << "     - " << *column << '\n';
         return os;
     }

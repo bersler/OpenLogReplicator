@@ -1,4 +1,4 @@
-/* Information about incarnation in Oracle database
+/* Information about incarnation in the database
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleIncarnation.h"
+#include "DbIncarnation.h"
 
 namespace OpenLogReplicator {
-    OracleIncarnation::OracleIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus,
-                                         typeResetlogs newResetlogs, uint32_t newPriorIncarnation) :
+    DbIncarnation::DbIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus,
+                                 typeResetlogs newResetlogs, uint32_t newPriorIncarnation) :
             incarnation(newIncarnation),
             resetlogsScn(newResetlogsScn),
             priorResetlogsScn(newPriorResetlogsScn),
@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
             current = false;
     }
 
-    std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i) {
+    std::ostream& operator<<(std::ostream& os, const DbIncarnation& i) {
         os << "(" << std::dec << i.incarnation << ", " << i.resetlogsScn << ", " << i.priorResetlogsScn << ", " << i.status << ", " << i.resetlogs << ", " <<
            i.priorIncarnation << ")";
         return os;

@@ -19,13 +19,13 @@
 list(APPEND ListCommon
         common/ClockHW.cpp
         common/Ctx.cpp
+        common/DbColumn.cpp
+        common/DbIncarnation.cpp
+        common/DbLob.cpp
+        common/DbTable.cpp
         common/LobCtx.cpp
         common/LobData.cpp
         common/LobKey.cpp
-        common/OracleColumn.cpp
-        common/OracleIncarnation.cpp
-        common/OracleLob.cpp
-        common/OracleTable.cpp
         common/RedoLogRecord.cpp
         common/MemoryManager.cpp
         common/Thread.cpp

@@ -66,11 +66,11 @@ namespace OpenLogReplicator {
         if ((fileSize & (Ctx::MEMORY_ALIGNMENT - 1)) != 0) {
             fileSize &= ~(Ctx::MEMORY_ALIGNMENT - 1);
             ctx->warning(10071, "file: " + fileName + " size is not a multiplication of " + std::to_string(Ctx::MEMORY_ALIGNMENT) + ", reading only " +
-                    std::to_string(fileSize) + " bytes ");
+                                std::to_string(fileSize) + " bytes ");
         }
 
 #if __linux__
-        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE))
             flags |= O_DIRECT;
 #endif
 
@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
         }
 
 #if __APPLE__
-        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
             contextSet(CONTEXT_OS, REASON_OS);
             int fcntlRet = fcntl(fileDes, F_GLOBAL_NOCACHE, 1);
             contextSet(CONTEXT_CPU);
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
     int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
-        if (unlikely(ctx->trace & Ctx::TRACE_PERFORMANCE))
+        if (unlikely(ctx->trace & Ctx::TRACE::PERFORMANCE))
             startTime = ctx->clock->getTimeUt();
         int64_t bytes = 0;
         uint64_t tries = ctx->archReadTries;
@@ -108,9 +108,9 @@ namespace OpenLogReplicator {
             contextSet(CONTEXT_OS, REASON_OS);
             bytes = pread(fileDes, buf, size, static_cast<int64_t>(offset));
             contextSet(CONTEXT_CPU);
-            if (unlikely(ctx->trace & Ctx::TRACE_FILE))
-                ctx->logTrace(Ctx::TRACE_FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
-                                               " returns " + std::to_string(bytes));
+            if (unlikely(ctx->trace & Ctx::TRACE::FILE))
+                ctx->logTrace(Ctx::TRACE::FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
+                                                " returns " + std::to_string(bytes));
 
             if (bytes > 0)
                 break;
@@ -132,12 +132,12 @@ namespace OpenLogReplicator {
         }
 
         // Maybe direct IO does not work
-        if (bytes < 0 && !ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
+        if (bytes < 0 && !ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
             ctx->hint("if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " +
-                      std::to_string(Ctx::REDO_FLAGS_DIRECT_DISABLE));
+                      std::to_string(Ctx::REDO_FLAGS::DIRECT_DISABLE));
         }
 
-        if (unlikely(ctx->trace & Ctx::TRACE_PERFORMANCE)) {
+        if (unlikely(ctx->trace & Ctx::TRACE::PERFORMANCE)) {
             if (bytes > 0)
                 sumRead += bytes;
             sumTime += ctx->clock->getTimeUt() - startTime;

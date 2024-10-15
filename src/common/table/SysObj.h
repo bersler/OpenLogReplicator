@@ -85,7 +85,7 @@ namespace OpenLogReplicator {
         static constexpr uint64_t FLAGS_ALLOW_FAST_ALTER_TABLE_UPGRADE = 524288;
         static constexpr uint64_t FLAGS_NOT_EDITIONABLE = 1048576;
         static constexpr uint64_t FLAGS_SPECIAL_INVOKER_RIGHTS = 2097152;
-        static constexpr uint64_t FLAGS_ORACLE_SUPPLIED_OBJECT = 4194304;
+        static constexpr uint64_t FLAGS_DATABASE_SUPPLIED_OBJECT = 4194304;
         static constexpr uint64_t FLAGS_NO_FINE_GRAINED_DEP = 8388608;
         static constexpr uint64_t FLAGS_COMMON_OBJECT_MISMATCH = 16777216;
         static constexpr uint64_t FLAGS_LOCAL_MCODE = 33554432;
@@ -102,49 +102,49 @@ namespace OpenLogReplicator {
         static constexpr uint64_t NAME_LENGTH = 128;
 
         // 11.2
-        static constexpr uint64_t TYPE_NEXT_OBJECT = 0;
-        static constexpr uint64_t TYPE_INDEX = 1;
-        static constexpr uint64_t TYPE_TABLE = 2;
-        static constexpr uint64_t TYPE_CLUSTER = 3;
-        static constexpr uint64_t TYPE_VIEW = 4;
-        static constexpr uint64_t TYPE_SYNONYM = 5;
-        static constexpr uint64_t TYPE_SEQUENCE = 6;
-        static constexpr uint64_t TYPE_PROCEDURE = 7;
-        static constexpr uint64_t TYPE_FUNCTION = 8;
-        static constexpr uint64_t TYPE_PACKAGE = 9;
-        static constexpr uint64_t TYPE_NON_EXISTENT = 10;
-        static constexpr uint64_t TYPE_PACKAGE_BODY = 11;
-        static constexpr uint64_t TYPE_TRIGGER = 12;
-        static constexpr uint64_t TYPE_TYPE = 13;
-        static constexpr uint64_t TYPE_TYPE_BODY = 14;
-        static constexpr uint64_t TYPE_VARCHAR_STORED_LOB = 21;
-        static constexpr uint64_t TYPE_LIBRARY = 22;
-        static constexpr uint64_t TYPE_JAVA_SOURCE = 28;
-        static constexpr uint64_t TYPE_JAVA_CLASS = 29;
-        static constexpr uint64_t TYPE_INDEXTYPE = 32;
-        static constexpr uint64_t TYPE_OPERATOR = 33;
-        static constexpr uint64_t TYPE_LOB = 40;
-        static constexpr uint64_t TYPE_MATERIALIZED_VIEW = 42;
-        static constexpr uint64_t TYPE_DIMENSION = 43;
-        static constexpr uint64_t TYPE_RULE_SET = 46;
-        static constexpr uint64_t TYPE_XML_SCHEMA = 55;
-        static constexpr uint64_t TYPE_JAVA_DATA = 56;
-        static constexpr uint64_t TYPE_RULE = 59;
-        static constexpr uint64_t TYPE_EVALUATION_CONTEXT = 62;
-        static constexpr uint64_t TYPE_ASSEMBLY = 87;
-        static constexpr uint64_t TYPE_CREDENTIAL = 90;
-        static constexpr uint64_t TYPE_CUBE_DIMENSION = 92;
-        static constexpr uint64_t TYPE_CUBE = 93;
-        static constexpr uint64_t TYPE_MEASURE_FOLDER = 94;
-        static constexpr uint64_t TYPE_CUBE_BUILD_PROCESS = 95;
+        static constexpr uint64_t TYPE_NEXT_OBJECT{0};
+        static constexpr uint64_t TYPE_INDEX{1};
+        static constexpr uint64_t TYPE_TABLE{2};
+        static constexpr uint64_t TYPE_CLUSTER{3};
+        static constexpr uint64_t TYPE_VIEW{4};
+        static constexpr uint64_t TYPE_SYNONYM{5};
+        static constexpr uint64_t TYPE_SEQUENCE{6};
+        static constexpr uint64_t TYPE_PROCEDURE{7};
+        static constexpr uint64_t TYPE_FUNCTION{8};
+        static constexpr uint64_t TYPE_PACKAGE{9};
+        static constexpr uint64_t TYPE_NON_EXISTENT{10};
+        static constexpr uint64_t TYPE_PACKAGE_BODY{11};
+        static constexpr uint64_t TYPE_TRIGGER{12};
+        static constexpr uint64_t TYPE_TYPE{13};
+        static constexpr uint64_t TYPE_TYPE_BODY{14};
+        static constexpr uint64_t TYPE_VARCHAR_STORED_LOB{21};
+        static constexpr uint64_t TYPE_LIBRARY{22};
+        static constexpr uint64_t TYPE_JAVA_SOURCE{28};
+        static constexpr uint64_t TYPE_JAVA_CLASS{29};
+        static constexpr uint64_t TYPE_INDEXTYPE{32};
+        static constexpr uint64_t TYPE_OPERATOR{33};
+        static constexpr uint64_t TYPE_LOB{40};
+        static constexpr uint64_t TYPE_MATERIALIZED_VIEW{42};
+        static constexpr uint64_t TYPE_DIMENSION{43};
+        static constexpr uint64_t TYPE_RULE_SET{46};
+        static constexpr uint64_t TYPE_XML_SCHEMA{55};
+        static constexpr uint64_t TYPE_JAVA_DATA{56};
+        static constexpr uint64_t TYPE_RULE{59};
+        static constexpr uint64_t TYPE_EVALUATION_CONTEXT{62};
+        static constexpr uint64_t TYPE_ASSEMBLY{87};
+        static constexpr uint64_t TYPE_CREDENTIAL{90};
+        static constexpr uint64_t TYPE_CUBE_DIMENSION{92};
+        static constexpr uint64_t TYPE_CUBE{93};
+        static constexpr uint64_t TYPE_MEASURE_FOLDER{94};
+        static constexpr uint64_t TYPE_CUBE_BUILD_PROCESS{95};
         // 12.1
-        static constexpr uint64_t TYPE_DIRECTORY = 23;
+        static constexpr uint64_t TYPE_DIRECTORY{23};
         // 12.2
-        static constexpr uint64_t TYPE_HIERARCHY = 150;
-        static constexpr uint64_t TYPE_ATTRIBUTE_DIMENSION = 151;
-        static constexpr uint64_t TYPE_ANALYTIC_VIEW = 152;
+        static constexpr uint64_t TYPE_HIERARCHY{150};
+        static constexpr uint64_t TYPE_ATTRIBUTE_DIMENSION{151};
+        static constexpr uint64_t TYPE_ANALYTIC_VIEW{152};
         // 19.0
-        static constexpr uint64_t TYPE_QUEUE = 24;
+        static constexpr uint64_t TYPE_QUEUE{24};
 
         SysObj(typeRowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
                uint64_t newFlags2, bool newSingle) :

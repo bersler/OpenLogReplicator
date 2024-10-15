@@ -27,14 +27,23 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SchemaElement final {
     public:
+        enum TAG_TYPE {
+            NONE, ALL, PK, LIST
+        };
+
+        std::string condition;
+        std::string key;
         std::string owner;
         std::string table;
-        std::vector<std::string> keys;
-        std::string keysStr;
-        std::string conditionStr;
+        std::string tag;
         typeOptions options;
+        TAG_TYPE tagType;
+        std::vector<std::string> keyList;
+        std::vector<std::string> tagList;
 
         SchemaElement(const char* newOwner, const char* newTable, typeOptions newOptions);
+        void parseKey(std::string value, const std::string& separator);
+        void parseTag(std::string value, const std::string& separator);
     };
 }
 

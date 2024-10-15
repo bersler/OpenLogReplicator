@@ -26,13 +26,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSetZHT32TRIS final : public CharacterSet {
     public:
-        static constexpr uint64_t ZHT32TRIS_b1 = 0x8E;
-        static constexpr uint64_t ZHT32TRIS_b2_min = 0xA1;
-        static constexpr uint64_t ZHT32TRIS_b2_max = 0xAE;
-        static constexpr uint64_t ZHT32TRIS_b3_min = 0xA1;
-        static constexpr uint64_t ZHT32TRIS_b3_max = 0xFE;
-        static constexpr uint64_t ZHT32TRIS_b4_min = 0xA1;
-        static constexpr uint64_t ZHT32TRIS_b4_max = 0xFE;
+        static constexpr uint64_t ZHT32TRIS_b1{0x8E};
+        static constexpr uint64_t ZHT32TRIS_b2_min{0xA1};
+        static constexpr uint64_t ZHT32TRIS_b2_max{0xAE};
+        static constexpr uint64_t ZHT32TRIS_b3_min{0xA1};
+        static constexpr uint64_t ZHT32TRIS_b3_max{0xFE};
+        static constexpr uint64_t ZHT32TRIS_b4_min{0xA1};
+        static constexpr uint64_t ZHT32TRIS_b4_max{0xFE};
 
     protected:
         static typeUnicode16 unicode_map_ZHT32TRIS_4b[(ZHT32TRIS_b2_max - ZHT32TRIS_b2_min + 1) *

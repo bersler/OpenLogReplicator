@@ -28,8 +28,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class typeIntX final {
     public:
-        static constexpr uint64_t LENGTH = 2;
-        static constexpr uint64_t DIGITS = 39;
+        static constexpr uint64_t LENGTH{2};
+        static constexpr uint64_t DIGITS{39};
 
     private:
         uint64_t data[LENGTH];

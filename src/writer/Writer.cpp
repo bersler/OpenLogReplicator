@@ -108,7 +108,7 @@ namespace OpenLogReplicator {
     void Writer::resetMessageQueue() {
         for (uint64_t i = 0; i < currentQueueSize; ++i) {
             BuilderMsg* msg = queue[i];
-            if ((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED) != 0)
+            if ((msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED) != 0)
                 delete[] msg->data;
         }
         currentQueueSize = 0;
@@ -134,15 +134,15 @@ namespace OpenLogReplicator {
             msg = queue[0];
         }
 
-        msg->flags |= Builder::OUTPUT_BUFFER_MESSAGE_CONFIRMED;
-        if (msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED) {
+        msg->flags |= Builder::OUTPUT_BUFFER::MESSAGE_CONFIRMED;
+        if (msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED) {
             delete[] msg->data;
-            msg->flags &= ~Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED;
+            msg->flags &= ~Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED;
         }
 
         uint64_t maxId = 0;
         {
-            while (currentQueueSize > 0 && (queue[0]->flags & Builder::OUTPUT_BUFFER_MESSAGE_CONFIRMED) != 0) {
+            while (currentQueueSize > 0 && (queue[0]->flags & Builder::OUTPUT_BUFFER::MESSAGE_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
                 if (confirmedScn == Ctx::ZERO_SCN || msg->lwnScn > confirmedScn) {
                     confirmedScn = msg->lwnScn;
@@ -178,10 +178,10 @@ namespace OpenLogReplicator {
     }
 
     void Writer::run() {
-        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
+        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(Ctx::TRACE_THREADS, "writer (" + ss.str() + ") start");
+            ctx->logTrace(Ctx::TRACE::THREADS, "writer (" + ss.str() + ") start");
         }
 
         ctx->info(0, "writer is starting with " + getName());
@@ -216,10 +216,10 @@ namespace OpenLogReplicator {
         }
 
         ctx->info(0, "writer is stopping: " + getType() + ", hwm queue size: " + std::to_string(hwmQueueSize));
-        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
+        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(Ctx::TRACE_THREADS, "writer (" + ss.str() + ") stop");
+            ctx->logTrace(Ctx::TRACE::THREADS, "writer (" + ss.str() + ") stop");
         }
     }
 
@@ -234,11 +234,11 @@ namespace OpenLogReplicator {
             while (!ctx->hardShutdown) {
                 pollQueue();
 
-                if (streaming && metadata->status == Metadata::STATUS_REPLICATE)
+                if (streaming && metadata->status == Metadata::STATUS::REPLICATE)
                     break;
 
-                if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
-                    ctx->logTrace(Ctx::TRACE_WRITER, "waiting for client");
+                if (unlikely(ctx->trace & Ctx::TRACE::WRITER))
+                    ctx->logTrace(Ctx::TRACE::WRITER, "waiting for client");
                 contextSet(CONTEXT_SLEEP);
                 usleep(ctx->pollIntervalUs);
                 contextSet(CONTEXT_CPU);
@@ -280,9 +280,9 @@ namespace OpenLogReplicator {
                 // The queue is full
                 pollQueue();
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
-                    if (unlikely(ctx->trace & Ctx::TRACE_WRITER))
-                        ctx->logTrace(Ctx::TRACE_WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
-                                                         " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
+                    if (unlikely(ctx->trace & Ctx::TRACE::WRITER))
+                        ctx->logTrace(Ctx::TRACE::WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
+                                                          " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     contextSet(CONTEXT_SLEEP);
                     usleep(ctx->pollIntervalUs);
                     contextSet(CONTEXT_CPU);
@@ -300,7 +300,7 @@ namespace OpenLogReplicator {
                 if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send the message to the client in one part
-                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                    if (((msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -318,7 +318,7 @@ namespace OpenLogReplicator {
                     if (unlikely(msg->data == nullptr))
                         throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->size) +
                                                       " bytes memory for: temporary buffer for JSON message");
-                    msg->flags |= Builder::OUTPUT_BUFFER_MESSAGE_ALLOCATED;
+                    msg->flags |= Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED;
 
                     uint64_t copied = 0;
                     while (msg->size > copied) {
@@ -340,7 +340,7 @@ namespace OpenLogReplicator {
 
                     createMessage(msg);
                     // Send only new messages to the client
-                    if (((msg->flags & Builder::OUTPUT_BUFFER_MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS_SHOW_CHECKPOINT)) ||
+                    if (((msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -382,14 +382,14 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
-        if (unlikely(ctx->trace & Ctx::TRACE_CHECKPOINT)) {
+        if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT)) {
             if (checkpointScn == Ctx::ZERO_SCN)
-                ctx->logTrace(Ctx::TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
-                                                     std::to_string(confirmedIdx));
+                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
+                                                      std::to_string(confirmedIdx));
             else
-                ctx->logTrace(Ctx::TRACE_CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
-                                                     std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
-                                                     std::to_string(checkpointIdx));
+                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
+                                                      std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
+                                                      std::to_string(checkpointIdx));
         }
         std::string name(database + "-chkpt");
         std::ostringstream ss;
@@ -419,8 +419,8 @@ namespace OpenLogReplicator {
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
                                        " - parse error: " + GetParseError_En(document.GetParseError()));
 
-        if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-            static const char* documentNames[] {"database", "resetlogs", "activation", "scn", "idx", nullptr};
+        if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+            static const char* documentNames[]{"database", "resetlogs", "activation", "scn", "idx", nullptr};
             Ctx::checkJsonFields(name, document, documentNames);
         }
 

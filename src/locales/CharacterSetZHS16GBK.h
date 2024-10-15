@@ -25,10 +25,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSetZHS16GBK final : public CharacterSet16bit {
     public:
-        static constexpr uint64_t ZHS16GBK_b1_min = 0x81;
-        static constexpr uint64_t ZHS16GBK_b1_max = 0xFE;
-        static constexpr uint64_t ZHS16GBK_b2_min = 0x40;
-        static constexpr uint64_t ZHS16GBK_b2_max = 0xFE;
+        static constexpr uint64_t ZHS16GBK_b1_min{0x81};
+        static constexpr uint64_t ZHS16GBK_b1_max{0xFE};
+        static constexpr uint64_t ZHS16GBK_b2_min{0x40};
+        static constexpr uint64_t ZHS16GBK_b2_max{0xFE};
 
     protected:
         static typeUnicode16 unicode_map_ZHS16GBK_2b[(ZHS16GBK_b1_max - ZHS16GBK_b1_min + 1) *
