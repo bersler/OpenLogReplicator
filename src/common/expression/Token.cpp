@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Token.h"
 
 namespace OpenLogReplicator {
-    Token::Token(uint64_t newTokenType, const std::string& newStringValue) :
+    Token::Token(TYPE newTokenType, const std::string& newStringValue) :
             Expression(),
             tokenType(newTokenType),
             stringValue(newStringValue) {

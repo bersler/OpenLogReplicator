@@ -1,4 +1,4 @@
-/* Header for OracleLob class
+/* Header for DbLob class
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -22,15 +22,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifndef ORACLE_LOB_H_
-#define ORACLE_LOB_H_
+#ifndef DB_LOB_H_
+#define DB_LOB_H_
 
 namespace OpenLogReplicator {
-    class OracleTable;
+    class DbTable;
 
-    class OracleLob {
+    class DbLob {
     public:
-        OracleTable* table;
+        DbTable* table;
         typeObj obj;
         typeDataObj dataObj;
         typeObj lObj;
@@ -40,14 +40,14 @@ namespace OpenLogReplicator {
         std::vector<typeDataObj> lobPartitions;
         std::unordered_map<typeObj, uint16_t> lobPageMap;
 
-        OracleLob(OracleTable* table, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol);
-        virtual ~OracleLob();
+        DbLob(DbTable* table, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol);
+        virtual ~DbLob();
 
         void addIndex(typeDataObj newDataObj);
         void addPartition(typeDataObj newDataObj, uint16_t pageSize);
         [[nodiscard]] uint32_t checkLobPageSize(typeDataObj newDataObj);
 
-        friend std::ostream& operator<<(std::ostream& os, const OracleLob& column);
+        friend std::ostream& operator<<(std::ostream& os, const DbLob& column);
     };
 }
 

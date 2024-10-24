@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/OracleColumn.h"
-#include "../common/OracleTable.h"
+#include "../common/DbColumn.h"
+#include "../common/DbTable.h"
 #include "../common/exception/RuntimeException.h"
 #include "../common/table/SysCCol.h"
 #include "../common/table/SysCDef.h"
@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
             xdbXNmTmp(nullptr),
             xdbXPtTmp(nullptr),
             xdbXQnTmp(nullptr) {
-        ctx->logTrace(Ctx::TRACE_SYSTEM, "begin");
+        ctx->logTrace(Ctx::TRACE::SYSTEM, "begin");
     }
 
     SystemTransaction::~SystemTransaction() {
@@ -169,141 +169,190 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::Builder::VALUE_AFTER] > 0) {
+    void SystemTransaction::updateNumber(int& val, int defVal, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
             char* retPtr;
             if (unlikely(table->columns[column]->type != 2))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->sizes[column][Builder::Builder::VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER], offset);
             builder->valueBuffer[builder->valueSize] = 0;
-            auto newVal = static_cast<int16_t>(strtol(builder->valueBuffer, &retPtr, 10));
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                                                 std::to_string(newVal) + ")");
+            auto newVal = static_cast<int>(strtol(builder->valueBuffer, &retPtr, 10));
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
+                                                  std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
         }
     }
 
-    void SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::Builder::VALUE_AFTER] > 0) {
+    void SystemTransaction::updateNumberu(uint& val, uint defVal, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
             char* retPtr;
             if (unlikely(table->columns[column]->type != 2))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::Builder::Builder::VALUE_AFTER],
-                                 builder->sizes[column][Builder::Builder::Builder::VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_TYPE::AFTER],
+                                 builder->sizes[column][Builder::Builder::VALUE_TYPE::AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
+            if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
+                throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
+                                              table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
+
+            uint newVal = strtoul(builder->valueBuffer, &retPtr, 10);
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
+                                                  std::to_string(newVal) + ")");
+            val = newVal;
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+            val = defVal;
+        }
+    }
+
+    void SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
+            char* retPtr;
+            if (unlikely(table->columns[column]->type != 2))
+                throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
+
+            builder->parseNumber(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER], offset);
+            builder->valueBuffer[builder->valueSize] = 0;
+            auto newVal = static_cast<int16_t>(strtol(builder->valueBuffer, &retPtr, 10));
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
+                                                  std::to_string(newVal) + ")");
+            val = newVal;
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+            val = defVal;
+        }
+    }
+
+    void SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
+            char* retPtr;
+            if (unlikely(table->columns[column]->type != 2))
+                throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
+                                              table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
+                                              std::to_string(offset));
+
+            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_TYPE::AFTER],
+                                 builder->sizes[column][Builder::Builder::VALUE_TYPE::AFTER], offset);
             builder->valueBuffer[builder->valueSize] = 0;
             if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             uint16_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                                            std::to_string(newVal) + ")");
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
+                                                  std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
         }
     }
 
-    void SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::Builder::VALUE_AFTER] > 0) {
+    void SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
             char* retPtr;
             if (unlikely(table->columns[column]->type != 2))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER], offset);
             builder->valueBuffer[builder->valueSize] = 0;
             if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             uint32_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                                                 std::to_string(newVal) + ")");
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
+                                                  std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
         }
     }
 
-    void SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
+    void SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
             char* retPtr;
             if (unlikely(table->columns[column]->type != 2))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER], offset);
             builder->valueBuffer[builder->valueSize] = 0;
             if (unlikely(builder->valueSize == 0))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             int64_t newVal = strtol(builder->valueBuffer, &retPtr, 10);
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                                                 std::to_string(newVal) + ")");
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
+                                                  std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
         }
     }
 
-    void SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
+    void SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
             char* retPtr;
             if (unlikely(table->columns[column]->type != 2))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER], offset);
             builder->valueBuffer[builder->valueSize] = 0;
             if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
             uint64_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                                                 std::to_string(newVal) + ")");
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
+                                                  std::to_string(newVal) + ")");
             val = newVal;
-        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
             val = defVal;
         }
     }
 
-    void SystemTransaction::updateNumberXu(typeIntX& val, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
+    void SystemTransaction::updateNumberXu(typeIntX& val, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
             if (unlikely(table->columns[column]->type != 2))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseNumber(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->parseNumber(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER], offset);
             builder->valueBuffer[builder->valueSize] = 0;
             if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                 throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -315,48 +364,48 @@ namespace OpenLogReplicator {
             if (err != "")
                 ctx->error(50021, err);
 
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> " + newVal.toString() + ")");
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> " + newVal.toString() + ")");
             val = newVal;
-        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL)");
             val.set(0, 0);
         }
     }
 
-    void SystemTransaction::updateRaw(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
-            if (unlikely(table->columns[column]->type != SysCol::TYPE_RAW))
+    void SystemTransaction::updateRaw(std::string& val, uint maxLength, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
+            if (unlikely(table->columns[column]->type != SysCol::COLTYPE::RAW))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseRaw(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER], offset);
+            builder->parseRaw(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER], offset);
             std::string newVal(builder->valueBuffer, builder->valueSize);
             if (unlikely(builder->valueSize > maxLength))
                 throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
                                               std::to_string(offset));
 
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
             val = newVal;
-        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
             val.assign("");
         }
     }
 
-    void SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, const OracleTable* table, uint64_t offset) {
-        if (builder->values[column][Builder::VALUE_AFTER] != nullptr && builder->sizes[column][Builder::VALUE_AFTER] > 0) {
-            if (unlikely(table->columns[column]->type != SysCol::TYPE_VARCHAR && table->columns[column]->type != SysCol::TYPE_CHAR))
+    void SystemTransaction::updateString(std::string& val, uint maxLength, typeCol column, const DbTable* table, uint64_t offset) {
+        if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr && builder->sizes[column][Builder::VALUE_TYPE::AFTER] > 0) {
+            if (unlikely(table->columns[column]->type != SysCol::COLTYPE::VARCHAR && table->columns[column]->type != SysCol::COLTYPE::CHAR))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                               table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type) + " offset: " +
                                               std::to_string(offset));
 
-            builder->parseString(builder->values[column][Builder::VALUE_AFTER], builder->sizes[column][Builder::VALUE_AFTER],
+            builder->parseString(builder->values[column][Builder::VALUE_TYPE::AFTER], builder->sizes[column][Builder::VALUE_TYPE::AFTER],
                                  table->columns[column]->charsetId, offset, false, false, false, true);
             std::string newVal(builder->valueBuffer, builder->valueSize);
             if (unlikely(builder->valueSize > maxLength))
@@ -364,20 +413,20 @@ namespace OpenLogReplicator {
                                               table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
                                               std::to_string(offset));
 
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
             val = newVal;
-        } else if (builder->values[column][Builder::VALUE_AFTER] != nullptr || builder->values[column][Builder::VALUE_BEFORE] != nullptr) {
-            if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                ctx->logTrace(Ctx::TRACE_SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
+        } else if (builder->values[column][Builder::VALUE_TYPE::AFTER] != nullptr || builder->values[column][Builder::VALUE_TYPE::BEFORE] != nullptr) {
+            if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
             val.assign("");
         }
     }
 
-    void SystemTransaction::processInsertSysCCol(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysCCol(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysCCol* sysCCol = metadata->schema->dictSysCColFind(rowId);
         if (sysCCol != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.CCOL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysCColDrop(sysCCol);
@@ -410,10 +459,10 @@ namespace OpenLogReplicator {
         sysCColTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysCDef(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysCDef(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysCDef* sysCDef = metadata->schema->dictSysCDefFind(rowId);
         if (sysCDef != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.CDEF$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysCDefDrop(sysCDef);
@@ -444,10 +493,10 @@ namespace OpenLogReplicator {
         sysCDefTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysCol(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysCol(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysCol* sysCol = metadata->schema->dictSysColFind(rowId);
         if (sysCol != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.COL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysColDrop(sysCol);
@@ -478,17 +527,17 @@ namespace OpenLogReplicator {
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysColTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "SIZE") {
-                    updateNumber64u(sysColTmp->length, 0, column, table, offset);
+                    updateNumberu(sysColTmp->length, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PRECISION#") {
-                    updateNumber64(sysColTmp->precision, -1, column, table, offset);
+                    updateNumber(sysColTmp->precision, -1, column, table, offset);
                 } else if (table->columns[column]->name == "SCALE") {
-                    updateNumber64(sysColTmp->scale, -1, column, table, offset);
+                    updateNumber(sysColTmp->scale, -1, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETFORM") {
-                    updateNumber64u(sysColTmp->charsetForm, 0, column, table, offset);
+                    updateNumberu(sysColTmp->charsetForm, 0, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETID") {
-                    updateNumber64u(sysColTmp->charsetId, 0, column, table, offset);
+                    updateNumberu(sysColTmp->charsetId, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NULL$") {
-                    updateNumber64(sysColTmp->null_, 0, column, table, offset);
+                    updateNumber(sysColTmp->null_, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PROPERTY") {
                     updateNumberXu(sysColTmp->property, column, table, offset);
                 }
@@ -499,10 +548,10 @@ namespace OpenLogReplicator {
         sysColTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysDeferredStg(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysDeferredStg(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysDeferredStg* sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
         if (sysDeferredStg != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
@@ -531,10 +580,10 @@ namespace OpenLogReplicator {
         sysDeferredStgTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysECol(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysECol(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysECol* sysECol = metadata->schema->dictSysEColFind(rowId);
         if (sysECol != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.ECOL$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysEColDrop(sysECol);
@@ -565,10 +614,10 @@ namespace OpenLogReplicator {
         sysEColTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysLob(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysLob(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysLob* sysLob = metadata->schema->dictSysLobFind(rowId);
         if (sysLob != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOB$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysLobDrop(sysLob);
@@ -603,10 +652,10 @@ namespace OpenLogReplicator {
         sysLobTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysLobCompPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysLobCompPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysLobCompPart* sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
         if (sysLobCompPart != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
@@ -635,10 +684,10 @@ namespace OpenLogReplicator {
         sysLobCompPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysLobFrag(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysLobFrag(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysLobFrag* sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
         if (sysLobFrag != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysLobFragDrop(sysLobFrag);
@@ -669,10 +718,10 @@ namespace OpenLogReplicator {
         sysLobFragTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysObj(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysObj(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysObj* sysObj = metadata->schema->dictSysObjFind(rowId);
         if (sysObj != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.OBJ$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysObjDrop(sysObj);
@@ -709,10 +758,10 @@ namespace OpenLogReplicator {
         sysObjTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysTab(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysTab(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysTab* sysTab = metadata->schema->dictSysTabFind(rowId);
         if (sysTab != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TAB$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysTabDrop(sysTab);
@@ -749,10 +798,10 @@ namespace OpenLogReplicator {
         sysTabTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysTabComPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysTabComPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysTabComPart* sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
         if (sysTabComPart != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysTabComPartDrop(sysTabComPart);
@@ -783,10 +832,10 @@ namespace OpenLogReplicator {
         sysTabComPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysTabPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysTabPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysTabPart* sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
         if (sysTabPart != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysTabPartDrop(sysTabPart);
@@ -817,10 +866,10 @@ namespace OpenLogReplicator {
         sysTabPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysTabSubPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysTabSubPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysTabSubPart* sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
         if (sysTabSubPart != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
@@ -851,10 +900,10 @@ namespace OpenLogReplicator {
         sysTabSubPartTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysTs(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysTs(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysTs* sysTs = metadata->schema->dictSysTsFind(rowId);
         if (sysTs != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.TS$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysTsDrop(sysTs);
@@ -885,10 +934,10 @@ namespace OpenLogReplicator {
         sysTsTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertSysUser(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertSysUser(const DbTable* table, typeRowId rowId, uint64_t offset) {
         SysUser* sysUser = metadata->schema->dictSysUserFind(rowId);
         if (sysUser != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate SYS.USER$: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictSysUserDrop(sysUser);
@@ -919,10 +968,10 @@ namespace OpenLogReplicator {
         sysUserTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertXdbTtSet(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertXdbTtSet(const DbTable* table, typeRowId rowId, uint64_t offset) {
         XdbTtSet* xdbTtSet = metadata->schema->dictXdbTtSetFind(rowId);
         if (xdbTtSet != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for insert at offset: " +
                                               std::to_string(offset));
             metadata->schema->dictXdbTtSetDrop(xdbTtSet);
@@ -955,10 +1004,10 @@ namespace OpenLogReplicator {
         xdbTtSetTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertXdbXNm(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertXdbXNm(const DbTable* table, typeRowId rowId, uint64_t offset) {
         XdbXNm* xdbXNm = metadata->schema->dictXdbXNmFind(table->tokSuf, rowId);
         if (xdbXNm != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() +
                                               ") for insert at offset: " + std::to_string(offset));
             metadata->schema->dictXdbXNmDrop(table->tokSuf, xdbXNm);
@@ -987,10 +1036,10 @@ namespace OpenLogReplicator {
         xdbXNmTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertXdbXPt(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertXdbXPt(const DbTable* table, typeRowId rowId, uint64_t offset) {
         XdbXPt* xdbXPt = metadata->schema->dictXdbXPtFind(table->tokSuf, rowId);
         if (xdbXPt != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() +
                                               ") for insert at offset: " + std::to_string(offset));
             metadata->schema->dictXdbXPtDrop(table->tokSuf, xdbXPt);
@@ -1019,10 +1068,10 @@ namespace OpenLogReplicator {
         xdbXPtTmp = nullptr;
     }
 
-    void SystemTransaction::processInsertXdbXQn(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processInsertXdbXQn(const DbTable* table, typeRowId rowId, uint64_t offset) {
         XdbXQn* xdbXQn = metadata->schema->dictXdbXQnFind(table->tokSuf, rowId);
         if (xdbXQn != nullptr) {
-            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)))
+            if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                 throw RuntimeException(50022, "ddl: duplicate XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() +
                                               ") for insert at offset: " + std::to_string(offset));
             metadata->schema->dictXdbXQnDrop(table->tokSuf, xdbXQn);
@@ -1054,100 +1103,103 @@ namespace OpenLogReplicator {
         xdbXQnTmp = nullptr;
     }
 
-    void SystemTransaction::processInsert(const OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
+    void SystemTransaction::processInsert(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-            ctx->logTrace(Ctx::TRACE_SYSTEM, "insert table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
+        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
 
         switch (table->systemTable) {
-            case OracleTable::SYS_CCOL:
+            case DbTable::TABLE::NONE:
+                break;
+
+            case DbTable::TABLE::SYS_CCOL:
                 processInsertSysCCol(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_CDEF:
+            case DbTable::TABLE::SYS_CDEF:
                 processInsertSysCDef(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_COL:
+            case DbTable::TABLE::SYS_COL:
                 processInsertSysCol(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_DEFERRED_STG:
+            case DbTable::TABLE::SYS_DEFERRED_STG:
                 processInsertSysDeferredStg(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_ECOL:
+            case DbTable::TABLE::SYS_ECOL:
                 processInsertSysECol(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB:
+            case DbTable::TABLE::SYS_LOB:
                 processInsertSysLob(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB_COMP_PART:
+            case DbTable::TABLE::SYS_LOB_COMP_PART:
                 processInsertSysLobCompPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB_FRAG:
+            case DbTable::TABLE::SYS_LOB_FRAG:
                 processInsertSysLobFrag(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_OBJ:
+            case DbTable::TABLE::SYS_OBJ:
                 processInsertSysObj(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TAB:
+            case DbTable::TABLE::SYS_TAB:
                 processInsertSysTab(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABCOMPART:
+            case DbTable::TABLE::SYS_TABCOMPART:
                 processInsertSysTabComPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABPART:
+            case DbTable::TABLE::SYS_TABPART:
                 processInsertSysTabPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABSUBPART:
+            case DbTable::TABLE::SYS_TABSUBPART:
                 processInsertSysTabSubPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TS:
+            case DbTable::TABLE::SYS_TS:
                 processInsertSysTs(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_USER:
+            case DbTable::TABLE::SYS_USER:
                 processInsertSysUser(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_TTSET:
+            case DbTable::TABLE::XDB_TTSET:
                 processInsertXdbTtSet(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XNM:
+            case DbTable::TABLE::XDB_XNM:
                 processInsertXdbXNm(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XPT:
+            case DbTable::TABLE::XDB_XPT:
                 processInsertXdbXPt(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XQN:
+            case DbTable::TABLE::XDB_XQN:
                 processInsertXdbXQn(table, rowId, offset);
                 break;
         }
     }
 
-    void SystemTransaction::processUpdateSysCCol(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysCCol(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysCColTmp = metadata->schema->dictSysCColFind(rowId);
         if (sysCColTmp != nullptr) {
             metadata->schema->dictSysCColDrop(sysCColTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysCColTmp = new SysCCol(rowId, 0, 0, 0, 0, 0);
@@ -1178,14 +1230,14 @@ namespace OpenLogReplicator {
         sysCColTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysCDef(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysCDef(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysCDefTmp = metadata->schema->dictSysCDefFind(rowId);
         if (sysCDefTmp != nullptr) {
             metadata->schema->dictSysCDefDrop(sysCDefTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysCDefTmp = new SysCDef(rowId, 0, 0, 0);
@@ -1214,14 +1266,14 @@ namespace OpenLogReplicator {
         sysCDefTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysCol(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysCol(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysColTmp = metadata->schema->dictSysColFind(rowId);
         if (sysColTmp != nullptr) {
             metadata->schema->dictSysColDrop(sysColTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.COL$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.COL$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysColTmp = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
@@ -1250,17 +1302,17 @@ namespace OpenLogReplicator {
                 } else if (table->columns[column]->name == "TYPE#") {
                     updateNumber16u(sysColTmp->type, 0, column, table, offset);
                 } else if (table->columns[column]->name == "SIZE") {
-                    updateNumber64u(sysColTmp->length, 0, column, table, offset);
+                    updateNumberu(sysColTmp->length, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PRECISION#") {
-                    updateNumber64(sysColTmp->precision, -1, column, table, offset);
+                    updateNumber(sysColTmp->precision, -1, column, table, offset);
                 } else if (table->columns[column]->name == "SCALE") {
-                    updateNumber64(sysColTmp->scale, -1, column, table, offset);
+                    updateNumber(sysColTmp->scale, -1, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETFORM") {
-                    updateNumber64u(sysColTmp->charsetForm, 0, column, table, offset);
+                    updateNumberu(sysColTmp->charsetForm, 0, column, table, offset);
                 } else if (table->columns[column]->name == "CHARSETID") {
-                    updateNumber64u(sysColTmp->charsetId, 0, column, table, offset);
+                    updateNumberu(sysColTmp->charsetId, 0, column, table, offset);
                 } else if (table->columns[column]->name == "NULL$") {
-                    updateNumber64(sysColTmp->null_, 0, column, table, offset);
+                    updateNumber(sysColTmp->null_, 0, column, table, offset);
                 } else if (table->columns[column]->name == "PROPERTY") {
                     updateNumberXu(sysColTmp->property, column, table, offset);
                 }
@@ -1271,14 +1323,14 @@ namespace OpenLogReplicator {
         sysColTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysDeferredStg(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysDeferredStg(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysDeferredStgTmp = metadata->schema->dictSysDeferredStgFind(rowId);
         if (sysDeferredStgTmp != nullptr) {
             metadata->schema->dictSysDeferredStgDrop(sysDeferredStgTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysDeferredStgTmp = new SysDeferredStg(rowId, 0, 0, 0);
@@ -1305,14 +1357,14 @@ namespace OpenLogReplicator {
         sysDeferredStgTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysECol(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysECol(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysEColTmp = metadata->schema->dictSysEColFind(rowId);
         if (sysEColTmp != nullptr) {
             metadata->schema->dictSysEColDrop(sysEColTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysEColTmp = new SysECol(rowId, 0, 0, -1);
@@ -1341,14 +1393,14 @@ namespace OpenLogReplicator {
         sysEColTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysLob(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysLob(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysLobTmp = metadata->schema->dictSysLobFind(rowId);
         if (sysLobTmp != nullptr) {
             metadata->schema->dictSysLobDrop(sysLobTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.LOB$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.LOB$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysLobTmp = new SysLob(rowId, 0, 0, 0, 0, 0);
@@ -1381,14 +1433,14 @@ namespace OpenLogReplicator {
         sysLobTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysLobCompPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysLobCompPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysLobCompPartTmp = metadata->schema->dictSysLobCompPartFind(rowId);
         if (sysLobCompPartTmp != nullptr) {
             metadata->schema->dictSysLobCompPartDrop(sysLobCompPartTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysLobCompPartTmp = new SysLobCompPart(rowId, 0, 0);
@@ -1415,14 +1467,14 @@ namespace OpenLogReplicator {
         sysLobCompPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysLobFrag(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysLobFrag(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysLobFragTmp = metadata->schema->dictSysLobFragFind(rowId);
         if (sysLobFragTmp != nullptr) {
             metadata->schema->dictSysLobFragDrop(sysLobFragTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysLobFragTmp = new SysLobFrag(rowId, 0, 0, 0);
@@ -1451,14 +1503,14 @@ namespace OpenLogReplicator {
         sysLobFragTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysObj(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysObj(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysObjTmp = metadata->schema->dictSysObjFind(rowId);
         if (sysObjTmp != nullptr) {
             metadata->schema->dictSysObjDrop(sysObjTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysObjTmp = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
@@ -1493,14 +1545,14 @@ namespace OpenLogReplicator {
         sysObjTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysTab(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysTab(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysTabTmp = metadata->schema->dictSysTabFind(rowId);
         if (sysTabTmp != nullptr) {
             metadata->schema->dictSysTabDrop(sysTabTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TAB$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TAB$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysTabTmp = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -1535,14 +1587,14 @@ namespace OpenLogReplicator {
         sysTabTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysTabComPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysTabComPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysTabComPartTmp = metadata->schema->dictSysTabComPartFind(rowId);
         if (sysTabComPartTmp != nullptr) {
             metadata->schema->dictSysTabComPartDrop(sysTabComPartTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysTabComPartTmp = new SysTabComPart(rowId, 0, 0, 0);
@@ -1571,14 +1623,14 @@ namespace OpenLogReplicator {
         sysTabComPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysTabPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysTabPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysTabPartTmp = metadata->schema->dictSysTabPartFind(rowId);
         if (sysTabPartTmp != nullptr) {
             metadata->schema->dictSysTabPartDrop(sysTabPartTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysTabPartTmp = new SysTabPart(rowId, 0, 0, 0);
@@ -1606,14 +1658,14 @@ namespace OpenLogReplicator {
         sysTabPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysTabSubPart(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysTabSubPart(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysTabSubPartTmp = metadata->schema->dictSysTabSubPartFind(rowId);
         if (sysTabSubPartTmp != nullptr) {
             metadata->schema->dictSysTabSubPartDrop(sysTabSubPartTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysTabSubPartTmp = new SysTabSubPart(rowId, 0, 0, 0);
@@ -1642,14 +1694,14 @@ namespace OpenLogReplicator {
         sysTabSubPartTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysTs(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysTs(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysTsTmp = metadata->schema->dictSysTsFind(rowId);
         if (sysTsTmp != nullptr) {
             metadata->schema->dictSysTsDrop(sysTsTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TS$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TS$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysTsTmp = new SysTs(rowId, 0, "", 0);
@@ -1678,14 +1730,14 @@ namespace OpenLogReplicator {
         sysTsTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateSysUser(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateSysUser(const DbTable* table, typeRowId rowId, uint64_t offset) {
         sysUserTmp = metadata->schema->dictSysUserFind(rowId);
         if (sysUserTmp != nullptr) {
             metadata->schema->dictSysUserDrop(sysUserTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.USER$: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.USER$: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             sysUserTmp = new SysUser(rowId, 0, "", 0, 0, false);
@@ -1714,14 +1766,14 @@ namespace OpenLogReplicator {
         sysUserTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateXdbTtSet(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateXdbTtSet(const DbTable* table, typeRowId rowId, uint64_t offset) {
         xdbTtSetTmp = metadata->schema->dictXdbTtSetFind(rowId);
         if (xdbTtSetTmp != nullptr) {
             metadata->schema->dictXdbTtSetDrop(xdbTtSetTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             xdbTtSetTmp = new XdbTtSet(rowId, "", "", 0, 0);
@@ -1752,14 +1804,14 @@ namespace OpenLogReplicator {
         xdbTtSetTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateXdbXNm(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateXdbXNm(const DbTable* table, typeRowId rowId, uint64_t offset) {
         xdbXNmTmp = metadata->schema->dictXdbXNmFind(table->tokSuf, rowId);
         if (xdbXNmTmp != nullptr) {
             metadata->schema->dictXdbXNmDrop(table->tokSuf, xdbXNmTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             xdbXNmTmp = new XdbXNm(rowId, "", "");
@@ -1786,14 +1838,14 @@ namespace OpenLogReplicator {
         xdbXNmTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateXdbXPt(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateXdbXPt(const DbTable* table, typeRowId rowId, uint64_t offset) {
         xdbXPtTmp = metadata->schema->dictXdbXPtFind(table->tokSuf, rowId);
         if (xdbXPtTmp != nullptr) {
             metadata->schema->dictXdbXPtDrop(table->tokSuf, xdbXPtTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             xdbXPtTmp = new XdbXPt(rowId, "", "");
@@ -1820,14 +1872,14 @@ namespace OpenLogReplicator {
         xdbXPtTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdateXdbXQn(const OracleTable* table, typeRowId rowId, uint64_t offset) {
+    void SystemTransaction::processUpdateXdbXQn(const DbTable* table, typeRowId rowId, uint64_t offset) {
         xdbXQnTmp = metadata->schema->dictXdbXQnFind(table->tokSuf, rowId);
         if (xdbXQnTmp != nullptr) {
             metadata->schema->dictXdbXQnDrop(table->tokSuf, xdbXQnTmp);
         } else {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for update");
                 return;
             }
             xdbXQnTmp = new XdbXQn(rowId, "", "", "", "");
@@ -1858,87 +1910,90 @@ namespace OpenLogReplicator {
         xdbXQnTmp = nullptr;
     }
 
-    void SystemTransaction::processUpdate(const OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
+    void SystemTransaction::processUpdate(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-            ctx->logTrace(Ctx::TRACE_SYSTEM, "update table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
+        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+            ctx->logTrace(Ctx::TRACE::SYSTEM, "update table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
 
         switch (table->systemTable) {
-            case OracleTable::SYS_CCOL:
+            case DbTable::TABLE::NONE:
+                break;
+
+            case DbTable::TABLE::SYS_CCOL:
                 processUpdateSysCCol(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_CDEF:
+            case DbTable::TABLE::SYS_CDEF:
                 processUpdateSysCDef(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_COL:
+            case DbTable::TABLE::SYS_COL:
                 processUpdateSysCol(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_DEFERRED_STG:
+            case DbTable::TABLE::SYS_DEFERRED_STG:
                 processUpdateSysDeferredStg(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_ECOL:
+            case DbTable::TABLE::SYS_ECOL:
                 processUpdateSysECol(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB:
+            case DbTable::TABLE::SYS_LOB:
                 processUpdateSysLob(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB_COMP_PART:
+            case DbTable::TABLE::SYS_LOB_COMP_PART:
                 processUpdateSysLobCompPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB_FRAG:
+            case DbTable::TABLE::SYS_LOB_FRAG:
                 processUpdateSysLobFrag(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_OBJ:
+            case DbTable::TABLE::SYS_OBJ:
                 processUpdateSysObj(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TAB:
+            case DbTable::TABLE::SYS_TAB:
                 processUpdateSysTab(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABCOMPART:
+            case DbTable::TABLE::SYS_TABCOMPART:
                 processUpdateSysTabComPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABPART:
+            case DbTable::TABLE::SYS_TABPART:
                 processUpdateSysTabPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABSUBPART:
+            case DbTable::TABLE::SYS_TABSUBPART:
                 processUpdateSysTabSubPart(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_TS:
+            case DbTable::TABLE::SYS_TS:
                 processUpdateSysTs(table, rowId, offset);
                 break;
 
-            case OracleTable::SYS_USER:
+            case DbTable::TABLE::SYS_USER:
                 processUpdateSysUser(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_TTSET:
+            case DbTable::TABLE::XDB_TTSET:
                 processUpdateXdbTtSet(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XNM:
+            case DbTable::TABLE::XDB_XNM:
                 processUpdateXdbXNm(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XPT:
+            case DbTable::TABLE::XDB_XPT:
                 processUpdateXdbXPt(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XQN:
+            case DbTable::TABLE::XDB_XQN:
                 processUpdateXdbXQn(table, rowId, offset);
                 break;
         }
@@ -1947,9 +2002,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysCCol(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysCColTmp = metadata->schema->dictSysCColFind(rowId);
         if (sysCColTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -1963,9 +2018,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysCDef(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysCDefTmp = metadata->schema->dictSysCDefFind(rowId);
         if (sysCDefTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -1979,9 +2034,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysCol(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysColTmp = metadata->schema->dictSysColFind(rowId);
         if (sysColTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.COL$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.COL$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -1995,9 +2050,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysDeferredStg(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysDeferredStgTmp = metadata->schema->dictSysDeferredStgFind(rowId);
         if (sysDeferredStgTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2011,9 +2066,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysECol(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysEColTmp = metadata->schema->dictSysEColFind(rowId);
         if (sysEColTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2027,9 +2082,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysLob(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysLobTmp = metadata->schema->dictSysLobFind(rowId);
         if (sysLobTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.LOB$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.LOB$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2043,9 +2098,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysLobCompPart(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysLobCompPartTmp = metadata->schema->dictSysLobCompPartFind(rowId);
         if (sysLobCompPartTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2059,9 +2114,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysLobFrag(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysLobFragTmp = metadata->schema->dictSysLobFragFind(rowId);
         if (sysLobFragTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2075,9 +2130,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysObj(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysObjTmp = metadata->schema->dictSysObjFind(rowId);
         if (sysObjTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2091,9 +2146,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysTab(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysTabTmp = metadata->schema->dictSysTabFind(rowId);
         if (sysTabTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TAB$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TAB$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2107,9 +2162,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysTabComPart(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysTabComPartTmp = metadata->schema->dictSysTabComPartFind(rowId);
         if (sysTabComPartTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2123,9 +2178,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysTabPart(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysTabPartTmp = metadata->schema->dictSysTabPartFind(rowId);
         if (sysTabPartTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2139,9 +2194,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysTabSubPart(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysTabSubPartTmp = metadata->schema->dictSysTabSubPartFind(rowId);
         if (sysTabSubPartTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2155,9 +2210,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysTs(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysTsTmp = metadata->schema->dictSysTsFind(rowId);
         if (sysTsTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.TS$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.TS$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2170,9 +2225,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteSysUser(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         sysUserTmp = metadata->schema->dictSysUserFind(rowId);
         if (sysUserTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing SYS.USER$: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing SYS.USER$: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2186,9 +2241,9 @@ namespace OpenLogReplicator {
     void SystemTransaction::processDeleteXdbTtSet(typeRowId rowId, uint64_t offset __attribute__((unused))) {
         xdbTtSetTmp = metadata->schema->dictXdbTtSetFind(rowId);
         if (xdbTtSetTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.XDB$TTSET: (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2198,12 +2253,12 @@ namespace OpenLogReplicator {
         xdbTtSetTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteXdbXNm(const OracleTable* table, typeRowId rowId, uint64_t offset __attribute__((unused))) {
+    void SystemTransaction::processDeleteXdbXNm(const DbTable* table, typeRowId rowId, uint64_t offset __attribute__((unused))) {
         xdbXNmTmp = metadata->schema->dictXdbXNmFind(table->tokSuf, rowId);
         if (xdbXNmTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.X$NM" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2213,12 +2268,12 @@ namespace OpenLogReplicator {
         xdbXNmTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteXdbXPt(const OracleTable* table, typeRowId rowId, uint64_t offset __attribute__((unused))) {
+    void SystemTransaction::processDeleteXdbXPt(const DbTable* table, typeRowId rowId, uint64_t offset __attribute__((unused))) {
         xdbXPtTmp = metadata->schema->dictXdbXPtFind(table->tokSuf, rowId);
         if (xdbXPtTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.X$PT" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2228,12 +2283,12 @@ namespace OpenLogReplicator {
         xdbXPtTmp = nullptr;
     }
 
-    void SystemTransaction::processDeleteXdbXQn(const OracleTable* table, typeRowId rowId, uint64_t offset __attribute__((unused))) {
+    void SystemTransaction::processDeleteXdbXQn(const DbTable* table, typeRowId rowId, uint64_t offset __attribute__((unused))) {
         xdbXQnTmp = metadata->schema->dictXdbXQnFind(table->tokSuf, rowId);
         if (xdbXQnTmp == nullptr) {
-            if (!ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-                    ctx->logTrace(Ctx::TRACE_SYSTEM, "missing XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
+            if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "missing XDB.X$QN" + table->tokSuf + ": (rowid: " + rowId.toString() + ") for delete");
                 return;
             }
         }
@@ -2243,95 +2298,98 @@ namespace OpenLogReplicator {
         xdbXQnTmp = nullptr;
     }
 
-    void SystemTransaction::processDelete(const OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
+    void SystemTransaction::processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-            ctx->logTrace(Ctx::TRACE_SYSTEM, "delete table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
+        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete table (name: " + table->owner + "." + table->name + ", rowid: " + rowId.toString() + ")");
 
         switch (table->systemTable) {
-            case OracleTable::SYS_CCOL:
+            case DbTable::TABLE::NONE:
+                break;
+
+            case DbTable::TABLE::SYS_CCOL:
                 processDeleteSysCCol(rowId, offset);
                 break;
 
-            case OracleTable::SYS_CDEF:
+            case DbTable::TABLE::SYS_CDEF:
                 processDeleteSysCDef(rowId, offset);
                 break;
 
-            case OracleTable::SYS_COL:
+            case DbTable::TABLE::SYS_COL:
                 processDeleteSysCol(rowId, offset);
                 break;
 
-            case OracleTable::SYS_DEFERRED_STG:
+            case DbTable::TABLE::SYS_DEFERRED_STG:
                 processDeleteSysDeferredStg(rowId, offset);
                 break;
 
-            case OracleTable::SYS_ECOL:
+            case DbTable::TABLE::SYS_ECOL:
                 processDeleteSysECol(rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB:
+            case DbTable::TABLE::SYS_LOB:
                 processDeleteSysLob(rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB_COMP_PART:
+            case DbTable::TABLE::SYS_LOB_COMP_PART:
                 processDeleteSysLobCompPart(rowId, offset);
                 break;
 
-            case OracleTable::SYS_LOB_FRAG:
+            case DbTable::TABLE::SYS_LOB_FRAG:
                 processDeleteSysLobFrag(rowId, offset);
                 break;
 
-            case OracleTable::SYS_OBJ:
+            case DbTable::TABLE::SYS_OBJ:
                 processDeleteSysObj(rowId, offset);
                 break;
 
-            case OracleTable::SYS_TAB:
+            case DbTable::TABLE::SYS_TAB:
                 processDeleteSysTab(rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABCOMPART:
+            case DbTable::TABLE::SYS_TABCOMPART:
                 processDeleteSysTabComPart(rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABPART:
+            case DbTable::TABLE::SYS_TABPART:
                 processDeleteSysTabPart(rowId, offset);
                 break;
 
-            case OracleTable::SYS_TABSUBPART:
+            case DbTable::TABLE::SYS_TABSUBPART:
                 processDeleteSysTabSubPart(rowId, offset);
                 break;
 
-            case OracleTable::SYS_TS:
+            case DbTable::TABLE::SYS_TS:
                 processDeleteSysTs(rowId, offset);
                 break;
 
-            case OracleTable::SYS_USER:
+            case DbTable::TABLE::SYS_USER:
                 processDeleteSysUser(rowId, offset);
                 break;
 
-            case OracleTable::XDB_TTSET:
+            case DbTable::TABLE::XDB_TTSET:
                 processDeleteXdbTtSet(rowId, offset);
                 break;
 
-            case OracleTable::XDB_XNM:
+            case DbTable::TABLE::XDB_XNM:
                 processDeleteXdbXNm(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XPT:
+            case DbTable::TABLE::XDB_XPT:
                 processDeleteXdbXPt(table, rowId, offset);
                 break;
 
-            case OracleTable::XDB_XQN:
+            case DbTable::TABLE::XDB_XQN:
                 processDeleteXdbXQn(table, rowId, offset);
                 break;
         }
     }
 
     void SystemTransaction::commit(typeScn scn) {
-        if (unlikely(ctx->trace & Ctx::TRACE_SYSTEM))
-            ctx->logTrace(Ctx::TRACE_SYSTEM, "commit");
+        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
+            ctx->logTrace(Ctx::TRACE::SYSTEM, "commit");
 
         if (!metadata->schema->touched)
             return;
@@ -2341,10 +2399,7 @@ namespace OpenLogReplicator {
         metadata->schema->scn = scn;
         metadata->schema->dropUnusedMetadata(metadata->users, metadata->schemaElements, msgsDropped);
 
-        for (const SchemaElement* element: metadata->schemaElements)
-            metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->conditionStr, element->options, msgsUpdated,
-                                        metadata->suppLogDbPrimary, metadata->suppLogDbAll, metadata->defaultCharacterMapId,
-                                        metadata->defaultCharacterNcharMapId);
+        metadata->buildMaps(msgsUpdated);
         metadata->schema->resetTouched();
 
         for (const auto& msg: msgsDropped) {

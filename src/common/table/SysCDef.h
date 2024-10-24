@@ -47,22 +47,11 @@ namespace OpenLogReplicator {
 
     class SysCDef final {
     public:
-        static constexpr uint64_t TYPE_TABLE_CHECK = 1;
-        static constexpr uint64_t TYPE_PK = 2;
-        static constexpr uint64_t TYPE_UNIQUE = 3;
-        static constexpr uint64_t TYPE_REFERENTIAL = 4;
-        static constexpr uint64_t TYPE_CHECK = 5;
-        static constexpr uint64_t TYPE_READ_ONLY = 6;
-        static constexpr uint64_t TYPE_CHECK_CONSTR_NOT_NULL = 7;
-        static constexpr uint64_t TYPE_HASH = 8;
-        static constexpr uint64_t TYPE_SCOPED_REF = 9;
-        static constexpr uint64_t TYPE_ROWID = 10;
-        static constexpr uint64_t TYPE_REF_NOT_NULL = 11;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG = 12;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_PK = 14;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_UNIQUE = 15;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_FK = 16;
-        static constexpr uint64_t TYPE_SUPPLEMENTAL_LOG_ALL = 17;
+        enum CDEFTYPE {
+            TABLE_CHECK = 1, PK = 2, UNIQUE = 3, REFERENTIAL = 4, CHECK = 5, READ_ONLY = 6, CHECK_CONSTR_NOT_NULL = 7, HASH = 8, SCOPED_REF = 9, ROWID = 10,
+            REF_NOT_NULL = 11, SUPPLEMENTAL_LOG = 12, SUPPLEMENTAL_LOG_PK = 14, SUPPLEMENTAL_LOG_UNIQUE = 15, SUPPLEMENTAL_LOG_FK = 16,
+            SUPPLEMENTAL_LOG_ALL = 17
+        };
 
         SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, typeType newType) :
                 rowId(newRowId),
@@ -76,19 +65,19 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isPK() const {
-            return (type == TYPE_PK);
+            return (type == CDEFTYPE::PK);
         }
 
         [[nodiscard]] bool isSupplementalLog() const {
-            return (type == TYPE_SUPPLEMENTAL_LOG);
+            return (type == CDEFTYPE::SUPPLEMENTAL_LOG);
         }
 
         [[nodiscard]] bool isSupplementalLogPK() const {
-            return (type == TYPE_SUPPLEMENTAL_LOG_PK);
+            return (type == CDEFTYPE::SUPPLEMENTAL_LOG_PK);
         }
 
         [[nodiscard]] bool isSupplementalLogAll() const {
-            return (type == TYPE_SUPPLEMENTAL_LOG_ALL);
+            return (type == CDEFTYPE::SUPPLEMENTAL_LOG_ALL);
         }
 
         typeRowId rowId;

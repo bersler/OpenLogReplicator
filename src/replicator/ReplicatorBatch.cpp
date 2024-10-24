@@ -1,4 +1,4 @@
-/* Thread reading Oracle Redo Logs using batch mode
+/* Thread reading database redo Logs using batch mode
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorBatch::createSchema() {
-        if (ctx->isFlagSet(Ctx::REDO_FLAGS_SCHEMALESS))
+        if (ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS))
             return;
 
         ctx->hint("if you don't have earlier schema, try with schemaless mode ('flags': 2)");

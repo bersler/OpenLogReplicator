@@ -18,8 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../common/Ctx.h"
-#include "../common/OracleIncarnation.h"
-#include "../common/OracleTable.h"
+#include "../common/DbIncarnation.h"
+#include "../common/DbTable.h"
 #include "../common/typeRowId.h"
 #include "../common/XmlCtx.h"
 #include "../common/exception/DataException.h"
@@ -119,7 +119,7 @@ namespace OpenLogReplicator {
 
         ss << "]," SERIALIZER_ENDL << R"("incarnations":[)";
         bool hasPrev = false;
-        for (const OracleIncarnation* oi: metadata->oracleIncarnations) {
+        for (const DbIncarnation* oi: metadata->dbIncarnations) {
             if (hasPrev)
                 ss << ",";
             else
@@ -521,213 +521,204 @@ namespace OpenLogReplicator {
                 throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
                                            " - parse error: " + GetParseError_En(document.GetParseError()));
 
-            {
-                if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                    static const char* documentChildNames[] {"scn", "min-tran", "seq", "offset", "database", "resetlogs",
-                                                             "activation", "time", "big-endian", "context", "con-id", "con-name",
-                                                             "db-timezone", "db-recovery-file-dest", "db-block-checksum",
-                                                             "log-archive-format", "log-archive-dest", "nls-character-set",
-                                                             "nls-nchar-character-set", "supp-log-db-primary", "supp-log-db-all",
-                                                             "online-redo", "incarnations", "users", "schema-ref-scn", "schema-scn",
-                                                             "sys-user", "sys-obj", "sys-col",  "sys-ccol", "sys-cdef",
-                                                             "sys-deferredstg", "sys-ecol", "sys-lob", "sys-lob-comp-part",
-                                                             "sys-lob-frag", "sys-tab", "sys-tabpart", "sys-tabcompart",
-                                                             "sys-tabsubpart", "sys-ts", "xdb-ttset", nullptr};
-                    Ctx::checkJsonFields(fileName, document, documentChildNames);
-                }
-                std::unique_lock<std::mutex> lckCheckpoint(metadata->mtxCheckpoint);
-                std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema);
 
-                if (loadMetadata) {
-                    metadata->checkpointScn = Ctx::getJsonFieldU64(fileName, document, "scn");
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* documentChildNames[]{"scn", "min-tran", "seq", "offset", "database", "resetlogs",
+                                                        "activation", "time", "big-endian", "context", "con-id", "con-name",
+                                                        "db-timezone", "db-recovery-file-dest", "db-block-checksum",
+                                                        "log-archive-format", "log-archive-dest", "nls-character-set",
+                                                        "nls-nchar-character-set", "supp-log-db-primary", "supp-log-db-all",
+                                                        "online-redo", "incarnations", "users", "schema-ref-scn", "schema-scn",
+                                                        "sys-user", "sys-obj", "sys-col", "sys-ccol", "sys-cdef",
+                                                        "sys-deferredstg", "sys-ecol", "sys-lob", "sys-lob-comp-part",
+                                                        "sys-lob-frag", "sys-tab", "sys-tabpart", "sys-tabcompart",
+                                                        "sys-tabsubpart", "sys-ts", "xdb-ttset", nullptr};
+                Ctx::checkJsonFields(fileName, document, documentChildNames);
+            }
+            std::unique_lock<std::mutex> lckCheckpoint(metadata->mtxCheckpoint);
+            std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema);
 
-                    if (document.HasMember("min-tran")) {
-                        const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(fileName, document, "min-tran");
-                        if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                            static const char* minTranJsonChildNames[] {"seq", "offset", "xid", nullptr};
-                            Ctx::checkJsonFields(fileName, minTranJson, minTranJsonChildNames);
-                        }
+            if (loadMetadata) {
+                metadata->checkpointScn = Ctx::getJsonFieldU64(fileName, document, "scn");
 
-                        metadata->sequence = Ctx::getJsonFieldU32(fileName, minTranJson, "seq");
-                        metadata->offset = Ctx::getJsonFieldU64(fileName, minTranJson, "offset");
-                    } else {
-                        metadata->sequence = Ctx::getJsonFieldU32(fileName, document, "seq");
-                        metadata->offset = Ctx::getJsonFieldU64(fileName, document, "offset");
+                if (document.HasMember("min-tran")) {
+                    const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(fileName, document, "min-tran");
+                    if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                        static const char* minTranJsonChildNames[]{"seq", "offset", "xid", nullptr};
+                        Ctx::checkJsonFields(fileName, minTranJson, minTranJsonChildNames);
                     }
 
-                    if (unlikely((metadata->offset & 511) != 0))
-                        throw DataException(20006, "file: " + fileName + " - invalid offset: " + std::to_string(metadata->offset) +
-                                                   " is not a multiplication of 512");
+                    metadata->sequence = Ctx::getJsonFieldU32(fileName, minTranJson, "seq");
+                    metadata->offset = Ctx::getJsonFieldU64(fileName, minTranJson, "offset");
+                } else {
+                    metadata->sequence = Ctx::getJsonFieldU32(fileName, document, "seq");
+                    metadata->offset = Ctx::getJsonFieldU64(fileName, document, "offset");
+                }
 
-                    metadata->minSequence = Ctx::ZERO_SEQ;
-                    metadata->minOffset = 0;
-                    metadata->minXid = 0;
-                    metadata->lastCheckpointScn = Ctx::ZERO_SCN;
-                    metadata->lastSequence = Ctx::ZERO_SEQ;
-                    metadata->lastCheckpointOffset = 0;
-                    metadata->lastCheckpointTime = 0;
-                    metadata->lastCheckpointBytes = 0;
+                if (unlikely((metadata->offset & 511) != 0))
+                    throw DataException(20006, "file: " + fileName + " - invalid offset: " + std::to_string(metadata->offset) +
+                                               " is not a multiplication of 512");
 
-                    if (!metadata->onlineData) {
-                        // Database metadata
-                        const std::string newDatabase = Ctx::getJsonFieldS(fileName, Ctx::JSON_PARAMETER_LENGTH, document, "database");
-                        if (metadata->database == "") {
-                            metadata->database = newDatabase;
-                        } else if (metadata->database != newDatabase) {
+                metadata->minSequence = Ctx::ZERO_SEQ;
+                metadata->minOffset = 0;
+                metadata->minXid = 0;
+                metadata->lastCheckpointScn = Ctx::ZERO_SCN;
+                metadata->lastSequence = Ctx::ZERO_SEQ;
+                metadata->lastCheckpointOffset = 0;
+                metadata->lastCheckpointTime = 0;
+                metadata->lastCheckpointBytes = 0;
+
+                if (!metadata->onlineData) {
+                    // Database metadata
+                    const std::string newDatabase = Ctx::getJsonFieldS(fileName, Ctx::JSON_PARAMETER_LENGTH, document, "database");
+                    if (metadata->database == "") {
+                        metadata->database = newDatabase;
+                    } else if (metadata->database != newDatabase) {
+                        throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
+                                                   " - parse error of field \"database\", invalid value: " + newDatabase + ", expected value: " +
+                                                   metadata->database);
+                    }
+                    metadata->resetlogs = Ctx::getJsonFieldU32(fileName, document, "resetlogs");
+                    metadata->activation = Ctx::getJsonFieldU32(fileName, document, "activation");
+                    int64_t bigEndian = Ctx::getJsonFieldU64(fileName, document, "big-endian");
+                    if (bigEndian == 1)
+                        metadata->ctx->setBigEndian();
+                    metadata->context = Ctx::getJsonFieldS(fileName, DbTable::VCONTEXT_LENGTH, document, "context");
+                    metadata->conId = Ctx::getJsonFieldI16(fileName, document, "con-id");
+                    metadata->conName = Ctx::getJsonFieldS(fileName, DbTable::VCONTEXT_LENGTH, document, "con-name");
+                    if (document.HasMember("db-timezone"))
+                        metadata->dbTimezoneStr = Ctx::getJsonFieldS(fileName, DbTable::VCONTEXT_LENGTH, document, "db-timezone");
+                    else
+                        metadata->dbTimezoneStr = "+00:00";
+                    if (metadata->ctx->dbTimezone != Ctx::BAD_TIMEZONE) {
+                        metadata->dbTimezone = metadata->ctx->dbTimezone;
+                    } else {
+                        if (unlikely(!metadata->ctx->parseTimezone(metadata->dbTimezoneStr.c_str(), metadata->dbTimezone)))
                             throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                                       " - parse error of field \"database\", invalid value: " + newDatabase + ", expected value: " +
-                                                       metadata->database);
+                                                       " - parse error of field \"db-timezone\", invalid value: " + metadata->dbTimezoneStr);
+                    }
+                    metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, DbTable::VPARAMETER_LENGTH, document, "db-recovery-file-dest");
+                    metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, DbTable::VPARAMETER_LENGTH, document, "db-block-checksum");
+                    if (!metadata->logArchiveFormatCustom)
+                        metadata->logArchiveFormat = Ctx::getJsonFieldS(fileName, DbTable::VPARAMETER_LENGTH, document, "log-archive-format");
+                    metadata->logArchiveDest = Ctx::getJsonFieldS(fileName, DbTable::VPARAMETER_LENGTH, document, "log-archive-dest");
+                    metadata->nlsCharacterSet = Ctx::getJsonFieldS(fileName, DbTable::VPROPERTY_LENGTH, document, "nls-character-set");
+                    metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(fileName, DbTable::VPROPERTY_LENGTH, document,
+                                                                        "nls-nchar-character-set");
+                    metadata->setNlsCharset(metadata->nlsCharacterSet, metadata->nlsNcharCharacterSet);
+                    metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(fileName, document, "supp-log-db-primary");
+                    metadata->suppLogDbAll = Ctx::getJsonFieldU64(fileName, document, "supp-log-db-all");
+
+                    const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(fileName, document, "online-redo");
+                    for (rapidjson::SizeType i = 0; i < onlineRedoJson.Size(); ++i) {
+                        if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                            static const char* onlineRedoChildNames[]{"group", "path", nullptr};
+                            Ctx::checkJsonFields(fileName, onlineRedoJson[i], onlineRedoChildNames);
                         }
-                        metadata->resetlogs = Ctx::getJsonFieldU32(fileName, document, "resetlogs");
-                        metadata->activation = Ctx::getJsonFieldU32(fileName, document, "activation");
-                        int64_t bigEndian = Ctx::getJsonFieldU64(fileName, document, "big-endian");
-                        if (bigEndian == 1)
-                            metadata->ctx->setBigEndian();
-                        metadata->context = Ctx::getJsonFieldS(fileName, OracleTable::VCONTEXT_LENGTH, document, "context");
-                        metadata->conId = Ctx::getJsonFieldI16(fileName, document, "con-id");
-                        metadata->conName = Ctx::getJsonFieldS(fileName, OracleTable::VCONTEXT_LENGTH, document, "con-name");
-                        if (document.HasMember("db-timezone"))
-                            metadata->dbTimezoneStr = Ctx::getJsonFieldS(fileName, OracleTable::VCONTEXT_LENGTH, document, "db-timezone");
+
+                        int64_t group = Ctx::getJsonFieldI64(fileName, onlineRedoJson[i], "group");
+                        const rapidjson::Value& path = Ctx::getJsonFieldA(fileName, onlineRedoJson[i], "path");
+
+                        for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
+                            const rapidjson::Value& pathVal = path[j];
+                            auto redoLog = new RedoLog(group, pathVal.GetString());
+                            metadata->redoLogs.insert(redoLog);
+                        }
+                    }
+
+                    const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(fileName, document, "incarnations");
+                    for (rapidjson::SizeType i = 0; i < incarnationsJson.Size(); ++i) {
+                        if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                            static const char* incarnationsChildNames[]{"incarnation", "resetlogs-scn", "prior-resetlogs-scn",
+                                                                        "status", "resetlogs", "prior-incarnation", nullptr};
+                            Ctx::checkJsonFields(fileName, incarnationsJson[i], incarnationsChildNames);
+                        }
+
+                        uint32_t incarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "incarnation");
+                        typeScn resetlogsScn = Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "resetlogs-scn");
+                        typeScn priorResetlogsScn = Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "prior-resetlogs-scn");
+                        const char* status = Ctx::getJsonFieldS(fileName, 128, incarnationsJson[i], "status");
+                        typeResetlogs resetlogs = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "resetlogs");
+                        uint32_t priorIncarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "prior-incarnation");
+
+                        auto oi = new DbIncarnation(incarnation, resetlogsScn, priorResetlogsScn,
+                                                    status, resetlogs, priorIncarnation);
+                        metadata->dbIncarnations.insert(oi);
+
+                        if (oi->current)
+                            metadata->dbIncarnationCurrent = oi;
                         else
-                            metadata->dbTimezoneStr = "+00:00";
-                        if (metadata->ctx->dbTimezone != Ctx::BAD_TIMEZONE) {
-                            metadata->dbTimezone = metadata->ctx->dbTimezone;
-                        } else {
-                            if (unlikely(!metadata->ctx->parseTimezone(metadata->dbTimezoneStr.c_str(), metadata->dbTimezone)))
-                                throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                                           " - parse error of field \"db-timezone\", invalid value: " + metadata->dbTimezoneStr);
-                        }
-                        metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "db-recovery-file-dest");
-                        metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "db-block-checksum");
-                        if (!metadata->logArchiveFormatCustom)
-                            metadata->logArchiveFormat = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "log-archive-format");
-                        metadata->logArchiveDest = Ctx::getJsonFieldS(fileName, OracleTable::VPARAMETER_LENGTH, document, "log-archive-dest");
-                        metadata->nlsCharacterSet = Ctx::getJsonFieldS(fileName, OracleTable::VPROPERTY_LENGTH, document, "nls-character-set");
-                        metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(fileName, OracleTable::VPROPERTY_LENGTH, document,
-                                                                            "nls-nchar-character-set");
-                        metadata->setNlsCharset(metadata->nlsCharacterSet, metadata->nlsNcharCharacterSet);
-                        metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(fileName, document, "supp-log-db-primary");
-                        metadata->suppLogDbAll = Ctx::getJsonFieldU64(fileName, document, "supp-log-db-all");
-
-                        const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(fileName, document, "online-redo");
-                        for (rapidjson::SizeType i = 0; i < onlineRedoJson.Size(); ++i) {
-                            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                                static const char* onlineRedoChildNames[] {"group", "path", nullptr};
-                                Ctx::checkJsonFields(fileName, onlineRedoJson[i], onlineRedoChildNames);
-                            }
-
-                            int64_t group = Ctx::getJsonFieldI64(fileName, onlineRedoJson[i], "group");
-                            const rapidjson::Value& path = Ctx::getJsonFieldA(fileName, onlineRedoJson[i], "path");
-
-                            for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
-                                const rapidjson::Value& pathVal = path[j];
-                                auto redoLog = new RedoLog(group, pathVal.GetString());
-                                metadata->redoLogs.insert(redoLog);
-                            }
-                        }
-
-                        const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(fileName, document, "incarnations");
-                        for (rapidjson::SizeType i = 0; i < incarnationsJson.Size(); ++i) {
-                            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                                static const char* incarnationsChildNames[] {"incarnation", "resetlogs-scn", "prior-resetlogs-scn",
-                                                                             "status", "resetlogs", "prior-incarnation", nullptr};
-                                Ctx::checkJsonFields(fileName, incarnationsJson[i], incarnationsChildNames);
-                            }
-
-                            uint32_t incarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "incarnation");
-                            typeScn resetlogsScn = Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "resetlogs-scn");
-                            typeScn priorResetlogsScn = Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "prior-resetlogs-scn");
-                            const char* status = Ctx::getJsonFieldS(fileName, 128, incarnationsJson[i], "status");
-                            typeResetlogs resetlogs = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "resetlogs");
-                            uint32_t priorIncarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "prior-incarnation");
-
-                            auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn,
-                                                            status, resetlogs, priorIncarnation);
-                            metadata->oracleIncarnations.insert(oi);
-
-                            if (oi->current)
-                                metadata->oracleIncarnationCurrent = oi;
-                            else
-                                metadata->oracleIncarnationCurrent = nullptr;
-                        }
-                    }
-
-                    if (!metadata->ctx->isFlagSet(Ctx::REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                        std::set<std::string> users;
-                        const rapidjson::Value& usersJson = Ctx::getJsonFieldA(fileName, document, "users");
-                        for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
-                            const rapidjson::Value& userJson = usersJson[i];;
-                            users.insert(userJson.GetString());
-                        }
-
-                        for (auto& user: metadata->users) {
-                            if (unlikely(users.find(user) == users.end()))
-                                throw DataException(20007, "file: " + fileName + " - " + user + " is missing");
-                        }
-                        for (auto& user: users) {
-                            if (unlikely(metadata->users.find(user) == metadata->users.end()))
-                                throw DataException(20007, "file: " + fileName + " - " + user + " is redundant");
-                        }
-                        users.clear();
+                            metadata->dbIncarnationCurrent = nullptr;
                     }
                 }
 
-                if (loadSchema) {
-                    // Schema referenced to other checkpoint file
-                    if (document.HasMember("schema-ref-scn")) {
-                        metadata->schema->scn = Ctx::ZERO_SCN;
-                        metadata->schema->refScn = Ctx::getJsonFieldU64(fileName, document, "schema-ref-scn");
-
-                    } else {
-                        metadata->schema->scn = Ctx::getJsonFieldU64(fileName, document, "schema-scn");
-                        metadata->schema->refScn = Ctx::ZERO_SCN;
-
-                        deserializeSysUser(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-user"));
-                        deserializeSysObj(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-obj"));
-                        deserializeSysCol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-col"));
-                        deserializeSysCCol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ccol"));
-                        deserializeSysCDef(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-cdef"));
-                        deserializeSysDeferredStg(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-deferredstg"));
-                        deserializeSysECol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ecol"));
-                        deserializeSysLob(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob"));
-                        deserializeSysLobCompPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob-comp-part"));
-                        deserializeSysLobFrag(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob-frag"));
-                        deserializeSysTab(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tab"));
-                        deserializeSysTabPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabpart"));
-                        deserializeSysTabComPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabcompart"));
-                        deserializeSysTabSubPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabsubpart"));
-                        deserializeSysTs(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ts"));
-                        // allow continuing
-                        if (document.HasMember("xdb-ttset"))
-                            deserializeXdbTtSet(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "xdb-ttset"));
-
-                        for (auto ttSetIt: metadata->schema->xdbTtSetMapRowId) {
-                            XmlCtx* xmlCtx = new XmlCtx(metadata->ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
-                            metadata->schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
-
-                            std::string field = "xdb-xnm" + ttSetIt.second->tokSuf;
-                            deserializeXdbXNm(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
-                            field = "xdb-xpt" + ttSetIt.second->tokSuf;
-                            deserializeXdbXPt(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
-                            field = "xdb-xqn" + ttSetIt.second->tokSuf;
-                            deserializeXdbXQn(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
-                        }
+                if (!metadata->ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
+                    std::set<std::string> users;
+                    const rapidjson::Value& usersJson = Ctx::getJsonFieldA(fileName, document, "users");
+                    for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
+                        const rapidjson::Value& userJson = usersJson[i];;
+                        users.insert(userJson.GetString());
                     }
 
-                    for (const SchemaElement* element: metadata->schemaElements) {
-                        if (metadata->ctx->logLevel >= Ctx::LOG_LEVEL_DEBUG)
-                            msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
-                                           std::to_string(element->options));
-
-                        metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->conditionStr, element->options,
-                                                    msgs, metadata->suppLogDbPrimary, metadata->suppLogDbAll, metadata->defaultCharacterMapId,
-                                                    metadata->defaultCharacterNcharMapId);
+                    for (auto& user: metadata->users) {
+                        if (unlikely(users.find(user) == users.end()))
+                            throw DataException(20007, "file: " + fileName + " - " + user + " is missing");
                     }
-
-                    metadata->schema->resetTouched();
-                    metadata->schema->loaded = true;
-                    return true;
+                    for (auto& user: users) {
+                        if (unlikely(metadata->users.find(user) == metadata->users.end()))
+                            throw DataException(20007, "file: " + fileName + " - " + user + " is redundant");
+                    }
+                    users.clear();
                 }
+            }
+
+            if (loadSchema) {
+                // Schema referenced to other checkpoint file
+                if (document.HasMember("schema-ref-scn")) {
+                    metadata->schema->scn = Ctx::ZERO_SCN;
+                    metadata->schema->refScn = Ctx::getJsonFieldU64(fileName, document, "schema-ref-scn");
+
+                } else {
+                    metadata->schema->scn = Ctx::getJsonFieldU64(fileName, document, "schema-scn");
+                    metadata->schema->refScn = Ctx::ZERO_SCN;
+
+                    deserializeSysUser(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-user"));
+                    deserializeSysObj(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-obj"));
+                    deserializeSysCol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-col"));
+                    deserializeSysCCol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ccol"));
+                    deserializeSysCDef(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-cdef"));
+                    deserializeSysDeferredStg(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-deferredstg"));
+                    deserializeSysECol(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ecol"));
+                    deserializeSysLob(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob"));
+                    deserializeSysLobCompPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob-comp-part"));
+                    deserializeSysLobFrag(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-lob-frag"));
+                    deserializeSysTab(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tab"));
+                    deserializeSysTabPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabpart"));
+                    deserializeSysTabComPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabcompart"));
+                    deserializeSysTabSubPart(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-tabsubpart"));
+                    deserializeSysTs(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "sys-ts"));
+                    // allow continuing
+                    if (document.HasMember("xdb-ttset"))
+                        deserializeXdbTtSet(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "xdb-ttset"));
+
+                    for (auto ttSetIt: metadata->schema->xdbTtSetMapRowId) {
+                        XmlCtx* xmlCtx = new XmlCtx(metadata->ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
+                        metadata->schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
+
+                        std::string field = "xdb-xnm" + ttSetIt.second->tokSuf;
+                        deserializeXdbXNm(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
+                        field = "xdb-xpt" + ttSetIt.second->tokSuf;
+                        deserializeXdbXPt(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
+                        field = "xdb-xqn" + ttSetIt.second->tokSuf;
+                        deserializeXdbXQn(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
+                    }
+                }
+
+                // Loading schema from configuration file
+                metadata->buildMaps(msgs);
+                metadata->schema->resetTouched();
+                metadata->schema->loaded = true;
+                return true;
             }
         } catch (DataException& ex) {
             metadata->ctx->error(ex.code, ex.msg);
@@ -738,8 +729,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysCCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson) {
         for (rapidjson::SizeType i = 0; i < sysCColJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysCColChildNames[] {"row-id", "con", "int-col", "obj", "spare1", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysCColChildNames[]{"row-id", "con", "int-col", "obj", "spare1", nullptr};
                 Ctx::checkJsonFields(fileName, sysCColJson[i], sysCColChildNames);
             }
 
@@ -759,8 +750,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysCDef(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson) {
         for (rapidjson::SizeType i = 0; i < sysCDefJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysCDefChildNames[] {"row-id", "con", "obj", "type", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysCDefChildNames[]{"row-id", "con", "obj", "type", nullptr};
                 Ctx::checkJsonFields(fileName, sysCDefJson[i], sysCDefChildNames);
             }
 
@@ -775,10 +766,10 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysColJson) {
         for (rapidjson::SizeType i = 0; i < sysColJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysColChildNames[] {"row-id", "obj", "col", "seg-col", "int-col", "name", "type",
-                                                       "length", "precision", "scale", "charset-form", "charset-id", "null",
-                                                       "property", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysColChildNames[]{"row-id", "obj", "col", "seg-col", "int-col", "name", "type",
+                                                      "length", "precision", "scale", "charset-form", "charset-id", "null",
+                                                      "property", nullptr};
                 Ctx::checkJsonFields(fileName, sysColJson[i], sysColChildNames);
             }
 
@@ -789,12 +780,12 @@ namespace OpenLogReplicator {
             typeCol intCol = Ctx::getJsonFieldI16(fileName, sysColJson[i], "int-col");
             const char* name_ = Ctx::getJsonFieldS(fileName, SysCol::NAME_LENGTH, sysColJson[i], "name");
             typeType type = Ctx::getJsonFieldU16(fileName, sysColJson[i], "type");
-            uint64_t length = Ctx::getJsonFieldU64(fileName, sysColJson[i], "length");
-            int64_t precision = Ctx::getJsonFieldI64(fileName, sysColJson[i], "precision");
-            int64_t scale = Ctx::getJsonFieldI64(fileName, sysColJson[i], "scale");
-            uint64_t charsetForm = Ctx::getJsonFieldU64(fileName, sysColJson[i], "charset-form");
-            uint64_t charsetId = Ctx::getJsonFieldU64(fileName, sysColJson[i], "charset-id");
-            int64_t null_ = Ctx::getJsonFieldI64(fileName, sysColJson[i], "null");
+            uint length = Ctx::getJsonFieldU(fileName, sysColJson[i], "length");
+            int precision = Ctx::getJsonFieldI(fileName, sysColJson[i], "precision");
+            int scale = Ctx::getJsonFieldI(fileName, sysColJson[i], "scale");
+            uint charsetForm = Ctx::getJsonFieldU(fileName, sysColJson[i], "charset-form");
+            uint charsetId = Ctx::getJsonFieldU(fileName, sysColJson[i], "charset-id");
+            int null_ = Ctx::getJsonFieldI64(fileName, sysColJson[i], "null");
             const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(fileName, sysColJson[i], "property");
             if (unlikely(propertyJson.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - property should be an array with 2 elements");
@@ -808,8 +799,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysDeferredStg(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysDeferredStgJson) {
         for (rapidjson::SizeType i = 0; i < sysDeferredStgJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysDeferredStgChildNames[] {"row-id", "obj", "flags-stg", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysDeferredStgChildNames[]{"row-id", "obj", "flags-stg", nullptr};
                 Ctx::checkJsonFields(fileName, sysDeferredStgJson[i], sysDeferredStgChildNames);
             }
 
@@ -828,8 +819,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysECol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysEColJson) {
         for (rapidjson::SizeType i = 0; i < sysEColJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysEColChildNames[] {"row-id", "tab-obj", "col-num", "guard-id", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysEColChildNames[]{"row-id", "tab-obj", "col-num", "guard-id", nullptr};
                 Ctx::checkJsonFields(fileName, sysEColJson[i], sysEColChildNames);
             }
 
@@ -844,8 +835,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysLob(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobJson) {
         for (rapidjson::SizeType i = 0; i < sysLobJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysLobChildNames[] {"row-id", "obj", "col", "int-col", "l-obj", "ts", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysLobChildNames[]{"row-id", "obj", "col", "int-col", "l-obj", "ts", nullptr};
                 Ctx::checkJsonFields(fileName, sysLobJson[i], sysLobChildNames);
             }
 
@@ -862,8 +853,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysLobCompPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobCompPartJson) {
         for (rapidjson::SizeType i = 0; i < sysLobCompPartJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysLobCompPartChildNames[] {"row-id", "part-obj", "l-obj", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysLobCompPartChildNames[]{"row-id", "part-obj", "l-obj", nullptr};
                 Ctx::checkJsonFields(fileName, sysLobCompPartJson[i], sysLobCompPartChildNames);
             }
 
@@ -877,8 +868,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysLobFrag(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobFragJson) {
         for (rapidjson::SizeType i = 0; i < sysLobFragJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysLobFragChildNames[] {"row-id", "frag-obj", "parent-obj", "ts", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysLobFragChildNames[]{"row-id", "frag-obj", "parent-obj", "ts", nullptr};
                 Ctx::checkJsonFields(fileName, sysLobFragJson[i], sysLobFragChildNames);
             }
 
@@ -893,9 +884,9 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysObj(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysObjJson) {
         for (rapidjson::SizeType i = 0; i < sysObjJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysObjChildNames[] {"row-id", "owner", "obj", "data-obj", "type", "name", "flags",
-                                                       "single", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysObjChildNames[]{"row-id", "owner", "obj", "data-obj", "type", "name", "flags",
+                                                      "single", nullptr};
                 Ctx::checkJsonFields(fileName, sysObjJson[i], sysObjChildNames);
             }
 
@@ -919,9 +910,9 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysTab(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabJson) {
         for (rapidjson::SizeType i = 0; i < sysTabJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysTabChildNames[] {"row-id", "obj", "data-obj", "ts", "clu-cols", "flags", "property",
-                                                         nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysTabChildNames[]{"row-id", "obj", "data-obj", "ts", "clu-cols", "flags", "property",
+                                                      nullptr};
                 Ctx::checkJsonFields(fileName, sysTabJson[i], sysTabChildNames);
             }
 
@@ -952,8 +943,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysTabComPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabComPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabComPartJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysTabComPartChildNames[] {"row-id", "obj", "data-obj", "bo", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysTabComPartChildNames[]{"row-id", "obj", "data-obj", "bo", nullptr};
                 Ctx::checkJsonFields(fileName, sysTabComPartJson[i], sysTabComPartChildNames);
             }
 
@@ -968,8 +959,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysTabPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabPartJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysTabPartChildNames[] {"row-id", "obj", "data-obj", "bo", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysTabPartChildNames[]{"row-id", "obj", "data-obj", "bo", nullptr};
                 Ctx::checkJsonFields(fileName, sysTabPartJson[i], sysTabPartChildNames);
             }
 
@@ -984,8 +975,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysTabSubPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabSubPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabSubPartJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysTabSubPartChildNames[] {"row-id", "obj", "data-obj", "p-obj", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysTabSubPartChildNames[]{"row-id", "obj", "data-obj", "p-obj", nullptr};
                 Ctx::checkJsonFields(fileName, sysTabSubPartJson[i], sysTabSubPartChildNames);
             }
 
@@ -1000,8 +991,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTsJson) {
         for (rapidjson::SizeType i = 0; i < sysTsJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysTsChildNames[] {"row-id", "ts", "name", "block-size", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysTsChildNames[]{"row-id", "ts", "name", "block-size", nullptr};
                 Ctx::checkJsonFields(fileName, sysTsJson[i], sysTsChildNames);
             }
 
@@ -1016,8 +1007,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeSysUser(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson) {
         for (rapidjson::SizeType i = 0; i < sysUserJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* sysUserChildNames[] {"row-id", "user", "name", "spare1", "single", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* sysUserChildNames[]{"row-id", "user", "name", "spare1", "single", nullptr};
                 Ctx::checkJsonFields(fileName, sysUserJson[i], sysUserChildNames);
             }
 
@@ -1038,8 +1029,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeXdbTtSet(Metadata* metadata, const std::string& fileName, const rapidjson::Value& xdbTtSetJson) {
         for (rapidjson::SizeType i = 0; i < xdbTtSetJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* xdbTtSetChildNames[] {"row-id", "guid", "toksuf", "flags", "obj", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* xdbTtSetChildNames[]{"row-id", "guid", "toksuf", "flags", "obj", nullptr};
                 Ctx::checkJsonFields(fileName, xdbTtSetJson[i], xdbTtSetChildNames);
             }
 
@@ -1055,8 +1046,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeXdbXNm(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXNmJson) {
         for (rapidjson::SizeType i = 0; i < xdbXNmJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* xdbXNmChildNames[] {"row-id", "nmspcuri", "id", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* xdbXNmChildNames[]{"row-id", "nmspcuri", "id", nullptr};
                 Ctx::checkJsonFields(fileName, xdbXNmJson[i], xdbXNmChildNames);
             }
 
@@ -1070,8 +1061,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeXdbXPt(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXPtJson) {
         for (rapidjson::SizeType i = 0; i < xdbXPtJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* xdbXPtChildNames[] {"row-id", "path", "id", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* xdbXPtChildNames[]{"row-id", "path", "id", nullptr};
                 Ctx::checkJsonFields(fileName, xdbXPtJson[i], xdbXPtChildNames);
             }
 
@@ -1085,8 +1076,8 @@ namespace OpenLogReplicator {
 
     void SerializerJson::deserializeXdbXQn(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXQnJson) {
         for (rapidjson::SizeType i = 0; i < xdbXQnJson.Size(); ++i) {
-            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS_JSON_TAGS)) {
-                static const char* xdbXQnChildNames[] {"row-id", "nmspcid", "localname", "flags", "id", nullptr};
+            if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
+                static const char* xdbXQnChildNames[]{"row-id", "nmspcid", "localname", "flags", "id", nullptr};
                 Ctx::checkJsonFields(fileName, xdbXQnJson[i], xdbXQnChildNames);
             }
 

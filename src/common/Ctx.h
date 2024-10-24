@@ -36,7 +36,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define CTX_H_
 
 #ifndef GLOBALS
-extern uint64_t OLR_LOCALES;
+extern uint OLR_LOCALES;
 #endif
 
 namespace OpenLogReplicator {
@@ -49,106 +49,71 @@ namespace OpenLogReplicator {
         std::vector<uint8_t*> chunks;
         int64_t swappedMin;
         int64_t swappedMax;
-        int64_t lockedChunk;
         bool release;
 
         SwapChunk() :
-            swappedMin(-1), swappedMax(-1), lockedChunk(-1), release(false) {};
+                swappedMin(-1), swappedMax(-1), release(false) {};
     };
 
 
     class Ctx final {
     public:
-        static constexpr uint64_t BAD_TIMEZONE = 0x7FFFFFFFFFFFFFFF;
-        static constexpr size_t MEMORY_ALIGNMENT = 512;
-        static constexpr uint64_t MAX_PATH_LENGTH = 2048;
+        static constexpr uint64_t BAD_TIMEZONE{0x7FFFFFFFFFFFFFFF};
+        static constexpr size_t MEMORY_ALIGNMENT{512};
+        static constexpr uint MAX_PATH_LENGTH{2048};
 
-        static constexpr uint64_t COLUMN_LIMIT = 1000;
-        static constexpr uint64_t COLUMN_LIMIT_23_0 = 4096;
+        static constexpr uint64_t COLUMN_LIMIT{1000};
+        static constexpr uint64_t COLUMN_LIMIT_23_0{4096};
+        static constexpr uint JSON_PARAMETER_LENGTH{256};
+        static constexpr uint JSON_TOPIC_LENGTH{256};
 
-        static constexpr uint64_t DISABLE_CHECKS_GRANTS = 0x00000001;
-        static constexpr uint64_t DISABLE_CHECKS_SUPPLEMENTAL_LOG = 0x00000002;
-        static constexpr uint64_t DISABLE_CHECKS_BLOCK_SUM = 0x00000004;
-        static constexpr uint64_t DISABLE_CHECKS_JSON_TAGS = 0x00000008;
+        static constexpr uint JSON_USERNAME_LENGTH{128};
+        static constexpr uint JSON_PASSWORD_LENGTH{128};
+        static constexpr uint JSON_SERVER_LENGTH{4096};
+        static constexpr uint JSON_KEY_LENGTH{4096};
+        static constexpr uint JSON_CONDITION_LENGTH{16384};
+        static constexpr uint JSON_XID_LENGTH{32};
+        static constexpr uint JSON_FORMAT_SEPARATOR_LENGTH{128};
+        static constexpr uint JSON_TAG_LENGTH{4096};
 
-        static constexpr uint64_t JSON_PARAMETER_LENGTH = 256;
-        static constexpr uint64_t JSON_BROKERS_LENGTH = 4096;
-        static constexpr uint64_t JSON_TOPIC_LENGTH = 256;
+        enum LOCALES {
+            TIMESTAMP, MOCK
+        };
+        enum LOG {
+            SILENT, ERROR, WARNING, INFO, DEBUG
+        };
+        enum MEMORY {
+            BUILDER, PARSER, READER, TRANSACTIONS
+        };
+        static constexpr uint MEMORY_COUNT{4};
+        enum DISABLE_CHECKS {
+            GRANTS = 1 << 0, SUPPLEMENTAL_LOG = 1 << 1, BLOCK_SUM = 1 << 2, JSON_TAGS = 1 << 3
+        };
+        enum REDO_FLAGS {
+            ARCH_ONLY = 1 << 0, SCHEMALESS = 1 << 1, ADAPTIVE_SCHEMA = 1 << 2, DIRECT_DISABLE = 1 << 3, IGNORE_DATA_ERRORS = 1 << 4,
+            SHOW_DDL = 1 << 5, SHOW_HIDDEN_COLUMNS = 1 << 6, SHOW_GUARD_COLUMNS = 1 << 7, SHOW_NESTED_COLUMNS = 1 << 8, SHOW_UNUSED_COLUMNS = 1 << 9,
+            SHOW_INCOMPLETE_TRANSACTIONS = 1 << 10, SHOW_SYSTEM_TRANSACTIONS = 1 << 11, SHOW_CHECKPOINT = 1 << 12, CHECKPOINT_KEEP = 1 << 13,
+            VERIFY_SCHEMA = 1 << 14, RAW_COLUMN_DATA = 1 << 15, EXPERIMENTAL_XMLTYPE = 1 << 16, EXPERIMENTAL_JSON = 1 << 17,
+            EXPERIMENTAL_NOT_NULL_MISSING = 1 << 18
+        };
+        enum TRACE {
+            DML = 1 << 0, DUMP = 1 << 1, LOB = 1 << 2, LWN = 1 << 3, THREADS = 1 << 4, SQL = 1 << 5, FILE = 1 << 6, DISK = 1 << 7, PERFORMANCE = 1 << 8,
+            TRANSACTION = 1 << 9, REDO = 1 << 10, ARCHIVE_LIST = 1 << 11, SCHEMA_LIST = 1 << 12, WRITER = 1 << 13, CHECKPOINT = 1 << 14, SYSTEM = 1 << 15,
+            LOB_DATA = 1 << 16, SLEEP = 1 << 17, CONDITION = 1 << 18
+        };
 
-        static constexpr uint64_t JSON_USERNAME_LENGTH = 128;
-        static constexpr uint64_t JSON_PASSWORD_LENGTH = 128;
-        static constexpr uint64_t JSON_SERVER_LENGTH = 4096;
-        static constexpr uint64_t JSON_KEY_LENGTH = 4096;
-        static constexpr uint64_t JSON_CONDITION_LENGTH = 16384;
-        static constexpr uint64_t JSON_XID_LENGTH = 32;
+        static constexpr uint64_t MEMORY_CHUNK_SIZE_MB{1};
+        static constexpr uint64_t MEMORY_CHUNK_SIZE{MEMORY_CHUNK_SIZE_MB * 1024 * 1024};
+        static constexpr uint64_t MEMORY_CHUNK_MIN_MB{32};
 
-        static constexpr uint64_t LOG_LEVEL_SILENT = 0;
-        static constexpr uint64_t LOG_LEVEL_ERROR = 1;
-        static constexpr uint64_t LOG_LEVEL_WARNING = 2;
-        static constexpr uint64_t LOG_LEVEL_INFO = 3;
-        static constexpr uint64_t LOG_LEVEL_DEBUG = 4;
+        static constexpr time_t UNIX_AD1970_01_01{62167132800L};
+        static constexpr time_t UNIX_BC1970_01_01{62167132800L - 365 * 24 * 60 * 60};
+        static constexpr time_t UNIX_BC4712_01_01{-210831897600L};
+        static constexpr time_t UNIX_AD9999_12_31{253402300799L};
 
-        static constexpr uint64_t MEMORY_MODULE_BUILDER = 0;
-        static constexpr uint64_t MEMORY_MODULE_PARSER = 1;
-        static constexpr uint64_t MEMORY_MODULE_READER = 2;
-        static constexpr uint64_t MEMORY_MODULE_TRANSACTIONS = 3;
-        static constexpr uint64_t MEMORY_MODULES_NUM = 4;
-
-        static constexpr uint64_t MEMORY_CHUNK_SIZE_MB = 1;
-        static constexpr uint64_t MEMORY_CHUNK_SIZE = MEMORY_CHUNK_SIZE_MB * 1024 * 1024;
-        static constexpr uint64_t MEMORY_CHUNK_MIN_MB = 32;
-
-        static constexpr uint64_t OLR_LOCALES_TIMESTAMP = 0;
-        static constexpr uint64_t OLR_LOCALES_MOCK = 1;
-
-        static constexpr uint64_t REDO_FLAGS_ARCH_ONLY = 0x00000001;
-        static constexpr uint64_t REDO_FLAGS_SCHEMALESS = 0x00000002;
-        static constexpr uint64_t REDO_FLAGS_ADAPTIVE_SCHEMA = 0x00000004;
-        static constexpr uint64_t REDO_FLAGS_DIRECT_DISABLE = 0x00000008;
-        static constexpr uint64_t REDO_FLAGS_IGNORE_DATA_ERRORS = 0x00000010;
-        static constexpr uint64_t REDO_FLAGS_SHOW_DDL = 0x00000020;
-        static constexpr uint64_t REDO_FLAGS_SHOW_HIDDEN_COLUMNS = 0x00000040;
-        static constexpr uint64_t REDO_FLAGS_SHOW_GUARD_COLUMNS = 0x00000080;
-        static constexpr uint64_t REDO_FLAGS_SHOW_NESTED_COLUMNS = 0x00000100;
-        static constexpr uint64_t REDO_FLAGS_SHOW_UNUSED_COLUMNS = 0x00000200;
-        static constexpr uint64_t REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS = 0x00000400;
-        static constexpr uint64_t REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS = 0x00000800;
-        static constexpr uint64_t REDO_FLAGS_SHOW_CHECKPOINT = 0x00001000;
-        static constexpr uint64_t REDO_FLAGS_CHECKPOINT_KEEP = 0x00002000;
-        static constexpr uint64_t REDO_FLAGS_VERIFY_SCHEMA = 0x00004000;
-        static constexpr uint64_t REDO_FLAGS_RAW_COLUMN_DATA = 0x00008000;
-        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_XMLTYPE = 0x00010000;
-        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_JSON = 0x00020000;
-        static constexpr uint64_t REDO_FLAGS_EXPERIMENTAL_NOT_NULL_MISSING = 0x00040000;
-
-        static constexpr uint64_t TRACE_DML = 0x00000001;
-        static constexpr uint64_t TRACE_DUMP = 0x00000002;
-        static constexpr uint64_t TRACE_LOB = 0x00000004;
-        static constexpr uint64_t TRACE_LWN = 0x00000008;
-        static constexpr uint64_t TRACE_THREADS = 0x00000010;
-        static constexpr uint64_t TRACE_SQL = 0x00000020;
-        static constexpr uint64_t TRACE_FILE = 0x00000040;
-        static constexpr uint64_t TRACE_DISK = 0x00000080;
-        static constexpr uint64_t TRACE_PERFORMANCE = 0x00000100;
-        static constexpr uint64_t TRACE_TRANSACTION = 0x00000200;
-        static constexpr uint64_t TRACE_REDO = 0x00000400;
-        static constexpr uint64_t TRACE_ARCHIVE_LIST = 0x00000800;
-        static constexpr uint64_t TRACE_SCHEMA_LIST = 0x00001000;
-        static constexpr uint64_t TRACE_WRITER = 0x00002000;
-        static constexpr uint64_t TRACE_CHECKPOINT = 0x00004000;
-        static constexpr uint64_t TRACE_SYSTEM = 0x00008000;
-        static constexpr uint64_t TRACE_LOB_DATA = 0x00010000;
-        static constexpr uint64_t TRACE_SLEEP = 0x00020000;
-        static constexpr uint64_t TRACE_CONDITION = 0x00040000;
-
-        static constexpr time_t UNIX_AD1970_01_01 = 62167132800L;
-        static constexpr time_t UNIX_BC1970_01_01 = 62167132800L - 365 * 24 * 60 * 60;
-        static constexpr time_t UNIX_BC4712_01_01 = -210831897600L;
-        static constexpr time_t UNIX_AD9999_12_31 = 253402300799L;
-
-        static constexpr typeSeq ZERO_SEQ = 0xFFFFFFFF;
-        static constexpr typeScn ZERO_SCN = 0xFFFFFFFFFFFFFFFF;
-        static constexpr typeBlk ZERO_BLK = 0xFFFFFFFF;
+        static constexpr typeSeq ZERO_SEQ{0xFFFFFFFF};
+        static constexpr typeScn ZERO_SCN{0xFFFFFFFFFFFFFFFF};
+        static constexpr typeBlk ZERO_BLK{0xFFFFFFFF};
 
     protected:
         bool bigEndian;
@@ -162,7 +127,7 @@ namespace OpenLogReplicator {
         uint64_t memoryChunksAllocated;
         uint64_t memoryChunksFree;
         uint64_t memoryChunksHWM;
-        uint64_t memoryModulesAllocated[MEMORY_MODULES_NUM];
+        uint64_t memoryModulesAllocated[MEMORY_COUNT];
         bool outOfMemoryParser;
 
         std::mutex mtx;
@@ -171,10 +136,10 @@ namespace OpenLogReplicator {
         pthread_t mainThread;
 
     public:
-        uint64_t memoryModulesHWM[MEMORY_MODULES_NUM];
+        uint64_t memoryModulesHWM[MEMORY_COUNT];
         static const char map64[65];
         static const char map64R[256];
-        static const std::string memoryModules[MEMORY_MODULES_NUM];
+        static const std::string memoryModules[MEMORY_COUNT];
         static const int64_t cumDays[12];
         static const int64_t cumDaysLeap[12];
 
@@ -224,13 +189,13 @@ namespace OpenLogReplicator {
         uint64_t stopCheckpoints;
         uint64_t stopTransactions;
         typeTransactionSize transactionSizeMax;
-        std::atomic<uint64_t> logLevel;
-        std::atomic<uint64_t> trace;
-        std::atomic<uint64_t> flags;
-        std::atomic<uint64_t> disableChecks;
-        std::atomic<bool> hardShutdown;
-        std::atomic<bool> softShutdown;
-        std::atomic<bool> replicatorFinished;
+        uint logLevel;
+        uint trace;
+        uint flags;
+        uint disableChecks;
+        bool hardShutdown;
+        bool softShutdown;
+        bool replicatorFinished;
         std::unordered_map<typeLobId, typeXid> lobIdToXidMap;
         Thread* parserThread;
         Thread* writerThread;
@@ -265,11 +230,11 @@ namespace OpenLogReplicator {
         }
 
     public:
-        bool isFlagSet(uint64_t mask) const {
+        bool isFlagSet(REDO_FLAGS mask) const {
             return (flags & mask) != 0;
         }
 
-        bool isDisableChecksSet(uint64_t mask) const {
+        bool isDisableChecksSet(DISABLE_CHECKS mask) const {
             return (disableChecks & mask) != 0;
         }
 
@@ -597,23 +562,27 @@ namespace OpenLogReplicator {
         [[nodiscard]] static int32_t getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static uint64_t getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static int64_t getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static uint getJsonFieldU(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static int getJsonFieldI(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field);
 
-        [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static int16_t getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static uint32_t getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static int32_t getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static uint64_t getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static int64_t getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field,
-                                                       uint64_t num);
+        [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static int16_t getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static uint32_t getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static int32_t getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static uint64_t getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static int64_t getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static uint getJsonFieldU(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static int getJsonFieldI(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
+        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field,
+                                                       uint num);
 
         bool parseTimezone(const char* str, int64_t& out) const;
         std::string timezoneToString(int64_t tz) const;
-        time_t valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) const;
+        time_t valuesToEpoch(int year, int month, int day, int hour, int minute, int second, int tz) const;
         uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) const;
 
         void initialize(uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t memoryReadBufferMaxMb, uint64_t memoryReadBufferMinMb, uint64_t memorySwapMb,
@@ -624,8 +593,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getAllocatedMemory() const;
         [[nodiscard]] uint64_t getSwapMemory(Thread* t) const;
         [[nodiscard]] uint64_t getFreeMemory(Thread* t) const;
-        [[nodiscard]] uint8_t* getMemoryChunk(Thread* t, uint64_t module, bool swap = false);
-        void freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk);
+        [[nodiscard]] uint8_t* getMemoryChunk(Thread* t, MEMORY module, bool swap = false);
+        void freeMemoryChunk(Thread* t, MEMORY module, uint8_t* chunk);
         void swappedMemoryInit(Thread* t, typeXid xid);
         [[nodiscard]] uint64_t swappedMemorySize(Thread* t, typeXid xid) const;
         [[nodiscard]] uint8_t* swappedMemoryGet(Thread* t, typeXid xid, int64_t index);

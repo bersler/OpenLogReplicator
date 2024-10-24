@@ -27,9 +27,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysUser final {
     public:
-        static constexpr uint64_t NAME_LENGTH = 128;
-        static constexpr uint64_t SPARE1_SUPP_LOG_PRIMARY = 1;
-        static constexpr uint64_t SPARE1_SUPP_LOG_ALL = 8;
+        static constexpr uint NAME_LENGTH{128};
+        static constexpr uint64_t SPARE1_SUPP_LOG_PRIMARY{1};
+        static constexpr uint64_t SPARE1_SUPP_LOG_ALL{8};
 
         SysUser(typeRowId newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),

@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
                 }
 
                 throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
-                                                             " [-v|--version] [-f|--file CONFIG] [-p|--process PROCESSNAME]");
+                                                    " [-v|--version] [-f|--file CONFIG] [-p|--process PROCESSNAME]");
             }
         } catch (ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
@@ -208,7 +208,7 @@ int main(int argc, char** argv) {
     if (olrLocalesStr != nullptr)
         olrLocales = olrLocalesStr;
     if (olrLocales == "MOCK")
-        OLR_LOCALES = OpenLogReplicator::Ctx::OLR_LOCALES_MOCK;
+        OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::MOCK;
 
     int ret = OpenLogReplicator::mainFunction(argc, argv);
 

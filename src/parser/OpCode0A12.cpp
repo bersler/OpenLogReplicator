@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 10.18
+/* Redo log OpCode: 10.18
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -50,8 +50,8 @@ namespace OpenLogReplicator {
 
             *ctx->dumpStream << "REDO: SINGLE / -- / -- \n";
             *ctx->dumpStream << "itl: " << std::dec << itl <<
-                            ", sno: " << std::dec << sno <<
-                            ", row size " << std::dec << rowSize << '\n';
+                             ", sno: " << std::dec << sno <<
+                             ", row size " << std::dec << rowSize << '\n';
         }
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A1203))

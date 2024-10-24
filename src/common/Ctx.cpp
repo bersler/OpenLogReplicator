@@ -35,12 +35,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "exception/RuntimeException.h"
 #include "metrics/Metrics.h"
 
-uint64_t OLR_LOCALES = OpenLogReplicator::Ctx::OLR_LOCALES_TIMESTAMP;
+uint OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::TIMESTAMP;
 
 namespace OpenLogReplicator {
-    const char Ctx::map64[65] {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+    const char Ctx::map64[65]{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
 
-    const char Ctx::map64R[256] {
+    const char Ctx::map64R[256]{
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0, 63,
@@ -58,10 +58,10 @@ namespace OpenLogReplicator {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    const std::string Ctx::memoryModules[MEMORY_MODULES_NUM] {"builder", "parser", "reader", "transaction"};
+    const std::string Ctx::memoryModules[MEMORY_COUNT]{"builder", "parser", "reader", "transaction"};
 
-    const int64_t Ctx::cumDays[12] {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
-    const int64_t Ctx::cumDaysLeap[12] {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
+    const int64_t Ctx::cumDays[12]{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+    const int64_t Ctx::cumDaysLeap[12]{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
 
     typeIntX typeIntX::BASE10[typeIntX::DIGITS][10];
 
@@ -112,7 +112,7 @@ namespace OpenLogReplicator {
             stopCheckpoints(0),
             stopTransactions(0),
             transactionSizeMax(0),
-            logLevel(3),
+            logLevel(LOG::INFO),
             trace(0),
             flags(0),
             disableChecks(0),
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
             softShutdown(false),
             replicatorFinished(false),
             parserThread(nullptr),
-            writerThread(nullptr) ,
+            writerThread(nullptr),
             swappedMB(0),
             swappedFlushXid(0, 0, 0),
             swappedShrinkXid(0, 0, 0) {
@@ -158,7 +158,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const char* names[]) {
-        for (auto const& child : value.GetObject()) {
+        for (auto const& child: value.GetObject()) {
             bool found = false;
             for (int i = 0; names[i] != nullptr; ++i) {
                 if (strcmp(child.name.GetString(), names[i]) == 0) {
@@ -168,8 +168,8 @@ namespace OpenLogReplicator {
             }
 
             if (unlikely(!found && memcmp(child.name.GetString(), "xdb-xnm", 7) != 0 &&
-                    memcmp(child.name.GetString(), "xdb-xpt", 7) != 0 &&
-                    memcmp(child.name.GetString(), "xdb-xqn", 7) != 0))
+                         memcmp(child.name.GetString(), "xdb-xpt", 7) != 0 &&
+                         memcmp(child.name.GetString(), "xdb-xqn", 7) != 0))
                 throw DataException(20003, "file: " + fileName + " - parse error, attribute " + child.name.GetString() + " not expected");
         }
     }
@@ -249,6 +249,24 @@ namespace OpenLogReplicator {
         return ret.GetInt64();
     }
 
+    uint Ctx::getJsonFieldU(const std::string& fileName, const rapidjson::Value& value, const char* field) {
+        if (unlikely(!value.HasMember(field)))
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
+        const rapidjson::Value& ret = value[field];
+        if (unlikely(!ret.IsUint()))
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned number");
+        return ret.GetUint();
+    }
+
+    int Ctx::getJsonFieldI(const std::string& fileName, const rapidjson::Value& value, const char* field) {
+        if (unlikely(!value.HasMember(field)))
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
+        const rapidjson::Value& ret = value[field];
+        if (unlikely(!ret.IsInt()))
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed number");
+        return ret.GetInt();
+    }
+
     const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
@@ -258,7 +276,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
+    const char* Ctx::getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field) {
         if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -270,7 +288,7 @@ namespace OpenLogReplicator {
         return ret.GetString();
     }
 
-    const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsArray()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -278,7 +296,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -290,7 +308,7 @@ namespace OpenLogReplicator {
         return val;
     }
 
-    int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -302,7 +320,7 @@ namespace OpenLogReplicator {
         return static_cast<int16_t>(val);
     }
 
-    uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -314,7 +332,7 @@ namespace OpenLogReplicator {
         return static_cast<uint32_t>(val);
     }
 
-    int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -326,7 +344,7 @@ namespace OpenLogReplicator {
         return static_cast<int32_t>(val);
     }
 
-    uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -334,7 +352,7 @@ namespace OpenLogReplicator {
         return ret.GetUint64();
     }
 
-    int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -342,7 +360,23 @@ namespace OpenLogReplicator {
         return ret.GetInt64();
     }
 
-    const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    uint Ctx::getJsonFieldU(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
+        const rapidjson::Value& ret = value[num];
+        if (unlikely(!ret.IsUint()))
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                       "] is not an unsigned number");
+        return ret.GetUint();
+    }
+
+    int Ctx::getJsonFieldI(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
+        const rapidjson::Value& ret = value[num];
+        if (unlikely(!ret.IsInt()))
+            throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
+                                       "] is not a signed number");
+        return ret.GetInt();
+    }
+
+    const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsObject()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -350,7 +384,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const char* Ctx::getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsString()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -474,7 +508,7 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    time_t Ctx::valuesToEpoch(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t tz) const {
+    time_t Ctx::valuesToEpoch(int year, int month, int day, int hour, int minute, int second, int tz) const {
         time_t result;
 
         if (year > 0) {
@@ -738,7 +772,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    uint8_t* Ctx::getMemoryChunk(Thread* t, uint64_t module, bool swap) {
+    uint8_t* Ctx::getMemoryChunk(Thread* t, MEMORY module, bool swap) {
         uint64_t allocatedModule = 0, usedTotal = 0, allocatedTotal = 0;
         uint8_t* chunk = nullptr;
 
@@ -746,23 +780,23 @@ namespace OpenLogReplicator {
         {
             std::unique_lock<std::mutex> lck(memoryMtx);
             while (true) {
-                if (module == MEMORY_MODULE_READER) {
-                    if (memoryModulesAllocated[MEMORY_MODULE_READER] < memoryChunksReadBufferMin)
+                if (module == MEMORY::READER) {
+                    if (memoryModulesAllocated[MEMORY::READER] < memoryChunksReadBufferMin)
                         break;
-                } else if (module == MEMORY_MODULE_BUILDER) {
-                    if (memoryModulesAllocated[MEMORY_MODULE_BUILDER] < memoryChunksWriteBufferMin)
+                } else if (module == MEMORY::BUILDER) {
+                    if (memoryModulesAllocated[MEMORY::BUILDER] < memoryChunksWriteBufferMin)
                         break;
                 }
 
                 uint64_t reservedChunks = 0;
-                if (memoryModulesAllocated[MEMORY_MODULE_READER] < memoryChunksReadBufferMin)
-                    reservedChunks += memoryChunksReadBufferMin - memoryModulesAllocated[MEMORY_MODULE_READER];
-                if (memoryModulesAllocated[MEMORY_MODULE_BUILDER] < memoryChunksWriteBufferMin)
-                    reservedChunks += memoryChunksWriteBufferMin - memoryModulesAllocated[MEMORY_MODULE_BUILDER];
+                if (memoryModulesAllocated[MEMORY::READER] < memoryChunksReadBufferMin)
+                    reservedChunks += memoryChunksReadBufferMin - memoryModulesAllocated[MEMORY::READER];
+                if (memoryModulesAllocated[MEMORY::BUILDER] < memoryChunksWriteBufferMin)
+                    reservedChunks += memoryChunksWriteBufferMin - memoryModulesAllocated[MEMORY::BUILDER];
                 if (!swap)
                     reservedChunks += memoryChunksUnswapBufferMin;
 
-                if (module != MEMORY_MODULE_BUILDER || memoryModulesAllocated[MEMORY_MODULE_BUILDER] < memoryChunksWriteBufferMax) {
+                if (module != MEMORY::BUILDER || memoryModulesAllocated[MEMORY::BUILDER] < memoryChunksWriteBufferMax) {
                     if (memoryChunksFree > reservedChunks)
                         break;
 
@@ -782,20 +816,20 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (module == MEMORY_MODULE_PARSER)
+                if (module == MEMORY::PARSER)
                     outOfMemoryParser = true;
 
                 if (hardShutdown)
                     return nullptr;
 
-                if (unlikely(trace & TRACE_SLEEP))
-                    logTrace(TRACE_SLEEP, "Ctx:getMemoryChunk");
+                if (unlikely(trace & TRACE::SLEEP))
+                    logTrace(TRACE::SLEEP, "Ctx:getMemoryChunk");
                 t->contextSet(Thread::CONTEXT_WAIT, Thread::MEMORY_EXHAUSTED);
                 condOutOfMemory.wait(lck);
                 t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
             }
 
-            if (module == MEMORY_MODULE_PARSER)
+            if (module == MEMORY::PARSER)
                 outOfMemoryParser = false;
 
             --memoryChunksFree;
@@ -817,19 +851,19 @@ namespace OpenLogReplicator {
             metrics->emitMemoryUsedTotalMb(usedTotal * MEMORY_CHUNK_SIZE_MB);
 
             switch (module) {
-                case MEMORY_MODULE_BUILDER:
+                case MEMORY::BUILDER:
                     metrics->emitMemoryUsedMbBuilder(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
-                case MEMORY_MODULE_PARSER:
+                case MEMORY::PARSER:
                     metrics->emitMemoryUsedMbParser(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
-                case MEMORY_MODULE_READER:
+                case MEMORY::READER:
                     metrics->emitMemoryUsedMbReader(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
-                case MEMORY_MODULE_TRANSACTIONS:
+                case MEMORY::TRANSACTIONS:
                     metrics->emitMemoryUsedMbTransactions(allocatedModule * MEMORY_CHUNK_SIZE_MB);
             }
         }
@@ -837,7 +871,7 @@ namespace OpenLogReplicator {
         return chunk;
     }
 
-    void Ctx::freeMemoryChunk(Thread* t, uint64_t module, uint8_t* chunk) {
+    void Ctx::freeMemoryChunk(Thread* t, MEMORY module, uint8_t* chunk) {
         uint64_t allocatedModule = 0, usedTotal = 0, allocatedTotal = 0;
         t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
         {
@@ -873,19 +907,19 @@ namespace OpenLogReplicator {
             metrics->emitMemoryUsedTotalMb(usedTotal * MEMORY_CHUNK_SIZE_MB);
 
             switch (module) {
-                case MEMORY_MODULE_BUILDER:
+                case MEMORY::BUILDER:
                     metrics->emitMemoryUsedMbBuilder(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
-                case MEMORY_MODULE_PARSER:
+                case MEMORY::PARSER:
                     metrics->emitMemoryUsedMbParser(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
-                case MEMORY_MODULE_READER:
+                case MEMORY::READER:
                     metrics->emitMemoryUsedMbReader(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
-                case MEMORY_MODULE_TRANSACTIONS:
+                case MEMORY::TRANSACTIONS:
                     metrics->emitMemoryUsedMbTransactions(allocatedModule * MEMORY_CHUNK_SIZE_MB);
             }
         }
@@ -954,7 +988,7 @@ namespace OpenLogReplicator {
         }
         t->contextSet(Thread::CONTEXT_CPU);
 
-        freeMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS, tc);
+        freeMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS, tc);
     }
 
     [[nodiscard]] uint8_t* Ctx::swappedMemoryGrow(Thread* t, typeXid xid) {
@@ -969,7 +1003,7 @@ namespace OpenLogReplicator {
         }
         t->contextSet(Thread::CONTEXT_CPU);
 
-        uint8_t* tc = getMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS);
+        uint8_t* tc = getMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS);
         memset(tc, 0, sizeof(uint64_t) + sizeof(uint32_t));
 
         {
@@ -995,7 +1029,7 @@ namespace OpenLogReplicator {
             sc->chunks.pop_back();
         }
 
-        freeMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS, tc);
+        freeMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS, tc);
 
         {
             t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_SHRINK2);
@@ -1046,7 +1080,7 @@ namespace OpenLogReplicator {
 
         for (auto tc: sc->chunks)
             if (tc != nullptr)
-                freeMemoryChunk(t, Ctx::MEMORY_MODULE_TRANSACTIONS, tc);
+                freeMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS, tc);
 
         {
             t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_FLUSH2);
@@ -1067,21 +1101,21 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (memoryModulesAllocated[MEMORY_MODULE_BUILDER] > memoryChunksWriteBufferMin) {
+        if (memoryModulesAllocated[MEMORY::BUILDER] > memoryChunksWriteBufferMin) {
             t->contextSet(Thread::CONTEXT_CPU);
             return;
         }
 
         hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
              "transaction would be skipped");
-        if (memoryModulesAllocated[MEMORY_MODULE_READER] > 5)
+        if (memoryModulesAllocated[MEMORY::READER] > 5)
             hint("amount of disk buffer is too high, try to decrease 'memory-read-buffer-max-mb' parameter, current utilization: " +
-                 std::to_string(memoryModulesAllocated[MEMORY_MODULE_READER] * MEMORY_CHUNK_SIZE_MB) + "MB");
+                 std::to_string(memoryModulesAllocated[MEMORY::READER] * MEMORY_CHUNK_SIZE_MB) + "MB");
         throw RuntimeException(10017, "out of memory");
     }
 
     void Ctx::stopHard() {
-        logTrace(TRACE_THREADS, "stop hard");
+        logTrace(TRACE::THREADS, "stop hard");
 
         {
             std::unique_lock<std::mutex> lck(mtx);
@@ -1100,7 +1134,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::stopSoft() {
-        logTrace(TRACE_THREADS, "stop soft");
+        logTrace(TRACE::THREADS, "stop soft");
 
         std::unique_lock<std::mutex> lck(mtx);
         if (softShutdown)
@@ -1111,7 +1145,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::mainFinish() {
-        logTrace(TRACE_THREADS, "main finish start");
+        logTrace(TRACE::THREADS, "main finish start");
 
         while (wakeThreads()) {
             usleep(10000);
@@ -1127,22 +1161,22 @@ namespace OpenLogReplicator {
             finishThread(thread);
         }
 
-        logTrace(TRACE_THREADS, "main finish end");
+        logTrace(TRACE::THREADS, "main finish end");
     }
 
     void Ctx::mainLoop() {
-        logTrace(TRACE_THREADS, "main loop start");
+        logTrace(TRACE::THREADS, "main loop start");
 
         {
             std::unique_lock<std::mutex> lck(mtx);
             if (!hardShutdown) {
-                if (unlikely(trace & TRACE_SLEEP))
-                    logTrace(TRACE_SLEEP, "Ctx:mainLoop");
+                if (unlikely(trace & TRACE::SLEEP))
+                    logTrace(TRACE::SLEEP, "Ctx:mainLoop");
                 condMainLoop.wait(lck);
             }
         }
 
-        logTrace(TRACE_THREADS, "main loop end");
+        logTrace(TRACE::THREADS, "main loop end");
     }
 
     void Ctx::printStacktrace() {
@@ -1178,14 +1212,14 @@ namespace OpenLogReplicator {
     }
 
     bool Ctx::wakeThreads() {
-        logTrace(TRACE_THREADS, "wake threads");
+        logTrace(TRACE::THREADS, "wake threads");
 
         bool wakingUp = false;
         {
             std::unique_lock<std::mutex> lck(mtx);
             for (Thread* thread: threads) {
                 if (!thread->finished) {
-                    logTrace(TRACE_THREADS, "waking up thread: " + thread->alias);
+                    logTrace(TRACE::THREADS, "waking up thread: " + thread->alias);
                     thread->wakeUp();
                     wakingUp = true;
                 }
@@ -1197,7 +1231,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::spawnThread(Thread* t) {
-        logTrace(TRACE_THREADS, "spawn: " + t->alias);
+        logTrace(TRACE::THREADS, "spawn: " + t->alias);
 
         if (unlikely(pthread_create(&t->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(t))))
             throw RuntimeException(10013, "spawning thread: " + t->alias);
@@ -1208,7 +1242,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::finishThread(Thread* t) {
-        logTrace(TRACE_THREADS, "finish: " + t->alias);
+        logTrace(TRACE::THREADS, "finish: " + t->alias);
 
         std::unique_lock<std::mutex> lck(mtx);
         if (threads.find(t) == threads.end())
@@ -1264,15 +1298,15 @@ namespace OpenLogReplicator {
         printMemoryUsageCurrent();
         for (Thread* thread: threads) {
             error(10014, "Dump: " + thread->getName() + " " + std::to_string(reinterpret_cast<uint64_t>(thread->pthread)) + " context: " +
-                    std::to_string(thread->curContext) + " reason: " + std::to_string(thread->curReason) + " switches: " +
-                    std::to_string(thread->contextSwitches));
+                         std::to_string(thread->curContext) + " reason: " + std::to_string(thread->curReason) + " switches: " +
+                         std::to_string(thread->contextSwitches));
             pthread_kill(thread->pthread, SIGUSR1);
         }
     }
 
     void Ctx::welcome(const std::string& message) const {
         int code = 0;
-        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+        if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];
             epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
@@ -1286,10 +1320,10 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::hint(const std::string& message) const {
-        if (logLevel < LOG_LEVEL_ERROR)
+        if (logLevel < LOG::ERROR)
             return;
 
-        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+        if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];
             epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
@@ -1303,10 +1337,10 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::error(int code, const std::string& message) const {
-        if (logLevel < LOG_LEVEL_ERROR)
+        if (logLevel < LOG::ERROR)
             return;
 
-        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+        if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];
             epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
@@ -1320,10 +1354,10 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::warning(int code, const std::string& message) const {
-        if (logLevel < LOG_LEVEL_WARNING)
+        if (logLevel < LOG::WARNING)
             return;
 
-        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+        if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];
             epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
@@ -1337,10 +1371,10 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::info(int code, const std::string& message) const {
-        if (logLevel < LOG_LEVEL_INFO)
+        if (logLevel < LOG::INFO)
             return;
 
-        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+        if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];
             epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
@@ -1354,10 +1388,10 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::debug(int code, const std::string& message) const {
-        if (logLevel < LOG_LEVEL_DEBUG)
+        if (logLevel < LOG::DEBUG)
             return;
 
-        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+        if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];
             epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
@@ -1376,80 +1410,80 @@ namespace OpenLogReplicator {
             return;
 
         switch (mask) {
-            case TRACE_DML:
+            case TRACE::DML:
                 code = "DML  ";
                 break;
 
-            case TRACE_DUMP:
+            case TRACE::DUMP:
                 code = "DUMP ";
                 break;
 
-            case TRACE_LOB:
+            case TRACE::LOB:
                 code = "LOB  ";
                 break;
 
-            case TRACE_LWN:
+            case TRACE::LWN:
                 code = "LWN  ";
                 break;
 
-            case TRACE_THREADS:
+            case TRACE::THREADS:
                 code = "THRD ";
                 break;
 
-            case TRACE_SQL:
+            case TRACE::SQL:
                 code = "SQL  ";
                 break;
 
-            case TRACE_FILE:
+            case TRACE::FILE:
                 code = "FILE ";
                 break;
 
-            case TRACE_DISK:
+            case TRACE::DISK:
                 code = "DISK ";
                 break;
 
-            case TRACE_PERFORMANCE:
+            case TRACE::PERFORMANCE:
                 code = "PERFM";
                 break;
 
-            case TRACE_TRANSACTION:
+            case TRACE::TRANSACTION:
                 code = "TRANX";
                 break;
 
-            case TRACE_REDO:
+            case TRACE::REDO:
                 code = "REDO ";
                 break;
 
-            case TRACE_ARCHIVE_LIST:
+            case TRACE::ARCHIVE_LIST:
                 code = "ARCHL";
                 break;
 
-            case TRACE_SCHEMA_LIST:
+            case TRACE::SCHEMA_LIST:
                 code = "SCHEM";
                 break;
 
-            case TRACE_WRITER:
+            case TRACE::WRITER:
                 code = "WRITR";
                 break;
 
-            case TRACE_CHECKPOINT:
+            case TRACE::CHECKPOINT:
                 code = "CHKPT";
                 break;
 
-            case TRACE_SYSTEM:
+            case TRACE::SYSTEM:
                 code = "SYSTM";
                 break;
 
-            case TRACE_LOB_DATA:
+            case TRACE::LOB_DATA:
                 code = "LOBDT";
                 break;
 
-            case TRACE_SLEEP:
+            case TRACE::SLEEP:
                 code = "SLEEP";
                 break;
         }
 
-        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+        if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];
             epochToIso8601(clock->getTimeT() + logTimezone, timestamp, false, false);
@@ -1463,22 +1497,20 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::printMemoryUsageHWM() const {
-        info(0, "Memory HWM: " + std::to_string(getMemoryHWM()) + "MB"
-                ", builder HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", parser HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", disk read buffer HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_READER] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", transaction HWM: " + std::to_string(memoryModulesHWM[Ctx::MEMORY_MODULE_TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", swapped: " + std::to_string(swappedMB) + "MB");
+        info(0, "Memory HWM: " + std::to_string(getMemoryHWM()) + "MB, builder HWM: " +
+                std::to_string(memoryModulesHWM[Ctx::MEMORY::BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
+                std::to_string(memoryModulesHWM[Ctx::MEMORY::PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer HWM: " +
+                std::to_string(memoryModulesHWM[Ctx::MEMORY::READER] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction HWM: " +
+                std::to_string(memoryModulesHWM[Ctx::MEMORY::TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
     }
 
     void Ctx::printMemoryUsageCurrent() const {
-        info(0, "Memory current swap: " + std::to_string(memoryChunksSwap * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", allocated: " + std::to_string(memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", free: " + std::to_string(memoryChunksFree * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", memory builder: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", parser: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", disk read buffer: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_READER] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", transaction: " + std::to_string(memoryModulesAllocated[Ctx::MEMORY_MODULE_TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB"
-                ", swapped: " + std::to_string(swappedMB) + "MB");
+        info(0, "Memory current swap: " + std::to_string(memoryChunksSwap * MEMORY_CHUNK_SIZE_MB) + "MB, allocated: " +
+                std::to_string(memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB) + "MB, free: " +
+                std::to_string(memoryChunksFree * MEMORY_CHUNK_SIZE_MB) + "MB, memory builder: " +
+                std::to_string(memoryModulesAllocated[Ctx::MEMORY::BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
+                std::to_string(memoryModulesAllocated[Ctx::MEMORY::PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer: " +
+                std::to_string(memoryModulesAllocated[Ctx::MEMORY::READER] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction: " +
+                std::to_string(memoryModulesAllocated[Ctx::MEMORY::TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
     }
 }

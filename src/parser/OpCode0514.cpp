@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 5.14
+/* Redo log OpCode: 5.14
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
         OpCode::process(ctx, redoLogRecord);
 
         if (unlikely(transaction == nullptr)) {
-            ctx->logTrace(Ctx::TRACE_TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
+            ctx->logTrace(Ctx::TRACE::TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
             return;
         }
         typePos fieldPos = 0;
