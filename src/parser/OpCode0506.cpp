@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 5.6
+/* Redo log OpCode: 5.6
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
             const uint16_t flg = ctx->read16(redoLogRecord->data() + fieldPos + 4);
 
             *ctx->dumpStream << "ktuxvoff: 0x" << std::setfill('0') << std::setw(4) << std::hex << off << " " <<
-                            " ktuxvflg: 0x" << std::setfill('0') << std::setw(4) << std::hex << flg << '\n';
+                             " ktuxvflg: 0x" << std::setfill('0') << std::setw(4) << std::hex << flg << '\n';
         }
     }
 }

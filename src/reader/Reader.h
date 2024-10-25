@@ -29,21 +29,26 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Reader : public Thread {
+    public:
+        enum REDO_CODE {
+            OK, OVERWRITTEN, FINISHED, STOPPED, SHUTDOWN, EMPTY, ERROR_READ, ERROR_WRITE, ERROR_SEQUENCE, ERROR_CRC, ERROR_BLOCK, ERROR_BAD_DATA,
+            ERROR, CNT
+        };
+
     protected:
-        static constexpr uint64_t FLAGS_END = 0x0008;
-        static constexpr uint64_t FLAGS_ASYNC = 0x0100;
-        static constexpr uint64_t FLAGS_NODATALOSS = 0x0200;
-        static constexpr uint64_t FLAGS_RESYNC = 0x0800;
-        static constexpr uint64_t FLAGS_CLOSEDTHREAD = 0x1000;
-        static constexpr uint64_t FLAGS_MAXPERFORMANCE = 0x2000;
+        static constexpr uint64_t FLAGS_END{0x0008};
+        static constexpr uint64_t FLAGS_ASYNC{0x0100};
+        static constexpr uint64_t FLAGS_NODATALOSS{0x0200};
+        static constexpr uint64_t FLAGS_RESYNC{0x0800};
+        static constexpr uint64_t FLAGS_CLOSEDTHREAD{0x1000};
+        static constexpr uint64_t FLAGS_MAXPERFORMANCE{0x2000};
 
-        static constexpr uint64_t STATUS_SLEEPING = 0;
-        static constexpr uint64_t STATUS_CHECK = 1;
-        static constexpr uint64_t STATUS_UPDATE = 2;
-        static constexpr uint64_t STATUS_READ = 3;
+        enum STATUS {
+            SLEEPING, CHECK, UPDATE, READ
+        };
 
-        static constexpr uint64_t PAGE_SIZE_MAX = 4096;
-        static constexpr uint64_t BAD_CDC_MAX_CNT = 20;
+        static constexpr size_t PAGE_SIZE_MAX{4096};
+        static constexpr uint BAD_CDC_MAX_CNT{20};
 
         std::string database;
         int fileCopyDes;
@@ -54,7 +59,7 @@ namespace OpenLogReplicator {
         bool readBlocks;
         bool reachedZero;
         std::string fileNameWrite;
-        int64_t group;
+        int group;
         typeSeq sequence;
         typeBlk numBlocksHeader;
         typeResetlogs resetlogs;
@@ -79,44 +84,30 @@ namespace OpenLogReplicator {
         std::mutex mtx;
         std::atomic<uint64_t> bufferStart;
         std::atomic<uint64_t> bufferEnd;
-        std::atomic<uint64_t> status;
-        std::atomic<uint64_t> ret;
+        std::atomic<STATUS> status;
+        std::atomic<REDO_CODE> ret;
         std::condition_variable condBufferFull;
         std::condition_variable condReaderSleeping;
         std::condition_variable condParserSleeping;
 
         virtual void redoClose() = 0;
-        virtual uint64_t redoOpen() = 0;
+        virtual REDO_CODE redoOpen() = 0;
         virtual int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) = 0;
         virtual uint64_t readSize(uint64_t lastRead);
-        virtual uint64_t reloadHeaderRead();
-        uint64_t checkBlockHeader(uint8_t* buffer, typeBlk blockNumber, bool showHint);
-        uint64_t reloadHeader();
+        virtual REDO_CODE reloadHeaderRead();
+        REDO_CODE checkBlockHeader(uint8_t* buffer, typeBlk blockNumber, bool showHint);
+        REDO_CODE reloadHeader();
         bool read1();
         bool read2();
         void mainLoop();
 
     public:
-        static constexpr uint64_t REDO_OK = 0;
-        static constexpr uint64_t REDO_OVERWRITTEN = 1;
-        static constexpr uint64_t REDO_FINISHED = 2;
-        static constexpr uint64_t REDO_STOPPED = 3;
-        static constexpr uint64_t REDO_SHUTDOWN = 4;
-        static constexpr uint64_t REDO_EMPTY = 5;
-        static constexpr uint64_t REDO_ERROR_READ = 6;
-        static constexpr uint64_t REDO_ERROR_WRITE = 7;
-        static constexpr uint64_t REDO_ERROR_SEQUENCE = 8;
-        static constexpr uint64_t REDO_ERROR_CRC = 9;
-        static constexpr uint64_t REDO_ERROR_BLOCK = 10;
-        static constexpr uint64_t REDO_ERROR_BAD_DATA = 11;
-        static constexpr uint64_t REDO_ERROR = 12;
-
-        const static char* REDO_CODE[13];
+        const static char* REDO_MSG[REDO_CODE::CNT];
         uint8_t** redoBufferList;
         std::vector<std::string> paths;
         std::string fileName;
 
-        Reader(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum);
+        Reader(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int newGroup, bool newConfiguredBlockSum);
         ~Reader() override;
 
         void initialize();
@@ -130,7 +121,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getBlockSize() const;
         [[nodiscard]] uint64_t getBufferStart() const;
         [[nodiscard]] uint64_t getBufferEnd() const;
-        [[nodiscard]] uint64_t getRet() const;
+        [[nodiscard]] REDO_CODE getRet() const;
         [[nodiscard]] typeScn getFirstScn() const;
         [[nodiscard]] typeScn getFirstScnHeader() const;
         [[nodiscard]] typeScn getNextScn() const;
@@ -143,7 +134,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getSumRead() const;
         [[nodiscard]] uint64_t getSumTime() const;
 
-        void setRet(uint64_t newRet);
+        void setRet(REDO_CODE newRet);
         void setBufferStartEnd(uint64_t newBufferStart, uint64_t newBufferEnd);
         bool checkRedoLog();
         bool updateRedoLog();

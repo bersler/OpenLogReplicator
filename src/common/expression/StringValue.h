@@ -25,15 +25,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class StringValue : public Expression {
     public:
-        uint64_t stringType;
+        enum TYPE {
+            SESSION_ATTRIBUTE, OP, VALUE
+        };
+
+        TYPE stringType;
         std::string stringValue;
 
-        static constexpr uint64_t SESSION_ATTRIBUTE = 0;
-        static constexpr uint64_t OP = 1;
-        static constexpr uint64_t VALUE = 2;
-
     public:
-        StringValue(uint64_t newStringType, const std::string& newStringValue);
+        StringValue(TYPE newStringType, const std::string& newStringValue);
         virtual ~StringValue();
 
         virtual bool isString() override { return true; }

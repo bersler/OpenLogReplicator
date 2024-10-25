@@ -35,11 +35,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Ctx;
+    class DbIncarnation;
     class Locales;
-    class OracleIncarnation;
     class RedoLog;
     class Schema;
     class SchemaElement;
+    class SchemaKey;
     class Serializer;
     class State;
     class StateDisk;
@@ -52,12 +53,11 @@ namespace OpenLogReplicator {
         static constexpr uint64_t CHECKPOINT_SCHEMA_FILE_MAX_SIZE = 2147483648;
 
     public:
-        // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
-        static constexpr uint64_t STATUS_READY = 0;
-        // Replicator tries to start replication with given parameters.
-        static constexpr uint64_t STATUS_START = 1;
-        // Replication is running. The metadata is initialized, the starting point of replication is defined.
-        static constexpr uint64_t STATUS_REPLICATE = 2;
+        enum STATUS {
+            READY, // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
+            START, // Replicator tries to start replication with given parameters.
+            REPLICATE // Replication is running. The metadata is initialized, the starting point of replication is defined.
+        };
 
         Schema* schema;
         Ctx* ctx;
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
         State* state;
         State* stateDisk;
         Serializer* serializer;
-        std::atomic<uint64_t> status;
+        std::atomic<STATUS> status;
 
         // Startup parameters
         std::string database;
@@ -105,8 +105,8 @@ namespace OpenLogReplicator {
         // Checkpoint information
         std::mutex mtxCheckpoint;
         typeResetlogs resetlogs;
-        std::set<OracleIncarnation*> oracleIncarnations;
-        OracleIncarnation* oracleIncarnationCurrent;
+        std::set<DbIncarnation*> dbIncarnations;
+        DbIncarnation* dbIncarnationCurrent;
         typeActivation activation;
         typeSeq sequence;
         typeSeq lastSequence;
@@ -157,6 +157,7 @@ namespace OpenLogReplicator {
         SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
         void resetElements();
         void commitElements();
+        void buildMaps(std::vector<std::string>& msgs);
 
         void waitForWriter(Thread* t);
         void waitForReplicator(Thread* t);

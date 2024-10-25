@@ -155,13 +155,13 @@ namespace OpenLogReplicator {
 
         if (unlikely(transaction->lastSplit)) {
             if (unlikely((redoLogRecord1->opCode) != 0x0501))
-                throw RedoLogException(50042, "split undo HEAD no 5.1 offset: " + std::to_string(redoLogRecord1->dataOffset));
+                throw RedoLogException(50042, "split undo HEAD on 5.1 offset: " + std::to_string(redoLogRecord1->dataOffset));
 
             if (unlikely((redoLogRecord1->flg & OpCode::FLG_MULTIBLOCKUNDOHEAD) == 0))
                 throw RedoLogException(50043, "bad split offset: " + std::to_string(redoLogRecord1->dataOffset) + " xid: " +
                                               transaction->xid.toString() + " second position");
 
-            const auto lastTc = transaction->lastTc ;
+            const auto lastTc = transaction->lastTc;
             const auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
             auto last501 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
 
@@ -294,9 +294,9 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
-        if (unlikely(ctx->trace & Ctx::TRACE_LOB))
-            ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
-                                          " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
+        if (unlikely(ctx->trace & Ctx::TRACE::LOB))
+            ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
+                                           " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
 
         LobKey lobKey(redoLogRecord1->lobId, redoLogRecord1->dba);
 
@@ -309,7 +309,7 @@ namespace OpenLogReplicator {
         orphanedLobs.insert_or_assign(lobKey, allocateLob(redoLogRecord1));
     }
 
-    uint8_t* TransactionBuffer::allocateLob(const RedoLogRecord* redoLogRecord1) const{
+    uint8_t* TransactionBuffer::allocateLob(const RedoLogRecord* redoLogRecord1) const {
         typeTransactionSize lobSize = redoLogRecord1->size + sizeof(RedoLogRecord) + sizeof(typeTransactionSize);
         uint8_t* data = new uint8_t[lobSize];
         *reinterpret_cast<typeTransactionSize*>(data) = lobSize;

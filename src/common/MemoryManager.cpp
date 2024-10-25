@@ -43,10 +43,10 @@ namespace OpenLogReplicator {
     }
 
     void MemoryManager::run() {
-        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
+        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(Ctx::TRACE_THREADS, "memory manager (" + ss.str() + ") start");
+            ctx->logTrace(Ctx::TRACE::THREADS, "memory manager (" + ss.str() + ") start");
         }
 
         try {
@@ -99,10 +99,10 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        if (unlikely(ctx->trace & Ctx::TRACE_THREADS)) {
+        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
-            ctx->logTrace(Ctx::TRACE_THREADS, "memory manager (" + ss.str() + ") stop");
+            ctx->logTrace(Ctx::TRACE::THREADS, "memory manager (" + ss.str() + ") stop");
         }
     }
 
@@ -230,7 +230,7 @@ namespace OpenLogReplicator {
     }
 
     bool MemoryManager::unswap(typeXid xid, int64_t index) {
-        uint8_t* tc = ctx->getMemoryChunk(this, Ctx::MEMORY_MODULE_TRANSACTIONS, true);
+        uint8_t* tc = ctx->getMemoryChunk(this, Ctx::MEMORY::TRANSACTIONS, true);
         if (tc == nullptr)
             return false;
 
@@ -247,10 +247,10 @@ namespace OpenLogReplicator {
 
         if (fileSize < (index + 1) * Ctx::MEMORY_CHUNK_SIZE)
             throw RuntimeException(50072, "swap file: " + fileName + " - too small file size: " + std::to_string(fileSize) + " to read chunk: " +
-                    std::to_string(index));
+                                          std::to_string(index));
 
 #if __linux__
-        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE))
             flags |= O_DIRECT;
 #endif
 
@@ -259,7 +259,7 @@ namespace OpenLogReplicator {
             throw RuntimeException(50072, "swap file: " + fileName + " - open for read returned: " + strerror(errno));
 
 #if __APPLE__
-        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
             if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0)
                 ctx->error(10008, "file: " + fileName + " - set no cache for file returned: " + strerror(errno));
         }
@@ -305,7 +305,7 @@ namespace OpenLogReplicator {
             }
 
             throw RuntimeException(50072, "swap file: " + fileName + " - unswapping: " + std::to_string(index) + " not in range " +
-                    std::to_string(sc->swappedMin) + "-" + std::to_string(sc->swappedMax));
+                                          std::to_string(sc->swappedMin) + "-" + std::to_string(sc->swappedMax));
         }
     }
 
@@ -339,7 +339,7 @@ namespace OpenLogReplicator {
 
         int flags = O_WRONLY | O_CREAT;
 #if __linux__
-        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE))
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE))
             flags |= O_DIRECT;
 #endif
 
@@ -349,7 +349,7 @@ namespace OpenLogReplicator {
             throw RuntimeException(50072, "swap file: " + fileName + " - open for write returned: " + strerror(errno));
 
 #if __APPLE__
-        if (!ctx->isFlagSet(Ctx::REDO_FLAGS_DIRECT_DISABLE)) {
+        if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
             if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0)
                 ctx->error(10008, "file: " + fileName + " - set no cache for file returned: " + strerror(errno));
         }
@@ -396,7 +396,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        ctx->freeMemoryChunk(this, Ctx::MEMORY_MODULE_TRANSACTIONS, tc);
+        ctx->freeMemoryChunk(this, Ctx::MEMORY::TRANSACTIONS, tc);
         return true;
     }
 }

@@ -1,4 +1,7 @@
 1.7.1
+- code style cleanup
+- changed parameters "scn" and "scn-all" -> "scn-key"
+- enhancement: add key data to messages
 
 1.7.0
 - fix: welcome banner
@@ -35,7 +38,7 @@
 - enhancement: new writer type: discard
 - minor code optimizations
 - fix: minor bug related to binary xmltype
-- fix: correctly display Oracle error codes
+- fix: correctly display database error codes
 - fix: static code analyzer warnings
 - fix: checkpointing is not working for online mode after restart
 - enhancement: add an option to build statically linked binary
@@ -57,8 +60,8 @@
 - enhancement: add row filtering based on condition
 - experimental: support for binary xmltype, added document about experimental features
 - enhancement: added support for BOOLEAN data type
-- enhancement: added support for Oracle 23c
-- enhancement: Oracle 23c: set column limit to 4096
+- enhancement: added support for database version 23c
+- enhancement: database version 23c: set column limit to 4096
 - clang-tidy code reformatting
 
 1.3.0
@@ -73,7 +76,7 @@
 - fix: typo in trace message
 - enhancement: added more timestamp formatting options
 - enhancement: added support for UROWID format
-- fix: LOB handing improvement for Oracle 19c
+- fix: LOB handing improvement for database version 19c
 - enhancement: added timezone field for timestamp with a timezone type
 - fix: file writer path handling and file handling fixes
 - enhancement: add database name to payload data
@@ -142,14 +145,14 @@ n inconsistency in transaction fix
 - fix: experimental LOB support schema script error
 - enhancement: optimized DDL processing speed
 - enhancement: added debug info for release builds
-- enhancement: added support for Oracle 19.18 and 21.8
+- enhancement: added support for database version 19.18 and 21.8
 - fix: experimental LOB data missing
 
 1.0.0 - released on 2022.12.10
 - copy from 0.9.58
 
 0.9.58
-- added support for Oracle 19.17 and 21.7
+- added support for database version 19.17 and 21.7
 - bug fixes
 - code cleanup
 
@@ -180,7 +183,7 @@ n inconsistency in transaction fix
 0.9.50
 - big fixes & code rewrite
 - added experimental support for LOBs
-- added support for Oracle 19.15 and 21.6
+- added support for database version 19.15 and 21.6
 - added "dump-xid" parameter to config file
 
 0.9.49
@@ -228,17 +231,17 @@ n inconsistency in transaction fix
 0.9.39-beta
 - fixed some logdump output
 - fixed bug: displayed warning about kteop field size
-- added support for Oracle 19.14 and 21.5
+- added support for database version 19.14 and 21.5
 - big code cleanup and rewrite of some parts
 - fixed bug: split undo record + rollback was not properly handled
 - fixed bug: sometimes supplemental redo log was missed
 - fixed bug: sometimes partially rolled transactions were improperly handled
-- changed Oracle client to 19.14
+- changed database version client to 19.14
 - cleanup in file access flags
 
 0.9.38-beta
 - minor code cleanup
-- changed Oracle client to 19.13
+- changed database version client to 19.13
 - bumped up year
 - fixed some logdump output
 - fixed bug: batch mode failed
@@ -256,7 +259,7 @@ n inconsistency in transaction fix
 - fixed bug: throwing exception in callback functions for Kafka module
 - fixed bug: error "split undo is broken" when undo for op code 11.22 split
 - fixed bug: reading from standby redo log files failed during switch
-- optimized Oracle connection handling
+- optimized database connection handling
 
 0.9.34-beta
 - fixed bug: reading from standby database
@@ -274,7 +277,7 @@ n inconsistency in transaction fix
 - OpenLogReplicator.json: added option "type" in "state"
 - forced creation of checkpoint files for redo log switch and some other conditions
 - optimized schema parameters read operation
-- added support for Oracle 19.13.0, 21.4.0
+- added support for database version 19.13.0, 21.4.0
 - added support for database resetlogs operation
 
 0.9.32-beta
@@ -351,7 +354,7 @@ n inconsistency in transaction fix
 - OpenLogReplicator.json: changed default for "redo-read-sleep-us" parameter from 10000 to 50000
 
 0.9.22-beta
-- added support for Oracle 21c (21.3)
+- added support for database version 21c (21.3)
 - OpenLogReplicator.json: field length limit for broker is 4096, topic is 256, context is 30, database to 256
 
 0.9.21-beta
@@ -359,12 +362,12 @@ n inconsistency in transaction fix
 - minor code cleanup & optimization to reduce memory allocations
 
 0.9.20-beta
-- changed Oracle client to 19.12
+- changed database client to 19.12
 - build scripts compiled with newer autotools
 - fixed bug with output file path for json decoder
 
 0.9.19-beta
-- added support for Oracle 19.12.0
+- added support for database version 19.12.0
 - added stacktrace print on signal USR1
 
 0.9.18-beta

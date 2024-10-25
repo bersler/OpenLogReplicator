@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StringValue.h"
 
 namespace OpenLogReplicator {
-    StringValue::StringValue(uint64_t newStringType, const std::string& newStringValue) :
+    StringValue::StringValue(TYPE newStringType, const std::string& newStringValue) :
             Expression(),
             stringType(newStringType),
             stringValue(newStringValue) {
@@ -36,17 +36,17 @@ namespace OpenLogReplicator {
 
     std::string StringValue::evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) {
         switch (stringType) {
-            case SESSION_ATTRIBUTE: {
+            case TYPE::SESSION_ATTRIBUTE: {
                 auto attributesIt = attributes->find(stringValue);
                 if (attributesIt == attributes->end())
                     return "";
                 return attributesIt->second;
             }
 
-            case OP:
+            case TYPE::OP:
                 return std::string(1, op);
 
-            case VALUE:
+            case TYPE::VALUE:
                 return stringValue;
         }
 

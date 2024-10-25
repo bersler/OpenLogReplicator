@@ -27,45 +27,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTab final {
     public:
-        static constexpr uint64_t PROPERTY_BINARY = 1;
-        static constexpr uint64_t PROPERTY_ATD_COLUMNS = 2;
-        static constexpr uint64_t PROPERTY_NESTED_TABLE_COLUMNS = 4;
-        static constexpr uint64_t PROPERTY_REF_COLUMNS = 8;
-        static constexpr uint64_t PROPERTY_ARRAY_COLUMNS = 16;
-        static constexpr uint64_t PROPERTY_PARTITIONED = 32;
-        static constexpr uint64_t PROPERTY_INDEX_ONLY = 64;
-        static constexpr uint64_t PROPERTY_IOT_ROW_OVERFLOW = 128;
-        static constexpr uint64_t PROPERTY_IOT_ROW_CLUSTERING = 256;
-        static constexpr uint64_t PROPERTY_IOT_OVERFLOW_SEGMENT = 512;
-        static constexpr uint64_t PROPERTY_CLUSTERED = 1024;
-        static constexpr uint64_t PROPERTY_INTERNAL_LOB_COLUMNS = 2048;
-        static constexpr uint64_t PROPERTY_PRIMARY_KEY_BASED_OID_COLUMN = 4096;
-        static constexpr uint64_t PROPERTY_NESTED = 8192;
-        static constexpr uint64_t PROPERTY_READ_ONLY = 16384;
-        static constexpr uint64_t PROPERTY_FILE_COLUMNS = 32768;
-        static constexpr uint64_t PROPERTY_OID_GENERATED_BY_DEFAULT = 65536;
-        static constexpr uint64_t PROPERTY_ROW_MOVEMENT = 131072;
-        static constexpr uint64_t PROPERTY_USER_DEFINED_LOB_COLUMNS = 262144;
-        static constexpr uint64_t PROPERTY_UNUSED_COLUMNS = 524288;
-        static constexpr uint64_t PROPERTY_ON_COMMIT_MATERIALIZED_VIEW = 1048576;
-        static constexpr uint64_t PROPERTY_SYSTEM_GENERATED_COLUMN_NAMES = 2097152;
-        static constexpr uint64_t PROPERTY_GLOBAL_TEMPORARY_TABLE = 4194304;
-        static constexpr uint64_t PROPERTY_DEPENDENCIES = 8388608;
-        static constexpr uint64_t PROPERTY_READ_ONLY_MATERIALIZED_VIEW = 33554432;
-        static constexpr uint64_t PROPERTY_MATERIALIZED_VIEW_TABLE = 67108864;
-        static constexpr uint64_t PROPERTY_SUB_TABLE = 134217728;
-        static constexpr uint64_t PROPERTY_IOT2 = 536870912;
-        static constexpr uint64_t PROPERTY_EXTERNAL = 2147483648;
-        static constexpr uint64_t PROPERTY_CUBE = 4294967296;
-        static constexpr uint64_t PROPERTY_DELAYED_SEGMENT_CREATION = 17179869184;
-        static constexpr uint64_t PROPERTY_RESULT_CACHE_FORCE = 2199023255552;
-        static constexpr uint64_t PROPERTY_RESULT_CACHE_MANUAL = 4398046511104;
-        static constexpr uint64_t PROPERTY_RESULT_CACHE_AUTO = 8796093022208;
-        static constexpr uint64_t PROPERTY_LONG_VARCHAR_COLUMN = 9007199254740992;
-        static constexpr uint64_t PROPERTY_CLUSTERING_CLAUSE = 18014398509481984;
-        static constexpr uint64_t PROPERTY_ZONEMAPS = 36028797018963968;
-        static constexpr uint64_t PROPERTY_IDENTITY_COLUMN = 288230376151711744;
-        static constexpr uint64_t PROPERTY_DIMENTION = 1152921504606846976;
+        enum PROPERTY {
+            BINARY = 1UL << 0, ATD_COLUMNS = 1UL << 1, NESTED_TABLE_COLUMNS = 1UL << 2, REF_COLUMNS = 1UL << 3, ARRAY_COLUMNS = 1UL << 4,
+            PARTITIONED = 1UL << 5, INDEX_ONLY = 1UL << 6, IOT_ROW_OVERFLOW = 1UL << 7, IOT_ROW_CLUSTERING = 1UL << 8, IOT_OVERFLOW_SEGMENT = 1UL << 9,
+            CLUSTERED = 1UL << 10, INTERNAL_LOB_COLUMNS = 1UL << 11, PRIMARY_KEY_BASED_OID_COLUMN = 1UL << 12, NESTED = 1UL << 13, READ_ONLY = 1UL << 14,
+            FILE_COLUMNS = 1UL << 15, OID_GENERATED_BY_DEFAULT = 1UL << 16, ROW_MOVEMENT = 1UL << 17, USER_DEFINED_LOB_COLUMNS = 1UL << 18,
+            UNUSED_COLUMNS = 1UL << 19, ON_COMMIT_MATERIALIZED_VIEW = 1UL << 20, SYSTEM_GENERATED_COLUMN_NAMES = 1UL << 21, GLOBAL_TEMPORARY_TABLE = 1UL << 22,
+            DEPENDENCIES = 1UL << 23, READ_ONLY_MATERIALIZED_VIEW = 1UL << 25, MATERIALIZED_VIEW_TABLE = 1UL << 26, SUB_TABLE = 1UL << 27, IOT2 = 1UL << 29,
+            EXTERNAL = 1UL << 31, CUBE = 1UL << 32, DELAYED_SEGMENT_CREATION = 1UL << 34, RESULT_CACHE_FORCE = 1UL << 41, RESULT_CACHE_MANUAL = 1UL << 42,
+            RESULT_CACHE_AUTO = 1UL << 43, LONG_VARCHAR_COLUMN = 1UL << 53, CLUSTERING_CLAUSE = 1UL << 54, ZONEMAPS = 1UL << 55, IDENTITY_COLUMN = 1UL << 58,
+            DIMENTION = 1UL << 60
+        };
 
         SysTab(typeRowId newRowId, typeObj newObj, typeDataObj newDataObj, typeTs newTs, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
                uint64_t newProperty1, uint64_t newProperty2) :
@@ -84,35 +56,35 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isBinary() {
-            return property.isSet64(PROPERTY_BINARY);
+            return property.isSet64(PROPERTY::BINARY);
         }
 
         [[nodiscard]] bool isClustered() {
-            return property.isSet64(PROPERTY_CLUSTERED);
+            return property.isSet64(PROPERTY::CLUSTERED);
         }
 
         [[nodiscard]] bool isIot() {
-            return property.isSet64(PROPERTY_IOT_OVERFLOW_SEGMENT) || flags.isSet64(PROPERTY_IOT2);
+            return property.isSet64(PROPERTY::IOT_OVERFLOW_SEGMENT) || flags.isSet64(PROPERTY::IOT2);
         }
 
         [[nodiscard]] bool isPartitioned() {
-            return property.isSet64(PROPERTY_PARTITIONED);
+            return property.isSet64(PROPERTY::PARTITIONED);
         }
 
         [[nodiscard]] bool isNested() {
-            return property.isSet64(PROPERTY_NESTED);
+            return property.isSet64(PROPERTY::NESTED);
         }
 
         [[nodiscard]] bool isRowMovement() {
-            return flags.isSet64(PROPERTY_ROW_MOVEMENT);
+            return flags.isSet64(PROPERTY::ROW_MOVEMENT);
         }
 
         [[nodiscard]] bool isDependencies() {
-            return flags.isSet64(PROPERTY_DEPENDENCIES);
+            return flags.isSet64(PROPERTY::DEPENDENCIES);
         }
 
         [[nodiscard]] bool isInitial() {
-            return flags.isSet64(PROPERTY_DELAYED_SEGMENT_CREATION);
+            return flags.isSet64(PROPERTY::DELAYED_SEGMENT_CREATION);
         }
 
         typeRowId rowId;

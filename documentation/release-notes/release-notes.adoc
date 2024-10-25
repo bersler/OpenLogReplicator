@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-02
+:revdate: 2024-10-26
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -17,6 +17,9 @@ This document describes the release notes of OpenLogReplicator.
 == Major Release 1.x
 
 === Version 1.7.1
+- code style cleanup
+- changed parameters "scn" and "scn-all" -> "scn-key"
+- enhancement: add key data to messages
 
 === Version 1.7.0
 - fix: welcome banner
@@ -52,7 +55,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: new writer type: discard
 - minor code optimizations
 - fix: minor bug related to binary xmltype
-- fix: correctly display Oracle error codes
+- fix: correctly display database error codes
 - fix: static code analyzer warnings
 - fix: checkpointing is not working for online mode after restart
 - enhancement: add an option to build statically linked binary
@@ -75,8 +78,8 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: add row filtering based on condition
 - experimental: support for binary xmltype, added document about experimental features
 - enhancement: added support for BOOLEAN data type
-- enhancement: added support for Oracle 23c
-- Oracle 23c: set column limit to 4096
+- enhancement: added support for database version 23c
+- database version 23c: set column limit to 4096
 - clang-tidy code reformatting
 
 === Version 1.3.0
@@ -92,7 +95,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: typo in trace message
 - enhancement: added more timestamp formatting options
 - enhancement: added support for UROWID format
-- fix: LOB handing improvement for Oracle 19c
+- fix: LOB handing improvement for database version 19c
 - enhancement: added timezone field for timestamp with a time zone type
 - fix: file writer path handling and file handling fixes
 - enhancement: add database name to payload data
@@ -163,7 +166,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: experimental LOB support schema script error
 - enhancement: optimized DDL processing speed
 - enhancement: added debug info for release builds
-- enhancement: added support for Oracle 19.18 and 21.8
+- enhancement: added support for database version 19.18 and 21.8
 - fix: experimental LOB data missing
 
 === Version 1.0

@@ -26,8 +26,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class XdbXPt final {
     public:
-        static constexpr uint64_t PATH_LENGTH = 2000;
-        static constexpr uint64_t ID_LENGTH = 16;
+        static constexpr uint PATH_LENGTH{2000};
+        static constexpr uint ID_LENGTH{16};
 
         XdbXPt(typeRowId newRowId, const char* newPath, const char* newId) :
                 rowId(newRowId),

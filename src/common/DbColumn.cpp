@@ -1,4 +1,4 @@
-/* Column of a table in an Oracle database
+/* Column of a table in the database
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -18,12 +18,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../common/table/SysCol.h"
-#include "OracleColumn.h"
+#include "DbColumn.h"
 
 namespace OpenLogReplicator {
-    OracleColumn::OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
-                               int64_t newPrecision, int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newHidden,
-                               bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType) :
+    DbColumn::DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, typeType newType, uint newLength,
+                       int newPrecision, int newScale, uint64_t newCharsetId, typeCol newNumPk, bool newNullable, bool newHidden,
+                       bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType) :
             col(newCol),
             guardSeg(newGuardSeg),
             segCol(newSegCol),
@@ -32,8 +32,8 @@ namespace OpenLogReplicator {
             length(newLength),
             precision(newPrecision),
             scale(newScale),
-            numPk(newNumPk),
             charsetId(newCharsetId),
+            numPk(newNumPk),
             nullable(newNullable),
             hidden(newHidden),
             storedAsLob(newStoredAsLob),
@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
             nullWarning(false) {
     }
 
-    std::ostream& operator<<(std::ostream& os, const OracleColumn& column) {
+    std::ostream& operator<<(std::ostream& os, const DbColumn& column) {
         os << column.segCol << ": (" << column.col << ", '" << column.name << "', " << column.type << ", " << column.length << ")";
         return os;
     }

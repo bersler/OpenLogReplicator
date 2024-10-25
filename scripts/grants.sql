@@ -1,4 +1,4 @@
-/* List of grants required for user in Oracle database
+/* List of grants required for user in the database
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.

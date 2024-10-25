@@ -1,4 +1,4 @@
-/* Transaction from Oracle database
+/* Transaction from the database
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -19,9 +19,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../builder/Builder.h"
 #include "../builder/SystemTransaction.h"
+#include "../common/DbLob.h"
+#include "../common/DbTable.h"
 #include "../common/LobCtx.h"
-#include "../common/OracleLob.h"
-#include "../common/OracleTable.h"
 #include "../common/RedoLogRecord.h"
 #include "../common/XmlCtx.h"
 #include "../common/exception/RedoLogException.h"
@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
             auto sizeLast = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
             auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast + TransactionBuffer::ROW_HEADER_DATA0);
             auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast + TransactionBuffer::ROW_HEADER_DATA1 +
-                    lastRedoLogRecord1->size);
+                                                                             lastRedoLogRecord1->size);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -149,9 +149,9 @@ namespace OpenLogReplicator {
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
             auto sizeLast = *reinterpret_cast<const typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
             auto lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
-                    TransactionBuffer::ROW_HEADER_DATA0);
+                                                                             TransactionBuffer::ROW_HEADER_DATA0);
             auto lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
-                    TransactionBuffer::ROW_HEADER_DATA1 + lastRedoLogRecord1->size);
+                                                                             TransactionBuffer::ROW_HEADER_DATA1 + lastRedoLogRecord1->size);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -202,8 +202,8 @@ namespace OpenLogReplicator {
             metadata->ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
             return;
         }
-        if (unlikely(metadata->ctx->trace & Ctx::TRACE_TRANSACTION))
-            metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, toString(metadata->ctx));
+        if (unlikely(metadata->ctx->trace & Ctx::TRACE::TRANSACTION))
+            metadata->ctx->logTrace(Ctx::TRACE::TRANSACTION, toString(metadata->ctx));
 
         if (system) {
             metadata->ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::TRANSACTION_SYSTEM);
@@ -217,7 +217,7 @@ namespace OpenLogReplicator {
         }
         builder->processBegin(xid, commitScn, lwnScn, &attributes);
 
-        uint64_t type = 0;
+        Builder::TRANSACTION_TYPE transactionType = Builder::TRANSACTION_TYPE::T_NONE;
         std::deque<const RedoLogRecord*> redo1;
         std::deque<const RedoLogRecord*> redo2;
 
@@ -236,27 +236,28 @@ namespace OpenLogReplicator {
 
                 pos += redoLogRecord1->size + redoLogRecord2->size + TransactionBuffer::ROW_HEADER_TOTAL;
 
-                if (unlikely(metadata->ctx->trace & Ctx::TRACE_TRANSACTION))
-                    metadata->ctx->logTrace(Ctx::TRACE_TRANSACTION, std::to_string(redoLogRecord1->size) + ":" + std::to_string(redoLogRecord2->size) +
-                                                                    " fb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
-                                                                    std::to_string(static_cast<uint64_t>(redoLogRecord2->fb)) + " op: " + std::to_string(op) +
-                                                                    " scn: " + std::to_string(redoLogRecord1->scn) + " subscn: " +
-                                                                    std::to_string(redoLogRecord1->subScn) + " scnrecord: " +
-                                                                    std::to_string(redoLogRecord1->scnRecord) + " obj: " + std::to_string(redoLogRecord1->obj) +
-                                                                    " dataobj: " + std::to_string(redoLogRecord1->dataObj) + " flg1: " +
-                                                                    std::to_string(redoLogRecord1->flg) + " flg2: " + std::to_string(redoLogRecord2->flg) +
-                                                                    // " uba1: " + PRINTUBA(redoLogRecord1->uba) +
-                                                                    // " uba2: " + PRINTUBA(redoLogRecord2->uba) <<
-                                                                    " bdba1: " + std::to_string(redoLogRecord1->bdba) + "." +
-                                                                    std::to_string(static_cast<uint64_t>(redoLogRecord1->slot)) + " bdba2: " +
-                                                                    std::to_string(redoLogRecord2->bdba) + "." +
-                                                                    std::to_string(static_cast<uint64_t>(redoLogRecord2->slot)) +
-                                                                    " supp: (" + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogFb)) + ", " +
-                                                                    std::to_string(redoLogRecord1->suppLogCC) + ", " +
-                                                                    std::to_string(redoLogRecord1->suppLogBefore) + ", " +
-                                                                    std::to_string(redoLogRecord1->suppLogAfter) + ", " +
-                                                                    std::to_string(redoLogRecord1->suppLogBdba) + "." +
-                                                                    std::to_string(redoLogRecord1->suppLogSlot) + ")");
+                if (unlikely(metadata->ctx->trace & Ctx::TRACE::TRANSACTION))
+                    metadata->ctx->logTrace(Ctx::TRACE::TRANSACTION, std::to_string(redoLogRecord1->size) + ":" + std::to_string(redoLogRecord2->size) +
+                                                                     " fb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
+                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord2->fb)) + " op: " + std::to_string(op) +
+                                                                     " scn: " + std::to_string(redoLogRecord1->scn) + " subscn: " +
+                                                                     std::to_string(redoLogRecord1->subScn) + " scnrecord: " +
+                                                                     std::to_string(redoLogRecord1->scnRecord) + " obj: " +
+                                                                     std::to_string(redoLogRecord1->obj) +
+                                                                     " dataobj: " + std::to_string(redoLogRecord1->dataObj) + " flg1: " +
+                                                                     std::to_string(redoLogRecord1->flg) + " flg2: " + std::to_string(redoLogRecord2->flg) +
+                                                                     // " uba1: " + PRINTUBA(redoLogRecord1->uba) +
+                                                                     // " uba2: " + PRINTUBA(redoLogRecord2->uba) <<
+                                                                     " bdba1: " + std::to_string(redoLogRecord1->bdba) + "." +
+                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord1->slot)) + " bdba2: " +
+                                                                     std::to_string(redoLogRecord2->bdba) + "." +
+                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord2->slot)) +
+                                                                     " supp: (" + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogFb)) + ", " +
+                                                                     std::to_string(redoLogRecord1->suppLogCC) + ", " +
+                                                                     std::to_string(redoLogRecord1->suppLogBefore) + ", " +
+                                                                     std::to_string(redoLogRecord1->suppLogAfter) + ", " +
+                                                                     std::to_string(redoLogRecord1->suppLogBdba) + "." +
+                                                                     std::to_string(redoLogRecord1->suppLogSlot) + ")");
 
                 // Cluster key
                 if ((redoLogRecord1->fb & RedoLogRecord::FB_K) != 0 || (redoLogRecord2->fb & RedoLogRecord::FB_K) != 0)
@@ -277,15 +278,15 @@ namespace OpenLogReplicator {
 
                     case 0x1A020000: {
                         // LOB idx
-                        const OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
+                        const DbLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
-                            if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
-                                metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() +
-                                                                        " obj: " + std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
-                                                                        std::to_string(redoLogRecord1->dba) + " page: " +
-                                                                        std::to_string(redoLogRecord1->lobPageNo) + " col: " + std::to_string(lob->intCol) +
-                                                                        " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
-                                                                        std::to_string(lob->lObj) + " IDX");
+                            if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                                metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() +
+                                                                         " obj: " + std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
+                                                                         std::to_string(redoLogRecord1->dba) + " page: " +
+                                                                         std::to_string(redoLogRecord1->lobPageNo) + " col: " + std::to_string(lob->intCol) +
+                                                                         " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
+                                                                         std::to_string(lob->lObj) + " IDX");
                         }
                     }
                         break;
@@ -293,30 +294,30 @@ namespace OpenLogReplicator {
                     case 0x13010000:
                     case 0x1A060000: {
                         // LOB data
-                        const OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
+                        const DbLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
-                            if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
-                                metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() + " obj: " +
-                                                                        std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
-                                                                        std::to_string(redoLogRecord1->dba) + " page: " +
-                                                                        std::to_string(redoLogRecord1->lobPageNo) + " col: " + std::to_string(lob->intCol) +
-                                                                        " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
-                                                                        std::to_string(lob->lObj));
+                            if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                                metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() + " obj: " +
+                                                                         std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
+                                                                         std::to_string(redoLogRecord1->dba) + " page: " +
+                                                                         std::to_string(redoLogRecord1->lobPageNo) + " col: " + std::to_string(lob->intCol) +
+                                                                         " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
+                                                                         std::to_string(lob->lObj));
                         }
                     }
                         break;
 
                     case 0x05011A02:
                         // LOB index 12+ and LOB redo
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB_DATA)) {
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB_DATA)) {
                             std::ostringstream ss;
                             for (typeSize j = 0; j < redoLogRecord2->indKeyDataSize; ++j) {
                                 ss << " " << std::setfill('0') << std::setw(2) << std::hex <<
                                    static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKeyData + j]);
                             }
 
-                            metadata->ctx->logTrace(Ctx::TRACE_LOB_DATA, "index: " + ss.str() + " code: " +
-                                                                         std::to_string(static_cast<uint64_t>(redoLogRecord2->indKeyDataCode)));
+                            metadata->ctx->logTrace(Ctx::TRACE::LOB_DATA, "index: " + ss.str() + " code: " +
+                                                                          std::to_string(static_cast<uint64_t>(redoLogRecord2->indKeyDataCode)));
                         }
 
                         if (redoLogRecord2->dba0 != 0) {
@@ -347,13 +348,13 @@ namespace OpenLogReplicator {
                                 break;
 
                             case OpCode::KDLI_CODE_FILL:
-                                if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
-                                    metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() +
-                                                                            " obj: " + std::to_string(redoLogRecord2->dataObj) + " op: " +
-                                                                            std::to_string(redoLogRecord2->opCode) + "     dba: " +
-                                                                            std::to_string(redoLogRecord2->dba) + " page: " +
-                                                                            std::to_string(redoLogRecord2->lobPageNo) + " pg: " +
-                                                                            std::to_string(redoLogRecord2->lobPageSize));
+                                if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                                    metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() +
+                                                                             " obj: " + std::to_string(redoLogRecord2->dataObj) + " op: " +
+                                                                             std::to_string(redoLogRecord2->opCode) + "     dba: " +
+                                                                             std::to_string(redoLogRecord2->dba) + " page: " +
+                                                                             std::to_string(redoLogRecord2->lobPageNo) + " pg: " +
+                                                                             std::to_string(redoLogRecord2->lobPageSize));
 
                                 lobCtx.addLob(metadata->ctx, redoLogRecord2->lobId, redoLogRecord2->dba, redoLogRecord2->lobOffset,
                                               transactionBuffer->allocateLob(redoLogRecord2), xid, redoLogRecord2->lobData);
@@ -367,7 +368,7 @@ namespace OpenLogReplicator {
                         // Init header
                     case 0x05010A12: {
                         // Update key data in row
-                        const OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord2->dataObj);
+                        const DbLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord2->dataObj);
                         if (lob == nullptr) {
                             metadata->ctx->warning(60016, "LOB is null for (obj: " + std::to_string(redoLogRecord2->obj) +
                                                           ", dataobj: " + std::to_string(redoLogRecord2->dataObj) + ", offset: " +
@@ -394,15 +395,15 @@ namespace OpenLogReplicator {
                             lobCtx.setSize(redoLogRecord2->lobId, redoLogRecord2->lobSizePages, redoLogRecord2->lobSizeRest);
                         }
 
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_LOB))
-                            metadata->ctx->logTrace(Ctx::TRACE_LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() + " obj: " +
-                                                                    std::to_string(redoLogRecord1->obj) + " op: " + std::to_string(op) + " dba: " +
-                                                                    std::to_string(redoLogRecord2->dba) + " page: " +
-                                                                    std::to_string(redoLogRecord2->lobPageNo) + " col: " + std::to_string(lob->intCol) +
-                                                                    " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
-                                                                    std::to_string(lob->lObj) + " - INDEX: " + pages.str() + " PAGES: " +
-                                                                    std::to_string(redoLogRecord2->lobSizePages) + " REST: " +
-                                                                    std::to_string(redoLogRecord2->lobSizeRest));
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                            metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() + " obj: " +
+                                                                     std::to_string(redoLogRecord1->obj) + " op: " + std::to_string(op) + " dba: " +
+                                                                     std::to_string(redoLogRecord2->dba) + " page: " +
+                                                                     std::to_string(redoLogRecord2->lobPageNo) + " col: " + std::to_string(lob->intCol) +
+                                                                     " table: " + lob->table->owner + "." + lob->table->name + " lobj: " +
+                                                                     std::to_string(lob->lObj) + " - INDEX: " + pages.str() + " PAGES: " +
+                                                                     std::to_string(redoLogRecord2->lobSizePages) + " REST: " +
+                                                                     std::to_string(redoLogRecord2->lobSizeRest));
                         break;
                     }
 
@@ -422,19 +423,19 @@ namespace OpenLogReplicator {
                         // Logminer support - KDOCMP
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 
-                        if (type == 0) {
+                        if (transactionType == Builder::TRANSACTION_TYPE::T_NONE) {
                             if (op == 0x05010B02)
-                                type = Builder::TRANSACTION_INSERT;
+                                transactionType = Builder::TRANSACTION_TYPE::INSERT;
                             else if (op == 0x05010B03)
-                                type = Builder::TRANSACTION_DELETE;
+                                transactionType = Builder::TRANSACTION_TYPE::DELETE;
                             else
-                                type = Builder::TRANSACTION_UPDATE;
-                        } else if (type == Builder::TRANSACTION_INSERT) {
+                                transactionType = Builder::TRANSACTION_TYPE::UPDATE;
+                        } else if (transactionType == Builder::TRANSACTION_TYPE::INSERT) {
                             if (op == 0x05010B03 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                                type = Builder::TRANSACTION_UPDATE;
-                        } else if (type == Builder::TRANSACTION_DELETE) {
+                                transactionType = Builder::TRANSACTION_TYPE::UPDATE;
+                        } else if (transactionType == Builder::TRANSACTION_TYPE::DELETE) {
                             if (op == 0x05010B02 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                                type = Builder::TRANSACTION_UPDATE;
+                                transactionType = Builder::TRANSACTION_TYPE::UPDATE;
                         }
 
                         if (redo1.empty()) {
@@ -448,8 +449,8 @@ namespace OpenLogReplicator {
                             }
                         } else {
                             if (redo1.back()->suppLogBdba == redoLogRecord1->suppLogBdba && redo1.back()->suppLogSlot == redoLogRecord1->suppLogSlot &&
-                                    redo1.front()->obj == redoLogRecord1->obj && redo2.front()->obj == redoLogRecord2->obj) {
-                                if (type == Builder::TRANSACTION_INSERT) {
+                                redo1.front()->obj == redoLogRecord1->obj && redo2.front()->obj == redoLogRecord2->obj) {
+                                if (transactionType == Builder::TRANSACTION_TYPE::INSERT) {
                                     redo1.push_front(redoLogRecord1);
                                     redo2.push_front(redoLogRecord2);
                                 } else {
@@ -475,7 +476,7 @@ namespace OpenLogReplicator {
 
                         if ((redoLogRecord1->suppLogFb & RedoLogRecord::FB_L) != 0) {
                             builder->processDml(redo2.front()->scnRecord, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
-                                                &lobCtx, xmlCtx, redo1, redo2, type, system, schema, dump);
+                                                &lobCtx, xmlCtx, redo1, redo2, transactionType, system, schema, dump);
                             opFlush = true;
                         }
                         break;
@@ -515,14 +516,14 @@ namespace OpenLogReplicator {
                                                   " bytes), xid: " + xid.toString());
 
                     if (system) {
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_SYSTEM))
-                            metadata->ctx->logTrace(Ctx::TRACE_SYSTEM, "commit");
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::SYSTEM))
+                            metadata->ctx->logTrace(Ctx::TRACE::SYSTEM, "commit");
                         builder->systemTransaction->commit(commitScn);
                         delete builder->systemTransaction;
                         builder->systemTransaction = nullptr;
 
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE_SYSTEM))
-                            metadata->ctx->logTrace(Ctx::TRACE_SYSTEM, "begin");
+                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::SYSTEM))
+                            metadata->ctx->logTrace(Ctx::TRACE::SYSTEM, "begin");
                         builder->systemTransaction = new SystemTransaction(builder, metadata);
                     }
 
@@ -533,9 +534,9 @@ namespace OpenLogReplicator {
                 if (opFlush) {
                     redo1.clear();
                     redo2.clear();
-                    type = 0;
+                    transactionType = Builder::TRANSACTION_TYPE::T_NONE;
 
-                    for (auto k : deallocChunks)
+                    for (auto k: deallocChunks)
                         metadata->ctx->swappedMemoryRelease(metadata->ctx->parserThread, xid, k);
                     deallocChunks.clear();
                 }
@@ -544,7 +545,7 @@ namespace OpenLogReplicator {
             deallocChunks.push_back(m);
         }
 
-        for (auto k : deallocChunks)
+        for (auto k: deallocChunks)
             metadata->ctx->swappedMemoryRelease(metadata->ctx->parserThread, xid, k);
         deallocChunks.clear();
 

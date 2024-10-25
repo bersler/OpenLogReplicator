@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         Ctx* ctx;
 
     public:
-        static constexpr uint64_t TYPE_DISK = 0;
+        static constexpr uint64_t TYPE_DISK{0};
 
         State(Ctx* newCtx);
         virtual ~State();

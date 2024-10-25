@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 5.2
+/* Redo log OpCode: 5.2
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -69,14 +69,14 @@ namespace OpenLogReplicator {
 
             *ctx->dumpStream << "kteop redo - redo operation on extent map\n";
             *ctx->dumpStream << "   SETHWM:      " <<
-                            " Highwater::  0x" << std::setfill('0') << std::setw(8) << std::hex << highwater << " " <<
-                            " ext#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << ext <<
-                            " blk#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blk <<
-                            " ext size: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << extSize << '\n';
+                             " Highwater::  0x" << std::setfill('0') << std::setw(8) << std::hex << highwater << " " <<
+                             " ext#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << ext <<
+                             " blk#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blk <<
+                             " ext size: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << extSize << '\n';
             *ctx->dumpStream << "  #blocks in seg. hdr's freelists: " << std::dec << blocksFreelist << "     \n";
             *ctx->dumpStream << "  #blocks below: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blocksBelow << '\n';
             *ctx->dumpStream << "  mapblk  0x" << std::setfill('0') << std::setw(8) << std::hex << mapblk << " " <<
-                            " offset: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << offset << '\n';
+                             " offset: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << offset << '\n';
             *ctx->dumpStream << std::right;
         }
     }
@@ -101,19 +101,19 @@ namespace OpenLogReplicator {
                                          ctx->read32(redoLogRecord->data() + fieldPos + 28));
 
             *ctx->dumpStream << "ktudh redo:" <<
-                            " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
-                            " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
-                            " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
-                            " siz: " << std::dec << siz <<
-                            " fbi: " << std::dec << static_cast<uint64_t>(fbi) << '\n';
+                             " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
+                             " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
+                             " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
+                             " siz: " << std::dec << siz <<
+                             " fbi: " << std::dec << static_cast<uint64_t>(fbi) << '\n';
             /*if (ctx->version < RedoLogRecord::REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                 *ctx->dumpStream << "           " <<
                         " uba: " << PRINTUBA(uba) << "   " <<
                         " pxid:  " << pXid;
             else*/
             *ctx->dumpStream << "           " <<
-                            " uba: " << PRINTUBA(uba) << "   " <<
-                            " pxid:  " << pXid.toString();
+                             " uba: " << PRINTUBA(uba) << "   " <<
+                             " pxid:  " << pXid.toString();
             if (ctx->version < RedoLogRecord::REDO_VERSION_12_1) // || redoLogRecord->conId == 0)
                 *ctx->dumpStream << '\n';
         }
@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
             const uint32_t pdbId = ctx->read32(redoLogRecord->data() + fieldPos + 0);
 
             *ctx->dumpStream << "       " <<
-                            " pdbid:" << std::dec << pdbId;
+                             " pdbid:" << std::dec << pdbId;
         }
     }
 }

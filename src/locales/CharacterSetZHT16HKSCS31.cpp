@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
     }
 
     typeUnicode32 CharacterSetZHT16HKSCS31::unicode_map_ZHT16HKSCS31_2b[(ZHT16HKSCS31_b1_max - ZHT16HKSCS31_b1_min + 1) *
-                                                                        (ZHT16HKSCS31_b2_max - ZHT16HKSCS31_b2_min + 1)] {
+                                                                        (ZHT16HKSCS31_b2_max - ZHT16HKSCS31_b2_min + 1)]{
             0x0000EEB8, 0x0000EEB9, 0x0000EEBA, 0x0000EEBB, 0x0000EEBC, 0x0000EEBD, 0x0000EEBE, 0x0000EEBF, 0x0000EEC0, 0x0000EEC1, 0x0000EEC2, 0x0000EEC3,
             0x0000EEC4, 0x0000EEC5, 0x0000EEC6, 0x0000EEC7, 0x0000EEC8, 0x0000EEC9, 0x0000EECA, 0x0000EECB, 0x0000EECC, 0x0000EECD, 0x0000EECE, 0x0000EECF,
             0x0000EED0, 0x0000EED1, 0x0000EED2, 0x0000EED3, 0x0000EED4, 0x0000EED5, 0x0000EED6, 0x0000EED7, 0x0000EED8, 0x0000EED9, 0x0000EEDA, 0x0000EEDB,

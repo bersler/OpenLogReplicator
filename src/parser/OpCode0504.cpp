@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 5.4
+/* Redo log OpCode: 5.4
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -59,11 +59,11 @@ namespace OpenLogReplicator {
             const uint32_t sta = ctx->read32(redoLogRecord->data() + fieldPos + 12);
 
             *ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex <<
-                            static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
-                            " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
-                            " srt: " << std::dec << srt <<
-                            " sta: " << std::dec << sta <<
-                            " flg: 0x" << std::hex << redoLogRecord->flg << " ";
+                             static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
+                             " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
+                             " srt: " << std::dec << srt <<
+                             " sta: " << std::dec << sta <<
+                             " flg: 0x" << std::hex << redoLogRecord->flg << " ";
         }
     }
 
@@ -79,11 +79,11 @@ namespace OpenLogReplicator {
             const uint8_t fbi = redoLogRecord->data()[fieldPos + 12];
 
             *ctx->dumpStream << "ktucf redo:" <<
-                            " uba: " << PRINTUBA(uba) <<
-                            " ext: " << std::dec << ext <<
-                            " spc: " << std::dec << spc <<
-                            " fbi: " << std::dec << static_cast<uint64_t>(fbi) <<
-                            " ";
+                             " uba: " << PRINTUBA(uba) <<
+                             " ext: " << std::dec << ext <<
+                             " spc: " << std::dec << spc <<
+                             " fbi: " << std::dec << static_cast<uint64_t>(fbi) <<
+                             " ";
         }
     }
 }

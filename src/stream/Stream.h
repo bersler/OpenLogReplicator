@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
         std::string uri;
 
     public:
-        static constexpr uint64_t READ_NETWORK_BUFFER = 1024;
+        static constexpr uint64_t READ_NETWORK_BUFFER{1024};
 
         Stream(Ctx* newCtx, const char* newUri);
         virtual ~Stream();

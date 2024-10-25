@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTs final {
     public:
-        static constexpr uint64_t NAME_LENGTH = 30;
+        static constexpr uint NAME_LENGTH{30};
 
         SysTs(typeRowId newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
                 rowId(newRowId),
