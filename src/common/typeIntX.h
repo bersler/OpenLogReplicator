@@ -28,8 +28,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class typeIntX final {
     public:
-        static constexpr uint64_t LENGTH = 2;
-        static constexpr uint64_t DIGITS = 39;
+        static constexpr uint LENGTH{2};
+        static constexpr uint64_t DIGITS{39};
 
     private:
         uint64_t data[LENGTH];
@@ -38,24 +38,24 @@ namespace OpenLogReplicator {
     public:
         explicit typeIntX(uint64_t other) {
             data[0] = other;
-            for (uint64_t i = 1; i < LENGTH; ++i)
+            for (uint i = 1; i < LENGTH; ++i)
                 data[i] = 0;
         }
 
         explicit typeIntX(const typeIntX& other) {
-            for (uint64_t i = 0; i < LENGTH; ++i)
+            for (uint i = 0; i < LENGTH; ++i)
                 data[i] = other.data[i];
         }
 
         typeIntX(uint64_t other1, uint64_t other2) {
             data[0] = other1;
             data[1] = other2;
-            for (uint64_t i = 2; i < LENGTH; ++i)
+            for (uint i = 2; i < LENGTH; ++i)
                 data[i] = 0;
         }
 
         typeIntX() {
-            for (uint64_t i = 0; i < LENGTH; ++i)
+            for (uint i = 0; i < LENGTH; ++i)
                 data[i] = 0;
         }
 
@@ -76,14 +76,14 @@ namespace OpenLogReplicator {
         }
 
         bool operator!=(const typeIntX& other) const {
-            for (uint64_t i = 0; i < LENGTH; ++i)
+            for (uint i = 0; i < LENGTH; ++i)
                 if (this->data[i] != other.data[i])
                     return true;
             return false;
         }
 
         bool operator==(const typeIntX& other) const {
-            for (uint64_t i = 0; i < LENGTH; ++i)
+            for (uint i = 0; i < LENGTH; ++i)
                 if (this->data[i] != other.data[i])
                     return false;
             return true;
@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
         typeIntX& operator+=(const typeIntX& other) {
             uint64_t carry = 0;
 
-            for (uint64_t i = 0; i < LENGTH; ++i) {
+            for (uint i = 0; i < LENGTH; ++i) {
                 if (this->data[i] + other.data[i] + carry < (this->data[i] | other.data[i] | carry)) {
                     this->data[i] += other.data[i] + carry;
                     carry = 1;
@@ -106,7 +106,7 @@ namespace OpenLogReplicator {
 
         typeIntX& operator=(const typeIntX& other) {
             if (&other != this) {
-                for (uint64_t i = 0; i < LENGTH; ++i)
+                for (uint i = 0; i < LENGTH; ++i)
                     this->data[i] = other.data[i];
             }
             return *this;
@@ -114,7 +114,7 @@ namespace OpenLogReplicator {
 
         typeIntX& operator=(uint64_t other) {
             this->data[0] = other;
-            for (uint64_t i = 1; i < LENGTH; ++i)
+            for (uint i = 1; i < LENGTH; ++i)
                 this->data[i] = 0;
             return *this;
         }
@@ -122,19 +122,19 @@ namespace OpenLogReplicator {
         typeIntX& set(uint64_t other1, uint64_t other2) {
             this->data[0] = other1;
             this->data[1] = other2;
-            for (uint64_t i = 2; i < LENGTH; ++i)
+            for (uint i = 2; i < LENGTH; ++i)
                 this->data[i] = 0;
             return *this;
         }
 
-        typeIntX& setStr(const char* other, uint64_t length, std::string& err) {
+        typeIntX& setStr(const char* other, uint length, std::string& err) {
             *this = static_cast<uint64_t>(0);
             if (length > DIGITS) {
                 err = "incorrect conversion of string: " + std::string(other);
                 return *this;
             }
 
-            for (uint64_t i = 0; i < length; ++i) {
+            for (uint i = 0; i < length; ++i) {
                 if (*other < '0' || *other > '9') {
                     err = "incorrect conversion of string: " + std::string(other);
                     return *this;
@@ -155,7 +155,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isZero() const {
-            for (uint64_t i = 0; i < LENGTH; ++i)
+            for (uint i = 0; i < LENGTH; ++i)
                 if (data[i] != 0)
                     return false;
             return true;
@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
         std::string toString(void) const {
             std::ostringstream ss;
             ss << "[";
-            for (uint64_t i = 0; i < LENGTH; ++i) {
+            for (uint i = 0; i < LENGTH; ++i) {
                 if (i > 0)
                     ss << ",";
                 ss << std::dec << data[i];

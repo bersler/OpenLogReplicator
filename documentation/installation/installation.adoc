@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-02
+:revdate: 2024-10-26
 :imagesdir: ./images
 :toc: preamble
 
@@ -107,7 +107,7 @@ Example configuration:
 [source,sql]
 ----
 ALTER SYSTEM SET DB_RECOVERY_FILE_DEST_SIZE = 50G;
-ALTER SYSTEM SET DB_RECOVERY_FILE_DEST = '/opt/oracle/fra';
+ALTER SYSTEM SET DB_RECOVERY_FILE_DEST = '/opt/db/fra';
 ----
 
 === Table configuration requirements
@@ -161,7 +161,7 @@ SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='USER LOG GROUP') and OWNER='
 ALTER TABLE <SCHEMA>.<TABLE> ADD SUPPLEMENTAL LOG GROUP <GROUP NAME> (<COLUMNS>) ALWAYS;               SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='USER LOG GROUP') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
 ----
 
-In such a case, it is also needed to define the custom key in the configuration file.
+In such a case, it is also necessary to define the custom key in the configuration file.
 In the `filter` group in `table` list add the following entry:
 
 [source,json]

@@ -26,8 +26,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class XdbXNm final {
     public:
-        static constexpr uint64_t NMSPCURI_LENGTH = 2000;
-        static constexpr uint64_t ID_LENGTH = 16;
+        static constexpr uint NMSPCURI_LENGTH{2000};
+        static constexpr uint ID_LENGTH{16};
 
         XdbXNm(typeRowId newRowId, const char* newNmSpcUri, const char* newId) :
                 rowId(newRowId),

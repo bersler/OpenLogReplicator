@@ -39,7 +39,7 @@
         "timestamp-all": 0,
         "char": 0,
         "scn": 0,
-        "scn-all": 0,
+        "scn-type": 0,
         "rid": 0,
         "unknown": 0,
         "schema": 0,
@@ -82,9 +82,13 @@
       "refresh-interval-us": 10000000,
       "transaction-max-mb": 1000,
       "filter": {
+        "separator": ";",
         "table": [
-          {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
+          {"owner": "OWNER1", "table": "TABLENAME1", "key": "COL1,COL2,COL3"},
           {"owner": "OWNER1", "table": "TABLENAME2", "condition": "!([op] == 'd' && [login username] == 'USER1')"},
+          {"owner": "OWNER1", "table": "K.*", "key": "COL1,COL2,COL3", "tag": "[pk]"},
+          {"owner": "OWNER1", "table": "L.*", "tag": "[all]"},
+          {"owner": "OWNER1", "table": "M.*", "key": "COL1,COL2,COL3", "tag": "COL1,COL2"},
           {"owner": "OWNER2", "table": "TAB.*"}
         ],
         "skip-xid": ["1234.ABC.12345678", "1234.0ABC.12345678", "09000D001D050000"],

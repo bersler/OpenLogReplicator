@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-02
+:revdate: 2024-10-26
 :imagesdir: ./images
 :toc: preamble
 
@@ -20,7 +20,7 @@ The following message levels are used:
 In some cases, the program may abort.
 Messages can be suppressed by setting the `trace` parameter to `0`.
 
-2. *Warnings* -- Something is not correct, but may be intentional or not critical.
+2. *Warnings* -- Something is not correct but may be intentional or not critical.
 Messages can be suppressed by setting the `trace` parameter to `1`.
 
 3. *Information* -- Program status.
@@ -336,13 +336,13 @@ Please report this issue.
 
 ==== code 10049: "read online redo log, code: <number>"
 
-An unknown error appeared during processing of online redo log file.
+An unknown error appeared during processing of the online redo log file.
 Please report this issue.
 
-==== code 10050: "can't initialize oracle environment (OCI)"
+==== code 10050: "can't initialize database environment (OCI)"
 
-Initialization of Oracle environment failed.
-Check if the Oracle client is installed and configured correctly.
+Initialization of database environment failed.
+Check if the database client is installed and configured correctly.
 
 ==== code 10051: "OCI: <message>"
 
@@ -430,7 +430,7 @@ Verify if the ZeroMQ library is installed and available.
 
 ==== code 10067: "deleting old swap file from previous execution: <path>"
 
-Most likely previous execution of OpenLogreplicator left a file in the swap directory.
+Most likely previous execution of OpenLogReplicator left a file in the swap directory.
 The file has been deleted.
 
 ==== code 10068: "invalid DBTIMEZONE value: <value>"
@@ -502,7 +502,7 @@ Verify if the file is not corrupted and contains correct JSON content.
 
 ==== code 20007: "file: <file name> - <schema> is [missing|redundant]"
 
-After starting of replication and collecting schema file, OpenLogReplicator monitors all tables in the database such match defined schema and user mask.
+After starting of replication and collecting a schema file, OpenLogReplicator monitors all tables in the database such match defined schema and user mask.
 If replication is stopped, the configuration file should not be altered and new schemas can't be added to the list of replicated tables.
 If such an event happens, replication can't start, and the following message is printed.
 This error reports that either a schema is missing or is redundant compared to the main configuration file (OpenLogReplicator.json).
@@ -721,7 +721,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50041: "bad split offset: <number> xid: <xid>"
 
-==== code 50042: "split undo HEAD no 5.1 offset: <number>"
+==== code 50042: "split undo HEAD on 5.1 offset: <number>"
 
 ==== code 50043: "bad split offset: <number> xid: <xid>" second position
 
@@ -777,8 +777,8 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50069: "no active XML context found"
 
-The experimental feature to decode binary xmldata has been turned on, but the metdata contains no xml dictionary data.
-Please consider recreating schema checkpoint files: stop replication, delele content of checkpoint folder, and restart to recreate the schema file.
+The experimental feature to decode binary xmldata has been turned on, but the metadata contains no XML dictionary data.
+Please consider recreating schema checkpoint files: stop replication, delete content of checkpoint folder, and restart to recreate the schema file.
 
 ==== code 50070: "swap chunk not found for xid: <xid> during <operation>"
 
@@ -898,7 +898,7 @@ If the problem persists, please report this issue.
 
 ==== code 60023: "file: <file name> - position: <number> - unexpected end of file"
 
-Unexpected end of redo log file.
+Unexpected end of a redo log file.
 Verify if the file is correct.
 If the problem persists, please report this issue.
 
@@ -920,7 +920,7 @@ Stripped trailing '/' from the parameter value from the path parameter.
 
 ==== code 60027: "couldn't find archive log for seq: <number>, found: <number>, sleeping <number> us"
 
-Missing archive log file.
+Missing an archive log file.
 Verify if the file is correct.
 If the problem persists, please report this issue.
 

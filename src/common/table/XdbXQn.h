@@ -26,11 +26,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class XdbXQn final {
     public:
-        static constexpr uint64_t NMSPCID_LENGTH = 16;
-        static constexpr uint64_t LOCALNAME_LENGTH = 2000;
-        static constexpr uint64_t FLAGS_LENGTH = 8;
-        static constexpr uint64_t ID_LENGTH = 16;
-        static constexpr uint64_t FLAG_ISATTRIBUTE = 1;
+        static constexpr uint NMSPCID_LENGTH{16};
+        static constexpr uint LOCALNAME_LENGTH{2000};
+        static constexpr uint FLAGS_LENGTH{8};
+        static constexpr uint ID_LENGTH{16};
+        static constexpr uint64_t FLAG_ISATTRIBUTE{1};
 
         XdbXQn(typeRowId newRowId, const char* newNmSpcId, const char* newLocalName, const char* newFlags, const char* newId) :
                 rowId(newRowId),

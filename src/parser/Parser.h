@@ -22,13 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types.h"
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
+#include "../reader/Reader.h"
 
 #ifndef PARSER_H_
 #define PARSER_H_
 
 namespace OpenLogReplicator {
     class Builder;
-    class Reader;
     class Metadata;
     class Transaction;
     class TransactionBuffer;
@@ -102,7 +102,7 @@ namespace OpenLogReplicator {
         Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, const std::string& newPath);
         virtual ~Parser();
 
-        uint64_t parse();
+        Reader::REDO_CODE parse();
         std::string toString() const;
     };
 }

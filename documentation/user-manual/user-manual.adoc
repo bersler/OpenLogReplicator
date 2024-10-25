@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-02
+:revdate: 2024-10-26
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -28,13 +28,13 @@ For submitting bugs and feature requests, please use the {url-github-docker}[Git
 == Architecture
 
 OpenLogReplicator is written in C++.
-It uses Oracle client libraries to connect to the database.
+It uses database client libraries to connect to the database.
 
 Transactions are directly decoded from redo log files.
 If possible, online redo logs are parsed, but if it is not possible –- archived redo logs are parsed instead.
 It is crucial that the process has physical access to files and the files aren't deleted before they're processed.
 
-HINT: Refer to Oracle Database manual for defining a retention period for archived redo logs.
+HINT: Refer to the database manual for defining a retention period for archived redo logs.
 
 The architecture of the program is multithreading.
 The following threads are used:
@@ -42,12 +42,12 @@ The following threads are used:
 1. Main thread: used for program startup and shutdown
 
 2. N Reader threads: used to read redo log files from disk -- there is one thread per redo log file (group).
-Most of the time just one thread is active, the other is sleeping and not utilizing the CPU.
+Most of the time just one thread is active, the other is sleeping and not using the CPU.
 Only during short time when the log switch is performed and the new redo log file is created, there may be more than one active thread.
 The reader thread uses buffering to read data from disk.
 The size of the buffer is configurable.
 
-3. Checkpoint thread: used to write checkpoint file to disk.
+3. Checkpoint thread: used to write a checkpoint file to disk.
 This is done every 10 seconds.
 The checkpoint file contains information about the last processed redo log file and the last processed block in this file.
 This information is used to restart the program from the last processed position.
@@ -84,20 +84,20 @@ HINT: Use the xref:../metrics/metrics.adoc[metrics module] to dynamically observ
 
 ==== Memory swapping
 
-For best performance run OpenLogReplicator on a host with sufficient physical memory, so that swapping is not needed.
+For best performance run OpenLogReplicator on a host with sufficient physical memory, so that swapping is unnecessary.
 If this is not possible, allow the program to decide itself when to swap data to disk.
 
 Using operating system memory swapping is not recommended on host, where OpenLogReplicator is running, however, it is fully supported.
-By design, the program should fully work in memory, to achive best performance and lowest, near real time delay.
-If memory is not sufficient, it is best to move OpenLogReplicator to hardware with more memory.
+By design, the program should fully work in memory, to achieve the best performance and lowest, near real time delay.
+If memory is not enough, it is best to move OpenLogReplicator to hardware with more memory.
 
 IMPORTANT: Only the transaction data can be swapped to disk when low memory.
 The metadata is always kept in memory.
 The read buffers are always kept in memory.
 
-When sapping is used, first blocks for longest inactive transactions are swapped to disk.
+When sapping is used, the first blocks for longest inactive transactions are swapped to disk.
 However, for every open transaction, at least one block (the last one - which is currently used to append new redo log vectors) is kept in memory.
-Thus, when N transactions are open, at least N blocks are kept in memory (+ memory used by other modules).
+Thus, when N transactions are open, at least N blocks are kept in memory (plus memory used by other modules).
 
 .Memory swapping
 image:memory-swapping.png[Memory swapping,,,]
@@ -160,7 +160,7 @@ This is a guarantee point for the database client that all changes have been acc
 
 NOTE: DMLs from different transactions are interleaved in the redo log files.
 
-IMPORTANT: For Oracle database, unlike PostgreSQL, the redo log files contain also information about transactions that eventually were rolled back.
+IMPORTANT: The redo log files contain also information about transactions that eventually were rolled back.
 Or are partially rolled back.
 
 The task of OpenLogReplicator is to sort DML commands and send them to output in proper order:
@@ -188,7 +188,7 @@ image:transaction-interleaving.png[Transform interleaved transactions to stream,
 NOTE: Depending on user configuration, the output stream in the picture above might contain two or six messages.
 It is up to the user to decide how the output should look like.
 
-=== Transaction caching & restart
+=== Transaction caching and restart
 
 All transactions which are active (started) are cached in memory.
 They're cached as long as the transaction is open.
@@ -265,7 +265,7 @@ There are two formats implemented: JSON and protocol buffer, but the architectur
 JSON format is the first implemented format with rapid write speed.
 The stream is directly constructed from the redo log data.
 The process of constructing the stream does not use dynamic memory allocation.
-Instead, the json stream is directly constructed and populated while redo log data is parsed.
+Instead, the JSON stream is directly constructed and populated while redo log data is parsed.
 This makes the speed of the output very fast; internal tests show that it is about 2.5 times faster than the protocol buffer format, even though the size of the output might be longer.
 
 ==== Response: _scn_val_
@@ -481,7 +481,7 @@ CAUTION: For performance reasons, the schema checkpoints are not written for eve
 Instead, files are created periodically, and the schema is written to the file only if it changed since the last checkpoint.
 When the schema did not change, the schema checkpoint would reference some other schema checkpoint earlier in time.
 
-CAUTION: By default, the schema checkpoints are deleted when they are not needed anymore.
+CAUTION: By default, the schema checkpoints are deleted when they aren't necessary anymore.
 Different checkpoint options decide how many files are created and how many files are kept.
 It is also possible to disable the deletion of the schema checkpoints.
 
@@ -594,7 +594,7 @@ Every transaction is tracked since every transaction can eventually contain a DM
 
 === Column types
 
-List of supported column types (with internal Oracle codes):
+List of supported column types (with internal database codes):
 
 - 1 –- varchar2/nvarchar2 (including out of row stored as LOB), supported <<supported-character-sets,character sets>>;
 - 2 –- number/float;
@@ -642,7 +642,7 @@ In such cases -- ignore the warnings.
 
 === Supported character sets [[supported-character-sets]]
 
-OpenLogReplicator supports many character sets which can be used in the source Oracle database.
+OpenLogReplicator supports many character sets which can be used in the source database.
 
 All character fields are read from the source database in respect to the source character set.
 The output message always uses Unicode as character encoding and UTF-8 format.
@@ -663,7 +663,7 @@ Only schemas which are configured for replication are copied.
 Other schemas -- not.
 
 If the user wants to replicate other schemas as well.
-For example, the user might stop replication, modify configuration file, add clauses for other schemas, and start replication again.
+For example, the user might stop replication, modify the configuration file, add clauses for other schemas, and start replication again.
 In such a case, replication would not start because the dictionary data for added schemas is missing.
 A possible workaround would be to delete all checkpoint files and start replication again.
 
@@ -701,7 +701,7 @@ Every checkpoint file contains a copy of the schema and is associated with a par
 === Position by scn
 
 If the user requests the replication to start from a particular SCN.
-In such a case, OpenLogReplicator would try to read the database chema at that SCN.
+In such a case, OpenLogReplicator would try to read the database schema at that SCN.
 
 CAUTION: Do not choose the starting point too far in the past.
 It may not be possible to read a consistent copy of system tables.
@@ -740,7 +740,7 @@ The record contains information about the current sequence of the redo log files
 Sometimes it also contains information about the fact that the redo log file has been switched (`"redo":true`).
 
 Using the checkpoint records is the best way of verifying that the replication is working properly.
-Oracle database writes LWNs every few seconds, so the checkpoint records are emitted every few seconds as well.
+The database writes LWNs every few seconds, so the checkpoint records are emitted every few seconds as well.
 In case of any problems, the checkpoint records would stop being emitted.
 
 === Checkpoint SCN
@@ -793,7 +793,7 @@ The change can be done offline, while OpenLogReplicator is not running, but also
 To allow online configuration updates, the configuration file is monitored for changes.
 Once the timestamp of the last file modification is changed, the configuration is reloaded.
 
-CAUTION: The configuration changes are not performed in an atomic way.
+CAUTION: The configuration changes are not performed atomically.
 If some long-running transactions are partially processed, the processed data in memory does not change.
 This can lead to situations like shown below: a transaction can contain data sets from two different configurations.
 
@@ -820,12 +820,12 @@ This also implies that there is no need to create a user in the database.
 
 The offline reader mode is activated by setting a parameter `"type": "offline"` in the `reader` section.
 
-To start work with the offline reader, a schema file is needed.
+To start work with the offline reader, a schema file is necessary.
 The schema file can be created using the `gencfg.sql` script or during the first run of the program when running with `online` reader.
 
 CAUTION: The schema file contains also list locations of redo log files.
 Those parameters are static and aren't tracked.
-Thus, if they change, the schema file needs to be edited manually (this is a json file), or the schema needs to be recreated.
+Thus, if they change, the schema file needs to be edited manually (this is a JSON file), or the schema needs to be recreated.
 
 ==== Starting as offline reader
 
@@ -837,7 +837,7 @@ Stop OpenLogReplicator, by simply pressing `Ctrl+C` or killing the process.
 
 Next, edit configuration file and change the type of the reader to `offline`, remove credentials for database connection and run OpenLogReplicator.
 
-==== Manually creating schema file
+==== Manually creating a schema file
 
 To create a schema file manually, the user needs to run the `gencfg.sql` script.
 The script is located in the `scripts` folder of the distribution.
@@ -851,7 +851,7 @@ Before running the script, it must be edited and the following parameters need t
 Save the results of the script to a file with name `checkpoint/<name>-chkpt-<scn>.json` where `<name>` is the logical name of the database and `<scn>` is the starting SCN for replication.
 Read the `resetlogs` and `activation` parameters from the first line of the output of the script.
 Use the read values during the next steps.
-Create additional file named `checkpoint/<name>-chkpt.json` with the following content:
+Create an additional file named `checkpoint/<name>-chkpt.json` with the following content:
 
  {"database":"<name>","scn":<scn>,"resetlogs":<resetlogs>,"activation":<activation>}
 

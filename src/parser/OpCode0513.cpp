@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 5.13
+/* Redo log OpCode: 5.13
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         typeSize fieldSize = 0;
 
         if (unlikely(transaction == nullptr)) {
-            ctx->logTrace(Ctx::TRACE_TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
+            ctx->logTrace(Ctx::TRACE::TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
             return;
         }
 
@@ -290,8 +290,8 @@ namespace OpenLogReplicator {
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream <<
-                            "session number   = " << std::dec << sessionNumber << '\n' <<
-                            "serial  number   = " << std::dec << serialNumber << '\n';
+                             "session number   = " << std::dec << sessionNumber << '\n' <<
+                             "serial  number   = " << std::dec << serialNumber << '\n';
         }
     }
 

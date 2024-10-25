@@ -75,65 +75,27 @@ namespace OpenLogReplicator {
 
     class SysCol final {
     public:
-        static constexpr uint64_t NAME_LENGTH = 128;
-        static constexpr uint64_t PROPERTY_ADT = 1;
-        static constexpr uint64_t PROPERTY_OID = 2;
-        static constexpr uint64_t PROPERTY_NESTED1 = 4;
-        static constexpr uint64_t PROPERTY_VIRTUAL1 = 8;
-        static constexpr uint64_t PROPERTY_NESTED_TABLE_SETID = 16;
-        static constexpr uint64_t PROPERTY_HIDDEN = 32;
-        static constexpr uint64_t PROPERTY_PRIMARY_KEY_BASED_OID = 64;
-        static constexpr uint64_t PROPERTY_STORED_AS_LOB = 128;
-        static constexpr uint64_t PROPERTY_SYSTEM_GENERATED = 256;
-        static constexpr uint64_t PROPERTY_ROWINFO_TYPED_TABLE_VIEW = 512;
-        static constexpr uint64_t PROPERTY_NESTED_TABLES_SETID = 1024;
-        static constexpr uint64_t PROPERTY_NOT_INSERTABLE = 2048;
-        static constexpr uint64_t PROPERTY_NOT_UPDATABLE = 4096;
-        static constexpr uint64_t PROPERTY_NOT_DELETABLE = 8192;
-        static constexpr uint64_t PROPERTY_DROPPED = 16384;
-        static constexpr uint64_t PROPERTY_UNUSED = 32768;
-        static constexpr uint64_t PROPERTY_VIRTUAL2 = 65536;
-        static constexpr uint64_t PROPERTY_PLACE_DESCEND_OPERATOR_ON_TOP = 131072;
-        static constexpr uint64_t PROPERTY_VIRTUAL_IS_NLS_DEPENDENT = 262144;
-        static constexpr uint64_t PROPERTY_REF_OID_COL = 524288;
-        static constexpr uint64_t PROPERTY_HIDDEN_SNAPSHOT_BASE_TABLE = 1048576;
-        static constexpr uint64_t PROPERTY_ATTRIBUTE_OF_USER_DEFINED_REF = 2097152;
-        static constexpr uint64_t PROPERTY_HIDDEN_RLS = 4194304;
-        static constexpr uint64_t PROPERTY_LENGTH_IN_CHARS = 8388608;
-        static constexpr uint64_t PROPERTY_VIRTUAL_EXPRESSION_SPECIFIED = 16777216;
-        static constexpr uint64_t PROPERTY_TYPEID = 33554432;
-        static constexpr uint64_t PROPERTY_ENCRYPTED = 67108864;
-        static constexpr uint64_t PROPERTY_ENCRYPTED_WITHOUT_SALT = 536870912;
-        static constexpr uint64_t PROPERTY_ADDED = 1073741824;
-        static constexpr uint64_t PROPERTY_DEFAULT_WITH_SEQUENCE = 34359738368;
-        static constexpr uint64_t PROPERTY_DEFAULT_ON_NULL = 68719476736;
-        static constexpr uint64_t PROPERTY_GENERATED_ALWAYS_IDENTITY = 137438953472;
-        static constexpr uint64_t PROPERTY_GENERATED_BY_DEFAULT_IDENTITY = 274877906944;
-        static constexpr uint64_t PROPERTY_GUARD = 549755813888;
+        static constexpr uint NAME_LENGTH{128};
 
-        static constexpr uint64_t TYPE_VARCHAR = 1;
-        static constexpr uint64_t TYPE_NUMBER = 2;
-        static constexpr uint64_t TYPE_LONG = 8;
-        static constexpr uint64_t TYPE_DATE = 12;
-        static constexpr uint64_t TYPE_RAW = 23;
-        static constexpr uint64_t TYPE_LONG_RAW = 24;
-        static constexpr uint64_t TYPE_XMLTYPE = 58;
-        static constexpr uint64_t TYPE_CHAR = 96;
-        static constexpr uint64_t TYPE_FLOAT = 100;
-        static constexpr uint64_t TYPE_DOUBLE = 101;
-        static constexpr uint64_t TYPE_CLOB = 112;
-        static constexpr uint64_t TYPE_BLOB = 113;
-        static constexpr uint64_t TYPE_JSON = 119;
-        static constexpr uint64_t TYPE_TIMESTAMP = 180;
-        static constexpr uint64_t TYPE_TIMESTAMP_WITH_TZ = 181;
-        static constexpr uint64_t TYPE_INTERVAL_YEAR_TO_MONTH = 182;
-        static constexpr uint64_t TYPE_INTERVAL_DAY_TO_SECOND = 183;
-        static constexpr uint64_t TYPE_UROWID = 208;
-        static constexpr uint64_t TYPE_TIMESTAMP_WITH_LOCAL_TZ = 231;
-        static constexpr uint64_t TYPE_BOOLEAN = 252;
+        enum PROPERTY {
+            ADT = 1UL << 0, OID = 1UL << 1, NESTED1 = 1UL << 2, VIRTUAL1 = 1UL << 3, NESTED_TABLE_SETID = 1UL << 4, HIDDEN = 1UL << 5,
+            PRIMARY_KEY_BASED_OID = 1UL << 6, STORED_AS_LOB = 1UL << 7, SYSTEM_GENERATED = 1UL << 8, ROWINFO_TYPED_TABLE_VIEW = 1UL << 9,
+            NESTED_TABLES_SETID = 1UL << 10, NOT_INSERTABLE = 1UL << 11, NOT_UPDATABLE = 1UL << 12, NOT_DELETABLE = 1UL << 13, DROPPED = 1UL << 14,
+            UNUSED = 1UL << 15, VIRTUAL2 = 1UL << 16, PLACE_DESCEND_OPERATOR_ON_TOP = 1UL << 17, VIRTUAL_IS_NLS_DEPENDENT = 1UL << 18,
+            REF_OID_COL = 1UL << 19, HIDDEN_SNAPSHOT_BASE_TABLE = 1UL << 20, ATTRIBUTE_OF_USER_DEFINED_REF = 1UL << 21, HIDDEN_RLS = 1UL << 22,
+            LENGTH_IN_CHARS = 1UL << 23, VIRTUAL_EXPRESSION_SPECIFIED = 1UL << 24, TYPEID = 1UL << 25, ENCRYPTED = 1UL << 26,
+            ENCRYPTED_WITHOUT_SALT = 1UL << 29, ADDED = 1UL << 30, DEFAULT_WITH_SEQUENCE = 1UL << 35, DEFAULT_ON_NULL = 1UL << 36,
+            GENERATED_ALWAYS_IDENTITY = 1UL << 37, GENERATED_BY_DEFAULT_IDENTITY = 1UL << 38, GUARD = 1UL << 39
+        };
+
+        enum COLTYPE {
+            VARCHAR = 1, NUMBER = 2, LONG = 8, DATE = 12, RAW = 23, LONG_RAW = 24, XMLTYPE = 58, CHAR = 96, FLOAT = 100, DOUBLE = 101, CLOB = 112, BLOB = 113,
+            JSON = 119, TIMESTAMP = 180, TIMESTAMP_WITH_TZ = 181, INTERVAL_YEAR_TO_MONTH = 182, INTERVAL_DAY_TO_SECOND = 183, UROWID = 208,
+            TIMESTAMP_WITH_LOCAL_TZ = 231, BOOLEAN = 252
+        };
 
         SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
-               uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
+               uint newLength, int newPrecision, int newScale, uint newCharsetForm, uint newCharsetId, int newNull,
                uint64_t newProperty1, uint64_t newProperty2) :
                 rowId(newRowId),
                 obj(newObj),
@@ -158,7 +120,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isHidden() {
-            return property.isSet64(PROPERTY_HIDDEN);
+            return property.isSet64(PROPERTY::HIDDEN);
         }
 
         [[nodiscard]] bool isNullable() {
@@ -166,31 +128,31 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isStoredAsLob() {
-            return property.isSet64(PROPERTY_STORED_AS_LOB);
+            return property.isSet64(PROPERTY::STORED_AS_LOB);
         }
 
         [[nodiscard]] bool isSystemGenerated() {
-            return property.isSet64(PROPERTY_SYSTEM_GENERATED);
+            return property.isSet64(PROPERTY::SYSTEM_GENERATED);
         }
 
         [[nodiscard]] bool isNested() {
-            return property.isSet64(PROPERTY_NESTED_TABLES_SETID);
+            return property.isSet64(PROPERTY::NESTED_TABLES_SETID);
         }
 
         [[nodiscard]] bool isUnused() {
-            return property.isSet64(PROPERTY_UNUSED);
+            return property.isSet64(PROPERTY::UNUSED);
         }
 
         [[nodiscard]] bool isAdded() {
-            return property.isSet64(PROPERTY_ADDED);
+            return property.isSet64(PROPERTY::ADDED);
         }
 
         [[nodiscard]] bool isGuard() {
-            return property.isSet64(PROPERTY_GUARD);
+            return property.isSet64(PROPERTY::GUARD);
         }
 
         [[nodiscard]] bool lengthInChars() {
-            return ((type == TYPE_VARCHAR || type == TYPE_CHAR) && property.isSet64(PROPERTY_LENGTH_IN_CHARS));
+            return ((type == COLTYPE::VARCHAR || type == COLTYPE::CHAR) && property.isSet64(PROPERTY::LENGTH_IN_CHARS));
             // Else in bytes
         }
 
@@ -201,12 +163,12 @@ namespace OpenLogReplicator {
         typeCol intCol;
         std::string name;
         typeType type;
-        uint64_t length;
-        int64_t precision;          // NULL
-        int64_t scale;              // NULL
-        uint64_t charsetForm;       // NULL
-        uint64_t charsetId;         // NULL
-        int64_t null_;
+        uint length;
+        int precision;          // NULL
+        int scale;              // NULL
+        uint charsetForm;       // NULL
+        uint charsetId;         // NULL
+        int null_;
         typeIntX property;
     };
 }

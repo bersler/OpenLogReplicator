@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 11.22
+/* Redo log OpCode: 11.22
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.

@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 24.1
+/* Redo log OpCode: 24.1
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.

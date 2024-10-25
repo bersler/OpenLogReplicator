@@ -25,45 +25,45 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSet16bit : public CharacterSet {
     public:
-        static constexpr uint64_t JA16VMS_b1_min = 0xA1;
-        static constexpr uint64_t JA16VMS_b1_max = 0xF4;
-        static constexpr uint64_t JA16VMS_b2_min = 0xA1;
-        static constexpr uint64_t JA16VMS_b2_max = 0xFE;
+        static constexpr uint64_t JA16VMS_b1_min{0xA1};
+        static constexpr uint64_t JA16VMS_b1_max{0xF4};
+        static constexpr uint64_t JA16VMS_b2_min{0xA1};
+        static constexpr uint64_t JA16VMS_b2_max{0xFE};
 
-        static constexpr uint64_t KO16KSC5601_b1_min = 0xA1;
-        static constexpr uint64_t KO16KSC5601_b1_max = 0xFD;
-        static constexpr uint64_t KO16KSC5601_b2_min = 0xA1;
-        static constexpr uint64_t KO16KSC5601_b2_max = 0xFE;
+        static constexpr uint64_t KO16KSC5601_b1_min{0xA1};
+        static constexpr uint64_t KO16KSC5601_b1_max{0xFD};
+        static constexpr uint64_t KO16KSC5601_b2_min{0xA1};
+        static constexpr uint64_t KO16KSC5601_b2_max{0xFE};
 
-        static constexpr uint64_t KO16MSWIN949_b1_min = 0x81;
-        static constexpr uint64_t KO16MSWIN949_b1_max = 0xFE;
-        static constexpr uint64_t KO16MSWIN949_b2_min = 0x41;
-        static constexpr uint64_t KO16MSWIN949_b2_max = 0xFE;
+        static constexpr uint64_t KO16MSWIN949_b1_min{0x81};
+        static constexpr uint64_t KO16MSWIN949_b1_max{0xFE};
+        static constexpr uint64_t KO16MSWIN949_b2_min{0x41};
+        static constexpr uint64_t KO16MSWIN949_b2_max{0xFE};
 
-        static constexpr uint64_t ZHS16CGB231280_b1_min = 0xA1;
-        static constexpr uint64_t ZHS16CGB231280_b1_max = 0xF7;
-        static constexpr uint64_t ZHS16CGB231280_b2_min = 0xA1;
-        static constexpr uint64_t ZHS16CGB231280_b2_max = 0xFE;
+        static constexpr uint64_t ZHS16CGB231280_b1_min{0xA1};
+        static constexpr uint64_t ZHS16CGB231280_b1_max{0xF7};
+        static constexpr uint64_t ZHS16CGB231280_b2_min{0xA1};
+        static constexpr uint64_t ZHS16CGB231280_b2_max{0xFE};
 
-        static constexpr uint64_t ZHT16BIG5_b1_min = 0xA1;
-        static constexpr uint64_t ZHT16BIG5_b1_max = 0xF9;
-        static constexpr uint64_t ZHT16BIG5_b2_min = 0x40;
-        static constexpr uint64_t ZHT16BIG5_b2_max = 0xFE;
+        static constexpr uint64_t ZHT16BIG5_b1_min{0xA1};
+        static constexpr uint64_t ZHT16BIG5_b1_max{0xF9};
+        static constexpr uint64_t ZHT16BIG5_b2_min{0x40};
+        static constexpr uint64_t ZHT16BIG5_b2_max{0xFE};
 
-        static constexpr uint64_t ZHT16CCDC_b1_min = 0xA1;
-        static constexpr uint64_t ZHT16CCDC_b1_max = 0xFB;
-        static constexpr uint64_t ZHT16CCDC_b2_min = 0x21;
-        static constexpr uint64_t ZHT16CCDC_b2_max = 0xFE;
+        static constexpr uint64_t ZHT16CCDC_b1_min{0xA1};
+        static constexpr uint64_t ZHT16CCDC_b1_max{0xFB};
+        static constexpr uint64_t ZHT16CCDC_b2_min{0x21};
+        static constexpr uint64_t ZHT16CCDC_b2_max{0xFE};
 
-        static constexpr uint64_t ZHT16MSWIN950_b1_min = 0x81;
-        static constexpr uint64_t ZHT16MSWIN950_b1_max = 0xFE;
-        static constexpr uint64_t ZHT16MSWIN950_b2_min = 0x40;
-        static constexpr uint64_t ZHT16MSWIN950_b2_max = 0xFE;
+        static constexpr uint64_t ZHT16MSWIN950_b1_min{0x81};
+        static constexpr uint64_t ZHT16MSWIN950_b1_max{0xFE};
+        static constexpr uint64_t ZHT16MSWIN950_b2_min{0x40};
+        static constexpr uint64_t ZHT16MSWIN950_b2_max{0xFE};
 
-        static constexpr uint64_t ZHT16HKSCS_b1_min = 0x81;
-        static constexpr uint64_t ZHT16HKSCS_b1_max = 0xFE;
-        static constexpr uint64_t ZHT16HKSCS_b2_min = 0x40;
-        static constexpr uint64_t ZHT16HKSCS_b2_max = 0xFE;
+        static constexpr uint64_t ZHT16HKSCS_b1_min{0x81};
+        static constexpr uint64_t ZHT16HKSCS_b1_max{0xFE};
+        static constexpr uint64_t ZHT16HKSCS_b2_min{0x40};
+        static constexpr uint64_t ZHT16HKSCS_b2_max{0xFE};
 
     protected:
         const typeUnicode16* map;

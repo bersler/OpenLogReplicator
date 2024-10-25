@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class typeLobId final {
     public:
-        static constexpr uint64_t LENGTH = 10;
+        static constexpr uint64_t LENGTH{10};
 
         uint8_t data[LENGTH];
 

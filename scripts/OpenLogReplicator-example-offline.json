@@ -17,7 +17,7 @@
       },
       "filter": {
         "table": [
-          {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
+          {"owner": "OWNER1", "table": "TABLENAME1", "key": "COL1,COL2,COL3"},
           {"owner": "OWNER1", "table": "TABLENAME2"},
           {"owner": "OWNER2", "table": "TAB.*"}
         ]

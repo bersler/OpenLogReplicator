@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-02
+:revdate: 2024-10-26
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -212,7 +212,7 @@ _CAUTION:_ The filter is applied only to the data, not to the DDL operations.
 
 _IMPORTANT:_ During the first run, the schema is read only for tables which are selected by the filter.
 If the filter is changed, the schema would not update.
-Startup would fail because the set of users present in checkpoint files would not match the set of users defined in config file.
+Startup would fail because the set of users present in checkpoint files would not match the set of users defined in a config file.
 The schema would update only when the program is reset, (i.e., the checkpoint files are removed and forced recreation).
 
 |`metrics`
@@ -332,7 +332,7 @@ Use this option just as a workaround in case when Direct IO is not possible.
 |`refresh-interval-us`
 |_number_, min: 0, default: 10000000
 |During online redo log reading, a new redo log group could be created, and the program would need to refresh the list of redo log groups.
-In case there is a situation when old redo log file has been completely processed, but still no new group is created, the program would need to refresh the list of redo log groups.
+In case there is a situation when an old redo log file has been completely processed, but still no new group is created; the program would need to refresh the list of redo log groups.
 
 Number in microseconds.
 
@@ -387,7 +387,7 @@ Do not allocate more than 25% of total memory.
 |The amount used of memory, witch activates swapping.
 
 When the memory usage reaches this value, the program would start swapping transaction data to disk.
-Refer to xref:../user-manual/user-manual.adoc#memory-allocation[Memory Allocation] chapter for details regarding memory management.
+Refer to the xref:../user-manual/user-manual.adoc#memory-allocation[Memory Allocation] chapter for details regarding memory management.
 
 _IMPORTANT:_ To disable swapping, set this parameter to 0.
 
@@ -424,8 +424,8 @@ It is important to not allocate too much memory for output streaming, otherwise 
 This memory is never swapped to disk, and it may happen that OpenLogReplicator would suffer when there is not enough memory for other purposes.
 In case of memory pressure, the memory is not released until data is sent to output.
 
-_IMPORTANT:_ The value of this parameter must be greater than the maximum expeced LOB field size + 10%.
-Setting too low might cause OpenLogReplicator to stop if it encouters too big field which would not fit fully in memory.
+_IMPORTANT:_ The value of this parameter must be greater than the maximum expected LOB field size + 10%.
+Setting too low might cause OpenLogReplicator to stop if it encounters too big field which would not fit fully in memory.
 
 |`write-buffer-min-mb`
 |_number_, min: 4, max: `max-mb` - `unswap-min-mb` - `read-buffer-min-mb` - 4, default: 4
@@ -453,7 +453,7 @@ When the connection to the database is lost, the program will try to reconnect.
 
 Example config file: `OpenLogReplicator.json.example`.
 
-* `offline` -– Like `online`, but metadata is only read from previously created checkpoint file; no connection to the database is required.
+* `offline` -– Like `online`, but metadata is only read from a previously created checkpoint file; no connection to the database is required.
 
 Example config file: `OpenLogReplicator.json.example-offline`.
 
@@ -461,14 +461,14 @@ Example config file: `OpenLogReplicator.json.example-offline`.
 
 Example config file: `OpenLogReplicator.json.example-batch`.
 
-_IMPORTANT:_ Batch mode is intended to be used only for testing and troubleshooting purpopses.
+_IMPORTANT:_ Batch mode is intended to be used only for testing and troubleshooting purposes.
 Using this mode for continues replication might lead to errors.
 It is not guaranteed that after the batch completion, the checkpoint file contains a proper schema which could be used for further processing.
 Using the checkpoint files which are created at the end of batch processing for `online`, `offline` or `batch` mode leads to schema inconsistency errors.
 
 _CAUTION_: Providing one by one redo log files and running the program in batch mode is different from running `online` or `offline` mode.
 It would produce different output and might lead to errors.
-Transactions that span multiple redo log fiels would not be sent to output, and system transactions that span multiple redo log files would be ignored leading to schema inconsistency errors.
+Transactions that span multiple redo log files would not be sent to output, and system transactions that span multiple redo log files would be ignored leading to schema inconsistency errors.
 
 |`con-id`
 |signed _number_, min: -32768, max: 32767, default: -1
@@ -523,7 +523,7 @@ When FRA is not used the value use for this parameter is read from database conf
 
 |`log-timezone`
 |_string_, default: time zone of OpenLogReplicator host
-|Time zone used for logging messagees.
+|Time zone used for logging messages.
 
 Timezone should be in format `+xx:yy` or `-xx:yy`.
 
@@ -550,11 +550,11 @@ If a prefix of the path matches with `beforeX` it is replaced with `afterX`.
 _NOTE:_ This field is valid only for `online` and `offline` types.
 
 _TIP:_ The parameter is useful when OpenLogReplicator operates on a different host than the database server is running and the paths differ.
-For example, the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but file is mounted using sshfs under a different path so having `"path-mapping": ["/db/fra", "/opt/fast-recovery-area"],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
+For example, the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but a file is mounted using sshfs under a different path so having `"path-mapping": ["/db/fra", "/opt/fast-recovery-area"],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
 
 |`redo-copy-path`
 |_string_, max length: 2048
-|Debugging parameter which allows to copy all contents of processed redo log files to defined folder.
+|Debugging parameter which allows copying all contents of processed redo log files to defined folder.
 
 _TIP:_ This parameter is useful for diagnosing disk-read related problems.
 When consistency errors are detected, the redo log file is copied to the defined folder.
@@ -652,13 +652,13 @@ If the transaction contains a large number of partially rolled back DML operatio
 
 |`interval-mb`
 |_number_, min: 0, default: 500
-|Threshold of processed redo log data after which checkpoint file is created.
+|Threshold of processed redo log data after which a checkpoint file is created.
 
 Number in megabytes.
 
 |`interval-s`
 |_number_, min: 0, default: 600
-|Threshold of processed redo log data time after which checkpoint file is created.
+|Threshold of processed redo log data time after which a checkpoint file is created.
 
 Number in seconds.
 
@@ -888,7 +888,7 @@ For JSON only target, the following additional flags are available:
 
 * `0x0008` -- Skip commit message (when using flag `0x0001`).
 
-* `0x0010` -- Add information about data offset (for debugging purpopses).
+* `0x0010` -- Add information about data offset (for debugging purposes).
 
 |`rid` [[rid]]
 |_number_, min: 0, max: 1, default: 0
@@ -932,10 +932,8 @@ Example output:
 `{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2"},"after":{"A":100,"B":999,"C":10.22,"D":"xx2       ","E":"yyy","F":1564662896000}}]}`
 
 |`scn` [[scn]]
-|_number_, min: 0, max: 3, default: 0
+|_number_, min: 0, max: 1, default: 0
 |SCN field format.
-
-By default, every DML operation contains `scn` field with SCN value which is derived from the redo vector which contains DML data.
 
 Possible values are:
 
@@ -943,17 +941,18 @@ Possible values are:
 
 * `1` -– SCN values are stored in a text format in hexadecimal format (in _"C"_ format – like `0xFF`) in `scns` field.
 
-* `2` -- SCN values for all DML operations are copied from commit SCN record.
-
-|`scn-all` [[scn-all]]
+|`scn-type` [[scn-type]]
 |_number_, min: 0, max: 1, default: 0
 |Include `scn` field in every payload.
 
-Possible values are:
+By default, every DML operation contains `scn` field with SCN value which is derived from the redo vector which contains DML data.
 
-* `0` -- Put `scn` field only in the first message.
+Value is a sum of:
 
-* `1` -- Put `scn` field in every message.
+* `0x0001` -- Put `scn` field in every message.
+The default is to put `scn` field only in the first message.
+
+* `0x0002` -- SCN values for all DML operations are copied from commit SCN record.
 
 |`timestamp` [[timestamp]]
 |_number_, min: 0, max: 15, default: 0
@@ -964,13 +963,13 @@ Possible values are:
 
 * `0` -- Unix with nanoseconds -- `"tm": 1651384800123456789`.
 
-* `1` -- Unix with a precision to the microsecond (possible data precision loss) -- `"tm": 1651384800123457`.
+* `1` -- Unix with precision to the microsecond (possible data precision loss) -- `"tm": 1651384800123457`.
 
 * `2` -- Unix with precision to the millisecond  (possible data precision loss) -- `"tm": 1651384800123`.
 
 * `3` -- Unix with precision to the second  (possible data precision loss) -- `"tm": 1651384800`.
 
-* `4` -- Unix with nanoseconds precision stored as a string -- `"tms": "1651384800123456789"`.
+* `4` -- Unix with nanosecond precision stored as a string -- `"tms": "1651384800123456789"`.
 
 * `5` -- Unix with microsecond precision stored as a string (possible data precision loss) -- `"tms": "1651384800123457"`.
 
@@ -984,15 +983,15 @@ Possible values are:
 
 * `10` -- _ISO-8601_ format stored with millisecond precision as a string -- `"tms": "2022-05-01T06:00:00.123Z"`.
 
-* `11` -- _ISO-8601_ format stored second precission as a string -- `"tms": "2022-05-01T06:00:00Z"`.
+* `11` -- _ISO-8601_ format stored second precision as a string -- `"tms": "2022-05-01T06:00:00Z"`.
 
 * `12` -- _ISO-8601_ format stored with nanosecond precision as a string without "TZ" -- `"tms": "2022-05-01 06:00:00.123456789"`.
 
 * `13` -- _ISO-8601_ format stored with microsecond precision as a string  without "TZ" -- `"tms": "2022-05-01 06:00:00.123456"`.
 
-* `14` -- _ISO-8601_ format stored with millisecond precission as a string without "TZ" -- `"tms": "2022-05-01 06:00:00.123"`.
+* `14` -- _ISO-8601_ format stored with millisecond precision as a string without "TZ" -- `"tms": "2022-05-01 06:00:00.123"`.
 
-* `15` -- _ISO-8601_ format stored second precission as a string without "TZ" -- `"tms": "2022-05-01 06:00:00"`.
+* `15` -- _ISO-8601_ format stored second precision as a string without "TZ" -- `"tms": "2022-05-01 06:00:00"`.
 
 _NOTE:_ This format is also used for type `timestamp with local time zone` since this type internally does not contain time zone data.
 
@@ -1018,15 +1017,15 @@ Possible values are:
 
 * `6` -- _ISO-8601_ format stored with millisecond precision as a string with time zone after space sign-- `"tms": "2022-05-01T06:00:00.123Z Europe/Warsaw"`.
 
-* `7` -- _ISO-8601_ format stored second precission as a string with time zone after space sign -- `"tms": "2022-05-01T06:00:00Z Europe/Warsaw"`.
+* `7` -- _ISO-8601_ format stored second precision as a string with time zone after space sign -- `"tms": "2022-05-01T06:00:00Z Europe/Warsaw"`.
 
 * `8` -- _ISO-8601_ format stored with nanosecond precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
 
 * `9` -- _ISO-8601_ format stored with microsecond precision as a string  without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123456 Europe/Warsaw"`.
 
-* `10` -- _ISO-8601_ format stored with millisecond precission as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123 Europe/Warsaw"`.
+* `10` -- _ISO-8601_ format stored with millisecond precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123 Europe/Warsaw"`.
 
-* `11` -- _ISO-8601_ format stored second precission as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
+* `11` -- _ISO-8601_ format stored second precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
 
 |`timestamp-all` [[timestamp-all]]
 |_number_, min: 0, max: 1, default: 0
@@ -1080,6 +1079,14 @@ A table that matches at least one of the rules is tracked, thus the rules can ov
 
 Example:
 `"table": {{"table": "owner1.table1"}, {"table": "owner2.table2", "key": "col1, col2, col3"}, {"table":"sys.%"}}.`
+
+|`separator` [[separator]]
+|_string_, max length: 128, default: `","`
+|Concatenation separator for <<key,key>> and <<tag,tag>> fields.
+
+_IMPORTANT:_ The separator character should be chosen as a combination of characters which do not appear in the key values.
+Otherwise, it may be impossible to split the key back to the original values.
+If such a requirement appears, in future versions they key might be escaped to allow for any character to be used.
 
 |`skip-xid` [[skip-xid]]
 |_list_ of _string_ elements, max length: 32
@@ -1137,7 +1144,7 @@ This equals to `filter` + `sys` options.
 
 [[table]]
 [width="100%",cols="a,a,50%a",options="header"]
-.Table element
+.Table element for <<filter,filter>>
 |===
 
 |Parameter
@@ -1154,10 +1161,11 @@ The pattern is case-sensitive.
 |Regex pattern for matching table name.
 The pattern is case-sensitive.
 
-|`key`
+|`key` [[key]]
 |_string_, max length: 4096
 |A string field with a list of columns which should be used as a primary key.
-The columns are separated by comma.
+The columns are separated by a comma character and should not contain spaces or any other additional characters.
+The separator can be changed using the <<separator,separator>> tag.
 The column names are case-sensitive.
 
 _TIP:_ If a table doesn't contain a primary key, a custom set of columns can be treated as a primary key.
@@ -1214,6 +1222,24 @@ The expression can contain the following tokens, which has name derived from the
 * [transaction name] -- the name of the transaction;
 
 * [version]
+
+|`tag` [[tag]]
+|_string_, max length: 4096, mandatory
+|A string field with describing what should be added as tag to the output message.
+
+Adding this field to `table` element causes additional tag to be added to the output message with the defined content.
+
+The columns are separated by a comma character and should not contain spaces or any other additional characters.
+The separator can be changed using the <<separator,separator>> tag.
+The column names are case-sensitive.
+Instead of column list, the following special values can be used:
+
+* `[pk]` -- Use primary key columns.
+
+* `[all]` -- Use all columns.
+
+Example:
+`"table": {{"table":"user1.x_%", "key":"[all]"}, {"table":"user1.y_%", "key":"A,B,C"}, {"table":"user1.z_%", "key":"[pk]"}}.`
 
 |===
 
@@ -1290,7 +1316,7 @@ _NOTE:_ This field is valid only for `network` and `zeromq` types.
 
 |`append`
 |_number_, min: 0, max: 1, default: 1
-|If define output file for transaction exists, append to it.
+|If the output file for the transaction exists, append to it.
 If not, create a new file.
 
 _NOTE:_ This field is valid only for `file` type.
@@ -1311,7 +1337,7 @@ _NOTE:_ This field is valid only for `kafka` type.
 
 |`max-file-size`
 |_number_, min: 0, default: 0
-|Maximum file size for output file.
+|Maximum file size for the output file.
 The size can be defined only when `output` parameter is set and is using `%i` or `%t` placeholder.
 
 _NOTE:_ This field is valid only for `file` type.
@@ -1332,7 +1358,7 @@ _NOTE:_ This field is valid only for `file` type.
 
 |`output`
 |_string_, max length: 256
-| Format of output file.
+| Format of the output file.
 The format is the same as for `strftime` function.
 
 The following placeholders are supported:

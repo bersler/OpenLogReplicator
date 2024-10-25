@@ -1,7 +1,7 @@
 = Introduction to OpenLogReplicator
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-02
+:revdate: 2024-10-26
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -40,7 +40,7 @@ The most important elements are:
 
 1. Change capture component: All changes in the source system are captured and stored in a format that can be easily processed by the application.
 
-2. Data storage & transformation component: The data can be transformed in many ways, including filtering, mapping, and converting data types or formats.
+2. Data storage and transformation component: The data can be transformed in many ways, including filtering, mapping, and converting data types or formats.
 For performance, security and reliability, the data is stored in a persistent data store.
 It is accessible for future processing.
 
@@ -54,9 +54,9 @@ By using a CDC application, organizations can ensure that their data is accurate
 .CDC Architecture
 image:cdc-architecture.png[CDC Architecture,,,]
 
-== Oracle database
+== The source database
 
-An Oracle database is a type of computer database made by a company called Oracle.
+An Oracle database is a type of computer database made by a company called Oracle (all rights reserved).
 It's used to store large amounts of data, provides the data for simultaneous change and keeps all consistent.
 It could contain customer information or financial records, and is often used by businesses and organizations.
 

@@ -1,7 +1,7 @@
 = Metrics
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-02
+:revdate: 2024-10-26
 :imagesdir: ./images
 :toc: preamble
 
@@ -77,7 +77,7 @@ filter={out,skip}
 
 _IMPORTANT:_ DML operations which are part of skipped transactions are not counted.
 There is no metric for those.
-The `filter` parameter refers to DML operations for tables which are processed by OpenLogReplicator based on filter clause in config file.
+The `filter` parameter refers to DML operations for tables which are processed by OpenLogReplicator based on filter clause in the config file.
 Skipped DML operations are for those tables that are not on the list and are not processed.
 
 | log_switches
@@ -132,7 +132,7 @@ The following modules are available:
 | Operations on swap space in MB.
 Types:
 
-* discard -- 1MB block has been written (swapped) to disk but not read, since it was not needed (for example, because of rollback);
+* discard -- 1MB block has been written (swapped) to disk but not read, since it was unnecessary, (for example, because of rollback);
 
 * read -- 1MB block has been read from disk to memory;
 

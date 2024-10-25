@@ -1,4 +1,4 @@
-/* LOB in a table in an Oracle database
+/* LOB in a table in the database
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleLob.h"
-#include "OracleTable.h"
+#include "DbLob.h"
+#include "DbTable.h"
 
 namespace OpenLogReplicator {
-    OracleLob::OracleLob(OracleTable* newTable, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol) :
+    DbLob::DbLob(DbTable* newTable, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol) :
             table(newTable),
             obj(newObj),
             dataObj(newDataObj),
@@ -30,22 +30,22 @@ namespace OpenLogReplicator {
             intCol(newIntCol) {
     }
 
-    OracleLob::~OracleLob() {
+    DbLob::~DbLob() {
         lobIndexes.clear();
         lobPartitions.clear();
         lobPageMap.clear();
     }
 
-    void OracleLob::addIndex(typeDataObj newDataObj) {
+    void DbLob::addIndex(typeDataObj newDataObj) {
         lobIndexes.push_back(newDataObj);
     }
 
-    void OracleLob::addPartition(typeDataObj newDataObj, uint16_t pageSize) {
+    void DbLob::addPartition(typeDataObj newDataObj, uint16_t pageSize) {
         lobPartitions.push_back(newDataObj);
         lobPageMap.insert_or_assign(newDataObj, pageSize);
     }
 
-    uint32_t OracleLob::checkLobPageSize(typeDataObj newDataObj) {
+    uint32_t DbLob::checkLobPageSize(typeDataObj newDataObj) {
         auto lobPageMapIt = lobPageMap.find(newDataObj);
         if (lobPageMapIt != lobPageMap.end())
             return lobPageMapIt->second;
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         return 8132;
     }
 
-    std::ostream& operator<<(std::ostream& os, const OracleLob& lob) {
+    std::ostream& operator<<(std::ostream& os, const DbLob& lob) {
         os << lob.obj << ": (" << lob.col << ", " << lob.intCol << ", " << lob.lObj << ")";
         return os;
     }

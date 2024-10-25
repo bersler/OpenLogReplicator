@@ -25,18 +25,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSetZHT32EUC final : public CharacterSet {
     public:
-        static constexpr uint64_t ZHT32EUC_2_b1_min = 0xA1;
-        static constexpr uint64_t ZHT32EUC_2_b1_max = 0xFD;
-        static constexpr uint64_t ZHT32EUC_2_b2_min = 0xA1;
-        static constexpr uint64_t ZHT32EUC_2_b2_max = 0xFE;
+        static constexpr uint64_t ZHT32EUC_2_b1_min{0xA1};
+        static constexpr uint64_t ZHT32EUC_2_b1_max{0xFD};
+        static constexpr uint64_t ZHT32EUC_2_b2_min{0xA1};
+        static constexpr uint64_t ZHT32EUC_2_b2_max{0xFE};
 
-        static constexpr uint64_t ZHT32EUC_4_b1 = 0x8E;
-        static constexpr uint64_t ZHT32EUC_4_b2_min = 0xA2;
-        static constexpr uint64_t ZHT32EUC_4_b2_max = 0xAE;
-        static constexpr uint64_t ZHT32EUC_4_b3_min = 0xA1;
-        static constexpr uint64_t ZHT32EUC_4_b3_max = 0xF2;
-        static constexpr uint64_t ZHT32EUC_4_b4_min = 0xA1;
-        static constexpr uint64_t ZHT32EUC_4_b4_max = 0xFE;
+        static constexpr uint64_t ZHT32EUC_4_b1{0x8E};
+        static constexpr uint64_t ZHT32EUC_4_b2_min{0xA2};
+        static constexpr uint64_t ZHT32EUC_4_b2_max{0xAE};
+        static constexpr uint64_t ZHT32EUC_4_b3_min{0xA1};
+        static constexpr uint64_t ZHT32EUC_4_b3_max{0xF2};
+        static constexpr uint64_t ZHT32EUC_4_b4_min{0xA1};
+        static constexpr uint64_t ZHT32EUC_4_b4_max{0xFE};
 
     protected:
         static typeUnicode16 unicode_map_ZHT32EUC_2b[(ZHT32EUC_2_b1_max - ZHT32EUC_2_b1_min + 1) *
