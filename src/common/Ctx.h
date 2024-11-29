@@ -35,10 +35,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CTX_H_
 #define CTX_H_
 
-#ifndef GLOBALS
-extern uint OLR_LOCALES;
-#endif
-
 namespace OpenLogReplicator {
     class Clock;
     class Metrics;
@@ -76,27 +72,27 @@ namespace OpenLogReplicator {
         static constexpr uint JSON_FORMAT_SEPARATOR_LENGTH{128};
         static constexpr uint JSON_TAG_LENGTH{4096};
 
-        enum LOCALES {
+        enum class LOCALES {
             TIMESTAMP, MOCK
         };
-        enum LOG {
+        enum class LOG {
             SILENT, ERROR, WARNING, INFO, DEBUG
         };
-        enum MEMORY {
+        enum class MEMORY {
             BUILDER, PARSER, READER, TRANSACTIONS
         };
         static constexpr uint MEMORY_COUNT{4};
-        enum DISABLE_CHECKS {
+        enum class DISABLE_CHECKS {
             GRANTS = 1 << 0, SUPPLEMENTAL_LOG = 1 << 1, BLOCK_SUM = 1 << 2, JSON_TAGS = 1 << 3
         };
-        enum REDO_FLAGS {
+        enum class REDO_FLAGS {
             ARCH_ONLY = 1 << 0, SCHEMALESS = 1 << 1, ADAPTIVE_SCHEMA = 1 << 2, DIRECT_DISABLE = 1 << 3, IGNORE_DATA_ERRORS = 1 << 4,
             SHOW_DDL = 1 << 5, SHOW_HIDDEN_COLUMNS = 1 << 6, SHOW_GUARD_COLUMNS = 1 << 7, SHOW_NESTED_COLUMNS = 1 << 8, SHOW_UNUSED_COLUMNS = 1 << 9,
             SHOW_INCOMPLETE_TRANSACTIONS = 1 << 10, SHOW_SYSTEM_TRANSACTIONS = 1 << 11, SHOW_CHECKPOINT = 1 << 12, CHECKPOINT_KEEP = 1 << 13,
             VERIFY_SCHEMA = 1 << 14, RAW_COLUMN_DATA = 1 << 15, EXPERIMENTAL_XMLTYPE = 1 << 16, EXPERIMENTAL_JSON = 1 << 17,
             EXPERIMENTAL_NOT_NULL_MISSING = 1 << 18
         };
-        enum TRACE {
+        enum class TRACE {
             DML = 1 << 0, DUMP = 1 << 1, LOB = 1 << 2, LWN = 1 << 3, THREADS = 1 << 4, SQL = 1 << 5, FILE = 1 << 6, DISK = 1 << 7, PERFORMANCE = 1 << 8,
             TRANSACTION = 1 << 9, REDO = 1 << 10, ARCHIVE_LIST = 1 << 11, SCHEMA_LIST = 1 << 12, WRITER = 1 << 13, CHECKPOINT = 1 << 14, SYSTEM = 1 << 15,
             LOB_DATA = 1 << 16, SLEEP = 1 << 17, CONDITION = 1 << 18
@@ -114,6 +110,11 @@ namespace OpenLogReplicator {
         static constexpr typeSeq ZERO_SEQ{0xFFFFFFFF};
         static constexpr typeScn ZERO_SCN{0xFFFFFFFFFFFFFFFF};
         static constexpr typeBlk ZERO_BLK{0xFFFFFFFF};
+
+        uint trace;
+        uint flags;
+        uint disableChecks;
+        LOG logLevel;
 
     protected:
         bool bigEndian;
@@ -189,10 +190,6 @@ namespace OpenLogReplicator {
         uint64_t stopCheckpoints;
         uint64_t stopTransactions;
         typeTransactionSize transactionSizeMax;
-        uint logLevel;
-        uint trace;
-        uint flags;
-        uint disableChecks;
         bool hardShutdown;
         bool softShutdown;
         bool replicatorFinished;
@@ -208,6 +205,7 @@ namespace OpenLogReplicator {
         typeXid swappedFlushXid;
         typeXid swappedShrinkXid;
         mutable std::mutex swapMtx;
+        std::condition_variable reusedTransactions;
 
         Ctx();
         virtual ~Ctx();
@@ -230,12 +228,20 @@ namespace OpenLogReplicator {
         }
 
     public:
+        bool isTraceSet(TRACE mask) const {
+            return (trace & static_cast<uint>(mask)) != 0;
+        }
+
         bool isFlagSet(REDO_FLAGS mask) const {
-            return (flags & mask) != 0;
+            return (flags & static_cast<uint>(mask)) != 0;
+        }
+
+        bool isLogLevelAt(LOG level) const {
+            return logLevel >= level;
         }
 
         bool isDisableChecksSet(DISABLE_CHECKS mask) const {
-            return (disableChecks & mask) != 0;
+            return (disableChecks & static_cast<uint>(mask)) != 0;
         }
 
         inline void setBigEndian() {
@@ -625,10 +631,14 @@ namespace OpenLogReplicator {
         void warning(int code, const std::string& message) const;
         void info(int code, const std::string& message) const;
         void debug(int code, const std::string& message) const;
-        void logTrace(int mask, const std::string& message) const;
+        void logTrace(TRACE mask, const std::string& message) const;
         void printMemoryUsageHWM() const;
         void printMemoryUsageCurrent() const;
     };
 }
+
+#ifndef GLOBALS
+extern OpenLogReplicator::Ctx::LOCALES OLR_LOCALES;
+#endif
 
 #endif

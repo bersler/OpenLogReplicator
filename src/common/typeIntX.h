@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iostream>
 #include <string>
 
-#ifndef TYPE_INTX_T_H_
-#define TYPE_INTX_T_H_
+#ifndef TYPE_INTX_H_
+#define TYPE_INTX_H_
 
 namespace OpenLogReplicator {
     class typeIntX final {
@@ -115,14 +115,6 @@ namespace OpenLogReplicator {
         typeIntX& operator=(uint64_t other) {
             this->data[0] = other;
             for (uint i = 1; i < LENGTH; ++i)
-                this->data[i] = 0;
-            return *this;
-        }
-
-        typeIntX& set(uint64_t other1, uint64_t other2) {
-            this->data[0] = other1;
-            this->data[1] = other2;
-            for (uint i = 2; i < LENGTH; ++i)
                 this->data[i] = 0;
             return *this;
         }

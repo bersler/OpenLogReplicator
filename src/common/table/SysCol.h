@@ -25,12 +25,170 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_COL_H_
 
 namespace OpenLogReplicator {
+    class SysCol final {
+    public:
+        static constexpr uint NAME_LENGTH{128};
+
+        enum class PROPERTY : unsigned long long {
+            ADT = 1ULL << 0, OID = 1ULL << 1, NESTED1 = 1ULL << 2, VIRTUAL1 = 1ULL << 3, NESTED_TABLE_SETID = 1ULL << 4, HIDDEN = 1ULL << 5,
+            PRIMARY_KEY_BASED_OID = 1ULL << 6, STORED_AS_LOB = 1ULL << 7, SYSTEM_GENERATED = 1ULL << 8, ROWINFO_TYPED_TABLE_VIEW = 1ULL << 9,
+            NESTED_TABLES_SETID = 1ULL << 10, NOT_INSERTABLE = 1ULL << 11, NOT_UPDATABLE = 1ULL << 12, NOT_DELETABLE = 1ULL << 13, DROPPED = 1ULL << 14,
+            UNUSED = 1ULL << 15, VIRTUAL2 = 1ULL << 16, PLACE_DESCEND_OPERATOR_ON_TOP = 1ULL << 17, VIRTUAL_IS_NLS_DEPENDENT = 1ULL << 18,
+            REF_OID_COL = 1ULL << 19, HIDDEN_SNAPSHOT_BASE_TABLE = 1ULL << 20, ATTRIBUTE_OF_USER_DEFINED_REF = 1ULL << 21, HIDDEN_RLS = 1ULL << 22,
+            LENGTH_IN_CHARS = 1ULL << 23, VIRTUAL_EXPRESSION_SPECIFIED = 1ULL << 24, TYPEID = 1ULL << 25, ENCRYPTED = 1ULL << 26,
+            ENCRYPTED_WITHOUT_SALT = 1ULL << 29, ADDED = 1ULL << 30, DEFAULT_WITH_SEQUENCE = 1ULL << 35, DEFAULT_ON_NULL = 1ULL << 36,
+            GENERATED_ALWAYS_IDENTITY = 1ULL << 37, GENERATED_BY_DEFAULT_IDENTITY = 1ULL << 38, GUARD = 1ULL << 39
+        };
+
+        enum class COLTYPE : unsigned short int{
+            NONE = 0, VARCHAR = 1, NUMBER = 2, LONG = 8, DATE = 12, RAW = 23, LONG_RAW = 24, XMLTYPE = 58, CHAR = 96, FLOAT = 100, DOUBLE = 101, CLOB = 112,
+            BLOB = 113, JSON = 119, TIMESTAMP = 180, TIMESTAMP_WITH_TZ = 181, INTERVAL_YEAR_TO_MONTH = 182, INTERVAL_DAY_TO_SECOND = 183, UROWID = 208,
+            TIMESTAMP_WITH_LOCAL_TZ = 231, BOOLEAN = 252
+        };
+
+        typeRowId rowId;
+        typeObj obj;
+        typeCol col;
+        typeCol segCol;
+        typeCol intCol;
+        std::string name;
+        SysCol::COLTYPE type;
+        uint length;
+        int precision;          // NULL
+        int scale;              // NULL
+        uint charsetForm;       // NULL
+        uint charsetId;         // NULL
+        int null_;
+        typeIntX property;
+
+        SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, SysCol::COLTYPE newType,
+               uint newLength, int newPrecision, int newScale, uint newCharsetForm, uint newCharsetId, int newNull,
+               uint64_t newProperty1, uint64_t newProperty2) :
+                rowId(newRowId),
+                obj(newObj),
+                col(newCol),
+                segCol(newSegCol),
+                intCol(newIntCol),
+                name(newName),
+                type(newType),
+                length(newLength),
+                precision(newPrecision),
+                scale(newScale),
+                charsetForm(newCharsetForm),
+                charsetId(newCharsetId),
+                null_(newNull),
+                property(newProperty1, newProperty2) {
+        }
+
+        explicit SysCol(typeRowId newRowId) :
+                rowId(newRowId),
+                obj(0),
+                col(0),
+                segCol(0),
+                intCol(0),
+                name(""),
+                type(COLTYPE::NONE),
+                length(0),
+                precision(-1),
+                scale(-1),
+                charsetForm(0),
+                charsetId(0),
+                null_(0),
+                property(0, 0) {
+        }
+
+        bool operator!=(const SysCol& other) const {
+            return (other.rowId != rowId) || (other.obj != obj) || (other.col != col) || (other.segCol != segCol) || (other.intCol != intCol) ||
+                   (other.name != name) || (other.type != type) || (other.length != length) || (other.precision != precision) || (other.scale != scale) ||
+                   (other.charsetForm != charsetForm) || (other.charsetId != charsetId) || (other.null_ != null_) || (other.property != property);
+        }
+
+        [[nodiscard]] bool isProperty(PROPERTY val) const{
+            return property.isSet64(static_cast<uint64_t>(val));
+        }
+
+        [[nodiscard]] bool isHidden() const {
+            return isProperty(PROPERTY::HIDDEN);
+        }
+
+        [[nodiscard]] bool isNullable() const {
+            return (null_ == 0);
+        }
+
+        [[nodiscard]] bool isStoredAsLob() const {
+            return isProperty(PROPERTY::STORED_AS_LOB);
+        }
+
+        [[nodiscard]] bool isSystemGenerated() const {
+            return isProperty(PROPERTY::SYSTEM_GENERATED);
+        }
+
+        [[nodiscard]] bool isNested() const {
+            return isProperty(PROPERTY::NESTED_TABLES_SETID);
+        }
+
+        [[nodiscard]] bool isUnused() const {
+            return isProperty(PROPERTY::UNUSED);
+        }
+
+        [[nodiscard]] bool isAdded() const {
+            return isProperty(PROPERTY::ADDED);
+        }
+
+        [[nodiscard]] bool isGuard() const {
+            return isProperty(PROPERTY::GUARD);
+        }
+
+        [[nodiscard]] bool lengthInChars() const {
+            return ((type == COLTYPE::VARCHAR || type == COLTYPE::CHAR) && isProperty(PROPERTY::LENGTH_IN_CHARS));
+            // Else in bytes
+        }
+
+        static std::string tableName() {
+            return "SYS.COL$";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", COL#: " + std::to_string(col) + ", SEGCOL#: " +
+                   std::to_string(segCol) + ", INTCOL#: " + std::to_string(intCol) + ", NAME: '" + name + "', TYPE#: " +
+                   std::to_string(static_cast<uint>(type)) + ", SIZE: " + std::to_string(length) + ", PRECISION#: " + std::to_string(precision) + ", SCALE: " +
+                   std::to_string(scale) + ", CHARSETFORM: " + std::to_string(charsetForm) + ", CHARSETID: " + std::to_string(charsetId) + ", NULL$: " +
+                   std::to_string(null_) + ", PROPERTY: " + property.toString();
+        }
+
+        static constexpr bool dependentTable() {
+            return true;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+
+        typeObj getDependentTable() const {
+            return obj;
+        };
+    };
+
     class SysColSeg final {
     public:
         SysColSeg(typeObj newObj, typeCol newSegCol, typeRowId newRowId) :
                 obj(newObj),
                 segCol(newSegCol),
                 rowId(newRowId) {
+        }
+
+        explicit SysColSeg(const SysCol* sysCol) :
+                obj(sysCol->obj),
+                segCol(sysCol->segCol),
+                rowId(sysCol->rowId) {
         }
 
         bool operator<(const SysColSeg& other) const {
@@ -54,12 +212,15 @@ namespace OpenLogReplicator {
 
     class SysColKey final {
     public:
-        SysColKey(typeObj newObj, typeCol newIntCol) :
-                obj(newObj),
-                intCol(newIntCol) {
+        typeObj obj;
+        typeCol intCol;
+
+        explicit SysColKey(const SysCol* sysCol) :
+                obj(sysCol->obj),
+                intCol(sysCol->intCol) {
         }
 
-        bool operator<(const SysColKey& other) const {
+        bool operator<(const SysColKey other) const {
             if (obj < other.obj)
                 return true;
             if (other.obj < obj)
@@ -68,108 +229,6 @@ namespace OpenLogReplicator {
                 return true;
             return false;
         }
-
-        typeObj obj;
-        typeCol intCol;
-    };
-
-    class SysCol final {
-    public:
-        static constexpr uint NAME_LENGTH{128};
-
-        enum PROPERTY {
-            ADT = 1UL << 0, OID = 1UL << 1, NESTED1 = 1UL << 2, VIRTUAL1 = 1UL << 3, NESTED_TABLE_SETID = 1UL << 4, HIDDEN = 1UL << 5,
-            PRIMARY_KEY_BASED_OID = 1UL << 6, STORED_AS_LOB = 1UL << 7, SYSTEM_GENERATED = 1UL << 8, ROWINFO_TYPED_TABLE_VIEW = 1UL << 9,
-            NESTED_TABLES_SETID = 1UL << 10, NOT_INSERTABLE = 1UL << 11, NOT_UPDATABLE = 1UL << 12, NOT_DELETABLE = 1UL << 13, DROPPED = 1UL << 14,
-            UNUSED = 1UL << 15, VIRTUAL2 = 1UL << 16, PLACE_DESCEND_OPERATOR_ON_TOP = 1UL << 17, VIRTUAL_IS_NLS_DEPENDENT = 1UL << 18,
-            REF_OID_COL = 1UL << 19, HIDDEN_SNAPSHOT_BASE_TABLE = 1UL << 20, ATTRIBUTE_OF_USER_DEFINED_REF = 1UL << 21, HIDDEN_RLS = 1UL << 22,
-            LENGTH_IN_CHARS = 1UL << 23, VIRTUAL_EXPRESSION_SPECIFIED = 1UL << 24, TYPEID = 1UL << 25, ENCRYPTED = 1UL << 26,
-            ENCRYPTED_WITHOUT_SALT = 1UL << 29, ADDED = 1UL << 30, DEFAULT_WITH_SEQUENCE = 1UL << 35, DEFAULT_ON_NULL = 1UL << 36,
-            GENERATED_ALWAYS_IDENTITY = 1UL << 37, GENERATED_BY_DEFAULT_IDENTITY = 1UL << 38, GUARD = 1UL << 39
-        };
-
-        enum COLTYPE {
-            VARCHAR = 1, NUMBER = 2, LONG = 8, DATE = 12, RAW = 23, LONG_RAW = 24, XMLTYPE = 58, CHAR = 96, FLOAT = 100, DOUBLE = 101, CLOB = 112, BLOB = 113,
-            JSON = 119, TIMESTAMP = 180, TIMESTAMP_WITH_TZ = 181, INTERVAL_YEAR_TO_MONTH = 182, INTERVAL_DAY_TO_SECOND = 183, UROWID = 208,
-            TIMESTAMP_WITH_LOCAL_TZ = 231, BOOLEAN = 252
-        };
-
-        SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
-               uint newLength, int newPrecision, int newScale, uint newCharsetForm, uint newCharsetId, int newNull,
-               uint64_t newProperty1, uint64_t newProperty2) :
-                rowId(newRowId),
-                obj(newObj),
-                col(newCol),
-                segCol(newSegCol),
-                intCol(newIntCol),
-                name(newName),
-                type(newType),
-                length(newLength),
-                precision(newPrecision),
-                scale(newScale),
-                charsetForm(newCharsetForm),
-                charsetId(newCharsetId),
-                null_(newNull),
-                property(newProperty1, newProperty2) {
-        }
-
-        bool operator!=(const SysCol& other) const {
-            return (other.rowId != rowId) || (other.obj != obj) || (other.col != col) || (other.segCol != segCol) || (other.intCol != intCol) ||
-                   (other.name != name) || (other.type != type) || (other.length != length) || (other.precision != precision) || (other.scale != scale) ||
-                   (other.charsetForm != charsetForm) || (other.charsetId != charsetId) || (other.null_ != null_) || (other.property != property);
-        }
-
-        [[nodiscard]] bool isHidden() {
-            return property.isSet64(PROPERTY::HIDDEN);
-        }
-
-        [[nodiscard]] bool isNullable() {
-            return (null_ == 0);
-        }
-
-        [[nodiscard]] bool isStoredAsLob() {
-            return property.isSet64(PROPERTY::STORED_AS_LOB);
-        }
-
-        [[nodiscard]] bool isSystemGenerated() {
-            return property.isSet64(PROPERTY::SYSTEM_GENERATED);
-        }
-
-        [[nodiscard]] bool isNested() {
-            return property.isSet64(PROPERTY::NESTED_TABLES_SETID);
-        }
-
-        [[nodiscard]] bool isUnused() {
-            return property.isSet64(PROPERTY::UNUSED);
-        }
-
-        [[nodiscard]] bool isAdded() {
-            return property.isSet64(PROPERTY::ADDED);
-        }
-
-        [[nodiscard]] bool isGuard() {
-            return property.isSet64(PROPERTY::GUARD);
-        }
-
-        [[nodiscard]] bool lengthInChars() {
-            return ((type == COLTYPE::VARCHAR || type == COLTYPE::CHAR) && property.isSet64(PROPERTY::LENGTH_IN_CHARS));
-            // Else in bytes
-        }
-
-        typeRowId rowId;
-        typeObj obj;
-        typeCol col;
-        typeCol segCol;
-        typeCol intCol;
-        std::string name;
-        typeType type;
-        uint length;
-        int precision;          // NULL
-        int scale;              // NULL
-        uint charsetForm;       // NULL
-        uint charsetId;         // NULL
-        int null_;
-        typeIntX property;
     };
 }
 

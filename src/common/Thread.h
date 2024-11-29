@@ -35,12 +35,12 @@ namespace OpenLogReplicator {
         virtual void run() = 0;
 
     public:
-        enum CONTEXT {
-            CONTEXT_NONE, CONTEXT_CPU, CONTEXT_OS, CONTEXT_MUTEX, CONTEXT_WAIT, CONTEXT_SLEEP, CONTEXT_MEM, CONTEXT_TRAN, CONTEXT_CHKPT,
-            CONTEXT_NUM
+        enum class CONTEXT {
+            NONE, CPU, OS, MUTEX, WAIT, SLEEP, MEM, TRAN, CHKPT,
+            NUM
         };
-        enum REASON {
-            REASON_NONE,
+        enum class REASON {
+            NONE,
             // MUTEX
             BUILDER_RELEASE, BUILDER_ROTATE, BUILDER_COMMIT, CHECKPOINT_RUN, // 1
             CHECKPOINT_WAKEUP, CTX_NOTHING_TO_SWAP, CTX_FREE_MEMORY, CTX_GET_SWAP, CTX_GET_USED, // 5
@@ -56,11 +56,11 @@ namespace OpenLogReplicator {
             // SLEEP
             CHECKPOINT_NO_WORK, MEMORY_EXHAUSTED, METADATA_WAIT_WRITER, METADATA_WAIT_FOR_REPLICATOR, READER_CHECK, // 55
             READER_EMPTY, READER_BUFFER_FULL, READER_FINISHED, READER_NO_WORK, MEMORY_NO_WORK, // 60
-            WRITER_NO_WORK, // 65
+            WRITER_NO_WORK, MEMORY_BLOCKED, // 66
             // OTHER
-            REASON_OS, REASON_MEM, REASON_TRAN, REASON_CHKPT, // 66
+            OS, MEM, TRAN, CHKPT, // 67
             // END
-            REASON_NUM = 1000
+            NUM = 1000
         };
         Ctx* ctx;
         pthread_t pthread;
@@ -78,11 +78,11 @@ namespace OpenLogReplicator {
         static constexpr bool contextCompiled = false;
 #endif
         time_ut contextTimeLast{0};
-        time_ut contextTime[CONTEXT_NUM]{0};
-        time_ut contextCnt[CONTEXT_NUM]{0};
-        uint64_t reasonCnt[REASON_NUM]{0};
-        REASON curReason{REASON_NONE};
-        CONTEXT curContext{CONTEXT_NONE};
+        time_ut contextTime[static_cast<uint>(CONTEXT::NUM)]{0};
+        time_ut contextCnt[static_cast<uint>(CONTEXT::NUM)]{0};
+        uint64_t reasonCnt[static_cast<uint>(REASON::NUM)]{0};
+        REASON curReason{REASON::NONE};
+        CONTEXT curContext{CONTEXT::NONE};
         uint64_t contextSwitches{0};
 
         virtual const std::string getName() const = 0;
@@ -100,15 +100,15 @@ namespace OpenLogReplicator {
             contextTimeLast = ctx->clock->getTimeUt();
         }
 
-        void contextSet(CONTEXT context, REASON reason = REASON_NONE) {
+        void contextSet(CONTEXT context, REASON reason = REASON::NONE) {
             if (!contextCompiled)
                 return;
 
             ++contextSwitches;
             time_ut contextTimeNow = ctx->clock->getTimeUt();
-            contextTime[curContext] += contextTimeNow - contextTimeLast;
-            ++contextCnt[curContext];
-            ++reasonCnt[reason];
+            contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
+            ++contextCnt[static_cast<uint>(curContext)];
+            ++reasonCnt[static_cast<uint>(reason)];
             curReason = reason;
             curContext = context;
             contextTimeLast = contextTimeNow;
@@ -120,21 +120,29 @@ namespace OpenLogReplicator {
 
             ++contextSwitches;
             time_ut contextTimeNow = ctx->clock->getTimeUt();
-            contextTime[curContext] += contextTimeNow - contextTimeLast;
-            ++contextCnt[curContext];
+            contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
+            ++contextCnt[static_cast<uint>(curContext)];
 
             std::string msg =
                     "thread: " + alias +
-                    " cpu: " + std::to_string(contextTime[CONTEXT_CPU]) + "/" + std::to_string(contextCnt[CONTEXT_CPU]) +
-                    " os: " + std::to_string(contextTime[CONTEXT_OS]) + "/" + std::to_string(contextCnt[CONTEXT_OS]) +
-                    " mtx: " + std::to_string(contextTime[CONTEXT_MUTEX]) + "/" + std::to_string(contextCnt[CONTEXT_MUTEX]) +
-                    " wait: " + std::to_string(contextTime[CONTEXT_WAIT]) + "/" + std::to_string(contextCnt[CONTEXT_WAIT]) +
-                    " sleep: " + std::to_string(contextTime[CONTEXT_SLEEP]) + "/" + std::to_string(contextCnt[CONTEXT_SLEEP]) +
-                    " mem: " + std::to_string(contextTime[CONTEXT_MEM]) + "/" + std::to_string(contextCnt[CONTEXT_MEM]) +
-                    " tran: " + std::to_string(contextTime[CONTEXT_TRAN]) + "/" + std::to_string(contextCnt[CONTEXT_TRAN]) +
-                    " chkpt: " + std::to_string(contextTime[CONTEXT_CHKPT]) + "/" + std::to_string(contextCnt[CONTEXT_CHKPT]) +
+                    " cpu: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::CPU)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::CPU)]) +
+                    " os: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::OS)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::OS)]) +
+                    " mtx: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::MUTEX)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::MUTEX)]) +
+                    " wait: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::WAIT)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::WAIT)]) +
+                    " sleep: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::SLEEP)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::SLEEP)]) +
+                    " mem: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::MEM)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::MEM)]) +
+                    " tran: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::TRAN)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::TRAN)]) +
+                    " chkpt: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::CHKPT)]) +
+                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::CHKPT)]) +
                     " switches: " + std::to_string(contextSwitches) + " reasons:";
-            for (int reason = REASON_NONE; reason < REASON_NUM; ++reason) {
+            for (uint reason = static_cast<uint>(REASON::NONE); reason < static_cast<int>(REASON::NUM); ++reason) {
                 if (reasonCnt[reason] == 0)
                     continue;
 

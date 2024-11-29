@@ -139,9 +139,9 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset) {
-        for (auto characterMapIt: locales->characterMap) {
-            if (nlsCharset == characterMapIt.second->name) {
-                defaultCharacterMapId = characterMapIt.first;
+        for (const auto& [mapId, characterSet]: locales->characterMap) {
+            if (nlsCharset == characterSet->name) {
+                defaultCharacterMapId = mapId;
                 break;
             }
         }
@@ -191,7 +191,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setSeqOffset(typeSeq newSequence, uint64_t newOffset) {
-        if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "setting sequence to: " + std::to_string(newSequence) + ", offset: " +
                                                   std::to_string(newOffset));
 
@@ -239,7 +239,11 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SchemaElement* Metadata::addElement(const char* owner, const char* table, typeOptions options) {
+    SchemaElement* Metadata::addElement(const char* owner, const char* table, DbTable::OPTIONS options1, DbTable::OPTIONS options2) {
+        return addElement(owner, table, static_cast<DbTable::OPTIONS>(static_cast<uint>(options1) | static_cast<uint>(options2)));
+    }
+
+    SchemaElement* Metadata::addElement(const char* owner, const char* table, DbTable::OPTIONS options) {
         if (unlikely(!Ctx::checkNameCase(owner)))
             throw ConfigurationException(30003, "owner '" + std::string(owner) +
                                                 "' contains lower case characters, value must be upper case");
@@ -256,11 +260,11 @@ namespace OpenLogReplicator {
             delete element;
         newSchemaElements.clear();
 
-        addElement("SYS", "CCOL\\$", DbTable::OPTIONS::SYSTEM_TABLE | DbTable::OPTIONS::SCHEMA_TABLE);
-        addElement("SYS", "CDEF\\$", DbTable::OPTIONS::SYSTEM_TABLE | DbTable::OPTIONS::SCHEMA_TABLE);
-        addElement("SYS", "COL\\$", DbTable::OPTIONS::SYSTEM_TABLE | DbTable::OPTIONS::SCHEMA_TABLE);
+        addElement("SYS", "CCOL\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
+        addElement("SYS", "CDEF\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
+        addElement("SYS", "COL\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
         addElement("SYS", "DEFERRED_STG\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "ECOL\\$", DbTable::OPTIONS::SYSTEM_TABLE | DbTable::OPTIONS::SCHEMA_TABLE);
+        addElement("SYS", "ECOL\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
         addElement("SYS", "LOB\\$", DbTable::OPTIONS::SYSTEM_TABLE);
         addElement("SYS", "LOBCOMPPART\\$", DbTable::OPTIONS::SYSTEM_TABLE);
         addElement("SYS", "LOBFRAG\\$", DbTable::OPTIONS::SYSTEM_TABLE);
@@ -291,9 +295,9 @@ namespace OpenLogReplicator {
 
     void Metadata::buildMaps(std::vector<std::string>& msgs) {
         for (const SchemaElement* element: schemaElements) {
-            if (ctx->logLevel >= Ctx::LOG::DEBUG)
+            if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                 msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
-                               std::to_string(element->options));
+                               std::to_string(static_cast<uint>(element->options)));
 
             schema->buildMaps(element->owner, element->table, element->keyList, element->key, element->tagType, element->tagList, element->tag,
                               element->condition, element->options, msgs, suppLogDbPrimary, suppLogDbAll, defaultCharacterMapId, defaultCharacterNcharMapId);
@@ -302,37 +306,37 @@ namespace OpenLogReplicator {
 
     void Metadata::waitForWriter(Thread* t) {
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             if (status == STATUS::READY) {
-                if (unlikely(ctx->trace & Ctx::TRACE::SLEEP))
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
                     ctx->logTrace(Ctx::TRACE::SLEEP, "Metadata:waitForWriter");
-                t->contextSet(Thread::CONTEXT_WAIT, Thread::METADATA_WAIT_WRITER);
+                t->contextSet(Thread::CONTEXT::WAIT, Thread::REASON::METADATA_WAIT_WRITER);
                 condReplicator.wait(lck);
             }
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::waitForReplicator(Thread* t) {
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             if (status == STATUS::START) {
-                if (unlikely(ctx->trace & Ctx::TRACE::SLEEP))
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
                     ctx->logTrace(Ctx::TRACE::SLEEP, "Metadata:waitForReplicator");
-                t->contextSet(Thread::CONTEXT_WAIT, Thread::METADATA_WAIT_FOR_REPLICATOR);
+                t->contextSet(Thread::CONTEXT::WAIT, Thread::REASON::METADATA_WAIT_FOR_REPLICATOR);
                 condWriter.wait(lck);
             }
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::setStatusReady(Thread* t) {
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             status = STATUS::READY;
@@ -342,47 +346,47 @@ namespace OpenLogReplicator {
             schema->scn = Ctx::ZERO_SCN;
             condWriter.notify_all();
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::setStatusStart(Thread* t) {
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             status = STATUS::START;
             condReplicator.notify_all();
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::setStatusReplicate(Thread* t) {
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             status = STATUS::REPLICATE;
             condReplicator.notify_all();
             condWriter.notify_all();
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::wakeUp(Thread* t) {
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             condReplicator.notify_all();
             condWriter.notify_all();
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::checkpoint(Thread* t, typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
                               uint64_t newCheckpointBytes, typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid) {
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             checkpointScn = newCheckpointScn;
@@ -394,14 +398,14 @@ namespace OpenLogReplicator {
             minOffset = newMinOffset;
             minXid = newMinXid;
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::writeCheckpoint(Thread* t, bool force) {
         std::ostringstream ss;
 
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
             if (!allowedCheckpoints)
                 return;
@@ -437,11 +441,11 @@ namespace OpenLogReplicator {
             checkpointScnList.insert(checkpointScn);
             checkpointSchemaMap.insert_or_assign(checkpointScn, storeSchema);
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
 
         std::string checkpointName = database + "-chkpt-" + std::to_string(lastCheckpointScn);
 
-        if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "write scn: " + std::to_string(lastCheckpointScn) + " time: " +
                                                   std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
                                                   std::to_string(lastCheckpointOffset) + " name: " + checkpointName);
@@ -451,7 +455,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::readCheckpoints() {
-        if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "searching for previous checkpoint information");
 
         std::set<std::string> namesList;
@@ -471,7 +475,7 @@ namespace OpenLogReplicator {
                 continue;
             }
 
-            if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
                 ctx->logTrace(Ctx::TRACE::CHECKPOINT, "found: " + name + " scn: " + std::to_string(scn));
 
             checkpointScnList.insert(scn);
@@ -483,7 +487,7 @@ namespace OpenLogReplicator {
         else
             firstDataScn = 0;
 
-        if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "scn: " + std::to_string(firstDataScn));
 
         if (firstDataScn != Ctx::ZERO_SCN && firstDataScn != 0) {
@@ -504,7 +508,7 @@ namespace OpenLogReplicator {
 
         std::string name1(database + "-chkpt-" + std::to_string(scn));
         if (!stateRead(name1, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss)) {
-            if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
                 ctx->logTrace(Ctx::TRACE::CHECKPOINT, "no checkpoint file found, setting unknown sequence");
 
             sequence = Ctx::ZERO_SEQ;
@@ -559,16 +563,16 @@ namespace OpenLogReplicator {
             return;
 
         {
-            t->contextSet(Thread::CONTEXT_CHKPT, Thread::REASON_CHKPT);
+            t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> lck(mtxCheckpoint);
 
             if (!allowedCheckpoints) {
-                t->contextSet(Thread::CONTEXT_CPU);
+                t->contextSet(Thread::CONTEXT::CPU);
                 return;
             }
 
             if (checkpoints < ctx->checkpointKeep) {
-                t->contextSet(Thread::CONTEXT_CPU);
+                t->contextSet(Thread::CONTEXT::CPU);
                 return;
             }
 
@@ -606,7 +610,7 @@ namespace OpenLogReplicator {
                 checkpointSchemaMap.erase(scn);
             }
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Metadata::loadAdaptiveSchema() {
@@ -638,7 +642,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::allowCheckpoints() {
-        if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "allowing checkpoints");
 
         std::unique_lock<std::mutex> lck(mtxCheckpoint);

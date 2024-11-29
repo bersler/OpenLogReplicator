@@ -43,9 +43,9 @@ namespace OpenLogReplicator {
 
     void ReaderFilesystem::redoClose() {
         if (fileDes != -1) {
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             close(fileDes);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
             fileDes = -1;
         }
     }
@@ -53,9 +53,9 @@ namespace OpenLogReplicator {
     Reader::REDO_CODE ReaderFilesystem::redoOpen() {
         struct stat fileStat;
 
-        contextSet(CONTEXT_OS, REASON_OS);
+        contextSet(CONTEXT::OS, REASON::OS);
         int statRet = stat(fileName.c_str(), &fileStat);
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
         if (statRet != 0) {
             ctx->error(10003, "file: " + fileName + " - get metadata returned: " + strerror(errno));
             return REDO_CODE::ERROR;
@@ -74,9 +74,9 @@ namespace OpenLogReplicator {
             flags |= O_DIRECT;
 #endif
 
-        contextSet(CONTEXT_OS, REASON_OS);
+        contextSet(CONTEXT::OS, REASON::OS);
         fileDes = open(fileName.c_str(), flags);
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
         if (fileDes == -1) {
             ctx->error(10001, "file: " + fileName + " - open for read returned: " + strerror(errno));
             return REDO_CODE::ERROR;
@@ -84,9 +84,9 @@ namespace OpenLogReplicator {
 
 #if __APPLE__
         if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             int fcntlRet = fcntl(fileDes, F_GLOBAL_NOCACHE, 1);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
             if (fcntlRet < 0)
                 ctx->error(10008, "file: " + fileName + " - set no cache for file returned: " + strerror(errno));
         }
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
     int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
-        if (unlikely(ctx->trace & Ctx::TRACE::PERFORMANCE))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::PERFORMANCE)))
             startTime = ctx->clock->getTimeUt();
         int64_t bytes = 0;
         uint64_t tries = ctx->archReadTries;
@@ -105,10 +105,10 @@ namespace OpenLogReplicator {
         while (tries > 0) {
             if (ctx->hardShutdown)
                 break;
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             bytes = pread(fileDes, buf, size, static_cast<int64_t>(offset));
-            contextSet(CONTEXT_CPU);
-            if (unlikely(ctx->trace & Ctx::TRACE::FILE))
+            contextSet(CONTEXT::CPU);
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::FILE)))
                 ctx->logTrace(Ctx::TRACE::FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
                                                 " returns " + std::to_string(bytes));
 
@@ -125,19 +125,19 @@ namespace OpenLogReplicator {
                 break;
 
             ctx->info(0, "sleeping " + std::to_string(ctx->archReadSleepUs) + " us before retrying read");
-            contextSet(CONTEXT_SLEEP);
+            contextSet(CONTEXT::SLEEP);
             usleep(ctx->archReadSleepUs);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
             --tries;
         }
 
         // Maybe direct IO does not work
         if (bytes < 0 && !ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
             ctx->hint("if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " +
-                      std::to_string(Ctx::REDO_FLAGS::DIRECT_DISABLE));
+                      std::to_string(static_cast<uint>(Ctx::REDO_FLAGS::DIRECT_DISABLE)));
         }
 
-        if (unlikely(ctx->trace & Ctx::TRACE::PERFORMANCE)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::PERFORMANCE))) {
             if (bytes > 0)
                 sumRead += bytes;
             sumTime += ctx->clock->getTimeUt() - startTime;

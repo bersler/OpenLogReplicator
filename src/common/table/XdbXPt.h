@@ -29,19 +29,79 @@ namespace OpenLogReplicator {
         static constexpr uint PATH_LENGTH{2000};
         static constexpr uint ID_LENGTH{16};
 
+        typeRowId rowId;
+        std::string path;
+        std::string id;
+
         XdbXPt(typeRowId newRowId, const char* newPath, const char* newId) :
                 rowId(newRowId),
                 path(newPath),
                 id(newId) {
         }
 
+        explicit XdbXPt(typeRowId newRowId) :
+                rowId(newRowId),
+                path(""),
+                id("") {
+        }
+
         bool operator!=(const XdbXPt& other) const {
             return (other.rowId != rowId) || (other.path != path) || (other.id != id);
         }
 
-        typeRowId rowId;
-        std::string path;
+        static std::string tableName() {
+            return "XDB.X$PT";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", PATH: '" + path + "', ID: '" + id + "'";
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+    };
+
+    class XdbXPtKey final {
+    public:
         std::string id;
+
+        explicit XdbXPtKey(const std::string& newId) :
+                id(newId) {
+        }
+
+        explicit XdbXPtKey(const XdbXPt* xdbXPt) :
+                id(xdbXPt->id) {
+        }
+
+        bool operator!=(const XdbXPtKey& other) const {
+            return (other.id != id);
+        }
+
+        bool operator==(const XdbXPtKey& other) const {
+            return (other.id == id);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::XdbXPtKey> {
+        size_t operator()(const OpenLogReplicator::XdbXPtKey& xdbXPtKey) const {
+            return hash<std::string>()(xdbXPtKey.id);
+        }
     };
 }
 

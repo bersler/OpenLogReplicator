@@ -108,7 +108,7 @@ namespace OpenLogReplicator {
     void Writer::resetMessageQueue() {
         for (uint64_t i = 0; i < currentQueueSize; ++i) {
             BuilderMsg* msg = queue[i];
-            if ((msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED) != 0)
+            if (msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::ALLOCATED))
                 delete[] msg->data;
         }
         currentQueueSize = 0;
@@ -122,27 +122,27 @@ namespace OpenLogReplicator {
             ctx->metrics->emitMessagesConfirmed(1);
         }
 
-        contextSet(CONTEXT_MUTEX, WRITER_CONFIRM);
+        contextSet(CONTEXT::MUTEX, REASON::WRITER_CONFIRM);
         std::unique_lock<std::mutex> lck(mtx);
 
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
                 ctx->warning(70007, "trying to confirm an empty message");
-                contextSet(CONTEXT_CPU);
+                contextSet(CONTEXT::CPU);
                 return;
             }
             msg = queue[0];
         }
 
-        msg->flags |= Builder::OUTPUT_BUFFER::MESSAGE_CONFIRMED;
-        if (msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED) {
+        msg->setFlag(BuilderMsg::OUTPUT_BUFFER::CONFIRMED);
+        if (msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::ALLOCATED)) {
             delete[] msg->data;
-            msg->flags &= ~Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED;
+            msg->unsetFlag(BuilderMsg::OUTPUT_BUFFER::ALLOCATED);
         }
 
         uint64_t maxId = 0;
         {
-            while (currentQueueSize > 0 && (queue[0]->flags & Builder::OUTPUT_BUFFER::MESSAGE_CONFIRMED) != 0) {
+            while (currentQueueSize > 0 && queue[0]->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::CONFIRMED)) {
                 maxId = queue[0]->queueId;
                 if (confirmedScn == Ctx::ZERO_SCN || msg->lwnScn > confirmedScn) {
                     confirmedScn = msg->lwnScn;
@@ -174,11 +174,11 @@ namespace OpenLogReplicator {
         }
 
         builder->releaseBuffers(this, maxId);
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
     }
 
     void Writer::run() {
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "writer (" + ss.str() + ") start");
@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
         }
 
         ctx->info(0, "writer is stopping: " + getType() + ", hwm queue size: " + std::to_string(hwmQueueSize));
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "writer (" + ss.str() + ") stop");
@@ -237,16 +237,16 @@ namespace OpenLogReplicator {
                 if (streaming && metadata->status == Metadata::STATUS::REPLICATE)
                     break;
 
-                if (unlikely(ctx->trace & Ctx::TRACE::WRITER))
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
                     ctx->logTrace(Ctx::TRACE::WRITER, "waiting for client");
-                contextSet(CONTEXT_SLEEP);
+                contextSet(CONTEXT::SLEEP);
                 usleep(ctx->pollIntervalUs);
-                contextSet(CONTEXT_CPU);
+                contextSet(CONTEXT::CPU);
             }
 
             // Get a message to send
             while (!ctx->hardShutdown) {
-                // Verify sent messages, check what is received by client
+                // Verify sent messages, check what client receives
                 pollQueue();
 
                 // Update checkpoint
@@ -280,12 +280,12 @@ namespace OpenLogReplicator {
                 // The queue is full
                 pollQueue();
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
-                    if (unlikely(ctx->trace & Ctx::TRACE::WRITER))
+                    if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
                         ctx->logTrace(Ctx::TRACE::WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
                                                           " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
-                    contextSet(CONTEXT_SLEEP);
+                    contextSet(CONTEXT::SLEEP);
                     usleep(ctx->pollIntervalUs);
-                    contextSet(CONTEXT_CPU);
+                    contextSet(CONTEXT::CPU);
                     pollQueue();
                 }
 
@@ -300,7 +300,7 @@ namespace OpenLogReplicator {
                 if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send the message to the client in one part
-                    if (((msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
+                    if ((msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -313,12 +313,12 @@ namespace OpenLogReplicator {
                     }
                     oldSize += size8;
                 } else {
-                    // The message is split to many parts - merge & copy
+                    // The message is split to many parts - merge and copy
                     msg->data = new uint8_t[msg->size];
                     if (unlikely(msg->data == nullptr))
                         throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->size) +
                                                       " bytes memory for: temporary buffer for JSON message");
-                    msg->flags |= Builder::OUTPUT_BUFFER::MESSAGE_ALLOCATED;
+                    msg->setFlag(BuilderMsg::OUTPUT_BUFFER::ALLOCATED);
 
                     uint64_t copied = 0;
                     while (msg->size > copied) {
@@ -340,7 +340,7 @@ namespace OpenLogReplicator {
 
                     createMessage(msg);
                     // Send only new messages to the client
-                    if (((msg->flags & Builder::OUTPUT_BUFFER::MESSAGE_CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
+                    if ((msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -382,7 +382,7 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
-        if (unlikely(ctx->trace & Ctx::TRACE::CHECKPOINT)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT))) {
             if (checkpointScn == Ctx::ZERO_SCN)
                 ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
                                                       std::to_string(confirmedIdx));
@@ -431,7 +431,7 @@ namespace OpenLogReplicator {
         metadata->setResetlogs(Ctx::getJsonFieldU32(name, document, "resetlogs"));
         metadata->setActivation(Ctx::getJsonFieldU32(name, document, "activation"));
 
-        // Started earlier - continue work & ignore default startup parameters
+        // Started earlier - continue work and ignore default startup parameters
         checkpointScn = Ctx::getJsonFieldU64(name, document, "scn");
         metadata->clientScn = checkpointScn;
         if (document.HasMember("idx"))

@@ -157,9 +157,7 @@ namespace OpenLogReplicator {
         // SYS.CCOL$
         ss << R"("sys-ccol":[)";
         hasPrev = false;
-        for (auto sysCColMapRowIdIt: metadata->schema->sysCColMapRowId) {
-            SysCCol* sysCCol = sysCColMapRowIdIt.second;
-
+        for (const auto &[_,sysCCol]: metadata->schema->sysCColPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -175,9 +173,7 @@ namespace OpenLogReplicator {
         // SYS.CDEF$
         ss << "]," SERIALIZER_ENDL << R"("sys-cdef":[)";
         hasPrev = false;
-        for (auto sysCDefMapRowIdIt: metadata->schema->sysCDefMapRowId) {
-            const SysCDef* sysCDef = sysCDefMapRowIdIt.second;
-
+        for (const auto &[_, sysCDef]: metadata->schema->sysCDefPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -186,15 +182,13 @@ namespace OpenLogReplicator {
             ss SERIALIZER_ENDL << R"({"row-id":")" << sysCDef->rowId <<
                                R"(","con":)" << std::dec << sysCDef->con <<
                                R"(,"obj":)" << std::dec << sysCDef->obj <<
-                               R"(,"type":)" << std::dec << sysCDef->type << "}";
+                               R"(,"type":)" << std::dec << static_cast<uint>(sysCDef->type) << "}";
         }
 
         // SYS.COL$
         ss << "]," SERIALIZER_ENDL << R"("sys-col":[)";
         hasPrev = false;
-        for (auto sysColMapRowIdIt: metadata->schema->sysColMapRowId) {
-            SysCol* sysCol = sysColMapRowIdIt.second;
-
+        for (const auto &[_, sysCol]: metadata->schema->sysColPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -207,7 +201,7 @@ namespace OpenLogReplicator {
                                R"(,"int-col":)" << std::dec << sysCol->intCol <<
                                R"(,"name":")";
             Ctx::writeEscapeValue(ss, sysCol->name);
-            ss << R"(","type":)" << std::dec << sysCol->type <<
+            ss << R"(","type":)" << std::dec << static_cast<uint>(sysCol->type) <<
                R"(,"length":)" << std::dec << sysCol->length <<
                R"(,"precision":)" << std::dec << sysCol->precision <<
                R"(,"scale":)" << std::dec << sysCol->scale <<
@@ -220,9 +214,7 @@ namespace OpenLogReplicator {
         // SYS.DEFERRED_STG$
         ss << "]," SERIALIZER_ENDL << R"("sys-deferredstg":[)";
         hasPrev = false;
-        for (auto sysDeferredStgMapRowIdIt: metadata->schema->sysDeferredStgMapRowId) {
-            SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt.second;
-
+        for (const auto &[_, sysDeferredStg]: metadata->schema->sysDeferredStgPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -236,9 +228,7 @@ namespace OpenLogReplicator {
         // SYS.ECOL$
         ss << "]," SERIALIZER_ENDL << R"("sys-ecol":[)";
         hasPrev = false;
-        for (auto sysEColMapRowIdIt: metadata->schema->sysEColMapRowId) {
-            const SysECol* sysECol = sysEColMapRowIdIt.second;
-
+        for (const auto &[_, sysECol]: metadata->schema->sysEColPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -253,9 +243,7 @@ namespace OpenLogReplicator {
         // SYS.LOB$
         ss << "]," SERIALIZER_ENDL << R"("sys-lob":[)";
         hasPrev = false;
-        for (auto sysLobMapRowIdIt: metadata->schema->sysLobMapRowId) {
-            const SysLob* sysLob = sysLobMapRowIdIt.second;
-
+        for (const auto &[_, sysLob]: metadata->schema->sysLobPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -272,9 +260,7 @@ namespace OpenLogReplicator {
         // SYS.LOBCOMPPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-lob-comp-part":[)";
         hasPrev = false;
-        for (auto sysLobCompPartMapRowIdIt: metadata->schema->sysLobCompPartMapRowId) {
-            const SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
-
+        for (const auto &[_, sysLobCompPart]: metadata->schema->sysLobCompPartPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -288,9 +274,7 @@ namespace OpenLogReplicator {
         // SYS.LOBFRAG$
         ss << "]," SERIALIZER_ENDL << R"("sys-lob-frag":[)";
         hasPrev = false;
-        for (auto sysLobFragMapRowIdIt: metadata->schema->sysLobFragMapRowId) {
-            const SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
-
+        for (const auto &[_, sysLobFrag]: metadata->schema->sysLobFragPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -305,9 +289,7 @@ namespace OpenLogReplicator {
         // SYS.OBJ$
         ss << "]," SERIALIZER_ENDL << R"("sys-obj":[)";
         hasPrev = false;
-        for (auto sysObjMapRowIdIt: metadata->schema->sysObjMapRowId) {
-            SysObj* sysObj = sysObjMapRowIdIt.second;
-
+        for (const auto &[_, sysObj]: metadata->schema->sysObjPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -319,7 +301,7 @@ namespace OpenLogReplicator {
                                R"(,"data-obj":)" << std::dec << sysObj->dataObj <<
                                R"(,"name":")";
             Ctx::writeEscapeValue(ss, sysObj->name);
-            ss << R"(","type":)" << std::dec << sysObj->type <<
+            ss << R"(","type":)" << std::dec << static_cast<uint>(sysObj->type) <<
                R"(,"flags":)" << std::dec << sysObj->flags.toString() <<
                R"(,"single":)" << std::dec << static_cast<uint64_t>(sysObj->single) << "}";
         }
@@ -327,9 +309,7 @@ namespace OpenLogReplicator {
         // SYS.TAB$
         ss << "]," SERIALIZER_ENDL << R"("sys-tab":[)";
         hasPrev = false;
-        for (auto sysTabMapRowIdIt: metadata->schema->sysTabMapRowId) {
-            SysTab* sysTab = sysTabMapRowIdIt.second;
-
+        for (const auto &[_, sysTab]: metadata->schema->sysTabPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -347,9 +327,7 @@ namespace OpenLogReplicator {
         // SYS.TABCOMPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabcompart":[)";
         hasPrev = false;
-        for (auto sysTabComPartMapRowIdIt: metadata->schema->sysTabComPartMapRowId) {
-            const SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
-
+        for (const auto &[_, sysTabComPart]: metadata->schema->sysTabComPartPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -364,9 +342,7 @@ namespace OpenLogReplicator {
         // SYS.TABPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabpart":[)";
         hasPrev = false;
-        for (auto sysTabPartMapRowIdIt: metadata->schema->sysTabPartMapRowId) {
-            const SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
-
+        for (const auto &[_, sysTabPart]: metadata->schema->sysTabPartPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -381,9 +357,7 @@ namespace OpenLogReplicator {
         // SYS.TABSUBPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabsubpart":[)";
         hasPrev = false;
-        for (auto sysTabSubPartMapRowIdIt: metadata->schema->sysTabSubPartMapRowId) {
-            const SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
-
+        for (const auto &[_, sysTabSubPart]: metadata->schema->sysTabSubPartPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -398,9 +372,7 @@ namespace OpenLogReplicator {
         // SYS.TS$
         ss << "]," SERIALIZER_ENDL << R"("sys-ts":[)";
         hasPrev = false;
-        for (auto sysTsMapRowIdIt: metadata->schema->sysTsMapRowId) {
-            const SysTs* sysTs = sysTsMapRowIdIt.second;
-
+        for (const auto &[_, sysTs]: metadata->schema->sysTsPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -416,9 +388,7 @@ namespace OpenLogReplicator {
         // SYS.USER$
         ss << "]," SERIALIZER_ENDL << R"("sys-user":[)";
         hasPrev = false;
-        for (auto sysUserMapRowIdIt: metadata->schema->sysUserMapRowId) {
-            SysUser* sysUser = sysUserMapRowIdIt.second;
-
+        for (const auto &[_, sysUser]: metadata->schema->sysUserPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -435,9 +405,7 @@ namespace OpenLogReplicator {
         // XDB.XDB$TTSET
         ss << "]," SERIALIZER_ENDL << R"("xdb-ttset":[)";
         hasPrev = false;
-        for (auto xdbTtSetMapRowIdIt: metadata->schema->xdbTtSetMapRowId) {
-            const XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
-
+        for (const auto &[_, xdbTtSet]: metadata->schema->xdbTtSetPack.mapRowId) {
             if (hasPrev)
                 ss << ",";
             else
@@ -451,15 +419,11 @@ namespace OpenLogReplicator {
                R"(,"obj":)" << std::dec << xdbTtSet->obj << "}";
         }
 
-        for (const auto& schemaXmlIt: metadata->schema->schemaXmlMap) {
-            const XmlCtx* xmlCtx = schemaXmlIt.second;
-
+        for (const auto &[_, xmlCtx]: metadata->schema->schemaXmlMap) {
             // XDB.X$NMxxx
             ss << "]," SERIALIZER_ENDL << R"("xdb-xnm)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
-            for (auto xdbXNmMapRowIdIt: xmlCtx->xdbXNmMapRowId) {
-                const XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
-
+            for (const auto &[key, xdbXNm]: xmlCtx->xdbXNmPack.mapRowId) {
                 if (hasPrev)
                     ss << ",";
                 else
@@ -474,9 +438,7 @@ namespace OpenLogReplicator {
             // XDB.X$PTxxx
             ss << "]," SERIALIZER_ENDL << R"("xdb-xpt)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
-            for (auto xdbXPtMapRowIdIt: xmlCtx->xdbXPtMapRowId) {
-                const XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
-
+            for (const auto &[__, xdbXPt]: xmlCtx->xdbXPtPack.mapRowId) {
                 if (hasPrev)
                     ss << ",";
                 else
@@ -491,9 +453,7 @@ namespace OpenLogReplicator {
             // XDB.X$QNxxx
             ss << "]," SERIALIZER_ENDL << R"("xdb-xqn)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
-            for (auto xdbXQnMapRowIdIt: xmlCtx->xdbXQnMapRowId) {
-                const XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
-
+            for (const auto &[__, xdbXQn]: xmlCtx->xdbXQnPack.mapRowId) {
                 if (hasPrev)
                     ss << ",";
                 else
@@ -701,17 +661,18 @@ namespace OpenLogReplicator {
                     if (document.HasMember("xdb-ttset"))
                         deserializeXdbTtSet(metadata, fileName, Ctx::getJsonFieldA(fileName, document, "xdb-ttset"));
 
-                    for (auto ttSetIt: metadata->schema->xdbTtSetMapRowId) {
-                        XmlCtx* xmlCtx = new XmlCtx(metadata->ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
-                        metadata->schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
+                    for (const auto &[key, xdbTtSet]: metadata->schema->xdbTtSetPack.mapRowId) {
+                        XmlCtx* xmlCtx = new XmlCtx(metadata->ctx, xdbTtSet->tokSuf, xdbTtSet->flags);
+                        metadata->schema->schemaXmlMap.insert_or_assign(xdbTtSet->tokSuf, xmlCtx);
 
-                        std::string field = "xdb-xnm" + ttSetIt.second->tokSuf;
+                        std::string field = "xdb-xnm" + xdbTtSet->tokSuf;
                         deserializeXdbXNm(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
-                        field = "xdb-xpt" + ttSetIt.second->tokSuf;
+                        field = "xdb-xpt" + xdbTtSet->tokSuf;
                         deserializeXdbXPt(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
-                        field = "xdb-xqn" + ttSetIt.second->tokSuf;
+                        field = "xdb-xqn" + xdbTtSet->tokSuf;
                         deserializeXdbXQn(metadata, xmlCtx, fileName, Ctx::getJsonFieldA(fileName, document, field.c_str()));
                     }
+                    metadata->schema->touched = true;
                 }
 
                 // Loading schema from configuration file
@@ -744,7 +705,8 @@ namespace OpenLogReplicator {
             uint64_t spare11 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 0);
             uint64_t spare12 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 1);
 
-            metadata->schema->dictSysCColAdd(rowIdStr, con, intCol, obj, spare11, spare12);
+            metadata->schema->sysCColPack.addWithKeys(metadata->ctx, new SysCCol(typeRowId(rowIdStr), con, intCol, obj, spare11, spare12));
+            metadata->schema->touchTable(obj);
         }
     }
 
@@ -758,9 +720,10 @@ namespace OpenLogReplicator {
             const char* rowIdStr = Ctx::getJsonFieldS(fileName, typeRowId::SIZE, sysCDefJson[i], "row-id");
             typeCon con = Ctx::getJsonFieldU32(fileName, sysCDefJson[i], "con");
             typeObj obj = Ctx::getJsonFieldU32(fileName, sysCDefJson[i], "obj");
-            typeType type = Ctx::getJsonFieldU16(fileName, sysCDefJson[i], "type");
+            SysCDef::CDEFTYPE type = static_cast<SysCDef::CDEFTYPE>(Ctx::getJsonFieldU16(fileName, sysCDefJson[i], "type"));
 
-            metadata->schema->dictSysCDefAdd(rowIdStr, con, obj, type);
+            metadata->schema->sysCDefPack.addWithKeys(metadata->ctx, new SysCDef(typeRowId(rowIdStr), con, obj, type));
+            metadata->schema->touchTable(obj);
         }
     }
 
@@ -779,7 +742,7 @@ namespace OpenLogReplicator {
             typeCol segCol = Ctx::getJsonFieldI16(fileName, sysColJson[i], "seg-col");
             typeCol intCol = Ctx::getJsonFieldI16(fileName, sysColJson[i], "int-col");
             const char* name_ = Ctx::getJsonFieldS(fileName, SysCol::NAME_LENGTH, sysColJson[i], "name");
-            typeType type = Ctx::getJsonFieldU16(fileName, sysColJson[i], "type");
+            SysCol::COLTYPE type = static_cast<SysCol::COLTYPE>(Ctx::getJsonFieldU16(fileName, sysColJson[i], "type"));
             uint length = Ctx::getJsonFieldU(fileName, sysColJson[i], "length");
             int precision = Ctx::getJsonFieldI(fileName, sysColJson[i], "precision");
             int scale = Ctx::getJsonFieldI(fileName, sysColJson[i], "scale");
@@ -792,8 +755,9 @@ namespace OpenLogReplicator {
             uint64_t property1 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 0);
             uint64_t property2 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 1);
 
-            metadata->schema->dictSysColAdd(rowIdStr, obj, col, segCol, intCol, name_, type, length, precision, scale, charsetForm, charsetId,
-                                            null_, property1, property2);
+            metadata->schema->sysColPack.addWithKeys(metadata->ctx, new SysCol(typeRowId(rowIdStr), obj, col, segCol, intCol, name_, type, length, precision,
+                                                                               scale, charsetForm, charsetId, null_, property1, property2));
+            metadata->schema->touchTable(obj);
         }
     }
 
@@ -813,7 +777,8 @@ namespace OpenLogReplicator {
             uint64_t flagsStg1 = Ctx::getJsonFieldU64(fileName, flagsStgJson, "flags-stg", 0);
             uint64_t flagsStg2 = Ctx::getJsonFieldU64(fileName, flagsStgJson, "flags-stg", 1);
 
-            metadata->schema->dictSysDeferredStgAdd(rowIdStr, obj, flagsStg1, flagsStg2);
+            metadata->schema->sysDeferredStgPack.addWithKeys(metadata->ctx, new SysDeferredStg(typeRowId(rowIdStr), obj, flagsStg1, flagsStg2));
+            metadata->schema->touchTable(obj);
         }
     }
 
@@ -825,11 +790,12 @@ namespace OpenLogReplicator {
             }
 
             const char* rowIdStr = Ctx::getJsonFieldS(fileName, typeRowId::SIZE, sysEColJson[i], "row-id");
-            typeObj obj = Ctx::getJsonFieldU32(fileName, sysEColJson[i], "tab-obj");
+            typeObj tabObj = Ctx::getJsonFieldU32(fileName, sysEColJson[i], "tab-obj");
             typeCol colNum = Ctx::getJsonFieldI16(fileName, sysEColJson[i], "col-num");
             typeCol guardId = Ctx::getJsonFieldI16(fileName, sysEColJson[i], "guard-id");
 
-            metadata->schema->dictSysEColAdd(rowIdStr, obj, colNum, guardId);
+            metadata->schema->sysEColPack.addWithKeys(metadata->ctx, new SysECol(typeRowId(rowIdStr), tabObj, colNum, guardId));
+            metadata->schema->touchTable(tabObj);
         }
     }
 
@@ -847,7 +813,8 @@ namespace OpenLogReplicator {
             typeObj lObj = Ctx::getJsonFieldU32(fileName, sysLobJson[i], "l-obj");
             uint32_t ts = Ctx::getJsonFieldU32(fileName, sysLobJson[i], "ts");
 
-            metadata->schema->dictSysLobAdd(rowIdStr, obj, col, intCol, lObj, ts);
+            metadata->schema->sysLobPack.addWithKeys(metadata->ctx, new SysLob(typeRowId(rowIdStr), obj, col, intCol, lObj, ts));
+            metadata->schema->touchTable(obj);
         }
     }
 
@@ -862,7 +829,8 @@ namespace OpenLogReplicator {
             typeObj partObj = Ctx::getJsonFieldU32(fileName, sysLobCompPartJson[i], "part-obj");
             typeObj lObj = Ctx::getJsonFieldU32(fileName, sysLobCompPartJson[i], "l-obj");
 
-            metadata->schema->dictSysLobCompPartAdd(rowIdStr, partObj, lObj);
+            metadata->schema->sysLobCompPartPack.addWithKeys(metadata->ctx, new SysLobCompPart(typeRowId(rowIdStr), partObj, lObj));
+            metadata->schema->touchTableLob(lObj);
         }
     }
 
@@ -878,7 +846,9 @@ namespace OpenLogReplicator {
             typeObj parentObj = Ctx::getJsonFieldU32(fileName, sysLobFragJson[i], "parent-obj");
             uint32_t ts = Ctx::getJsonFieldU32(fileName, sysLobFragJson[i], "ts");
 
-            metadata->schema->dictSysLobFragAdd(rowIdStr, fragObj, parentObj, ts);
+            metadata->schema->sysLobFragPack.addWithKeys(metadata->ctx, new SysLobFrag(typeRowId(rowIdStr), fragObj, parentObj, ts));
+            metadata->schema->touchTableLobFrag(parentObj);
+            metadata->schema->touchTableLob(parentObj);
         }
     }
 
@@ -894,7 +864,7 @@ namespace OpenLogReplicator {
             typeUser owner = Ctx::getJsonFieldU32(fileName, sysObjJson[i], "owner");
             typeObj obj = Ctx::getJsonFieldU32(fileName, sysObjJson[i], "obj");
             typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysObjJson[i], "data-obj");
-            typeType type = Ctx::getJsonFieldU16(fileName, sysObjJson[i], "type");
+            SysObj::OBJTYPE type = static_cast<SysObj::OBJTYPE>(Ctx::getJsonFieldU16(fileName, sysObjJson[i], "type"));
             const char* name_ = Ctx::getJsonFieldS(fileName, SysObj::NAME_LENGTH, sysObjJson[i], "name");
 
             const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(fileName, sysObjJson[i], "flags");
@@ -904,7 +874,9 @@ namespace OpenLogReplicator {
             uint64_t flags2 = Ctx::getJsonFieldU64(fileName, flagsJson, "flags", 1);
             uint64_t single = Ctx::getJsonFieldU64(fileName, sysObjJson[i], "single");
 
-            metadata->schema->dictSysObjAdd(rowIdStr, owner, obj, dataObj, type, name_, flags1, flags2, single != 0u);
+            metadata->schema->sysObjPack.addWithKeys(metadata->ctx, new SysObj(typeRowId(rowIdStr), owner, obj, dataObj, type, name_, flags1, flags2,
+                                                                               single != 0u));
+            metadata->schema->touchTable(obj);
         }
     }
 
@@ -937,7 +909,9 @@ namespace OpenLogReplicator {
             uint64_t property1 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 0);
             uint64_t property2 = Ctx::getJsonFieldU64(fileName, propertyJson, "property", 1);
 
-            metadata->schema->dictSysTabAdd(rowIdStr, obj, dataObj, ts, cluCols, flags1, flags2, property1, property2);
+            metadata->schema->sysTabPack.addWithKeys(metadata->ctx, new SysTab(typeRowId(rowIdStr), obj, dataObj, ts, cluCols, flags1, flags2, property1,
+                                                                               property2));
+            metadata->schema->touchTable(obj);
         }
     }
 
@@ -953,7 +927,8 @@ namespace OpenLogReplicator {
             typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysTabComPartJson[i], "data-obj");
             typeObj bo = Ctx::getJsonFieldU32(fileName, sysTabComPartJson[i], "bo");
 
-            metadata->schema->dictSysTabComPartAdd(rowIdStr, obj, dataObj, bo);
+            metadata->schema->sysTabComPartPack.addWithKeys(metadata->ctx, new SysTabComPart(typeRowId(rowIdStr), obj, dataObj, bo));
+            metadata->schema->touchTable(bo);
         }
     }
 
@@ -969,7 +944,8 @@ namespace OpenLogReplicator {
             typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysTabPartJson[i], "data-obj");
             typeObj bo = Ctx::getJsonFieldU32(fileName, sysTabPartJson[i], "bo");
 
-            metadata->schema->dictSysTabPartAdd(rowIdStr, obj, dataObj, bo);
+            metadata->schema->sysTabPartPack.addWithKeys(metadata->ctx, new SysTabPart(typeRowId(rowIdStr), obj, dataObj, bo));
+            metadata->schema->touchTable(bo);
         }
     }
 
@@ -985,7 +961,8 @@ namespace OpenLogReplicator {
             typeDataObj dataObj = Ctx::getJsonFieldU32(fileName, sysTabSubPartJson[i], "data-obj");
             typeObj pObj = Ctx::getJsonFieldU32(fileName, sysTabSubPartJson[i], "p-obj");
 
-            metadata->schema->dictSysTabSubPartAdd(rowIdStr, obj, dataObj, pObj);
+            metadata->schema->sysTabSubPartPack.addWithKeys(metadata->ctx, new SysTabSubPart(typeRowId(rowIdStr), obj, dataObj, pObj));
+            metadata->schema->touchTablePart(obj);
         }
     }
 
@@ -1001,7 +978,7 @@ namespace OpenLogReplicator {
             const char* name_ = Ctx::getJsonFieldS(fileName, SysTs::NAME_LENGTH, sysTsJson[i], "name");
             uint32_t blockSize = Ctx::getJsonFieldU32(fileName, sysTsJson[i], "block-size");
 
-            metadata->schema->dictSysTsAdd(rowIdStr, ts, name_, blockSize);
+            metadata->schema->sysTsPack.addWithKeys(metadata->ctx, new SysTs(typeRowId(rowIdStr), ts, name_, blockSize));
         }
     }
 
@@ -1023,7 +1000,7 @@ namespace OpenLogReplicator {
             uint64_t spare12 = Ctx::getJsonFieldU64(fileName, spare1Json, "spare1", 1);
             uint64_t single = Ctx::getJsonFieldU64(fileName, sysUserJson[i], "single");
 
-            metadata->schema->dictSysUserAdd(rowIdStr, user, name_, spare11, spare12, single != 0u);
+            metadata->schema->sysUserPack.addWithKeys(metadata->ctx, new SysUser(typeRowId(rowIdStr), user, name_, spare11, spare12, single != 0u));
         }
     }
 
@@ -1040,7 +1017,7 @@ namespace OpenLogReplicator {
             uint64_t flags = Ctx::getJsonFieldU64(fileName, xdbTtSetJson[i], "flags");
             uint32_t obj = Ctx::getJsonFieldU32(fileName, xdbTtSetJson[i], "obj");
 
-            metadata->schema->dictXdbTtSetAdd(rowIdStr, guid, tokSuf, flags, obj);
+            metadata->schema->xdbTtSetPack.addWithKeys(metadata->ctx, new XdbTtSet(typeRowId(rowIdStr), guid, tokSuf, flags, obj));
         }
     }
 
@@ -1055,7 +1032,7 @@ namespace OpenLogReplicator {
             const char* nmSpcUri = Ctx::getJsonFieldS(fileName, XdbXNm::NMSPCURI_LENGTH, xdbXNmJson[i], "nmspcuri");
             const char* id = Ctx::getJsonFieldS(fileName, XdbXNm::ID_LENGTH, xdbXNmJson[i], "id");
 
-            metadata->schema->dictXdbXNmAdd(xmlCtx, rowIdStr, nmSpcUri, id);
+            xmlCtx->xdbXNmPack.addWithKeys(metadata->ctx, new XdbXNm(typeRowId(rowIdStr), nmSpcUri, id));
         }
     }
 
@@ -1070,7 +1047,7 @@ namespace OpenLogReplicator {
             const char* path = Ctx::getJsonFieldS(fileName, XdbXPt::PATH_LENGTH, xdbXPtJson[i], "path");
             const char* id = Ctx::getJsonFieldS(fileName, XdbXPt::ID_LENGTH, xdbXPtJson[i], "id");
 
-            metadata->schema->dictXdbXPtAdd(xmlCtx, rowIdStr, path, id);
+            xmlCtx->xdbXPtPack.addWithKeys(metadata->ctx, new XdbXPt(typeRowId(rowIdStr), path, id));
         }
     }
 
@@ -1087,7 +1064,7 @@ namespace OpenLogReplicator {
             const char* flags = Ctx::getJsonFieldS(fileName, XdbXQn::FLAGS_LENGTH, xdbXQnJson[i], "flags");
             const char* id = Ctx::getJsonFieldS(fileName, XdbXQn::ID_LENGTH, xdbXQnJson[i], "id");
 
-            metadata->schema->dictXdbXQnAdd(xmlCtx, rowIdStr, nmSpcId, localName, flags, id);
+            xmlCtx->xdbXQnPack.addWithKeys(metadata->ctx, new XdbXQn(typeRowId(rowIdStr), nmSpcId, localName, flags, id));
         }
     }
 }

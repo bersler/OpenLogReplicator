@@ -24,40 +24,31 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_CDEF_H_
 
 namespace OpenLogReplicator {
-    class SysCDefKey final {
-    public:
-        SysCDefKey(typeObj newObj, typeCon newCon) :
-                obj(newObj),
-                con(newCon) {
-        }
-
-        bool operator<(const SysCDefKey& other) const {
-            if (obj < other.obj)
-                return true;
-            if (other.obj < obj)
-                return false;
-            if (con < other.con)
-                return true;
-            return false;
-        }
-
-        typeObj obj;
-        typeCon con;
-    };
-
     class SysCDef final {
     public:
-        enum CDEFTYPE {
-            TABLE_CHECK = 1, PK = 2, UNIQUE = 3, REFERENTIAL = 4, CHECK = 5, READ_ONLY = 6, CHECK_CONSTR_NOT_NULL = 7, HASH = 8, SCOPED_REF = 9, ROWID = 10,
-            REF_NOT_NULL = 11, SUPPLEMENTAL_LOG = 12, SUPPLEMENTAL_LOG_PK = 14, SUPPLEMENTAL_LOG_UNIQUE = 15, SUPPLEMENTAL_LOG_FK = 16,
+        enum class CDEFTYPE : unsigned short int{
+            NONE = 0, TABLE_CHECK = 1, PK = 2, UNIQUE = 3, REFERENTIAL = 4, CHECK = 5, READ_ONLY = 6, CHECK_CONSTR_NOT_NULL = 7, HASH = 8, SCOPED_REF = 9,
+            ROWID = 10, REF_NOT_NULL = 11, SUPPLEMENTAL_LOG = 12, SUPPLEMENTAL_LOG_PK = 14, SUPPLEMENTAL_LOG_UNIQUE = 15, SUPPLEMENTAL_LOG_FK = 16,
             SUPPLEMENTAL_LOG_ALL = 17
         };
 
-        SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, typeType newType) :
+        typeRowId rowId;
+        typeCon con;
+        typeObj obj;
+        CDEFTYPE type;
+
+        SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, CDEFTYPE newType) :
                 rowId(newRowId),
                 con(newCon),
                 obj(newObj),
                 type(newType) {
+        }
+
+        explicit SysCDef(typeRowId newRowId) :
+                rowId(newRowId),
+                con(0),
+                obj(0),
+                type(CDEFTYPE::NONE) {
         }
 
         [[nodiscard]] bool operator!=(const SysCDef& other) const {
@@ -80,10 +71,90 @@ namespace OpenLogReplicator {
             return (type == CDEFTYPE::SUPPLEMENTAL_LOG_ALL);
         }
 
-        typeRowId rowId;
-        typeCon con;
+        static std::string tableName() {
+            return "SYS.CDEF$";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", CON#: " + std::to_string(con) + ", OBJ#: " + std::to_string(obj) + ", TYPE: " +
+                    std::to_string(static_cast<uint>(type));
+        }
+
+        static constexpr bool dependentTable() {
+            return true;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+
+        typeObj getDependentTable() const {
+            return obj;
+        }
+    };
+
+    class SysCDefKey final {
+    public:
         typeObj obj;
-        typeType type;
+        typeCon con;
+
+        SysCDefKey(typeObj newObj, typeCon newCon) :
+                obj(newObj),
+                con(newCon) {
+        }
+
+        explicit SysCDefKey(const SysCDef* sysCDef) :
+                obj(sysCDef->obj),
+                con(sysCDef->con) {
+        }
+
+        bool operator<(const SysCDefKey other) const {
+            if (obj < other.obj)
+                return true;
+            if (other.obj < obj)
+                return false;
+            if (con < other.con)
+                return true;
+            return false;
+        }
+    };
+
+    class SysCDefCon final {
+    public:
+        typeCon con;
+
+        explicit SysCDefCon(typeCon newCon) :
+                con(newCon) {
+        }
+
+        explicit SysCDefCon(const SysCDef* sysCDef) :
+                con(sysCDef->con) {
+        }
+
+        bool operator!=(const SysCDefCon other) const {
+            return (other.con != con);
+        }
+
+        bool operator==(const SysCDefCon other) const {
+            return (other.con == con);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::SysCDefCon> {
+        size_t operator()(const OpenLogReplicator::SysCDefCon sysCDefCon) const {
+            return hash<typeCon>()(sysCDefCon.con);
+        }
     };
 }
 

@@ -133,7 +133,7 @@ namespace OpenLogReplicator {
         localess.push_back(locales);
         locales->initialize();
 
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "main (" + ss.str() + ") start");
@@ -196,9 +196,9 @@ namespace OpenLogReplicator {
         }
 
         if (document.HasMember("log-level")) {
-            ctx->logLevel = Ctx::getJsonFieldU64(configFileName, document, "log-level");
+            ctx->logLevel = static_cast<Ctx::LOG>(Ctx::getJsonFieldU(configFileName, document, "log-level"));
             if (ctx->logLevel > Ctx::LOG::DEBUG)
-                throw ConfigurationException(30001, "bad JSON, invalid \"log-level\" value: " + std::to_string(ctx->logLevel) +
+                throw ConfigurationException(30001, "bad JSON, invalid \"log-level\" value: " + std::to_string(static_cast<uint>(ctx->logLevel)) +
                                                     ", expected: one of {0 .. 4}");
         }
 
@@ -499,7 +499,7 @@ namespace OpenLogReplicator {
             if (debugOwner != nullptr && debugTable != nullptr)
                 metadata->addElement(debugOwner, debugTable, DbTable::OPTIONS::DEBUG_TABLE);
             if (ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA))
-                metadata->addElement(".*", ".*", 0);
+                metadata->addElement(".*", ".*", DbTable::OPTIONS::DEFAULT);
 
             if (stateType == State::TYPE_DISK) {
                 metadata->state = new StateDisk(ctx, statePath);
@@ -534,7 +534,7 @@ namespace OpenLogReplicator {
 
                 if (metricsJson.HasMember("type")) {
                     const char* metricsType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, metricsJson, "type");
-                    uint tagNames = Metrics::TAG_NAMES::NONE;
+                    Metrics::TAG_NAMES tagNames = Metrics::TAG_NAMES::NONE;
 
                     if (metricsJson.HasMember("tag-names")) {
                         const char* tagNamesStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_TOPIC_LENGTH, metricsJson, "tag-names");
@@ -546,7 +546,8 @@ namespace OpenLogReplicator {
                         else if (strcmp(tagNamesStr, "sys") == 0)
                             tagNames = Metrics::TAG_NAMES::SYS;
                         else if (strcmp(tagNamesStr, "all") == 0)
-                            tagNames = Metrics::TAG_NAMES::FILTER | Metrics::TAG_NAMES::SYS;
+                            tagNames = static_cast<Metrics::TAG_NAMES>(static_cast<uint>(Metrics::TAG_NAMES::FILTER) |
+                                    static_cast<uint>(Metrics::TAG_NAMES::SYS));
                         else
                             throw ConfigurationException(30001, "bad JSON, invalid \"tag-names\" value: " + std::string(tagNamesStr) +
                                                                 ", expected: one of {\"all\", \"filter\", \"none\", \"sys\"}");
@@ -580,23 +581,25 @@ namespace OpenLogReplicator {
                 Ctx::checkJsonFields(configFileName, formatJson, formatNames);
             }
 
-            uint64_t dbFormat = Builder::DB_FORMAT::DB_DEFAULT;
+            Builder::DB_FORMAT dbFormat = Builder::DB_FORMAT::DEFAULT;
             if (formatJson.HasMember("db")) {
-                dbFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "db");
-                if (dbFormat > 3)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"db\" value: " + std::to_string(dbFormat) +
+                uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "db");
+                if (val > 3)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"db\" value: " + std::to_string(val) +
                                                         ", expected: one of {0 .. 3}");
+                dbFormat = static_cast<Builder::DB_FORMAT>(val);
             }
 
-            uint64_t attributesFormat = Builder::ATTRIBUTES_FORMAT::ATTR_DEFAULT;
+            Builder::ATTRIBUTES_FORMAT attributesFormat = Builder::ATTRIBUTES_FORMAT::DEFAULT;
             if (formatJson.HasMember("attributes")) {
-                attributesFormat = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
-                if (attributesFormat > 7)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"attributes\" value: " + std::to_string(attributesFormat) +
+                uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
+                if (val > 7)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"attributes\" value: " + std::to_string(val) +
                                                         ", expected: one of {0 .. 7}");
+                attributesFormat = static_cast<Builder::ATTRIBUTES_FORMAT>(val);
             }
 
-            Builder::INTERVAL_DTS_FORMAT intervalDtsFormat = Builder::INTERVAL_DTS_FORMAT::DTS_UNIX_NANO;
+            Builder::INTERVAL_DTS_FORMAT intervalDtsFormat = Builder::INTERVAL_DTS_FORMAT::UNIX_NANO;
             if (formatJson.HasMember("interval-dts")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "interval-dts");
                 if (val > 10)
@@ -605,7 +608,7 @@ namespace OpenLogReplicator {
                 intervalDtsFormat = static_cast<Builder::INTERVAL_DTS_FORMAT>(val);
             }
 
-            Builder::INTERVAL_YTM_FORMAT intervalYtmFormat = Builder::INTERVAL_YTM_FORMAT::YTM_MONTHS;
+            Builder::INTERVAL_YTM_FORMAT intervalYtmFormat = Builder::INTERVAL_YTM_FORMAT::MONTHS;
             if (formatJson.HasMember("interval-ytm")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "interval-ytm");
                 if (val > 4)
@@ -614,21 +617,25 @@ namespace OpenLogReplicator {
                 intervalYtmFormat = static_cast<Builder::INTERVAL_YTM_FORMAT>(val);
             }
 
-            uint messageFormat = Builder::MESSAGE_FORMAT::MSG_DEFAULT;
+            Builder::MESSAGE_FORMAT messageFormat = Builder::MESSAGE_FORMAT::DEFAULT;
             if (formatJson.HasMember("message")) {
-                messageFormat = Ctx::getJsonFieldU(configFileName, formatJson, "message");
-                if (messageFormat > 31)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(messageFormat) +
+                uint val = Ctx::getJsonFieldU(configFileName, formatJson, "message");
+                if (val > 31)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(val) +
                                                         ", expected: one of {0 .. 31}");
-                if ((messageFormat & Builder::MESSAGE_FORMAT::MSG_FULL) != 0 &&
-                    (messageFormat & (Builder::MESSAGE_FORMAT::MSG_SKIP_BEGIN | Builder::MESSAGE_FORMAT::MSG_SKIP_COMMIT)) != 0)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(messageFormat) +
-                                                        ", expected: BEGIN/COMMIT flag is unset (" + std::to_string(Builder::MESSAGE_FORMAT::MSG_SKIP_BEGIN) +
-                                                        "/" + std::to_string(Builder::MESSAGE_FORMAT::MSG_SKIP_COMMIT) + ") together with FULL mode (" +
-                                                        std::to_string(Builder::MESSAGE_FORMAT::MSG_FULL) + ")");
+                if ((val & static_cast<uint>(Builder::MESSAGE_FORMAT::FULL)) != 0 &&
+                    (val & (static_cast<uint>(Builder::MESSAGE_FORMAT::SKIP_BEGIN) |
+                            static_cast<uint>(Builder::MESSAGE_FORMAT::SKIP_COMMIT))) != 0)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(val) +
+                                                        ", expected: BEGIN/COMMIT flag is unset (" +
+                                                        std::to_string(static_cast<uint>(Builder::MESSAGE_FORMAT::SKIP_BEGIN)) +
+                                                        "/" + std::to_string(static_cast<uint>(Builder::MESSAGE_FORMAT::SKIP_COMMIT)) +
+                                                        ") together with FULL mode (" +
+                                                        std::to_string(static_cast<uint>(Builder::MESSAGE_FORMAT::FULL)) + ")");
+                messageFormat = static_cast<Builder::MESSAGE_FORMAT>(val);
             }
 
-            Builder::RID_FORMAT ridFormat = Builder::RID_FORMAT::RID_SKIP;
+            Builder::RID_FORMAT ridFormat = Builder::RID_FORMAT::SKIP;
             if (formatJson.HasMember("rid")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "rid");
                 if (val > 1)
@@ -637,7 +644,7 @@ namespace OpenLogReplicator {
                 ridFormat = static_cast<Builder::RID_FORMAT>(val);
             }
 
-            Builder::XID_FORMAT xidFormat = Builder::XID_FORMAT::XID_TEXT_HEX;
+            Builder::XID_FORMAT xidFormat = Builder::XID_FORMAT::TEXT_HEX;
             if (formatJson.HasMember("xid")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "xid");
                 if (val > 2)
@@ -646,7 +653,7 @@ namespace OpenLogReplicator {
                 xidFormat = static_cast<Builder::XID_FORMAT>(val);
             }
 
-            Builder::TIMESTAMP_FORMAT timestampFormat = Builder::TIMESTAMP_FORMAT::TMSTP_UNIX_NANO;
+            Builder::TIMESTAMP_FORMAT timestampFormat = Builder::TIMESTAMP_FORMAT::UNIX_NANO;
             if (formatJson.HasMember("timestamp")) {
                 uint val  = Ctx::getJsonFieldU(configFileName, formatJson, "timestamp");
                 if (val > 15)
@@ -655,7 +662,7 @@ namespace OpenLogReplicator {
                 timestampFormat = static_cast<Builder::TIMESTAMP_FORMAT>(val);
             }
 
-            Builder::TIMESTAMP_TZ_FORMAT timestampTzFormat = Builder::TIMESTAMP_TZ_FORMAT::TMSTP_TZ_UNIX_NANO_STRING;
+            Builder::TIMESTAMP_TZ_FORMAT timestampTzFormat = Builder::TIMESTAMP_TZ_FORMAT::UNIX_NANO_STRING;
             if (formatJson.HasMember("timestamp-tz")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "timestamp-tz");
                 if (val > 11)
@@ -664,7 +671,7 @@ namespace OpenLogReplicator {
                 timestampTzFormat = static_cast<Builder::TIMESTAMP_TZ_FORMAT>(val);
             }
 
-            Builder::TIMESTAMP_ALL timestampAll = Builder::TIMESTAMP_ALL::TIMESTAMP_JUST_BEGIN;
+            Builder::TIMESTAMP_ALL timestampAll = Builder::TIMESTAMP_ALL::JUST_BEGIN;
             if (formatJson.HasMember("timestamp-all")) {
                 uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-all");
                 if (val > 1)
@@ -682,24 +689,25 @@ namespace OpenLogReplicator {
                 charFormat = static_cast<Builder::CHAR_FORMAT>(val);
             }
 
-            Builder::SCN_FORMAT scnFormat = Builder::SCN_FORMAT::SCN_NUMERIC;
+            Builder::SCN_FORMAT scnFormat = Builder::SCN_FORMAT::NUMERIC;
             if (formatJson.HasMember("scn")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "scn");
                 if (val > 1)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"scn\" value: " + std::to_string(scnFormat) +
+                    throw ConfigurationException(30001, "bad JSON, invalid \"scn\" value: " + std::to_string(val) +
                                                         ", expected: one of {0, 1}");
                 scnFormat = static_cast<Builder::SCN_FORMAT>(val);
             }
 
-            uint scnType = Builder::SCN_TYPE::SCN_NONE;
+            Builder::SCN_TYPE scnType = Builder::SCN_TYPE::NONE;
             if (formatJson.HasMember("scn-type")) {
-                scnType = Ctx::getJsonFieldU64(configFileName, formatJson, "scn-type");
-                if (scnType > 3)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"scn-type\" value: " + std::to_string(scnType) +
+                uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "scn-type");
+                if (val > 3)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"scn-type\" value: " + std::to_string(val) +
                                                         ", expected: one of {0, 3}");
+                scnType = static_cast<Builder::SCN_TYPE>(val);
             }
 
-            Builder::UNKNOWN_FORMAT unknownFormat = Builder::UNKNOWN_FORMAT::UNKNOWN_QUESTION_MARK;
+            Builder::UNKNOWN_FORMAT unknownFormat = Builder::UNKNOWN_FORMAT::QUESTION_MARK;
             if (formatJson.HasMember("unknown")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "unknown");
                 if (val > 1)
@@ -708,12 +716,13 @@ namespace OpenLogReplicator {
                 unknownFormat = static_cast<Builder::UNKNOWN_FORMAT>(val);
             }
 
-            uint schemaFormat = Builder::SCHEMA_FORMAT::SCHEMA_DEFAULT;
+            Builder::SCHEMA_FORMAT schemaFormat = Builder::SCHEMA_FORMAT::DEFAULT;
             if (formatJson.HasMember("schema")) {
-                schemaFormat = Ctx::getJsonFieldU(configFileName, formatJson, "schema");
-                if (schemaFormat > 7)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"schema\" value: " + std::to_string(schemaFormat) +
+                uint val = Ctx::getJsonFieldU(configFileName, formatJson, "schema");
+                if (val > 7)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"schema\" value: " + std::to_string(val) +
                                                         ", expected: one of {0 .. 7}");
+                schemaFormat = static_cast<Builder::SCHEMA_FORMAT>(val);
             }
 
             Builder::COLUMN_FORMAT columnFormat = Builder::COLUMN_FORMAT::CHANGED;
@@ -729,7 +738,7 @@ namespace OpenLogReplicator {
                 columnFormat = static_cast<Builder::COLUMN_FORMAT>(val);
             }
 
-            Builder::UNKNOWN_TYPE unknownType = Builder::UNKNOWN_TYPE::UNKNOWN_HIDE;
+            Builder::UNKNOWN_TYPE unknownType = Builder::UNKNOWN_TYPE::HIDE;
             if (formatJson.HasMember("unknown-type")) {
                 uint val = Ctx::getJsonFieldU(configFileName, formatJson, "unknown-type");
                 if (val > 1)
@@ -914,7 +923,7 @@ namespace OpenLogReplicator {
 
                         const char* owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
                         const char* table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
-                        SchemaElement* element = metadata->addElement(owner, table, 0);
+                        SchemaElement* element = metadata->addElement(owner, table, DbTable::OPTIONS::DEFAULT);
 
                         metadata->users.insert(owner);
 
@@ -1113,7 +1122,7 @@ namespace OpenLogReplicator {
 
         ctx->mainLoop();
 
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "main (" + ss.str() + ") stop");

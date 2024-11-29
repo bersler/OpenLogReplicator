@@ -62,6 +62,10 @@ namespace OpenLogReplicator {
     };
 
     struct BuilderMsg {
+        enum class OUTPUT_BUFFER : unsigned short int {
+            NONE = 0, ALLOCATED = 1 << 0, CONFIRMED = 1 << 1, CHECKPOINT = 1 << 2
+        };
+
         void* ptr;
         uint64_t id;
         uint64_t queueId;
@@ -73,100 +77,106 @@ namespace OpenLogReplicator {
         uint8_t* data;
         typeSeq sequence;
         typeObj obj;
-        uint16_t flags;
+        OUTPUT_BUFFER flags;
+
+        bool isFlagsSet(OUTPUT_BUFFER flag) const {
+            return (static_cast<uint>(flags) & static_cast<uint>(flag)) != 0;
+        };
+
+        void setFlag(OUTPUT_BUFFER flag) {
+            flags = static_cast<OUTPUT_BUFFER>(static_cast<OUTPUT_BUFFER>(static_cast<uint>(flags) | static_cast<uint>(flag)));
+        };
+
+        void unsetFlag(OUTPUT_BUFFER flag) {
+            flags = static_cast<OUTPUT_BUFFER>(static_cast<OUTPUT_BUFFER>(static_cast<uint>(flags) & ~static_cast<uint>(flag)));
+        };
     };
 
     class Builder {
     public:
         static constexpr uint64_t OUTPUT_BUFFER_DATA_SIZE = Ctx::MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue);
 
-        enum OUTPUT_BUFFER {
-            MESSAGE_ALLOCATED = 1 << 0, MESSAGE_CONFIRMED = 1 << 1, MESSAGE_CHECKPOINT = 1 << 2
+        enum class ATTRIBUTES_FORMAT {
+            DEFAULT = 0, BEGIN = 1UL << 0, DML = 1UL << 1, COMMIT = 1UL << 2
         };
 
-        enum ATTRIBUTES_FORMAT {
-            ATTR_DEFAULT = 0, BEGIN = 1, DML = 2, COMMIT = 4
+        enum class DB_FORMAT {
+            DEFAULT = 0, ADD_DML = 1, ADD_DDL = 2
         };
 
-        enum DB_FORMAT {
-            DB_DEFAULT = 0, ADD_DML = 1, ADD_DDL = 2
-        };
-
-        enum CHAR_FORMAT {
+        enum class CHAR_FORMAT {
             UTF8 = 0, NOMAPPING = 1, HEX = 2
         };
 
-        enum COLUMN_FORMAT {
+        enum class COLUMN_FORMAT {
             CHANGED = 0,        // Default, only changed columns for update, or PK
-            FULL_INS_DEC = 1,   // Show full nulls from insert & delete
+            FULL_INS_DEC = 1,   // Show full nulls from insert and delete
             FULL_UPD = 2        // Show all from redo;
         };
 
-        enum INTERVAL_DTS_FORMAT {
-            DTS_UNIX_NANO, DTS_UNIX_MICRO, DTS_UNIX_MILLI, DTS_UNIX, DTS_UNIX_NANO_STRING, DTS_UNIX_MICRO_STRING, DTS_UNIX_MILLI_STRING, DTS_UNIX_STRING,
-            DTS_ISO8601_SPACE, DTS_ISO8601_COMMA, DTS_ISO8601_DASH
+        enum class INTERVAL_DTS_FORMAT {
+            UNIX_NANO, UNIX_MICRO, UNIX_MILLI, UNIX, UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_SPACE, ISO8601_COMMA,
+            ISO8601_DASH
         };
 
-        enum INTERVAL_YTM_FORMAT {
-            YTM_MONTHS, YTM_MONTHS_STRING, YTM_STRING_YM_SPACE, YTM_STRING_YM_COMMA, YTM_STRING_YM_DASH
+        enum class INTERVAL_YTM_FORMAT {
+            MONTHS, MONTHS_STRING, STRING_YM_SPACE, STRING_YM_COMMA, STRING_YM_DASH
         };
 
-        enum MESSAGE_FORMAT {
-            MSG_DEFAULT, MSG_FULL = 1 << 0, MSG_ADD_SEQUENCES = 1 << 1,
+        enum class MESSAGE_FORMAT {
+            DEFAULT, FULL = 1 << 0, ADD_SEQUENCES = 1 << 1,
             // JSON only:
-            MSG_SKIP_BEGIN = 1 << 2, MSG_SKIP_COMMIT = 1 << 3, MSG_ADD_OFFSET = 1 << 4
+            SKIP_BEGIN = 1 << 2, SKIP_COMMIT = 1 << 3, ADD_OFFSET = 1 << 4
         };
 
-        enum RID_FORMAT {
-            RID_SKIP, RID_TEXT
+        enum class RID_FORMAT {
+            SKIP, TEXT
         };
 
-        enum SCN_FORMAT {
-            SCN_NUMERIC, SCN_TEXT_HEX
+        enum class SCN_FORMAT {
+            NUMERIC, TEXT_HEX
         };
 
-        enum SCN_TYPE {
-            SCN_NONE = 0, SCN_ALL_PAYLOADS = 1 << 0, SCN_COMMIT_VALUE = 1 << 1
+        enum class SCN_TYPE {
+            NONE = 0, ALL_PAYLOADS = 1 << 0, COMMIT_VALUE = 1 << 1
         };
 
-        enum SCHEMA_FORMAT {
-            SCHEMA_DEFAULT = 0, SCHEMA_FULL = 1 << 0, SCHEMA_REPEATED = 1 << 1, SCHEMA_OBJ = 1 << 2
+        enum class SCHEMA_FORMAT {
+            DEFAULT = 0, FULL = 1 << 0, REPEATED = 1 << 1, OBJ = 1 << 2
         };
 
-        enum TIMESTAMP_ALL {
-            TIMESTAMP_JUST_BEGIN, TIMESTAMP_ALL_PAYLOADS
+        enum class TIMESTAMP_ALL {
+            JUST_BEGIN, ALL_PAYLOADS
         };
 
-        enum TIMESTAMP_FORMAT {
-            TMSTP_UNIX_NANO, TMSTP_UNIX_MICRO, TMSTP_UNIX_MILLI, TMSTP_UNIX, TMSTP_UNIX_NANO_STRING, TMSTP_UNIX_MICRO_STRING, TMSTP_UNIX_MILLI_STRING,
-            TMSTP_UNIX_STRING, TMSTP_ISO8601_NANO_TZ, TMSTP_ISO8601_MICRO_TZ, TMSTP_ISO8601_MILLI_TZ, TMSTP_ISO8601_TZ, TMSTP_ISO8601_NANO, TMSTP_ISO8601_MICRO,
-            TMSTP_ISO8601_MILLI, TMSTP_ISO8601
+        enum class TIMESTAMP_FORMAT {
+            UNIX_NANO, UNIX_MICRO, UNIX_MILLI, UNIX, UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_NANO_TZ, ISO8601_MICRO_TZ,
+            ISO8601_MILLI_TZ, ISO8601_TZ, ISO8601_NANO, ISO8601_MICRO, ISO8601_MILLI, ISO8601
         };
 
-        enum TIMESTAMP_TZ_FORMAT {
-            TMSTP_TZ_UNIX_NANO_STRING, TMSTP_TZ_UNIX_MICRO_STRING, TMSTP_TZ_UNIX_MILLI_STRING, TMSTP_TZ_UNIX_STRING, TMSTP_TZ_ISO8601_NANO_TZ,
-            TMSTP_TZ_ISO8601_MICRO_TZ, TMSTP_TZ_ISO8601_MILLI_TZ, TMSTP_TZ_ISO8601_TZ, TMSTP_TZ_ISO8601_NANO, TMSTP_TZ_ISO8601_MICRO, TMSTP_TZ_ISO8601_MILLI,
-            TMSTP_TZ_ISO8601
+        enum class TIMESTAMP_TZ_FORMAT {
+            UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_NANO_TZ, ISO8601_MICRO_TZ, ISO8601_MILLI_TZ, ISO8601_TZ, ISO8601_NANO,
+            ISO8601_MICRO, ISO8601_MILLI, ISO8601
         };
 
-        enum TRANSACTION_TYPE {
+        enum class TRANSACTION_TYPE {
             T_NONE, INSERT, DELETE, UPDATE
         };
 
-        enum UNKNOWN_FORMAT {
-            UNKNOWN_QUESTION_MARK, UNKNOWN_DUMP
+        enum class UNKNOWN_FORMAT {
+            QUESTION_MARK, DUMP
         };
 
-        enum UNKNOWN_TYPE {
-            UNKNOWN_HIDE, UNKNOWN_SHOW
+        enum class UNKNOWN_TYPE {
+            HIDE, SHOW
         };
 
-        enum VALUE_TYPE {
-            BEFORE, AFTER, BEFORE_SUPP, AFTER_SUPP, VALUE_TYPE_LENGTH
+        enum class VALUE_TYPE {
+            BEFORE, AFTER, BEFORE_SUPP, AFTER_SUPP, LENGTH
         };
 
-        enum XID_FORMAT {
-            XID_TEXT_HEX, XID_TEXT_DEC, XID_NUMERIC
+        enum class XID_FORMAT {
+            TEXT_HEX, TEXT_DEC, NUMERIC
         };
 
     protected:
@@ -192,11 +202,11 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         BuilderMsg* msg;
 
-        uint64_t dbFormat;
-        uint64_t attributesFormat;
+        DB_FORMAT dbFormat;
+        ATTRIBUTES_FORMAT attributesFormat;
         INTERVAL_DTS_FORMAT intervalDtsFormat;
         INTERVAL_YTM_FORMAT intervalYtmFormat;
-        uint messageFormat;
+        MESSAGE_FORMAT messageFormat;
         RID_FORMAT ridFormat;
         XID_FORMAT xidFormat;
         TIMESTAMP_FORMAT timestampFormat;
@@ -204,9 +214,9 @@ namespace OpenLogReplicator {
         TIMESTAMP_ALL timestampAll;
         CHAR_FORMAT charFormat;
         SCN_FORMAT scnFormat;
-        uint scnType;
+        SCN_TYPE scnType;
         UNKNOWN_FORMAT unknownFormat;
-        uint schemaFormat;
+        SCHEMA_FORMAT schemaFormat;
         COLUMN_FORMAT columnFormat;
         UNKNOWN_TYPE unknownType;
         uint64_t unconfirmedSize;
@@ -223,12 +233,12 @@ namespace OpenLogReplicator {
         typeXid lastXid;
         uint64_t valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
         uint64_t valuesMerge[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
-        int64_t sizes[Ctx::COLUMN_LIMIT_23_0][VALUE_TYPE_LENGTH];
-        const uint8_t* values[Ctx::COLUMN_LIMIT_23_0][VALUE_TYPE_LENGTH];
-        uint64_t sizesPart[3][Ctx::COLUMN_LIMIT_23_0][VALUE_TYPE_LENGTH];
-        const uint8_t* valuesPart[3][Ctx::COLUMN_LIMIT_23_0][VALUE_TYPE_LENGTH];
+        int64_t sizes[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
+        const uint8_t* values[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
+        uint64_t sizesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
+        const uint8_t* valuesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
         uint64_t valuesMax;
-        uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * VALUE_TYPE_LENGTH];
+        uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * static_cast<uint>(VALUE_TYPE::LENGTH)];
         uint64_t mergesMax;
         uint64_t id;
         uint64_t num;
@@ -246,6 +256,74 @@ namespace OpenLogReplicator {
         double decodeFloat(const uint8_t* data);
         long double decodeDouble(const uint8_t* data);
 
+        bool isAttributesFormatBegin() const {
+            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::BEGIN)) != 0;
+        };
+
+        bool isAttributesFormatDml() const {
+            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::DML)) != 0;
+        };
+
+        bool isAttributesFormatCommit() const {
+            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::COMMIT)) != 0;
+        };
+
+        bool isCharFormatNoMapping() const {
+            return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::NOMAPPING)) != 0;
+        };
+
+        bool isCharFormatHex() const {
+            return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::HEX)) != 0;
+        };
+
+        bool isScnTypeAllPayloads() const {
+            return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::ALL_PAYLOADS)) != 0;
+        };
+
+        bool isScnTypeCommitValue() const {
+            return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::COMMIT_VALUE)) != 0;
+        };
+
+        bool isSchemaFormatFull() const {
+            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::FULL)) != 0;
+        };
+
+        bool isSchemaFormatRepeated() const {
+            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::REPEATED)) != 0;
+        };
+
+        bool isSchemaFormatObj() const {
+            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::OBJ)) != 0;
+        };
+
+        bool isMessageFormatFull() const {
+            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::FULL)) != 0;
+        }
+
+        bool isMessageFormatAddSequences() const {
+            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_SEQUENCES)) != 0;
+        }
+
+        bool isMessageFormatSkipBegin() const {
+            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_BEGIN)) != 0;
+        }
+
+        bool isMessageFormatSkipCommit() const {
+            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_COMMIT)) != 0;
+        }
+
+        bool isMessageFormatAddOffset() const {
+            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_OFFSET)) != 0;
+        }
+
+        bool isDbFormatAddDml() const {
+            return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DML)) != 0;
+        }
+
+        bool isDbFormatAddDdl() const {
+            return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DDL)) != 0;
+        }
+
         inline void builderRotate(bool copy) {
             if (messageSize > ctx->memoryChunksWriteBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
                 throw RedoLogException(10072, "writer buffer (parameter \"write-buffer-max-mb\" = " +
@@ -253,7 +331,7 @@ namespace OpenLogReplicator {
                                               ") is too small to fit a message with size: " +
                                               std::to_string(messageSize));
             auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY::BUILDER));
-            ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
+            ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
             nextBuffer->next = nullptr;
             nextBuffer->id = lastBuilderQueue->id + 1;
             nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
@@ -273,13 +351,13 @@ namespace OpenLogReplicator {
             }
 
             {
-                ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::BUILDER_ROTATE);
+                ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_ROTATE);
                 std::unique_lock<std::mutex> lck(mtx);
                 lastBuilderQueue->next = nextBuffer;
                 ++buffersAllocated;
                 lastBuilderQueue = nextBuffer;
             }
-            ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
+            ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
         }
 
         void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeCol col, const uint8_t* data, uint32_t size, uint64_t offset,
@@ -300,10 +378,10 @@ namespace OpenLogReplicator {
                         continue;
 
                     valuesSet[base] &= ~mask;
-                    values[column][VALUE_TYPE::BEFORE] = nullptr;
-                    values[column][VALUE_TYPE::BEFORE_SUPP] = nullptr;
-                    values[column][VALUE_TYPE::AFTER] = nullptr;
-                    values[column][VALUE_TYPE::AFTER_SUPP] = nullptr;
+                    values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = nullptr;
+                    values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = nullptr;
+                    values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = nullptr;
+                    values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] = nullptr;
                 }
             }
             valuesMax = 0;
@@ -312,9 +390,9 @@ namespace OpenLogReplicator {
         };
 
         inline void valueSet(VALUE_TYPE type, uint16_t column, const uint8_t* data, typeSize size, uint8_t fb, bool dump) {
-            if (unlikely((ctx->trace & Ctx::TRACE::DML) != 0 || dump)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::DML) || dump)) {
                 std::ostringstream ss;
-                ss << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << size << "/" << std::setfill('0') <<
+                ss << "DML: value: " << std::dec << static_cast<uint>(type) << "/" << column << "/" << std::dec << size << "/" << std::setfill('0') <<
                    std::setw(2) << std::hex << static_cast<uint64_t>(fb) << " to: ";
                 for (uint64_t i = 0; i < size && i < 64; ++i) {
                     ss << "0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[i]) << ", ";
@@ -332,27 +410,27 @@ namespace OpenLogReplicator {
 
             switch (fb & (RedoLogRecord::FB_P | RedoLogRecord::FB_N)) {
                 case 0:
-                    sizes[column][type] = size;
-                    values[column][type] = data;
+                    sizes[column][static_cast<uint>(type)] = size;
+                    values[column][static_cast<uint>(type)] = data;
                     break;
 
                 case RedoLogRecord::FB_N:
-                    sizesPart[0][column][type] = size;
-                    valuesPart[0][column][type] = data;
+                    sizesPart[0][column][static_cast<uint>(type)] = size;
+                    valuesPart[0][column][static_cast<uint>(type)] = data;
                     if ((valuesMerge[base] & mask) == 0)
                         valuesMerge[base] |= mask;
                     break;
 
                 case RedoLogRecord::FB_P | RedoLogRecord::FB_N:
-                    sizesPart[1][column][type] = size;
-                    valuesPart[1][column][type] = data;
+                    sizesPart[1][column][static_cast<uint>(type)] = size;
+                    valuesPart[1][column][static_cast<uint>(type)] = data;
                     if ((valuesMerge[base] & mask) == 0)
                         valuesMerge[base] |= mask;
                     break;
 
                 case RedoLogRecord::FB_P:
-                    sizesPart[2][column][type] = size;
-                    valuesPart[2][column][type] = data;
+                    sizesPart[2][column][static_cast<uint>(type)] = size;
+                    valuesPart[2][column][static_cast<uint>(type)] = data;
                     if ((valuesMerge[base] & mask) == 0)
                         valuesMerge[base] |= mask;
                     break;
@@ -370,10 +448,10 @@ namespace OpenLogReplicator {
             messagePosition += bytes;
         };
 
-        inline void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, uint16_t flags) {
+        inline void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, BuilderMsg::OUTPUT_BUFFER flags) {
             messageSize = 0;
             messagePosition = 0;
-            if ((scnType & SCN_TYPE::SCN_COMMIT_VALUE) != 0)
+            if (isScnTypeCommitValue())
                 scn = commitScn;
 
             if (unlikely(lastBuilderQueue->size + messagePosition + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE))
@@ -444,7 +522,7 @@ namespace OpenLogReplicator {
             valueBuffer[0] = '?';
             valueSize = 1;
             columnString(columnName);
-            if (unlikely(unknownFormat == UNKNOWN_FORMAT::UNKNOWN_DUMP)) {
+            if (unlikely(unknownFormat == UNKNOWN_FORMAT::DUMP)) {
                 std::ostringstream ss;
                 for (uint32_t j = 0; j < size; ++j)
                     ss << " " << std::hex << std::setfill('0') << std::setw(2) << (static_cast<uint64_t>(data[j]));
@@ -626,7 +704,7 @@ namespace OpenLogReplicator {
         inline bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t size, uint64_t charsetId, typeObj obj, uint64_t offset, bool isClob, bool isSystem) {
             bool appendData = false, hasPrev = false, hasNext = true;
             valueSize = 0;
-            if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA)))
                 ctx->logTrace(Ctx::TRACE::LOB_DATA, dumpLob(data, size));
 
             if (unlikely(size < 20)) {
@@ -642,7 +720,7 @@ namespace OpenLogReplicator {
             if ((flags & 0x04) == 0) {
                 auto lobsIt = lobCtx->lobs.find(lobId);
                 if (unlikely(lobsIt == lobCtx->lobs.end())) {
-                    if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA))
+                    if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA)))
                         ctx->logTrace(Ctx::TRACE::LOB_DATA, "LOB missing LOB index xid: " + lastXid.toString() + " LOB: " + lobId.lower() +
                                                             " data: " + dumpLob(data, size));
                     return true;
@@ -662,7 +740,7 @@ namespace OpenLogReplicator {
                     LobDataElement element(page, 0);
                     auto dataMapIt = lobData->dataMap.find(element);
                     if (unlikely(dataMapIt == lobData->dataMap.end())) {
-                        if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                        if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                             ctx->logTrace(Ctx::TRACE::LOB_DATA, "missing LOB (in-index) for xid: " + lastXid.toString() + " LOB: " +
                                                                 lobId.lower() + " page: " + std::to_string(page) + " obj: " + std::to_string(obj));
                             ctx->logTrace(Ctx::TRACE::LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, size));
@@ -677,7 +755,7 @@ namespace OpenLogReplicator {
                         hasNext = false;
                     }
 
-                    RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                    const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
 
                     valueBufferCheck(chunkSize * 4, offset);
                     addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset, appendData, isClob,
@@ -718,7 +796,7 @@ namespace OpenLogReplicator {
 
                     auto lobsIt = lobCtx->lobs.find(lobId);
                     if (lobsIt == lobCtx->lobs.end()) {
-                        if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                        if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                             ctx->logTrace(Ctx::TRACE::LOB_DATA, "missing LOB (in-index) for xid: " + lastXid.toString() + " obj: " +
                                                                 std::to_string(obj));
                             ctx->logTrace(Ctx::TRACE::LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, size));
@@ -757,7 +835,7 @@ namespace OpenLogReplicator {
                         LobDataElement element(page, 0);
                         auto dataMapIt = lobData->dataMap.find(element);
                         if (dataMapIt == lobData->dataMap.end()) {
-                            if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                            if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                                 ctx->logTrace(Ctx::TRACE::LOB_DATA, "missing LOB index (in-index) for xid: " + lastXid.toString() + " LOB: " +
                                                                     lobId.lower() + " page: " + std::to_string(page) + " obj: " + std::to_string(obj));
                                 ctx->logTrace(Ctx::TRACE::LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, size));
@@ -766,7 +844,7 @@ namespace OpenLogReplicator {
                         }
 
                         while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
-                            RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                            const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                             if (j < pageCnt)
                                 chunkSize = redoLogRecordLob->lobDataSize;
                             else
@@ -901,7 +979,7 @@ namespace OpenLogReplicator {
                         // 12+ data
                         auto lobsIt = lobCtx->lobs.find(lobId);
                         if (lobsIt == lobCtx->lobs.end()) {
-                            if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                            if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                                 ctx->logTrace(Ctx::TRACE::LOB_DATA, "missing LOB index (12+ in-value) for xid: " + lastXid.toString() + " LOB: " +
                                                                     lobId.lower() + " obj: " + std::to_string(obj));
                                 ctx->logTrace(Ctx::TRACE::LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, size));
@@ -936,7 +1014,7 @@ namespace OpenLogReplicator {
                                     LobDataElement element(page, 0);
                                     auto dataMapIt = lobData->dataMap.find(element);
                                     if (unlikely(dataMapIt == lobData->dataMap.end())) {
-                                        if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                                        if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                                             ctx->logTrace(Ctx::TRACE::LOB_DATA, "missing LOB data (new in-value) for xid: " + lastXid.toString() +
                                                                                 " LOB: " + lobId.lower() + " page: " + std::to_string(page) + " obj: " +
                                                                                 std::to_string(obj));
@@ -946,7 +1024,7 @@ namespace OpenLogReplicator {
                                     }
 
                                     while (dataMapIt != lobData->dataMap.end() && dataMapIt->first.dba == page) {
-                                        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                                        const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                         chunkSize = redoLogRecordLob->lobDataSize;
                                         if (i == lobPages - 1U && j == pageCnt - 1U)
                                             hasNext = false;
@@ -992,7 +1070,7 @@ namespace OpenLogReplicator {
                                         LobDataElement element(page, 0);
                                         auto dataMapIt = lobData->dataMap.find(element);
                                         if (unlikely(dataMapIt == lobData->dataMap.end())) {
-                                            if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                                            if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                                                 ctx->logTrace(Ctx::TRACE::LOB_DATA, "missing LOB data (new in-value 12+) for xid: " + lastXid.toString() +
                                                                                     " LOB: " + lobId.lower() + " page: " + std::to_string(page) + " obj: " +
                                                                                     std::to_string(obj));
@@ -1002,7 +1080,7 @@ namespace OpenLogReplicator {
                                             return false;
                                         }
 
-                                        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                                        const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                         chunkSize = redoLogRecordLob->lobDataSize;
                                         if (listPage == 0 && i == aSiz - 1U && j == pageCnt - 1U)
                                             hasNext = false;
@@ -1035,7 +1113,7 @@ namespace OpenLogReplicator {
 
                         auto lobsIt = lobCtx->lobs.find(lobId);
                         if (unlikely(lobsIt == lobCtx->lobs.end())) {
-                            if (unlikely(ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                            if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                                 ctx->logTrace(Ctx::TRACE::LOB_DATA, "missing LOB index (new in-value) for xid: " + lastXid.toString() + " LOB: " +
                                                                     lobId.lower() + " obj: " + std::to_string(obj));
                                 ctx->logTrace(Ctx::TRACE::LOB_DATA, "dump LOB: " + lobId.lower() + " data: " + dumpLob(data, size));
@@ -1082,7 +1160,7 @@ namespace OpenLogReplicator {
                                     return false;
                                 }
 
-                                RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                                const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                 chunkSize = redoLogRecordLob->lobDataSize;
                                 if (i == lobPages - 1U && j == pageCnt - 1U)
                                     hasNext = false;
@@ -1126,7 +1204,7 @@ namespace OpenLogReplicator {
         inline void parseString(const uint8_t* data, uint64_t size, uint64_t charsetId, uint64_t offset, bool appendData, bool hasPrev, bool hasNext,
                                 bool isSystem) {
             const CharacterSet* characterSet = locales->characterMap[charsetId];
-            if (unlikely(characterSet == nullptr && (charFormat & CHAR_FORMAT::NOMAPPING) == 0))
+            if (unlikely(characterSet == nullptr && !isCharFormatNoMapping()))
                 throw RedoLogException(50010, "can't find character set map for id = " + std::to_string(charsetId) + " at offset: " +
                                               std::to_string(offset));
             if (!appendData)
@@ -1166,10 +1244,10 @@ namespace OpenLogReplicator {
 
                 typeUnicode unicodeCharacter;
 
-                if ((charFormat & CHAR_FORMAT::NOMAPPING) == 0) {
+                if (!isCharFormatNoMapping()) {
                     unicodeCharacter = characterSet->decode(ctx, lastXid, parseData, parseSize);
 
-                    if ((charFormat & CHAR_FORMAT::HEX) == 0 || isSystem) {
+                    if (!isCharFormatHex() || isSystem) {
                         if (unicodeCharacter <= 0x7F) {
                             // 0xxxxxxx
                             valueBufferAppend(unicodeCharacter);
@@ -1226,7 +1304,7 @@ namespace OpenLogReplicator {
                     unicodeCharacter = *parseData++;
                     --parseSize;
 
-                    if ((charFormat & CHAR_FORMAT::HEX) == 0 || isSystem) {
+                    if (!isCharFormatHex() || isSystem) {
                         valueBufferAppend(unicodeCharacter);
                     } else {
                         valueBufferAppendHex(unicodeCharacter, offset);
@@ -1291,10 +1369,10 @@ namespace OpenLogReplicator {
         typeScn lwnScn;
         typeIdx lwnIdx;
 
-        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newAttributesFormat,
-                INTERVAL_DTS_FORMAT newIntervalDtsFormat, INTERVAL_YTM_FORMAT newIntervalYtmFormat, uint newMessageFormat, RID_FORMAT newRidFormat,
+        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat,
+                INTERVAL_DTS_FORMAT newIntervalDtsFormat, INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat,
                 XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll,
-                CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat, uint newScnType, UNKNOWN_FORMAT newUnknownFormat, uint newSchemaFormat,
+                CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat,
                 COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType, uint64_t newFlushBuffer);
         virtual ~Builder();
 
@@ -1318,11 +1396,11 @@ namespace OpenLogReplicator {
 
         inline void flush() {
             {
-                ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::BUILDER_COMMIT);
+                ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_COMMIT);
                 std::unique_lock<std::mutex> lck(mtx);
                 condNoWriterWork.notify_all();
             }
-            ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
+            ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
             unconfirmedSize = 0;
         };
 

@@ -190,25 +190,25 @@ namespace OpenLogReplicator {
                                       " empty buffer, offset: " + std::to_string(redoLogRecord1->dataOffset) + ", xid: " + xid.toString() + ", pos: 1");
     }
 
-    void Transaction::flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn) {
+    void Transaction::flush(Metadata* metadata, const TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn) {
         metadata->ctx->swappedMemoryFlush(metadata->ctx->parserThread, xid);
         bool opFlush;
         uint64_t maxMessageMb = builder->getMaxMessageMb();
-        metadata->ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
+        metadata->ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
         std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
         std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema, std::defer_lock);
 
         if (opCodes == 0 || rollback) {
-            metadata->ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
+            metadata->ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
             return;
         }
-        if (unlikely(metadata->ctx->trace & Ctx::TRACE::TRANSACTION))
+        if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::TRANSACTION)))
             metadata->ctx->logTrace(Ctx::TRACE::TRANSACTION, toString(metadata->ctx));
 
         if (system) {
-            metadata->ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::TRANSACTION_SYSTEM);
+            metadata->ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_SYSTEM);
             lckSchema.lock();
-            metadata->ctx->parserThread->contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
+            metadata->ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
 
             if (unlikely(builder->systemTransaction != nullptr))
                 throw RedoLogException(50056, "system transaction already active");
@@ -236,7 +236,7 @@ namespace OpenLogReplicator {
 
                 pos += redoLogRecord1->size + redoLogRecord2->size + TransactionBuffer::ROW_HEADER_TOTAL;
 
-                if (unlikely(metadata->ctx->trace & Ctx::TRACE::TRANSACTION))
+                if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::TRANSACTION)))
                     metadata->ctx->logTrace(Ctx::TRACE::TRANSACTION, std::to_string(redoLogRecord1->size) + ":" + std::to_string(redoLogRecord2->size) +
                                                                      " fb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
                                                                      std::to_string(static_cast<uint64_t>(redoLogRecord2->fb)) + " op: " + std::to_string(op) +
@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
                         // LOB idx
                         const DbLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
-                            if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                            if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::LOB)))
                                 metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() +
                                                                          " obj: " + std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
                                                                          std::to_string(redoLogRecord1->dba) + " page: " +
@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
                         // LOB data
                         const DbLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
-                            if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                            if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::LOB)))
                                 metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord1->lobId.lower() + " xid: " + xid.toString() + " obj: " +
                                                                          std::to_string(lob->obj) + " op: " + std::to_string(op) + " dba: " +
                                                                          std::to_string(redoLogRecord1->dba) + " page: " +
@@ -309,7 +309,7 @@ namespace OpenLogReplicator {
 
                     case 0x05011A02:
                         // LOB index 12+ and LOB redo
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB_DATA)) {
+                        if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::LOB_DATA))) {
                             std::ostringstream ss;
                             for (typeSize j = 0; j < redoLogRecord2->indKeyDataSize; ++j) {
                                 ss << " " << std::setfill('0') << std::setw(2) << std::hex <<
@@ -348,7 +348,7 @@ namespace OpenLogReplicator {
                                 break;
 
                             case OpCode::KDLI_CODE_FILL:
-                                if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                                if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::LOB)))
                                     metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() +
                                                                              " obj: " + std::to_string(redoLogRecord2->dataObj) + " op: " +
                                                                              std::to_string(redoLogRecord2->opCode) + "     dba: " +
@@ -395,7 +395,7 @@ namespace OpenLogReplicator {
                             lobCtx.setSize(redoLogRecord2->lobId, redoLogRecord2->lobSizePages, redoLogRecord2->lobSizeRest);
                         }
 
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::LOB))
+                        if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::LOB)))
                             metadata->ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + xid.toString() + " obj: " +
                                                                      std::to_string(redoLogRecord1->obj) + " op: " + std::to_string(op) + " dba: " +
                                                                      std::to_string(redoLogRecord2->dba) + " page: " +
@@ -516,13 +516,13 @@ namespace OpenLogReplicator {
                                                   " bytes), xid: " + xid.toString());
 
                     if (system) {
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::SYSTEM))
+                        if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                             metadata->ctx->logTrace(Ctx::TRACE::SYSTEM, "commit");
                         builder->systemTransaction->commit(commitScn);
                         delete builder->systemTransaction;
                         builder->systemTransaction = nullptr;
 
-                        if (unlikely(metadata->ctx->trace & Ctx::TRACE::SYSTEM))
+                        if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                             metadata->ctx->logTrace(Ctx::TRACE::SYSTEM, "begin");
                         builder->systemTransaction = new SystemTransaction(builder, metadata);
                     }
@@ -561,7 +561,7 @@ namespace OpenLogReplicator {
             lckSchema.unlock();
         }
         builder->processCommit(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
-        metadata->ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
+        metadata->ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Transaction::purge(Ctx* ctx) {

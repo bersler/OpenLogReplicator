@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
         typeCol guardSeg;
         typeCol segCol;
         std::string name;
-        typeType type;
+        SysCol::COLTYPE type;
         uint length;
         int precision;
         int scale;
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
         bool xmlType;
         bool nullWarning;
 
-        DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, typeType newType, uint newLength,
+        DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, SysCol::COLTYPE newType, uint newLength,
                  int newPrecision, int newScale, uint64_t newCharsetId, typeCol newNumPk, bool newNullable, bool newHidden,
                  bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType);
 

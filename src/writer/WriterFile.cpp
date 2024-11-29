@@ -168,7 +168,7 @@ namespace OpenLogReplicator {
                 if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length()) != suffix)
                     continue;
 
-                if (unlikely(ctx->trace & Ctx::TRACE::WRITER))
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
                     ctx->logTrace(Ctx::TRACE::WRITER, "found previous output file: " + pathName + "/" + fileName);
                 std::string fileNameFoundNum(fileName.substr(prefix.length(), fileName.length() - suffix.length() - prefix.length()));
                 typeScn fileNum;
@@ -195,9 +195,9 @@ namespace OpenLogReplicator {
 
     void WriterFile::closeFile() {
         if (outputDes != -1) {
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             close(outputDes);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
             outputDes = -1;
         }
     }
@@ -269,9 +269,9 @@ namespace OpenLogReplicator {
         // File is closed, open it
         if (outputDes == -1) {
             struct stat fileStat;
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             int statRet = stat(fullFileName.c_str(), &fileStat);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
             if (statRet == 0) {
                 // File already exists, append?
                 if (append == 0)
@@ -282,16 +282,16 @@ namespace OpenLogReplicator {
                 fileSize = 0;
 
             ctx->info(0, "opening output file: " + fullFileName);
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             outputDes = open(fullFileName.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
 
             if (outputDes == -1)
                 throw RuntimeException(10006, "file: " + fullFileName + " - open for write returned: " + strerror(errno));
 
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             int lseekRet = lseek(outputDes, 0, SEEK_END);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
             if (lseekRet == -1)
                 throw RuntimeException(10011, "file: " + fullFileName + " - seek returned: " + strerror(errno));
         }
@@ -303,18 +303,18 @@ namespace OpenLogReplicator {
         else
             checkFile(msg->scn, msg->sequence, msg->size);
 
-        contextSet(CONTEXT_OS, REASON_OS);
+        contextSet(CONTEXT::OS, REASON::OS);
         int64_t bytesWritten = write(outputDes, reinterpret_cast<const char*>(msg->data + msg->tagSize), msg->size - msg->tagSize);
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
         if (static_cast<uint64_t>(bytesWritten) != msg->size - msg->tagSize)
             throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
                                           std::to_string(msg->size - msg->tagSize) + ", code returned: " + strerror(errno));
         fileSize += bytesWritten;
 
         if (newLine > 0) {
-            contextSet(CONTEXT_OS, REASON_OS);
+            contextSet(CONTEXT::OS, REASON::OS);
             bytesWritten = write(outputDes, newLineMsg, newLine);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
             if (static_cast<uint64_t>(bytesWritten) != newLine)
                 throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
                                               std::to_string(msg->size) + ", code returned: " + strerror(errno));

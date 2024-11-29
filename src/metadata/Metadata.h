@@ -29,6 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
+#include "../common/DbTable.h"
 
 #ifndef METADATA_H_
 #define METADATA_H_
@@ -53,7 +54,7 @@ namespace OpenLogReplicator {
         static constexpr uint64_t CHECKPOINT_SCHEMA_FILE_MAX_SIZE = 2147483648;
 
     public:
-        enum STATUS {
+        enum class STATUS {
             READY, // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
             START, // Replicator tries to start replication with given parameters.
             REPLICATE // Replication is running. The metadata is initialized, the starting point of replication is defined.
@@ -154,7 +155,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in);
         [[nodiscard]] bool stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out);
         [[nodiscard]] bool stateDrop(const std::string& name);
-        SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
+        SchemaElement* addElement(const char* owner, const char* table, DbTable::OPTIONS options1, DbTable::OPTIONS options2);
+        SchemaElement* addElement(const char* owner, const char* table, DbTable::OPTIONS options);
         void resetElements();
         void commitElements();
         void buildMaps(std::vector<std::string>& msgs);

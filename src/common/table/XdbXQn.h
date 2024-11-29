@@ -32,6 +32,12 @@ namespace OpenLogReplicator {
         static constexpr uint ID_LENGTH{16};
         static constexpr uint64_t FLAG_ISATTRIBUTE{1};
 
+        typeRowId rowId;
+        std::string nmSpcId;
+        std::string localName;
+        std::string flags;
+        std::string id;
+
         XdbXQn(typeRowId newRowId, const char* newNmSpcId, const char* newLocalName, const char* newFlags, const char* newId) :
                 rowId(newRowId),
                 nmSpcId(newNmSpcId),
@@ -40,15 +46,71 @@ namespace OpenLogReplicator {
                 id(newId) {
         }
 
+        explicit XdbXQn(typeRowId newRowId) :
+                rowId(newRowId),
+                nmSpcId(""),
+                localName(""),
+                flags(""),
+                id("") {
+        }
+
         bool operator!=(const XdbXQn& other) const {
             return (other.rowId != rowId) || (other.nmSpcId != nmSpcId) || (other.localName != localName) || (other.flags != flags) || (other.id != id);
         }
 
-        typeRowId rowId;
-        std::string nmSpcId;
-        std::string localName;
-        std::string flags;
+        static std::string tableName() {
+            return "XDB.X$QN";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", NMSPCID: '" + nmSpcId + "', LOCALNAME: '" + localName + "', FLAGS: '" + flags + "', ID: '" + id + "'";
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+    };
+
+    class XdbXQnKey final {
+    public:
         std::string id;
+
+        explicit XdbXQnKey(const std::string& newId) :
+                id(newId) {
+        }
+
+        explicit XdbXQnKey(const XdbXQn* xdbXQn) :
+                id(xdbXQn->id) {
+        }
+
+        bool operator!=(const XdbXQnKey& other) const {
+            return (other.id != id);
+        }
+
+        bool operator==(const XdbXQnKey& other) const {
+            return (other.id == id);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::XdbXQnKey> {
+        size_t operator()(const OpenLogReplicator::XdbXQnKey& xdbXQnKey) const {
+            return hash<std::string>()(xdbXQnKey.id);
+        }
     };
 }
 

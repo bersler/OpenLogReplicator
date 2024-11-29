@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-    SchemaElement::SchemaElement(const char* newOwner, const char* newTable, typeOptions newOptions) :
+    SchemaElement::SchemaElement(const char* newOwner, const char* newTable, DbTable::OPTIONS newOptions) :
             owner(newOwner),
             table(newTable),
             options(newOptions),

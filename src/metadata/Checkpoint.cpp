@@ -51,11 +51,11 @@ namespace OpenLogReplicator {
 
     void Checkpoint::wakeUp() {
         {
-            contextSet(Thread::CONTEXT_MUTEX, Thread::CHECKPOINT_WAKEUP);
+            contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CHECKPOINT_WAKEUP);
             std::unique_lock<std::mutex> lck(mtx);
             condLoop.notify_all();
         }
-        contextSet(Thread::CONTEXT_CPU);
+        contextSet(Thread::CONTEXT::CPU);
     }
 
     void Checkpoint::trackConfigFile() {
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
                 users.insert(std::string(debugOwner));
             }
             if (ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA))
-                metadata->addElement(".*", ".*", 0);
+                metadata->addElement(".*", ".*", DbTable::OPTIONS::DEFAULT);
 
             if (sourceJson.HasMember("filter")) {
                 const rapidjson::Value& filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
@@ -185,7 +185,7 @@ namespace OpenLogReplicator {
 
                         const char* owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
                         const char* table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
-                        SchemaElement* element = metadata->addElement(owner, table, 0);
+                        SchemaElement* element = metadata->addElement(owner, table, DbTable::OPTIONS::DEFAULT);
 
                         users.insert(owner);
 
@@ -220,13 +220,13 @@ namespace OpenLogReplicator {
         ctx->info(0, "scanning objects which match the configuration file");
         // Suspend transaction processing for the schema update
         {
-            contextSet(Thread::CONTEXT_TRAN, Thread::REASON_TRAN);
+            contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
             std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
             metadata->commitElements();
             metadata->schema->purgeMetadata();
 
             // Mark all tables as touched to force a schema update
-            for (const auto& it: metadata->schema->sysObjMapRowId)
+            for (const auto& it: metadata->schema->sysObjPack.mapRowId)
                 metadata->schema->touchTable(it.second->obj);
 
             std::vector<std::string> msgs;
@@ -236,11 +236,11 @@ namespace OpenLogReplicator {
 
             metadata->schema->resetTouched();
         }
-        contextSet(Thread::CONTEXT_CPU);
+        contextSet(Thread::CONTEXT::CPU);
     }
 
     void Checkpoint::run() {
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "checkpoint (" + ss.str() + ") start");
@@ -260,16 +260,16 @@ namespace OpenLogReplicator {
                 trackConfigFile();
 
                 {
-                    if (unlikely(ctx->trace & Ctx::TRACE::SLEEP))
+                    if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
                         ctx->logTrace(Ctx::TRACE::SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
                                                          " checkpointScn: " + std::to_string(metadata->checkpointScn));
 
-                    contextSet(Thread::CONTEXT_MUTEX, Thread::CHECKPOINT_RUN);
+                    contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CHECKPOINT_RUN);
                     std::unique_lock<std::mutex> lck(mtx);
-                    contextSet(Thread::CONTEXT_WAIT, CHECKPOINT_NO_WORK);
+                    contextSet(Thread::CONTEXT::WAIT, REASON::CHECKPOINT_NO_WORK);
                     condLoop.wait_for(lck, std::chrono::milliseconds(100));
                 }
-                contextSet(Thread::CONTEXT_CPU);
+                contextSet(Thread::CONTEXT::CPU);
             }
 
             if (ctx->softShutdown)
@@ -283,7 +283,7 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "checkpoint (" + ss.str() + ") stop");

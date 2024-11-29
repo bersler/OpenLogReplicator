@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
     }
 
     void MemoryManager::run() {
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "memory manager (" + ss.str() + ") start");
@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
                 int64_t unswapIndex = -1;
 
                 {
-                    contextSet(Thread::CONTEXT_MUTEX, Thread::MEMORY_RUN1);
+                    contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_RUN1);
                     std::unique_lock<std::mutex> lck(ctx->swapMtx);
                     getChunkToUnswap(unswapXid, unswapIndex);
                     getChunkToSwap(swapXid, swapIndex);
@@ -73,23 +73,23 @@ namespace OpenLogReplicator {
                         ctx->wontSwap(this);
 
                     if (unswapIndex == -1 && swapIndex == -1) {
-                        contextSet(Thread::CONTEXT_WAIT, Thread::MEMORY_NO_WORK);
+                        contextSet(Thread::CONTEXT::WAIT, Thread::REASON::MEMORY_NO_WORK);
                         ctx->chunksMemoryManager.wait_for(lck, std::chrono::milliseconds(10000));
-                        contextSet(Thread::CONTEXT_CPU);
+                        contextSet(Thread::CONTEXT::CPU);
                         continue;
                     }
                 }
-                contextSet(Thread::CONTEXT_CPU);
+                contextSet(Thread::CONTEXT::CPU);
 
                 if (unswapIndex != -1) {
                     if (unswap(unswapXid, unswapIndex) && ctx->metrics)
                         ctx->metrics->emitSwapOperationsMbRead(1);
                     {
-                        contextSet(Thread::CONTEXT_MUTEX, Thread::MEMORY_RUN2);
+                        contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_RUN2);
                         std::unique_lock<std::mutex> lck(ctx->swapMtx);
                         ctx->chunksTransaction.notify_all();
                     }
-                    contextSet(Thread::CONTEXT_CPU);
+                    contextSet(Thread::CONTEXT::CPU);
                 }
                 if (swapIndex != -1 && swap(swapXid, swapIndex) && ctx->metrics)
                     ctx->metrics->emitSwapOperationsMbWrite(1);
@@ -99,7 +99,7 @@ namespace OpenLogReplicator {
             ctx->stopHard();
         }
 
-        if (unlikely(ctx->trace & Ctx::TRACE::THREADS)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             ctx->logTrace(Ctx::TRACE::THREADS, "memory manager (" + ss.str() + ") stop");
@@ -116,10 +116,10 @@ namespace OpenLogReplicator {
             typeXid xid;
             SwapChunk* sc;
             {
-                contextSet(Thread::CONTEXT_MUTEX, Thread::MEMORY_CLEAN);
+                contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_CLEAN);
                 std::unique_lock<std::mutex> lck(ctx->swapMtx);
                 if (ctx->commitedXids.empty()) {
-                    contextSet(Thread::CONTEXT_CPU);
+                    contextSet(Thread::CONTEXT::CPU);
                     return discard;
                 }
 
@@ -132,8 +132,9 @@ namespace OpenLogReplicator {
                 if (sc->swappedMax >= 0)
                     discard += sc->swappedMax - sc->swappedMin;
                 ctx->swapChunks.erase(it);
+                ctx->reusedTransactions.notify_all();
             }
-            contextSet(Thread::CONTEXT_CPU);
+            contextSet(Thread::CONTEXT::CPU);
             delete sc;
 
             struct stat fileStat;
@@ -188,7 +189,7 @@ namespace OpenLogReplicator {
         if (ctx->swappedFlushXid.toUint() != 0) {
             auto it = ctx->swapChunks.find(ctx->swappedFlushXid);
             if (unlikely(it == ctx->swapChunks.end()))
-                throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during unswap");
+                throw RuntimeException(50070, "swap chunk not found for xid: " + ctx->swappedFlushXid.toString() + " during unswap");
             const SwapChunk* sc = it->second;
             if (sc->swappedMin > -1) {
                 index = sc->swappedMin;
@@ -272,7 +273,7 @@ namespace OpenLogReplicator {
             throw RuntimeException(50072, "swap file: " + fileName + " - read returned: " + strerror(errno));
 
         {
-            contextSet(Thread::CONTEXT_MUTEX, Thread::MEMORY_UNSWAP);
+            contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_UNSWAP);
             std::unique_lock<std::mutex> lck(ctx->swapMtx);
             auto it = ctx->swapChunks.find(xid);
             if (unlikely(it == ctx->swapChunks.end()))
@@ -284,7 +285,7 @@ namespace OpenLogReplicator {
                     sc->swappedMin = sc->swappedMax = -1;
                 else
                     ++sc->swappedMin;
-                contextSet(Thread::CONTEXT_CPU);
+                contextSet(Thread::CONTEXT::CPU);
                 return true;
             }
 
@@ -300,7 +301,7 @@ namespace OpenLogReplicator {
                         throw RuntimeException(50072, "swap file: " + fileName + " - truncate returned: " + strerror(errno));
                 }
 
-                contextSet(Thread::CONTEXT_CPU);
+                contextSet(Thread::CONTEXT::CPU);
                 return true;
             }
 
@@ -313,7 +314,7 @@ namespace OpenLogReplicator {
         uint8_t* tc;
         SwapChunk* sc;
         {
-            contextSet(CONTEXT_MUTEX, MEMORY_SWAP1);
+            contextSet(CONTEXT::MUTEX, REASON::MEMORY_SWAP1);
             std::unique_lock<std::mutex> lck(ctx->swapMtx);
             auto it = ctx->swapChunks.find(xid);
             if (unlikely(it == ctx->swapChunks.end()))
@@ -321,7 +322,7 @@ namespace OpenLogReplicator {
             sc = it->second;
 
             if (sc->chunks.size() <= 1 || index >= static_cast<int64_t>(sc->chunks.size() - 1) || sc->swappedMax != index - 1) {
-                contextSet(CONTEXT_CPU);
+                contextSet(CONTEXT::CPU);
                 return false;
             }
 
@@ -333,7 +334,7 @@ namespace OpenLogReplicator {
 
             sc->chunks[index] = nullptr;
         }
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
 
         std::string fileName = swapPath + "/" + xid.toString() + ".swap";
 
@@ -366,7 +367,7 @@ namespace OpenLogReplicator {
         uint64_t truncateSize(0);
 
         {
-            contextSet(CONTEXT_MUTEX, MEMORY_SWAP2);
+            contextSet(CONTEXT::MUTEX, REASON::MEMORY_SWAP2);
             std::unique_lock<std::mutex> lck(ctx->swapMtx);
 
             if (ctx->swappedShrinkXid == xid) {
@@ -382,7 +383,7 @@ namespace OpenLogReplicator {
                 ctx->chunksTransaction.notify_all();
             }
         }
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
 
         // discard write
         if (remove) {

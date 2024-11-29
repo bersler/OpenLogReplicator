@@ -35,7 +35,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "exception/RuntimeException.h"
 #include "metrics/Metrics.h"
 
-uint OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::TIMESTAMP;
+OpenLogReplicator::Ctx::LOCALES OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::TIMESTAMP;
 
 namespace OpenLogReplicator {
     const char Ctx::map64[65]{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
@@ -66,6 +66,10 @@ namespace OpenLogReplicator {
     typeIntX typeIntX::BASE10[typeIntX::DIGITS][10];
 
     Ctx::Ctx() :
+            trace(0),
+            flags(0),
+            disableChecks(0),
+            logLevel(LOG::INFO),
             bigEndian(false),
             memoryChunks(nullptr),
             memoryChunksMin(0),
@@ -112,10 +116,6 @@ namespace OpenLogReplicator {
             stopCheckpoints(0),
             stopTransactions(0),
             transactionSizeMax(0),
-            logLevel(LOG::INFO),
-            trace(0),
-            flags(0),
-            disableChecks(0),
             hardShutdown(false),
             softShutdown(false),
             replicatorFinished(false),
@@ -519,7 +519,7 @@ namespace OpenLogReplicator {
             result += minute;
             result *= 60;
             result += second;
-            return result - UNIX_AD1970_01_01 - tz; // adjust to 1970 epoch, 719527 days
+            return result - UNIX_AD1970_01_01 - tz; // adjust to 1970 epoch, 719,527 days
         } else {
             // treat dates BC with the exact rules as AD for leap years
             result = -yearToDaysBC(-year, month) + cumDays[month % 12] + day;
@@ -529,7 +529,7 @@ namespace OpenLogReplicator {
             result += minute;
             result *= 60;
             result += second;
-            return result - UNIX_BC1970_01_01 - tz; // adjust to 1970 epoch, 718798 days (year 0 does not exist)
+            return result - UNIX_BC1970_01_01 - tz; // adjust to 1970 epoch, 718,798 days (year 0 does not exist)
         }
     }
 
@@ -732,11 +732,11 @@ namespace OpenLogReplicator {
     bool Ctx::nothingToSwap(Thread* t) const {
         bool ret;
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_NOTHING_TO_SWAP);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_NOTHING_TO_SWAP);
             std::unique_lock<std::mutex> lck(memoryMtx);
             ret = memoryChunksSwap == 0 || (memoryChunksAllocated - memoryChunksFree < memoryChunksSwap);
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         return ret;
     }
 
@@ -748,11 +748,11 @@ namespace OpenLogReplicator {
     uint64_t Ctx::getFreeMemory(Thread* t) const {
         uint64_t ret;
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_FREE_MEMORY);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_FREE_MEMORY);
             std::unique_lock<std::mutex> lck(memoryMtx);
             ret = memoryChunksFree * MEMORY_CHUNK_SIZE_MB;
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         return ret;
     }
 
@@ -764,11 +764,11 @@ namespace OpenLogReplicator {
     uint64_t Ctx::getSwapMemory(Thread* t) const {
         uint64_t ret;
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_GET_SWAP);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_GET_SWAP);
             std::unique_lock<std::mutex> lck(memoryMtx);
             ret = memoryChunksSwap * MEMORY_CHUNK_SIZE_MB;
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         return ret;
     }
 
@@ -776,37 +776,37 @@ namespace OpenLogReplicator {
         uint64_t allocatedModule = 0, usedTotal = 0, allocatedTotal = 0;
         uint8_t* chunk = nullptr;
 
-        t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
+        t->contextSet(Thread::CONTEXT::MEM, Thread::REASON::MEM);
         {
             std::unique_lock<std::mutex> lck(memoryMtx);
             while (true) {
                 if (module == MEMORY::READER) {
-                    if (memoryModulesAllocated[MEMORY::READER] < memoryChunksReadBufferMin)
+                    if (memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] < memoryChunksReadBufferMin)
                         break;
                 } else if (module == MEMORY::BUILDER) {
-                    if (memoryModulesAllocated[MEMORY::BUILDER] < memoryChunksWriteBufferMin)
+                    if (memoryModulesAllocated[static_cast<uint>(MEMORY::BUILDER)] < memoryChunksWriteBufferMin)
                         break;
                 }
 
                 uint64_t reservedChunks = 0;
-                if (memoryModulesAllocated[MEMORY::READER] < memoryChunksReadBufferMin)
-                    reservedChunks += memoryChunksReadBufferMin - memoryModulesAllocated[MEMORY::READER];
-                if (memoryModulesAllocated[MEMORY::BUILDER] < memoryChunksWriteBufferMin)
-                    reservedChunks += memoryChunksWriteBufferMin - memoryModulesAllocated[MEMORY::BUILDER];
+                if (memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] < memoryChunksReadBufferMin)
+                    reservedChunks += memoryChunksReadBufferMin - memoryModulesAllocated[static_cast<uint>(MEMORY::READER)];
+                if (memoryModulesAllocated[static_cast<uint>(MEMORY::BUILDER)] < memoryChunksWriteBufferMin)
+                    reservedChunks += memoryChunksWriteBufferMin - memoryModulesAllocated[static_cast<uint>(MEMORY::BUILDER)];
                 if (!swap)
                     reservedChunks += memoryChunksUnswapBufferMin;
 
-                if (module != MEMORY::BUILDER || memoryModulesAllocated[MEMORY::BUILDER] < memoryChunksWriteBufferMax) {
+                if (module != MEMORY::BUILDER || memoryModulesAllocated[static_cast<uint>(MEMORY::BUILDER)] < memoryChunksWriteBufferMax) {
                     if (memoryChunksFree > reservedChunks)
                         break;
 
                     if (memoryChunksAllocated < memoryChunksMax) {
-                        t->contextSet(Thread::CONTEXT_OS, Thread::REASON_OS);
+                        t->contextSet(Thread::CONTEXT::OS, Thread::REASON::OS);
                         memoryChunks[memoryChunksFree] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
-                        t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
+                        t->contextSet(Thread::CONTEXT::MEM, Thread::REASON::MEM);
                         if (unlikely(memoryChunks[memoryChunksFree] == nullptr))
                             throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                                          " bytes memory for: " + memoryModules[module]);
+                                                          " bytes memory for: " + memoryModules[static_cast<uint>(module)]);
                         ++memoryChunksFree;
                         allocatedTotal = ++memoryChunksAllocated;
 
@@ -822,11 +822,11 @@ namespace OpenLogReplicator {
                 if (hardShutdown)
                     return nullptr;
 
-                if (unlikely(trace & TRACE::SLEEP))
+                if (unlikely(isTraceSet(TRACE::SLEEP)))
                     logTrace(TRACE::SLEEP, "Ctx:getMemoryChunk");
-                t->contextSet(Thread::CONTEXT_WAIT, Thread::MEMORY_EXHAUSTED);
+                t->contextSet(Thread::CONTEXT::WAIT, Thread::REASON::MEMORY_EXHAUSTED);
                 condOutOfMemory.wait(lck);
-                t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
+                t->contextSet(Thread::CONTEXT::MEM, Thread::REASON::MEM);
             }
 
             if (module == MEMORY::PARSER)
@@ -834,12 +834,12 @@ namespace OpenLogReplicator {
 
             --memoryChunksFree;
             usedTotal = memoryChunksAllocated - memoryChunksFree;
-            allocatedModule = ++memoryModulesAllocated[module];
-            if (memoryModulesAllocated[module] > memoryModulesHWM[module])
-                memoryModulesHWM[module] = memoryModulesAllocated[module];
+            allocatedModule = ++memoryModulesAllocated[static_cast<uint>(module)];
+            if (memoryModulesAllocated[static_cast<uint>(module)] > memoryModulesHWM[static_cast<uint>(module)])
+                memoryModulesHWM[static_cast<uint>(module)] = memoryModulesAllocated[static_cast<uint>(module)];
             chunk = memoryChunks[memoryChunksFree];
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
 
         if (unlikely(hardShutdown))
             throw RuntimeException(10018, "shutdown during memory allocation");
@@ -873,12 +873,12 @@ namespace OpenLogReplicator {
 
     void Ctx::freeMemoryChunk(Thread* t, MEMORY module, uint8_t* chunk) {
         uint64_t allocatedModule = 0, usedTotal = 0, allocatedTotal = 0;
-        t->contextSet(Thread::CONTEXT_MEM, Thread::REASON_MEM);
+        t->contextSet(Thread::CONTEXT::MEM, Thread::REASON::MEM);
         {
             std::unique_lock<std::mutex> lck(memoryMtx);
 
             if (unlikely(memoryChunksFree == memoryChunksAllocated))
-                throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[module]);
+                throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[static_cast<uint>(module)]);
 
             // Keep memoryChunksMin reserved
             if (memoryChunksFree >= memoryChunksMin)
@@ -889,17 +889,17 @@ namespace OpenLogReplicator {
             }
 
             usedTotal = memoryChunksAllocated - memoryChunksFree;
-            allocatedModule = --memoryModulesAllocated[module];
+            allocatedModule = --memoryModulesAllocated[static_cast<uint>(module)];
 
             condOutOfMemory.notify_all();
         }
 
         if (chunk != nullptr) {
-            t->contextSet(Thread::CONTEXT_OS, Thread::REASON_OS);
+            t->contextSet(Thread::CONTEXT::OS, Thread::REASON::OS);
             free(chunk);
         }
 
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         if (metrics) {
             if (allocatedTotal > 0)
                 metrics->emitMemoryAllocatedMb(allocatedTotal * MEMORY_CHUNK_SIZE_MB);
@@ -926,19 +926,33 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::swappedMemoryInit(Thread* t, typeXid xid) {
+        bool slept = false;
         SwapChunk* sc = new SwapChunk();
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_MEMORY_INIT);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_MEMORY_INIT);
             std::unique_lock<std::mutex> lck(swapMtx);
+
+            while (!hardShutdown) {
+                if (swapChunks.find(xid) == swapChunks.end())
+                    break;
+
+                slept = true;
+                t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_BLOCKED);
+                reusedTransactions.wait(lck);
+                t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_MEMORY_INIT);
+            }
+
             swapChunks.insert_or_assign(xid, sc);
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
+        if (slept && unlikely(isTraceSet(Ctx::TRACE::TRANSACTION)))
+            logTrace(Ctx::TRACE::TRANSACTION, "swap memory stalled transaction xid: " + xid.toString());
     }
 
     uint64_t Ctx::swappedMemorySize(Thread* t, typeXid xid) const {
         uint64_t ret;
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_SIZE);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SIZE);
             std::unique_lock<std::mutex> lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
@@ -946,13 +960,13 @@ namespace OpenLogReplicator {
             SwapChunk* sc = it->second;
             ret = sc->chunks.size();
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         return ret;
     }
 
     uint8_t* Ctx::swappedMemoryGet(Thread* t, typeXid xid, int64_t index) {
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_GET);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_GET);
             std::unique_lock<std::mutex> lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
@@ -961,7 +975,7 @@ namespace OpenLogReplicator {
 
             while (!hardShutdown) {
                 if (index < sc->swappedMin || index > sc->swappedMax) {
-                    t->contextSet(Thread::CONTEXT_CPU);
+                    t->contextSet(Thread::CONTEXT::CPU);
                     return sc->chunks.at(index);
                 }
 
@@ -970,14 +984,14 @@ namespace OpenLogReplicator {
             }
         }
 
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         return nullptr;
     }
 
     void Ctx::swappedMemoryRelease(Thread* t, typeXid xid, int64_t index) {
         uint8_t* tc;
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_RELEASE);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_RELEASE);
             std::unique_lock<std::mutex> lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
@@ -986,7 +1000,7 @@ namespace OpenLogReplicator {
             tc = sc->chunks.at(index);
             sc->chunks[index] = nullptr;
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
 
         freeMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS, tc);
     }
@@ -994,24 +1008,24 @@ namespace OpenLogReplicator {
     [[nodiscard]] uint8_t* Ctx::swappedMemoryGrow(Thread* t, typeXid xid) {
         SwapChunk* sc;
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_GROW1);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_GROW1);
             std::unique_lock<std::mutex> lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory grow");
             sc = it->second;
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
 
         uint8_t* tc = getMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS);
         memset(tc, 0, sizeof(uint64_t) + sizeof(uint32_t));
 
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_GROW2);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_GROW2);
             std::unique_lock<std::mutex> lck(swapMtx);
             sc->chunks.push_back(tc);
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         return tc;
     }
 
@@ -1019,7 +1033,7 @@ namespace OpenLogReplicator {
         SwapChunk* sc;
         uint8_t* tc;
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_SHRINK1);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SHRINK1);
             std::unique_lock<std::mutex> lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
@@ -1032,10 +1046,10 @@ namespace OpenLogReplicator {
         freeMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS, tc);
 
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_SHRINK2);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SHRINK2);
             std::unique_lock<std::mutex> lck(swapMtx);
             if (sc->chunks.size() == 0) {
-                t->contextSet(Thread::CONTEXT_CPU);
+                t->contextSet(Thread::CONTEXT::CPU);
                 return nullptr;
             }
             int64_t index = sc->chunks.size() - 1;
@@ -1051,23 +1065,23 @@ namespace OpenLogReplicator {
             swappedShrinkXid = 0;
             tc = sc->chunks.back();
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
         return tc;
     }
 
     void Ctx::swappedMemoryFlush(Thread* t, typeXid xid) {
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_FLUSH1);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_FLUSH1);
             std::unique_lock<std::mutex> lck(swapMtx);
             swappedFlushXid = xid;
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Ctx::swappedMemoryRemove(Thread* t, typeXid xid) {
         SwapChunk* sc;
         {
-            t->contextSet(Thread::CONTEXT_CPU);
+            t->contextSet(Thread::CONTEXT::CPU);
             std::unique_lock<std::mutex> lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
@@ -1076,41 +1090,41 @@ namespace OpenLogReplicator {
             sc->release = true;
             swappedFlushXid = 0;
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
 
         for (auto tc: sc->chunks)
             if (tc != nullptr)
                 freeMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS, tc);
 
         {
-            t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_FLUSH2);
+            t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_FLUSH2);
             std::unique_lock<std::mutex> lck(swapMtx);
             sc->chunks.clear();
             commitedXids.push_back(xid);
             chunksMemoryManager.notify_all();
         }
-        t->contextSet(Thread::CONTEXT_CPU);
+        t->contextSet(Thread::CONTEXT::CPU);
     }
 
     void Ctx::wontSwap(Thread* t) {
-        t->contextSet(Thread::CONTEXT_MUTEX, Thread::CTX_SWAPPED_WONT);
+        t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_WONT);
         std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (!outOfMemoryParser) {
-            t->contextSet(Thread::CONTEXT_CPU);
+            t->contextSet(Thread::CONTEXT::CPU);
             return;
         }
 
-        if (memoryModulesAllocated[MEMORY::BUILDER] > memoryChunksWriteBufferMin) {
-            t->contextSet(Thread::CONTEXT_CPU);
+        if (memoryModulesAllocated[static_cast<uint>(MEMORY::BUILDER)] > memoryChunksWriteBufferMin) {
+            t->contextSet(Thread::CONTEXT::CPU);
             return;
         }
 
         hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
              "transaction would be skipped");
-        if (memoryModulesAllocated[MEMORY::READER] > 5)
+        if (memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] > 5)
             hint("amount of disk buffer is too high, try to decrease 'memory-read-buffer-max-mb' parameter, current utilization: " +
-                 std::to_string(memoryModulesAllocated[MEMORY::READER] * MEMORY_CHUNK_SIZE_MB) + "MB");
+                 std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
         throw RuntimeException(10017, "out of memory");
     }
 
@@ -1170,7 +1184,7 @@ namespace OpenLogReplicator {
         {
             std::unique_lock<std::mutex> lck(mtx);
             if (!hardShutdown) {
-                if (unlikely(trace & TRACE::SLEEP))
+                if (unlikely(isTraceSet(TRACE::SLEEP)))
                     logTrace(TRACE::SLEEP, "Ctx:mainLoop");
                 condMainLoop.wait(lck);
             }
@@ -1297,9 +1311,10 @@ namespace OpenLogReplicator {
         std::unique_lock<std::mutex> lck(mtx);
         printMemoryUsageCurrent();
         for (Thread* thread: threads) {
-            error(10014, "Dump: " + thread->getName() + " " + std::to_string(reinterpret_cast<uint64_t>(thread->pthread)) + " context: " +
-                         std::to_string(thread->curContext) + " reason: " + std::to_string(thread->curReason) + " switches: " +
-                         std::to_string(thread->contextSwitches));
+            error(10014, "Dump: " + thread->getName() + " " + std::to_string(reinterpret_cast<uint64_t>(thread->pthread)) +
+                         " context: " + std::to_string(static_cast<uint>(thread->curContext)) +
+                         " reason: " + std::to_string(static_cast<uint>(thread->curReason)) +
+                         " switches: " + std::to_string(thread->contextSwitches));
             pthread_kill(thread->pthread, SIGUSR1);
         }
     }
@@ -1404,9 +1419,9 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::logTrace(int mask, const std::string& message) const {
+    void Ctx::logTrace(TRACE mask, const std::string& message) const {
         const char* code = "XXXXX";
-        if (likely((trace & mask) == 0))
+        if (likely((trace & static_cast<uint>(mask)) == 0))
             return;
 
         switch (mask) {
@@ -1481,6 +1496,10 @@ namespace OpenLogReplicator {
             case TRACE::SLEEP:
                 code = "SLEEP";
                 break;
+
+            case TRACE::CONDITION:
+                code = "CONDT";
+                break;
         }
 
         if (OLR_LOCALES == LOCALES::TIMESTAMP) {
@@ -1498,19 +1517,19 @@ namespace OpenLogReplicator {
 
     void Ctx::printMemoryUsageHWM() const {
         info(0, "Memory HWM: " + std::to_string(getMemoryHWM()) + "MB, builder HWM: " +
-                std::to_string(memoryModulesHWM[Ctx::MEMORY::BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
-                std::to_string(memoryModulesHWM[Ctx::MEMORY::PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer HWM: " +
-                std::to_string(memoryModulesHWM[Ctx::MEMORY::READER] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction HWM: " +
-                std::to_string(memoryModulesHWM[Ctx::MEMORY::TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer HWM: " +
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction HWM: " +
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
     }
 
     void Ctx::printMemoryUsageCurrent() const {
         info(0, "Memory current swap: " + std::to_string(memoryChunksSwap * MEMORY_CHUNK_SIZE_MB) + "MB, allocated: " +
                 std::to_string(memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB) + "MB, free: " +
                 std::to_string(memoryChunksFree * MEMORY_CHUNK_SIZE_MB) + "MB, memory builder: " +
-                std::to_string(memoryModulesAllocated[Ctx::MEMORY::BUILDER] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
-                std::to_string(memoryModulesAllocated[Ctx::MEMORY::PARSER] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer: " +
-                std::to_string(memoryModulesAllocated[Ctx::MEMORY::READER] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction: " +
-                std::to_string(memoryModulesAllocated[Ctx::MEMORY::TRANSACTIONS] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer: " +
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction: " +
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
     }
 }

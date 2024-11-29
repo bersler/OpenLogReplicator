@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Token : public Expression {
     public:
-        enum TYPE {
+        enum class TYPE {
             NONE, IDENTIFIER, LEFT_PARENTHESIS, RIGHT_PARENTHESIS, COMMA, OPERATOR, NUMBER, STRING
         };
 

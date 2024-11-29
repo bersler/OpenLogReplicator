@@ -22,6 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Ctx.h"
 #include "../common/typeRowId.h"
 #include "../common/types.h"
+#include "../common/table/TablePack.h"
 #include "../common/table/XdbXNm.h"
 #include "../common/table/XdbXQn.h"
 #include "../common/table/XdbXPt.h"
@@ -33,17 +34,9 @@ namespace OpenLogReplicator {
 
     class XmlCtx final {
     public:
-        // XDB.X$NMxxx
-        std::map<typeRowId, XdbXNm*> xdbXNmMapRowId;
-        std::unordered_map<std::string, XdbXNm*> xdbXNmMapId;
-
-        // XDB.X$QNxxx
-        std::map<typeRowId, XdbXQn*> xdbXQnMapRowId;
-        std::unordered_map<std::string, XdbXQn*> xdbXQnMapId;
-
-        // XDB.X$PTxxx
-        std::map<typeRowId, XdbXPt*> xdbXPtMapRowId;
-        std::unordered_map<std::string, XdbXPt*> xdbXPtMapId;
+        TablePack<XdbXNm, TabRowIdKeyDefault, XdbXNmKey> xdbXNmPack;
+        TablePack<XdbXQn, TabRowIdKeyDefault, XdbXQnKey> xdbXQnPack;
+        TablePack<XdbXPt, TabRowIdKeyDefault, XdbXPtKey> xdbXPtPack;
 
         Ctx* ctx;
         std::string tokSuf;
@@ -53,19 +46,6 @@ namespace OpenLogReplicator {
         virtual ~XmlCtx();
 
         void purgeDicts();
-
-        XdbXNm* dictXdbXNmFind(typeRowId rowId);
-        XdbXPt* dictXdbXPtFind(typeRowId rowId);
-        XdbXQn* dictXdbXQnFind(typeRowId rowId);
-
-        void dictXdbXNmAdd(XdbXNm* xdbXNm);
-        void dictXdbXPtAdd(XdbXPt* xdbXPt);
-        void dictXdbXQnAdd(XdbXQn* xdbXQn);
-
-        void dictXdbXNmDrop(XdbXNm* xdbXNm);
-        void dictXdbXPtDrop(XdbXPt* xdbXPt);
-        void dictXdbXQnDrop(XdbXQn* xdbXQn);
     };
-
 }
 #endif

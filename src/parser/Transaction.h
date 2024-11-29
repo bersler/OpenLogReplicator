@@ -75,11 +75,11 @@ namespace OpenLogReplicator {
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1,
                             const RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1);
-        void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn);
+        void flush(Metadata* metadata, const TransactionBuffer* transactionBuffer, Builder* builder, typeScn lwnScn);
         void purge(Ctx* ctx);
 
         inline void log(const Ctx* ctx, const char* msg, const RedoLogRecord* redoLogRecord1) const {
-            if (likely(!dump && (ctx->trace & Ctx::TRACE::DUMP) == 0))
+            if (likely(!dump && !ctx->isTraceSet(Ctx::TRACE::DUMP)))
                 return;
 
             ctx->info(0, std::string(msg) + " xid: " + xid.toString() +
