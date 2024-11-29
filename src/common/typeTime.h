@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
             return this->data;
         }
 
-        bool operator==(const typeTime& other) const {
+        bool operator==(const typeTime other) const {
             return data == other.data;
         }
 
@@ -70,7 +70,7 @@ namespace OpenLogReplicator {
                      + hour) * 60 + min) * 60 + sec - hostTimezone;
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const typeTime& other) {
+        friend std::ostream& operator<<(std::ostream& os, const typeTime other) {
             uint64_t rest = other.data;
             uint64_t ss = rest % 60;
             rest /= 60;

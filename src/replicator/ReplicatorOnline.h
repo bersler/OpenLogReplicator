@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "Replicator.h"
+#include "../common/DbTable.h"
 #include "../metadata/SchemaElement.h"
 
 #ifndef REPLICATOR_ONLINE_H_
@@ -82,17 +83,17 @@ namespace OpenLogReplicator {
         bool checkConnection() override;
         std::string getParameterValue(const char* parameter) const;
         std::string getPropertyValue(const char* property) const;
-        void checkTableForGrants(const char* tableName);
-        void checkTableForGrantsFlashback(const char* tableName, typeScn scn);
+        void checkTableForGrants(const std::string& tableName);
+        void checkTableForGrantsFlashback(const std::string& tableName, typeScn scn);
         const char* getModeName() const override;
         void verifySchema(typeScn currentScn) override;
         void createSchema() override;
         void readSystemDictionariesMetadata(Schema* schema, typeScn targetScn);
         void readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj);
-        void readSystemDictionaries(Schema* schema, typeScn targetScn, const std::string& owner, const std::string& table, typeOptions options);
+        void readSystemDictionaries(Schema* schema, typeScn targetScn, const std::string& owner, const std::string& table, DbTable::OPTIONS options);
         void createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keyList,
                                   const std::string& key, SchemaElement::TAG_TYPE tagType, const std::vector<std::string>& tagList, const std::string& tag,
-                                  const std::string& condition, typeOptions options, std::vector<std::string>& msgs);
+                                  const std::string& condition, DbTable::OPTIONS options, std::vector<std::string>& msgs);
         void updateOnlineRedoLogData() override;
 
     public:

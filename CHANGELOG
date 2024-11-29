@@ -2,6 +2,7 @@
 - code style cleanup
 - changed parameters "scn" and "scn-all" -> "scn-key"
 - enhancement: add key data to messages
+- fix: minor bug related to swapping
 
 1.7.0
 - fix: welcome banner

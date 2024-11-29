@@ -27,11 +27,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
-    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newDbFormat, uint64_t newAttributesFormat,
-                                     INTERVAL_DTS_FORMAT newIntervalDtsFormat, INTERVAL_YTM_FORMAT newIntervalYtmFormat, uint newMessageFormat,
+    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat,
+                                     INTERVAL_DTS_FORMAT newIntervalDtsFormat, INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat,
                                      RID_FORMAT newRidFormat, XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat,
                                      TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat,
-                                     SCN_FORMAT newScnFormat, uint newScnType, UNKNOWN_FORMAT newUnknownFormat, uint newSchemaFormat,
+                                     SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat,
                                      COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType, uint64_t newFlushBuffer) :
             Builder(newCtx, newLocales, newMetadata, newDbFormat, newAttributesFormat, newIntervalDtsFormat, newIntervalYtmFormat, newMessageFormat,
                     newRidFormat, newXidFormat, newTimestampFormat, newTimestampTzFormat, newTimestampAll, newCharFormat, newScnFormat, newScnType,
@@ -111,11 +111,11 @@ namespace OpenLogReplicator {
 
     void BuilderProtobuf::processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) {
         newTran = false;
-        builderBegin(scn, sequence, 0, 0);
+        builderBegin(scn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
         createResponse();
-        appendHeader(scn, timestamp, true, (dbFormat & DB_FORMAT::ADD_DML) != 0, true);
+        appendHeader(scn, timestamp, true, isDbFormatAddDml(), true);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) == 0) {
+        if (!isMessageFormatFull()) {
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::BEGIN);
@@ -137,13 +137,13 @@ namespace OpenLogReplicator {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) != 0) {
+        if (isMessageFormatFull()) {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB insert processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, 0);
+            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
-            appendHeader(scn, timestamp, true, (dbFormat & DB_FORMAT::ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, true, isDbFormatAddDml(), true);
         }
 
         redoResponsePB->add_payload();
@@ -155,7 +155,7 @@ namespace OpenLogReplicator {
         appendRowid(dataObj, bdba, slot);
         appendAfter(lobCtx, xmlCtx, table, offset);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) == 0) {
+        if (!isMessageFormatFull()) {
             std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
@@ -174,13 +174,13 @@ namespace OpenLogReplicator {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) != 0) {
+        if (isMessageFormatFull()) {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB update processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, 0);
+            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
-            appendHeader(scn, timestamp, true, (dbFormat & DB_FORMAT::ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, true, isDbFormatAddDml(), true);
         }
 
         redoResponsePB->add_payload();
@@ -193,7 +193,7 @@ namespace OpenLogReplicator {
         appendBefore(lobCtx, xmlCtx, table, offset);
         appendAfter(lobCtx, xmlCtx, table, offset);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) == 0) {
+        if (!isMessageFormatFull()) {
             std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
@@ -212,13 +212,13 @@ namespace OpenLogReplicator {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) != 0) {
+        if (isMessageFormatFull()) {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB delete processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, 0);
+            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
-            appendHeader(scn, timestamp, true, (dbFormat & DB_FORMAT::ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, true, isDbFormatAddDml(), true);
         }
 
         redoResponsePB->add_payload();
@@ -230,7 +230,7 @@ namespace OpenLogReplicator {
         appendRowid(dataObj, bdba, slot);
         appendBefore(lobCtx, xmlCtx, table, offset);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) == 0) {
+        if (!isMessageFormatFull()) {
             std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
@@ -250,13 +250,13 @@ namespace OpenLogReplicator {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) != 0) {
+        if (isMessageFormatFull()) {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, 0);
+            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
-            appendHeader(scn, timestamp, true, (dbFormat & DB_FORMAT::ADD_DDL) != 0, true);
+            appendHeader(scn, timestamp, true, isDbFormatAddDdl(), true);
 
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
@@ -265,7 +265,7 @@ namespace OpenLogReplicator {
             payloadPB->set_ddl(sql, sqlSize);
         }
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) == 0) {
+        if (!isMessageFormatFull()) {
             std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
@@ -292,13 +292,13 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if ((messageFormat & MESSAGE_FORMAT::MSG_FULL) != 0) {
+        if (isMessageFormatFull()) {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, 0, 0);
+            builderBegin(scn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
-            appendHeader(scn, timestamp, true, (dbFormat & DB_FORMAT::ADD_DML) != 0, true);
+            appendHeader(scn, timestamp, true, isDbFormatAddDml(), true);
 
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
@@ -324,7 +324,7 @@ namespace OpenLogReplicator {
             lwnIdx = 0;
         }
 
-        builderBegin(scn, sequence, 0, OUTPUT_BUFFER::MESSAGE_CHECKPOINT);
+        builderBegin(scn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::CHECKPOINT);
         createResponse();
         appendHeader(scn, timestamp, true, false, false);
 

@@ -24,11 +24,70 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_LOB_COMP_PART_H_
 
 namespace OpenLogReplicator {
+    class SysLobCompPart final {
+    public:
+        typeRowId rowId;
+        typeObj partObj;
+        typeObj lObj;
+
+        SysLobCompPart(typeRowId newRowId, typeObj newPartObj, typeObj newLObj) :
+                rowId(newRowId),
+                partObj(newPartObj),
+                lObj(newLObj) {
+        }
+
+        explicit SysLobCompPart(typeRowId newRowId) :
+                rowId(newRowId),
+                partObj(0),
+                lObj(0) {
+        }
+
+        bool operator!=(const SysLobCompPart& other) const {
+            return (other.rowId != rowId) || (other.partObj != partObj) || (other.lObj != lObj);
+        }
+
+        static std::string tableName() {
+            return "SYS.LOBCOMPPART$";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", PARTOBJ#: " + std::to_string(partObj) + ", LOBJ#: " + std::to_string(lObj);
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return true;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+
+        typeObj getDependentTableLob() const {
+            return lObj;
+        }
+    };
+
     class SysLobCompPartKey final {
     public:
+        typeObj lObj;
+        typeObj partObj;
+
         SysLobCompPartKey(typeObj newLObj, typeObj newPartObj) :
                 lObj(newLObj),
                 partObj(newPartObj) {
+        }
+
+        explicit SysLobCompPartKey(const SysLobCompPart* sysLobCompPart) :
+                lObj(sysLobCompPart->lObj),
+                partObj(sysLobCompPart->partObj) {
         }
 
         bool operator<(SysLobCompPartKey other) const {
@@ -40,26 +99,36 @@ namespace OpenLogReplicator {
                 return true;
             return false;
         }
-
-        typeObj lObj;
-        typeObj partObj;
     };
 
-    class SysLobCompPart final {
+    class SysLobCompPartPartObj final {
     public:
-        SysLobCompPart(typeRowId newRowId, typeObj newPartObj, typeObj newLObj) :
-                rowId(newRowId),
-                partObj(newPartObj),
-                lObj(newLObj) {
-        }
-
-        bool operator!=(const SysLobCompPart& other) const {
-            return (other.rowId != rowId) || (other.partObj != partObj) || (other.lObj != lObj);
-        }
-
-        typeRowId rowId;
         typeObj partObj;
-        typeObj lObj;
+
+        explicit SysLobCompPartPartObj(typeObj newPartObj) :
+                partObj(newPartObj) {
+        }
+
+        explicit SysLobCompPartPartObj(const SysLobCompPart* sysLobCompPart) :
+                partObj(sysLobCompPart->partObj) {
+        }
+
+        bool operator!=(const SysLobCompPartPartObj other) const {
+            return (other.partObj != partObj);
+        }
+
+        bool operator==(const SysLobCompPartPartObj other) const {
+            return (other.partObj == partObj);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::SysLobCompPartPartObj> {
+        size_t operator()(const OpenLogReplicator::SysLobCompPartPartObj sysLobCompPartPartObj) const {
+            return hash<typeObj>()(sysLobCompPartPartObj.partObj);
+        }
     };
 }
 

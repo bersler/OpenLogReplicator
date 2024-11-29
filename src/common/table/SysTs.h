@@ -28,6 +28,11 @@ namespace OpenLogReplicator {
     public:
         static constexpr uint NAME_LENGTH{30};
 
+        typeRowId rowId;
+        typeTs ts;
+        std::string name;
+        uint32_t blockSize;
+
         SysTs(typeRowId newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
                 rowId(newRowId),
                 ts(newTs),
@@ -35,14 +40,70 @@ namespace OpenLogReplicator {
                 blockSize(newBlockSize) {
         }
 
+        explicit SysTs(typeRowId newRowId) :
+                rowId(newRowId),
+                ts(0),
+                name(""),
+                blockSize(0) {
+        }
+
         bool operator!=(const SysTs& other) const {
             return (other.rowId != rowId) || (other.ts != ts) || (other.name != name) || (other.blockSize != blockSize);
         }
 
-        typeRowId rowId;
+        static std::string tableName() {
+            return "SYS.TS$";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", TS#: " + std::to_string(ts) + ", NAME: '" + name + "', BLOCKSIZE: " + std::to_string(blockSize);
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+    };
+
+    class SysTsTs final {
+    public:
         typeTs ts;
-        std::string name;
-        uint32_t blockSize;
+
+        explicit SysTsTs(typeTs newTs) :
+                ts(newTs) {
+        }
+
+        explicit SysTsTs(const SysTs* sysTs) :
+                ts(sysTs->ts) {
+        }
+
+        bool operator!=(const SysTsTs other) const {
+            return (other.ts != ts);
+        }
+
+        bool operator==(const SysTsTs other) const {
+            return (other.ts == ts);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::SysTsTs> {
+        size_t operator()(const OpenLogReplicator::SysTsTs sysTsTs) const {
+            return hash<typeTs>()(sysTsTs.ts);
+        }
     };
 }
 

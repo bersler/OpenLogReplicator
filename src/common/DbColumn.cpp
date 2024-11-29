@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DbColumn.h"
 
 namespace OpenLogReplicator {
-    DbColumn::DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, typeType newType, uint newLength,
+    DbColumn::DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, SysCol::COLTYPE newType, uint newLength,
                        int newPrecision, int newScale, uint64_t newCharsetId, typeCol newNumPk, bool newNullable, bool newHidden,
                        bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType) :
             col(newCol),
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
     }
 
     std::ostream& operator<<(std::ostream& os, const DbColumn& column) {
-        os << column.segCol << ": (" << column.col << ", '" << column.name << "', " << column.type << ", " << column.length << ")";
+        os << column.segCol << ": (" << column.col << ", '" << column.name << "', " << static_cast<uint>(column.type) << ", " << column.length << ")";
         return os;
     }
 }

@@ -24,17 +24,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class BoolValue : public Expression {
+    public:
+        enum class VALUE {
+            FALSE, TRUE, OPERATOR_AND, OPERATOR_OR, OPERATOR_NOT, OPERATOR_EQUAL, OPERATOR_NOT_EQUAL
+        };
+
     protected:
-        uint64_t boolType;
+        VALUE boolType;
         Expression* left;
         Expression* right;
 
     public:
-        enum VALUE {
-            FALSE, TRUE, OPERATOR_AND, OPERATOR_OR, OPERATOR_NOT, OPERATOR_EQUAL, OPERATOR_NOT_EQUAL
-        };
-
-        BoolValue(uint64_t newBoolType, Expression* newLeft, Expression* newRight);
+        BoolValue(VALUE newBoolType, Expression* newLeft, Expression* newRight);
         virtual ~BoolValue();
 
         virtual bool isBool() override { return true; }

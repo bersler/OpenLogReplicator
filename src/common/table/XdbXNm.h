@@ -29,19 +29,79 @@ namespace OpenLogReplicator {
         static constexpr uint NMSPCURI_LENGTH{2000};
         static constexpr uint ID_LENGTH{16};
 
+        typeRowId rowId;
+        std::string nmSpcUri;
+        std::string id;
+
         XdbXNm(typeRowId newRowId, const char* newNmSpcUri, const char* newId) :
                 rowId(newRowId),
                 nmSpcUri(newNmSpcUri),
                 id(newId) {
         }
 
+        explicit XdbXNm(typeRowId newRowId) :
+                rowId(newRowId),
+                nmSpcUri(""),
+                id("") {
+        }
+
         bool operator!=(const XdbXNm& other) const {
             return (other.rowId != rowId) || (other.nmSpcUri != nmSpcUri) || (other.id != id);
         }
 
-        typeRowId rowId;
-        std::string nmSpcUri;
+        static std::string tableName() {
+            return "XDB.X$NM";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", NMSPCURI: '" + nmSpcUri + "', ID: '" + id + "'";
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+    };
+
+    class XdbXNmKey final {
+    public:
         std::string id;
+
+        explicit XdbXNmKey(const std::string& newId) :
+                id(newId) {
+        }
+
+        explicit XdbXNmKey(const XdbXNm* xdbXNm) :
+                id(xdbXNm->id) {
+        }
+
+        bool operator!=(const XdbXNmKey& other) const {
+            return (other.id != id);
+        }
+
+        bool operator==(const XdbXNmKey& other) const {
+            return (other.id == id);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::XdbXNmKey> {
+        size_t operator()(const OpenLogReplicator::XdbXNmKey& xdbXNmKey) const {
+            return hash<std::string>()(xdbXNmKey.id);
+        }
     };
 }
 

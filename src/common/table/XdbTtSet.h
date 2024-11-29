@@ -29,6 +29,12 @@ namespace OpenLogReplicator {
         static constexpr uint GUID_LENGTH{32};
         static constexpr uint TOKSUF_LENGTH{26};
 
+        typeRowId rowId;
+        std::string guid;
+        std::string tokSuf;
+        uint64_t flags;
+        typeObj obj;
+
         XdbTtSet(typeRowId newRowId, const char* newGuid, const char* newTokSuf, uint64_t newFlags, typeObj newObj) :
                 rowId(newRowId),
                 guid(newGuid),
@@ -37,15 +43,72 @@ namespace OpenLogReplicator {
                 obj(newObj) {
         }
 
+        explicit XdbTtSet(typeRowId newRowId) :
+                rowId(newRowId),
+                guid(""),
+                tokSuf(""),
+                flags(0),
+                obj(0) {
+        }
+
         bool operator!=(const XdbTtSet& other) const {
             return (other.rowId != rowId) || (other.guid != guid) || (other.tokSuf != tokSuf) || (other.flags != flags) || (other.obj != obj);
         }
 
-        typeRowId rowId;
-        std::string guid;
+        static std::string tableName() {
+            return "XDB.XDB$TTSET";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", GUID: '" + guid + "', TOKSUF: '" + tokSuf + "', FLAGS: " + std::to_string(flags) + ", OBJ#: " +
+                   std::to_string(obj);
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+    };
+
+    class XdbTtSetTokSuf final {
+    public:
         std::string tokSuf;
-        uint64_t flags;
-        typeObj obj;
+
+        explicit XdbTtSetTokSuf(const std::string& newTokSuf) :
+                tokSuf(newTokSuf) {
+        }
+
+        explicit XdbTtSetTokSuf(const XdbTtSet* xdbTtSet) :
+                tokSuf(xdbTtSet->tokSuf) {
+        }
+
+        bool operator!=(const XdbTtSetTokSuf& other) const {
+            return (other.tokSuf != tokSuf);
+        }
+
+        bool operator==(const XdbTtSetTokSuf& other) const {
+            return (other.tokSuf == tokSuf);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::XdbTtSetTokSuf> {
+        size_t operator()(const OpenLogReplicator::XdbTtSetTokSuf& xdbTtSetTokSuf) const {
+            return hash<std::string>()(xdbTtSetTokSuf.tokSuf);
+        }
     };
 }
 

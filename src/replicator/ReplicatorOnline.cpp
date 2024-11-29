@@ -28,6 +28,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/XmlCtx.h"
 #include "../common/exception/BootException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/table/SysCCol.h"
+#include "../common/table/SysCDef.h"
+#include "../common/table/SysCol.h"
+#include "../common/table/SysDeferredStg.h"
+#include "../common/table/SysECol.h"
+#include "../common/table/SysLob.h"
+#include "../common/table/SysLobCompPart.h"
+#include "../common/table/SysLobFrag.h"
+#include "../common/table/SysObj.h"
+#include "../common/table/SysTab.h"
+#include "../common/table/SysTabComPart.h"
+#include "../common/table/SysTabPart.h"
+#include "../common/table/SysTabSubPart.h"
+#include "../common/table/SysTs.h"
+#include "../common/table/SysUser.h"
 #include "../common/table/XdbTtSet.h"
 #include "../common/table/XdbXNm.h"
 #include "../common/table/XdbXQn.h"
@@ -551,21 +566,17 @@ namespace OpenLogReplicator {
 
         typeScn currentScn;
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::GRANTS)) {
-            checkTableForGrants("SYS.V_$ARCHIVED_LOG");
-            checkTableForGrants("SYS.V_$DATABASE");
-            checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
-            checkTableForGrants("SYS.V_$LOG");
-            checkTableForGrants("SYS.V_$LOGFILE");
-            checkTableForGrants("SYS.V_$PARAMETER");
-            checkTableForGrants("SYS.V_$STANDBY_LOG");
-            checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
+            std::vector<std::string> tables {"SYS.V_$ARCHIVED_LOG", "SYS.V_$DATABASE", "SYS.V_$DATABASE_INCARNATION", "SYS.V_$LOG", "SYS.V_$LOGFILE",
+                                             "SYS.V_$PARAMETER", "SYS.V_$STANDBY_LOG", "SYS.V_$TRANSPORTABLE_PLATFORM"};
+            for (const auto& tableName : tables)
+                checkTableForGrants(tableName);
         }
 
         archReader = readerCreate(0);
 
         {
             DatabaseStatement stmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_DATABASE_INFORMATION);
             stmt.createStatement(SQL_GET_DATABASE_INFORMATION);
             uint64_t logMode;
@@ -620,7 +631,7 @@ namespace OpenLogReplicator {
                 if (memcmp(banner, "Oracle Database 11g", 19) != 0) {
                     ctx->version12 = true;
                     DatabaseStatement stmt2(conn);
-                    if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+                    if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                         ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_CON_INFO);
                     stmt2.createStatement(SQL_GET_CON_INFO);
                     typeConId conId;
@@ -646,22 +657,12 @@ namespace OpenLogReplicator {
         }
 
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::GRANTS) && !standby) {
-            checkTableForGrantsFlashback("SYS.CCOL$", currentScn);
-            checkTableForGrantsFlashback("SYS.CDEF$", currentScn);
-            checkTableForGrantsFlashback("SYS.COL$", currentScn);
-            checkTableForGrantsFlashback("SYS.DEFERRED_STG$", currentScn);
-            checkTableForGrantsFlashback("SYS.ECOL$", currentScn);
-            checkTableForGrantsFlashback("SYS.LOB$", currentScn);
-            checkTableForGrantsFlashback("SYS.LOBCOMPPART$", currentScn);
-            checkTableForGrantsFlashback("SYS.LOBFRAG$", currentScn);
-            checkTableForGrantsFlashback("SYS.OBJ$", currentScn);
-            checkTableForGrantsFlashback("SYS.TAB$", currentScn);
-            checkTableForGrantsFlashback("SYS.TABCOMPART$", currentScn);
-            checkTableForGrantsFlashback("SYS.TABPART$", currentScn);
-            checkTableForGrantsFlashback("SYS.TABSUBPART$", currentScn);
-            checkTableForGrantsFlashback("SYS.TS$", currentScn);
-            checkTableForGrantsFlashback("SYS.USER$", currentScn);
-            checkTableForGrantsFlashback("XDB.XDB$TTSET", currentScn);
+            std::vector<std::string> tables {SysCCol::tableName(), SysCDef::tableName(), SysCol::tableName(), SysDeferredStg::tableName(),
+                                             SysECol::tableName(), SysLob::tableName(), SysLobCompPart::tableName(), SysLobFrag::tableName(),
+                                             SysObj::tableName(), SysTab::tableName(), SysTabComPart::tableName(), SysTabSubPart::tableName(),
+                                             SysTs::tableName(), SysUser::tableName(), XdbTtSet::tableName()};
+            for (const auto& tableName : tables)
+                checkTableForGrantsFlashback(tableName, currentScn);
         }
 
         metadata->dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
@@ -696,7 +697,7 @@ namespace OpenLogReplicator {
             if (standby)
                 throw BootException(10024, "can't position by time for standby database");
 
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SCN_FROM_TIME);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + metadata->startTime);
             }
@@ -715,7 +716,7 @@ namespace OpenLogReplicator {
             if (standby)
                 throw BootException(10026, "can't position by relative time for standby database");
 
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SCN_FROM_TIME_RELATIVE);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(metadata->startTimeRel));
             }
@@ -731,7 +732,7 @@ namespace OpenLogReplicator {
         } else if (metadata->firstDataScn == Ctx::ZERO_SCN || metadata->firstDataScn == 0) {
             // NOW
             DatabaseStatement stmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_DATABASE_SCN);
             stmt.createStatement(SQL_GET_DATABASE_SCN);
             typeScn firstDataScn;
@@ -750,7 +751,7 @@ namespace OpenLogReplicator {
         } else {
             DatabaseStatement stmt(conn);
             if (standby) {
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(metadata->firstDataScn));
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(metadata->firstDataScn));
@@ -761,7 +762,7 @@ namespace OpenLogReplicator {
                 stmt.bindUInt64(2, metadata->firstDataScn);
                 stmt.bindUInt32(3, metadata->resetlogs);
             } else {
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SEQUENCE_FROM_SCN);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(metadata->firstDataScn));
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(metadata->firstDataScn));
@@ -803,7 +804,7 @@ namespace OpenLogReplicator {
             if (conn->connected) {
                 try {
                     DatabaseStatement stmt(conn);
-                    if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+                    if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                         ctx->logTrace(Ctx::TRACE::SQL, SQL_CHECK_CONNECTION);
                     stmt.createStatement(SQL_CHECK_CONNECTION);
                     uint64_t dummy;
@@ -812,9 +813,9 @@ namespace OpenLogReplicator {
                     stmt.executeQuery();
                 } catch (RuntimeException& ex) {
                     conn->disconnect();
-                    contextSet(CONTEXT_SLEEP);
+                    contextSet(CONTEXT::SLEEP);
                     usleep(ctx->redoReadSleepUs);
-                    contextSet(CONTEXT_CPU);
+                    contextSet(CONTEXT::CPU);
                     ctx->info(0, "reconnecting to the database instance of " + database + " to " + conn->connectString);
                     continue;
                 }
@@ -822,11 +823,11 @@ namespace OpenLogReplicator {
                 return true;
             }
 
-            if (unlikely(ctx->trace & Ctx::TRACE::REDO))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
                 ctx->logTrace(Ctx::TRACE::REDO, "cannot connect to database, retry in 5 sec.");
-            contextSet(CONTEXT_SLEEP);
+            contextSet(CONTEXT::SLEEP);
             sleep(5);
-            contextSet(CONTEXT_CPU);
+            contextSet(CONTEXT::CPU);
         }
 
         return false;
@@ -840,7 +841,7 @@ namespace OpenLogReplicator {
     std::string ReplicatorOnline::getParameterValue(const char* parameter) const {
         char value[DbTable::VPARAMETER_LENGTH + 1];
         DatabaseStatement stmt(conn);
-        if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
             ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_PARAMETER);
             ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::string(parameter));
         }
@@ -858,7 +859,7 @@ namespace OpenLogReplicator {
     std::string ReplicatorOnline::getPropertyValue(const char* property) const {
         char value[DbTable::VPROPERTY_LENGTH + 1];
         DatabaseStatement stmt(conn);
-        if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
             ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_PROPERTY);
             ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::string(property));
         }
@@ -873,11 +874,11 @@ namespace OpenLogReplicator {
         throw RuntimeException(10033, "can't get property value for " + std::string(property));
     }
 
-    void ReplicatorOnline::checkTableForGrants(const char* tableName) {
+    void ReplicatorOnline::checkTableForGrants(const std::string& tableName) {
         try {
-            std::string query("SELECT 1 FROM " + std::string(tableName) + " WHERE 0 = 1");
+            std::string query("SELECT 1 FROM " + tableName + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, query);
             stmt.createStatement(query.c_str());
             uint64_t dummy;
@@ -888,22 +889,22 @@ namespace OpenLogReplicator {
             if (ex.supCode == 1031) {
                 if (metadata->conId > 0) {
                     ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
-                    ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
+                    ctx->hint("run: GRANT SELECT ON " + tableName + " TO " + conn->user + ";");
                 } else {
-                    ctx->hint("run: GRANT SELECT ON " + std::string(tableName) + " TO " + conn->user + ";");
+                    ctx->hint("run: GRANT SELECT ON " + tableName + " TO " + conn->user + ";");
                 }
-                throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
+                throw RuntimeException(10034, "grants missing for table " + tableName);
             } else {
                 throw RuntimeException(ex.code, ex.msg);
             }
         }
     }
 
-    void ReplicatorOnline::checkTableForGrantsFlashback(const char* tableName, typeScn scn) {
+    void ReplicatorOnline::checkTableForGrantsFlashback(const std::string& tableName, typeScn scn) {
         try {
-            std::string query("SELECT 1 FROM " + std::string(tableName) + " AS OF SCN " + std::to_string(scn) + " WHERE 0 = 1");
+            std::string query("SELECT 1 FROM " + tableName + " AS OF SCN " + std::to_string(scn) + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, query);
             stmt.createStatement(query.c_str());
             uint64_t dummy;
@@ -914,11 +915,11 @@ namespace OpenLogReplicator {
             if (ex.supCode == 1031) {
                 if (metadata->conId > 0) {
                     ctx->hint("run: ALTER SESSION SET CONTAINER = " + metadata->conName + ";");
-                    ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
+                    ctx->hint("run: GRANT SELECT, FLASHBACK ON " + tableName + " TO " + conn->user + ";");
                 } else {
-                    ctx->hint("run: GRANT SELECT, FLASHBACK ON " + std::string(tableName) + " TO " + conn->user + ";");
+                    ctx->hint("run: GRANT SELECT, FLASHBACK ON " + tableName + " TO " + conn->user + ";");
                 }
-                throw RuntimeException(10034, "grants missing for table " + std::string(tableName));
+                throw RuntimeException(10034, "grants missing for table " + tableName);
             } else if (ex.supCode == 8181)
                 throw RuntimeException(10035, "specified SCN number is not a valid system change number");
             else {
@@ -961,7 +962,7 @@ namespace OpenLogReplicator {
 
         std::vector<std::string> msgs;
         {
-            contextSet(CONTEXT_MUTEX, REPLICATOR_SCHEMA);
+            contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_SCHEMA);
             std::unique_lock<std::mutex> lck(metadata->mtxSchema);
             metadata->schema->purgeMetadata();
             metadata->schema->purgeDicts();
@@ -974,11 +975,11 @@ namespace OpenLogReplicator {
                                      element->tagList, element->tag, element->condition, element->options, msgs);
             metadata->schema->resetTouched();
 
-            if (unlikely(metadata->ctx->trace & Ctx::TRACE::CHECKPOINT))
+            if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
                 metadata->ctx->logTrace(Ctx::TRACE::CHECKPOINT, "schema creation completed, allowing checkpoints");
             metadata->allowCheckpoints();
         }
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
 
         for (const auto& msg: msgs) {
             ctx->info(0, "- found: " + msg);
@@ -986,20 +987,20 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::readSystemDictionariesMetadata(Schema* schema, typeScn targetScn) {
-        if (unlikely(ctx->trace & Ctx::TRACE::REDO))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "reading metadata");
 
         try {
             // Reading SYS.TS$
             DatabaseStatement sysTsStmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TS);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
             }
             sysTsStmt.createStatement(SQL_GET_SYS_TS);
             sysTsStmt.bindUInt64(1, targetScn);
-            char sysTsRowid[19];
-            sysTsStmt.defineString(1, sysTsRowid, sizeof(sysTsRowid));
+            char sysTsRowidStr[19];
+            sysTsStmt.defineString(1, sysTsRowidStr, sizeof(sysTsRowidStr));
             typeTs sysTsTs;
             sysTsStmt.defineUInt32(2, sysTsTs);
             char sysTsName[129];
@@ -1009,20 +1010,20 @@ namespace OpenLogReplicator {
 
             int64_t sysTsRet = sysTsStmt.executeQuery();
             while (sysTsRet) {
-                schema->dictSysTsAdd(sysTsRowid, sysTsTs, sysTsName, sysTsBlockSize);
+                schema->sysTsPack.addWithKeys(ctx, new SysTs(typeRowId(sysTsRowidStr), sysTsTs, sysTsName, sysTsBlockSize));
                 sysTsRet = sysTsStmt.next();
             }
 
             // Reading XDB.XDB$TTSET
             DatabaseStatement xdbTtSetStmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_XDB_TTSET);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
             }
             xdbTtSetStmt.createStatement(SQL_GET_XDB_TTSET);
             xdbTtSetStmt.bindUInt64(1, targetScn);
-            char xdbTtSetRowid[19];
-            xdbTtSetStmt.defineString(1, xdbTtSetRowid, sizeof(xdbTtSetRowid));
+            char xdbTtSetRowidStr[19];
+            xdbTtSetStmt.defineString(1, xdbTtSetRowidStr, sizeof(xdbTtSetRowidStr));
             char xdbTtSetGuid[XdbTtSet::GUID_LENGTH + 1];
             xdbTtSetStmt.defineString(2, xdbTtSetGuid, sizeof(xdbTtSetGuid));
             char xdbTtSetTokSuf[XdbTtSet::TOKSUF_LENGTH + 1];
@@ -1034,21 +1035,21 @@ namespace OpenLogReplicator {
 
             int64_t xdbTtSetRet = xdbTtSetStmt.executeQuery();
             while (xdbTtSetRet) {
-                schema->dictXdbTtSetAdd(xdbTtSetRowid, xdbTtSetGuid, xdbTtSetTokSuf, xdbTtSetFlags, xdbTtSetObj);
+                schema->xdbTtSetPack.addWithKeys(ctx, new XdbTtSet(typeRowId(xdbTtSetRowidStr), xdbTtSetGuid, xdbTtSetTokSuf, xdbTtSetFlags, xdbTtSetObj));
                 xdbTtSetRet = xdbTtSetStmt.next();
             }
 
-            for (auto ttSetIt: schema->xdbTtSetMapRowId) {
+            for (auto ttSetIt: schema->xdbTtSetPack.mapRowId) {
                 XmlCtx* xmlCtx = new XmlCtx(ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
                 schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
 
                 // Check permissions before reading data
                 std::string tableName = "XDB.X$NM" + ttSetIt.second->tokSuf;
-                checkTableForGrantsFlashback(tableName.c_str(), targetScn);
+                checkTableForGrantsFlashback(tableName, targetScn);
                 tableName = "XDB.X$PT" + ttSetIt.second->tokSuf;
-                checkTableForGrantsFlashback(tableName.c_str(), targetScn);
+                checkTableForGrantsFlashback(tableName, targetScn);
                 tableName = "XDB.X$QN" + ttSetIt.second->tokSuf;
-                checkTableForGrantsFlashback(tableName.c_str(), targetScn);
+                checkTableForGrantsFlashback(tableName, targetScn);
 
                 // Reading XDB.X$NMxxxx
                 DatabaseStatement xdbXNmStmt(conn);
@@ -1056,14 +1057,14 @@ namespace OpenLogReplicator {
                                               "   T.ROWID, T.NMSPCURI, T.ID "
                                               " FROM"
                                               "   XDB.X$NM" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_XDB_XNM);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 }
                 xdbXNmStmt.createStatement(SQL_GET_XDB_XNM.c_str());
                 xdbXNmStmt.bindUInt64(1, targetScn);
-                char xdbXNmRowid[19];
-                xdbXNmStmt.defineString(1, xdbXNmRowid, sizeof(xdbXNmRowid));
+                char xdbXNmRowidStr[19];
+                xdbXNmStmt.defineString(1, xdbXNmRowidStr, sizeof(xdbXNmRowidStr));
                 char xdbNmNmSpcUri[XdbXNm::NMSPCURI_LENGTH + 1];
                 xdbXNmStmt.defineString(2, xdbNmNmSpcUri, sizeof(xdbNmNmSpcUri));
                 char xdbNmId[XdbXNm::ID_LENGTH + 1];
@@ -1071,7 +1072,7 @@ namespace OpenLogReplicator {
 
                 int64_t xdbXNmRet = xdbXNmStmt.executeQuery();
                 while (xdbXNmRet) {
-                    schema->dictXdbXNmAdd(xmlCtx, xdbXNmRowid, xdbNmNmSpcUri, xdbNmId);
+                    xmlCtx->xdbXNmPack.addWithKeys(ctx, new XdbXNm(typeRowId(xdbXNmRowidStr), xdbNmNmSpcUri, xdbNmId));
                     xdbXNmRet = xdbXNmStmt.next();
                 }
 
@@ -1081,14 +1082,14 @@ namespace OpenLogReplicator {
                                               "   T.ROWID, T.PATH, T.ID "
                                               " FROM"
                                               "   XDB.X$PT" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_XDB_XPT);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 }
                 xdbXPtStmt.createStatement(SQL_GET_XDB_XPT.c_str());
                 xdbXPtStmt.bindUInt64(1, targetScn);
-                char xdbXPtRowid[19];
-                xdbXPtStmt.defineString(1, xdbXPtRowid, sizeof(xdbXPtRowid));
+                char xdbXPtRowidStr[19];
+                xdbXPtStmt.defineString(1, xdbXPtRowidStr, sizeof(xdbXPtRowidStr));
                 char xdbPtPath[XdbXPt::PATH_LENGTH + 1];
                 xdbXPtStmt.defineString(2, xdbPtPath, sizeof(xdbPtPath));
                 char xdbPtId[XdbXPt::ID_LENGTH + 1];
@@ -1096,7 +1097,7 @@ namespace OpenLogReplicator {
 
                 int64_t xdbXPtRet = xdbXPtStmt.executeQuery();
                 while (xdbXPtRet) {
-                    schema->dictXdbXPtAdd(xmlCtx, xdbXPtRowid, xdbPtPath, xdbPtId);
+                    xmlCtx->xdbXPtPack.addWithKeys(ctx, new XdbXPt(typeRowId(xdbXPtRowidStr), xdbPtPath, xdbPtId));
                     xdbXPtRet = xdbXPtStmt.next();
                 }
 
@@ -1106,14 +1107,14 @@ namespace OpenLogReplicator {
                                               "   T.ROWID, T.NMSPCID, T.LOCALNAME, T.FLAGS, T.ID "
                                               " FROM"
                                               "   XDB.X$QN" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_XDB_XQN);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 }
                 xdbXQnStmt.createStatement(SQL_GET_XDB_XQN.c_str());
                 xdbXQnStmt.bindUInt64(1, targetScn);
-                char xdbXQnRowid[19];
-                xdbXQnStmt.defineString(1, xdbXQnRowid, sizeof(xdbXQnRowid));
+                char xdbXQnRowidStr[19];
+                xdbXQnStmt.defineString(1, xdbXQnRowidStr, sizeof(xdbXQnRowidStr));
                 char xdbXQnNmSpcId[XdbXQn::NMSPCID_LENGTH + 1];
                 xdbXQnStmt.defineString(2, xdbXQnNmSpcId, sizeof(xdbXQnNmSpcId));
                 char xdbXQnLocalName[XdbXQn::LOCALNAME_LENGTH + 1];
@@ -1125,7 +1126,7 @@ namespace OpenLogReplicator {
 
                 int64_t xdbXQnRet = xdbXQnStmt.executeQuery();
                 while (xdbXQnRet) {
-                    schema->dictXdbXQnAdd(xmlCtx, xdbXQnRowid, xdbXQnNmSpcId, xdbXQnLocalName, xdbXQnFlags, xdbXQnId);
+                    xmlCtx->xdbXQnPack.addWithKeys(ctx, new XdbXQn(typeRowId(xdbXQnRowidStr), xdbXQnNmSpcId, xdbXQnLocalName, xdbXQnFlags, xdbXQnId));
                     xdbXQnRet = xdbXQnStmt.next();
                 }
             }
@@ -1139,13 +1140,13 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj) {
-        if (unlikely(ctx->trace & Ctx::TRACE::REDO))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "read dictionaries for user: " + std::to_string(user) + ", object: " + std::to_string(obj));
 
         // Reading SYS.CCOL$
         DatabaseStatement sysCColStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_CCOL_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1154,7 +1155,7 @@ namespace OpenLogReplicator {
             sysCColStmt.bindUInt64(1, targetScn);
             sysCColStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_CCOL_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1166,8 +1167,8 @@ namespace OpenLogReplicator {
             sysCColStmt.bindUInt32(3, user);
         }
 
-        char sysCColRowid[19];
-        sysCColStmt.defineString(1, sysCColRowid, sizeof(sysCColRowid));
+        char sysCColRowidStr[19];
+        sysCColStmt.defineString(1, sysCColRowidStr, sizeof(sysCColRowidStr));
         typeCon sysCColCon;
         sysCColStmt.defineUInt32(2, sysCColCon);
         typeCol sysCColIntCol;
@@ -1181,7 +1182,8 @@ namespace OpenLogReplicator {
 
         int64_t sysCColRet = sysCColStmt.executeQuery();
         while (sysCColRet) {
-            schema->dictSysCColAdd(sysCColRowid, sysCColCon, sysCColIntCol, sysCColObj, sysCColSpare11, sysCColSpare12);
+            schema->sysCColPack.addWithKeys(ctx, new SysCCol(typeRowId(sysCColRowidStr), sysCColCon, sysCColIntCol, sysCColObj, sysCColSpare11, sysCColSpare12));
+            schema->touchTable(sysCColObj);
             sysCColSpare11 = 0;
             sysCColSpare12 = 0;
             sysCColRet = sysCColStmt.next();
@@ -1190,7 +1192,7 @@ namespace OpenLogReplicator {
         // Reading SYS.CDEF$
         DatabaseStatement sysCDefStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_CDEF_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1199,7 +1201,7 @@ namespace OpenLogReplicator {
             sysCDefStmt.bindUInt64(1, targetScn);
             sysCDefStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_CDEF_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1211,8 +1213,8 @@ namespace OpenLogReplicator {
             sysCDefStmt.bindUInt32(3, user);
         }
 
-        char sysCDefRowid[19];
-        sysCDefStmt.defineString(1, sysCDefRowid, sizeof(sysCDefRowid));
+        char sysCDefRowidStr[19];
+        sysCDefStmt.defineString(1, sysCDefRowidStr, sizeof(sysCDefRowidStr));
         typeCon sysCDefCon;
         sysCDefStmt.defineUInt32(2, sysCDefCon);
         typeObj sysCDefObj;
@@ -1222,14 +1224,15 @@ namespace OpenLogReplicator {
 
         int64_t sysCDefRet = sysCDefStmt.executeQuery();
         while (sysCDefRet) {
-            schema->dictSysCDefAdd(sysCDefRowid, sysCDefCon, sysCDefObj, sysCDefType);
+            schema->sysCDefPack.addWithKeys(ctx, new SysCDef(typeRowId(sysCDefRowidStr), sysCDefCon, sysCDefObj, static_cast<SysCDef::CDEFTYPE>(sysCDefType)));
+            schema->touchTable(sysCDefObj);
             sysCDefRet = sysCDefStmt.next();
         }
 
         // Reading SYS.COL$
         DatabaseStatement sysColStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_COL_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1238,7 +1241,7 @@ namespace OpenLogReplicator {
             sysColStmt.bindUInt64(1, targetScn);
             sysColStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_COL_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1250,8 +1253,8 @@ namespace OpenLogReplicator {
             sysColStmt.bindUInt32(3, user);
         }
 
-        char sysColRowid[19];
-        sysColStmt.defineString(1, sysColRowid, sizeof(sysColRowid));
+        char sysColRowidStr[19];
+        sysColStmt.defineString(1, sysColRowidStr, sizeof(sysColRowidStr));
         typeObj sysColObj;
         sysColStmt.defineUInt32(2, sysColObj);
         typeCol sysColCol;
@@ -1283,9 +1286,10 @@ namespace OpenLogReplicator {
 
         int64_t sysColRet = sysColStmt.executeQuery();
         while (sysColRet) {
-            schema->dictSysColAdd(sysColRowid, sysColObj, sysColCol, sysColSegCol, sysColIntCol, sysColName,
-                                  sysColType, sysColLength, sysColPrecision, sysColScale, sycColCharsetForm,
-                                  sysColCharsetId, sysColNull, sysColProperty1, sysColProperty2);
+            schema->sysColPack.addWithKeys(ctx, new SysCol(typeRowId(sysColRowidStr), sysColObj, sysColCol, sysColSegCol, sysColIntCol, sysColName,
+                                                           static_cast<SysCol::COLTYPE>(sysColType), sysColLength, sysColPrecision, sysColScale,
+                                                           sycColCharsetForm, sysColCharsetId, sysColNull, sysColProperty1, sysColProperty2));
+            schema->touchTable(sysColObj);
             sysColPrecision = -1;
             sysColScale = -1;
             sycColCharsetForm = 0;
@@ -1296,7 +1300,7 @@ namespace OpenLogReplicator {
         // Reading SYS.DEFERRED_STG$
         DatabaseStatement sysDeferredStgStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_DEFERRED_STG_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1305,7 +1309,7 @@ namespace OpenLogReplicator {
             sysDeferredStgStmt.bindUInt64(1, targetScn);
             sysDeferredStgStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_DEFERRED_STG_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1317,8 +1321,8 @@ namespace OpenLogReplicator {
             sysDeferredStgStmt.bindUInt32(3, user);
         }
 
-        char sysDeferredStgRowid[19];
-        sysDeferredStgStmt.defineString(1, sysDeferredStgRowid, sizeof(sysDeferredStgRowid));
+        char sysDeferredStgRowidStr[19];
+        sysDeferredStgStmt.defineString(1, sysDeferredStgRowidStr, sizeof(sysDeferredStgRowidStr));
         typeObj sysDeferredStgObj;
         sysDeferredStgStmt.defineUInt32(2, sysDeferredStgObj);
         uint64_t sysDeferredStgFlagsStg1 = 0;
@@ -1328,8 +1332,9 @@ namespace OpenLogReplicator {
 
         int64_t sysDeferredStgRet = sysDeferredStgStmt.executeQuery();
         while (sysDeferredStgRet) {
-            schema->dictSysDeferredStgAdd(sysDeferredStgRowid, sysDeferredStgObj, sysDeferredStgFlagsStg1,
-                                          sysDeferredStgFlagsStg2);
+            schema->sysDeferredStgPack.addWithKeys(ctx, new SysDeferredStg(typeRowId(sysDeferredStgRowidStr), sysDeferredStgObj,
+                                                                           sysDeferredStgFlagsStg1, sysDeferredStgFlagsStg2));
+            schema->touchTable(sysDeferredStgObj);
             sysDeferredStgFlagsStg1 = 0;
             sysDeferredStgFlagsStg2 = 0;
             sysDeferredStgRet = sysDeferredStgStmt.next();
@@ -1339,7 +1344,7 @@ namespace OpenLogReplicator {
         DatabaseStatement sysEColStmt(conn);
         if (ctx->version12) {
             if (obj != 0) {
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_ECOL_OBJ);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1348,7 +1353,7 @@ namespace OpenLogReplicator {
                 sysEColStmt.bindUInt64(1, targetScn);
                 sysEColStmt.bindUInt32(2, obj);
             } else {
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_ECOL_USER);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1361,7 +1366,7 @@ namespace OpenLogReplicator {
             }
         } else {
             if (obj != 0) {
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_ECOL11_OBJ);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1370,7 +1375,7 @@ namespace OpenLogReplicator {
                 sysEColStmt.bindUInt64(1, targetScn);
                 sysEColStmt.bindUInt32(2, obj);
             } else {
-                if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_ECOL11_USER);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1383,8 +1388,8 @@ namespace OpenLogReplicator {
             }
         }
 
-        char sysEColRowid[19];
-        sysEColStmt.defineString(1, sysEColRowid, sizeof(sysEColRowid));
+        char sysEColRowidStr[19];
+        sysEColStmt.defineString(1, sysEColRowidStr, sizeof(sysEColRowidStr));
         typeObj sysEColTabObj;
         sysEColStmt.defineUInt32(2, sysEColTabObj);
         typeCol sysEColColNum = 0;
@@ -1394,7 +1399,8 @@ namespace OpenLogReplicator {
 
         int64_t sysEColRet = sysEColStmt.executeQuery();
         while (sysEColRet) {
-            schema->dictSysEColAdd(sysEColRowid, sysEColTabObj, sysEColColNum, sysEColGuardId);
+            schema->sysEColPack.addWithKeys(ctx, new SysECol(typeRowId(sysEColRowidStr), sysEColTabObj, sysEColColNum, sysEColGuardId));
+            schema->touchTable(sysEColTabObj);
             sysEColColNum = 0;
             sysEColGuardId = -1;
             sysEColRet = sysEColStmt.next();
@@ -1403,7 +1409,7 @@ namespace OpenLogReplicator {
         // Reading SYS.LOB$
         DatabaseStatement sysLobStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_LOB_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1412,7 +1418,7 @@ namespace OpenLogReplicator {
             sysLobStmt.bindUInt64(1, targetScn);
             sysLobStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_LOB_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1424,8 +1430,8 @@ namespace OpenLogReplicator {
             sysLobStmt.bindUInt32(3, user);
         }
 
-        char sysLobRowid[19];
-        sysLobStmt.defineString(1, sysLobRowid, sizeof(sysLobRowid));
+        char sysLobRowidStr[19];
+        sysLobStmt.defineString(1, sysLobRowidStr, sizeof(sysLobRowidStr));
         typeObj sysLobObj;
         sysLobStmt.defineUInt32(2, sysLobObj);
         typeCol sysLobCol = 0;
@@ -1439,14 +1445,15 @@ namespace OpenLogReplicator {
 
         int64_t sysLobRet = sysLobStmt.executeQuery();
         while (sysLobRet) {
-            schema->dictSysLobAdd(sysLobRowid, sysLobObj, sysLobCol, sysLobIntCol, sysLobLObj, sysLobTs);
+            schema->sysLobPack.addWithKeys(ctx, new SysLob(typeRowId(sysLobRowidStr), sysLobObj, sysLobCol, sysLobIntCol, sysLobLObj, sysLobTs));
+            schema->touchTable(sysLobObj);
             sysLobRet = sysLobStmt.next();
         }
 
         // Reading SYS.LOBCOMPPART$
         DatabaseStatement sysLobCompPartStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_LOB_COMP_PART_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1457,7 +1464,7 @@ namespace OpenLogReplicator {
             sysLobCompPartStmt.bindUInt64(2, targetScn);
             sysLobCompPartStmt.bindUInt32(3, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_LOB_COMP_PART_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1471,8 +1478,8 @@ namespace OpenLogReplicator {
             sysLobCompPartStmt.bindUInt32(4, user);
         }
 
-        char sysLobCompPartRowid[19];
-        sysLobCompPartStmt.defineString(1, sysLobCompPartRowid, sizeof(sysLobCompPartRowid));
+        char sysLobCompPartRowidStr[19];
+        sysLobCompPartStmt.defineString(1, sysLobCompPartRowidStr, sizeof(sysLobCompPartRowidStr));
         typeObj sysLobCompPartPartObj;
         sysLobCompPartStmt.defineUInt32(2, sysLobCompPartPartObj);
         typeObj sysLobCompPartLObj;
@@ -1480,14 +1487,15 @@ namespace OpenLogReplicator {
 
         int64_t sysLobCompPartRet = sysLobCompPartStmt.executeQuery();
         while (sysLobCompPartRet) {
-            schema->dictSysLobCompPartAdd(sysLobCompPartRowid, sysLobCompPartPartObj, sysLobCompPartLObj);
+            schema->sysLobCompPartPack.addWithKeys(ctx, new SysLobCompPart(typeRowId(sysLobCompPartRowidStr), sysLobCompPartPartObj, sysLobCompPartLObj));
+            metadata->schema->touchTableLob(sysLobCompPartLObj);
             sysLobCompPartRet = sysLobCompPartStmt.next();
         }
 
         // Reading SYS.LOBFRAG$
         DatabaseStatement sysLobFragStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_LOB_FRAG_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1506,7 +1514,7 @@ namespace OpenLogReplicator {
             sysLobFragStmt.bindUInt64(6, targetScn);
             sysLobFragStmt.bindUInt32(7, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_LOB_FRAG_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1530,8 +1538,8 @@ namespace OpenLogReplicator {
             sysLobFragStmt.bindUInt32(9, user);
         }
 
-        char sysLobFragRowid[19];
-        sysLobFragStmt.defineString(1, sysLobFragRowid, sizeof(sysLobFragRowid));
+        char sysLobFragRowidStr[19];
+        sysLobFragStmt.defineString(1, sysLobFragRowidStr, sizeof(sysLobFragRowidStr));
         typeObj sysLobFragFragObj;
         sysLobFragStmt.defineUInt32(2, sysLobFragFragObj);
         typeObj sysLobFragParentObj;
@@ -1541,14 +1549,16 @@ namespace OpenLogReplicator {
 
         int64_t sysLobFragRet = sysLobFragStmt.executeQuery();
         while (sysLobFragRet) {
-            schema->dictSysLobFragAdd(sysLobFragRowid, sysLobFragFragObj, sysLobFragParentObj, sysLobFragTs);
+            schema->sysLobFragPack.addWithKeys(ctx, new SysLobFrag(typeRowId(sysLobFragRowidStr), sysLobFragFragObj, sysLobFragParentObj, sysLobFragTs));
+            metadata->schema->touchTableLobFrag(sysLobFragParentObj);
+            metadata->schema->touchTableLob(sysLobFragParentObj);
             sysLobFragRet = sysLobFragStmt.next();
         }
 
         // Reading SYS.TAB$
         DatabaseStatement sysTabStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TAB_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1557,7 +1567,7 @@ namespace OpenLogReplicator {
             sysTabStmt.bindUInt64(1, targetScn);
             sysTabStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TAB_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1569,8 +1579,8 @@ namespace OpenLogReplicator {
             sysTabStmt.bindUInt32(3, user);
         }
 
-        char sysTabRowid[19];
-        sysTabStmt.defineString(1, sysTabRowid, sizeof(sysTabRowid));
+        char sysTabRowidStr[19];
+        sysTabStmt.defineString(1, sysTabRowidStr, sizeof(sysTabRowidStr));
         typeObj sysTabObj;
         sysTabStmt.defineUInt32(2, sysTabObj);
         typeDataObj sysTabDataObj = 0;
@@ -1590,8 +1600,9 @@ namespace OpenLogReplicator {
 
         int64_t sysTabRet = sysTabStmt.executeQuery();
         while (sysTabRet) {
-            schema->dictSysTabAdd(sysTabRowid, sysTabObj, sysTabDataObj, sysTabTs, sysTabCluCols, sysTabFlags1,
-                                  sysTabFlags2, sysTabProperty1, sysTabProperty2);
+            schema->sysTabPack.addWithKeys(ctx, new SysTab(typeRowId(sysTabRowidStr), sysTabObj, sysTabDataObj, sysTabTs, sysTabCluCols, sysTabFlags1,
+                                                           sysTabFlags2, sysTabProperty1, sysTabProperty2));
+            metadata->schema->touchTable(sysTabObj);
             sysTabDataObj = 0;
             sysTabCluCols = 0;
             sysTabRet = sysTabStmt.next();
@@ -1600,7 +1611,7 @@ namespace OpenLogReplicator {
         // Reading SYS.TABCOMPART$
         DatabaseStatement sysTabComPartStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TABCOMPART_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1609,7 +1620,7 @@ namespace OpenLogReplicator {
             sysTabComPartStmt.bindUInt64(1, targetScn);
             sysTabComPartStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TABCOMPART_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1621,8 +1632,8 @@ namespace OpenLogReplicator {
             sysTabComPartStmt.bindUInt32(3, user);
         }
 
-        char sysTabComPartRowid[19];
-        sysTabComPartStmt.defineString(1, sysTabComPartRowid, sizeof(sysTabComPartRowid));
+        char sysTabComPartRowidStr[19];
+        sysTabComPartStmt.defineString(1, sysTabComPartRowidStr, sizeof(sysTabComPartRowidStr));
         typeObj sysTabComPartObj;
         sysTabComPartStmt.defineUInt32(2, sysTabComPartObj);
         typeDataObj sysTabComPartDataObj = 0;
@@ -1632,7 +1643,9 @@ namespace OpenLogReplicator {
 
         int64_t sysTabComPartRet = sysTabComPartStmt.executeQuery();
         while (sysTabComPartRet) {
-            schema->dictSysTabComPartAdd(sysTabComPartRowid, sysTabComPartObj, sysTabComPartDataObj, sysTabComPartBo);
+            schema->sysTabComPartPack.addWithKeys(ctx, new SysTabComPart(typeRowId(sysTabComPartRowidStr), sysTabComPartObj, sysTabComPartDataObj,
+                                                                         sysTabComPartBo));
+            metadata->schema->touchTable(sysTabComPartBo);
             sysTabComPartDataObj = 0;
             sysTabComPartRet = sysTabComPartStmt.next();
         }
@@ -1640,7 +1653,7 @@ namespace OpenLogReplicator {
         // Reading SYS.TABPART$
         DatabaseStatement sysTabPartStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TABPART_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1649,7 +1662,7 @@ namespace OpenLogReplicator {
             sysTabPartStmt.bindUInt64(1, targetScn);
             sysTabPartStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TABPART_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1661,8 +1674,8 @@ namespace OpenLogReplicator {
             sysTabPartStmt.bindUInt32(3, user);
         }
 
-        char sysTabPartRowid[19];
-        sysTabPartStmt.defineString(1, sysTabPartRowid, sizeof(sysTabPartRowid));
+        char sysTabPartRowidStr[19];
+        sysTabPartStmt.defineString(1, sysTabPartRowidStr, sizeof(sysTabPartRowidStr));
         typeObj sysTabPartObj;
         sysTabPartStmt.defineUInt32(2, sysTabPartObj);
         typeDataObj sysTabPartDataObj = 0;
@@ -1672,7 +1685,8 @@ namespace OpenLogReplicator {
 
         int64_t sysTabPartRet = sysTabPartStmt.executeQuery();
         while (sysTabPartRet) {
-            schema->dictSysTabPartAdd(sysTabPartRowid, sysTabPartObj, sysTabPartDataObj, sysTabPartBo);
+            schema->sysTabPartPack.addWithKeys(ctx, new SysTabPart(typeRowId(sysTabPartRowidStr), sysTabPartObj, sysTabPartDataObj, sysTabPartBo));
+            metadata->schema->touchTable(sysTabPartBo);
             sysTabPartDataObj = 0;
             sysTabPartRet = sysTabPartStmt.next();
         }
@@ -1680,7 +1694,7 @@ namespace OpenLogReplicator {
         // Reading SYS.TABSUBPART$
         DatabaseStatement sysTabSubPartStmt(conn);
         if (obj != 0) {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TABSUBPART_OBJ);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(obj));
@@ -1689,7 +1703,7 @@ namespace OpenLogReplicator {
             sysTabSubPartStmt.bindUInt64(1, targetScn);
             sysTabSubPartStmt.bindUInt32(2, obj);
         } else {
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_TABSUBPART_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(targetScn));
@@ -1701,8 +1715,8 @@ namespace OpenLogReplicator {
             sysTabSubPartStmt.bindUInt32(3, user);
         }
 
-        char sysTabSubPartRowid[19];
-        sysTabSubPartStmt.defineString(1, sysTabSubPartRowid, sizeof(sysTabSubPartRowid));
+        char sysTabSubPartRowidStr[19];
+        sysTabSubPartStmt.defineString(1, sysTabSubPartRowidStr, sizeof(sysTabSubPartRowidStr));
         typeObj sysTabSubPartObj;
         sysTabSubPartStmt.defineUInt32(2, sysTabSubPartObj);
         typeDataObj sysTabSubPartDataObj = 0;
@@ -1712,17 +1726,22 @@ namespace OpenLogReplicator {
 
         int64_t sysTabSubPartRet = sysTabSubPartStmt.executeQuery();
         while (sysTabSubPartRet) {
-            schema->dictSysTabSubPartAdd(sysTabSubPartRowid, sysTabSubPartObj, sysTabSubPartDataObj, sysTabSubPartPobj);
+            schema->sysTabSubPartPack.addWithKeys(ctx, new SysTabSubPart(typeRowId(sysTabSubPartRowidStr), sysTabSubPartObj, sysTabSubPartDataObj,
+                                                                         sysTabSubPartPobj));
+            metadata->schema->touchTablePart(sysTabSubPartObj);
             sysTabSubPartDataObj = 0;
             sysTabSubPartRet = sysTabSubPartStmt.next();
         }
+
+        schema->touched = true;
     }
 
-    void ReplicatorOnline::readSystemDictionaries(Schema* schema, typeScn targetScn, const std::string& owner, const std::string& table, typeOptions options) {
+    void ReplicatorOnline::readSystemDictionaries(Schema* schema, typeScn targetScn, const std::string& owner, const std::string& table,
+                                                  DbTable::OPTIONS options) {
         std::string ownerRegexp("^" + owner + "$");
         std::string tableRegexp("^" + table + "$");
-        bool single = ((options & DbTable::OPTIONS::SYSTEM_TABLE) != 0);
-        if (unlikely(ctx->trace & Ctx::TRACE::REDO))
+        bool single = DbTable::isSystemTable(options);
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "read dictionaries for owner: " + owner + ", table: " + table + ", options: " +
                                             std::to_string(static_cast<uint64_t>(options)));
 
@@ -1730,7 +1749,7 @@ namespace OpenLogReplicator {
             DatabaseStatement sysUserStmt(conn);
 
             // Reading SYS.USER$
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_USER);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + ownerRegexp);
@@ -1738,8 +1757,8 @@ namespace OpenLogReplicator {
             sysUserStmt.createStatement(SQL_GET_SYS_USER);
             sysUserStmt.bindUInt64(1, targetScn);
             sysUserStmt.bindString(2, ownerRegexp);
-            char sysUserRowid[19];
-            sysUserStmt.defineString(1, sysUserRowid, sizeof(sysUserRowid));
+            char sysUserRowidStr[19];
+            sysUserStmt.defineString(1, sysUserRowidStr, sizeof(sysUserRowidStr));
             typeUser sysUserUser;
             sysUserStmt.defineUInt32(2, sysUserUser);
             char sysUserName[129];
@@ -1751,18 +1770,30 @@ namespace OpenLogReplicator {
 
             int64_t sysUserRet = sysUserStmt.executeQuery();
             while (sysUserRet) {
-                if (!schema->dictSysUserAdd(sysUserRowid, sysUserUser, sysUserName, sysUserSpare11, sysUserSpare12,
-                                            (options & DbTable::OPTIONS::SYSTEM_TABLE) != 0)) {
-                    sysUserSpare11 = 0;
-                    sysUserSpare12 = 0;
-                    sysUserRet = sysUserStmt.next();
-                    continue;
-                }
+                typeRowId sysUserRowid(sysUserRowidStr);
+                auto sysUserMapRowIdIt = schema->sysUserPack.mapRowId.find(sysUserRowid);
+                if (sysUserMapRowIdIt != schema->sysUserPack.mapRowId.end()) {
+                    if (!single) {
+                        SysUser* sysUser = sysUserMapRowIdIt->second;
+                        if (sysUser->single) {
+                            sysUser->single = false;
+                            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
+                                ctx->logTrace(Ctx::TRACE::SYSTEM, "disabling single option for user " + std::string(sysUserName) + " (" +
+                                                                  std::to_string(sysUserUser) + ")");
+                        } else {
+                            sysUserSpare11 = 0;
+                            sysUserSpare12 = 0;
+                            sysUserRet = sysUserStmt.next();
+                            continue;
+                        }
+                    }
+                } else
+                    schema->sysUserPack.addWithKeys(ctx, new SysUser(sysUserRowid, sysUserUser, sysUserName, sysUserSpare11, sysUserSpare12, single));
 
                 DatabaseStatement sysObjStmt(conn);
                 // Reading SYS.OBJ$
-                if ((options & DbTable::OPTIONS::SYSTEM_TABLE) == 0) {
-                    if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                if (!single) {
+                    if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                         ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_OBJ_USER);
                         ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                         ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(sysUserUser));
@@ -1771,7 +1802,7 @@ namespace OpenLogReplicator {
                     sysObjStmt.bindUInt64(1, targetScn);
                     sysObjStmt.bindUInt32(2, sysUserUser);
                 } else {
-                    if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+                    if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                         ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_SYS_OBJ_NAME);
                         ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
                         ctx->logTrace(Ctx::TRACE::SQL, "PARAM2: " + std::to_string(sysUserUser));
@@ -1783,8 +1814,8 @@ namespace OpenLogReplicator {
                     sysObjStmt.bindString(3, tableRegexp);
                 }
 
-                char sysObjRowid[19];
-                sysObjStmt.defineString(1, sysObjRowid, sizeof(sysObjRowid));
+                char sysObjRowidStr[19];
+                sysObjStmt.defineString(1, sysObjRowidStr, sizeof(sysObjRowidStr));
                 typeUser sysObjOwner;
                 sysObjStmt.defineUInt32(2, sysObjOwner);
                 typeObj sysObjObj;
@@ -1802,11 +1833,31 @@ namespace OpenLogReplicator {
 
                 int64_t sysObjRet = sysObjStmt.executeQuery();
                 while (sysObjRet) {
-                    if (schema->dictSysObjAdd(sysObjRowid, sysObjOwner, sysObjObj, sysObjDataObj, sysObjType, sysObjName,
-                                              sysObjFlags1, sysObjFlags2, single)) {
-                        if (single)
-                            readSystemDictionariesDetails(schema, targetScn, sysUserUser, sysObjObj);
+                    typeRowId sysObjRowId(sysObjRowidStr);
+                    auto sysObjMapRowIdIt = schema->sysObjPack.mapRowId.find(sysObjRowId);
+                    if (sysObjMapRowIdIt != schema->sysObjPack.mapRowId.end()) {
+                        SysObj* sysObj = sysObjMapRowIdIt->second;
+                        if (sysObj->single && !single) {
+                            sysObj->single = false;
+                            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
+                                ctx->logTrace(Ctx::TRACE::SYSTEM, "disabling single option for object " + std::string(sysObjName) + " (owner " +
+                                                                  std::to_string(sysObjOwner) + ")");
+                        }
+
+                        sysObjDataObj = 0;
+                        sysObjFlags1 = 0;
+                        sysObjFlags2 = 0;
+                        sysObjRet = sysObjStmt.next();
+                        continue;
                     }
+
+                    schema->sysObjPack.addWithKeys(ctx, new SysObj(sysObjRowId, sysObjOwner, sysObjObj, sysObjDataObj,
+                                                                   static_cast<SysObj::OBJTYPE>(sysObjType), sysObjName, sysObjFlags1, sysObjFlags2, single));
+                    schema->touchTable(sysObjObj);
+
+                    if (single)
+                        readSystemDictionariesDetails(schema, targetScn, sysUserUser, sysObjObj);
+
                     sysObjDataObj = 0;
                     sysObjFlags1 = 0;
                     sysObjFlags2 = 0;
@@ -1834,8 +1885,8 @@ namespace OpenLogReplicator {
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keyList,
                                                 const std::string& key, SchemaElement::TAG_TYPE tagType, const std::vector<std::string>& tagList, const std::string& tag,
-                                                const std::string& condition, typeOptions options, std::vector<std::string>& msgs) {
-        if (unlikely(ctx->trace & Ctx::TRACE::REDO))
+                                                const std::string& condition, DbTable::OPTIONS options, std::vector<std::string>& msgs) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "creating table schema for owner: " + owner + " table: " + table + " options: " +
                                             std::to_string(static_cast<uint64_t>(options)));
 
@@ -1850,7 +1901,7 @@ namespace OpenLogReplicator {
         if (!checkConnection())
             return;
 
-        contextSet(CONTEXT_CHKPT, REASON_CHKPT);
+        contextSet(CONTEXT::CHKPT, REASON::CHKPT);
         std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
 
         // Reload incarnation ctx
@@ -1862,7 +1913,7 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_DATABASE_ROLE);
             stmt.createStatement(SQL_GET_DATABASE_ROLE);
             char databaseRole[129];
@@ -1888,7 +1939,7 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL))
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_DATABASE_INCARNATION);
             stmt.createStatement(SQL_GET_DATABASE_INCARNATION);
             uint32_t incarnation;
@@ -1925,7 +1976,7 @@ namespace OpenLogReplicator {
         // Reload online redo log ctx
         {
             DatabaseStatement stmt(conn);
-            if (unlikely(ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_LOGFILE_LIST);
                 ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(standby));
             }
@@ -1965,7 +2016,7 @@ namespace OpenLogReplicator {
             }
         }
         checkOnlineRedoLogs();
-        contextSet(CONTEXT_CPU);
+        contextSet(CONTEXT::CPU);
     }
 
     void ReplicatorOnline::archGetLogOnline(Replicator* replicator) {
@@ -1978,7 +2029,7 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(replicatorOnline->conn);
-            if (unlikely(replicator->ctx->trace & Ctx::TRACE::SQL)) {
+            if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 replicator->ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_ARCHIVE_LOG_LIST);
                 replicator->ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " +
                                                            std::to_string(replicatorOnline->metadata->sequence));

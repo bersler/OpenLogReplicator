@@ -36,25 +36,6 @@ namespace OpenLogReplicator {
             ctx(newCtx),
             locales(newLocales),
             sysUserAdaptive(sysUserRowId, 0, "", 0, 0, false),
-            sysCColTmp(nullptr),
-            sysCDefTmp(nullptr),
-            sysColTmp(nullptr),
-            sysDeferredStgTmp(nullptr),
-            sysEColTmp(nullptr),
-            sysLobTmp(nullptr),
-            sysLobCompPartTmp(nullptr),
-            sysLobFragTmp(nullptr),
-            sysObjTmp(nullptr),
-            sysTabTmp(nullptr),
-            sysTabComPartTmp(nullptr),
-            sysTabPartTmp(nullptr),
-            sysTabSubPartTmp(nullptr),
-            sysTsTmp(nullptr),
-            sysUserTmp(nullptr),
-            xdbTtSetTmp(nullptr),
-            xdbXNmTmp(nullptr),
-            xdbXPtTmp(nullptr),
-            xdbXQnTmp(nullptr),
             scn(Ctx::ZERO_SCN),
             refScn(Ctx::ZERO_SCN),
             loaded(false),
@@ -66,106 +47,6 @@ namespace OpenLogReplicator {
     }
 
     Schema::~Schema() {
-        if (sysCColTmp != nullptr) {
-            delete sysCColTmp;
-            sysCColTmp = nullptr;
-        }
-
-        if (sysCColTmp != nullptr) {
-            delete sysCColTmp;
-            sysCColTmp = nullptr;
-        }
-
-        if (sysCDefTmp != nullptr) {
-            delete sysCDefTmp;
-            sysCDefTmp = nullptr;
-        }
-
-        if (sysColTmp != nullptr) {
-            delete sysColTmp;
-            sysColTmp = nullptr;
-        }
-
-        if (sysDeferredStgTmp != nullptr) {
-            delete sysDeferredStgTmp;
-            sysDeferredStgTmp = nullptr;
-        }
-
-        if (sysEColTmp != nullptr) {
-            delete sysEColTmp;
-            sysEColTmp = nullptr;
-        }
-
-        if (sysLobTmp != nullptr) {
-            delete sysLobTmp;
-            sysLobTmp = nullptr;
-        }
-
-        if (sysLobCompPartTmp != nullptr) {
-            delete sysLobCompPartTmp;
-            sysLobCompPartTmp = nullptr;
-        }
-
-        if (sysLobFragTmp != nullptr) {
-            delete sysLobFragTmp;
-            sysLobFragTmp = nullptr;
-        }
-
-        if (sysObjTmp != nullptr) {
-            delete sysObjTmp;
-            sysObjTmp = nullptr;
-        }
-
-        if (sysTabTmp != nullptr) {
-            delete sysTabTmp;
-            sysTabTmp = nullptr;
-        }
-
-        if (sysTabComPartTmp != nullptr) {
-            delete sysTabComPartTmp;
-            sysTabComPartTmp = nullptr;
-        }
-
-        if (sysTabPartTmp != nullptr) {
-            delete sysTabPartTmp;
-            sysTabPartTmp = nullptr;
-        }
-
-        if (sysTabSubPartTmp != nullptr) {
-            delete sysTabSubPartTmp;
-            sysTabSubPartTmp = nullptr;
-        }
-
-        if (sysTsTmp != nullptr) {
-            delete sysTsTmp;
-            sysTsTmp = nullptr;
-        }
-
-        if (sysUserTmp != nullptr) {
-            delete sysUserTmp;
-            sysUserTmp = nullptr;
-        }
-
-        if (xdbTtSetTmp != nullptr) {
-            delete xdbTtSetTmp;
-            xdbTtSetTmp = nullptr;
-        }
-
-        if (xdbXNmTmp != nullptr) {
-            delete xdbXNmTmp;
-            xdbXNmTmp = nullptr;
-        }
-
-        if (xdbXPtTmp != nullptr) {
-            delete xdbXPtTmp;
-            xdbXPtTmp = nullptr;
-        }
-
-        if (xdbXQnTmp != nullptr) {
-            delete xdbXQnTmp;
-            xdbXQnTmp = nullptr;
-        }
-
         purgeMetadata();
         purgeDicts();
     }
@@ -208,176 +89,22 @@ namespace OpenLogReplicator {
     }
 
     void Schema::purgeDicts() {
-        // SYS.CCOL$
-        while (!sysCColMapRowId.empty()) {
-            auto sysCColMapRowIdIt = sysCColMapRowId.cbegin();
-            SysCCol* sysCCol = sysCColMapRowIdIt->second;
-            dictSysCColDrop(sysCCol);
-            delete sysCCol;
-        }
-        if (!sysCColMapKey.empty())
-            ctx->error(50029, "key map SYS.CCOL$ not empty, left: " + std::to_string(sysCColMapKey.size()) + " at exit");
-
-        // SYS.CDEF$
-        while (!sysCDefMapRowId.empty()) {
-            auto sysCDefMapRowIdIt = sysCDefMapRowId.cbegin();
-            SysCDef* sysCDef = sysCDefMapRowIdIt->second;
-            dictSysCDefDrop(sysCDef);
-            delete sysCDef;
-        }
-        if (!sysCDefMapCon.empty())
-            ctx->error(50029, "con# map SYS.CDEF$ not empty, left: " + std::to_string(sysCDefMapCon.size()) + " at exit");
-        if (!sysCDefMapKey.empty())
-            ctx->error(50029, "key map SYS.CDEF$ not empty, left: " + std::to_string(sysCDefMapKey.size()) + " at exit");
-
-        // SYS.COL$
-        while (!sysColMapRowId.empty()) {
-            auto sysColMapRowIdIt = sysColMapRowId.cbegin();
-            SysCol* sysCol = sysColMapRowIdIt->second;
-            dictSysColDrop(sysCol);
-            delete sysCol;
-        }
-        if (!sysColMapSeg.empty())
-            ctx->error(50029, "seg# map SYS.COL$ not empty, left: " + std::to_string(sysColMapSeg.size()) + " at exit");
-
-        // SYS.DEFERRED_STG$
-        while (!sysDeferredStgMapRowId.empty()) {
-            auto sysDeferredStgMapRowIdIt = sysDeferredStgMapRowId.cbegin();
-            SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt->second;
-            dictSysDeferredStgDrop(sysDeferredStg);
-            delete sysDeferredStg;
-        }
-        if (!sysDeferredStgMapObj.empty())
-            ctx->error(50029, "obj map SYS.DEFERRED_STG$ not empty, left: " + std::to_string(sysDeferredStgMapObj.size()) + " at exit");
-
-        // SYS.ECOL$
-        while (!sysEColMapRowId.empty()) {
-            auto sysEColMapRowIdIt = sysEColMapRowId.cbegin();
-            SysECol* sysECol = sysEColMapRowIdIt->second;
-            dictSysEColDrop(sysECol);
-            delete sysECol;
-        }
-        if (!sysEColMapKey.empty())
-            ctx->error(50029, "key map SYS.ECOL$ not empty, left: " + std::to_string(sysEColMapKey.size()) + " at exit");
-
-        // SYS.LOB$
-        while (!sysLobMapRowId.empty()) {
-            auto sysLobMapRowIdIt = sysLobMapRowId.cbegin();
-            SysLob* sysLob = sysLobMapRowIdIt->second;
-            dictSysLobDrop(sysLob);
-            delete sysLob;
-        }
-        if (!sysLobMapLObj.empty())
-            ctx->error(50029, "lobj# map SYS.LOB$ not empty, left: " + std::to_string(sysLobMapLObj.size()) + " at exit");
-        if (!sysLobMapKey.empty())
-            ctx->error(50029, "key map SYS.LOB$ not empty, left: " + std::to_string(sysLobMapKey.size()) + " at exit");
-
-        // SYS.LOBCOMPPART$
-        while (!sysLobCompPartMapRowId.empty()) {
-            auto sysLobCompPartMapRowIdIt = sysLobCompPartMapRowId.cbegin();
-            SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt->second;
-            dictSysLobCompPartDrop(sysLobCompPart);
-            delete sysLobCompPart;
-        }
-        if (!sysLobCompPartMapPartObj.empty())
-            ctx->error(50029, "partobj# map SYS.LOBCOMPPART$ not empty, left: " + std::to_string(sysLobCompPartMapPartObj.size()) +
-                              " at exit");
-        if (!sysLobCompPartMapKey.empty())
-            ctx->error(50029, "key map SYS.LOBCOMPPART$ not empty, left: " + std::to_string(sysLobCompPartMapKey.size()) + " at exit");
-
-        // SYS.LOBFRAG$
-        while (!sysLobFragMapRowId.empty()) {
-            auto sysLobFragMapRowIdIt = sysLobFragMapRowId.cbegin();
-            SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt->second;
-            dictSysLobFragDrop(sysLobFrag);
-            delete sysLobFrag;
-        }
-        if (!sysLobFragMapKey.empty())
-            ctx->error(50029, "key map SYS.LOBFRAG$ not empty, left: " + std::to_string(sysLobFragMapKey.size()) + " at exit");
-
-        // SYS.OBJ$
-        while (!sysObjMapRowId.empty()) {
-            auto sysObjMapRowIdIt = sysObjMapRowId.cbegin();
-            SysObj* sysObj = sysObjMapRowIdIt->second;
-            dictSysObjDrop(sysObj);
-            delete sysObj;
-        }
-        if (!sysObjMapName.empty())
-            ctx->error(50029, "name map SYS.OBJ$ not empty, left: " + std::to_string(sysObjMapName.size()) + " at exit");
-        if (!sysObjMapObj.empty())
-            ctx->error(50029, "obj# map SYS.OBJ$ not empty, left: " + std::to_string(sysObjMapObj.size()) + " at exit");
-
-        // SYS.TAB$
-        while (!sysTabMapRowId.empty()) {
-            auto sysTabMapRowIdIt = sysTabMapRowId.cbegin();
-            SysTab* sysTab = sysTabMapRowIdIt->second;
-            dictSysTabDrop(sysTab);
-            delete sysTab;
-        }
-        if (!sysTabMapObj.empty())
-            ctx->error(50029, "obj# map SYS.TAB$ not empty, left: " + std::to_string(sysTabMapObj.size()) + " at exit");
-
-        // SYS.TABCOMPART$
-        while (!sysTabComPartMapRowId.empty()) {
-            auto sysTabComPartMapRowIdIt = sysTabComPartMapRowId.cbegin();
-            SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt->second;
-            dictSysTabComPartDrop(sysTabComPart);
-            delete sysTabComPart;
-        }
-        if (!sysTabComPartMapObj.empty())
-            ctx->error(50029, "obj# map SYS.TABCOMPART$ not empty, left: " + std::to_string(sysTabComPartMapObj.size()) + " at exit");
-        if (!sysTabComPartMapKey.empty())
-            ctx->error(50029, "key map SYS.TABCOMPART$ not empty, left: " + std::to_string(sysTabComPartMapKey.size()) + " at exit");
-
-        // SYS.TABPART$
-        while (!sysTabPartMapRowId.empty()) {
-            auto sysTabPartMapRowIdIt = sysTabPartMapRowId.cbegin();
-            SysTabPart* sysTabPart = sysTabPartMapRowIdIt->second;
-            dictSysTabPartDrop(sysTabPart);
-            delete sysTabPart;
-        }
-        if (!sysTabPartMapKey.empty())
-            ctx->error(50029, "key map SYS.TABPART$ not empty, left: " + std::to_string(sysTabPartMapKey.size()) + " at exit");
-
-        // SYS.TABSUBPART$
-        while (!sysTabSubPartMapRowId.empty()) {
-            auto sysTabSubPartMapRowIdIt = sysTabSubPartMapRowId.cbegin();
-            SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt->second;
-            dictSysTabSubPartDrop(sysTabSubPart);
-            delete sysTabSubPart;
-        }
-        if (!sysTabSubPartMapKey.empty())
-            ctx->error(50029, "key map SYS.TABSUBPART$ not empty, left: " + std::to_string(sysTabSubPartMapKey.size()) + " at exit");
-
-        // SYS.TS$
-        while (!sysTsMapRowId.empty()) {
-            auto sysTsMapRowIdIt = sysTsMapRowId.cbegin();
-            SysTs* sysTs = sysTsMapRowIdIt->second;
-            dictSysTsDrop(sysTs);
-            delete sysTs;
-        }
-        if (!sysTsMapTs.empty())
-            ctx->error(50029, "ts# map SYS.TS$ not empty, left: " + std::to_string(sysTsMapTs.size()) + " at exit");
-
-        // SYS.USER$
-        while (!sysUserMapRowId.empty()) {
-            auto sysUserMapRowIdIt = sysUserMapRowId.cbegin();
-            SysUser* sysUser = sysUserMapRowIdIt->second;
-            dictSysUserDrop(sysUser);
-            delete sysUser;
-        }
-        if (!sysUserMapUser.empty())
-            ctx->error(50029, "user# map SYS.USER$ not empty, left: " + std::to_string(sysUserMapUser.size()) + " at exit");
-
-        // XDB.XDB$TTSET
-        while (!xdbTtSetMapRowId.empty()) {
-            auto xdbTtSetMapRowIdIt = xdbTtSetMapRowId.cbegin();
-            XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt->second;
-            dictXdbTtSetDrop(xdbTtSet);
-            delete xdbTtSet;
-        }
-        if (!xdbTtSetMapTs.empty())
-            ctx->error(50029, "guid map XDB.XDB$TTSET not empty, left: " + std::to_string(xdbTtSetMapTs.size()) + " at exit");
+        sysCColPack.clear(ctx);
+        sysCDefPack.clear(ctx);
+        sysColPack.clear(ctx);
+        sysDeferredStgPack.clear(ctx);
+        sysEColPack.clear(ctx);
+        sysLobPack.clear(ctx);
+        sysLobCompPartPack.clear(ctx);
+        sysLobFragPack.clear(ctx);
+        sysObjPack.clear(ctx);
+        sysTabPack.clear(ctx);
+        sysTabComPartPack.clear(ctx);
+        sysTabPartPack.clear(ctx);
+        sysTabSubPartPack.clear(ctx);
+        sysTsPack.clear(ctx);
+        sysUserPack.clear(ctx);
+        xdbTtSetPack.clear(ctx);
 
         while (!schemaXmlMap.empty()) {
             auto schemaXmlMapIt = schemaXmlMap.cbegin();
@@ -390,390 +117,6 @@ namespace OpenLogReplicator {
         resetTouched();
     }
 
-    bool Schema::compareSysCCol(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysCColMapRowIdIt: sysCColMapRowId) {
-            SysCCol* sysCCol = sysCColMapRowIdIt.second;
-            auto sysCColMapRowIdIt2 = otherSchema->sysCColMapRowId.find(sysCCol->rowId);
-            if (sysCColMapRowIdIt2 == otherSchema->sysCColMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.CCOL$ lost ROWID: " + sysCCol->rowId.toString());
-                return false;
-            } else if (*sysCCol != *(sysCColMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.CCOL$ differs ROWID: " + sysCCol->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysCColMapRowIdIt: otherSchema->sysCColMapRowId) {
-            SysCCol* sysCCol = sysCColMapRowIdIt.second;
-            auto sysCColMapRowIdIt2 = sysCColMapRowId.find(sysCCol->rowId);
-            if (sysCColMapRowIdIt2 == sysCColMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.CCOL$ lost ROWID: " + sysCCol->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysCDef(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysCDefMapRowIdIt: sysCDefMapRowId) {
-            SysCDef* sysCDef = sysCDefMapRowIdIt.second;
-            auto sysCDefMapRowIdIt2 = otherSchema->sysCDefMapRowId.find(sysCDef->rowId);
-            if (sysCDefMapRowIdIt2 == otherSchema->sysCDefMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.CDEF$ lost ROWID: " + sysCDef->rowId.toString());
-                return false;
-            } else if (*sysCDef != *(sysCDefMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.CDEF$ differs ROWID: " + sysCDef->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysCDefMapRowIdIt: otherSchema->sysCDefMapRowId) {
-            SysCDef* sysCDef = sysCDefMapRowIdIt.second;
-            auto sysCDefMapRowIdIt2 = sysCDefMapRowId.find(sysCDef->rowId);
-            if (sysCDefMapRowIdIt2 == sysCDefMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.CDEF$ lost ROWID: " + sysCDef->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysCol(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysColMapRowIdIt: sysColMapRowId) {
-            SysCol* sysCol = sysColMapRowIdIt.second;
-            auto sysColMapRowIdIt2 = otherSchema->sysColMapRowId.find(sysCol->rowId);
-            if (sysColMapRowIdIt2 == otherSchema->sysColMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.COL$ lost ROWID: " + sysCol->rowId.toString());
-                return false;
-            } else if (*sysCol != *(sysColMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.COL$ differs ROWID: " + sysCol->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysColMapRowIdIt: otherSchema->sysColMapRowId) {
-            SysCol* sysCol = sysColMapRowIdIt.second;
-            auto sysColMapRowIdIt2 = sysColMapRowId.find(sysCol->rowId);
-            if (sysColMapRowIdIt2 == sysColMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.COL$ lost ROWID: " + sysCol->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysDeferredStg(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysDeferredStgMapRowIdIt: sysDeferredStgMapRowId) {
-            SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt.second;
-            auto sysDeferredStgMapRowIdIt2 = otherSchema->sysDeferredStgMapRowId.find(sysDeferredStg->rowId);
-            if (sysDeferredStgMapRowIdIt2 == otherSchema->sysDeferredStgMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.DEFERRED_STG$ lost ROWID: " + sysDeferredStg->rowId.toString());
-                return false;
-            } else if (*sysDeferredStg != *(sysDeferredStgMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.DEFERRED_STG$ differs ROWID: " + sysDeferredStg->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysDeferredStgMapRowIdIt: otherSchema->sysDeferredStgMapRowId) {
-            SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt.second;
-            auto sysDeferredStgMapRowIdIt2 = sysDeferredStgMapRowId.find(sysDeferredStg->rowId);
-            if (sysDeferredStgMapRowIdIt2 == sysDeferredStgMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.DEFERRED_STG$ lost ROWID: " + sysDeferredStg->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysECol(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysEColMapRowIdIt: sysEColMapRowId) {
-            SysECol* sysECol = sysEColMapRowIdIt.second;
-            auto sysEColMapRowIdIt2 = otherSchema->sysEColMapRowId.find(sysECol->rowId);
-            if (sysEColMapRowIdIt2 == otherSchema->sysEColMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.ECOL$ lost ROWID: " + sysECol->rowId.toString());
-                return false;
-            } else if (*sysECol != *(sysEColMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.ECOL$ differs ROWID: " + sysECol->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysEColMapRowIdIt: otherSchema->sysEColMapRowId) {
-            SysECol* sysECol = sysEColMapRowIdIt.second;
-            auto sysEColMapRowIdIt2 = sysEColMapRowId.find(sysECol->rowId);
-            if (sysEColMapRowIdIt2 == sysEColMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.ECOL$ lost ROWID: " + sysECol->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysLob(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysLobMapRowIdIt: sysLobMapRowId) {
-            SysLob* sysLob = sysLobMapRowIdIt.second;
-            auto sysLobMapRowIdIt2 = otherSchema->sysLobMapRowId.find(sysLob->rowId);
-            if (sysLobMapRowIdIt2 == otherSchema->sysLobMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.LOB$ lost ROWID: " + sysLob->rowId.toString());
-                return false;
-            } else if (*sysLob != *(sysLobMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.LOB$ differs ROWID: " + sysLob->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysLobMapRowIdIt: otherSchema->sysLobMapRowId) {
-            SysLob* sysLob = sysLobMapRowIdIt.second;
-            auto sysLobMapRowIdIt2 = sysLobMapRowId.find(sysLob->rowId);
-            if (sysLobMapRowIdIt2 == sysLobMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.LOB$ lost ROWID: " + sysLob->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysLobCompPart(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysLobCompPartMapRowIdIt: sysLobCompPartMapRowId) {
-            SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
-            auto sysLobCompPartMapRowIdIt2 = otherSchema->sysLobCompPartMapRowId.find(sysLobCompPart->rowId);
-            if (sysLobCompPartMapRowIdIt2 == otherSchema->sysLobCompPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.LOBCOMPPART$ lost ROWID: " + sysLobCompPart->rowId.toString());
-                return false;
-            } else if (*sysLobCompPart != *(sysLobCompPartMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.LOBCOMPPART$ differs ROWID: " + sysLobCompPart->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysLobCompPartMapRowIdIt: otherSchema->sysLobCompPartMapRowId) {
-            SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
-            auto sysLobCompPartMapRowIdIt2 = sysLobCompPartMapRowId.find(sysLobCompPart->rowId);
-            if (sysLobCompPartMapRowIdIt2 == sysLobCompPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.LOBCOMPPART$ lost ROWID: " + sysLobCompPart->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysLobFrag(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysLobFragMapRowIdIt: sysLobFragMapRowId) {
-            SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
-            auto sysLobFragMapRowIdIt2 = otherSchema->sysLobFragMapRowId.find(sysLobFrag->rowId);
-            if (sysLobFragMapRowIdIt2 == otherSchema->sysLobFragMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.LOBFRAG$ lost ROWID: " + sysLobFrag->rowId.toString());
-                return false;
-            } else if (*sysLobFrag != *(sysLobFragMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.LOBFRAG$ differs ROWID: " + sysLobFrag->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysLobFragMapRowIdIt: otherSchema->sysLobFragMapRowId) {
-            SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
-            auto sysLobFragMapRowIdIt2 = sysLobFragMapRowId.find(sysLobFrag->rowId);
-            if (sysLobFragMapRowIdIt2 == sysLobFragMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.LOBFRAG$ lost ROWID: " + sysLobFrag->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysObj(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysObjMapRowIdIt: sysObjMapRowId) {
-            SysObj* sysObj = sysObjMapRowIdIt.second;
-            auto sysObjMapRowIdIt2 = otherSchema->sysObjMapRowId.find(sysObj->rowId);
-            if (sysObjMapRowIdIt2 == otherSchema->sysObjMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.OBJ$ lost ROWID: " + sysObj->rowId.toString());
-                return false;
-            } else if (*sysObj != *(sysObjMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.OBJ$ differs ROWID: " + sysObj->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysObjMapRowIdIt: otherSchema->sysObjMapRowId) {
-            SysObj* sysObj = sysObjMapRowIdIt.second;
-            auto sysObjMapRowIdIt2 = sysObjMapRowId.find(sysObj->rowId);
-            if (sysObjMapRowIdIt2 == sysObjMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.OBJ$ lost ROWID: " + sysObj->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysTab(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysTabMapRowIdIt: sysTabMapRowId) {
-            SysTab* sysTab = sysTabMapRowIdIt.second;
-            auto sysTabMapRowIdIt2 = otherSchema->sysTabMapRowId.find(sysTab->rowId);
-            if (sysTabMapRowIdIt2 == otherSchema->sysTabMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TAB$ lost ROWID: " + sysTab->rowId.toString());
-                return false;
-            } else if (*sysTab != *(sysTabMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.TAB$ differs ROWID: " + sysTab->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysTabMapRowIdIt: otherSchema->sysTabMapRowId) {
-            SysTab* sysTab = sysTabMapRowIdIt.second;
-            auto sysTabMapRowIdIt2 = sysTabMapRowId.find(sysTab->rowId);
-            if (sysTabMapRowIdIt2 == sysTabMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TAB$ lost ROWID: " + sysTab->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysTabComPart(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysTabComPartMapRowIdIt: sysTabComPartMapRowId) {
-            SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
-            auto sysTabComPartMapRowIdIt2 = otherSchema->sysTabComPartMapRowId.find(sysTabComPart->rowId);
-            if (sysTabComPartMapRowIdIt2 == otherSchema->sysTabComPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TABCOMPART$ lost ROWID: " + sysTabComPart->rowId.toString());
-                return false;
-            } else if (*sysTabComPart != *(sysTabComPartMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.TABCOMPART$ differs ROWID: " + sysTabComPart->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysTabComPartMapRowIdIt: otherSchema->sysTabComPartMapRowId) {
-            SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
-            auto sysTabComPartMapRowIdIt2 = sysTabComPartMapRowId.find(sysTabComPart->rowId);
-            if (sysTabComPartMapRowIdIt2 == sysTabComPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TABCOMPART$ lost ROWID: " + sysTabComPart->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysTabPart(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysTabPartMapRowIdIt: sysTabPartMapRowId) {
-            SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
-            auto sysTabPartMapRowIdIt2 = otherSchema->sysTabPartMapRowId.find(sysTabPart->rowId);
-            if (sysTabPartMapRowIdIt2 == otherSchema->sysTabPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TABPART$ lost ROWID: " + sysTabPart->rowId.toString());
-                return false;
-            } else if (*sysTabPart != *(sysTabPartMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.TABPART$ differs ROWID: " + sysTabPart->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysTabPartMapRowIdIt: otherSchema->sysTabPartMapRowId) {
-            SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
-            auto sysTabPartMapRowIdIt2 = sysTabPartMapRowId.find(sysTabPart->rowId);
-            if (sysTabPartMapRowIdIt2 == sysTabPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TABPART$ lost ROWID: " + sysTabPart->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysTabSubPart(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysTabSubPartMapRowIdIt: sysTabSubPartMapRowId) {
-            SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
-            auto sysTabSubPartMapRowIdIt2 = otherSchema->sysTabSubPartMapRowId.find(sysTabSubPart->rowId);
-            if (sysTabSubPartMapRowIdIt2 == otherSchema->sysTabSubPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TABSUBPART$ lost ROWID: " + sysTabSubPart->rowId.toString());
-                return false;
-            } else if (*sysTabSubPart != *(sysTabSubPartMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.TABSUBPART$ differs ROWID: " + sysTabSubPart->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysTabSubPartMapRowIdIt: otherSchema->sysTabSubPartMapRowId) {
-            SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
-            auto sysTabSubPartMapRowIdIt2 = sysTabSubPartMapRowId.find(sysTabSubPart->rowId);
-            if (sysTabSubPartMapRowIdIt2 == sysTabSubPartMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TABSUBPART$ lost ROWID: " + sysTabSubPart->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysTs(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysTsMapRowIdIt: sysTsMapRowId) {
-            SysTs* sysTs = sysTsMapRowIdIt.second;
-            auto sysTsMapRowIdIt2 = otherSchema->sysTsMapRowId.find(sysTs->rowId);
-            if (sysTsMapRowIdIt2 == otherSchema->sysTsMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TS$ lost ROWID: " + sysTs->rowId.toString());
-                return false;
-            } else if (*sysTs != *(sysTsMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.TS$ differs ROWID: " + sysTs->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysTsMapRowIdIt: otherSchema->sysTsMapRowId) {
-            SysTs* sysTs = sysTsMapRowIdIt.second;
-            auto sysTsMapRowIdIt2 = sysTsMapRowId.find(sysTs->rowId);
-            if (sysTsMapRowIdIt2 == sysTsMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.TS$ lost ROWID: " + sysTs->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareSysUser(Schema* otherSchema, std::string& msgs) const {
-        for (const auto sysUserMapRowIdIt: sysUserMapRowId) {
-            SysUser* sysUser = sysUserMapRowIdIt.second;
-            auto sysUserMapRowIdIt2 = otherSchema->sysUserMapRowId.find(sysUser->rowId);
-            if (sysUserMapRowIdIt2 == otherSchema->sysUserMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.USER$ lost ROWID: " + sysUser->rowId.toString());
-                return false;
-            } else if (*sysUser != *(sysUserMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: SYS.USER$ differs ROWID: " + sysUser->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto sysUserMapRowIdIt: otherSchema->sysUserMapRowId) {
-            SysUser* sysUser = sysUserMapRowIdIt.second;
-            auto sysUserMapRowIdIt2 = sysUserMapRowId.find(sysUser->rowId);
-            if (sysUserMapRowIdIt2 == sysUserMapRowId.end()) {
-                msgs.assign("schema mismatch: SYS.USER$ lost ROWID: " + sysUser->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareXdbTtSet(Schema* otherSchema, std::string& msgs) const {
-        for (const auto xdbTtSetMapRowIdIt: xdbTtSetMapRowId) {
-            XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
-            auto xdbTtSetMapRowIdIt2 = otherSchema->xdbTtSetMapRowId.find(xdbTtSet->rowId);
-            if (xdbTtSetMapRowIdIt2 == otherSchema->xdbTtSetMapRowId.end()) {
-                msgs.assign("schema mismatch: XDB.XDB$TTSET lost ROWID: " + xdbTtSet->rowId.toString());
-                return false;
-            } else if (*xdbTtSet != *(xdbTtSetMapRowIdIt2->second)) {
-                msgs.assign("schema mismatch: XDB.XDB$TTSET differs ROWID: " + xdbTtSet->rowId.toString());
-                return false;
-            }
-        }
-
-        for (const auto xdbTtSetMapRowIdIt: otherSchema->xdbTtSetMapRowId) {
-            XdbTtSet* xdbTtSet = xdbTtSetMapRowIdIt.second;
-            auto xdbTtSetMapRowIdIt2 = xdbTtSetMapRowId.find(xdbTtSet->rowId);
-            if (xdbTtSetMapRowIdIt2 == xdbTtSetMapRowId.end()) {
-                msgs.assign("schema mismatch: XDB.XDB$TTSET lost ROWID: " + xdbTtSet->rowId.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
     bool Schema::compareXdbXNm(Schema* otherSchema, std::string& msgs) const {
         for (const auto& schemaXmlMapIter: schemaXmlMap) {
             XmlCtx* xmlCtx = schemaXmlMapIter.second;
@@ -782,23 +125,23 @@ namespace OpenLogReplicator {
                 return false;
             XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
 
-            for (auto xdbXNmMapRowIdIt: xmlCtx->xdbXNmMapRowId) {
+            for (auto xdbXNmMapRowIdIt: xmlCtx->xdbXNmPack.mapRowId) {
                 XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
-                auto xdbXNmMapRowIdIt2 = otherXmlCtx->xdbXNmMapRowId.find(xdbXNm->rowId);
-                if (xdbXNmMapRowIdIt2 == otherXmlCtx->xdbXNmMapRowId.end()) {
-                    msgs.assign("schema mismatch: XDB.X$NM" + schemaXmlMapIter.first + " lost ROWID: " + xdbXNm->rowId.toString());
+                auto xdbXNmMapRowIdIt2 = otherXmlCtx->xdbXNmPack.mapRowId.find(xdbXNm->rowId);
+                if (xdbXNmMapRowIdIt2 == otherXmlCtx->xdbXNmPack.mapRowId.end()) {
+                    msgs.assign("schema mismatch: " + XdbXNm::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXNm->rowId.toString());
                     return false;
                 } else if (*xdbXNm != *(xdbXNmMapRowIdIt2->second)) {
-                    msgs.assign("schema mismatch: XDB.X$NM" + schemaXmlMapIter.first + " differs ROWID: " + xdbXNm->rowId.toString());
+                    msgs.assign("schema mismatch: " + XdbXNm::tableName() + schemaXmlMapIter.first + " differs ROWID: " + xdbXNm->rowId.toString());
                     return false;
                 }
             }
 
-            for (const auto xdbXNmMapRowIdIt: otherXmlCtx->xdbXNmMapRowId) {
+            for (const auto xdbXNmMapRowIdIt: otherXmlCtx->xdbXNmPack.mapRowId) {
                 XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
-                auto xdbXNmMapRowIdIt2 = xmlCtx->xdbXNmMapRowId.find(xdbXNm->rowId);
-                if (xdbXNmMapRowIdIt2 == xmlCtx->xdbXNmMapRowId.end()) {
-                    msgs.assign("schema mismatch: XDB.X$NM" + schemaXmlMapIter.first + " lost ROWID: " + xdbXNm->rowId.toString());
+                auto xdbXNmMapRowIdIt2 = xmlCtx->xdbXNmPack.mapRowId.find(xdbXNm->rowId);
+                if (xdbXNmMapRowIdIt2 == xmlCtx->xdbXNmPack.mapRowId.end()) {
+                    msgs.assign("schema mismatch: " + XdbXNm::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXNm->rowId.toString());
                     return false;
                 }
             }
@@ -814,23 +157,23 @@ namespace OpenLogReplicator {
                 return false;
             XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
 
-            for (auto xdbXQnMapRowIdIt: xmlCtx->xdbXQnMapRowId) {
+            for (auto xdbXQnMapRowIdIt: xmlCtx->xdbXQnPack.mapRowId) {
                 XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
-                auto xdbXQnMapRowIdIt2 = otherXmlCtx->xdbXQnMapRowId.find(xdbXQn->rowId);
-                if (xdbXQnMapRowIdIt2 == otherXmlCtx->xdbXQnMapRowId.end()) {
-                    msgs.assign("schema mismatch: XDB.X$QN" + schemaXmlMapIter.first + " lost ROWID: " + xdbXQn->rowId.toString());
+                auto xdbXQnMapRowIdIt2 = otherXmlCtx->xdbXQnPack.mapRowId.find(xdbXQn->rowId);
+                if (xdbXQnMapRowIdIt2 == otherXmlCtx->xdbXQnPack.mapRowId.end()) {
+                    msgs.assign("schema mismatch: " + XdbXQn::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXQn->rowId.toString());
                     return false;
                 } else if (*xdbXQn != *(xdbXQnMapRowIdIt2->second)) {
-                    msgs.assign("schema mismatch: XDB.X$QN" + schemaXmlMapIter.first + " differs ROWID: " + xdbXQn->rowId.toString());
+                    msgs.assign("schema mismatch: " + XdbXQn::tableName() + schemaXmlMapIter.first + " differs ROWID: " + xdbXQn->rowId.toString());
                     return false;
                 }
             }
 
-            for (const auto xdbXQnMapRowIdIt: otherXmlCtx->xdbXQnMapRowId) {
+            for (const auto xdbXQnMapRowIdIt: otherXmlCtx->xdbXQnPack.mapRowId) {
                 XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
-                auto xdbXQnMapRowIdIt2 = xmlCtx->xdbXQnMapRowId.find(xdbXQn->rowId);
-                if (xdbXQnMapRowIdIt2 == xmlCtx->xdbXQnMapRowId.end()) {
-                    msgs.assign("schema mismatch: XDB.X$QN" + schemaXmlMapIter.first + " lost ROWID: " + xdbXQn->rowId.toString());
+                auto xdbXQnMapRowIdIt2 = xmlCtx->xdbXQnPack.mapRowId.find(xdbXQn->rowId);
+                if (xdbXQnMapRowIdIt2 == xmlCtx->xdbXQnPack.mapRowId.end()) {
+                    msgs.assign("schema mismatch: " + XdbXQn::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXQn->rowId.toString());
                     return false;
                 }
             }
@@ -846,23 +189,23 @@ namespace OpenLogReplicator {
                 return false;
             XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
 
-            for (auto xdbXPtMapRowIdIt: xmlCtx->xdbXPtMapRowId) {
+            for (auto xdbXPtMapRowIdIt: xmlCtx->xdbXPtPack.mapRowId) {
                 XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
-                auto xdbXPtMapRowIdIt2 = otherXmlCtx->xdbXPtMapRowId.find(xdbXPt->rowId);
-                if (xdbXPtMapRowIdIt2 == otherXmlCtx->xdbXPtMapRowId.end()) {
-                    msgs.assign("schema mismatch: XDB.X$PT" + schemaXmlMapIter.first + " lost ROWID: " + xdbXPt->rowId.toString());
+                auto xdbXPtMapRowIdIt2 = otherXmlCtx->xdbXPtPack.mapRowId.find(xdbXPt->rowId);
+                if (xdbXPtMapRowIdIt2 == otherXmlCtx->xdbXPtPack.mapRowId.end()) {
+                    msgs.assign("schema mismatch: " + XdbXPt::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXPt->rowId.toString());
                     return false;
                 } else if (*xdbXPt != *(xdbXPtMapRowIdIt2->second)) {
-                    msgs.assign("schema mismatch: XDB.X$PT" + schemaXmlMapIter.first + " differs ROWID: " + xdbXPt->rowId.toString());
+                    msgs.assign("schema mismatch: " + XdbXPt::tableName() + schemaXmlMapIter.first + " differs ROWID: " + xdbXPt->rowId.toString());
                     return false;
                 }
             }
 
-            for (const auto xdbXPtMapRowIdIt: otherXmlCtx->xdbXPtMapRowId) {
+            for (const auto xdbXPtMapRowIdIt: otherXmlCtx->xdbXPtPack.mapRowId) {
                 XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
-                auto xdbXPtMapRowIdIt2 = xmlCtx->xdbXPtMapRowId.find(xdbXPt->rowId);
-                if (xdbXPtMapRowIdIt2 == xmlCtx->xdbXPtMapRowId.end()) {
-                    msgs.assign("schema mismatch: XDB.X$PT" + schemaXmlMapIter.first + " lost ROWID: " + xdbXPt->rowId.toString());
+                auto xdbXPtMapRowIdIt2 = xmlCtx->xdbXPtPack.mapRowId.find(xdbXPt->rowId);
+                if (xdbXPtMapRowIdIt2 == xmlCtx->xdbXPtPack.mapRowId.end()) {
+                    msgs.assign("schema mismatch: " + XdbXPt::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXPt->rowId.toString());
                     return false;
                 }
             }
@@ -871,1283 +214,28 @@ namespace OpenLogReplicator {
     }
 
     bool Schema::compare(Schema* otherSchema, std::string& msgs) const {
-        if (!compareSysCCol(otherSchema, msgs)) return false;
-        if (!compareSysCDef(otherSchema, msgs)) return false;
-        if (!compareSysCol(otherSchema, msgs)) return false;
-        if (!compareSysDeferredStg(otherSchema, msgs)) return false;
-        if (!compareSysECol(otherSchema, msgs)) return false;
-        if (!compareSysLob(otherSchema, msgs)) return false;
-        if (!compareSysLobCompPart(otherSchema, msgs)) return false;
-        if (!compareSysLobFrag(otherSchema, msgs)) return false;
-        if (!compareSysObj(otherSchema, msgs)) return false;
-        if (!compareSysTab(otherSchema, msgs)) return false;
-        if (!compareSysTabComPart(otherSchema, msgs)) return false;
-        if (!compareSysTabPart(otherSchema, msgs)) return false;
-        if (!compareSysTabSubPart(otherSchema, msgs)) return false;
-        if (!compareSysTs(otherSchema, msgs)) return false;
-        if (!compareSysUser(otherSchema, msgs)) return false;
-        if (!compareXdbTtSet(otherSchema, msgs)) return false;
+        if (!sysCColPack.compareTo(otherSchema->sysCColPack, msgs)) return false;
+        if (!sysCDefPack.compareTo(otherSchema->sysCDefPack, msgs)) return false;
+        if (!sysColPack.compareTo(otherSchema->sysColPack, msgs)) return false;
+        if (!sysDeferredStgPack.compareTo(otherSchema->sysDeferredStgPack, msgs)) return false;
+        if (!sysEColPack.compareTo(otherSchema->sysEColPack, msgs)) return false;
+        if (!sysLobPack.compareTo(otherSchema->sysLobPack, msgs)) return false;
+        if (!sysLobCompPartPack.compareTo(otherSchema->sysLobCompPartPack, msgs)) return false;
+        if (!sysLobFragPack.compareTo(otherSchema->sysLobFragPack, msgs)) return false;
+        if (!sysObjPack.compareTo(otherSchema->sysObjPack, msgs)) return false;
+        if (!sysTabPack.compareTo(otherSchema->sysTabPack, msgs)) return false;
+        if (!sysTabComPartPack.compareTo(otherSchema->sysTabComPartPack, msgs)) return false;
+        if (!sysTabPartPack.compareTo(otherSchema->sysTabPartPack, msgs)) return false;
+        if (!sysTabSubPartPack.compareTo(otherSchema->sysTabSubPartPack, msgs)) return false;
+        if (!sysTsPack.compareTo(otherSchema->sysTsPack, msgs)) return false;
+        if (!sysUserPack.compareTo(otherSchema->sysUserPack, msgs)) return false;
+        if (!xdbTtSetPack.compareTo(otherSchema->xdbTtSetPack, msgs)) return false;
         if (!compareXdbXNm(otherSchema, msgs)) return false;
         if (!compareXdbXPt(otherSchema, msgs)) return false;
         if (!compareXdbXQn(otherSchema, msgs)) return false;
 
         msgs.assign("");
         return true;
-    }
-
-    void Schema::dictSysCColAdd(const char* rowIdStr, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysCColMapRowId.find(rowId) != sysCColMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.CCOL$ value: (rowid: " + rowId.toString() + ")");
-
-        sysCColTmp = new SysCCol(rowId, con, intCol, obj, spare11, spare12);
-        dictSysCColAdd(sysCColTmp);
-        sysCColTmp = nullptr;
-    }
-
-    void Schema::dictSysCDefAdd(const char* rowIdStr, typeCon con, typeObj obj, uint16_t type) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysCDefMapRowId.find(rowId) != sysCDefMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.CDEF$ value: (rowid: " + rowId.toString() + ")");
-
-        sysCDefTmp = new SysCDef(rowId, con, obj, type);
-        dictSysCDefAdd(sysCDefTmp);
-        sysCDefTmp = nullptr;
-    }
-
-    void Schema::dictSysColAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name, typeType type,
-                               uint length, int precision, int scale, uint charsetForm, uint charsetId, int null_,
-                               uint64_t property1, uint64_t property2) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysColMapRowId.find(rowId) != sysColMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.COL$ value: (rowid: " + rowId.toString() + ")");
-
-        if (unlikely(strlen(name) > SysCol::NAME_LENGTH))
-            throw DataException(50025, "value of SYS.COL$ too long for NAME (value: '" + std::string(name) + "', length: " +
-                                       std::to_string(strlen(name)) + ")");
-
-        if (unlikely(segCol > 1000))
-            throw DataException(50025, "value of SYS.COL$ too big for SEGCOL# (value: " + std::to_string(segCol) + ")");
-
-        sysColTmp = new SysCol(rowId, obj, col, segCol, intCol, name, type, length,
-                               precision, scale, charsetForm, charsetId, null_, property1,
-                               property2);
-        dictSysColAdd(sysColTmp);
-        sysColTmp = nullptr;
-    }
-
-    void Schema::dictSysDeferredStgAdd(const char* rowIdStr, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysDeferredStgMapRowId.find(rowId) != sysDeferredStgMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.DEFERRED_STG$ value: (rowid: " + rowId.toString() + ")");
-
-        sysDeferredStgTmp = new SysDeferredStg(rowId, obj, flagsStg1, flagsStg2);
-        dictSysDeferredStgAdd(sysDeferredStgTmp);
-        sysDeferredStgTmp = nullptr;
-    }
-
-    void Schema::dictSysEColAdd(const char* rowIdStr, typeObj tabObj, typeCol colNum, typeCol guardId) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysEColMapRowId.find(rowId) != sysEColMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.ECOL$ value: (rowid: " + rowId.toString() + ")");
-
-        sysEColTmp = new SysECol(rowId, tabObj, colNum, guardId);
-        dictSysEColAdd(sysEColTmp);
-        sysEColTmp = nullptr;
-    }
-
-    void Schema::dictSysLobAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol intCol, typeObj lObj, typeTs ts) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysLobMapRowId.find(rowId) != sysLobMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.LOB$ value: (rowid: " + rowId.toString() + ")");
-
-        sysLobTmp = new SysLob(rowId, obj, col, intCol, lObj, ts);
-        dictSysLobAdd(sysLobTmp);
-        sysLobTmp = nullptr;
-    }
-
-    void Schema::dictSysLobCompPartAdd(const char* rowIdStr, typeObj partObj, typeObj lObj) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysLobCompPartMapRowId.find(rowId) != sysLobCompPartMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.LOBCOMPPART$ value: (rowid: " + rowId.toString() + ")");
-
-        sysLobCompPartTmp = new SysLobCompPart(rowId, partObj, lObj);
-        dictSysLobCompPartAdd(sysLobCompPartTmp);
-        sysLobCompPartTmp = nullptr;
-    }
-
-    void Schema::dictSysLobFragAdd(const char* rowIdStr, typeObj fragObj, typeObj parentObj, typeTs ts) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysLobFragMapRowId.find(rowId) != sysLobFragMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.LOBFRAG$ value: (rowid: " + rowId.toString() + ")");
-
-        sysLobFragTmp = new SysLobFrag(rowId, fragObj, parentObj, ts);
-        dictSysLobFragAdd(sysLobFragTmp);
-        sysLobFragTmp = nullptr;
-    }
-
-    bool Schema::dictSysObjAdd(const char* rowIdStr, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
-                               uint64_t flags1, uint64_t flags2, bool single) {
-        typeRowId rowId(rowIdStr);
-        auto sysObjMapRowIdIt = sysObjMapRowId.find(rowId);
-        if (sysObjMapRowIdIt != sysObjMapRowId.end()) {
-            SysObj* sysObj = sysObjMapRowIdIt->second;
-
-            if (sysObj->single) {
-                if (!single) {
-                    sysObj->single = false;
-                    if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-                        ctx->logTrace(Ctx::TRACE::SYSTEM, "disabling single option for object " + std::string(name) + " (owner " +
-                                                          std::to_string(owner) + ")");
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        if (unlikely(strlen(name) > SysObj::NAME_LENGTH))
-            throw DataException(50025, "value of SYS.OBJ$ too long for NAME (value: '" + std::string(name) + "', length: " +
-                                       std::to_string(strlen(name)) + ")");
-        sysObjTmp = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2,
-                               single);
-        dictSysObjAdd(sysObjTmp);
-        sysObjTmp = nullptr;
-
-        return true;
-    }
-
-    void Schema::dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeTs ts, typeCol cluCols, uint64_t flags1, uint64_t flags2,
-                               uint64_t property1, uint64_t property2) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysTabMapRowId.find(rowId) != sysTabMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.TAB$ value: (rowid: " + rowId.toString() + ")");
-
-        sysTabTmp = new SysTab(rowId, obj, dataObj, ts, cluCols, flags1, flags2,
-                               property1, property2);
-        dictSysTabAdd(sysTabTmp);
-        sysTabTmp = nullptr;
-    }
-
-    void Schema::dictSysTabComPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysTabComPartMapRowId.find(rowId) != sysTabComPartMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.TABCOMPART$ value: (rowid: " + rowId.toString() + ")");
-
-        sysTabComPartTmp = new SysTabComPart(rowId, obj, dataObj, bo);
-        dictSysTabComPartAdd(sysTabComPartTmp);
-        sysTabComPartTmp = nullptr;
-    }
-
-    void Schema::dictSysTabPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysTabPartMapRowId.find(rowId) != sysTabPartMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.TABPART$ value: (rowid: " + rowId.toString() + ")");
-
-        sysTabPartTmp = new SysTabPart(rowId, obj, dataObj, bo);
-        dictSysTabPartAdd(sysTabPartTmp);
-        sysTabPartTmp = nullptr;
-    }
-
-    void Schema::dictSysTabSubPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj pObj) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysTabSubPartMapRowId.find(rowId) != sysTabSubPartMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.TABSUBPART$ value: (rowid: " + rowId.toString() + ")");
-
-        sysTabSubPartTmp = new SysTabSubPart(rowId, obj, dataObj, pObj);
-        dictSysTabSubPartAdd(sysTabSubPartTmp);
-        sysTabSubPartTmp = nullptr;
-    }
-
-    void Schema::dictSysTsAdd(const char* rowIdStr, typeTs ts, const char* name, uint32_t blockSize) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(sysTsMapRowId.find(rowId) != sysTsMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.TS$ value: (rowid: " + rowId.toString() + ")");
-
-        sysTsTmp = new SysTs(rowId, ts, name, blockSize);
-        dictSysTsAdd(sysTsTmp);
-        sysTsTmp = nullptr;
-    }
-
-    bool Schema::dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single) {
-        typeRowId rowId(rowIdStr);
-
-        auto sysUserMapRowIdIt = sysUserMapRowId.find(rowId);
-        if (sysUserMapRowIdIt != sysUserMapRowId.end()) {
-            SysUser* sysUser = sysUserMapRowIdIt->second;
-            if (sysUser->single) {
-                if (!single) {
-                    sysUser->single = false;
-                    if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-                        ctx->logTrace(Ctx::TRACE::SYSTEM, "disabling single option for user " + std::string(name) + " (" +
-                                                          std::to_string(user) + ")");
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        if (unlikely(strlen(name) > SysUser::NAME_LENGTH))
-            throw DataException(50025, "value of SYS.USER$ too long for NAME (value: '" + std::string(name) + "', length: " +
-                                       std::to_string(strlen(name)) + ")");
-        sysUserTmp = new SysUser(rowId, user, name, spare11, spare12, single);
-        dictSysUserAdd(sysUserTmp);
-        sysUserTmp = nullptr;
-
-        return true;
-    }
-
-    void Schema::dictXdbTtSetAdd(const char* rowIdStr, const char* guid, const char* tokSuf, uint64_t flags, typeObj obj) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(xdbTtSetMapRowId.find(rowId) != xdbTtSetMapRowId.end()))
-            throw DataException(50023, "duplicate SYS.TS$ value: (rowid: " + rowId.toString() + ")");
-
-        xdbTtSetTmp = new XdbTtSet(rowId, guid, tokSuf, flags, obj);
-        dictXdbTtSetAdd(xdbTtSetTmp);
-        xdbTtSetTmp = nullptr;
-    }
-
-    void Schema::dictXdbXNmAdd(XmlCtx* xmlCtx, const char* rowIdStr, const char* nmSpcUri, const char* id) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(xmlCtx->xdbXNmMapRowId.find(rowId) != xmlCtx->xdbXNmMapRowId.end()))
-            throw DataException(50023, "duplicate XDB.X$NM" + xmlCtx->tokSuf + " value: (rowid: " + rowId.toString() + ")");
-
-        xdbXNmTmp = new XdbXNm(rowId, nmSpcUri, id);
-        xmlCtx->dictXdbXNmAdd(xdbXNmTmp);
-        xdbXNmTmp = nullptr;
-    }
-
-    void Schema::dictXdbXPtAdd(XmlCtx* xmlCtx, const char* rowIdStr, const char* path, const char* id) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(xmlCtx->xdbXPtMapRowId.find(rowId) != xmlCtx->xdbXPtMapRowId.end()))
-            throw DataException(50023, "duplicate XDB.X$PT" + xmlCtx->tokSuf + " value: (rowid: " + rowId.toString() + ")");
-
-        xdbXPtTmp = new XdbXPt(rowId, path, id);
-        xmlCtx->dictXdbXPtAdd(xdbXPtTmp);
-        xdbXPtTmp = nullptr;
-    }
-
-    void Schema::dictXdbXQnAdd(XmlCtx* xmlCtx, const char* rowIdStr, const char* nmSpcId, const char* localName, const char* flags, const char* id) {
-        typeRowId rowId(rowIdStr);
-        if (unlikely(xmlCtx->xdbXQnMapRowId.find(rowId) != xmlCtx->xdbXQnMapRowId.end()))
-            throw DataException(50023, "duplicate XDB.X$QN" + xmlCtx->tokSuf + " value: (rowid: " + rowId.toString() + ")");
-
-        xdbXQnTmp = new XdbXQn(rowId, nmSpcId, localName, flags, id);
-        xmlCtx->dictXdbXQnAdd(xdbXQnTmp);
-        xdbXQnTmp = nullptr;
-    }
-
-    void Schema::dictSysCColAdd(SysCCol* sysCCol) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.CCOL$ (ROWID: " + sysCCol->rowId.toString() +
-                                              ", CON#: " + std::to_string(sysCCol->con) +
-                                              ", INTCOL#: " + std::to_string(sysCCol->intCol) +
-                                              ", OBJ#: " + std::to_string(sysCCol->obj) +
-                                              ", SPARE1: " + sysCCol->spare1.toString() + ")");
-
-        SysCColKey sysCColKey(sysCCol->obj, sysCCol->con, sysCCol->intCol);
-        auto sysCColMapKeyIt = sysCColMapKey.find(sysCColKey);
-        if (unlikely(sysCColMapKeyIt != sysCColMapKey.end()))
-            throw DataException(50024, "duplicate SYS.CCOL$ value for unique (OBJ#: " + std::to_string(sysCCol->obj) + ", INTCOL#: " +
-                                       std::to_string(sysCCol->intCol) + ", CON#: " + std::to_string(sysCCol->con) + ")");
-
-        sysCColMapRowId.insert_or_assign(sysCCol->rowId, sysCCol);
-        sysCColMapKey.insert_or_assign(sysCColKey, sysCCol);
-        sysCColSetTouched.insert(sysCCol);
-        touchTable(sysCCol->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysCDefAdd(SysCDef* sysCDef) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.CDEF$ (ROWID: " + sysCDef->rowId.toString() +
-                                              ", CON#: " + std::to_string(sysCDef->con) +
-                                              ", OBJ#: " + std::to_string(sysCDef->obj) +
-                                              ", TYPE: " + std::to_string(sysCDef->type) + ")");
-
-        SysCDefKey sysCDefKey(sysCDef->obj, sysCDef->con);
-        auto sysCDefMapKeyIt = sysCDefMapKey.find(sysCDefKey);
-        if (unlikely(sysCDefMapKeyIt != sysCDefMapKey.end()))
-            throw DataException(50024, "duplicate SYS.CDEF$ value for unique (OBJ#: " + std::to_string(sysCDef->obj) + ", CON#: " +
-                                       std::to_string(sysCDef->con) + ")");
-
-        auto sysCDefMapConIt = sysCDefMapCon.find(sysCDef->con);
-        if (unlikely(sysCDefMapConIt != sysCDefMapCon.end()))
-            throw DataException(50024, "duplicate SYS.CDEF$ value for unique (CON#: " + std::to_string(sysCDef->con) + ")");
-
-        sysCDefMapRowId.insert_or_assign(sysCDef->rowId, sysCDef);
-        sysCDefMapKey.insert_or_assign(sysCDefKey, sysCDef);
-        sysCDefMapCon.insert_or_assign(sysCDef->con, sysCDef);
-        sysCDefSetTouched.insert(sysCDef);
-        touchTable(sysCDef->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysColAdd(SysCol* sysCol) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.COL$ (ROWID: " + sysCol->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysCol->obj) +
-                                              ", COL#: " + std::to_string(sysCol->col) +
-                                              ", SEGCOL#: " + std::to_string(sysCol->segCol) +
-                                              ", INTCOL#: " + std::to_string(sysCol->intCol) +
-                                              ", NAME: '" + sysCol->name +
-                                              "', TYPE#: " + std::to_string(sysCol->type) +
-                                              ", SIZE: " + std::to_string(sysCol->length) +
-                                              ", PRECISION#: " + std::to_string(sysCol->precision) +
-                                              ", SCALE: " + std::to_string(sysCol->scale) +
-                                              ", CHARSETFORM: " + std::to_string(sysCol->charsetForm) +
-                                              ", CHARSETID: " + std::to_string(sysCol->charsetId) +
-                                              ", NULL$: " + std::to_string(sysCol->null_) +
-                                              ", PROPERTY: " + sysCol->property.toString() + ")");
-
-        SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
-        auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
-        if (unlikely(sysColMapSegIt != sysColMapSeg.end()))
-            throw DataException(50024, "duplicate SYS.COL$ value for unique (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
-                                       std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
-
-        sysColMapRowId.insert_or_assign(sysCol->rowId, sysCol);
-        sysColMapSeg.insert_or_assign(sysColSeg, sysCol);
-        sysColSetTouched.insert(sysCol);
-        touchTable(sysCol->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysDeferredStgAdd(SysDeferredStg* sysDeferredStg) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.DEFERRED_STG$ (ROWID: " + sysDeferredStg->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysDeferredStg->obj) +
-                                              ", FLAGS_STG: " + sysDeferredStg->flagsStg.toString() + ")");
-
-        auto sysDeferredStgMapObjIt = sysDeferredStgMapObj.find(sysDeferredStg->obj);
-        if (unlikely(sysDeferredStgMapObjIt != sysDeferredStgMapObj.end()))
-            throw DataException(50024, "duplicate SYS.DEFERRED_STG$ value for unique (OBJ#: " + std::to_string(sysDeferredStg->obj) +
-                                       ")");
-
-        sysDeferredStgMapRowId.insert_or_assign(sysDeferredStg->rowId, sysDeferredStg);
-        sysDeferredStgMapObj.insert_or_assign(sysDeferredStg->obj, sysDeferredStg);
-        sysDeferredStgSetTouched.insert(sysDeferredStg);
-        touchTable(sysDeferredStg->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysEColAdd(SysECol* sysECol) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.ECOL$ (ROWID: " + sysECol->rowId.toString() +
-                                              ", TABOBJ#: " + std::to_string(sysECol->tabObj) +
-                                              ", COLNUM: " + std::to_string(sysECol->colNum) +
-                                              ", GUARD_ID: " + std::to_string(sysECol->guardId) + ")");
-
-        SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
-        auto sysEColMapKeyIt = sysEColMapKey.find(sysEColKey);
-        if (unlikely(sysEColMapKeyIt != sysEColMapKey.end()))
-            throw DataException(50024, "duplicate SYS.ECOL$ value for unique (TABOBJ#: " + std::to_string(sysECol->tabObj) + ", COLNUM: " +
-                                       std::to_string(sysECol->colNum) + ")");
-
-        sysEColMapRowId.insert_or_assign(sysECol->rowId, sysECol);
-        sysEColMapKey.insert_or_assign(sysEColKey, sysECol);
-        sysEColSetTouched.insert(sysECol);
-        touchTable(sysECol->tabObj);
-        touched = true;
-    }
-
-    void Schema::dictSysLobAdd(SysLob* sysLob) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.LOB$ (ROWID: " + sysLob->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysLob->obj) +
-                                              ", COL#: " + std::to_string(sysLob->col) +
-                                              ", INTCOL#: " + std::to_string(sysLob->intCol) +
-                                              ", LOBJ#: " + std::to_string(sysLob->lObj) +
-                                              ", TS#: " + std::to_string(sysLob->ts) + ")");
-
-        SysLobKey sysLobKey(sysLob->obj, sysLob->intCol);
-        auto sysLobMapKeyIt = sysLobMapKey.find(sysLobKey);
-        if (unlikely(sysLobMapKeyIt != sysLobMapKey.end()))
-            throw DataException(50024, "duplicate SYS.LOB$ value for unique (OBJ#: " + std::to_string(sysLob->obj) + ", INTCOL#: " +
-                                       std::to_string(sysLob->intCol) + ")");
-
-        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLob->lObj);
-        if (unlikely(sysLobMapLObjIt != sysLobMapLObj.end()))
-            throw DataException(50024, "duplicate SYS.LOB$ value for unique (LOBJ#: " + std::to_string(sysLob->lObj) + ")");
-
-        sysLobMapRowId.insert_or_assign(sysLob->rowId, sysLob);
-        sysLobMapKey.insert_or_assign(sysLobKey, sysLob);
-        sysLobMapLObj.insert_or_assign(sysLob->lObj, sysLob);
-        sysLobSetTouched.insert(sysLob);
-        touchTable(sysLob->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysLobCompPartAdd(SysLobCompPart* sysLobCompPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.LOBCOMPPART$ (ROWID: " + sysLobCompPart->rowId.toString() +
-                                              ", PARTOBJ#: " + std::to_string(sysLobCompPart->partObj) +
-                                              ", LOBJ#: " + std::to_string(sysLobCompPart->lObj) + ")");
-
-        SysLobCompPartKey sysLobCompPartKey(sysLobCompPart->lObj, sysLobCompPart->partObj);
-        auto sysLobCompPartMapKeyIt = sysLobCompPartMapKey.find(sysLobCompPartKey);
-        if (unlikely(sysLobCompPartMapKeyIt != sysLobCompPartMapKey.end()))
-            throw DataException(50024, "duplicate SYS.LOBCOMPPART$ value for unique (LOBJ#: " + std::to_string(sysLobCompPart->lObj) +
-                                       ", PARTOBJ#: " + std::to_string(sysLobCompPart->partObj) + ")");
-
-        auto sysLobCompPartMapPartObjIt = sysLobCompPartMapPartObj.find(sysLobCompPart->partObj);
-        if (unlikely(sysLobCompPartMapPartObjIt != sysLobCompPartMapPartObj.end()))
-            throw DataException(50024, "duplicate SYS.LOBCOMPPART$ value for unique (PARTOBJ#: " +
-                                       std::to_string(sysLobCompPart->partObj) + ")");
-
-        sysLobCompPartMapRowId.insert_or_assign(sysLobCompPart->rowId, sysLobCompPart);
-        sysLobCompPartMapKey.insert_or_assign(sysLobCompPartKey, sysLobCompPart);
-        sysLobCompPartMapPartObj.insert_or_assign(sysLobCompPart->partObj, sysLobCompPart);
-        sysLobCompPartSetTouched.insert(sysLobCompPart);
-        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPart->lObj);
-        if (sysLobMapLObjIt != sysLobMapLObj.end())
-            touchTable(sysLobMapLObjIt->second->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysLobFragAdd(SysLobFrag* sysLobFrag) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.LOBFRAG$ (ROWID: " + sysLobFrag->rowId.toString() +
-                                              ", FRAGOBJ#: " + std::to_string(sysLobFrag->fragObj) +
-                                              ", PARENTOBJ#: " + std::to_string(sysLobFrag->parentObj) +
-                                              ", TS#: " + std::to_string(sysLobFrag->ts) + ")");
-
-        SysLobFragKey sysLobFragKey(sysLobFrag->parentObj, sysLobFrag->fragObj);
-        auto sysLobFragMapKeyIt = sysLobFragMapKey.find(sysLobFragKey);
-        if (unlikely(sysLobFragMapKeyIt != sysLobFragMapKey.end()))
-            throw DataException(50024, "duplicate SYS.LOBFRAG$ value for unique (PARENTOBJ#: " + std::to_string(sysLobFrag->parentObj) +
-                                       ", PARTOBJ#: " + std::to_string(sysLobFrag->parentObj) + ")");
-
-        sysLobFragMapRowId.insert_or_assign(sysLobFrag->rowId, sysLobFrag);
-        sysLobFragMapKey.insert_or_assign(sysLobFragKey, sysLobFrag);
-        sysLobFragSetTouched.insert(sysLobFrag);
-        auto sysLobCompPartMapPartObjIt = sysLobCompPartMapPartObj.find(sysLobFrag->parentObj);
-        if (sysLobCompPartMapPartObjIt != sysLobCompPartMapPartObj.end()) {
-            auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPartMapPartObjIt->second->lObj);
-            if (sysLobMapLObjIt != sysLobMapLObj.end())
-                touchTable(sysLobMapLObjIt->second->obj);
-        }
-        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobFrag->parentObj);
-        if (sysLobMapLObjIt != sysLobMapLObj.end())
-            touchTable(sysLobMapLObjIt->second->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysObjAdd(SysObj* sysObj) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.OBJ$ (ROWID: " + sysObj->rowId.toString() +
-                                              ", OWNER#: " + std::to_string(sysObj->owner) +
-                                              ", OBJ#: " + std::to_string(sysObj->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysObj->dataObj) +
-                                              ", TYPE#: " + std::to_string(sysObj->type) +
-                                              ", NAME: '" + sysObj->name +
-                                              "', FLAGS: " + sysObj->flags.toString() + ")");
-
-        SysObjNameKey sysObjNameKey(sysObj->owner, sysObj->name.c_str(), sysObj->obj, sysObj->dataObj);
-        auto sysObjMapNameIt = sysObjMapName.find(sysObjNameKey);
-        if (unlikely(sysObjMapNameIt != sysObjMapName.end()))
-            throw DataException(50024, "duplicate SYS.OBJ$ value for unique (OWNER#: " + std::to_string(sysObj->owner) + ", NAME: '" +
-                                       sysObj->name + "', OBJ#: " + std::to_string(sysObj->obj) + ", DATAOBJ#: " + std::to_string(sysObj->dataObj) + ")");
-
-        auto sysObjMapObjIt = sysObjMapObj.find(sysObj->obj);
-        if (unlikely(sysObjMapObjIt != sysObjMapObj.end()))
-            throw DataException(50024, "duplicate SYS.OBJ$ value for unique (OBJ#: " + std::to_string(sysObj->obj) + ")");
-
-        sysObjMapRowId.insert_or_assign(sysObj->rowId, sysObj);
-        sysObjMapName.insert_or_assign(sysObjNameKey, sysObj);
-        sysObjMapObj.insert_or_assign(sysObj->obj, sysObj);
-        sysObjSetTouched.insert(sysObj);
-        touchTable(sysObj->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysTabAdd(SysTab* sysTab) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.TAB$ (ROWID: " + sysTab->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTab->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTab->dataObj) +
-                                              ", CLUCOLS: " + std::to_string(sysTab->cluCols) +
-                                              ", FLAGS: " + sysTab->flags.toString() +
-                                              ", PROPERTY: " + sysTab->property.toString() + ")");
-
-        auto sysTabMapObjIt = sysTabMapObj.find(sysTab->obj);
-        if (unlikely(sysTabMapObjIt != sysTabMapObj.end()))
-            throw DataException(50024, "duplicate SYS.TAB$ value for unique (OBJ#: " + std::to_string(sysTab->obj) + ")");
-
-        sysTabMapRowId.insert_or_assign(sysTab->rowId, sysTab);
-        sysTabMapObj.insert_or_assign(sysTab->obj, sysTab);
-        sysTabSetTouched.insert(sysTab);
-        touchTable(sysTab->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysTabComPartAdd(SysTabComPart* sysTabComPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.TABCOMPART$ (ROWID: " + sysTabComPart->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTabComPart->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTabComPart->dataObj) +
-                                              ", BO#: " + std::to_string(sysTabComPart->bo) + ")");
-
-        SysTabComPartKey sysTabComPartKey(sysTabComPart->bo, sysTabComPart->obj);
-        auto sysTabComPartMapKeyIt = sysTabComPartMapKey.find(sysTabComPartKey);
-        if (unlikely(sysTabComPartMapKeyIt != sysTabComPartMapKey.end()))
-            throw DataException(50024, "duplicate SYS.TABCOMPART$ value for unique (BO#: " + std::to_string(sysTabComPart->bo) +
-                                       ", OBJ#: " + std::to_string(sysTabComPart->obj) + ")");
-
-        auto sysTabComPartMapObjIt = sysTabComPartMapObj.find(sysTabComPart->obj);
-        if (unlikely(sysTabComPartMapObjIt != sysTabComPartMapObj.end()))
-            throw DataException(50024, "duplicate SYS.TABCOMPART$ value for unique (OBJ#: " + std::to_string(sysTabComPart->obj) + ")");
-
-        sysTabComPartMapRowId.insert_or_assign(sysTabComPart->rowId, sysTabComPart);
-        sysTabComPartMapKey.insert_or_assign(sysTabComPartKey, sysTabComPart);
-        sysTabComPartMapObj.insert_or_assign(sysTabComPart->obj, sysTabComPart);
-        sysTabComPartSetTouched.insert(sysTabComPart);
-        touchTable(sysTabComPart->bo);
-        touched = true;
-    }
-
-    void Schema::dictSysTabPartAdd(SysTabPart* sysTabPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.TABPART$ (ROWID: " + sysTabPart->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTabPart->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTabPart->dataObj) +
-                                              ", BO#: " + std::to_string(sysTabPart->bo) + ")");
-
-        SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
-        auto sysTabPartMapKeyIt = sysTabPartMapKey.find(sysTabPartKey);
-        if (unlikely(sysTabPartMapKeyIt != sysTabPartMapKey.end()))
-            throw DataException(50024, "duplicate SYS.TABPART$ value for unique (BO#: " + std::to_string(sysTabPart->bo) + ", OBJ#: " +
-                                       std::to_string(sysTabPart->obj) + ")");
-
-        sysTabPartMapRowId.insert_or_assign(sysTabPart->rowId, sysTabPart);
-        sysTabPartMapKey.insert_or_assign(sysTabPartKey, sysTabPart);
-        sysTabPartSetTouched.insert(sysTabPart);
-        touchTable(sysTabPart->bo);
-        touched = true;
-    }
-
-    void Schema::dictSysTabSubPartAdd(SysTabSubPart* sysTabSubPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.TABSUBPART$ (ROWID: " + sysTabSubPart->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTabSubPart->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTabSubPart->dataObj) +
-                                              ", POBJ#: " + std::to_string(sysTabSubPart->pObj) + ")");
-
-        SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
-        auto sysTabSubPartMapKeyIt = sysTabSubPartMapKey.find(sysTabSubPartKey);
-        if (unlikely(sysTabSubPartMapKeyIt != sysTabSubPartMapKey.end()))
-            throw DataException(50024, "duplicate SYS.TABSUBPART$ value for unique (POBJ#: " + std::to_string(sysTabSubPart->pObj) +
-                                       ", OBJ#: " + std::to_string(sysTabSubPart->obj) + ")");
-
-        sysTabSubPartMapRowId.insert_or_assign(sysTabSubPart->rowId, sysTabSubPart);
-        sysTabSubPartMapKey.insert_or_assign(sysTabSubPartKey, sysTabSubPart);
-        sysTabSubPartSetTouched.insert(sysTabSubPart);
-        auto sysObjMapObjIt = sysObjMapObj.find(sysTabSubPart->obj);
-        if (sysObjMapObjIt != sysObjMapObj.end())
-            touchTable(sysObjMapObjIt->second->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysTsAdd(SysTs* sysTs) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.TS$ (ROWID: " + sysTs->rowId.toString() +
-                                              ", TS#: " + std::to_string(sysTs->ts) +
-                                              ", NAME: '" + sysTs->name +
-                                              "', BLOCKSIZE: " + std::to_string(sysTs->blockSize) + ")");
-
-        auto sysTsMapTsIt = sysTsMapTs.find(sysTs->ts);
-        if (unlikely(sysTsMapTsIt != sysTsMapTs.end()))
-            throw DataException(50024, "duplicate SYS.TS$ value for unique (TS#: " + std::to_string(sysTs->ts) + ")");
-
-        sysTsMapRowId.insert_or_assign(sysTs->rowId, sysTs);
-        sysTsMapTs.insert_or_assign(sysTs->ts, sysTs);
-        touched = true;
-    }
-
-    void Schema::dictSysUserAdd(SysUser* sysUser) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert SYS.USER$ (ROWID: " + sysUser->rowId.toString() +
-                                              ", USER#: " + std::to_string(sysUser->user) +
-                                              ", NAME: '" + sysUser->name +
-                                              "', SPARE1: " + sysUser->spare1.toString() + ")");
-
-        auto sysUserMapUserIt = sysUserMapUser.find(sysUser->user);
-        if (unlikely(sysUserMapUserIt != sysUserMapUser.end()))
-            throw DataException(50024, "duplicate SYS.USER$ value for unique (USER#: " + std::to_string(sysUser->user) + ")");
-
-        sysUserMapRowId.insert_or_assign(sysUser->rowId, sysUser);
-        sysUserMapUser.insert_or_assign(sysUser->user, sysUser);
-        sysUserSetTouched.insert(sysUser);
-        touched = true;
-    }
-
-    void Schema::dictXdbTtSetAdd(XdbTtSet* xdbTtSet) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert XDB.XDB$TTSET (ROWID: " + xdbTtSet->rowId.toString() +
-                                              ", GUID: '" + xdbTtSet->guid +
-                                              "', TOKSUF: '" + xdbTtSet->tokSuf +
-                                              "', FLAGS: '" + std::to_string(xdbTtSet->flags) +
-                                              "', OBJ#: " + std::to_string(xdbTtSet->obj) + ")");
-
-        auto xdbTtSetMapTsIt = xdbTtSetMapTs.find(xdbTtSet->tokSuf);
-        if (unlikely(xdbTtSetMapTsIt != xdbTtSetMapTs.end()))
-            throw DataException(50024, "duplicate XDB.XDB$TTSET value for unique (TOKSUF: '" + xdbTtSet->tokSuf + "')");
-
-        xdbTtSetMapRowId.insert_or_assign(xdbTtSet->rowId, xdbTtSet);
-        xdbTtSetMapTs.insert_or_assign(xdbTtSet->tokSuf, xdbTtSet);
-        touched = true;
-    }
-
-    void Schema::dictXdbXNmAdd(const std::string& tokSuf, XdbXNm* xdbXNm) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert XDB.X$NM" + tokSuf + " (ROWID: " + xdbXNm->rowId.toString() +
-                                              ", NMSPCURI: '" + xdbXNm->nmSpcUri +
-                                              "', ID: '" + xdbXNm->id + "')");
-
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$NM" + tokSuf + " table, insert failed");
-        schemaXmlMapIt->second->dictXdbXNmAdd(xdbXNm);
-        touched = true;
-    }
-
-    void Schema::dictXdbXPtAdd(const std::string& tokSuf, XdbXPt* xdbXPt) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert XDB.X$PT" + tokSuf + " (ROWID: " + xdbXPt->rowId.toString() +
-                                              ", PATH: '" + xdbXPt->path +
-                                              "', ID: '" + xdbXPt->id + "')");
-
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$PT" + tokSuf + " table, insert failed");
-        schemaXmlMapIt->second->dictXdbXPtAdd(xdbXPt);
-        touched = true;
-    }
-
-    void Schema::dictXdbXQnAdd(const std::string& tokSuf, XdbXQn* xdbXQn) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "insert XDB.X$QN" + tokSuf + " (ROWID: " + xdbXQn->rowId.toString() +
-                                              ", NMSPCID: '" + xdbXQn->nmSpcId +
-                                              "', LOCALNAME: '" + xdbXQn->localName +
-                                              "', FLAGS: '" + xdbXQn->flags +
-                                              "', ID: '" + xdbXQn->id + "')");
-
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$QN" + tokSuf + " table, insert failed");
-        schemaXmlMapIt->second->dictXdbXQnAdd(xdbXQn);
-        touched = true;
-    }
-
-    void Schema::dictSysCColDrop(SysCCol* sysCCol) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.CCOL$ (ROWID: " + sysCCol->rowId.toString() +
-                                              ", CON#: " + std::to_string(sysCCol->con) +
-                                              ", INTCOL#: " + std::to_string(sysCCol->intCol) +
-                                              ", OBJ#: " + std::to_string(sysCCol->obj) +
-                                              ", SPARE1: " + sysCCol->spare1.toString() + ")");
-        auto sysCColMapRowIdIt = sysCColMapRowId.find(sysCCol->rowId);
-        if (sysCColMapRowIdIt == sysCColMapRowId.end())
-            return;
-        sysCColMapRowId.erase(sysCColMapRowIdIt);
-
-        SysCColKey sysCColKey(sysCCol->obj, sysCCol->con, sysCCol->intCol);
-        auto sysCColMapKeyIt = sysCColMapKey.find(sysCColKey);
-        if (sysCColMapKeyIt != sysCColMapKey.end())
-            sysCColMapKey.erase(sysCColMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.CCOL$ (OBJ#: " + std::to_string(sysCCol->obj) + ", INTCOL#: " +
-                                std::to_string(sysCCol->intCol) + ", CON#: " + std::to_string(sysCCol->con) + ")");
-
-        touchTable(sysCCol->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysCDefDrop(SysCDef* sysCDef) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.CDEF$ (ROWID: " + sysCDef->rowId.toString() +
-                                              ", CON#: " + std::to_string(sysCDef->con) +
-                                              ", OBJ#: " + std::to_string(sysCDef->obj) +
-                                              ", TYPE: " + std::to_string(sysCDef->type) + ")");
-        auto sysCDefMapRowIdIt = sysCDefMapRowId.find(sysCDef->rowId);
-        if (sysCDefMapRowIdIt == sysCDefMapRowId.end())
-            return;
-        sysCDefMapRowId.erase(sysCDefMapRowIdIt);
-
-        SysCDefKey sysCDefKey(sysCDef->obj, sysCDef->con);
-        auto sysCDefMapKeyIt = sysCDefMapKey.find(sysCDefKey);
-        if (sysCDefMapKeyIt != sysCDefMapKey.end())
-            sysCDefMapKey.erase(sysCDefMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.CDEF$ (OBJ#: " + std::to_string(sysCDef->obj) + ", CON#: " +
-                                std::to_string(sysCDef->con) + ")");
-
-        auto sysCDefMapConIt = sysCDefMapCon.find(sysCDef->con);
-        if (sysCDefMapConIt != sysCDefMapCon.end())
-            sysCDefMapCon.erase(sysCDefMapConIt);
-        else
-            ctx->warning(50030, "missing index for SYS.CDEF$ (CON#: " + std::to_string(sysCDef->con) + ")");
-
-        touchTable(sysCDef->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysColDrop(SysCol* sysCol) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.COL$ (ROWID: " + sysCol->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysCol->obj) +
-                                              ", COL#: " + std::to_string(sysCol->col) +
-                                              ", SEGCOL#: " + std::to_string(sysCol->segCol) +
-                                              ", INTCOL#: " + std::to_string(sysCol->intCol) +
-                                              ", NAME: '" + sysCol->name +
-                                              "', TYPE#: " + std::to_string(sysCol->type) +
-                                              ", SIZE: " + std::to_string(sysCol->length) +
-                                              ", PRECISION#: " + std::to_string(sysCol->precision) +
-                                              ", SCALE: " + std::to_string(sysCol->scale) +
-                                              ", CHARSETFORM: " + std::to_string(sysCol->charsetForm) +
-                                              ", CHARSETID: " + std::to_string(sysCol->charsetId) +
-                                              ", NULL$: " + std::to_string(sysCol->null_) +
-                                              ", PROPERTY: " + sysCol->property.toString() + ")");
-        auto sysColMapRowIdIt = sysColMapRowId.find(sysCol->rowId);
-        if (sysColMapRowIdIt == sysColMapRowId.end())
-            return;
-        sysColMapRowId.erase(sysColMapRowIdIt);
-
-        SysColSeg sysColSeg(sysCol->obj, sysCol->segCol, sysCol->rowId);
-        auto sysColMapSegIt = sysColMapSeg.find(sysColSeg);
-        if (sysColMapSegIt != sysColMapSeg.end())
-            sysColMapSeg.erase(sysColMapSegIt);
-        else
-            ctx->warning(50030, "missing index for SYS.COL$ (OBJ#: " + std::to_string(sysCol->obj) + ", SEGCOL#: " +
-                                std::to_string(sysCol->segCol) + ", ROWID: " + sysCol->rowId.toString() + ")");
-
-        touchTable(sysCol->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysDeferredStgDrop(SysDeferredStg* sysDeferredStg) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.DEFERRED_STG$ (ROWID: " + sysDeferredStg->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysDeferredStg->obj) +
-                                              ", FLAGS_STG: " + sysDeferredStg->flagsStg.toString() + ")");
-        auto sysDeferredStgMapRowIdIt = sysDeferredStgMapRowId.find(sysDeferredStg->rowId);
-        if (sysDeferredStgMapRowIdIt == sysDeferredStgMapRowId.end())
-            return;
-        sysDeferredStgMapRowId.erase(sysDeferredStgMapRowIdIt);
-
-        auto sysDeferredStgMapObjIt = sysDeferredStgMapObj.find(sysDeferredStg->obj);
-        if (sysDeferredStgMapObjIt != sysDeferredStgMapObj.end())
-            sysDeferredStgMapObj.erase(sysDeferredStgMapObjIt);
-        else
-            ctx->warning(50030, "missing index for SYS.DEFERRED_STG$ (OBJ#: " + std::to_string(sysDeferredStg->obj) + ")");
-
-        touchTable(sysDeferredStg->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysEColDrop(SysECol* sysECol) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.ECOL$ (ROWID: " + sysECol->rowId.toString() +
-                                              ", TABOBJ#: " + std::to_string(sysECol->tabObj) +
-                                              ", COLNUM: " + std::to_string(sysECol->colNum) +
-                                              ", GUARD_ID: " + std::to_string(sysECol->guardId) + ")");
-        auto sysEColMapRowIdIt = sysEColMapRowId.find(sysECol->rowId);
-        if (sysEColMapRowIdIt == sysEColMapRowId.end())
-            return;
-        sysEColMapRowId.erase(sysEColMapRowIdIt);
-
-        SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
-        auto sysEColMapKeyIt = sysEColMapKey.find(sysEColKey);
-        if (sysEColMapKeyIt != sysEColMapKey.end())
-            sysEColMapKey.erase(sysEColMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.ECOL$ (TABOBJ#: " + std::to_string(sysECol->tabObj) + ", COLNUM#: " +
-                                std::to_string(sysECol->colNum) + ")");
-
-        touchTable(sysECol->tabObj);
-        touched = true;
-    }
-
-    void Schema::dictSysLobDrop(SysLob* sysLob) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.LOB$ (ROWID: " + sysLob->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysLob->obj) +
-                                              ", COL#: " + std::to_string(sysLob->col) +
-                                              ", INTCOL#: " + std::to_string(sysLob->intCol) +
-                                              ", LOBJ#: " + std::to_string(sysLob->lObj) +
-                                              ", TS#: " + std::to_string(sysLob->ts) + ")");
-        auto sysLobMapRowIdIt = sysLobMapRowId.find(sysLob->rowId);
-        if (sysLobMapRowIdIt == sysLobMapRowId.end())
-            return;
-        sysLobMapRowId.erase(sysLobMapRowIdIt);
-
-        SysLobKey sysLobKey(sysLob->obj, sysLob->intCol);
-        auto sysLobMapKeyIt = sysLobMapKey.find(sysLobKey);
-        if (sysLobMapKeyIt != sysLobMapKey.end())
-            sysLobMapKey.erase(sysLobMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.LOB$ (OBJ#: " + std::to_string(sysLob->obj) + ", INTCOL#: " +
-                                std::to_string(sysLob->intCol) + ")");
-
-        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLob->lObj);
-        if (sysLobMapLObjIt != sysLobMapLObj.end())
-            sysLobMapLObj.erase(sysLobMapLObjIt);
-        else
-            ctx->warning(50030, "missing index for SYS.LOB$ (LOBJ#: " + std::to_string(sysLob->lObj) + ")");
-
-        touchTable(sysLob->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysLobCompPartDrop(SysLobCompPart* sysLobCompPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.LOBCOMPPART$ (ROWID: " + sysLobCompPart->rowId.toString() +
-                                              ", PARTOBJ#: " + std::to_string(sysLobCompPart->partObj) +
-                                              ", LOBJ#: " + std::to_string(sysLobCompPart->lObj) + ")");
-        auto sysLobCompPartMapRowIdIt = sysLobCompPartMapRowId.find(sysLobCompPart->rowId);
-        if (sysLobCompPartMapRowIdIt == sysLobCompPartMapRowId.end())
-            return;
-        sysLobCompPartMapRowId.erase(sysLobCompPartMapRowIdIt);
-
-        SysLobCompPartKey sysLobCompPartKey(sysLobCompPart->lObj, sysLobCompPart->partObj);
-        auto sysLobCompPartMapKeyIt = sysLobCompPartMapKey.find(sysLobCompPartKey);
-        if (sysLobCompPartMapKeyIt != sysLobCompPartMapKey.end())
-            sysLobCompPartMapKey.erase(sysLobCompPartMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.LOBCOMPPART$ (LOBJ#: " + std::to_string(sysLobCompPart->lObj) + ", PARTOBJ#: " +
-                                std::to_string(sysLobCompPart->partObj) + ")");
-
-        auto sysLobCompPartMapPartObjIt = sysLobCompPartMapPartObj.find(sysLobCompPart->partObj);
-        if (sysLobCompPartMapPartObjIt != sysLobCompPartMapPartObj.end())
-            sysLobCompPartMapPartObj.erase(sysLobCompPartMapPartObjIt);
-        else
-            ctx->warning(50030, "missing index for SYS.LOBCOMPPART$ (PARTOBJ#: " + std::to_string(sysLobCompPart->partObj) + ")");
-
-        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPart->lObj);
-        if (sysLobMapLObjIt != sysLobMapLObj.end())
-            touchTable(sysLobMapLObjIt->second->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysLobFragDrop(SysLobFrag* sysLobFrag) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.LOBFRAG$ (ROWID: " + sysLobFrag->rowId.toString() +
-                                              ", FRAGOBJ#: " + std::to_string(sysLobFrag->fragObj) +
-                                              ", PARENTOBJ#: " + std::to_string(sysLobFrag->parentObj) +
-                                              ", TS#: " + std::to_string(sysLobFrag->ts) + ")");
-        auto sysLobFragMapRowIdIt = sysLobFragMapRowId.find(sysLobFrag->rowId);
-        if (sysLobFragMapRowIdIt == sysLobFragMapRowId.end())
-            return;
-        sysLobFragMapRowId.erase(sysLobFragMapRowIdIt);
-
-        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobFrag->parentObj);
-        if (sysLobMapLObjIt != sysLobMapLObj.end())
-            touchTable(sysLobMapLObjIt->second->obj);
-
-        SysLobFragKey sysLobFragKey(sysLobFrag->parentObj, sysLobFrag->fragObj);
-        auto sysLobFragMapKeyIt = sysLobFragMapKey.find(sysLobFragKey);
-        if (sysLobFragMapKeyIt != sysLobFragMapKey.end())
-            sysLobFragMapKey.erase(sysLobFragMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.LOBFRAG$ (PARENTOBJ#: " + std::to_string(sysLobFrag->parentObj) + ", FRAGOBJ#: " +
-                                std::to_string(sysLobFrag->fragObj) + ")");
-
-        auto sysLobCompPartMapPartObjIt = sysLobCompPartMapPartObj.find(sysLobFrag->parentObj);
-        if (sysLobCompPartMapPartObjIt != sysLobCompPartMapPartObj.end()) {
-            sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPartMapPartObjIt->second->lObj);
-            if (sysLobMapLObjIt != sysLobMapLObj.end())
-                touchTable(sysLobMapLObjIt->second->obj);
-        }
-        touched = true;
-    }
-
-    void Schema::dictSysObjDrop(SysObj* sysObj) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.OBJ$ (ROWID: " + sysObj->rowId.toString() +
-                                              ", OWNER#: " + std::to_string(sysObj->owner) +
-                                              ", OBJ#: " + std::to_string(sysObj->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysObj->dataObj) +
-                                              ", TYPE#: " + std::to_string(sysObj->type) +
-                                              ", NAME: '" + sysObj->name +
-                                              "', FLAGS: " + sysObj->flags.toString() + ")");
-        auto sysObjMapRowIdIt = sysObjMapRowId.find(sysObj->rowId);
-        if (sysObjMapRowIdIt == sysObjMapRowId.end())
-            return;
-        sysObjMapRowId.erase(sysObjMapRowIdIt);
-
-        SysObjNameKey sysObjNameKey(sysObj->owner, sysObj->name.c_str(), sysObj->obj, sysObj->dataObj);
-        auto sysObjMapNameIt = sysObjMapName.find(sysObjNameKey);
-        if (sysObjMapNameIt != sysObjMapName.end())
-            sysObjMapName.erase(sysObjMapNameIt);
-        else
-            ctx->warning(50030, "missing index for SYS.OBJ$ (OWNER#: " + std::to_string(sysObj->owner) + ", NAME: '" +
-                                sysObj->name + "', OBJ#: " + std::to_string(sysObj->obj) + ", DATAOBJ#: " + std::to_string(sysObj->dataObj) + ")");
-
-        auto sysObjMapObjIt = sysObjMapObj.find(sysObj->obj);
-        if (sysObjMapObjIt != sysObjMapObj.end())
-            sysObjMapObj.erase(sysObjMapObjIt);
-        else
-            ctx->warning(50030, "missing index for SYS.OBJ$ (OBJ#: " + std::to_string(sysObj->obj) + ")");
-
-        touchTable(sysObj->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysTabDrop(SysTab* sysTab) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.TAB$ (ROWID: " + sysTab->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTab->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTab->dataObj) +
-                                              ", CLUCOLS: " + std::to_string(sysTab->cluCols) +
-                                              ", FLAGS: " + sysTab->flags.toString() +
-                                              ", PROPERTY: " + sysTab->property.toString() + ")");
-        auto sysTabMapRowIdIt = sysTabMapRowId.find(sysTab->rowId);
-        if (sysTabMapRowIdIt == sysTabMapRowId.end())
-            return;
-        sysTabMapRowId.erase(sysTabMapRowIdIt);
-
-        auto sysTabMapObjIt = sysTabMapObj.find(sysTab->obj);
-        if (sysTabMapObjIt != sysTabMapObj.end())
-            sysTabMapObj.erase(sysTab->obj);
-        else
-            ctx->warning(50030, "missing index for SYS.TAB$ (OBJ#: " + std::to_string(sysTab->obj) + ")");
-
-        touchTable(sysTab->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysTabComPartDrop(SysTabComPart* sysTabComPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.TABCOMPART$ (ROWID: " + sysTabComPart->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTabComPart->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTabComPart->dataObj) +
-                                              ", BO#: " + std::to_string(sysTabComPart->bo) + ")");
-        auto sysTabComPartMapRowIdIt = sysTabComPartMapRowId.find(sysTabComPart->rowId);
-        if (sysTabComPartMapRowIdIt == sysTabComPartMapRowId.end())
-            return;
-        sysTabComPartMapRowId.erase(sysTabComPartMapRowIdIt);
-
-        SysTabComPartKey sysTabComPartKey(sysTabComPart->bo, sysTabComPart->obj);
-        auto sysTabComPartMapKeyIt = sysTabComPartMapKey.find(sysTabComPartKey);
-        if (sysTabComPartMapKeyIt != sysTabComPartMapKey.end())
-            sysTabComPartMapKey.erase(sysTabComPartMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.TABCOMPART$ (BO#: " + std::to_string(sysTabComPart->bo) + ", OBJ#: " +
-                                std::to_string(sysTabComPart->obj) + ")");
-
-        auto sysTabComPartMapObjIt = sysTabComPartMapObj.find(sysTabComPart->obj);
-        if (sysTabComPartMapObjIt != sysTabComPartMapObj.end())
-            sysTabComPartMapObj.erase(sysTabComPartMapObjIt);
-        else
-            ctx->warning(50030, "missing index for SYS.TABCOMPART$ (OBJ#: " + std::to_string(sysTabComPart->obj) + ")");
-
-        touchTable(sysTabComPart->bo);
-        touched = true;
-    }
-
-    void Schema::dictSysTabPartDrop(SysTabPart* sysTabPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.TABPART$ (ROWID: " + sysTabPart->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTabPart->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTabPart->dataObj) +
-                                              ", BO#: " + std::to_string(sysTabPart->bo) + ")");
-        auto sysTabPartMapRowIdIt = sysTabPartMapRowId.find(sysTabPart->rowId);
-        if (sysTabPartMapRowIdIt == sysTabPartMapRowId.end())
-            return;
-        sysTabPartMapRowId.erase(sysTabPartMapRowIdIt);
-
-        SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
-        auto sysTabPartMapKeyIt = sysTabPartMapKey.find(sysTabPartKey);
-        if (sysTabPartMapKeyIt != sysTabPartMapKey.end())
-            sysTabPartMapKey.erase(sysTabPartMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.TABPART$ (BO#: " + std::to_string(sysTabPart->bo) + ", OBJ#: " +
-                                std::to_string(sysTabPart->obj) + ")");
-
-        touchTable(sysTabPart->bo);
-        touched = true;
-    }
-
-    void Schema::dictSysTabSubPartDrop(SysTabSubPart* sysTabSubPart) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.TABSUBPART$ (ROWID: " + sysTabSubPart->rowId.toString() +
-                                              ", OBJ#: " + std::to_string(sysTabSubPart->obj) +
-                                              ", DATAOBJ#: " + std::to_string(sysTabSubPart->dataObj) +
-                                              ", POBJ#: " + std::to_string(sysTabSubPart->pObj) + ")");
-        auto sysTabSubPartMapRowIdIt = sysTabSubPartMapRowId.find(sysTabSubPart->rowId);
-        if (sysTabSubPartMapRowIdIt == sysTabSubPartMapRowId.end())
-            return;
-        sysTabSubPartMapRowId.erase(sysTabSubPartMapRowIdIt);
-
-        SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
-        auto sysTabSubPartMapKeyIt = sysTabSubPartMapKey.find(sysTabSubPartKey);
-        if (sysTabSubPartMapKeyIt != sysTabSubPartMapKey.end())
-            sysTabSubPartMapKey.erase(sysTabSubPartMapKeyIt);
-        else
-            ctx->warning(50030, "missing index for SYS.TABSUBPART$ (POBJ#: " + std::to_string(sysTabSubPart->pObj) + ", OBJ#: " +
-                                std::to_string(sysTabSubPart->obj) + ")");
-
-        auto sysObjMapObjIt = sysObjMapObj.find(sysTabSubPart->obj);
-        if (sysObjMapObjIt != sysObjMapObj.end())
-            touchTable(sysObjMapObjIt->second->obj);
-        touched = true;
-    }
-
-    void Schema::dictSysTsDrop(SysTs* sysTs) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.TS$ (ROWID: " + sysTs->rowId.toString() +
-                                              ", TS#: " + std::to_string(sysTs->ts) +
-                                              ", NAME: '" + sysTs->name +
-                                              "', BLOCKSIZE: " + std::to_string(sysTs->blockSize) + ")");
-        auto sysTsMapRowIdIt = sysTsMapRowId.find(sysTs->rowId);
-        if (sysTsMapRowIdIt == sysTsMapRowId.end())
-            return;
-        sysTsMapRowId.erase(sysTsMapRowIdIt);
-
-        auto sysTsMapTsIt = sysTsMapTs.find(sysTs->ts);
-        if (sysTsMapTsIt != sysTsMapTs.end())
-            sysTsMapTs.erase(sysTsMapTsIt);
-        else
-            ctx->warning(50030, "missing index for SYS.TS$ (TS#: " + std::to_string(sysTs->ts) + ")");
-        touched = true;
-    }
-
-    void Schema::dictSysUserDrop(SysUser* sysUser) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete SYS.USER$ (ROWID: " + sysUser->rowId.toString() +
-                                              ", USER#: " + std::to_string(sysUser->user) +
-                                              ", NAME: '" + sysUser->name +
-                                              "', SPARE1: " + sysUser->spare1.toString() + ")");
-        auto sysUserMapRowIdIt = sysUserMapRowId.find(sysUser->rowId);
-        if (sysUserMapRowIdIt == sysUserMapRowId.end())
-            return;
-        sysUserMapRowId.erase(sysUserMapRowIdIt);
-
-        auto sysUserMapUserIt = sysUserMapUser.find(sysUser->user);
-        if (sysUserMapUserIt != sysUserMapUser.end())
-            sysUserMapUser.erase(sysUserMapUserIt);
-        else
-            ctx->warning(50030, "missing index for SYS.USER$ (USER#: " + std::to_string(sysUser->user) + ")");
-        touched = true;
-    }
-
-    void Schema::dictXdbTtSetDrop(XdbTtSet* xdbTtSet) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete XDB.XDB$TTSET (ROWID: " + xdbTtSet->rowId.toString() +
-                                              ", GUID: '" + xdbTtSet->guid +
-                                              "', TOKSUF: '" + xdbTtSet->tokSuf +
-                                              "', FLAGS: " + std::to_string(xdbTtSet->flags) +
-                                              ", OBJ#: " + std::to_string(xdbTtSet->obj) + ")");
-        auto xdbTtSetMapRowIdIt = xdbTtSetMapRowId.find(xdbTtSet->rowId);
-        if (xdbTtSetMapRowIdIt == xdbTtSetMapRowId.end())
-            return;
-        xdbTtSetMapRowId.erase(xdbTtSetMapRowIdIt);
-
-        auto xdbTtSetMapTsIt = xdbTtSetMapTs.find(xdbTtSet->tokSuf);
-        if (xdbTtSetMapTsIt != xdbTtSetMapTs.end())
-            xdbTtSetMapTs.erase(xdbTtSetMapTsIt);
-        else
-            ctx->warning(50030, "missing index for XDB.XDB$TTSET (TOKSUF: '" + xdbTtSet->tokSuf + "')");
-        touched = true;
-    }
-
-    void Schema::dictXdbXNmDrop(const std::string& tokSuf, XdbXNm* xdbXNm) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete XDB.X$NM" + tokSuf + " (ROWID: " + xdbXNm->rowId.toString() +
-                                              ", NMSPCURI: '" + xdbXNm->nmSpcUri +
-                                              "', ID: '" + xdbXNm->id + "')");
-
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$NM" + tokSuf + " table, delete failed");
-        schemaXmlMapIt->second->dictXdbXNmDrop(xdbXNm);
-        touched = true;
-    }
-
-    void Schema::dictXdbXPtDrop(const std::string& tokSuf, XdbXPt* xdbXPt) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete XDB.X$PT" + tokSuf + " (ROWID: " + xdbXPt->rowId.toString() +
-                                              ", PATH: '" + xdbXPt->path +
-                                              "', ID: '" + xdbXPt->id + "')");
-
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$PT" + tokSuf + " table, delete failed");
-        schemaXmlMapIt->second->dictXdbXPtDrop(xdbXPt);
-        touched = true;
-    }
-
-    void Schema::dictXdbXQnDrop(const std::string& tokSuf, XdbXQn* xdbXQn) {
-        if (unlikely(ctx->trace & Ctx::TRACE::SYSTEM))
-            ctx->logTrace(Ctx::TRACE::SYSTEM, "delete XDB.X$QN" + tokSuf + " (ROWID: " + xdbXQn->rowId.toString() +
-                                              ", NMSPCID '" + xdbXQn->nmSpcId +
-                                              "', LOCALNAME: '" + xdbXQn->localName +
-                                              "', FLAGS: '" + xdbXQn->flags +
-                                              "', ID: '" + xdbXQn->id + "')");
-
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$QN" + tokSuf + " table, delete failed");
-        schemaXmlMapIt->second->dictXdbXQnDrop(xdbXQn);
-        touched = true;
-    }
-
-    SysCCol* Schema::dictSysCColFind(typeRowId rowId) {
-        auto sysCColMapRowIdIt = sysCColMapRowId.find(rowId);
-        if (sysCColMapRowIdIt != sysCColMapRowId.end())
-            return sysCColMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysCDef* Schema::dictSysCDefFind(typeRowId rowId) {
-        auto sysCDefMapRowIdIt = sysCDefMapRowId.find(rowId);
-        if (sysCDefMapRowIdIt != sysCDefMapRowId.end())
-            return sysCDefMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysCol* Schema::dictSysColFind(typeRowId rowId) {
-        auto sysColMapRowIdIt = sysColMapRowId.find(rowId);
-        if (sysColMapRowIdIt != sysColMapRowId.end())
-            return sysColMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysDeferredStg* Schema::dictSysDeferredStgFind(typeRowId rowId) {
-        auto sysDeferredStgMapRowIdIt = sysDeferredStgMapRowId.find(rowId);
-        if (sysDeferredStgMapRowIdIt != sysDeferredStgMapRowId.end())
-            return sysDeferredStgMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysECol* Schema::dictSysEColFind(typeRowId rowId) {
-        auto sysEColMapRowIdIt = sysEColMapRowId.find(rowId);
-        if (sysEColMapRowIdIt != sysEColMapRowId.end())
-            return sysEColMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysLob* Schema::dictSysLobFind(typeRowId rowId) {
-        auto sysLobMapRowIdIt = sysLobMapRowId.find(rowId);
-        if (sysLobMapRowIdIt != sysLobMapRowId.end())
-            return sysLobMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysLobCompPart* Schema::dictSysLobCompPartFind(typeRowId rowId) {
-        auto sysLobCompPartMapRowIdIt = sysLobCompPartMapRowId.find(rowId);
-        if (sysLobCompPartMapRowIdIt != sysLobCompPartMapRowId.end())
-            return sysLobCompPartMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysLobFrag* Schema::dictSysLobFragFind(typeRowId rowId) {
-        auto sysLobFragMapRowIdIt = sysLobFragMapRowId.find(rowId);
-        if (sysLobFragMapRowIdIt != sysLobFragMapRowId.end())
-            return sysLobFragMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysObj* Schema::dictSysObjFind(typeRowId rowId) {
-        auto sysObjMapRowIdIt = sysObjMapRowId.find(rowId);
-        if (sysObjMapRowIdIt != sysObjMapRowId.end())
-            return sysObjMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysTab* Schema::dictSysTabFind(typeRowId rowId) {
-        auto sysTabMapRowIdIt = sysTabMapRowId.find(rowId);
-        if (sysTabMapRowIdIt != sysTabMapRowId.end())
-            return sysTabMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysTabComPart* Schema::dictSysTabComPartFind(typeRowId rowId) {
-        auto sysTabComPartMapRowIdIt = sysTabComPartMapRowId.find(rowId);
-        if (sysTabComPartMapRowIdIt != sysTabComPartMapRowId.end())
-            return sysTabComPartMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysTabPart* Schema::dictSysTabPartFind(typeRowId rowId) {
-        auto sysTabPartMapRowIdIt = sysTabPartMapRowId.find(rowId);
-        if (sysTabPartMapRowIdIt != sysTabPartMapRowId.end())
-            return sysTabPartMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysTabSubPart* Schema::dictSysTabSubPartFind(typeRowId rowId) {
-        auto sysTabSubPartMapRowIdIt = sysTabSubPartMapRowId.find(rowId);
-        if (sysTabSubPartMapRowIdIt != sysTabSubPartMapRowId.end())
-            return sysTabSubPartMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysTs* Schema::dictSysTsFind(typeRowId rowId) {
-        auto sysTsMapRowIdIt = sysTsMapRowId.find(rowId);
-        if (sysTsMapRowIdIt != sysTsMapRowId.end())
-            return sysTsMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    SysUser* Schema::dictSysUserFind(typeRowId rowId) {
-        auto sysUserMapRowIdIt = sysUserMapRowId.find(rowId);
-        if (sysUserMapRowIdIt != sysUserMapRowId.end())
-            return sysUserMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    XdbTtSet* Schema::dictXdbTtSetFind(typeRowId rowId) {
-        auto xdbTtSetMapRowIdIt = xdbTtSetMapRowId.find(rowId);
-        if (xdbTtSetMapRowIdIt != xdbTtSetMapRowId.end())
-            return xdbTtSetMapRowIdIt->second;
-        else
-            return nullptr;
-    }
-
-    XdbXNm* Schema::dictXdbXNmFind(const std::string& tokSuf, typeRowId rowId) {
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$NM" + tokSuf + " table, find failed");
-        XmlCtx* xmlCtx = schemaXmlMapIt->second;
-
-        return xmlCtx->dictXdbXNmFind(rowId);
-    }
-
-    XdbXPt* Schema::dictXdbXPtFind(const std::string& tokSuf, typeRowId rowId) {
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$PT" + tokSuf + " table, find failed");
-        XmlCtx* xmlCtx = schemaXmlMapIt->second;
-
-        return xmlCtx->dictXdbXPtFind(rowId);
-    }
-
-    XdbXQn* Schema::dictXdbXQnFind(const std::string& tokSuf, typeRowId rowId) {
-        auto schemaXmlMapIt = schemaXmlMap.find(tokSuf);
-        if (unlikely(schemaXmlMapIt == schemaXmlMap.end()))
-            throw DataException(50068, "missing XDB.X$QN" + tokSuf + " table, find failed");
-        XmlCtx* xmlCtx = schemaXmlMapIt->second;
-
-        return xmlCtx->dictXdbXQnFind(rowId);
     }
 
     void Schema::touchTable(typeObj obj) {
@@ -2166,6 +254,27 @@ namespace OpenLogReplicator {
         tablesTouched.insert(tableMapIt->second);
     }
 
+    void Schema::touchTableLob(typeObj lobObj) {
+        auto it = sysLobPack.unorderedMapKey.find(SysLobLObj(lobObj));
+        if (it != sysLobPack.unorderedMapKey.end())
+            touchTable(it->second->obj);
+    }
+
+    void Schema::touchTableLobFrag(typeObj lobFragObj) {
+        auto it = sysLobCompPartPack.unorderedMapKey.find(SysLobCompPartPartObj(lobFragObj));
+        if (it != sysLobCompPartPack.unorderedMapKey.end()) {
+            auto it2 = sysLobPack.unorderedMapKey.find(SysLobLObj(it->second->lObj));
+            if (it2 != sysLobPack.unorderedMapKey.end())
+                touchTable(it2->second->obj);
+        }
+    }
+
+    void Schema::touchTablePart(typeObj obj) {
+        auto it = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
+        if (it != sysObjPack.unorderedMapKey.end())
+            touchTable(it->second->obj);
+    }
+
     DbTable* Schema::checkTableDict(typeObj obj) const {
         const auto tablePartitionMapIt = tablePartitionMap.find(obj);
         if (tablePartitionMapIt != tablePartitionMap.end())
@@ -2175,13 +284,13 @@ namespace OpenLogReplicator {
     }
 
     bool Schema::checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table) const {
-        const auto objIt = sysObjMapObj.find(obj);
-        if (objIt == sysObjMapObj.end())
+        const auto objIt = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
+        if (objIt == sysObjPack.unorderedMapKey.end())
             return false;
         SysObj* sysObj = objIt->second;
 
-        const auto userIt = sysUserMapUser.find(sysObj->owner);
-        if (userIt == sysUserMapUser.end())
+        const auto userIt = sysUserPack.unorderedMapKey.find(SysUserUser(sysObj->owner));
+        if (userIt == sysUserPack.unorderedMapKey.end())
             return false;
         const SysUser* sysUser = userIt->second;
 
@@ -2298,20 +407,18 @@ namespace OpenLogReplicator {
         tablesTouched.clear();
 
         // SYS.USER$
-        for (auto sysUser: sysUserSetTouched) {
+        for (auto sysUser: sysUserPack.setTouched) {
             if (users.find(sysUser->name) != users.end())
                 continue;
-
-            dictSysUserDrop(sysUser);
-            delete sysUser;
+            sysUserPack.drop(ctx, sysUser->rowId);
         }
 
         // SYS.OBJ$
         if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)) {
             // delete objects owned by users that are not in the list of users
-            for (auto sysObj: sysObjSetTouched) {
-                auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
-                if (sysUserMapUserIt != sysUserMapUser.end()) {
+            for (auto sysObj: sysObjPack.setTouched) {
+                auto sysUserMapUserIt = sysUserPack.unorderedMapKey.find(SysUserUser(sysObj->owner));
+                if (sysUserMapUserIt != sysUserPack.unorderedMapKey.end()) {
                     SysUser* sysUser = sysUserMapUserIt->second;
                     if (sysUser->name == "SYS") {
                         if (!sysUser->single)
@@ -2333,139 +440,140 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                dictSysObjDrop(sysObj);
-                delete sysObj;
+                sysObjPack.drop(ctx, sysObj->rowId);
+                touched = true;
             }
+            sysObjPack.setTouched.clear();
         }
 
         // SYS.CCOL$
-        for (auto sysCCol: sysCColSetTouched) {
-            if (sysObjMapObj.find(sysCCol->obj) != sysObjMapObj.end())
+        for (auto sysCCol: sysCColPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysCCol->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysCColDrop(sysCCol);
-            delete sysCCol;
+            sysCColPack.drop(ctx, sysCCol->rowId);
+            touched = true;
         }
+        sysCColPack.setTouched.clear();
 
         // SYS.CDEF$
-        for (auto sysCDef: sysCDefSetTouched) {
-            if (sysObjMapObj.find(sysCDef->obj) != sysObjMapObj.end())
+        for (auto sysCDef: sysCDefPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysCDef->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysCDefDrop(sysCDef);
-            delete sysCDef;
+            sysCDefPack.drop(ctx, sysCDef->rowId);
+            touched = true;
         }
+        sysCDefPack.setTouched.clear();
 
         // SYS.COL$
-        for (auto sysCol: sysColSetTouched) {
-            if (sysObjMapObj.find(sysCol->obj) != sysObjMapObj.end())
+        for (auto sysCol: sysColPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysCol->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysColDrop(sysCol);
-            delete sysCol;
+            sysColPack.drop(ctx, sysCol->rowId);
+            touched = true;
         }
+        sysColPack.setTouched.clear();
 
         // SYS.DEFERRED_STG$
-        for (auto sysDeferredStg: sysDeferredStgSetTouched) {
-            if (sysObjMapObj.find(sysDeferredStg->obj) != sysObjMapObj.end())
+        for (auto sysDeferredStg: sysDeferredStgPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysDeferredStg->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysDeferredStgDrop(sysDeferredStg);
-            delete sysDeferredStg;
+            sysDeferredStgPack.drop(ctx, sysDeferredStg->rowId);
+            touched = true;
         }
+        sysDeferredStgPack.setTouched.clear();
 
         // SYS.ECOL$
-        for (auto sysECol: sysEColSetTouched) {
-            if (sysObjMapObj.find(sysECol->tabObj) != sysObjMapObj.end())
+        for (auto sysECol: sysEColPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysECol->tabObj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysEColDrop(sysECol);
-            delete sysECol;
+            sysEColPack.drop(ctx, sysECol->rowId);
+            touched = true;
         }
+        sysEColPack.setTouched.clear();
 
         // SYS.LOB$
-        for (auto sysLob: sysLobSetTouched) {
-            if (sysObjMapObj.find(sysLob->obj) != sysObjMapObj.end())
+        for (auto sysLob: sysLobPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysLob->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysLobDrop(sysLob);
-            delete sysLob;
+            sysLobPack.drop(ctx, sysLob->rowId);
+            touched = true;
         }
+        sysLobPack.setTouched.clear();
 
         // SYS.LOBCOMPPART$
-        for (auto sysLobCompPart: sysLobCompPartSetTouched) {
-            if (sysLobMapLObj.find(sysLobCompPart->lObj) != sysLobMapLObj.end())
+        for (auto sysLobCompPart: sysLobCompPartPack.setTouched) {
+            if (sysLobPack.unorderedMapKey.find(SysLobLObj(sysLobCompPart->lObj)) != sysLobPack.unorderedMapKey.end())
                 continue;
-
-            dictSysLobCompPartDrop(sysLobCompPart);
-            delete sysLobCompPart;
+            sysLobCompPartPack.drop(ctx, sysLobCompPart->rowId);
+            touched = true;
         }
+        sysLobCompPartPack.setTouched.clear();
 
         // SYS.LOBFRAG$
-        for (auto sysLobFrag: sysLobFragSetTouched) {
-            if (sysLobCompPartMapPartObj.find(sysLobFrag->parentObj) != sysLobCompPartMapPartObj.end())
+        for (auto sysLobFrag: sysLobFragPack.setTouched) {
+            if (sysLobCompPartPack.unorderedMapKey.find(SysLobCompPartPartObj(sysLobFrag->parentObj)) != sysLobCompPartPack.unorderedMapKey.end())
                 continue;
-            if (sysLobMapLObj.find(sysLobFrag->parentObj) != sysLobMapLObj.end())
+            if (sysLobPack.unorderedMapKey.find(SysLobLObj(sysLobFrag->parentObj)) != sysLobPack.unorderedMapKey.end())
                 continue;
-
-            dictSysLobFragDrop(sysLobFrag);
-            delete sysLobFrag;
+            sysLobFragPack.drop(ctx, sysLobFrag->rowId);
+            touched = true;
         }
+        sysLobFragPack.setTouched.clear();
 
         // SYS.TAB$
-        for (auto sysTab: sysTabSetTouched) {
-            if (sysObjMapObj.find(sysTab->obj) != sysObjMapObj.end())
+        for (auto sysTab: sysTabPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysTab->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysTabDrop(sysTab);
-            delete sysTab;
+            sysTabPartPack.drop(ctx, sysTab->rowId);
+            touched = true;
         }
+        sysTabPack.setTouched.clear();
 
         // SYS.TABCOMPART$
-        for (auto sysTabComPart: sysTabComPartSetTouched) {
-            if (sysObjMapObj.find(sysTabComPart->obj) != sysObjMapObj.end())
+        for (auto sysTabComPart: sysTabComPartPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysTabComPart->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysTabComPartDrop(sysTabComPart);
-            delete sysTabComPart;
+            sysTabComPartPack.drop(ctx, sysTabComPart->rowId);
+            touched = true;
         }
+        sysTabComPartPack.setTouched.clear();
 
         // SYS.TABPART$
-        for (auto sysTabPart: sysTabPartSetTouched) {
-            if (sysObjMapObj.find(sysTabPart->bo) != sysObjMapObj.end())
+        for (auto sysTabPart: sysTabPartPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysTabPart->bo)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysTabPartDrop(sysTabPart);
-            delete sysTabPart;
+            sysTabPartPack.drop(ctx, sysTabPart->rowId);
+            touched = true;
         }
+        sysTabPartPack.setTouched.clear();
 
         // SYS.TABSUBPART$
-        for (auto sysTabSubPart: sysTabSubPartSetTouched) {
-            if (sysObjMapObj.find(sysTabSubPart->obj) != sysObjMapObj.end())
+        for (auto sysTabSubPart: sysTabSubPartPack.setTouched) {
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysTabSubPart->obj)) != sysObjPack.unorderedMapKey.end())
                 continue;
-
-            dictSysTabSubPartDrop(sysTabSubPart);
-            delete sysTabSubPart;
+            sysTabSubPartPack.drop(ctx, sysTabSubPart->rowId);
+            touched = true;
         }
+        sysTabSubPartPack.setTouched.clear();
     }
 
     void Schema::resetTouched() {
         tablesTouched.clear();
         identifiersTouched.clear();
-        sysCColSetTouched.clear();
-        sysCDefSetTouched.clear();
-        sysColSetTouched.clear();
-        sysDeferredStgSetTouched.clear();
-        sysEColSetTouched.clear();
-        sysLobSetTouched.clear();
-        sysLobCompPartSetTouched.clear();
-        sysLobFragSetTouched.clear();
-        sysObjSetTouched.clear();
-        sysTabSetTouched.clear();
-        sysTabComPartSetTouched.clear();
-        sysTabPartSetTouched.clear();
-        sysTabSubPartSetTouched.clear();
-        sysUserSetTouched.clear();
+        sysCColPack.setTouched.clear();
+        sysCDefPack.setTouched.clear();
+        sysColPack.setTouched.clear();
+        sysDeferredStgPack.setTouched.clear();
+        sysEColPack.setTouched.clear();
+        sysLobPack.setTouched.clear();
+        sysLobCompPartPack.setTouched.clear();
+        sysLobFragPack.setTouched.clear();
+        sysObjPack.setTouched.clear();
+        sysTabPack.setTouched.clear();
+        sysTabComPartPack.setTouched.clear();
+        sysTabPartPack.setTouched.clear();
+        sysTabSubPartPack.setTouched.clear();
+        sysUserPack.setTouched.clear();
         touched = false;
     }
 
@@ -2487,15 +595,15 @@ namespace OpenLogReplicator {
 
     void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keyList, const std::string& key,
                            SchemaElement::TAG_TYPE tagType, const std::vector<std::string>& tagList, const std::string& tag __attribute__((unused)),
-                           const std::string& condition, typeOptions options, std::vector<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
+                           const std::string& condition, DbTable::OPTIONS options, std::vector<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
                            uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
         std::regex regexOwner(owner);
         std::regex regexTable(table);
         char sysLobConstraintName[26]{"SYS_LOB0000000000C00000$$"};
 
         for (auto obj: identifiersTouched) {
-            auto sysObjMapObjTouchedIt = sysObjMapObj.find(obj);
-            if (sysObjMapObjTouchedIt == sysObjMapObj.end())
+            auto sysObjMapObjTouchedIt = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
+            if (sysObjMapObjTouchedIt == sysObjPack.unorderedMapKey.end())
                 continue;
             SysObj* sysObj = sysObjMapObjTouchedIt->second;
 
@@ -2503,8 +611,8 @@ namespace OpenLogReplicator {
                 continue;
 
             SysUser* sysUser = nullptr;
-            auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
-            if (sysUserMapUserIt == sysUserMapUser.end()) {
+            auto sysUserMapUserIt = sysUserPack.unorderedMapKey.find(SysUserUser(sysObj->owner));
+            if (sysUserMapUserIt == sysUserPack.unorderedMapKey.end()) {
                 if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA))
                     continue;
                 sysUserAdaptive.name = "USER_" + std::to_string(sysObj->obj);
@@ -2517,44 +625,45 @@ namespace OpenLogReplicator {
 
             // Table already added with another rule
             if (tableMap.find(sysObj->obj) != tableMap.end()) {
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                     msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - already added (skipped)");
                 continue;
             }
 
             // Object without SYS.TAB$
-            auto sysTabMapObjIt = sysTabMapObj.find(sysObj->obj);
-            if (sysTabMapObjIt == sysTabMapObj.end()) {
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
-                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - SYS.TAB$ entry missing (skipped)");
+            auto sysTabMapObjIt = sysTabPack.unorderedMapKey.find(SysTabObj(sysObj->obj));
+            if (sysTabMapObjIt == sysTabPack.unorderedMapKey.end()) {
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - " + SysTab::tableName() +
+                                   " entry missing (skipped)");
                 continue;
             }
-            SysTab* sysTab = sysTabMapObjIt->second;
+            const SysTab* sysTab = sysTabMapObjIt->second;
 
             // Skip binary objects
             if (sysTab->isBinary()) {
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                     msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - binary (skipped");
                 continue;
             }
 
             // Skip Index Organized Tables (IOT)
             if (sysTab->isIot()) {
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                     msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - IOT (skipped)");
                 continue;
             }
 
             // Skip temporary tables
             if (sysObj->isTemporary()) {
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                     msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - temporary table (skipped)");
                 continue;
             }
 
             // Skip nested tables
             if (sysTab->isNested()) {
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                     msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - nested table (skipped)");
                 continue;
             }
@@ -2563,14 +672,14 @@ namespace OpenLogReplicator {
             if (sysTab->isPartitioned())
                 compressed = false;
             else if (sysTab->isInitial()) {
-                SysDeferredStg* sysDeferredStg = sysDeferredStgMapObj[sysObj->obj];
-                if (sysDeferredStg != nullptr)
-                    compressed = sysDeferredStg->isCompressed();
+                auto it = sysDeferredStgPack.unorderedMapKey.find(SysDeferredStgObj(sysObj->obj));
+                if (it != sysDeferredStgPack.unorderedMapKey.end())
+                    compressed = it->second->isCompressed();
             }
 
             // Skip compressed tables
             if (compressed) {
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                     msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - compressed table (skipped)");
                 continue;
             }
@@ -2591,8 +700,8 @@ namespace OpenLogReplicator {
 
             if (sysTab->isPartitioned()) {
                 SysTabPartKey sysTabPartKey(sysObj->obj, 0);
-                for (auto sysTabPartMapKeyIt = sysTabPartMapKey.upper_bound(sysTabPartKey);
-                     sysTabPartMapKeyIt != sysTabPartMapKey.end() && sysTabPartMapKeyIt->first.bo == sysObj->obj; ++sysTabPartMapKeyIt) {
+                for (auto sysTabPartMapKeyIt = sysTabPartPack.mapKey.upper_bound(sysTabPartKey);
+                     sysTabPartMapKeyIt != sysTabPartPack.mapKey.end() && sysTabPartMapKeyIt->first.bo == sysObj->obj; ++sysTabPartMapKeyIt) {
 
                     const SysTabPart* sysTabPart = sysTabPartMapKeyIt->second;
                     tableTmp->addTablePartition(sysTabPart->obj, sysTabPart->dataObj);
@@ -2600,12 +709,12 @@ namespace OpenLogReplicator {
                 }
 
                 SysTabComPartKey sysTabComPartKey(sysObj->obj, 0);
-                for (auto sysTabComPartMapKeyIt = sysTabComPartMapKey.upper_bound(sysTabComPartKey);
-                     sysTabComPartMapKeyIt != sysTabComPartMapKey.end() && sysTabComPartMapKeyIt->first.bo == sysObj->obj; ++sysTabComPartMapKeyIt) {
+                for (auto sysTabComPartMapKeyIt = sysTabComPartPack.mapKey.upper_bound(sysTabComPartKey);
+                     sysTabComPartMapKeyIt != sysTabComPartPack.mapKey.end() && sysTabComPartMapKeyIt->first.bo == sysObj->obj; ++sysTabComPartMapKeyIt) {
 
                     SysTabSubPartKey sysTabSubPartKeyFirst(sysTabComPartMapKeyIt->second->obj, 0);
-                    for (auto sysTabSubPartMapKeyIt = sysTabSubPartMapKey.upper_bound(sysTabSubPartKeyFirst);
-                         sysTabSubPartMapKeyIt != sysTabSubPartMapKey.end() && sysTabSubPartMapKeyIt->first.pObj == sysTabComPartMapKeyIt->second->obj;
+                    for (auto sysTabSubPartMapKeyIt = sysTabSubPartPack.mapKey.upper_bound(sysTabSubPartKeyFirst);
+                         sysTabSubPartMapKeyIt != sysTabSubPartPack.mapKey.end() && sysTabSubPartMapKeyIt->first.pObj == sysTabComPartMapKeyIt->second->obj;
                          ++sysTabSubPartMapKeyIt) {
 
                         const SysTabSubPart* sysTabSubPart = sysTabSubPartMapKeyIt->second;
@@ -2615,12 +724,12 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::SUPPLEMENTAL_LOG) && (options & DbTable::OPTIONS::SYSTEM_TABLE) == 0 &&
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::SUPPLEMENTAL_LOG) && !DbTable::isSystemTable(options) &&
                 !suppLogDbAll && !sysUser->isSuppLogAll()) {
 
                 SysCDefKey sysCDefKeyFirst(sysObj->obj, 0);
-                for (auto sysCDefMapKeyIt = sysCDefMapKey.upper_bound(sysCDefKeyFirst);
-                     sysCDefMapKeyIt != sysCDefMapKey.end() && sysCDefMapKeyIt->first.obj == sysObj->obj;
+                for (auto sysCDefMapKeyIt = sysCDefPack.mapKey.upper_bound(sysCDefKeyFirst);
+                     sysCDefMapKeyIt != sysCDefPack.mapKey.end() && sysCDefMapKeyIt->first.obj == sysObj->obj;
                      ++sysCDefMapKeyIt) {
                     const SysCDef* sysCDef = sysCDefMapKeyIt->second;
                     if (sysCDef->isSupplementalLogPK())
@@ -2632,7 +741,7 @@ namespace OpenLogReplicator {
 
             typeRowId rowId;
             SysColSeg sysColSegFirst(sysObj->obj, 0, rowId);
-            for (auto sysColMapSegIt = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt != sysColMapSeg.end() &&
+            for (auto sysColMapSegIt = sysColPack.mapKey.upper_bound(sysColSegFirst); sysColMapSegIt != sysColPack.mapKey.end() &&
                                                                                  sysColMapSegIt->first.obj == sysObj->obj; ++sysColMapSegIt) {
                 SysCol* sysCol = sysColMapSegIt->second;
                 if (sysCol->segCol == 0)
@@ -2644,8 +753,8 @@ namespace OpenLogReplicator {
                 typeCol guardSeg = -1;
 
                 SysEColKey sysEColKey(sysObj->obj, sysCol->intCol);
-                auto sysEColIt = sysEColMapKey.find(sysEColKey);
-                if (sysEColIt != sysEColMapKey.end())
+                auto sysEColIt = sysEColPack.unorderedMapKey.find(sysEColKey);
+                if (sysEColIt != sysEColPack.unorderedMapKey.end())
                     guardSeg = sysEColIt->second->guardId;
 
                 if (sysCol->charsetForm == 1) {
@@ -2671,15 +780,15 @@ namespace OpenLogReplicator {
                     tableTmp->tagCols.resize(tagList.size());
 
                 SysCColKey sysCColKeyFirst(sysObj->obj, 0, sysCol->intCol);
-                for (auto sysCColMapKeyIt = sysCColMapKey.upper_bound(sysCColKeyFirst);
-                     sysCColMapKeyIt != sysCColMapKey.end() && sysCColMapKeyIt->first.obj == sysObj->obj && sysCColMapKeyIt->first.intCol == sysCol->intCol;
+                for (auto sysCColMapKeyIt = sysCColPack.mapKey.upper_bound(sysCColKeyFirst);
+                     sysCColMapKeyIt != sysCColPack.mapKey.end() && sysCColMapKeyIt->first.obj == sysObj->obj && sysCColMapKeyIt->first.intCol == sysCol->intCol;
                      ++sysCColMapKeyIt) {
                     SysCCol* sysCCol = sysCColMapKeyIt->second;
 
                     // Count the number of PKs the column is part of
-                    auto sysCDefMapConIt = sysCDefMapCon.find(sysCCol->con);
-                    if (sysCDefMapConIt == sysCDefMapCon.end()) {
-                        ctx->warning(70005, "data in SYS.CDEF$ missing for CON#: " + std::to_string(sysCCol->con));
+                    auto sysCDefMapConIt = sysCDefPack.unorderedMapKey.find(SysCDefCon(sysCCol->con));
+                    if (sysCDefMapConIt == sysCDefPack.unorderedMapKey.end()) {
+                        ctx->warning(70005, "data in " + SysCDef::tableName() + " missing for CON#: " + std::to_string(sysCCol->con));
                         continue;
                     }
                     const SysCDef* sysCDef = sysCDefMapConIt->second;
@@ -2742,7 +851,7 @@ namespace OpenLogReplicator {
                         break;
                 }
 
-                if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                     msgs.push_back("- col: " + std::to_string(sysCol->segCol) + ": " + sysCol->name + " (pk: " + std::to_string(numPk) + ", S: " +
                                    std::to_string(numSup) + ", G: " + std::to_string(guardSeg) + ", T:" + std::to_string(tagCol) + ")");
 
@@ -2752,7 +861,7 @@ namespace OpenLogReplicator {
                 if (sysCol->isSystemGenerated()) {
                     //typeRowId rid2(0, 0, 0);
                     //SysColSeg sysColSegFirst2(sysObj->obj - 1, 0, rid2);
-                    for (auto sysColMapSegIt2 = sysColMapSeg.upper_bound(sysColSegFirst); sysColMapSegIt2 != sysColMapSeg.end() &&
+                    for (auto sysColMapSegIt2 = sysColPack.mapKey.upper_bound(sysColSegFirst); sysColMapSegIt2 != sysColPack.mapKey.end() &&
                                                                                           sysColMapSegIt2->first.obj <= sysObj->obj; ++sysColMapSegIt2) {
                         const SysCol* sysCol2 = sysColMapSegIt2->second;
                         if (sysCol->col == sysCol2->col && sysCol2->segCol == 0) {
@@ -2774,20 +883,20 @@ namespace OpenLogReplicator {
                 columnTmp = nullptr;
             }
 
-            if ((options & DbTable::OPTIONS::SYSTEM_TABLE) == 0) {
+            if (!DbTable::isSystemTable(options)) {
                 SysLobKey sysLobKeyFirst(sysObj->obj, 0);
-                for (auto sysLobMapKeyIt = sysLobMapKey.upper_bound(sysLobKeyFirst);
-                     sysLobMapKeyIt != sysLobMapKey.end() && sysLobMapKeyIt->first.obj == sysObj->obj; ++sysLobMapKeyIt) {
+                for (auto sysLobMapKeyIt = sysLobPack.mapKey.upper_bound(sysLobKeyFirst);
+                     sysLobMapKeyIt != sysLobPack.mapKey.end() && sysLobMapKeyIt->first.obj == sysObj->obj; ++sysLobMapKeyIt) {
 
                     SysLob* sysLob = sysLobMapKeyIt->second;
 
-                    auto sysObjMapObjIt = sysObjMapObj.find(sysLob->lObj);
-                    if (unlikely(sysObjMapObjIt == sysObjMapObj.end()))
+                    auto sysObjMapObjIt = sysObjPack.unorderedMapKey.find(SysObjObj(sysLob->lObj));
+                    if (unlikely(sysObjMapObjIt == sysObjPack.unorderedMapKey.end()))
                         throw DataException(50027, "table " + std::string(sysUser->name) + "." + sysObj->name + " couldn't find obj for lob " +
                                                    std::to_string(sysLob->lObj));
                     typeObj lobDataObj = sysObjMapObjIt->second->dataObj;
 
-                    if (ctx->logLevel >= Ctx::LOG::DEBUG)
+                    if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                         msgs.push_back("- lob: " + std::to_string(sysLob->col) + ":" + std::to_string(sysLob->intCol) + ":" +
                                        std::to_string(lobDataObj) + ":" + std::to_string(sysLob->lObj));
 
@@ -2801,8 +910,8 @@ namespace OpenLogReplicator {
                     std::string lobIndexName = str.str();
 
                     SysObjNameKey sysObjNameKeyFirst(sysObj->owner, lobIndexName.c_str(), 0, 0);
-                    for (auto sysObjMapNameIt = sysObjMapName.upper_bound(sysObjNameKeyFirst);
-                         sysObjMapNameIt != sysObjMapName.end() &&
+                    for (auto sysObjMapNameIt = sysObjPack.mapKey.upper_bound(sysObjNameKeyFirst);
+                         sysObjMapNameIt != sysObjPack.mapKey.end() &&
                          sysObjMapNameIt->first.name == lobIndexName &&
                          sysObjMapNameIt->first.owner == sysObj->owner; ++sysObjMapNameIt) {
 
@@ -2810,7 +919,7 @@ namespace OpenLogReplicator {
                             continue;
 
                         lobTmp->addIndex(sysObjMapNameIt->first.dataObj);
-                        if ((ctx->trace & Ctx::TRACE::LOB) != 0)
+                        if ((ctx->isTraceSet(Ctx::TRACE::LOB)) != 0)
                             lobIndexesList << " " << std::dec << sysObjMapNameIt->first.dataObj << "/" << sysObjMapNameIt->second->obj;
                         ++lobIndexes;
                     }
@@ -2824,13 +933,13 @@ namespace OpenLogReplicator {
                     if (sysTab->isPartitioned()) {
                         // Partitions
                         SysLobFragKey sysLobFragKey(sysLob->lObj, 0);
-                        for (auto sysLobFragMapKeyIt = sysLobFragMapKey.upper_bound(sysLobFragKey);
-                             sysLobFragMapKeyIt != sysLobFragMapKey.end() &&
+                        for (auto sysLobFragMapKeyIt = sysLobFragPack.mapKey.upper_bound(sysLobFragKey);
+                             sysLobFragMapKeyIt != sysLobFragPack.mapKey.end() &&
                              sysLobFragMapKeyIt->first.parentObj == sysLob->lObj; ++sysLobFragMapKeyIt) {
 
                             SysLobFrag* sysLobFrag = sysLobFragMapKeyIt->second;
-                            auto sysObjMapObjIt2 = sysObjMapObj.find(sysLobFrag->fragObj);
-                            if (unlikely(sysObjMapObjIt2 == sysObjMapObj.end()))
+                            auto sysObjMapObjIt2 = sysObjPack.unorderedMapKey.find(SysObjObj(sysLobFrag->fragObj));
+                            if (unlikely(sysObjMapObjIt2 == sysObjPack.unorderedMapKey.end()))
                                 throw DataException(50028, "table " + std::string(sysUser->name) + "." + sysObj->name +
                                                            " couldn't find obj for lob frag " + std::to_string(sysLobFrag->fragObj));
                             typeObj lobFragDataObj = sysObjMapObjIt2->second->dataObj;
@@ -2841,20 +950,20 @@ namespace OpenLogReplicator {
 
                         // Subpartitions
                         SysLobCompPartKey sysLobCompPartKey(sysLob->lObj, 0);
-                        for (auto sysLobCompPartMapKeyIt = sysLobCompPartMapKey.upper_bound(sysLobCompPartKey);
-                             sysLobCompPartMapKeyIt != sysLobCompPartMapKey.end() &&
+                        for (auto sysLobCompPartMapKeyIt = sysLobCompPartPack.mapKey.upper_bound(sysLobCompPartKey);
+                             sysLobCompPartMapKeyIt != sysLobCompPartPack.mapKey.end() &&
                              sysLobCompPartMapKeyIt->first.lObj == sysLob->lObj; ++sysLobCompPartMapKeyIt) {
 
                             const SysLobCompPart* sysLobCompPart = sysLobCompPartMapKeyIt->second;
 
                             SysLobFragKey sysLobFragKey2(sysLobCompPart->partObj, 0);
-                            for (auto sysLobFragMapKeyIt = sysLobFragMapKey.upper_bound(sysLobFragKey2);
-                                 sysLobFragMapKeyIt != sysLobFragMapKey.end() &&
+                            for (auto sysLobFragMapKeyIt = sysLobFragPack.mapKey.upper_bound(sysLobFragKey2);
+                                 sysLobFragMapKeyIt != sysLobFragPack.mapKey.end() &&
                                  sysLobFragMapKeyIt->first.parentObj == sysLobCompPart->partObj; ++sysLobFragMapKeyIt) {
 
                                 SysLobFrag* sysLobFrag = sysLobFragMapKeyIt->second;
-                                auto sysObjMapObjIt2 = sysObjMapObj.find(sysLobFrag->fragObj);
-                                if (unlikely(sysObjMapObjIt2 == sysObjMapObj.end()))
+                                auto sysObjMapObjIt2 = sysObjPack.unorderedMapKey.find(SysObjObj(sysLobFrag->fragObj));
+                                if (unlikely(sysObjMapObjIt2 == sysObjPack.unorderedMapKey.end()))
                                     throw DataException(50028, "table " + std::string(sysUser->name) + "." + sysObj->name +
                                                                " couldn't find obj for lob frag " + std::to_string(sysLobFrag->fragObj));
                                 typeObj lobFragDataObj = sysObjMapObjIt2->second->dataObj;
@@ -2867,7 +976,7 @@ namespace OpenLogReplicator {
 
                     lobTmp->addPartition(lobTmp->dataObj, getLobBlockSize(sysLob->ts));
                     tableTmp->addLob(lobTmp);
-                    if ((ctx->trace & Ctx::TRACE::LOB) != 0)
+                    if ((ctx->isTraceSet(Ctx::TRACE::LOB)) != 0)
                         lobList << " " << std::dec << lobTmp->obj << "/" << lobTmp->dataObj << "/" << std::dec << lobTmp->lObj;
                     lobTmp = nullptr;
                 }
@@ -2881,7 +990,7 @@ namespace OpenLogReplicator {
                 }
 
                 SysObjNameKey sysObjNameKeyName(sysObj->owner, sysLobConstraintName, 0, 0);
-                for (auto sysObjMapNameIt = sysObjMapName.upper_bound(sysObjNameKeyName); sysObjMapNameIt != sysObjMapName.end();
+                for (auto sysObjMapNameIt = sysObjPack.mapKey.upper_bound(sysObjNameKeyName); sysObjMapNameIt != sysObjPack.mapKey.end();
                      ++sysObjMapNameIt) {
                     SysObj* sysObjLob = sysObjMapNameIt->second;
                     const char* colStr = sysObjLob->name.c_str();
@@ -2940,7 +1049,7 @@ namespace OpenLogReplicator {
             if (sysTab->isRowMovement())
                 ss << ", row movement enabled";
 
-            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::SUPPLEMENTAL_LOG) && (options & DbTable::OPTIONS::SYSTEM_TABLE) == 0) {
+            if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::SUPPLEMENTAL_LOG) && !DbTable::isSystemTable(options)) {
                 // Use a default primary key
                 if (keyList.empty()) {
                     if (tableTmp->totalPk == 0)
@@ -2966,9 +1075,9 @@ namespace OpenLogReplicator {
     }
 
     uint16_t Schema::getLobBlockSize(typeTs ts) const {
-        auto sysTsMapTsIt = sysTsMapTs.find(ts);
-        if (sysTsMapTsIt != sysTsMapTs.end()) {
-            typeDba pageSize = sysTsMapTsIt->second->blockSize;
+        auto it = sysTsPack.unorderedMapKey.find(SysTsTs(ts));
+        if (it != sysTsPack.unorderedMapKey.end()) {
+            typeDba pageSize = it->second->blockSize;
             if (pageSize == 8192)
                 return 8132;
             else if (pageSize == 16384)

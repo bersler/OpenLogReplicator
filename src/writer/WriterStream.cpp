@@ -136,7 +136,7 @@ namespace OpenLogReplicator {
         }
         metadata->setStatusStart(this);
 
-        contextSet(CONTEXT_SLEEP);
+        contextSet(CONTEXT::SLEEP);
         metadata->waitForReplicator(this);
 
         if (metadata->status == Metadata::STATUS::REPLICATE) {

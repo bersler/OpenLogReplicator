@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <vector>
 
+#include "../common/DbTable.h"
 #include "../common/types.h"
 
 #ifndef SCHEMA_ELEMENT_H_
@@ -27,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SchemaElement final {
     public:
-        enum TAG_TYPE {
+        enum class TAG_TYPE {
             NONE, ALL, PK, LIST
         };
 
@@ -36,12 +37,12 @@ namespace OpenLogReplicator {
         std::string owner;
         std::string table;
         std::string tag;
-        typeOptions options;
+        DbTable::OPTIONS options;
         TAG_TYPE tagType;
         std::vector<std::string> keyList;
         std::vector<std::string> tagList;
 
-        SchemaElement(const char* newOwner, const char* newTable, typeOptions newOptions);
+        SchemaElement(const char* newOwner, const char* newTable, DbTable::OPTIONS newOptions);
         void parseKey(std::string value, const std::string& separator);
         void parseTag(std::string value, const std::string& separator);
     };

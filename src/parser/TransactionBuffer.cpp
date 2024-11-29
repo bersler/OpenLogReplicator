@@ -69,11 +69,11 @@ namespace OpenLogReplicator {
 
             transaction = new Transaction(xid, &orphanedLobs, xmlCtx);
             {
-                ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::TRANSACTION_FIND);
+                ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_FIND);
                 std::unique_lock<std::mutex> lck(mtx);
                 xidTransactionMap.insert_or_assign(xidMap, transaction);
             }
-            ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
+            ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
             ctx->swappedMemoryInit(ctx->parserThread, xid);
 
             if (dumpXidList.find(xid) != dumpXidList.end())
@@ -86,11 +86,11 @@ namespace OpenLogReplicator {
     void TransactionBuffer::dropTransaction(typeXid xid, typeConId conId) {
         typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(conId) << 32);
         {
-            ctx->parserThread->contextSet(Thread::CONTEXT_MUTEX, Thread::TRANSACTION_DROP);
+            ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_DROP);
             std::unique_lock<std::mutex> lck(mtx);
             xidTransactionMap.erase(xidMap);
         }
-        ctx->parserThread->contextSet(Thread::CONTEXT_CPU);
+        ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
     }
 
     void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord) {
@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
 
             const auto lastTc = transaction->lastTc;
             auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
-            const auto last501 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
+            const auto last501 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
 
             uint32_t mergeSize = last501->size + redoLogRecord->size;
             transaction->mergeBuffer = new uint8_t[mergeSize];
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
 
             const auto lastTc = transaction->lastTc;
             const auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
-            auto last501 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
+            auto last501 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
 
             uint32_t mergeSize = last501->size + redoLogRecord1->size;
             transaction->mergeBuffer = new uint8_t[mergeSize];
@@ -294,7 +294,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
-        if (unlikely(ctx->trace & Ctx::TRACE::LOB))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB)))
             ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
                                            " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
 

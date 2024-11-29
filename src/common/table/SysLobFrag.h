@@ -24,14 +24,81 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_LOB_FRAG_H_
 
 namespace OpenLogReplicator {
+    class SysLobFrag final {
+    public:
+        typeRowId rowId;
+        typeObj fragObj;
+        typeObj parentObj;
+        typeTs ts;
+
+        SysLobFrag(typeRowId newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
+                rowId(newRowId),
+                fragObj(newFragObj),
+                parentObj(newParentObj),
+                ts(newTs) {
+        }
+
+        explicit SysLobFrag(typeRowId newRowId) :
+                rowId(newRowId),
+                fragObj(0),
+                parentObj(0),
+                ts(0) {
+        }
+
+        bool operator!=(const SysLobFrag& other) const {
+            return (other.rowId != rowId) || (other.fragObj != fragObj) || (other.parentObj != parentObj) || (other.ts != ts);
+        }
+
+        static std::string tableName() {
+            return "SYS.LOBFRAG$";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", FRAGOBJ#: " + std::to_string(fragObj) + ", PARENTOBJ#: " + std::to_string(parentObj) + ", TS#: " +
+                   std::to_string(ts);
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return true;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return true;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+
+        typeObj getDependentTableLob() const {
+            return parentObj;
+        }
+
+        typeObj getDependentTableLobFrag() const {
+            return parentObj;
+        }
+    };
+
     class SysLobFragKey final {
     public:
+        typeObj parentObj;
+        typeObj fragObj;
+
         SysLobFragKey(typeObj newParentObj, typeObj newFragObj) :
                 parentObj(newParentObj),
                 fragObj(newFragObj) {
         }
 
-        bool operator<(const SysLobFragKey& other) const {
+        explicit SysLobFragKey(const SysLobFrag* sysLobFrag) :
+                parentObj(sysLobFrag->parentObj),
+                fragObj(sysLobFrag->fragObj) {
+        }
+
+        bool operator<(const SysLobFragKey other) const {
             if (parentObj < other.parentObj)
                 return true;
             if (other.parentObj < parentObj)
@@ -40,28 +107,6 @@ namespace OpenLogReplicator {
                 return true;
             return false;
         }
-
-        typeObj parentObj;
-        typeObj fragObj;
-    };
-
-    class SysLobFrag final {
-    public:
-        SysLobFrag(typeRowId newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
-                rowId(newRowId),
-                fragObj(newFragObj),
-                parentObj(newParentObj),
-                ts(newTs) {
-        }
-
-        bool operator!=(const SysLobFrag& other) const {
-            return (other.rowId != rowId) || (other.fragObj != fragObj) || (other.parentObj != parentObj) || (other.ts != ts);
-        }
-
-        typeRowId rowId;
-        typeObj fragObj;
-        typeObj parentObj;
-        typeTs ts;
     };
 }
 

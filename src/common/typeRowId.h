@@ -200,6 +200,35 @@ namespace OpenLogReplicator {
             return os;
         }
     };
+
+    class TabRowId {
+    public:
+        typeRowId rowId;
+
+        explicit TabRowId(typeRowId newRowId) :
+            rowId(newRowId) {
+        };
+    };
+
+    class TabRowIdKey {
+    };
+
+    class TabRowIdUnorderedKey {
+        bool operator<(const TabRowIdUnorderedKey& other);
+    };
+
+    class TabRowIdKeyDefault final : public TabRowIdUnorderedKey {
+    public:
+        char x;
+        bool operator<(const TabRowIdKeyDefault other) const {
+            return x < other.x;
+        }
+    };
+
+    class TabRowIdUnorderedKeyDefault final : public TabRowIdUnorderedKey {
+    public:
+        char x;
+    };
 }
 
 namespace std {
@@ -209,6 +238,13 @@ namespace std {
             return hash<typeDataObj>()(other.dataObj) ^
                    hash<typeDba>()(other.dba) ^
                    hash<typeSlot>()(other.slot);
+        }
+    };
+
+    template<>
+    struct hash<OpenLogReplicator::TabRowIdUnorderedKeyDefault> {
+        size_t operator()(const OpenLogReplicator::TabRowIdUnorderedKeyDefault key) const {
+            return hash<char>()(key.x);
         }
     };
 }

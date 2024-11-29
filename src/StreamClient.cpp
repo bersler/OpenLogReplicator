@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
     //    replication from. If it is running, it would expect the client to provide c:<scn>,<idx> - position of last confirmed message.
     //    Possible values are:
     //      now - start from NOW
-    //      now - start from NOW but start parsing redo log from sequence <seq>
+    //      now:<,seq> - start from NOW but start parsing redo log from sequence <seq>
     //      scn:<scn> - start from given SCN
     //      scn:<scn>,<seq> - start from given SCN but start parsing redo log from sequence <seq>
     //      tm_rel:<time> - start from given time (relative to current time)

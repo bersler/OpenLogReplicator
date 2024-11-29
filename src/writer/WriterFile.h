@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class WriterFile final : public Writer {
     protected:
-        enum MODE {
+        enum class MODE {
             STDOUT, NO_ROTATE, NUM, TIMESTAMP, SEQUENCE
         };
 

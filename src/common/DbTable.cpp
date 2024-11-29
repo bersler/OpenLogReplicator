@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "expression/Token.h"
 
 namespace OpenLogReplicator {
-    DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, const std::string& newOwner,
+    DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, DbTable::OPTIONS newOptions, const std::string& newOwner,
                      const std::string& newName) :
             obj(newObj),
             dataObj(newDataObj),
@@ -152,7 +152,7 @@ namespace OpenLogReplicator {
         if (conditionValue != nullptr)
             result = conditionValue->evaluateToBool(op, attributes);
 
-        if (unlikely(ctx->trace & Ctx::TRACE::CONDITION))
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::CONDITION)))
             ctx->logTrace(Ctx::TRACE::CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + condition + ", result: " +
                                                  std::to_string(result));
         return result;

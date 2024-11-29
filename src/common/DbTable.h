@@ -36,10 +36,10 @@ namespace OpenLogReplicator {
 
     class DbTable final {
     public:
-        enum OPTIONS {
-            DEBUG_TABLE = 1 << 0, SYSTEM_TABLE = 1 << 1, SCHEMA_TABLE = 1 << 2
+        enum class OPTIONS {
+            DEFAULT = 0, DEBUG_TABLE = 1 << 0, SYSTEM_TABLE = 1 << 1, SCHEMA_TABLE = 1 << 2
         };
-        enum TABLE {
+        enum class TABLE {
             NONE, SYS_CCOL, SYS_CDEF, SYS_COL, SYS_DEFERRED_STG, SYS_ECOL, SYS_LOB, SYS_LOB_COMP_PART, SYS_LOB_FRAG, SYS_OBJ, SYS_TAB, SYS_TABPART,
             SYS_TABCOMPART, SYS_TABSUBPART, SYS_TS, SYS_USER, XDB_TTSET, XDB_XNM, XDB_XPT, XDB_XQN
         };
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         typeCol cluCols;
         typeCol totalPk;
         typeCol totalLobs;
-        typeOptions options;
+        OPTIONS options;
         typeCol maxSegCol;
         typeCol guardSegNo;
         std::string owner;
@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
         TABLE systemTable;
         bool sys;
 
-        DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, const std::string& newOwner,
+        DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, OPTIONS newOptions, const std::string& newOwner,
                 const std::string& newName);
         virtual ~DbTable();
 
@@ -81,6 +81,18 @@ namespace OpenLogReplicator {
         void addTablePartition(typeObj newObj, typeDataObj newDataObj);
         bool matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes);
         void setCondition(const std::string& newCondition);
+
+        static bool isDebugTable(OPTIONS options) {
+            return (static_cast<uint>(options) & static_cast<uint>(OPTIONS::DEBUG_TABLE)) != 0;
+        }
+
+        static bool isSchemaTable(OPTIONS options) {
+            return (static_cast<uint>(options) & static_cast<uint>(OPTIONS::SCHEMA_TABLE)) != 0;
+        }
+
+        static bool isSystemTable(OPTIONS options) {
+            return (static_cast<uint>(options) & static_cast<uint>(OPTIONS::SYSTEM_TABLE)) != 0;
+        }
 
         friend std::ostream& operator<<(std::ostream& os, const DbTable& table);
     };

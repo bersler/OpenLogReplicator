@@ -26,15 +26,16 @@ namespace OpenLogReplicator {
     class Ctx;
 
     class Metrics {
-    protected:
-        uint64_t tagNames;
-
     public:
-        enum TAG_NAMES {
+        enum class TAG_NAMES {
             NONE, FILTER = 1 << 0, SYS = 1 << 2
         };
 
-        Metrics(uint newTagNames);
+    protected:
+        TAG_NAMES tagNames;
+
+    public:
+        Metrics(TAG_NAMES newTagNames);
         virtual ~Metrics();
 
         virtual void initialize(const Ctx* ctx) = 0;

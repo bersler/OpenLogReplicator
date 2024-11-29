@@ -28,8 +28,16 @@ namespace OpenLogReplicator {
     class SysUser final {
     public:
         static constexpr uint NAME_LENGTH{128};
-        static constexpr uint64_t SPARE1_SUPP_LOG_PRIMARY{1};
-        static constexpr uint64_t SPARE1_SUPP_LOG_ALL{8};
+
+        enum class SPARE1 {
+            SUPP_LOG_PRIMARY = 1UL << 0, SUPP_LOG_ALL = 1UL << 3
+        };
+
+        typeRowId rowId;
+        typeUser user;
+        std::string name;
+        typeIntX spare1;            // NULL
+        bool single;
 
         SysUser(typeRowId newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),
@@ -39,23 +47,83 @@ namespace OpenLogReplicator {
                 single(newSingle) {
         }
 
+        explicit SysUser(typeRowId newRowId) :
+                rowId(newRowId),
+                user(0),
+                name(""),
+                spare1(0, 0),
+                single(false) {
+        }
+
         bool operator!=(const SysUser& other) const {
             return (other.rowId != rowId) || (other.user != user) || (other.name != name) || (other.spare1 != spare1);
         }
 
-        [[nodiscard]] bool isSuppLogPrimary() {
-            return spare1.isSet64(SPARE1_SUPP_LOG_PRIMARY);
+        [[nodiscard]] bool isSpare1(SPARE1 val) const {
+            return spare1.isSet64(static_cast<uint>(val));
         }
 
-        [[nodiscard]] bool isSuppLogAll() {
-            return spare1.isSet64(SPARE1_SUPP_LOG_ALL);
+        [[nodiscard]] bool isSuppLogPrimary() const {
+            return isSpare1(SPARE1::SUPP_LOG_PRIMARY);
         }
 
-        typeRowId rowId;
+        [[nodiscard]] bool isSuppLogAll() const {
+            return isSpare1(SPARE1::SUPP_LOG_ALL);
+        }
+
+        static std::string tableName() {
+            return "SYS.USER$";
+        }
+
+        std::string toString() const {
+            return "ROWID: " + rowId.toString() + ", USER#: " + std::to_string(user) + ", NAME: '" + name + "', SPARE1: " + spare1.toString();
+        }
+
+        static constexpr bool dependentTable() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLob() {
+            return false;
+        }
+
+        static constexpr bool dependentTableLobFrag() {
+            return false;
+        }
+
+        static constexpr bool dependentTablePart() {
+            return false;
+        }
+    };
+
+    class SysUserUser final {
+    public:
         typeUser user;
-        std::string name;
-        typeIntX spare1;            // NULL
-        bool single;
+
+        explicit SysUserUser(typeUser newUser) :
+                user(newUser) {
+        }
+
+        explicit SysUserUser(const SysUser* sysUser) :
+                user(sysUser->user) {
+        }
+
+        bool operator!=(const SysUserUser other) const {
+            return (other.user != user);
+        }
+
+        bool operator==(const SysUserUser other) const {
+            return (other.user == user);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<OpenLogReplicator::SysUserUser> {
+        size_t operator()(const OpenLogReplicator::SysUserUser sysUserUser) const {
+            return hash<typeUser>()(sysUserUser.user);
+        }
     };
 }
 

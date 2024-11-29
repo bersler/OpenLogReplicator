@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../Ctx.h"
 
 namespace OpenLogReplicator {
-    MetricsPrometheus::MetricsPrometheus(uint64_t newTagNames, const char* newBind) :
+    MetricsPrometheus::MetricsPrometheus(TAG_NAMES newTagNames, const char* newBind) :
             Metrics(newTagNames),
             bind(newBind),
             exposer(nullptr),

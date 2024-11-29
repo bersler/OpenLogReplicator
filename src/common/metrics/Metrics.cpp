@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Metrics.h"
 
 namespace OpenLogReplicator {
-    Metrics::Metrics(uint newTagNames) :
+    Metrics::Metrics(TAG_NAMES newTagNames) :
             tagNames(newTagNames) {
     }
 
@@ -31,10 +31,10 @@ namespace OpenLogReplicator {
     }
 
     bool Metrics::isTagNamesFilter() {
-        return (tagNames & TAG_NAMES::FILTER) != 0;
+        return (static_cast<uint>(tagNames) & static_cast<uint>(TAG_NAMES::FILTER)) != 0;
     }
 
     bool Metrics::isTagNamesSys() {
-        return (tagNames & TAG_NAMES::SYS) != 0;
+        return (static_cast<uint>(tagNames) & static_cast<uint>(TAG_NAMES::SYS)) != 0;
     }
 }
