@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
         pb::Schema* schemaPB;
 
         inline void columnNull(const DbTable* table, typeCol col, bool after) {
-            if (table != nullptr && unknownType == UNKNOWN_TYPE::HIDE) {
+            if (table != nullptr && format.unknownType == Format::UNKNOWN_TYPE::HIDE) {
                 DbColumn* column = table->columns[col];
                 if (column->storedAsLob)
                     return;
@@ -78,12 +78,12 @@ namespace OpenLogReplicator {
         }
 
         inline void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
-            if (isMessageFormatAddSequences())
+            if (format.isMessageFormatAddSequences())
                 payloadPB->set_num(num);
 
-            if (ridFormat == RID_FORMAT::SKIP)
+            if (format.ridFormat == Format::RID_FORMAT::SKIP)
                 return;
-            else if (ridFormat == RID_FORMAT::TEXT) {
+            else if (format.ridFormat == Format::RID_FORMAT::TEXT) {
                 typeRowId rowId(dataObj, bdba, slot);
                 char str[19];
                 rowId.toString(str);
@@ -93,8 +93,8 @@ namespace OpenLogReplicator {
 
         inline void appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
             redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
-            if (first || isScnTypeAllPayloads()) {
-                if (scnFormat == SCN_FORMAT::TEXT_HEX) {
+            if (first || format.isScnTypeAllPayloads()) {
+                if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
                     char buf[17];
                     numToString(scn, buf, 16);
                     redoResponsePB->set_scns(buf);
@@ -103,46 +103,46 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (first || timestampAll == TIMESTAMP_ALL::ALL_PAYLOADS) {
+            if (first || format.timestampAll == Format::TIMESTAMP_ALL::ALL_PAYLOADS) {
                 std::string str;
-                switch (timestampFormat) {
-                    case TIMESTAMP_FORMAT::UNIX_NANO:
+                switch (format.timestampFormat) {
+                    case Format::TIMESTAMP_FORMAT::UNIX_NANO:
                         redoResponsePB->set_tm(timestamp * 1000000000L);
                         break;
 
-                    case TIMESTAMP_FORMAT::UNIX_MICRO:
+                    case Format::TIMESTAMP_FORMAT::UNIX_MICRO:
                         redoResponsePB->set_tm(timestamp * 1000000L);
                         break;
 
-                    case TIMESTAMP_FORMAT::UNIX_MILLI:
+                    case Format::TIMESTAMP_FORMAT::UNIX_MILLI:
                         redoResponsePB->set_tm(timestamp * 1000L);
                         break;
 
-                    case TIMESTAMP_FORMAT::UNIX:
+                    case Format::TIMESTAMP_FORMAT::UNIX:
                         redoResponsePB->set_tm(timestamp);
                         break;
 
-                    case TIMESTAMP_FORMAT::UNIX_NANO_STRING:
+                    case Format::TIMESTAMP_FORMAT::UNIX_NANO_STRING:
                         str = std::to_string(timestamp * 1000000000L);
                         redoResponsePB->set_tms(str);
                         break;
 
-                    case TIMESTAMP_FORMAT::UNIX_MICRO_STRING:
+                    case Format::TIMESTAMP_FORMAT::UNIX_MICRO_STRING:
                         str = std::to_string(timestamp * 1000000L);
                         redoResponsePB->set_tms(str);
                         break;
 
-                    case TIMESTAMP_FORMAT::UNIX_MILLI_STRING:
+                    case Format::TIMESTAMP_FORMAT::UNIX_MILLI_STRING:
                         str = std::to_string(timestamp * 1000L);
                         redoResponsePB->set_tms(str);
                         break;
 
-                    case TIMESTAMP_FORMAT::UNIX_STRING:
+                    case Format::TIMESTAMP_FORMAT::UNIX_STRING:
                         str = std::to_string(timestamp);
                         redoResponsePB->set_tms(str);
                         break;
 
-                    case TIMESTAMP_FORMAT::ISO8601:
+                    case Format::TIMESTAMP_FORMAT::ISO8601:
                         char buffer[22];
                         str.assign(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
                         redoResponsePB->set_tms(str);
@@ -157,7 +157,7 @@ namespace OpenLogReplicator {
             redoResponsePB->set_c_idx(lwnIdx);
 
             if (showXid) {
-                if (xidFormat == XID_FORMAT::TEXT_HEX) {
+                if (format.xidFormat == Format::XID_FORMAT::TEXT_HEX) {
                     std::ostringstream ss;
                     ss << "0x";
                     ss << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint64_t>(lastXid.usn());
@@ -166,7 +166,7 @@ namespace OpenLogReplicator {
                     ss << '.';
                     ss << std::setfill('0') << std::setw(8) << std::hex << static_cast<uint64_t>(lastXid.sqn());
                     redoResponsePB->set_xid(ss.str());
-                } else if (xidFormat == XID_FORMAT::TEXT_DEC) {
+                } else if (format.xidFormat == Format::XID_FORMAT::TEXT_DEC) {
                     std::ostringstream ss;
                     ss << static_cast<uint64_t>(lastXid.usn());
                     ss << '.';
@@ -174,7 +174,7 @@ namespace OpenLogReplicator {
                     ss << '.';
                     ss << static_cast<uint64_t>(lastXid.sqn());
                     redoResponsePB->set_xid(ss.str());
-                } else if (xidFormat == XID_FORMAT::NUMERIC) {
+                } else if (format.xidFormat == Format::XID_FORMAT::NUMERIC) {
                     redoResponsePB->set_xidn(lastXid.getData());
                 }
             }
@@ -196,7 +196,7 @@ namespace OpenLogReplicator {
                     schemaPB->set_name(tableName);
                 }
 
-                if (isSchemaFormatObj())
+                if (format.isSchemaFormatObj())
                     schemaPB->set_obj(obj);
 
                 return;
@@ -205,11 +205,11 @@ namespace OpenLogReplicator {
             schemaPB->set_owner(table->owner);
             schemaPB->set_name(table->name);
 
-            if (isSchemaFormatObj())
+            if (format.isSchemaFormatObj())
                 schemaPB->set_obj(obj);
 
-            if (isSchemaFormatFull()) {
-                if (!isSchemaFormatRepeated()) {
+            if (format.isSchemaFormatFull()) {
+                if (!format.isSchemaFormatRepeated()) {
                     if (tables.count(table) > 0)
                         return;
                     else
@@ -317,14 +317,14 @@ namespace OpenLogReplicator {
         }
 
         inline void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
-            if (columnFormat > COLUMN_FORMAT::CHANGED && table != nullptr) {
+            if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
-                    if (values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr) {
-                        if (sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] > 0) {
+                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
+                        if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0) {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                            processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(VALUE_TYPE::AFTER)],
-                                         sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)], offset, true, compressedAfter);
+                            processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
+                                         sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], offset, true, compressedAfter);
                         } else {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
@@ -342,12 +342,12 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        if (values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr) {
-                            if (sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] > 0) {
+                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
+                            if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0) {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(VALUE_TYPE::AFTER)],
-                                             sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)], offset, true, compressedAfter);
+                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
+                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], offset, true, compressedAfter);
                             } else {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
@@ -360,14 +360,14 @@ namespace OpenLogReplicator {
         }
 
         inline void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
-            if (columnFormat > COLUMN_FORMAT::CHANGED && table != nullptr) {
+            if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
-                    if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr) {
-                        if (sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] > 0) {
+                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
+                        if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0) {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(VALUE_TYPE::BEFORE)],
-                                         sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)], offset, false, compressedBefore);
+                            processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
+                                         sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], offset, false, compressedBefore);
                         } else {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
@@ -385,12 +385,12 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr) {
-                            if (sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] > 0) {
+                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
+                            if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0) {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(VALUE_TYPE::BEFORE)],
-                                             sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)], offset, false, compressedBefore);
+                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
+                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], offset, false, compressedBefore);
                             } else {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
@@ -436,12 +436,7 @@ namespace OpenLogReplicator {
         void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
 
     public:
-        BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat,
-                        INTERVAL_DTS_FORMAT newIntervalDtsFormat, INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat,
-                        RID_FORMAT newRidFormat, XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat,
-                        TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat, SCN_TYPE newScnType,
-                        UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType,
-                        uint64_t newFlushBuffer);
+        BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
         virtual ~BuilderProtobuf() override;
 
         virtual void initialize() override;

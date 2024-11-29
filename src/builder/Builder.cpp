@@ -33,32 +33,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SystemTransaction.h"
 
 namespace OpenLogReplicator {
-    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat,
-                     INTERVAL_DTS_FORMAT newIntervalDtsFormat, INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat,
-                     XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll,
-                     CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat,
-                     COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType, uint64_t newFlushBuffer) :
+    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer) :
             ctx(newCtx),
             locales(newLocales),
             metadata(newMetadata),
             msg(nullptr),
-            dbFormat(newDbFormat),
-            attributesFormat(newAttributesFormat),
-            intervalDtsFormat(newIntervalDtsFormat),
-            intervalYtmFormat(newIntervalYtmFormat),
-            messageFormat(newMessageFormat),
-            ridFormat(newRidFormat),
-            xidFormat(newXidFormat),
-            timestampFormat(newTimestampFormat),
-            timestampTzFormat(newTimestampTzFormat),
-            timestampAll(newTimestampAll),
-            charFormat(newCharFormat),
-            scnFormat(newScnFormat),
-            scnType(newScnType),
-            unknownFormat(newUnknownFormat),
-            schemaFormat(newSchemaFormat),
-            columnFormat(newColumnFormat),
-            unknownType(newUnknownType),
+            format(std::move(newFormat)),
             unconfirmedSize(0),
             messageSize(0),
             messagePosition(0),
@@ -431,7 +411,8 @@ namespace OpenLogReplicator {
                         if (minus)
                             valueBuffer[valueSize++] = '-';
 
-                        if (intervalYtmFormat == INTERVAL_YTM_FORMAT::MONTHS || intervalYtmFormat == INTERVAL_YTM_FORMAT::MONTHS_STRING) {
+                        if (format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::MONTHS ||
+                                format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::MONTHS_STRING) {
                             uint64_t val = year * 12 + month;
                             if (val == 0) {
                                 valueBuffer[valueSize++] = '0';
@@ -444,7 +425,7 @@ namespace OpenLogReplicator {
                                     valueBuffer[valueSize++] = buffer[--len];
                             }
 
-                            if (intervalYtmFormat == INTERVAL_YTM_FORMAT::MONTHS)
+                            if (format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::MONTHS)
                                 columnNumber(column->name, 17, 0);
                             else
                                 columnString(column->name);
@@ -461,11 +442,11 @@ namespace OpenLogReplicator {
                                     valueBuffer[valueSize++] = buffer[--len];
                             }
 
-                            if (intervalYtmFormat == INTERVAL_YTM_FORMAT::STRING_YM_SPACE)
+                            if (format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::STRING_YM_SPACE)
                                 valueBuffer[valueSize++] = ' ';
-                            else if (intervalYtmFormat == INTERVAL_YTM_FORMAT::STRING_YM_COMMA)
+                            else if (format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::STRING_YM_COMMA)
                                 valueBuffer[valueSize++] = ',';
-                            else if (intervalYtmFormat == INTERVAL_YTM_FORMAT::STRING_YM_DASH)
+                            else if (format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::STRING_YM_DASH)
                                 valueBuffer[valueSize++] = '-';
 
                             if (month >= 10) {
@@ -536,8 +517,9 @@ namespace OpenLogReplicator {
                         if (minus)
                             valueBuffer[valueSize++] = '-';
 
-                        if (intervalDtsFormat == INTERVAL_DTS_FORMAT::ISO8601_SPACE || intervalDtsFormat == INTERVAL_DTS_FORMAT::ISO8601_COMMA ||
-                            intervalDtsFormat == INTERVAL_DTS_FORMAT::ISO8601_DASH) {
+                        if (format.intervalDtsFormat == Format::INTERVAL_DTS_FORMAT::ISO8601_SPACE ||
+                                format.intervalDtsFormat == Format::INTERVAL_DTS_FORMAT::ISO8601_COMMA ||
+                                format.intervalDtsFormat == Format::INTERVAL_DTS_FORMAT::ISO8601_DASH) {
 
                             val = day;
                             if (day == 0) {
@@ -551,11 +533,11 @@ namespace OpenLogReplicator {
                                     valueBuffer[valueSize++] = buffer[--len];
                             }
 
-                            if (intervalDtsFormat == INTERVAL_DTS_FORMAT::ISO8601_SPACE)
+                            if (format.intervalDtsFormat == Format::INTERVAL_DTS_FORMAT::ISO8601_SPACE)
                                 valueBuffer[valueSize++] = ' ';
-                            else if (intervalDtsFormat == INTERVAL_DTS_FORMAT::ISO8601_COMMA)
+                            else if (format.intervalDtsFormat == Format::INTERVAL_DTS_FORMAT::ISO8601_COMMA)
                                 valueBuffer[valueSize++] = ',';
-                            else if (intervalDtsFormat == INTERVAL_DTS_FORMAT::ISO8601_DASH)
+                            else if (format.intervalDtsFormat == Format::INTERVAL_DTS_FORMAT::ISO8601_DASH)
                                 valueBuffer[valueSize++] = '-';
 
                             valueBuffer[valueSize++] = Ctx::map10(hour / 10);
@@ -576,24 +558,24 @@ namespace OpenLogReplicator {
 
                             columnString(column->name);
                         } else {
-                            switch (intervalDtsFormat) {
-                                case INTERVAL_DTS_FORMAT::UNIX_NANO:
-                                case INTERVAL_DTS_FORMAT::UNIX_NANO_STRING:
+                            switch (format.intervalDtsFormat) {
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_NANO:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_NANO_STRING:
                                     val = (((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us;
                                     break;
 
-                                case INTERVAL_DTS_FORMAT::UNIX_MICRO:
-                                case INTERVAL_DTS_FORMAT::UNIX_MICRO_STRING:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MICRO:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MICRO_STRING:
                                     val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500) / 1000;
                                     break;
 
-                                case INTERVAL_DTS_FORMAT::UNIX_MILLI:
-                                case INTERVAL_DTS_FORMAT::UNIX_MILLI_STRING:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MILLI:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MILLI_STRING:
                                     val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000) / 1000000;
                                     break;
 
-                                case INTERVAL_DTS_FORMAT::UNIX:
-                                case INTERVAL_DTS_FORMAT::UNIX_STRING:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_STRING:
                                     val = ((((day * 24 + hour) * 60 + minute) * 60 + second) * 1000000000 + us + 500000000) / 1000000000;
                                     break;
 
@@ -612,18 +594,18 @@ namespace OpenLogReplicator {
                                     valueBuffer[valueSize++] = buffer[--len];
                             }
 
-                            switch (intervalDtsFormat) {
-                                case INTERVAL_DTS_FORMAT::UNIX_NANO:
-                                case INTERVAL_DTS_FORMAT::UNIX_MICRO:
-                                case INTERVAL_DTS_FORMAT::UNIX_MILLI:
-                                case INTERVAL_DTS_FORMAT::UNIX:
+                            switch (format.intervalDtsFormat) {
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_NANO:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MICRO:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MILLI:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX:
                                     columnNumber(column->name, 17, 0);
                                     break;
 
-                                case INTERVAL_DTS_FORMAT::UNIX_NANO_STRING:
-                                case INTERVAL_DTS_FORMAT::UNIX_MICRO_STRING:
-                                case INTERVAL_DTS_FORMAT::UNIX_MILLI_STRING:
-                                case INTERVAL_DTS_FORMAT::UNIX_STRING:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_NANO_STRING:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MICRO_STRING:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_MILLI_STRING:
+                                case Format::INTERVAL_DTS_FORMAT::UNIX_STRING:
                                     columnString(column->name);
                                     break;
 
@@ -656,7 +638,7 @@ namespace OpenLogReplicator {
                 break;
 
             default:
-                if (unknownType == UNKNOWN_TYPE::SHOW)
+                if (format.unknownType == Format::UNKNOWN_TYPE::SHOW)
                     columnUnknown(column->name, data, size);
         }
     }
@@ -759,7 +741,7 @@ namespace OpenLogReplicator {
         typeSize fieldSize = 0;
         typeSize colSize;
         DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if (isScnTypeCommitValue())
+        if (format.isScnTypeCommitValue())
             scn = commitScn;
 
         while (fieldNum < redoLogRecord2->rowData)
@@ -800,8 +782,8 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (colSize > 0 || columnFormat >= COLUMN_FORMAT::FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
-                    valueSet(VALUE_TYPE::AFTER, i, redoLogRecord2->data() + fieldPos + pos, colSize, 0, dump);
+                if (colSize > 0 || format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
+                    valueSet(Format::VALUE_TYPE::AFTER, i, redoLogRecord2->data() + fieldPos + pos, colSize, 0, dump);
                 pos += colSize;
             }
 
@@ -853,7 +835,7 @@ namespace OpenLogReplicator {
         typeSize fieldSize = 0;
         typeSize colSize;
         DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if (isScnTypeCommitValue())
+        if (format.isScnTypeCommitValue())
             scn = commitScn;
 
         while (fieldNum < redoLogRecord1->rowData)
@@ -894,8 +876,8 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (colSize > 0 || columnFormat >= COLUMN_FORMAT::FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
-                    valueSet(VALUE_TYPE::BEFORE, i, redoLogRecord1->data() + fieldPos + pos, colSize, 0, dump);
+                if (colSize > 0 || format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
+                    valueSet(Format::VALUE_TYPE::BEFORE, i, redoLogRecord1->data() + fieldPos + pos, colSize, 0, dump);
                 pos += colSize;
             }
 
@@ -940,7 +922,7 @@ namespace OpenLogReplicator {
 
     void Builder::processDml(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx,
                              const std::deque<const RedoLogRecord*>& redo1, const std::deque<const RedoLogRecord*>& redo2,
-                             Builder::TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump) {
+                             Format::TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump) {
         uint8_t fb;
         typeObj obj;
         typeDataObj dataObj;
@@ -954,10 +936,10 @@ namespace OpenLogReplicator {
         const RedoLogRecord* redoLogRecord2 = *it2;
 
         DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if (isScnTypeCommitValue())
+        if (format.isScnTypeCommitValue())
             scn = commitScn;
 
-        if (transactionType == Builder::TRANSACTION_TYPE::INSERT) {
+        if (transactionType == Format::TRANSACTION_TYPE::INSERT) {
             for (auto it3: redo2) {
                 if ((it3->fb & RedoLogRecord::FB_F) != 0) {
                     redoLogRecord2p = it3;
@@ -1101,7 +1083,7 @@ namespace OpenLogReplicator {
                         colSize = fieldSize;
                     }
 
-                    valueSet(VALUE_TYPE::BEFORE, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
+                    valueSet(Format::VALUE_TYPE::BEFORE, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -1178,12 +1160,12 @@ namespace OpenLogReplicator {
                     // Insert, lock, update, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 ||
                         redoLogRecord2p->opCode == 0x0B10)
-                        valueSet(VALUE_TYPE::AFTER_SUPP, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
+                        valueSet(Format::VALUE_TYPE::AFTER_SUPP, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
 
                     // Delete, update, overwrite, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 ||
                         redoLogRecord2p->opCode == 0x0B10)
-                        valueSet(VALUE_TYPE::BEFORE_SUPP, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
+                        valueSet(Format::VALUE_TYPE::BEFORE_SUPP, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
 
                     colSizes += 2;
                 }
@@ -1286,7 +1268,7 @@ namespace OpenLogReplicator {
                     else
                         colSize = fieldSize;
 
-                    valueSet(VALUE_TYPE::AFTER, colNum, redoLogRecord2p->data() + fieldPos, colSize, fb, dump);
+                    valueSet(Format::VALUE_TYPE::AFTER, colNum, redoLogRecord2p->data() + fieldPos, colSize, fb, dump);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -1367,50 +1349,55 @@ namespace OpenLogReplicator {
                 if (table != nullptr && column >= table->maxSegCol)
                     break;
 
-                if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == nullptr) {
+                if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr) {
                     bool guardPresent = false;
-                    if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr) {
+                    if (guardPos != -1 && table->columns[column]->guardSeg != -1 &&
+                            values[guardPos][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
                         typeCol column2 = table->columns[column]->guardSeg;
-                        const uint8_t* guardData = values[guardPos][static_cast<uint>(VALUE_TYPE::BEFORE)];
-                        if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < sizes[guardPos][static_cast<uint>(VALUE_TYPE::BEFORE)]) {
+                        const uint8_t* guardData = values[guardPos][static_cast<uint>(Format::VALUE_TYPE::BEFORE)];
+                        if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) <
+                                sizes[guardPos][static_cast<uint>(Format::VALUE_TYPE::BEFORE)]) {
                             guardPresent = true;
-                            if ((values[guardPos][static_cast<uint>(VALUE_TYPE::BEFORE)][column2 / 8] & (1 << (column2 & 7))) != 0) {
-                                values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
-                                sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = 0;
+                            if ((values[guardPos][static_cast<uint>(Format::VALUE_TYPE::BEFORE)][column2 / 8] & (1 << (column2 & 7))) != 0) {
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
+                                sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                             }
                         }
                     }
 
-                    if (!guardPresent && values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] != nullptr) {
-                        values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)];
-                        sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)];
+                    if (!guardPresent && values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] != nullptr) {
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)];
+                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)];
                     }
-                } else if (sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == 0 && values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] != nullptr) {
-                    values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)];
-                    sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)];
+                } else if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0 &&
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] != nullptr) {
+                    values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)];
+                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)];
                 }
 
-                if (values[column][static_cast<uint>(VALUE_TYPE::AFTER)] == nullptr) {
+                if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr) {
                     bool guardPresent = false;
-                    if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr) {
+                    if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
                         typeCol column2 = table->columns[column]->guardSeg;
-                        const uint8_t* guardData = values[guardPos][static_cast<uint>(VALUE_TYPE::AFTER)];
-                        if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < sizes[guardPos][static_cast<uint>(VALUE_TYPE::AFTER)]) {
+                        const uint8_t* guardData = values[guardPos][static_cast<uint>(Format::VALUE_TYPE::AFTER)];
+                        if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) <
+                                sizes[guardPos][static_cast<uint>(Format::VALUE_TYPE::AFTER)]) {
                             guardPresent = true;
-                            if ((values[guardPos][static_cast<uint>(VALUE_TYPE::AFTER)][column2 / 8] & (1 << (column2 & 7))) != 0) {
-                                values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
-                                sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] = 0;
+                            if ((values[guardPos][static_cast<uint>(Format::VALUE_TYPE::AFTER)][column2 / 8] & (1 << (column2 & 7))) != 0) {
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
+                                sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
                             }
                         }
                     }
 
-                    if (!guardPresent && values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] != nullptr) {
-                        values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)];
-                        sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] = sizes[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)];
+                    if (!guardPresent && values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] != nullptr) {
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
+                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
                     }
-                } else if (sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] == 0 && values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] != nullptr) {
-                    values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)];
-                    sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] = sizes[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)];
+                } else if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == 0 &&
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] != nullptr) {
+                    values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
+                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
                 }
             }
         }
@@ -1433,12 +1420,15 @@ namespace OpenLogReplicator {
                             break;
 
                         ctx->logTrace(Ctx::TRACE::DML, "DML: " + std::to_string(column + 1) + ":  B(" +
-                                                       std::to_string(values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr ? sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] : -1) +
-                                                       ") A(" + std::to_string(values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr ? sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] :
-                                                       -1) + ") BS(" + std::to_string(values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] != nullptr ?
-                                                       sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] : -1) + ") AS(" +
-                                                       std::to_string(values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] != nullptr ?
-                                                       sizes[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] : -1) + ") pk: " + std::to_string(table->columns[column]->numPk));
+                                                       std::to_string(values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr ?
+                                                       sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] : -1) +
+                                                       ") A(" + std::to_string(values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr ?
+                                                       sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] :
+                                                       -1) + ") BS(" + std::to_string(values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] !=
+                                                       nullptr ? sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] : -1) + ") AS(" +
+                                                       std::to_string(values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] != nullptr ?
+                                                       sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] : -1) + ") pk: " +
+                                                       std::to_string(table->columns[column]->numPk));
                     }
                 }
             } else {
@@ -1457,16 +1447,16 @@ namespace OpenLogReplicator {
                             continue;
 
                         ctx->logTrace(Ctx::TRACE::DML, "DML: " + std::to_string(column + 1) + ":  B(" +
-                                                       std::to_string(sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)]) + ") A(" +
-                                                       std::to_string(sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)]) + ") BS(" +
-                                                       std::to_string(sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)]) + ") AS(" +
-                                                       std::to_string(sizes[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)]) + ")");
+                                                       std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)]) + ") A(" +
+                                                       std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)]) + ") BS(" +
+                                                       std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)]) + ") AS(" +
+                                                       std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)]) + ")");
                     }
                 }
             }
         }
 
-        if (transactionType == TRANSACTION_TYPE::UPDATE) {
+        if (transactionType == Format::TRANSACTION_TYPE::UPDATE) {
             if (!compressedBefore && !compressedAfter) {
                 baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1481,84 +1471,101 @@ namespace OpenLogReplicator {
 
                         if (table != nullptr) {
                             if (table->columns[column]->nullable == false &&
-                                values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr && values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr &&
-                                sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == 0 && sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] > 0) {
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr &&
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
+                                sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0 &&
+                                sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0) {
                                 if (!table->columns[column]->nullWarning) {
                                     table->columns[column]->nullWarning = true;
                                     ctx->warning(60034, "observed UPDATE operation for NOT NULL column with NULL value for table " +
                                                         table->owner + "." + table->name + " column " + table->columns[column]->name);
                                 }
                                 if (ctx->isFlagSet(Ctx::REDO_FLAGS::EXPERIMENTAL_NOT_NULL_MISSING)) {
-                                    values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = values[column][static_cast<uint>(VALUE_TYPE::AFTER)];
-                                    sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)];
-                                    values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)];
-                                    sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = sizes[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)];
+                                    values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] =
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)];
+                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)];
+                                    values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] =
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
+                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] =
+                                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
                                 }
                             }
 
-                            if (columnFormat < COLUMN_FORMAT::FULL_UPD) {
+                            if (format.columnFormat < Format::COLUMN_FORMAT::FULL_UPD) {
                                 if (table->columns[column]->numPk == 0) {
                                     // Remove unchanged column values - only for tables with a defined primary key
-                                    if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr &&
-                                            sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] &&
-                                            values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr) {
-                                        if (sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == 0 ||
-                                                memcmp(values[column][static_cast<uint>(VALUE_TYPE::BEFORE)], values[column][static_cast<uint>(VALUE_TYPE::AFTER)],
-                                                       sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)]) == 0) {
+                                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr &&
+                                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] ==
+                                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] &&
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
+                                        if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0 ||
+                                                memcmp(values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
+                                                       values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
+                                                       sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)]) == 0) {
                                             valuesSet[base] &= ~mask;
-                                            values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = nullptr;
-                                            values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = nullptr;
-                                            values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = nullptr;
-                                            values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] = nullptr;
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
                                             continue;
                                         }
                                     }
 
                                     // Remove columns additionally present, but null
-                                    if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr && sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == 0 &&
-                                            values[column][static_cast<uint>(VALUE_TYPE::AFTER)] == nullptr) {
+                                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr &&
+                                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0 &&
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr) {
                                         valuesSet[base] &= ~mask;
-                                        values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = nullptr;
-                                        values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = nullptr;
-                                        values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] = nullptr;
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
                                         continue;
                                     }
 
-                                    if (values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr && sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] == 0 &&
-                                            values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == nullptr) {
+                                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
+                                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == 0 &&
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr) {
                                         valuesSet[base] &= ~mask;
-                                        values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = nullptr;
-                                        values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = nullptr;
-                                        values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] = nullptr;
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
                                         continue;
                                     }
 
                                 } else {
                                     // Leave NULL value & propagate
-                                    if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr && sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == 0 &&
-                                            values[column][static_cast<uint>(VALUE_TYPE::AFTER)] == nullptr) {
-                                        values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = values[column][static_cast<uint>(VALUE_TYPE::BEFORE)];
-                                        sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] = sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)];
+                                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr &&
+                                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0 &&
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr) {
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] =
+                                                values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)];
+                                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] =
+                                                sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)];
                                     }
 
-                                    if (values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr && sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] == 0 &&
-                                            values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == nullptr) {
-                                        values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = values[column][static_cast<uint>(VALUE_TYPE::AFTER)];
-                                        sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)];
+                                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
+                                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == 0 &&
+                                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr) {
+                                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] =
+                                                values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)];
+                                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] =
+                                                sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)];
                                     }
                                 }
                             }
                         }
 
                         // For update assume null for missing columns
-                        if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] != nullptr && values[column][static_cast<uint>(VALUE_TYPE::AFTER)] == nullptr) {
-                            values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] = 0;
+                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr &&
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr) {
+                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
+                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
                         }
 
-                        if (values[column][static_cast<uint>(VALUE_TYPE::AFTER)] != nullptr && values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == nullptr) {
-                            values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = 0;
+                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr) {
+                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
+                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                         }
                     }
                 }
@@ -1593,18 +1600,18 @@ namespace OpenLogReplicator {
                 }
             }
 
-        } else if (transactionType == TRANSACTION_TYPE::INSERT) {
+        } else if (transactionType == Format::TRANSACTION_TYPE::INSERT) {
             if (table != nullptr && !compressedAfter) {
                 // Assume NULL values for all missing columns
-                if (columnFormat >= COLUMN_FORMAT::FULL_INS_DEC) {
+                if (format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC) {
                     auto maxCol = static_cast<typeCol>(table->columns.size());
                     for (typeCol column = 0; column < maxCol; ++column) {
                         uint64_t base = column >> 6;
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] = 0;
+                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
+                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
                             if (static_cast<uint64_t>(column) >= valuesMax)
                                 valuesMax = column + 1;
                         }
@@ -1624,10 +1631,11 @@ namespace OpenLogReplicator {
                             if (table->columns[column]->numPk > 0)
                                 continue;
 
-                            if (values[column][static_cast<uint>(VALUE_TYPE::AFTER)] == nullptr || sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] == 0) {
+                            if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr ||
+                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == 0) {
                                 valuesSet[base] &= ~mask;
-                                values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = nullptr;
-                                values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] = nullptr;
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
                             }
                         }
                     }
@@ -1638,8 +1646,8 @@ namespace OpenLogReplicator {
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(VALUE_TYPE::AFTER)] = 0;
+                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
+                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
                             if (static_cast<uint64_t>(column) >= valuesMax)
                                 valuesMax = column + 1;
                         }
@@ -1676,18 +1684,18 @@ namespace OpenLogReplicator {
                 }
             }
 
-        } else if (transactionType == TRANSACTION_TYPE::DELETE) {
+        } else if (transactionType == Format::TRANSACTION_TYPE::DELETE) {
             if (table != nullptr && !compressedBefore) {
                 // Assume NULL values for all missing columns
-                if (columnFormat >= COLUMN_FORMAT::FULL_INS_DEC) {
+                if (format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC) {
                     auto maxCol = static_cast<typeCol>(table->columns.size());
                     for (typeCol column = 0; column < maxCol; ++column) {
                         uint64_t base = column >> 6;
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = 0;
+                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
+                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                         }
                     }
                 } else {
@@ -1705,10 +1713,11 @@ namespace OpenLogReplicator {
                             if (table->columns[column]->numPk > 0)
                                 continue;
 
-                            if (values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == nullptr || sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] == 0) {
+                            if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr ||
+                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0) {
                                 valuesSet[base] &= ~mask;
-                                values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = nullptr;
-                                values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = nullptr;
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
+                                values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
                             }
                         }
                     }
@@ -1719,8 +1728,8 @@ namespace OpenLogReplicator {
                         uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = 0;
+                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
+                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                         }
                     }
                 }
@@ -1765,7 +1774,7 @@ namespace OpenLogReplicator {
         typeField fieldNum = 0;
         typeSize fieldSize = 0;
         const DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if (isScnTypeCommitValue())
+        if (format.isScnTypeCommitValue())
             scn = commitScn;
 
         RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldSize, 0x000009);

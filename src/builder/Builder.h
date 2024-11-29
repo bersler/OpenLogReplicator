@@ -27,6 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_set>
 
 #include "../common/Ctx.h"
+#include "../common/Format.h"
 #include "../common/LobCtx.h"
 #include "../common/LobData.h"
 #include "../common/LobKey.h"
@@ -96,89 +97,6 @@ namespace OpenLogReplicator {
     public:
         static constexpr uint64_t OUTPUT_BUFFER_DATA_SIZE = Ctx::MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue);
 
-        enum class ATTRIBUTES_FORMAT {
-            DEFAULT = 0, BEGIN = 1UL << 0, DML = 1UL << 1, COMMIT = 1UL << 2
-        };
-
-        enum class DB_FORMAT {
-            DEFAULT = 0, ADD_DML = 1, ADD_DDL = 2
-        };
-
-        enum class CHAR_FORMAT {
-            UTF8 = 0, NOMAPPING = 1, HEX = 2
-        };
-
-        enum class COLUMN_FORMAT {
-            CHANGED = 0,        // Default, only changed columns for update, or PK
-            FULL_INS_DEC = 1,   // Show full nulls from insert and delete
-            FULL_UPD = 2        // Show all from redo;
-        };
-
-        enum class INTERVAL_DTS_FORMAT {
-            UNIX_NANO, UNIX_MICRO, UNIX_MILLI, UNIX, UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_SPACE, ISO8601_COMMA,
-            ISO8601_DASH
-        };
-
-        enum class INTERVAL_YTM_FORMAT {
-            MONTHS, MONTHS_STRING, STRING_YM_SPACE, STRING_YM_COMMA, STRING_YM_DASH
-        };
-
-        enum class MESSAGE_FORMAT {
-            DEFAULT, FULL = 1 << 0, ADD_SEQUENCES = 1 << 1,
-            // JSON only:
-            SKIP_BEGIN = 1 << 2, SKIP_COMMIT = 1 << 3, ADD_OFFSET = 1 << 4
-        };
-
-        enum class RID_FORMAT {
-            SKIP, TEXT
-        };
-
-        enum class SCN_FORMAT {
-            NUMERIC, TEXT_HEX
-        };
-
-        enum class SCN_TYPE {
-            NONE = 0, ALL_PAYLOADS = 1 << 0, COMMIT_VALUE = 1 << 1
-        };
-
-        enum class SCHEMA_FORMAT {
-            DEFAULT = 0, FULL = 1 << 0, REPEATED = 1 << 1, OBJ = 1 << 2
-        };
-
-        enum class TIMESTAMP_ALL {
-            JUST_BEGIN, ALL_PAYLOADS
-        };
-
-        enum class TIMESTAMP_FORMAT {
-            UNIX_NANO, UNIX_MICRO, UNIX_MILLI, UNIX, UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_NANO_TZ, ISO8601_MICRO_TZ,
-            ISO8601_MILLI_TZ, ISO8601_TZ, ISO8601_NANO, ISO8601_MICRO, ISO8601_MILLI, ISO8601
-        };
-
-        enum class TIMESTAMP_TZ_FORMAT {
-            UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_NANO_TZ, ISO8601_MICRO_TZ, ISO8601_MILLI_TZ, ISO8601_TZ, ISO8601_NANO,
-            ISO8601_MICRO, ISO8601_MILLI, ISO8601
-        };
-
-        enum class TRANSACTION_TYPE {
-            T_NONE, INSERT, DELETE, UPDATE
-        };
-
-        enum class UNKNOWN_FORMAT {
-            QUESTION_MARK, DUMP
-        };
-
-        enum class UNKNOWN_TYPE {
-            HIDE, SHOW
-        };
-
-        enum class VALUE_TYPE {
-            BEFORE, AFTER, BEFORE_SUPP, AFTER_SUPP, LENGTH
-        };
-
-        enum class XID_FORMAT {
-            TEXT_HEX, TEXT_DEC, NUMERIC
-        };
-
     protected:
         static constexpr uint64_t BUFFER_START_UNDEFINED{0xFFFFFFFFFFFFFFFF};
 
@@ -202,23 +120,7 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         BuilderMsg* msg;
 
-        DB_FORMAT dbFormat;
-        ATTRIBUTES_FORMAT attributesFormat;
-        INTERVAL_DTS_FORMAT intervalDtsFormat;
-        INTERVAL_YTM_FORMAT intervalYtmFormat;
-        MESSAGE_FORMAT messageFormat;
-        RID_FORMAT ridFormat;
-        XID_FORMAT xidFormat;
-        TIMESTAMP_FORMAT timestampFormat;
-        TIMESTAMP_TZ_FORMAT timestampTzFormat;
-        TIMESTAMP_ALL timestampAll;
-        CHAR_FORMAT charFormat;
-        SCN_FORMAT scnFormat;
-        SCN_TYPE scnType;
-        UNKNOWN_FORMAT unknownFormat;
-        SCHEMA_FORMAT schemaFormat;
-        COLUMN_FORMAT columnFormat;
-        UNKNOWN_TYPE unknownType;
+        Format format;
         uint64_t unconfirmedSize;
         uint64_t messageSize;
         uint64_t messagePosition;
@@ -233,12 +135,12 @@ namespace OpenLogReplicator {
         typeXid lastXid;
         uint64_t valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
         uint64_t valuesMerge[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
-        int64_t sizes[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
-        const uint8_t* values[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
-        uint64_t sizesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
-        const uint8_t* valuesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(VALUE_TYPE::LENGTH)];
+        int64_t sizes[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
+        const uint8_t* values[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
+        uint64_t sizesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
+        const uint8_t* valuesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
         uint64_t valuesMax;
-        uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * static_cast<uint>(VALUE_TYPE::LENGTH)];
+        uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
         uint64_t mergesMax;
         uint64_t id;
         uint64_t num;
@@ -255,74 +157,6 @@ namespace OpenLogReplicator {
 
         double decodeFloat(const uint8_t* data);
         long double decodeDouble(const uint8_t* data);
-
-        bool isAttributesFormatBegin() const {
-            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::BEGIN)) != 0;
-        };
-
-        bool isAttributesFormatDml() const {
-            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::DML)) != 0;
-        };
-
-        bool isAttributesFormatCommit() const {
-            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::COMMIT)) != 0;
-        };
-
-        bool isCharFormatNoMapping() const {
-            return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::NOMAPPING)) != 0;
-        };
-
-        bool isCharFormatHex() const {
-            return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::HEX)) != 0;
-        };
-
-        bool isScnTypeAllPayloads() const {
-            return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::ALL_PAYLOADS)) != 0;
-        };
-
-        bool isScnTypeCommitValue() const {
-            return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::COMMIT_VALUE)) != 0;
-        };
-
-        bool isSchemaFormatFull() const {
-            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::FULL)) != 0;
-        };
-
-        bool isSchemaFormatRepeated() const {
-            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::REPEATED)) != 0;
-        };
-
-        bool isSchemaFormatObj() const {
-            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::OBJ)) != 0;
-        };
-
-        bool isMessageFormatFull() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::FULL)) != 0;
-        }
-
-        bool isMessageFormatAddSequences() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_SEQUENCES)) != 0;
-        }
-
-        bool isMessageFormatSkipBegin() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_BEGIN)) != 0;
-        }
-
-        bool isMessageFormatSkipCommit() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_COMMIT)) != 0;
-        }
-
-        bool isMessageFormatAddOffset() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_OFFSET)) != 0;
-        }
-
-        bool isDbFormatAddDml() const {
-            return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DML)) != 0;
-        }
-
-        bool isDbFormatAddDdl() const {
-            return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DDL)) != 0;
-        }
 
         inline void builderRotate(bool copy) {
             if (messageSize > ctx->memoryChunksWriteBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
@@ -378,10 +212,10 @@ namespace OpenLogReplicator {
                         continue;
 
                     valuesSet[base] &= ~mask;
-                    values[column][static_cast<uint>(VALUE_TYPE::BEFORE)] = nullptr;
-                    values[column][static_cast<uint>(VALUE_TYPE::BEFORE_SUPP)] = nullptr;
-                    values[column][static_cast<uint>(VALUE_TYPE::AFTER)] = nullptr;
-                    values[column][static_cast<uint>(VALUE_TYPE::AFTER_SUPP)] = nullptr;
+                    values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
+                    values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
+                    values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
+                    values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
                 }
             }
             valuesMax = 0;
@@ -389,7 +223,7 @@ namespace OpenLogReplicator {
             compressedAfter = false;
         };
 
-        inline void valueSet(VALUE_TYPE type, uint16_t column, const uint8_t* data, typeSize size, uint8_t fb, bool dump) {
+        inline void valueSet(Format::VALUE_TYPE type, uint16_t column, const uint8_t* data, typeSize size, uint8_t fb, bool dump) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::DML) || dump)) {
                 std::ostringstream ss;
                 ss << "DML: value: " << std::dec << static_cast<uint>(type) << "/" << column << "/" << std::dec << size << "/" << std::setfill('0') <<
@@ -451,7 +285,7 @@ namespace OpenLogReplicator {
         inline void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, BuilderMsg::OUTPUT_BUFFER flags) {
             messageSize = 0;
             messagePosition = 0;
-            if (isScnTypeCommitValue())
+            if (format.isScnTypeCommitValue())
                 scn = commitScn;
 
             if (unlikely(lastBuilderQueue->size + messagePosition + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE))
@@ -522,7 +356,7 @@ namespace OpenLogReplicator {
             valueBuffer[0] = '?';
             valueSize = 1;
             columnString(columnName);
-            if (unlikely(unknownFormat == UNKNOWN_FORMAT::DUMP)) {
+            if (unlikely(format.unknownFormat == Format::UNKNOWN_FORMAT::DUMP)) {
                 std::ostringstream ss;
                 for (uint32_t j = 0; j < size; ++j)
                     ss << " " << std::hex << std::setfill('0') << std::setw(2) << (static_cast<uint64_t>(data[j]));
@@ -1204,7 +1038,7 @@ namespace OpenLogReplicator {
         inline void parseString(const uint8_t* data, uint64_t size, uint64_t charsetId, uint64_t offset, bool appendData, bool hasPrev, bool hasNext,
                                 bool isSystem) {
             const CharacterSet* characterSet = locales->characterMap[charsetId];
-            if (unlikely(characterSet == nullptr && !isCharFormatNoMapping()))
+            if (unlikely(characterSet == nullptr && !format.isCharFormatNoMapping()))
                 throw RedoLogException(50010, "can't find character set map for id = " + std::to_string(charsetId) + " at offset: " +
                                               std::to_string(offset));
             if (!appendData)
@@ -1244,10 +1078,10 @@ namespace OpenLogReplicator {
 
                 typeUnicode unicodeCharacter;
 
-                if (!isCharFormatNoMapping()) {
+                if (!format.isCharFormatNoMapping()) {
                     unicodeCharacter = characterSet->decode(ctx, lastXid, parseData, parseSize);
 
-                    if (!isCharFormatHex() || isSystem) {
+                    if (!format.isCharFormatHex() || isSystem) {
                         if (unicodeCharacter <= 0x7F) {
                             // 0xxxxxxx
                             valueBufferAppend(unicodeCharacter);
@@ -1304,7 +1138,7 @@ namespace OpenLogReplicator {
                     unicodeCharacter = *parseData++;
                     --parseSize;
 
-                    if (!isCharFormatHex() || isSystem) {
+                    if (!format.isCharFormatHex() || isSystem) {
                         valueBufferAppend(unicodeCharacter);
                     } else {
                         valueBufferAppendHex(unicodeCharacter, offset);
@@ -1369,11 +1203,7 @@ namespace OpenLogReplicator {
         typeScn lwnScn;
         typeIdx lwnIdx;
 
-        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat,
-                INTERVAL_DTS_FORMAT newIntervalDtsFormat, INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat,
-                XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll,
-                CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat,
-                COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType, uint64_t newFlushBuffer);
+        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
         virtual ~Builder();
 
         [[nodiscard]] uint64_t builderSize() const;
@@ -1385,7 +1215,7 @@ namespace OpenLogReplicator {
         void processDeleteMultiple(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
         void processDml(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const std::deque<const RedoLogRecord*>& redo1,
-                        const std::deque<const RedoLogRecord*>& redo2, TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump);
+                        const std::deque<const RedoLogRecord*>& redo2, Format::TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump);
         void processDdlHeader(typeScn scn, typeSeq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1);
         virtual void initialize();
         virtual void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
