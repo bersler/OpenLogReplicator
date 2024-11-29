@@ -217,7 +217,7 @@ namespace OpenLogReplicator {
         }
         builder->processBegin(xid, commitScn, lwnScn, &attributes);
 
-        Builder::TRANSACTION_TYPE transactionType = Builder::TRANSACTION_TYPE::T_NONE;
+        Format::TRANSACTION_TYPE transactionType = Format::TRANSACTION_TYPE::T_NONE;
         std::deque<const RedoLogRecord*> redo1;
         std::deque<const RedoLogRecord*> redo2;
 
@@ -423,19 +423,19 @@ namespace OpenLogReplicator {
                         // Logminer support - KDOCMP
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 
-                        if (transactionType == Builder::TRANSACTION_TYPE::T_NONE) {
+                        if (transactionType == Format::TRANSACTION_TYPE::T_NONE) {
                             if (op == 0x05010B02)
-                                transactionType = Builder::TRANSACTION_TYPE::INSERT;
+                                transactionType = Format::TRANSACTION_TYPE::INSERT;
                             else if (op == 0x05010B03)
-                                transactionType = Builder::TRANSACTION_TYPE::DELETE;
+                                transactionType = Format::TRANSACTION_TYPE::DELETE;
                             else
-                                transactionType = Builder::TRANSACTION_TYPE::UPDATE;
-                        } else if (transactionType == Builder::TRANSACTION_TYPE::INSERT) {
+                                transactionType = Format::TRANSACTION_TYPE::UPDATE;
+                        } else if (transactionType == Format::TRANSACTION_TYPE::INSERT) {
                             if (op == 0x05010B03 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                                transactionType = Builder::TRANSACTION_TYPE::UPDATE;
-                        } else if (transactionType == Builder::TRANSACTION_TYPE::DELETE) {
+                                transactionType = Format::TRANSACTION_TYPE::UPDATE;
+                        } else if (transactionType == Format::TRANSACTION_TYPE::DELETE) {
                             if (op == 0x05010B02 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                                transactionType = Builder::TRANSACTION_TYPE::UPDATE;
+                                transactionType = Format::TRANSACTION_TYPE::UPDATE;
                         }
 
                         if (redo1.empty()) {
@@ -450,7 +450,7 @@ namespace OpenLogReplicator {
                         } else {
                             if (redo1.back()->suppLogBdba == redoLogRecord1->suppLogBdba && redo1.back()->suppLogSlot == redoLogRecord1->suppLogSlot &&
                                 redo1.front()->obj == redoLogRecord1->obj && redo2.front()->obj == redoLogRecord2->obj) {
-                                if (transactionType == Builder::TRANSACTION_TYPE::INSERT) {
+                                if (transactionType == Format::TRANSACTION_TYPE::INSERT) {
                                     redo1.push_front(redoLogRecord1);
                                     redo2.push_front(redoLogRecord2);
                                 } else {
@@ -534,7 +534,7 @@ namespace OpenLogReplicator {
                 if (opFlush) {
                     redo1.clear();
                     redo2.clear();
-                    transactionType = Builder::TRANSACTION_TYPE::T_NONE;
+                    transactionType = Format::TRANSACTION_TYPE::T_NONE;
 
                     for (auto k: deallocChunks)
                         metadata->ctx->swappedMemoryRelease(metadata->ctx->parserThread, xid, k);
