@@ -58,8 +58,8 @@ namespace OpenLogReplicator {
         static constexpr size_t MEMORY_ALIGNMENT{512};
         static constexpr uint MAX_PATH_LENGTH{2048};
 
-        static constexpr uint64_t COLUMN_LIMIT{1000};
-        static constexpr uint64_t COLUMN_LIMIT_23_0{4096};
+        static constexpr typeCol COLUMN_LIMIT{1000};
+        static constexpr typeCol COLUMN_LIMIT_23_0{4096};
         static constexpr uint JSON_PARAMETER_LENGTH{256};
         static constexpr uint JSON_TOPIC_LENGTH{256};
 

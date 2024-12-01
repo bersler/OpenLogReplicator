@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-11-29
+:revdate: 2024-12-01
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -21,6 +21,7 @@ This document describes the release notes of OpenLogReplicator.
 - changed parameters "scn" and "scn-all" -> "scn-key"
 - enhancement: add key data to messages
 - fix: minor bug related to swapping
+- enhancement: performance optimizations
 
 === Version 1.7.0
 - fix: welcome banner

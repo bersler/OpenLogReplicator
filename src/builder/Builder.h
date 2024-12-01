@@ -133,15 +133,15 @@ namespace OpenLogReplicator {
         std::unordered_set<const DbTable*> tables;
         typeScn commitScn;
         typeXid lastXid;
-        uint64_t valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
-        uint64_t valuesMerge[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
+        typeMask valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
+        typeMask valuesMerge[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)];
         int64_t sizes[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
         const uint8_t* values[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
         uint64_t sizesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
         const uint8_t* valuesPart[3][Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
-        uint64_t valuesMax;
-        uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * static_cast<uint>(Format::VALUE_TYPE::LENGTH)];
-        uint64_t mergesMax;
+        typeCol valuesMax;
+        uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * static_cast<int>(Format::VALUE_TYPE::LENGTH)];
+        typeCol mergesMax;
         uint64_t id;
         uint64_t num;
         uint64_t maxMessageMb;      // Maximum message size able to handle by writer
@@ -198,24 +198,27 @@ namespace OpenLogReplicator {
                           bool after, bool compressed);
 
         inline void valuesRelease() {
-            for (uint64_t i = 0; i < mergesMax; ++i)
+            for (typeCol i = 0; i < mergesMax; ++i)
                 delete[] merges[i];
             mergesMax = 0;
 
-            uint64_t baseMax = valuesMax >> 6;
-            for (uint64_t base = 0; base <= baseMax; ++base) {
-                auto column = static_cast<typeCol>(base << 6);
-                for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (valuesSet[base] < mask)
-                        break;
-                    if ((valuesSet[base] & mask) == 0)
-                        continue;
+            typeCol baseMax = valuesMax >> 6;
+            for (typeCol base = 0; base <= baseMax; ++base) {
+                typeCol columnBase = static_cast<typeCol>(base << 6);
+                typeMask set = valuesSet[base];
+                typeCol pos = ffsl(set) - 1;
+                while (pos >= 0) {
+                    typeMask mask = 1ULL << pos;
+                    typeCol column = columnBase + pos;
 
                     valuesSet[base] &= ~mask;
                     values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
                     values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
                     values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
                     values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
+
+                    set &= ~mask;
+                    pos = ffsl(set) - 1;
                 }
             }
             valuesMax = 0;
@@ -234,8 +237,8 @@ namespace OpenLogReplicator {
                 ctx->info(0, ss.str());
             }
 
-            uint64_t base = static_cast<uint64_t>(column) >> 6;
-            uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
+            typeMask base = static_cast<uint64_t>(column) >> 6;
+            typeMask mask = static_cast<uint64_t>(1) << (column & 0x3F);
             // New value
             if ((valuesSet[base] & mask) == 0)
                 valuesSet[base] |= mask;

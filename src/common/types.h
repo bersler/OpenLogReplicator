@@ -69,6 +69,7 @@ typedef uint16_t typeUnicode16;
 typedef uint32_t typeUnicode32;
 typedef uint64_t typeUnicode;
 typedef int64_t time_ut;
+typedef uint64_t typeMask;
 
 #define likely(x)                               __builtin_expect(!!(x),1)
 #define unlikely(x)                             __builtin_expect(!!(x),0)
