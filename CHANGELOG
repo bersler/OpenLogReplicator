@@ -3,6 +3,7 @@
 - changed parameters "scn" and "scn-all" -> "scn-key"
 - enhancement: add key data to messages
 - fix: minor bug related to swapping
+- enhancement: performance optimizations
 
 1.7.0
 - fix: welcome banner

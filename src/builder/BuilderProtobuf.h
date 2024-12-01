@@ -333,14 +333,13 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                uint64_t baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    auto column = static_cast<typeCol>(base << 6);
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
+                typeCol baseMax = valuesMax >> 6;
+                for (typeCol base = 0; base <= baseMax; ++base) {
+                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    typeMask set = valuesSet[base];
+                    typeCol pos = ffsl(set) - 1;
+                    while (pos >= 0) {
+                        typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0) {
@@ -354,6 +353,9 @@ namespace OpenLogReplicator {
                                 columnNull(table, column, true);
                             }
                         }
+
+                        set &= ~(1ULL << pos);
+                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -376,14 +378,13 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                uint64_t baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    auto column = static_cast<typeCol>(base << 6);
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
+                typeCol baseMax = valuesMax >> 6;
+                for (typeCol base = 0; base <= baseMax; ++base) {
+                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    typeMask set = valuesSet[base];
+                    typeCol pos = ffsl(set) - 1;
+                    while (pos >= 0) {
+                        typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0) {
@@ -397,6 +398,9 @@ namespace OpenLogReplicator {
                                 columnNull(table, column, false);
                             }
                         }
+
+                        set &= ~(1ULL << pos);
+                        pos = ffsl(set) - 1;
                     }
                 }
             }

@@ -1291,19 +1291,21 @@ namespace OpenLogReplicator {
         if (table != nullptr && table->guardSegNo != -1)
             guardPos = table->guardSegNo;
 
-        uint64_t baseMax = valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            auto column = static_cast<typeCol>(base << 6);
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
+        if (table != nullptr && valuesMax >= table->maxSegCol)
+            valuesMax = table->maxSegCol -1;
+
+        typeCol baseMax = valuesMax >> 6;
+        for (typeCol base = 0; base <= baseMax; ++base) {
+            typeCol columnBase = base << 6;
+            typeMask set = valuesSet[base];
+            typeCol pos = ffsl(set) - 1;
+            while (pos >= 0) {
+                typeMask mask = 1ULL << pos;
+                typeCol column = columnBase + pos;
 
                 // Merge column values
                 if ((valuesMerge[base] & mask) != 0) {
-
-                    for (uint64_t j = 0; j < 4; ++j) {
+                    for (int j = 0; j < 4; ++j) {
                         uint64_t mergeSize = 0;
 
                         if (valuesPart[0][column][j] != nullptr)
@@ -1399,6 +1401,9 @@ namespace OpenLogReplicator {
                     values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
                 }
+
+                set &= ~mask;
+                pos = ffsl(set) - 1;
             }
         }
 
@@ -1409,15 +1414,12 @@ namespace OpenLogReplicator {
                                                std::to_string(valuesMax));
 
                 baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    auto column = static_cast<typeCol>(base << 6);
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
-                        if (column >= table->maxSegCol)
-                            break;
+                for (typeCol base = 0; base <= baseMax; ++base) {
+                    typeCol columnBase = base << 6;
+                    typeMask set = valuesSet[base];
+                    typeCol pos = ffsl(set) - 1;
+                    while (pos >= 0) {
+                        typeCol column = columnBase + pos;
 
                         ctx->logTrace(Ctx::TRACE::DML, "DML: " + std::to_string(column + 1) + ":  B(" +
                                                        std::to_string(values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr ?
@@ -1429,6 +1431,9 @@ namespace OpenLogReplicator {
                                                        std::to_string(values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] != nullptr ?
                                                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] : -1) + ") pk: " +
                                                        std::to_string(table->columns[column]->numPk));
+
+                        set &= ~(1ULL << pos);
+                        pos = ffsl(set) - 1;
                     }
                 }
             } else {
@@ -1438,19 +1443,21 @@ namespace OpenLogReplicator {
                                                " columns: " + std::to_string(valuesMax));
 
                 baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    auto column = static_cast<typeCol>(base << 6);
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
+                for (typeCol base = 0; base <= baseMax; ++base) {
+                    typeCol columnBase = base << 6;
+                    typeMask set = valuesSet[base];
+                    typeCol pos = ffsl(set) - 1;
+                    while (pos >= 0) {
+                        typeCol column = columnBase + pos;
 
                         ctx->logTrace(Ctx::TRACE::DML, "DML: " + std::to_string(column + 1) + ":  B(" +
                                                        std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)]) + ") A(" +
                                                        std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)]) + ") BS(" +
                                                        std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)]) + ") AS(" +
                                                        std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)]) + ")");
+
+                        set &= ~(1ULL << pos);
+                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -1459,15 +1466,13 @@ namespace OpenLogReplicator {
         if (transactionType == Format::TRANSACTION_TYPE::UPDATE) {
             if (!compressedBefore && !compressedAfter) {
                 baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    auto column = static_cast<typeCol>(base << 6);
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
-                        if (table != nullptr && column >= table->maxSegCol)
-                            break;
+                for (typeCol base = 0; base <= baseMax; ++base) {
+                    typeCol columnBase = base << 6;
+                    typeMask set = valuesSet[base];
+                    typeCol pos = ffsl(set) - 1;
+                    while (pos >= 0) {
+                        typeMask mask = 1ULL << pos;
+                        typeCol column = columnBase + pos;
 
                         if (table != nullptr) {
                             if (table->columns[column]->nullable == false &&
@@ -1567,6 +1572,9 @@ namespace OpenLogReplicator {
                             values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                         }
+
+                        set &= ~mask;
+                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -1606,49 +1614,49 @@ namespace OpenLogReplicator {
                 if (format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC) {
                     auto maxCol = static_cast<typeCol>(table->columns.size());
                     for (typeCol column = 0; column < maxCol; ++column) {
-                        uint64_t base = column >> 6;
-                        uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
+                        typeCol base = column >> 6;
+                        typeMask mask = 1ULL << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
                             values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
-                            if (static_cast<uint64_t>(column) >= valuesMax)
+                            if (column >= valuesMax)
                                 valuesMax = column + 1;
                         }
                     }
                 } else {
                     // Remove NULL values from insert if not PK
                     baseMax = valuesMax >> 6;
-                    for (uint64_t base = 0; base <= baseMax; ++base) {
-                        auto column = static_cast<typeCol>(base << 6);
-                        for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                            if (valuesSet[base] < mask)
-                                break;
-                            if ((valuesSet[base] & mask) == 0)
-                                continue;
-                            if (column >= table->maxSegCol)
-                                break;
-                            if (table->columns[column]->numPk > 0)
-                                continue;
+                    for (typeCol base = 0; base <= baseMax; ++base) {
+                        typeCol columnBase = base << 6;
+                        typeMask set = valuesSet[base];
+                        typeCol pos = ffsl(set) - 1;
+                        while (pos >= 0) {
+                            typeMask mask = 1ULL << pos;
+                            typeCol column = columnBase + pos;
 
-                            if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr ||
-                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == 0) {
+                            if (table->columns[column]->numPk == 0 &&
+                                    (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr ||
+                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == 0)) {
                                 valuesSet[base] &= ~mask;
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
                             }
+
+                            set &= ~mask;
+                            pos = ffsl(set) - 1;
                         }
                     }
 
                     // Assume NULL values for PK missing columns
                     for (typeCol column: table->pk) {
-                        uint64_t base = column >> 6;
-                        uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
+                        typeCol base = column >> 6;
+                        typeMask mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
                             values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
-                            if (static_cast<uint64_t>(column) >= valuesMax)
+                            if (column >= valuesMax)
                                 valuesMax = column + 1;
                         }
                     }
@@ -1690,8 +1698,8 @@ namespace OpenLogReplicator {
                 if (format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC) {
                     auto maxCol = static_cast<typeCol>(table->columns.size());
                     for (typeCol column = 0; column < maxCol; ++column) {
-                        uint64_t base = column >> 6;
-                        uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
+                        typeCol base = column >> 6;
+                        typeMask mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
                             values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
@@ -1701,31 +1709,31 @@ namespace OpenLogReplicator {
                 } else {
                     // Remove NULL values from delete if not PK
                     baseMax = valuesMax >> 6;
-                    for (uint64_t base = 0; base <= baseMax; ++base) {
-                        auto column = static_cast<typeCol>(base << 6);
-                        for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                            if (valuesSet[base] < mask)
-                                break;
-                            if ((valuesSet[base] & mask) == 0)
-                                continue;
-                            if (column >= table->maxSegCol)
-                                break;
-                            if (table->columns[column]->numPk > 0)
-                                continue;
+                    for (typeCol base = 0; base <= baseMax; ++base) {
+                        typeCol columnBase = base << 6;
+                        typeMask set = valuesSet[base];
+                        typeCol pos = ffsl(set) - 1;
+                        while (pos >= 0) {
+                            typeMask mask = 1ULL << pos;
+                            typeCol column = columnBase + pos;
 
-                            if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr ||
-                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0) {
+                            if (table->columns[column]->numPk == 0 &&
+                                    (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr ||
+                                    sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == 0)) {
                                 valuesSet[base] &= ~mask;
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
                             }
+
+                            set &= ~mask;
+                            pos = ffsl(set) - 1;
                         }
                     }
 
                     // Assume NULL values for PK missing columns
                     for (typeCol column: table->pk) {
-                        uint64_t base = column >> 6;
-                        uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
+                        typeCol base = column >> 6;
+                        typeMask mask = static_cast<uint64_t>(1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
                             values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);

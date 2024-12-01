@@ -624,23 +624,25 @@ namespace OpenLogReplicator {
                         columnNull(table, column, true);
                 }
             } else {
-                uint64_t baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    auto column = static_cast<typeCol>(base << 6);
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
-                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr)
-                            continue;
+                typeCol baseMax = valuesMax >> 6;
+                for (typeCol base = 0; base <= baseMax; ++base) {
+                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    typeMask set = valuesSet[base];
+                    typeCol pos = ffsl(set) - 1;
+                    while (pos >= 0) {
+                        typeCol column = columnBase + pos;
 
-                        if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0)
-                            processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                         sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], offset,
-                                         true, compressedAfter);
-                        else
-                            columnNull(table, column, true);
+                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
+                            if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0)
+                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
+                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], offset,
+                                             true, compressedAfter);
+                            else
+                                columnNull(table, column, true);
+                        }
+
+                        set &= ~(1ULL << pos);
+                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -664,23 +666,25 @@ namespace OpenLogReplicator {
                         columnNull(table, column, false);
                 }
             } else {
-                uint64_t baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    auto column = static_cast<typeCol>(base << 6);
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
-                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr)
-                            continue;
+                typeCol baseMax = valuesMax >> 6;
+                for (typeCol base = 0; base <= baseMax; ++base) {
+                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    typeMask set = valuesSet[base];
+                    typeCol pos = ffsl(set) - 1;
+                    while (pos >= 0) {
+                        typeCol column = columnBase + pos;
 
-                        if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0)
-                            processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
-                                         sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], offset,
-                                         false, compressedBefore);
-                        else
-                            columnNull(table, column, false);
+                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
+                            if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0)
+                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
+                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], offset,
+                                             false, compressedBefore);
+                            else
+                                columnNull(table, column, false);
+                        }
+
+                        set &= ~(1ULL << pos);
+                        pos = ffsl(set) - 1;
                     }
                 }
             }

@@ -391,16 +391,18 @@ namespace OpenLogReplicator {
 
     template<class TABLE, class TABLEKEY, class TABLEUNORDEREDKEY>
     void SystemTransaction::updateAllValues(TablePack<TABLE, TABLEKEY, TABLEUNORDEREDKEY>* pack, const DbTable* table, TABLE* row, uint64_t offset) {
-        uint64_t baseMax = builder->valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            auto column = static_cast<typeCol>(base << 6);
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (builder->valuesSet[base] < mask)
-                    break;
-                if ((builder->valuesSet[base] & mask) == 0)
-                    continue;
+        typeCol baseMax = builder->valuesMax >> 6;
+        for (typeCol base = 0; base <= baseMax; ++base) {
+            typeCol columnBase = static_cast<typeCol>(base << 6);
+            typeMask set = builder->valuesSet[base];
+            typeCol pos = ffsl(set) - 1;
+            while (pos >= 0) {
+                typeCol column = columnBase + pos;
 
                 updateValues<TABLE>(table, row, column, offset);
+
+                set &= ~(1ULL << pos);
+                pos = ffsl(set) - 1;
             }
         }
 
