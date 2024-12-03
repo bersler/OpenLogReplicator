@@ -62,6 +62,7 @@ namespace OpenLogReplicator {
             // END
             NUM = 1000
         };
+
         Ctx* ctx;
         pthread_t pthread;
         std::string alias;
@@ -93,62 +94,59 @@ namespace OpenLogReplicator {
             contextStop();
         }
 
-        void contextStart() {
-            if (!contextCompiled)
-                return;
-
-            contextTimeLast = ctx->clock->getTimeUt();
-        }
-
-        void contextSet(CONTEXT context, REASON reason = REASON::NONE) {
-            if (!contextCompiled)
-                return;
-
-            ++contextSwitches;
-            time_ut contextTimeNow = ctx->clock->getTimeUt();
-            contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
-            ++contextCnt[static_cast<uint>(curContext)];
-            ++reasonCnt[static_cast<uint>(reason)];
-            curReason = reason;
-            curContext = context;
-            contextTimeLast = contextTimeNow;
-        }
-
-        void contextStop() {
-            if (!contextCompiled)
-                return;
-
-            ++contextSwitches;
-            time_ut contextTimeNow = ctx->clock->getTimeUt();
-            contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
-            ++contextCnt[static_cast<uint>(curContext)];
-
-            std::string msg =
-                    "thread: " + alias +
-                    " cpu: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::CPU)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::CPU)]) +
-                    " os: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::OS)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::OS)]) +
-                    " mtx: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::MUTEX)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::MUTEX)]) +
-                    " wait: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::WAIT)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::WAIT)]) +
-                    " sleep: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::SLEEP)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::SLEEP)]) +
-                    " mem: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::MEM)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::MEM)]) +
-                    " tran: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::TRAN)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::TRAN)]) +
-                    " chkpt: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::CHKPT)]) +
-                    "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::CHKPT)]) +
-                    " switches: " + std::to_string(contextSwitches) + " reasons:";
-            for (uint reason = static_cast<uint>(REASON::NONE); reason < static_cast<int>(REASON::NUM); ++reason) {
-                if (reasonCnt[reason] == 0)
-                    continue;
-
-                msg += " " + std::to_string(reason) + "/" + std::to_string(reasonCnt[reason]);
+        void inline contextStart() {
+            if constexpr  (contextCompiled) {
+                contextTimeLast = ctx->clock->getTimeUt();
             }
-            ctx->info(0, msg);
+        }
+
+        void inline contextSet(CONTEXT context, REASON reason = REASON::NONE) {
+            if constexpr (contextCompiled) {
+                ++contextSwitches;
+                time_ut contextTimeNow = ctx->clock->getTimeUt();
+                contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
+                ++contextCnt[static_cast<uint>(curContext)];
+                ++reasonCnt[static_cast<uint>(reason)];
+                curReason = reason;
+                curContext = context;
+                contextTimeLast = contextTimeNow;
+            }
+        }
+
+        void inline contextStop() {
+            if constexpr (contextCompiled) {
+                ++contextSwitches;
+                time_ut contextTimeNow = ctx->clock->getTimeUt();
+                contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
+                ++contextCnt[static_cast<uint>(curContext)];
+
+                std::string msg =
+                        "thread: " + alias +
+                        " cpu: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::CPU)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::CPU)]) +
+                        " os: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::OS)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::OS)]) +
+                        " mtx: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::MUTEX)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::MUTEX)]) +
+                        " wait: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::WAIT)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::WAIT)]) +
+                        " sleep: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::SLEEP)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::SLEEP)]) +
+                        " mem: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::MEM)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::MEM)]) +
+                        " tran: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::TRAN)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::TRAN)]) +
+                        " chkpt: " + std::to_string(contextTime[static_cast<uint>(CONTEXT::CHKPT)]) +
+                        "/" + std::to_string(contextCnt[static_cast<uint>(CONTEXT::CHKPT)]) +
+                        " switches: " + std::to_string(contextSwitches) + " reasons:";
+                for (uint reason = static_cast<uint>(REASON::NONE); reason < static_cast<int>(REASON::NUM); ++reason) {
+                    if (reasonCnt[reason] == 0)
+                        continue;
+
+                    msg += " " + std::to_string(reason) + "/" + std::to_string(reasonCnt[reason]);
+                }
+                ctx->info(0, msg);
+            }
         }
     };
 }

@@ -98,11 +98,11 @@ namespace OpenLogReplicator {
             const typeDba nxt = ctx->read32(redoLogRecord->data() + fieldPos + 8);
             const typeDba prv = ctx->read32(redoLogRecord->data() + fieldPos + 12);
 
-            *ctx->dumpStream << "kdxlnitl = " << std::dec << static_cast<uint64_t>(itl) << '\n';
-            *ctx->dumpStream << "kdxlnnco = " << std::dec << static_cast<uint64_t>(nco) << '\n';
-            *ctx->dumpStream << "kdxlndsz = " << std::dec << static_cast<uint64_t>(dsz) << '\n';
-            *ctx->dumpStream << "kdxlncol = " << std::dec << static_cast<uint64_t>(col) << '\n';
-            *ctx->dumpStream << "kdxlnflg = " << std::dec << static_cast<uint64_t>(flg) << '\n';
+            *ctx->dumpStream << "kdxlnitl = " << std::dec << static_cast<uint>(itl) << '\n';
+            *ctx->dumpStream << "kdxlnnco = " << std::dec << static_cast<uint>(nco) << '\n';
+            *ctx->dumpStream << "kdxlndsz = " << std::dec << static_cast<uint>(dsz) << '\n';
+            *ctx->dumpStream << "kdxlncol = " << std::dec << static_cast<uint>(col) << '\n';
+            *ctx->dumpStream << "kdxlnflg = " << std::dec << static_cast<uint>(flg) << '\n';
             *ctx->dumpStream << "kdxlnnxt = 0x" << std::hex << nxt << '\n';
             *ctx->dumpStream << "kdxlnprv = 0x" << std::hex << prv << '\n';
         }

@@ -425,10 +425,10 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::applyMapping(std::string& path) {
-        uint64_t newPathLength = path.length();
+        size_t newPathLength = path.length();
         char pathBuffer[Ctx::MAX_PATH_LENGTH];
 
-        for (uint64_t i = 0; i < pathMapping.size() / 2; ++i) {
+        for (size_t i = 0; i < pathMapping.size() / 2; ++i) {
             uint64_t sourceLength = pathMapping[i * 2].length();
             uint64_t targetLength = pathMapping[i * 2 + 1].length();
 

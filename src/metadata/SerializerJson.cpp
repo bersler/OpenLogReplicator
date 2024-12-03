@@ -303,7 +303,7 @@ namespace OpenLogReplicator {
             Ctx::writeEscapeValue(ss, sysObj->name);
             ss << R"(","type":)" << std::dec << static_cast<uint>(sysObj->type) <<
                R"(,"flags":)" << std::dec << sysObj->flags.toString() <<
-               R"(,"single":)" << std::dec << static_cast<uint64_t>(sysObj->single) << "}";
+               R"(,"single":)" << std::dec << static_cast<uint>(sysObj->single) << "}";
         }
 
         // SYS.TAB$
@@ -399,7 +399,7 @@ namespace OpenLogReplicator {
                                R"(,"name":")";
             Ctx::writeEscapeValue(ss, sysUser->name);
             ss << R"(","spare1":)" << std::dec << sysUser->spare1.toString() <<
-               R"(,"single":)" << std::dec << static_cast<uint64_t>(sysUser->single) << "}";
+               R"(,"single":)" << std::dec << static_cast<uint>(sysUser->single) << "}";
         }
 
         // XDB.XDB$TTSET

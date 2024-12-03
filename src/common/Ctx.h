@@ -560,6 +560,12 @@ namespace OpenLogReplicator {
             }
         }
 
+        void inline logTrace(TRACE mask, const std::string& message) const {
+            if (unlikely((trace & static_cast<uint>(mask)) != 0)) {
+                logTraceInt(mask, message);
+            }
+        }
+
         static void checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const char* names[]);
         [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field);
@@ -631,7 +637,7 @@ namespace OpenLogReplicator {
         void warning(int code, const std::string& message) const;
         void info(int code, const std::string& message) const;
         void debug(int code, const std::string& message) const;
-        void logTrace(TRACE mask, const std::string& message) const;
+        void logTraceInt(TRACE mask, const std::string& message) const;
         void printMemoryUsageHWM() const;
         void printMemoryUsageCurrent() const;
     };

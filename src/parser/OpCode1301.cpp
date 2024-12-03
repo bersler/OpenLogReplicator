@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
                              "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
 
             for (typeSize j = 0; j < fieldSize - 36U; ++j) {
-                *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data()[fieldPos + j + 36]) << " ";
+                *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(redoLogRecord->data()[fieldPos + j + 36]) << " ";
                 if ((j % 24) == 23 && j != fieldSize - 1U)
                     *ctx->dumpStream << "\n    ";
             }

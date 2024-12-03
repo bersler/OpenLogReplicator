@@ -1419,11 +1419,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::logTrace(TRACE mask, const std::string& message) const {
+    void Ctx::logTraceInt(TRACE mask, const std::string& message) const {
         const char* code = "XXXXX";
-        if (likely((trace & static_cast<uint>(mask)) == 0))
-            return;
-
         switch (mask) {
             case TRACE::DML:
                 code = "DML  ";

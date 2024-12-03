@@ -60,11 +60,12 @@ namespace OpenLogReplicator {
         Builder* builder;
         Metadata* metadata;
 
-        template<class VALUE, SysCol::COLTYPE COLTYPE> void updateValue(VALUE& val, typeCol column, const DbTable* table, uint64_t offset, int defVal = 0,
-                uint maxLength = 0);
-        template<class TABLE> void updateValues(const DbTable* table, TABLE* row, typeCol column, uint64_t offset);
+        template<class VALUE, SysCol::COLTYPE COLTYPE>
+        void updateValue(VALUE& val, typeCol column, const DbTable* table, uint64_t offset, int defVal = 0, uint maxLength = 0);
+        template<class TABLE>
+        void updateValues(const DbTable* table, TABLE* row, typeCol column, uint64_t offset);
         template<class TABLE, class TABLEKEY, class TABLEUNORDEREDKEY>
-                void updateAllValues(TablePack<TABLE, TABLEKEY, TABLEUNORDEREDKEY>* pack, const DbTable* table, TABLE* row, uint64_t offset);
+        void updateAllValues(TablePack<TABLE, TABLEKEY, TABLEUNORDEREDKEY>* pack, const DbTable* table, TABLE* row, uint64_t offset);
 
         XmlCtx* findMatchingXmlCtx(const DbTable* table) const;
 

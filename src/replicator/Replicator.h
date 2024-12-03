@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
 
         const std::string getName() const override {
             return std::string{"Replicator: " + alias};
-        };
+        }
     };
 }
 

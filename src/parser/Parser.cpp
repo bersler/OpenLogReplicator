@@ -137,13 +137,13 @@ namespace OpenLogReplicator {
                 *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
                                  std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                                  std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordSize << " VLD: 0x" <<
-                                 std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << '\n';
+                                 std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(vld) << '\n';
             else {
                 uint32_t conUid = ctx->read32(data + 16);
                 *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence <<
                                  "." << std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                                  std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordSize << " VLD: 0x" <<
-                                 std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << " CON_UID: " << std::dec << conUid << '\n';
+                                 std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(vld) << " CON_UID: " << std::dec << conUid << '\n';
             }
 
             if (ctx->dumpRawData > 0) {
@@ -154,7 +154,7 @@ namespace OpenLogReplicator {
                     *ctx->dumpStream << std::string(36 - header.length(), ' ');
 
                 for (uint32_t j = 0; j < headerSize; ++j)
-                    *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
+                    *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(data[j]) << " ";
                 *ctx->dumpStream << '\n';
             }
 
@@ -1167,11 +1167,11 @@ namespace OpenLogReplicator {
             if (redoLogRecord1->indKeySize > 0)
                 ss << "0x";
             for (typeSize i = 0; i < redoLogRecord1->indKeySize; ++i)
-                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->data()[redoLogRecord1->indKey + i]);
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(redoLogRecord1->data()[redoLogRecord1->indKey + i]);
             if (redoLogRecord2->indKeySize > 0)
                 ss << " 0x";
             for (typeSize i = 0; i < redoLogRecord2->indKeySize; ++i)
-                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey + i]);
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + i]);
 
             ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + redoLogRecord1->xid.toString() + " obj: " +
                                            std::to_string(redoLogRecord2->dataObj) + " op: " + std::to_string(redoLogRecord1->opCode) + ":" +
@@ -1219,7 +1219,7 @@ namespace OpenLogReplicator {
                     ss << "\n##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
                 if ((j & 0x07) == 0)
                     ss << " ";
-                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(data[j]) << " ";
             }
             ctx->warning(70002, ss.str());
         }

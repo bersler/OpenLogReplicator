@@ -80,47 +80,47 @@ namespace OpenLogReplicator {
         std::string lower() const {
             std::ostringstream ss;
             ss << std::setfill('0') << std::hex <<
-               std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
-               std::setw(2) << static_cast<uint64_t>(data[2]) << std::setw(2) << static_cast<uint64_t>(data[3]) <<
-               std::setw(2) << static_cast<uint64_t>(data[4]) << std::setw(2) << static_cast<uint64_t>(data[5]) <<
-               std::setw(2) << static_cast<uint64_t>(data[6]) << std::setw(2) << static_cast<uint64_t>(data[7]) <<
-               std::setw(2) << static_cast<uint64_t>(data[8]) << std::setw(2) << static_cast<uint64_t>(data[9]);
+               std::setw(2) << static_cast<uint>(data[0]) << std::setw(2) << static_cast<uint>(data[1]) <<
+               std::setw(2) << static_cast<uint>(data[2]) << std::setw(2) << static_cast<uint>(data[3]) <<
+               std::setw(2) << static_cast<uint>(data[4]) << std::setw(2) << static_cast<uint>(data[5]) <<
+               std::setw(2) << static_cast<uint>(data[6]) << std::setw(2) << static_cast<uint>(data[7]) <<
+               std::setw(2) << static_cast<uint>(data[8]) << std::setw(2) << static_cast<uint>(data[9]);
             return ss.str();
         }
 
         std::string upper() const {
             std::ostringstream ss;
             ss << std::uppercase << std::setfill('0') << std::hex <<
-               std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
-               std::setw(2) << static_cast<uint64_t>(data[2]) << std::setw(2) << static_cast<uint64_t>(data[3]) <<
-               std::setw(2) << static_cast<uint64_t>(data[4]) << std::setw(2) << static_cast<uint64_t>(data[5]) <<
-               std::setw(2) << static_cast<uint64_t>(data[6]) << std::setw(2) << static_cast<uint64_t>(data[7]) <<
-               std::setw(2) << static_cast<uint64_t>(data[8]) << std::setw(2) << static_cast<uint64_t>(data[9]) << std::nouppercase;
+               std::setw(2) << static_cast<uint>(data[0]) << std::setw(2) << static_cast<uint>(data[1]) <<
+               std::setw(2) << static_cast<uint>(data[2]) << std::setw(2) << static_cast<uint>(data[3]) <<
+               std::setw(2) << static_cast<uint>(data[4]) << std::setw(2) << static_cast<uint>(data[5]) <<
+               std::setw(2) << static_cast<uint>(data[6]) << std::setw(2) << static_cast<uint>(data[7]) <<
+               std::setw(2) << static_cast<uint>(data[8]) << std::setw(2) << static_cast<uint>(data[9]) << std::nouppercase;
             return ss.str();
         }
 
         std::string narrow() const {
             std::ostringstream ss;
-            ss << std::uppercase << std::setfill('0') << std::hex << static_cast<uint64_t>(data[0]) << static_cast<uint64_t>(data[1]) <<
-               static_cast<uint64_t>(data[2]) << static_cast<uint64_t>(data[3]) <<
-               static_cast<uint64_t>(data[4]) << static_cast<uint64_t>(data[5]) <<
-               static_cast<uint64_t>(data[6]) << static_cast<uint64_t>(data[7]) <<
-               static_cast<uint64_t>(data[8]) << static_cast<uint64_t>(data[9]) << std::nouppercase;
+            ss << std::uppercase << std::setfill('0') << std::hex << static_cast<uint>(data[0]) << static_cast<uint>(data[1]) <<
+               static_cast<uint64_t>(data[2]) << static_cast<uint>(data[3]) <<
+               static_cast<uint64_t>(data[4]) << static_cast<uint>(data[5]) <<
+               static_cast<uint64_t>(data[6]) << static_cast<uint>(data[7]) <<
+               static_cast<uint64_t>(data[8]) << static_cast<uint>(data[9]) << std::nouppercase;
             return ss.str();
         }
 
         friend std::ostream& operator<<(std::ostream& os, const typeLobId& other) {
             os << std::uppercase << std::setfill('0') << std::hex <<
-               std::setw(2) << static_cast<uint64_t>(other.data[0]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[1]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[2]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[3]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[4]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[5]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[6]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[7]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[8]) <<
-               std::setw(2) << static_cast<uint64_t>(other.data[9]) << std::nouppercase;
+               std::setw(2) << static_cast<uint>(other.data[0]) <<
+               std::setw(2) << static_cast<uint>(other.data[1]) <<
+               std::setw(2) << static_cast<uint>(other.data[2]) <<
+               std::setw(2) << static_cast<uint>(other.data[3]) <<
+               std::setw(2) << static_cast<uint>(other.data[4]) <<
+               std::setw(2) << static_cast<uint>(other.data[5]) <<
+               std::setw(2) << static_cast<uint>(other.data[6]) <<
+               std::setw(2) << static_cast<uint>(other.data[7]) <<
+               std::setw(2) << static_cast<uint>(other.data[8]) <<
+               std::setw(2) << static_cast<uint>(other.data[9]) << std::nouppercase;
             return os;
         }
     };
