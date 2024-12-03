@@ -438,7 +438,7 @@ namespace OpenLogReplicator {
         REDO_CODE currentRet = REDO_CODE::OK;
 
         // Check which blocks are good
-        for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
+        for (typeBlk numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
             currentRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
                                           ctx->redoVerifyDelayUs == 0 || group == 0);
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
@@ -925,8 +925,8 @@ namespace OpenLogReplicator {
            " nab: 0x" << std::hex << numBlocksHeader <<
            " seq: 0x" << std::setfill('0') << std::setw(8) << std::hex << seq <<
            " hws: 0x" << std::hex << hws <<
-           " eot: " << std::dec << static_cast<uint64_t>(eot) <<
-           " dis: " << std::dec << static_cast<uint64_t>(dis) << '\n';
+           " eot: " << std::dec << static_cast<uint>(eot) <<
+           " dis: " << std::dec << static_cast<uint>(dis) << '\n';
 
         typeScn resetlogsScn = ctx->readScn(headerBuffer + blockSize + 164);
         typeResetlogs prevResetlogsCnt = ctx->read32(headerBuffer + blockSize + 292);
@@ -1018,14 +1018,14 @@ namespace OpenLogReplicator {
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                " seq: " << std::dec << seq2 <<
                " scn: " << PRINTSCN48(scn2) << '\n' <<
-               " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << '\n' <<
-               " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << '\n';
+               " Zero blocks: " << std::dec << static_cast<uint>(zeroBlocks) << '\n' <<
+               " Format ID is " << std::dec << static_cast<uint>(formatId) << '\n';
         else
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                " seq: " << std::dec << seq2 <<
                " scn: " << PRINTSCN64(scn2) << '\n' <<
-               " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << '\n' <<
-               " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << '\n';
+               " Zero blocks: " << std::dec << static_cast<uint>(zeroBlocks) << '\n' <<
+               " Format ID is " << std::dec << static_cast<uint>(formatId) << '\n';
 
         uint32_t standbyApplyDelay = ctx->read32(headerBuffer + blockSize + 280);
         if (standbyApplyDelay > 0)
@@ -1036,8 +1036,8 @@ namespace OpenLogReplicator {
             ss << " Standby Log Close Time:  " << standbyLogCloseTime << '\n';
 
         ss << " redo log key is ";
-        for (uint64_t i = 448; i < 448 + 16; ++i)
-            ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[blockSize + i]);
+        for (uint i = 448; i < 448 + 16; ++i)
+            ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(headerBuffer[blockSize + i]);
         ss << '\n';
 
         uint16_t redoKeyFlag = ctx->read16(headerBuffer + blockSize + 480);

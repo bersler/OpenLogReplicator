@@ -48,6 +48,7 @@ namespace OpenLogReplicator {
             valueBufferSize(0),
             valueBufferOld(nullptr),
             valueSizeOld(0),
+            lastBuilderSize(0),
             commitScn(Ctx::ZERO_SCN),
             lastXid(typeXid()),
             valuesMax(0),
@@ -105,9 +106,10 @@ namespace OpenLogReplicator {
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
         firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
-        firstBuilderQueue->size = 0;
+        firstBuilderQueue->confirmedSize = 0;
         firstBuilderQueue->start = 0;
         lastBuilderQueue = firstBuilderQueue;
+        lastBuilderSize = 0;
 
         valueBuffer = new char[VALUE_BUFFER_MIN];
         valueBufferSize = VALUE_BUFFER_MIN;
@@ -550,7 +552,7 @@ namespace OpenLogReplicator {
                             valueBuffer[valueSize++] = Ctx::map10(second % 10);
                             valueBuffer[valueSize++] = '.';
 
-                            for (uint64_t j = 0; j < 9; ++j) {
+                            for (uint j = 0; j < 9; ++j) {
                                 valueBuffer[valueSize + 8 - j] = Ctx::map10(us % 10);
                                 us /= 10;
                             }
@@ -1298,9 +1300,10 @@ namespace OpenLogReplicator {
         for (typeCol base = 0; base <= baseMax; ++base) {
             typeCol columnBase = base << 6;
             typeMask set = valuesSet[base];
-            typeCol pos = ffsl(set) - 1;
-            while (pos >= 0) {
+            while (set != 0) {
+                typeCol pos = ffsl(set) - 1;
                 typeMask mask = 1ULL << pos;
+                set &= ~mask;
                 typeCol column = columnBase + pos;
 
                 // Merge column values
@@ -1401,9 +1404,6 @@ namespace OpenLogReplicator {
                     values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)];
                 }
-
-                set &= ~mask;
-                pos = ffsl(set) - 1;
             }
         }
 
@@ -1417,8 +1417,9 @@ namespace OpenLogReplicator {
                 for (typeCol base = 0; base <= baseMax; ++base) {
                     typeCol columnBase = base << 6;
                     typeMask set = valuesSet[base];
-                    typeCol pos = ffsl(set) - 1;
-                    while (pos >= 0) {
+                    while (set != 0) {
+                        typeCol pos = ffsl(set) - 1;
+                        set &= ~(1ULL << pos);
                         typeCol column = columnBase + pos;
 
                         ctx->logTrace(Ctx::TRACE::DML, "DML: " + std::to_string(column + 1) + ":  B(" +
@@ -1431,9 +1432,6 @@ namespace OpenLogReplicator {
                                                        std::to_string(values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] != nullptr ?
                                                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] : -1) + ") pk: " +
                                                        std::to_string(table->columns[column]->numPk));
-
-                        set &= ~(1ULL << pos);
-                        pos = ffsl(set) - 1;
                     }
                 }
             } else {
@@ -1446,8 +1444,9 @@ namespace OpenLogReplicator {
                 for (typeCol base = 0; base <= baseMax; ++base) {
                     typeCol columnBase = base << 6;
                     typeMask set = valuesSet[base];
-                    typeCol pos = ffsl(set) - 1;
-                    while (pos >= 0) {
+                    while (set != 0) {
+                        typeCol pos = ffsl(set) - 1;
+                        set &= ~(1ULL << pos);
                         typeCol column = columnBase + pos;
 
                         ctx->logTrace(Ctx::TRACE::DML, "DML: " + std::to_string(column + 1) + ":  B(" +
@@ -1455,9 +1454,6 @@ namespace OpenLogReplicator {
                                                        std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)]) + ") BS(" +
                                                        std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)]) + ") AS(" +
                                                        std::to_string(sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)]) + ")");
-
-                        set &= ~(1ULL << pos);
-                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -1469,9 +1465,10 @@ namespace OpenLogReplicator {
                 for (typeCol base = 0; base <= baseMax; ++base) {
                     typeCol columnBase = base << 6;
                     typeMask set = valuesSet[base];
-                    typeCol pos = ffsl(set) - 1;
-                    while (pos >= 0) {
+                    while (set != 0) {
+                        typeCol pos = ffsl(set) - 1;
                         typeMask mask = 1ULL << pos;
+                        set &= ~mask;
                         typeCol column = columnBase + pos;
 
                         if (table != nullptr) {
@@ -1572,9 +1569,6 @@ namespace OpenLogReplicator {
                             values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                         }
-
-                        set &= ~mask;
-                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -1630,9 +1624,10 @@ namespace OpenLogReplicator {
                     for (typeCol base = 0; base <= baseMax; ++base) {
                         typeCol columnBase = base << 6;
                         typeMask set = valuesSet[base];
-                        typeCol pos = ffsl(set) - 1;
-                        while (pos >= 0) {
+                        while (set != 0) {
+                            typeCol pos = ffsl(set) - 1;
                             typeMask mask = 1ULL << pos;
+                            set &= ~mask;
                             typeCol column = columnBase + pos;
 
                             if (table->columns[column]->numPk == 0 &&
@@ -1642,9 +1637,6 @@ namespace OpenLogReplicator {
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
                             }
-
-                            set &= ~mask;
-                            pos = ffsl(set) - 1;
                         }
                     }
 
@@ -1712,9 +1704,10 @@ namespace OpenLogReplicator {
                     for (typeCol base = 0; base <= baseMax; ++base) {
                         typeCol columnBase = base << 6;
                         typeMask set = valuesSet[base];
-                        typeCol pos = ffsl(set) - 1;
-                        while (pos >= 0) {
+                        while (set != 0) {
+                            typeCol pos = ffsl(set) - 1;
                             typeMask mask = 1ULL << pos;
+                            set &= ~mask;
                             typeCol column = columnBase + pos;
 
                             if (table->columns[column]->numPk == 0 &&
@@ -1724,9 +1717,6 @@ namespace OpenLogReplicator {
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
                             }
-
-                            set &= ~mask;
-                            pos = ffsl(set) - 1;
                         }
                     }
 

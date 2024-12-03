@@ -395,14 +395,12 @@ namespace OpenLogReplicator {
         for (typeCol base = 0; base <= baseMax; ++base) {
             typeCol columnBase = static_cast<typeCol>(base << 6);
             typeMask set = builder->valuesSet[base];
-            typeCol pos = ffsl(set) - 1;
-            while (pos >= 0) {
+            while (set != 0) {
+                typeCol pos = ffsl(set) - 1;
+                set &= ~(1ULL << pos);
                 typeCol column = columnBase + pos;
 
                 updateValues<TABLE>(table, row, column, offset);
-
-                set &= ~(1ULL << pos);
-                pos = ffsl(set) - 1;
             }
         }
 

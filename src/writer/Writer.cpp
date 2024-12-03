@@ -108,7 +108,7 @@ namespace OpenLogReplicator {
     void Writer::resetMessageQueue() {
         for (uint64_t i = 0; i < currentQueueSize; ++i) {
             BuilderMsg* msg = queue[i];
-            if (msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::ALLOCATED))
+            if (msg->isFlagSet(BuilderMsg::OUTPUT_BUFFER::ALLOCATED))
                 delete[] msg->data;
         }
         currentQueueSize = 0;
@@ -135,14 +135,14 @@ namespace OpenLogReplicator {
         }
 
         msg->setFlag(BuilderMsg::OUTPUT_BUFFER::CONFIRMED);
-        if (msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::ALLOCATED)) {
+        if (msg->isFlagSet(BuilderMsg::OUTPUT_BUFFER::ALLOCATED)) {
             delete[] msg->data;
             msg->unsetFlag(BuilderMsg::OUTPUT_BUFFER::ALLOCATED);
         }
 
         uint64_t maxId = 0;
         {
-            while (currentQueueSize > 0 && queue[0]->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::CONFIRMED)) {
+            while (currentQueueSize > 0 && queue[0]->isFlagSet(BuilderMsg::OUTPUT_BUFFER::CONFIRMED)) {
                 maxId = queue[0]->queueId;
                 if (confirmedScn == Ctx::ZERO_SCN || msg->lwnScn > confirmedScn) {
                     confirmedScn = msg->lwnScn;
@@ -254,15 +254,15 @@ namespace OpenLogReplicator {
 
                 // Next buffer
                 if (builderQueue->next != nullptr)
-                    if (builderQueue->size == oldSize) {
+                    if (builderQueue->confirmedSize == oldSize) {
                         builderQueue = builderQueue->next;
                         oldSize = 0;
                     }
 
                 // Found something
                 msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldSize);
-                if (builderQueue->size > oldSize + sizeof(struct BuilderMsg) && msg->size > 0) {
-                    newSize = builderQueue->size;
+                if (builderQueue->confirmedSize > oldSize + sizeof(struct BuilderMsg) && msg->size > 0) {
+                    newSize = builderQueue->confirmedSize;
                     break;
                 }
 
@@ -300,7 +300,7 @@ namespace OpenLogReplicator {
                 if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     // Send the message to the client in one part
-                    if ((msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
+                    if ((msg->isFlagSet(BuilderMsg::OUTPUT_BUFFER::CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -340,7 +340,7 @@ namespace OpenLogReplicator {
 
                     createMessage(msg);
                     // Send only new messages to the client
-                    if ((msg->isFlagsSet(BuilderMsg::OUTPUT_BUFFER::CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
+                    if ((msg->isFlagSet(BuilderMsg::OUTPUT_BUFFER::CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
@@ -358,7 +358,7 @@ namespace OpenLogReplicator {
             // All work done?
             if (ctx->softShutdown && ctx->replicatorFinished) {
                 // Is there still some data to send?
-                if (builderQueue->size != oldSize || builderQueue->next != nullptr)
+                if (builderQueue->confirmedSize != oldSize || builderQueue->next != nullptr)
                     continue;
                 break;
             }

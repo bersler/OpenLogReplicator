@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         uint64_t data;
     public:
         typeXid() : data(0) {
-        };
+        }
 
         explicit typeXid(uint64_t newData) : data(newData) {
         }

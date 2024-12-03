@@ -259,7 +259,7 @@ namespace OpenLogReplicator {
                 std::ostringstream ss;
                 ss << "request decoder[" << std::dec << size << "]: ";
                 for (uint64_t i = 0; i < static_cast<uint64_t>(size); ++i)
-                    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(msgR[i]) << " ";
+                    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint>(msgR[i]) << " ";
                 ctx->warning(60033, ss.str());
             }
         } else if (errno != EAGAIN)

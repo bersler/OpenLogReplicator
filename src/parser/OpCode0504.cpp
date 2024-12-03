@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
                              " uba: " << PRINTUBA(uba) <<
                              " ext: " << std::dec << ext <<
                              " spc: " << std::dec << spc <<
-                             " fbi: " << std::dec << static_cast<uint64_t>(fbi) <<
+                             " fbi: " << std::dec << static_cast<uint>(fbi) <<
                              " ";
         }
     }

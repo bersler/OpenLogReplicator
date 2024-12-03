@@ -160,19 +160,19 @@ namespace OpenLogReplicator {
                 if (format.xidFormat == Format::XID_FORMAT::TEXT_HEX) {
                     std::ostringstream ss;
                     ss << "0x";
-                    ss << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint64_t>(lastXid.usn());
+                    ss << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint>(lastXid.usn());
                     ss << '.';
-                    ss << std::setfill('0') << std::setw(3) << std::hex << static_cast<uint64_t>(lastXid.slt());
+                    ss << std::setfill('0') << std::setw(3) << std::hex << static_cast<uint>(lastXid.slt());
                     ss << '.';
-                    ss << std::setfill('0') << std::setw(8) << std::hex << static_cast<uint64_t>(lastXid.sqn());
+                    ss << std::setfill('0') << std::setw(8) << std::hex << static_cast<uint>(lastXid.sqn());
                     redoResponsePB->set_xid(ss.str());
                 } else if (format.xidFormat == Format::XID_FORMAT::TEXT_DEC) {
                     std::ostringstream ss;
-                    ss << static_cast<uint64_t>(lastXid.usn());
+                    ss << static_cast<uint>(lastXid.usn());
                     ss << '.';
-                    ss << static_cast<uint64_t>(lastXid.slt());
+                    ss << static_cast<uint>(lastXid.slt());
                     ss << '.';
-                    ss << static_cast<uint64_t>(lastXid.sqn());
+                    ss << static_cast<uint>(lastXid.sqn());
                     redoResponsePB->set_xid(ss.str());
                 } else if (format.xidFormat == Format::XID_FORMAT::NUMERIC) {
                     redoResponsePB->set_xidn(lastXid.getData());
@@ -337,8 +337,9 @@ namespace OpenLogReplicator {
                 for (typeCol base = 0; base <= baseMax; ++base) {
                     typeCol columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
-                    typeCol pos = ffsl(set) - 1;
-                    while (pos >= 0) {
+                    while (set != 0) {
+                        typeCol pos = ffsl(set) - 1;
+                        set &= ~(1ULL << pos);
                         typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
@@ -353,9 +354,6 @@ namespace OpenLogReplicator {
                                 columnNull(table, column, true);
                             }
                         }
-
-                        set &= ~(1ULL << pos);
-                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -382,8 +380,9 @@ namespace OpenLogReplicator {
                 for (typeCol base = 0; base <= baseMax; ++base) {
                     typeCol columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
-                    typeCol pos = ffsl(set) - 1;
-                    while (pos >= 0) {
+                    while (set != 0) {
+                        typeCol pos = ffsl(set) - 1;
+                        set &= ~(1ULL << pos);
                         typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
@@ -398,9 +397,6 @@ namespace OpenLogReplicator {
                                 columnNull(table, column, false);
                             }
                         }
-
-                        set &= ~(1ULL << pos);
-                        pos = ffsl(set) - 1;
                     }
                 }
             }

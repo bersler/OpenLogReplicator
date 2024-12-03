@@ -336,9 +336,10 @@ namespace OpenLogReplicator {
 
             if (format.isSchemaFormatFull()) {
                 if (!format.isSchemaFormatRepeated()) {
-                    if (tables.count(table) > 0)
+                    if (tables.count(table) > 0) {
+                        append('}');
                         return;
-                    else
+                    } else
                         tables.insert(table);
                 }
 
@@ -460,75 +461,125 @@ namespace OpenLogReplicator {
         }
 
         inline void appendHex2(uint8_t value) {
-            append(Ctx::map16((value >> 4) & 0xF));
-            append(Ctx::map16(value & 0xF));
+            if (likely(lastBuilderSize + messagePosition + 2 < OUTPUT_BUFFER_DATA_SIZE)) {
+                append<true>(Ctx::map16((value >> 4) & 0xF));
+                append<true>(Ctx::map16(value & 0xF));
+            } else {
+                append(Ctx::map16((value >> 4) & 0xF));
+                append(Ctx::map16(value & 0xF));
+            }
         }
 
         inline void appendHex3(uint16_t value) {
-            append(Ctx::map16((value >> 8) & 0xF));
-            append(Ctx::map16((value >> 4) & 0xF));
-            append(Ctx::map16(value & 0xF));
+            if (likely(lastBuilderSize + messagePosition + 3 < OUTPUT_BUFFER_DATA_SIZE)) {
+                append<true>(Ctx::map16((value >> 8) & 0xF));
+                append<true>(Ctx::map16((value >> 4) & 0xF));
+                append<true>(Ctx::map16(value & 0xF));
+            } else {
+                append(Ctx::map16((value >> 8) & 0xF));
+                append(Ctx::map16((value >> 4) & 0xF));
+                append(Ctx::map16(value & 0xF));
+            }
         }
 
         inline void appendHex4(uint16_t value) {
-            append(Ctx::map16((value >> 12) & 0xF));
-            append(Ctx::map16((value >> 8) & 0xF));
-            append(Ctx::map16((value >> 4) & 0xF));
-            append(Ctx::map16(value & 0xF));
+            if (likely(lastBuilderSize + messagePosition + 4 < OUTPUT_BUFFER_DATA_SIZE)) {
+                append<true>(Ctx::map16((value >> 12) & 0xF));
+                append<true>(Ctx::map16((value >> 8) & 0xF));
+                append<true>(Ctx::map16((value >> 4) & 0xF));
+                append<true>(Ctx::map16(value & 0xF));
+            } else {
+                append(Ctx::map16((value >> 12) & 0xF));
+                append(Ctx::map16((value >> 8) & 0xF));
+                append(Ctx::map16((value >> 4) & 0xF));
+                append(Ctx::map16(value & 0xF));
+            };
         }
 
         inline void appendHex8(uint32_t value) {
-            append(Ctx::map16((value >> 28) & 0xF));
-            append(Ctx::map16((value >> 24) & 0xF));
-            append(Ctx::map16((value >> 20) & 0xF));
-            append(Ctx::map16((value >> 16) & 0xF));
-            append(Ctx::map16((value >> 12) & 0xF));
-            append(Ctx::map16((value >> 8) & 0xF));
-            append(Ctx::map16((value >> 4) & 0xF));
-            append(Ctx::map16(value & 0xF));
+            if (likely(lastBuilderSize + messagePosition + 8 < OUTPUT_BUFFER_DATA_SIZE)) {
+                append<true>(Ctx::map16((value >> 28) & 0xF));
+                append<true>(Ctx::map16((value >> 24) & 0xF));
+                append<true>(Ctx::map16((value >> 20) & 0xF));
+                append<true>(Ctx::map16((value >> 16) & 0xF));
+                append<true>(Ctx::map16((value >> 12) & 0xF));
+                append<true>(Ctx::map16((value >> 8) & 0xF));
+                append<true>(Ctx::map16((value >> 4) & 0xF));
+                append<true>(Ctx::map16(value & 0xF));
+            } else {
+                append(Ctx::map16((value >> 28) & 0xF));
+                append(Ctx::map16((value >> 24) & 0xF));
+                append(Ctx::map16((value >> 20) & 0xF));
+                append(Ctx::map16((value >> 16) & 0xF));
+                append(Ctx::map16((value >> 12) & 0xF));
+                append(Ctx::map16((value >> 8) & 0xF));
+                append(Ctx::map16((value >> 4) & 0xF));
+                append(Ctx::map16(value & 0xF));
+            }
         }
 
         inline void appendHex16(uint64_t value) {
-            append(Ctx::map16((value >> 60) & 0xF));
-            append(Ctx::map16((value >> 56) & 0xF));
-            append(Ctx::map16((value >> 52) & 0xF));
-            append(Ctx::map16((value >> 48) & 0xF));
-            append(Ctx::map16((value >> 44) & 0xF));
-            append(Ctx::map16((value >> 40) & 0xF));
-            append(Ctx::map16((value >> 36) & 0xF));
-            append(Ctx::map16((value >> 32) & 0xF));
-            append(Ctx::map16((value >> 28) & 0xF));
-            append(Ctx::map16((value >> 24) & 0xF));
-            append(Ctx::map16((value >> 20) & 0xF));
-            append(Ctx::map16((value >> 16) & 0xF));
-            append(Ctx::map16((value >> 12) & 0xF));
-            append(Ctx::map16((value >> 8) & 0xF));
-            append(Ctx::map16((value >> 4) & 0xF));
-            append(Ctx::map16(value & 0xF));
+            if (likely(lastBuilderSize + messagePosition + 16 < OUTPUT_BUFFER_DATA_SIZE)) {
+                append<true>(Ctx::map16((value >> 60) & 0xF));
+                append<true>(Ctx::map16((value >> 56) & 0xF));
+                append<true>(Ctx::map16((value >> 52) & 0xF));
+                append<true>(Ctx::map16((value >> 48) & 0xF));
+                append<true>(Ctx::map16((value >> 44) & 0xF));
+                append<true>(Ctx::map16((value >> 40) & 0xF));
+                append<true>(Ctx::map16((value >> 36) & 0xF));
+                append<true>(Ctx::map16((value >> 32) & 0xF));
+                append<true>(Ctx::map16((value >> 28) & 0xF));
+                append<true>(Ctx::map16((value >> 24) & 0xF));
+                append<true>(Ctx::map16((value >> 20) & 0xF));
+                append<true>(Ctx::map16((value >> 16) & 0xF));
+                append<true>(Ctx::map16((value >> 12) & 0xF));
+                append<true>(Ctx::map16((value >> 8) & 0xF));
+                append<true>(Ctx::map16((value >> 4) & 0xF));
+                append<true>(Ctx::map16(value & 0xF));
+            } else {
+                append(Ctx::map16((value >> 60) & 0xF));
+                append(Ctx::map16((value >> 56) & 0xF));
+                append(Ctx::map16((value >> 52) & 0xF));
+                append(Ctx::map16((value >> 48) & 0xF));
+                append(Ctx::map16((value >> 44) & 0xF));
+                append(Ctx::map16((value >> 40) & 0xF));
+                append(Ctx::map16((value >> 36) & 0xF));
+                append(Ctx::map16((value >> 32) & 0xF));
+                append(Ctx::map16((value >> 28) & 0xF));
+                append(Ctx::map16((value >> 24) & 0xF));
+                append(Ctx::map16((value >> 20) & 0xF));
+                append(Ctx::map16((value >> 16) & 0xF));
+                append(Ctx::map16((value >> 12) & 0xF));
+                append(Ctx::map16((value >> 8) & 0xF));
+                append(Ctx::map16((value >> 4) & 0xF));
+                append(Ctx::map16(value & 0xF));
+            }
         }
 
-        inline void appendDec(uint64_t value, uint64_t size) {
+        template<uint size, bool fast = false>
+        inline void appendDec(uint64_t value) {
             char buffer[21];
 
-            for (uint64_t i = 0; i < size; ++i) {
+            for (uint i = 0; i < size; ++i) {
                 buffer[i] = Ctx::map10(value % 10);
                 value /= 10;
             }
 
-            if (likely(lastBuilderQueue->size + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
-                uint8_t* ptr = lastBuilderQueue->data + lastBuilderQueue->size + messagePosition;
-                for (uint64_t i = 0; i < size; ++i)
+            if (likely(fast || lastBuilderSize + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
+                uint8_t* ptr = lastBuilderQueue->data + lastBuilderSize + messagePosition;
+                for (uint i = 0; i < size; ++i)
                     *ptr++ = buffer[size - i - 1];
                 messagePosition += size;
             } else {
-                for (uint64_t i = 0; i < size; ++i)
+                for (uint i = 0; i < size; ++i)
                     append(buffer[size - i - 1]);
             }
         }
 
+        template<bool fast = false>
         inline void appendDec(uint64_t value) {
             char buffer[21];
-            uint64_t size = 0;
+            uint size = 0;
 
             if (value == 0) {
                 buffer[0] = '0';
@@ -540,20 +591,20 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (likely(lastBuilderQueue->size + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
-                uint8_t* ptr = lastBuilderQueue->data + lastBuilderQueue->size + messagePosition;
-                for (uint64_t i = 0; i < size; ++i)
+            if (likely(fast || lastBuilderSize + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
+                uint8_t* ptr = lastBuilderQueue->data + lastBuilderSize + messagePosition;
+                for (uint i = 0; i < size; ++i)
                     *ptr++ = buffer[size - i - 1];
                 messagePosition += size;
             } else {
-                for (uint64_t i = 0; i < size; ++i)
+                for (uint i = 0; i < size; ++i)
                     append(buffer[size - i - 1]);
             }
         }
 
         inline void appendSDec(int64_t value) {
             char buffer[22];
-            uint64_t size = 0;
+            uint size = 0;
 
             if (value == 0) {
                 buffer[0] = '0';
@@ -574,8 +625,15 @@ namespace OpenLogReplicator {
                 }
             }
 
-            for (uint64_t i = 0; i < size; ++i)
-                append(buffer[size - i - 1]);
+            if (likely(lastBuilderSize + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
+                uint8_t* ptr = lastBuilderQueue->data + lastBuilderSize + messagePosition;
+                for (uint i = 0; i < size; ++i)
+                    *ptr++ = buffer[size - i - 1];
+                messagePosition += size;
+            } else {
+                for (uint i = 0; i < size; ++i)
+                    append(buffer[size - i - 1]);
+            }
         }
 
         inline void appendEscape(const std::string& str) {
@@ -583,24 +641,74 @@ namespace OpenLogReplicator {
         }
 
         inline void appendEscape(const char* str, uint64_t size) {
+            if (likely(lastBuilderSize + messagePosition + size * 5 < OUTPUT_BUFFER_DATA_SIZE)) {
+                appendEscapeInternal<true>(str, size);
+            } else {
+                appendEscapeInternal<false>(str, size);
+            }
+        }
+
+        template<bool fast = false>
+        inline void appendEscapeInternal(const char* str, uint64_t size) {
             while (size > 0) {
-                if (*str == '\t') {
-                    append("\\t", sizeof("\\t") - 1);
-                } else if (*str == '\r') {
-                    append("\\r", sizeof("\\r") - 1);
-                } else if (*str == '\n') {
-                    append("\\n", sizeof("\\n") - 1);
-                } else if (*str == '\f') {
-                    append("\\f", sizeof("\\f") - 1);
-                } else if (*str == '\b') {
-                    append("\\b", sizeof("\\b") - 1);
-                } else if (static_cast<unsigned char>(*str) < 32) {
-                    append("\\u00", sizeof("\\u00") - 1);
-                    appendDec(*str, 2);
-                } else {
-                    if (*str == '"' || *str == '\\' || *str == '/')
-                        append('\\');
-                    append(*str);
+                switch (*str) {
+                    case '\t':
+                        append<fast>("\\t", sizeof("\\t") - 1);
+                        break;
+                    case '\r':
+                        append<fast>("\\r", sizeof("\\r") - 1);
+                        break;
+                    case '\n':
+                        append<fast>("\\n", sizeof("\\n") - 1);
+                        break;
+                    case '\f':
+                        append<fast>("\\f", sizeof("\\f") - 1);
+                        break;
+                    case '\b':
+                        append<fast>("\\b", sizeof("\\b") - 1);
+                        break;
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                    //case 8:  // \b
+                    //case 9:  // \t
+                    //case 10: // \n
+                    case 11:
+                    //case 12: // \f
+                    //case 13: // \r
+                    case 14:
+                    case 15:
+                    case 16:
+                    case 17:
+                    case 18:
+                    case 19:
+                    case 20:
+                    case 21:
+                    case 22:
+                    case 23:
+                    case 24:
+                    case 25:
+                    case 26:
+                    case 27:
+                    case 28:
+                    case 29:
+                    case 30:
+                        append<fast>("\\u00", sizeof("\\u00") - 1);
+                        appendDec<2, fast>(*str);
+                        break;
+                    case '"':
+                    case '\\':
+                    case '/':
+                        append<fast>('\\');
+                        append<fast>(*str);
+                        break;
+                    default:
+                        append<fast>(*str);
                 }
                 ++str;
                 --size;
@@ -628,8 +736,9 @@ namespace OpenLogReplicator {
                 for (typeCol base = 0; base <= baseMax; ++base) {
                     typeCol columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
-                    typeCol pos = ffsl(set) - 1;
-                    while (pos >= 0) {
+                    while (set != 0) {
+                        typeCol pos = ffsl(set) - 1;
+                        set &= ~(1ULL << pos);
                         typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
@@ -640,9 +749,6 @@ namespace OpenLogReplicator {
                             else
                                 columnNull(table, column, true);
                         }
-
-                        set &= ~(1ULL << pos);
-                        pos = ffsl(set) - 1;
                     }
                 }
             }
@@ -670,8 +776,9 @@ namespace OpenLogReplicator {
                 for (typeCol base = 0; base <= baseMax; ++base) {
                     typeCol columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
-                    typeCol pos = ffsl(set) - 1;
-                    while (pos >= 0) {
+                    while (set != 0) {
+                        typeCol pos = ffsl(set) - 1;
+                        set &= ~(1ULL << pos);
                         typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
@@ -682,9 +789,6 @@ namespace OpenLogReplicator {
                             else
                                 columnNull(table, column, false);
                         }
-
-                        set &= ~(1ULL << pos);
-                        pos = ffsl(set) - 1;
                     }
                 }
             }
