@@ -141,11 +141,13 @@ namespace OpenLogReplicator {
                    builder->values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM))) {
                 if constexpr (std::is_same<VALUE, typeIntX>::value)
-                    ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL)");
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL) defVal: " +
+                                                      std::to_string(defVal));
                 else if constexpr (std::is_same<VALUE, std::string>::value)
-                    ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL)");
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL) defVal: " + std::to_string(defVal));
                 else
-                    ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL)");
+                    ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL) defVal: " +
+                                                      std::to_string(defVal));
             }
             if constexpr (std::is_same<VALUE, int>::value || std::is_same<VALUE, int16_t>::value || std::is_same<VALUE, int32_t>::value ||
                           std::is_same<VALUE, int64_t>::value || std::is_same<VALUE, uint>::value || std::is_same<VALUE, uint16_t>::value ||
