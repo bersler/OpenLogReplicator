@@ -557,7 +557,7 @@ namespace OpenLogReplicator {
         }
 
         template<uint size, bool fast = false>
-        inline void appendDec(uint64_t value) {
+        inline void appendDecN(uint64_t value) {
             char buffer[21];
 
             for (uint i = 0; i < size; ++i) {
@@ -699,7 +699,7 @@ namespace OpenLogReplicator {
                     case 29:
                     case 30:
                         append<fast>("\\u00", sizeof("\\u00") - 1);
-                        appendDec<2, fast>(*str);
+                        appendDecN<2, fast>(*str);
                         break;
                     case '"':
                     case '\\':

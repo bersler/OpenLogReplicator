@@ -140,7 +140,7 @@ namespace OpenLogReplicator {
                     }
                     timestamp %= 1000000000;
                     appendSDec(firstDigits);
-                    appendDec<18>(timestamp * 1000000000L + fraction);
+                    appendDecN<18>(timestamp * 1000000000L + fraction);
                 }
                 break;
 
@@ -173,7 +173,7 @@ namespace OpenLogReplicator {
                     }
                     timestamp %= 1000000000;
                     appendSDec(firstDigits);
-                    appendDec<18>(timestamp * 1000000000L + fraction);
+                    appendDecN<18>(timestamp * 1000000000L + fraction);
                 }
                 append('"');
                 break;
@@ -204,7 +204,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
                 append('.');
-                appendDec<9>(fraction);
+                appendDecN<9>(fraction);
                 append(R"(Z")", sizeof(R"(Z")") - 1);
                 break;
 
@@ -219,7 +219,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
                 append('.');
-                appendDec<6>(fraction);
+                appendDecN<6>(fraction);
                 append(R"(Z")", sizeof(R"(Z")") - 1);
                 break;
 
@@ -234,7 +234,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
                 append('.');
-                appendDec<3>(fraction);
+                appendDecN<3>(fraction);
                 append(R"(Z")", sizeof(R"(Z")") - 1);
                 break;
 
@@ -251,7 +251,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append('.');
-                appendDec<9>(fraction);
+                appendDecN<9>(fraction);
                 append('"');
                 break;
 
@@ -266,7 +266,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append('.');
-                appendDec<6>(fraction);
+                appendDecN<6>(fraction);
                 append('"');
                 break;
 
@@ -281,7 +281,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append('.');
-                appendDec<3>(fraction);
+                appendDecN<3>(fraction);
                 append('"');
                 break;
 
@@ -322,7 +322,7 @@ namespace OpenLogReplicator {
                     }
                     timestamp %= 1000000000;
                     appendSDec(firstDigits);
-                    appendDec<18>(timestamp * 1000000000L + fraction);
+                    appendDecN<18>(timestamp * 1000000000L + fraction);
                 }
                 append(',');
                 append(tz);
@@ -361,7 +361,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
                 append('.');
-                appendDec<9>(fraction);
+                appendDecN<9>(fraction);
                 append("Z ", sizeof("Z ") - 1);
                 append(tz);
                 append('"');
@@ -378,7 +378,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
                 append('.');
-                appendDec<6>(fraction);
+                appendDecN<6>(fraction);
                 append("Z ", sizeof("Z ") - 1);
                 append(tz);
                 append('"');
@@ -395,7 +395,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
                 append('.');
-                appendDec<3>(fraction);
+                appendDecN<3>(fraction);
                 append("Z ", sizeof("Z ") - 1);
                 append(tz);
                 append('"');
@@ -417,7 +417,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append('.');
-                appendDec<9>(fraction);
+                appendDecN<9>(fraction);
                 append(' ');
                 append(tz);
                 append('"');
@@ -434,7 +434,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append('.');
-                appendDec<6>(fraction);
+                appendDecN<6>(fraction);
                 append(' ');
                 append(tz);
                 append('"');
@@ -451,7 +451,7 @@ namespace OpenLogReplicator {
                 append('"');
                 append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                 append('.');
-                appendDec<3>(fraction);
+                appendDecN<3>(fraction);
                 append(' ');
                 append(tz);
                 append('"');
