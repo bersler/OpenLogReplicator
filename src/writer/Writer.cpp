@@ -357,6 +357,7 @@ namespace OpenLogReplicator {
 
             // All work done?
             if (ctx->softShutdown && ctx->replicatorFinished) {
+                flush();
                 // Is there still some data to send?
                 if (builderQueue->confirmedSize != oldSize || builderQueue->next != nullptr)
                     continue;

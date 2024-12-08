@@ -28,6 +28,8 @@ namespace OpenLogReplicator {
         enum class MODE {
             STDOUT, NO_ROTATE, NUM, TIMESTAMP, SEQUENCE
         };
+        static constexpr uint BUFFER_SIZE = 1024 * 1024;
+        static constexpr uint BUFFER_FLUSH = 512 * 1024;
 
         size_t prefixPos;
         size_t suffixPos;
@@ -45,13 +47,18 @@ namespace OpenLogReplicator {
         uint64_t newLine;
         uint64_t append;
         typeSeq lastSequence;
-        const char* newLineMsg;
+        const uint8_t* newLineMsg;
         bool warningDisplayed;
+        uint8_t buffer[BUFFER_SIZE];
+        uint bufferFill;
+
         void closeFile();
         void checkFile(typeScn scn, typeSeq sequence, uint64_t size);
         void sendMessage(BuilderMsg* msg) override;
         std::string getType() const override;
         void pollQueue() override;
+        void unbufferedWrite(const uint8_t* data, uint64_t size);
+        void bufferedWrite(const uint8_t* data, uint64_t size);
 
     public:
         WriterFile(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newOutput,
@@ -59,6 +66,7 @@ namespace OpenLogReplicator {
         ~WriterFile() override;
 
         void initialize() override;
+        void flush() override;
     };
 }
 
