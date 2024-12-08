@@ -50,7 +50,8 @@ namespace OpenLogReplicator {
             append(newAppend),
             lastSequence(Ctx::ZERO_SEQ),
             newLineMsg(nullptr),
-            warningDisplayed(false) {
+            warningDisplayed(false),
+            bufferFill(0) {
     }
 
     WriterFile::~WriterFile() {
@@ -61,9 +62,9 @@ namespace OpenLogReplicator {
         Writer::initialize();
 
         if (newLine == 1) {
-            newLineMsg = "\n";
+            newLineMsg = reinterpret_cast<const uint8_t*>("\n");
         } else if (newLine == 2) {
-            newLineMsg = "\r\n";
+            newLineMsg = reinterpret_cast<const uint8_t*>("\r\n");
         }
 
         if (this->output.length() == 0) {
@@ -194,12 +195,13 @@ namespace OpenLogReplicator {
     }
 
     void WriterFile::closeFile() {
-        if (outputDes != -1) {
-            contextSet(CONTEXT::OS, REASON::OS);
-            close(outputDes);
-            contextSet(CONTEXT::CPU);
-            outputDes = -1;
-        }
+        if (outputDes == -1)
+            return;
+
+        contextSet(CONTEXT::OS, REASON::OS);
+        close(outputDes);
+        contextSet(CONTEXT::CPU);
+        outputDes = -1;
     }
 
     void WriterFile::checkFile(typeScn scn __attribute__((unused)), typeSeq sequence, uint64_t size) {
@@ -209,6 +211,7 @@ namespace OpenLogReplicator {
             fullFileName = pathName + "/" + fileNameMask;
         } else if (mode == MODE::NUM) {
             if (fileSize + size > maxFileSize) {
+                flush();
                 closeFile();
                 ++fileNameNum;
                 fileSize = 0;
@@ -252,11 +255,13 @@ namespace OpenLogReplicator {
             }
 
             if (shouldSwitch) {
+                flush();
                 closeFile();
                 fileSize = 0;
             }
         } else if (mode == MODE::SEQUENCE) {
             if (sequence != lastSequence) {
+                flush();
                 closeFile();
             }
 
@@ -303,22 +308,12 @@ namespace OpenLogReplicator {
         else
             checkFile(msg->scn, msg->sequence, msg->size);
 
-        contextSet(CONTEXT::OS, REASON::OS);
-        int64_t bytesWritten = write(outputDes, reinterpret_cast<const char*>(msg->data + msg->tagSize), msg->size - msg->tagSize);
-        contextSet(CONTEXT::CPU);
-        if (static_cast<uint64_t>(bytesWritten) != msg->size - msg->tagSize)
-            throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                          std::to_string(msg->size - msg->tagSize) + ", code returned: " + strerror(errno));
-        fileSize += bytesWritten;
+        bufferedWrite(msg->data + msg->tagSize, msg->size - msg->tagSize);
+        fileSize += msg->size - msg->tagSize;
 
         if (newLine > 0) {
-            contextSet(CONTEXT::OS, REASON::OS);
-            bytesWritten = write(outputDes, newLineMsg, newLine);
-            contextSet(CONTEXT::CPU);
-            if (static_cast<uint64_t>(bytesWritten) != newLine)
-                throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                              std::to_string(msg->size) + ", code returned: " + strerror(errno));
-            fileSize += bytesWritten;
+            bufferedWrite(newLineMsg, newLine);
+            fileSize += newLine;
         }
 
         confirmMessage(msg);
@@ -334,5 +329,38 @@ namespace OpenLogReplicator {
     void WriterFile::pollQueue() {
         if (metadata->status == Metadata::STATUS::READY)
             metadata->setStatusStart(this);
+    }
+
+    void WriterFile::flush() {
+        if (bufferFill == 0)
+            return;
+
+        unbufferedWrite(buffer, bufferFill);
+        bufferFill = 0;
+    }
+
+    void WriterFile::unbufferedWrite(const uint8_t* data, uint64_t size) {
+        contextSet(CONTEXT::OS, REASON::OS);
+        uint64_t bytesWritten = write(outputDes, data, size);
+        contextSet(CONTEXT::CPU);
+        if (bytesWritten != size)
+            throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
+                                          std::to_string(size) + ", code returned: " + strerror(errno));
+    }
+
+    void WriterFile::bufferedWrite(const uint8_t* data, uint64_t size) {
+        if (bufferFill + size > BUFFER_SIZE)
+            flush();
+
+        if (size > BUFFER_FLUSH) {
+            unbufferedWrite(data, size);
+            return;
+        }
+
+        memcpy(buffer + bufferFill, data, size);
+        bufferFill += size;
+
+        if (bufferFill > BUFFER_FLUSH)
+            flush();
     }
 }

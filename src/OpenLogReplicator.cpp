@@ -89,8 +89,10 @@ namespace OpenLogReplicator {
         ctx->stopSoft();
         ctx->mainFinish();
 
-        for (Writer* writer: writers)
+        for (Writer* writer: writers) {
+            writer->flush();
             delete writer;
+        }
         writers.clear();
 
         for (Builder* builder: builders)
