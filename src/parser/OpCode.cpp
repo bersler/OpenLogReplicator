@@ -128,11 +128,11 @@ namespace OpenLogReplicator {
             else
                 *ctx->dumpStream << "(pre-11)";
 
-            uint64_t padding = ((flg & 0x10) != 0) ? 0 : 1;
+            uint padding = ((flg & 0x10) != 0) ? 0 : 1;
             *ctx->dumpStream << " padding: " << padding << '\n';
         }
         char opCode;
-        uint64_t startPos = 8;
+        typePos startPos = 8;
         if ((flg & 0x08) == 0)
             startPos = 4;
 
@@ -2070,12 +2070,12 @@ namespace OpenLogReplicator {
         if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "Dump of memory from 0xXXXXXXXXXXXXXXXX to 0xXXXXXXXXXXXXXXXX\n";
 
-            const uint64_t start = fieldPos & 0xFFFFFFFFFFFFFFF0;
-            const uint64_t end = (fieldPos + fieldSize + 15) & 0xFFFFFFFFFFFFFFF0;
-            for (uint64_t i = start; i < end; i += 16) {
+            const typePos start = fieldPos & 0xFFF0;
+            const typePos end = (fieldPos + fieldSize + 15) & 0xFFF0;
+            for (typePos i = start; i < end; i += 16) {
                 *ctx->dumpStream << "XXXXXXXXXXXX";
 
-                int64_t first = -1, last = -1;
+                int first = -1, last = -1;
                 for (uint j = 0; j < 4; ++j) {
                     if (i + j * 4 >= fieldPos && i + j * 4 < fieldPos + fieldSize) {
                         if (first == -1)
@@ -2089,11 +2089,11 @@ namespace OpenLogReplicator {
                 }
                 *ctx->dumpStream << "  ";
 
-                for (int64_t j = 0; j < first; ++j)
+                for (int j = 0; j < first; ++j)
                     *ctx->dumpStream << "    ";
                 *ctx->dumpStream << "[";
 
-                for (int64_t j = first; j <= last; ++j)
+                for (int j = first; j <= last; ++j)
                     *ctx->dumpStream << "....";
                 *ctx->dumpStream << "]\n";
             }
@@ -2102,7 +2102,7 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::dumpColVector(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, typeCCExt colNum) {
-        uint64_t pos = 0;
+        uint pos = 0;
 
         *ctx->dumpStream << "Vector content: \n";
 
@@ -2166,7 +2166,7 @@ namespace OpenLogReplicator {
 
     void OpCode::dumpRows(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data) {
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            uint64_t pos = 0;
+            typePos pos = 0;
             char fbStr[9]{"--------"};
 
             for (typeCC r = 0; r < redoLogRecord->nRow; ++r) {

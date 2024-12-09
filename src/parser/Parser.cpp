@@ -767,7 +767,7 @@ namespace OpenLogReplicator {
 
         // Skip list
         auto skipXidListIt = transactionBuffer->skipXidList.find(redoLogRecord1->xid);
-        if (skipXidListIt != transactionBuffer->skipXidList.end()) {
+        if (unlikely(skipXidListIt != transactionBuffer->skipXidList.end())) {
             transactionBuffer->skipXidList.erase(skipXidListIt);
             return;
         }
@@ -775,12 +775,12 @@ namespace OpenLogReplicator {
         // Broken transaction
         typeXidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
         auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
-        if (brokenXidMapListIt != transactionBuffer->brokenXidMapList.end())
+        if (unlikely(brokenXidMapListIt != transactionBuffer->brokenXidMapList.end()))
             transactionBuffer->brokenXidMapList.erase(xidMap);
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
                                                                       true, ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_INCOMPLETE_TRANSACTIONS), false);
-        if (transaction == nullptr)
+        if (unlikely(transaction == nullptr))
             return;
 
         transaction->log(ctx, "C   ", redoLogRecord1);

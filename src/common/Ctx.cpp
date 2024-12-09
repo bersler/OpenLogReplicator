@@ -1267,23 +1267,63 @@ namespace OpenLogReplicator {
 
     std::ostringstream& Ctx::writeEscapeValue(std::ostringstream& ss, const std::string& str) {
         const char* c_str = str.c_str();
-        for (uint64_t i = 0; i < str.length(); ++i) {
-            if (*c_str == '\t') {
-                ss << "\\t";
-            } else if (*c_str == '\r') {
-                ss << "\\r";
-            } else if (*c_str == '\n') {
-                ss << "\\n";
-            } else if (*c_str == '\b') {
-                ss << "\\b";
-            } else if (*c_str == '\f') {
-                ss << "\\f";
-            } else if (*c_str == '"' || *c_str == '\\') {
-                ss << '\\' << *c_str;
-            } else if (*c_str < 32) {
-                ss << "\\u00" << Ctx::map16((*c_str >> 4) & 0x0F) << Ctx::map16(*c_str & 0x0F);
-            } else {
-                ss << *c_str;
+        for (uint i = 0; i < str.length(); ++i) {
+            switch (*c_str) {
+                case '\t':
+                    ss << "\\t";
+                    break;
+                case '\r':
+                    ss << "\\r";
+                    break;
+                case '\n':
+                    ss << "\\n";
+                    break;
+                case '\b':
+                    ss << "\\b";
+                    break;
+                case '\f':
+                    ss << "\\f";
+                    break;
+                case '"':
+                case '\\':
+                    ss << '\\' << *c_str;
+                    break;
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                //case 8: // \b
+                //case 9: // \t
+                //case 10: // \n
+                case 11:
+                //case 12: // \f
+                //case 13: // \r
+                case 14:
+                case 15:
+                case 16:
+                case 17:
+                case 18:
+                case 19:
+                case 20:
+                case 21:
+                case 22:
+                case 23:
+                case 24:
+                case 25:
+                case 26:
+                case 27:
+                case 28:
+                case 29:
+                case 30:
+                case 31:
+                    ss << "\\u00" << Ctx::map16((*c_str >> 4) & 0x0F) << Ctx::map16(*c_str & 0x0F);
+                    break;
+                default:
+                    ss << *c_str;
             }
             ++c_str;
         }

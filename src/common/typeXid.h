@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
                 sqn_.assign(str + 8, 8);
             } else if (length == 17) {
                 // UUUU.SSS.QQQQQQQQ
-                for (uint64_t i = 0; i < 17; ++i)
+                for (uint i = 0; i < 17; ++i)
                     if (unlikely(!isxdigit(str[i]) && i != 4 && i != 8))
                         throw DataException(20002, "bad XID value: " + std::string(str));
                 if (unlikely(str[4] != '.' || str[8] != '.'))
