@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
     class typeIntX final {
     public:
         static constexpr uint LENGTH{2};
-        static constexpr uint64_t DIGITS{39};
+        static constexpr uint DIGITS{39};
 
     private:
         uint64_t data[LENGTH];
@@ -64,12 +64,12 @@ namespace OpenLogReplicator {
 
         static void initializeBASE10() {
             memset(reinterpret_cast<void*>(BASE10), 0, sizeof(BASE10));
-            for (uint64_t digit = 0; digit < 10; ++digit) {
+            for (uint digit = 0; digit < 10; ++digit) {
                 BASE10[0][digit] = digit;
 
-                for (uint64_t pos = 1; pos < DIGITS; ++pos) {
+                for (uint pos = 1; pos < DIGITS; ++pos) {
                     BASE10[pos][digit] = BASE10[pos - 1][digit];
-                    for (uint64_t j = 1; j < 10; ++j)
+                    for (uint j = 1; j < 10; ++j)
                         BASE10[pos][digit] += BASE10[pos - 1][digit];
                 }
             }
@@ -90,7 +90,7 @@ namespace OpenLogReplicator {
         }
 
         typeIntX& operator+=(const typeIntX& other) {
-            uint64_t carry = 0;
+            uint carry = 0;
 
             for (uint i = 0; i < LENGTH; ++i) {
                 if (this->data[i] + other.data[i] + carry < (this->data[i] | other.data[i] | carry)) {
