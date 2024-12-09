@@ -337,7 +337,7 @@ namespace OpenLogReplicator {
         }
 
         template<bool fast = false>
-        inline void append(const char* str, uint64_t size) {
+        inline void appendArr(const char* str, uint64_t size) {
             if (fast || likely(lastBuilderSize + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
                 memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderSize + messagePosition),
                        reinterpret_cast<const void*>(str), size);
@@ -348,6 +348,12 @@ namespace OpenLogReplicator {
             }
         }
 
+        template<bool fast = false>
+        inline void append(const std::string_view& str) {
+            appendArr<fast>(str.data(), str.size());
+        }
+
+        template<bool fast = false>
         inline void append(const std::string& str) {
             size_t size = str.length();
             if (unlikely(lastBuilderSize + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
@@ -357,7 +363,7 @@ namespace OpenLogReplicator {
             } else {
                 const char* charStr = str.c_str();
                 for (size_t i = 0; i < size; ++i)
-                    append(*charStr++);
+                    append<fast>(*charStr++);
             }
         }
 
@@ -1192,7 +1198,7 @@ namespace OpenLogReplicator {
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) = 0;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) = 0;
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) = 0;
-        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const char* tz) = 0;
+        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) = 0;
         virtual void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
         virtual void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,

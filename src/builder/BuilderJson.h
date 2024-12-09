@@ -78,12 +78,12 @@ namespace OpenLogReplicator {
                 std::string columnName("COL_" + std::to_string(col));
                 append(columnName);
             }
-            append(R"(":null)", sizeof(R"(":null)") - 1);
+            append(std::string_view(R"(":null)"));
         }
 
         inline void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
             if (format.isMessageFormatAddSequences()) {
-                append(R"(,"num":)", sizeof(R"(,"num":)") - 1);
+                append(std::string_view(R"(,"num":)"));
                 appendDec(num);
             }
 
@@ -93,8 +93,8 @@ namespace OpenLogReplicator {
                 typeRowId rowId(dataObj, bdba, slot);
                 char str[19];
                 rowId.toString(str);
-                append(R"(,"rid":")", sizeof(R"(,"rid":")") - 1);
-                append(str, 18);
+                append(std::string_view(R"(,"rid":")"));
+                appendArr(str, 18);
                 append('"');
             }
         }
@@ -107,11 +107,11 @@ namespace OpenLogReplicator {
                     hasPreviousValue = true;
 
                 if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
-                    append(R"("scns":"0x)", sizeof(R"("scns":"0x)") - 1);
+                    append(std::string_view(R"("scns":"0x)"));
                     appendHex16(scn);
                     append('"');
                 } else {
-                    append(R"("scn":)", sizeof(R"("scn":)") - 1);
+                    append(std::string_view(R"("scn":)"));
                     appendDec(scn);
                 }
             }
@@ -125,106 +125,106 @@ namespace OpenLogReplicator {
                 char buffer[22];
                 switch (format.timestampFormat) {
                     case Format::TIMESTAMP_FORMAT::UNIX_NANO:
-                        append(R"("tm":)", sizeof(R"("tm":)") - 1);
+                        append(std::string_view(R"("tm":)"));
                         appendDec(timestamp);
                         if (timestamp != 0)
-                            append("000000000", 9);
+                            append(std::string_view("000000000"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::UNIX_MICRO:
-                        append(R"("tm":)", sizeof(R"("tm":)") - 1);
+                        append(std::string_view(R"("tm":)"));
                         appendDec(timestamp);
                         if (timestamp != 0)
-                            append("000000", 6);
+                            append(std::string_view("000000"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::UNIX_MILLI:
-                        append(R"("tm":)", sizeof(R"("tm":)") - 1);
+                        append(std::string_view(R"("tm":)"));
                         appendDec(timestamp);
                         if (timestamp != 0)
-                            append("000", 3);
+                            append(std::string_view("000"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::UNIX:
-                        append(R"("tm":)", sizeof(R"("tm":)") - 1);
+                        append(std::string_view(R"("tm":)"));
                         appendDec(timestamp);
                         break;
 
                     case Format::TIMESTAMP_FORMAT::UNIX_NANO_STRING:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                        append(std::string_view(R"("tms":")"));
                         appendDec(timestamp);
                         if (timestamp != 0)
-                            append("000000000", 9);
+                            append(std::string_view("000000000"));
                         append('"');
                         break;
 
                     case Format::TIMESTAMP_FORMAT::UNIX_MICRO_STRING:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                        append(std::string_view(R"("tms":")"));
                         appendDec(timestamp);
                         if (timestamp != 0)
-                            append("000000", 6);
+                            append(std::string_view("000000"));
                         append('"');
                         break;
 
                     case Format::TIMESTAMP_FORMAT::UNIX_MILLI_STRING:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                        append(std::string_view(R"("tms":")"));
                         appendDec(timestamp);
                         if (timestamp != 0)
-                            append("000", 3);
+                            append(std::string_view("000"));
                         append('"');
                         break;
 
                     case Format::TIMESTAMP_FORMAT::UNIX_STRING:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
+                        append(std::string_view(R"("tms":")"));
                         appendDec(timestamp);
                         append('"');
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_NANO_TZ:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
-                        append(R"(.000000000Z")", sizeof(R"(.000000000Z")") - 1);
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                        append(std::string_view(R"(.000000000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MICRO_TZ:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
-                        append(R"(.000000Z")", sizeof(R"(.000000Z")") - 1);
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
+                        append(std::string_view(R"(.000000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MILLI_TZ:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
-                        append(R"(.000Z")", sizeof(R"(.000Z")") - 1);
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                        append(std::string_view(R"(.000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_TZ:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
                         append('"');
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_NANO:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
-                        append(R"(.000000000")", sizeof(R"(.000000000")") - 1);
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        append(std::string_view(R"(.000000000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MICRO:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
-                        append(R"(.000000")", sizeof(R"(.000000")") - 1);
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        append(std::string_view(R"(.000000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MILLI:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
-                        append(R"(.000")", sizeof(R"(.000")") - 1);
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        append(std::string_view(R"(.000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601:
-                        append(R"("tms":")", sizeof(R"("tms":")") - 1);
-                        append(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        append(std::string_view(R"("tms":")"));
+                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
                         append('"');
                         break;
                 }
@@ -234,9 +234,9 @@ namespace OpenLogReplicator {
                 append(',');
             else
                 hasPreviousValue = true;
-            append(R"("c_scn":)", sizeof(R"("c_scn":)") - 1);
+            append(std::string_view(R"("c_scn":)"));
             appendDec(lwnScn);
-            append(R"(,"c_idx":)", sizeof(R"(,"c_idx":)") - 1);
+            append(std::string_view(R"(,"c_idx":)"));
             appendDec(lwnIdx);
 
             if (showXid) {
@@ -246,7 +246,7 @@ namespace OpenLogReplicator {
                     hasPreviousValue = true;
 
                 if (format.xidFormat == Format::XID_FORMAT::TEXT_HEX) {
-                    append(R"("xid":"0x)", sizeof(R"("xid":"0x)") - 1);
+                    append(std::string_view(R"("xid":"0x)"));
                     appendHex4(lastXid.usn());
                     append('.');
                     appendHex3(lastXid.slt());
@@ -254,7 +254,7 @@ namespace OpenLogReplicator {
                     appendHex8(lastXid.sqn());
                     append('"');
                 } else if (format.xidFormat == Format::XID_FORMAT::TEXT_DEC) {
-                    append(R"("xid":")", sizeof(R"("xid":")") - 1);
+                    append(std::string_view(R"("xid":")"));
                     appendDec(lastXid.usn());
                     append('.');
                     appendDec(lastXid.slt());
@@ -262,7 +262,7 @@ namespace OpenLogReplicator {
                     appendDec(lastXid.sqn());
                     append('"');
                 } else if (format.xidFormat == Format::XID_FORMAT::NUMERIC) {
-                    append(R"("xidn":)", sizeof(R"("xidn":)") - 1);
+                    append(std::string_view(R"("xidn":)"));
                     appendDec(lastXid.getData());
                 }
             }
@@ -273,14 +273,14 @@ namespace OpenLogReplicator {
                 else
                     hasPreviousValue = true;
 
-                append(R"("db":")", sizeof(R"("db":")") - 1);
+                append(std::string_view(R"("db":")"));
                 append(metadata->conName);
                 append('"');
             }
         }
 
         inline void appendAttributes() {
-            append(R"("attributes":{)", sizeof(R"("attributes":[)") - 1);
+            append(std::string_view(R"("attributes":{)"));
             bool hasPreviousAttribute = false;
             for (const auto& attributeIt: *attributes) {
                 if (hasPreviousAttribute)
@@ -290,11 +290,11 @@ namespace OpenLogReplicator {
 
                 append('"');
                 appendEscape(attributeIt.first);
-                append(R"(":")", sizeof(R"(":")") - 1);
+                append(std::string_view(R"(":")"));
                 appendEscape(attributeIt.second);
                 append('"');
             }
-            append("},", 2);
+            append(std::string_view("},"));
         }
 
         inline void appendSchema(const DbTable* table, typeObj obj) {
@@ -303,34 +303,34 @@ namespace OpenLogReplicator {
                 std::string tableName;
                 // try to read object name from ongoing uncommitted transaction data
                 if (metadata->schema->checkTableDictUncommitted(obj, ownerName, tableName)) {
-                    append(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
+                    append(std::string_view(R"("schema":{"owner":")"));
                     appendEscape(ownerName);
-                    append(R"(","table":")", sizeof(R"(","table":")") - 1);
+                    append(std::string_view(R"(","table":")"));
                     appendEscape(tableName);
                     append('"');
                 } else {
-                    append(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
+                    append(std::string_view(R"("schema":{"table":")"));
                     tableName = "OBJ_" + std::to_string(obj);
                     append(tableName);
                     append('"');
                 }
 
                 if (format.isSchemaFormatObj()) {
-                    append(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
+                    append(std::string_view(R"(,"obj":)"));
                     appendDec(obj);
                 }
                 append('}');
                 return;
             }
 
-            append(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
+            append(std::string_view(R"("schema":{"owner":")"));
             appendEscape(table->owner);
-            append(R"(","table":")", sizeof(R"(","table":")") - 1);
+            append(std::string_view(R"(","table":")"));
             appendEscape(table->name);
             append('"');
 
             if (format.isSchemaFormatObj()) {
-                append(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
+                append(std::string_view(R"(,"obj":)"));
                 appendDec(obj);
             }
 
@@ -343,7 +343,7 @@ namespace OpenLogReplicator {
                         tables.insert(table);
                 }
 
-                append(R"(,"columns":[)", sizeof(R"(,"columns":[)") - 1);
+                append(std::string_view(R"(,"columns":[)"));
 
                 bool hasPrev = false;
                 for (typeCol column = 0; column < static_cast<typeCol>(table->columns.size()); ++column) {
@@ -355,102 +355,102 @@ namespace OpenLogReplicator {
                     else
                         hasPrev = true;
 
-                    append(R"({"name":")", sizeof(R"({"name":")") - 1);
+                    append(std::string_view(R"({"name":")"));
                     appendEscape(table->columns[column]->name);
 
-                    append(R"(","type":)", sizeof(R"(","type":)") - 1);
+                    append(std::string_view(R"(","type":)"));
                     switch (table->columns[column]->type) {
                         case SysCol::COLTYPE::VARCHAR:
-                            append(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
+                            append(std::string_view(R"("varchar2","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::NUMBER:
-                            append(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
+                            append(std::string_view(R"("number","precision":)"));
                             appendSDec(table->columns[column]->precision);
-                            append(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
+                            append(std::string_view(R"(,"scale":)"));
                             appendSDec(table->columns[column]->scale);
                             break;
 
                         case SysCol::COLTYPE::LONG:
                             // Long, not supported
-                            append(R"("long")", sizeof(R"("long")") - 1);
+                            append(std::string_view(R"("long")"));
                             break;
 
                         case SysCol::COLTYPE::DATE:
-                            append(R"("date")", sizeof(R"("date")") - 1);
+                            append(std::string_view(R"("date")"));
                             break;
 
                         case SysCol::COLTYPE::RAW:
-                            append(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
+                            append(std::string_view(R"("raw","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::LONG_RAW: // Not supported
-                            append(R"("long raw")", sizeof(R"("long raw")") - 1);
+                            append(std::string_view(R"("long raw")"));
                             break;
 
                         case SysCol::COLTYPE::CHAR:
-                            append(R"("char","length":)", sizeof(R"("char","length":)") - 1);
+                            append(std::string_view(R"("char","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::FLOAT:
-                            append(R"("binary_float")", sizeof(R"("binary_float")") - 1);
+                            append(std::string_view(R"("binary_float")"));
                             break;
 
                         case SysCol::COLTYPE::DOUBLE:
-                            append(R"("binary_double")", sizeof(R"("binary_double")") - 1);
+                            append(std::string_view(R"("binary_double")"));
                             break;
 
                         case SysCol::COLTYPE::CLOB:
-                            append(R"("clob")", sizeof(R"("clob")") - 1);
+                            append(std::string_view(R"("clob")"));
                             break;
 
                         case SysCol::COLTYPE::BLOB:
-                            append(R"("blob")", sizeof(R"("blob")") - 1);
+                            append(std::string_view(R"("blob")"));
                             break;
 
                         case SysCol::COLTYPE::TIMESTAMP:
-                            append(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
+                            append(std::string_view(R"("timestamp","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::TIMESTAMP_WITH_TZ:
-                            append(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
+                            append(std::string_view(R"("timestamp with time zone","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::INTERVAL_YEAR_TO_MONTH:
-                            append(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
+                            append(std::string_view(R"("interval year to month","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::INTERVAL_DAY_TO_SECOND:
-                            append(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
+                            append(std::string_view(R"("interval day to second","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::UROWID:
-                            append(R"("urowid","length":)", sizeof(R"("urowid","length":)") - 1);
+                            append(std::string_view(R"("urowid","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         case SysCol::COLTYPE::TIMESTAMP_WITH_LOCAL_TZ:
-                            append(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
+                            append(std::string_view(R"("timestamp with local time zone","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
                         default:
-                            append(R"("unknown")", sizeof(R"("unknown")") - 1);
+                            append(std::string_view(R"("unknown")"));
                             break;
                     }
 
-                    append(R"(,"nullable":)", sizeof(R"(,"nullable":)") - 1);
+                    append(std::string_view(R"(,"nullable":)"));
                     if (table->columns[column]->nullable)
-                        append("true", sizeof("true") - 1);
+                        append(std::string_view("true"));
                     else
-                        append("false", sizeof("false") - 1);
+                        append(std::string_view("false"));
 
                     append('}');
                 }
@@ -653,19 +653,19 @@ namespace OpenLogReplicator {
             while (size > 0) {
                 switch (*str) {
                     case '\t':
-                        append<fast>("\\t", sizeof("\\t") - 1);
+                        append<fast>(std::string_view("\\t"));
                         break;
                     case '\r':
-                        append<fast>("\\r", sizeof("\\r") - 1);
+                        append<fast>(std::string_view("\\r"));
                         break;
                     case '\n':
-                        append<fast>("\\n", sizeof("\\n") - 1);
+                        append<fast>(std::string_view("\\n"));
                         break;
                     case '\f':
-                        append<fast>("\\f", sizeof("\\f") - 1);
+                        append<fast>(std::string_view("\\f"));
                         break;
                     case '\b':
-                        append<fast>("\\b", sizeof("\\b") - 1);
+                        append<fast>(std::string_view("\\b"));
                         break;
                     case 0:
                     case 1:
@@ -698,7 +698,7 @@ namespace OpenLogReplicator {
                     case 28:
                     case 29:
                     case 30:
-                        append<fast>("\\u00", sizeof("\\u00") - 1);
+                        append<fast>(std::string_view("\\u00"));
                         appendDecN<2, fast>(*str);
                         break;
                     case '"':
@@ -716,7 +716,7 @@ namespace OpenLogReplicator {
         }
 
         inline void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
-            append(R"(,"after":{)", sizeof(R"(,"after":{)") - 1);
+            append(std::string_view(R"(,"after":{)"));
 
             hasPreviousColumn = false;
             if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
@@ -756,7 +756,7 @@ namespace OpenLogReplicator {
         }
 
         inline void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
-            append(R"(,"before":{)", sizeof(R"(,"before":{)") - 1);
+            append(std::string_view(R"(,"before":{)"));
 
             hasPreviousColumn = false;
             if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
@@ -803,7 +803,7 @@ namespace OpenLogReplicator {
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) override;
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
-        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const char* tz) override;
+        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
         virtual void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
         virtual void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,

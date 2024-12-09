@@ -303,10 +303,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterFile::sendMessage(BuilderMsg* msg) {
-        if (newLine > 0)
-            checkFile(msg->scn, msg->sequence, msg->size + 1);
-        else
-            checkFile(msg->scn, msg->sequence, msg->size);
+        checkFile(msg->scn, msg->sequence, msg->size + newLine);
 
         bufferedWrite(msg->data + msg->tagSize, msg->size - msg->tagSize);
         fileSize += msg->size - msg->tagSize;
@@ -341,15 +338,15 @@ namespace OpenLogReplicator {
 
     void WriterFile::unbufferedWrite(const uint8_t* data, uint64_t size) {
         contextSet(CONTEXT::OS, REASON::OS);
-        uint64_t bytesWritten = write(outputDes, data, size);
+        int64_t bytesWritten = write(outputDes, data, size);
         contextSet(CONTEXT::CPU);
-        if (bytesWritten != size)
+        if (bytesWritten <= 0 || static_cast<uint64_t>(bytesWritten) != size)
             throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
                                           std::to_string(size) + ", code returned: " + strerror(errno));
     }
 
     void WriterFile::bufferedWrite(const uint8_t* data, uint64_t size) {
-        if (bufferFill + size > BUFFER_SIZE)
+        if (bufferFill + size > BUFFER_FLUSH)
             flush();
 
         if (size > BUFFER_FLUSH) {

@@ -117,102 +117,6 @@ namespace OpenLogReplicator {
         resetTouched();
     }
 
-    bool Schema::compareXdbXNm(Schema* otherSchema, std::string& msgs) const {
-        for (const auto& schemaXmlMapIter: schemaXmlMap) {
-            XmlCtx* xmlCtx = schemaXmlMapIter.second;
-            auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
-            if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
-                return false;
-            XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
-
-            for (auto xdbXNmMapRowIdIt: xmlCtx->xdbXNmPack.mapRowId) {
-                XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
-                auto xdbXNmMapRowIdIt2 = otherXmlCtx->xdbXNmPack.mapRowId.find(xdbXNm->rowId);
-                if (xdbXNmMapRowIdIt2 == otherXmlCtx->xdbXNmPack.mapRowId.end()) {
-                    msgs.assign("schema mismatch: " + XdbXNm::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXNm->rowId.toString());
-                    return false;
-                } else if (*xdbXNm != *(xdbXNmMapRowIdIt2->second)) {
-                    msgs.assign("schema mismatch: " + XdbXNm::tableName() + schemaXmlMapIter.first + " differs ROWID: " + xdbXNm->rowId.toString());
-                    return false;
-                }
-            }
-
-            for (const auto xdbXNmMapRowIdIt: otherXmlCtx->xdbXNmPack.mapRowId) {
-                XdbXNm* xdbXNm = xdbXNmMapRowIdIt.second;
-                auto xdbXNmMapRowIdIt2 = xmlCtx->xdbXNmPack.mapRowId.find(xdbXNm->rowId);
-                if (xdbXNmMapRowIdIt2 == xmlCtx->xdbXNmPack.mapRowId.end()) {
-                    msgs.assign("schema mismatch: " + XdbXNm::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXNm->rowId.toString());
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareXdbXQn(Schema* otherSchema, std::string& msgs) const {
-        for (const auto& schemaXmlMapIter: schemaXmlMap) {
-            XmlCtx* xmlCtx = schemaXmlMapIter.second;
-            auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
-            if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
-                return false;
-            XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
-
-            for (auto xdbXQnMapRowIdIt: xmlCtx->xdbXQnPack.mapRowId) {
-                XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
-                auto xdbXQnMapRowIdIt2 = otherXmlCtx->xdbXQnPack.mapRowId.find(xdbXQn->rowId);
-                if (xdbXQnMapRowIdIt2 == otherXmlCtx->xdbXQnPack.mapRowId.end()) {
-                    msgs.assign("schema mismatch: " + XdbXQn::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXQn->rowId.toString());
-                    return false;
-                } else if (*xdbXQn != *(xdbXQnMapRowIdIt2->second)) {
-                    msgs.assign("schema mismatch: " + XdbXQn::tableName() + schemaXmlMapIter.first + " differs ROWID: " + xdbXQn->rowId.toString());
-                    return false;
-                }
-            }
-
-            for (const auto xdbXQnMapRowIdIt: otherXmlCtx->xdbXQnPack.mapRowId) {
-                XdbXQn* xdbXQn = xdbXQnMapRowIdIt.second;
-                auto xdbXQnMapRowIdIt2 = xmlCtx->xdbXQnPack.mapRowId.find(xdbXQn->rowId);
-                if (xdbXQnMapRowIdIt2 == xmlCtx->xdbXQnPack.mapRowId.end()) {
-                    msgs.assign("schema mismatch: " + XdbXQn::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXQn->rowId.toString());
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    bool Schema::compareXdbXPt(Schema* otherSchema, std::string& msgs) const {
-        for (const auto& schemaXmlMapIter: schemaXmlMap) {
-            XmlCtx* xmlCtx = schemaXmlMapIter.second;
-            auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
-            if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
-                return false;
-            XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
-
-            for (auto xdbXPtMapRowIdIt: xmlCtx->xdbXPtPack.mapRowId) {
-                XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
-                auto xdbXPtMapRowIdIt2 = otherXmlCtx->xdbXPtPack.mapRowId.find(xdbXPt->rowId);
-                if (xdbXPtMapRowIdIt2 == otherXmlCtx->xdbXPtPack.mapRowId.end()) {
-                    msgs.assign("schema mismatch: " + XdbXPt::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXPt->rowId.toString());
-                    return false;
-                } else if (*xdbXPt != *(xdbXPtMapRowIdIt2->second)) {
-                    msgs.assign("schema mismatch: " + XdbXPt::tableName() + schemaXmlMapIter.first + " differs ROWID: " + xdbXPt->rowId.toString());
-                    return false;
-                }
-            }
-
-            for (const auto xdbXPtMapRowIdIt: otherXmlCtx->xdbXPtPack.mapRowId) {
-                XdbXPt* xdbXPt = xdbXPtMapRowIdIt.second;
-                auto xdbXPtMapRowIdIt2 = xmlCtx->xdbXPtPack.mapRowId.find(xdbXPt->rowId);
-                if (xdbXPtMapRowIdIt2 == xmlCtx->xdbXPtPack.mapRowId.end()) {
-                    msgs.assign("schema mismatch: " + XdbXPt::tableName() + schemaXmlMapIter.first + " lost ROWID: " + xdbXPt->rowId.toString());
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
     bool Schema::compare(Schema* otherSchema, std::string& msgs) const {
         if (!sysCColPack.compareTo(otherSchema->sysCColPack, msgs)) return false;
         if (!sysCDefPack.compareTo(otherSchema->sysCDefPack, msgs)) return false;
@@ -230,10 +134,19 @@ namespace OpenLogReplicator {
         if (!sysTsPack.compareTo(otherSchema->sysTsPack, msgs)) return false;
         if (!sysUserPack.compareTo(otherSchema->sysUserPack, msgs)) return false;
         if (!xdbTtSetPack.compareTo(otherSchema->xdbTtSetPack, msgs)) return false;
-        if (!compareXdbXNm(otherSchema, msgs)) return false;
-        if (!compareXdbXPt(otherSchema, msgs)) return false;
-        if (!compareXdbXQn(otherSchema, msgs)) return false;
-
+        for (const auto& schemaXmlMapIter: schemaXmlMap) {
+            XmlCtx* xmlCtx = schemaXmlMapIter.second;
+            auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
+            if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
+                return false;
+            XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
+            if (!xmlCtx->xdbXNmPack.compareTo(otherXmlCtx->xdbXNmPack, msgs))
+                return false;
+            if (!xmlCtx->xdbXPtPack.compareTo(otherXmlCtx->xdbXPtPack, msgs))
+                return false;
+            if (!xmlCtx->xdbXQnPack.compareTo(otherXmlCtx->xdbXQnPack, msgs))
+                return false;
+        }
         msgs.assign("");
         return true;
     }

@@ -424,7 +424,7 @@ namespace OpenLogReplicator {
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
         virtual void columnRowId(const std::string& columnName, typeRowId rowId) override;
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
-        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const char* tz) override;
+        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
         virtual void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
         virtual void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
