@@ -328,8 +328,8 @@ namespace OpenLogReplicator {
                     if (size == 13)
                         fraction = ctx->read32Big(data + 7);
 
-                    const char* tz;
-                    char tz2[7];
+                    char tz2[6] {'+', '0', '0', ':', '0', '0'};
+                    std::string_view tz(tz2, 6);
 
                     if (data[11] >= 5 && data[11] <= 36) {
                         if (data[11] < 20 || (data[11] == 20 && data[12] < 60))
@@ -358,8 +358,7 @@ namespace OpenLogReplicator {
                             tz2[4] = Ctx::map10(val / 10);
                             tz2[5] = Ctx::map10(val % 10);
                         }
-                        tz2[6] = 0;
-                        tz = tz2;
+                        tz = std::string_view(tz2, 6);
                     } else {
                         uint16_t tzKey = (data[11] << 8) | data[12];
                         auto timeZoneMapIt = locales->timeZoneMap.find(tzKey);

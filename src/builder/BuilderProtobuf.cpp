@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderProtobuf::columnTimestampTz(const std::string& columnName, time_t tmstp __attribute__((unused)),
-                                            uint64_t fraction __attribute__((unused)), const char* tz __attribute__((unused))) {
+                                            uint64_t fraction __attribute__((unused)), const std::string_view& tz __attribute__((unused))) {
         valuePB->set_name(columnName);
         // TODO: implement
     }

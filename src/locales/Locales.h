@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     class Locales final {
     public:
         std::unordered_map<uint64_t, CharacterSet*> characterMap;
-        std::unordered_map<uint16_t, const char*> timeZoneMap;
+        std::unordered_map<uint16_t, std::string_view> timeZoneMap;
 
         Locales();
         ~Locales();
