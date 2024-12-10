@@ -756,7 +756,7 @@ namespace OpenLogReplicator {
                 parser->reader = archReader;
 
                 archReader->fileName = parser->path;
-                uint64_t retry = ctx->archReadTries;
+                uint retry = ctx->archReadTries;
 
                 while (true) {
                     if (archReader->checkRedoLog() && archReader->updateRedoLog()) {

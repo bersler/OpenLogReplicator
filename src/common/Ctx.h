@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
         uint64_t redoReadSleepUs;
         uint64_t redoVerifyDelayUs;
         uint64_t archReadSleepUs;
-        uint64_t archReadTries;
+        uint archReadTries;
         uint64_t refreshIntervalUs;
         // Writer
         uint64_t pollIntervalUs;

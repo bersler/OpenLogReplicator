@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         int flags;
         void redoClose() override;
         REDO_CODE redoOpen() override;
-        int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) override;
+        int redoRead(uint8_t* buf, uint64_t offset, uint size) override;
 
     public:
         ReaderFilesystem(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int newGroup, bool newConfiguredBlockSum);

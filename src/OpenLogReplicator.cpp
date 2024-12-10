@@ -783,7 +783,7 @@ namespace OpenLogReplicator {
                 ctx->archReadSleepUs = Ctx::getJsonFieldU64(configFileName, sourceJson, "arch-read-sleep-us");
 
             if (sourceJson.HasMember("arch-read-tries")) {
-                ctx->archReadTries = Ctx::getJsonFieldU64(configFileName, sourceJson, "arch-read-tries");
+                ctx->archReadTries = Ctx::getJsonFieldU(configFileName, sourceJson, "arch-read-tries");
                 if (ctx->archReadTries < 1 || ctx->archReadTries > 1000000000)
                     throw ConfigurationException(30001, "bad JSON, invalid \"arch-read-tries\" value: " +
                                                         std::to_string(ctx->archReadTries) + ", expected: one of: {1 .. 1000000000}");

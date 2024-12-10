@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
         bool hasPreviousColumn;
 
         inline void columnNull(const DbTable* table, typeCol col, bool after) {
-            if (table != nullptr && format.unknownType == Format::UNKNOWN_TYPE::HIDE) {
+            if (unlikely(table != nullptr && format.unknownType == Format::UNKNOWN_TYPE::HIDE)) {
                 const DbColumn* column = table->columns[col];
                 if (column->guard && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_GUARD_COLUMNS))
                     return;
@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
                 hasPreviousColumn = true;
 
             append('"');
-            if (table != nullptr)
+            if (likely(table != nullptr))
                 appendEscape(table->columns[col]->name);
             else {
                 std::string columnName("COL_" + std::to_string(col));
@@ -245,25 +245,28 @@ namespace OpenLogReplicator {
                 else
                     hasPreviousValue = true;
 
-                if (format.xidFormat == Format::XID_FORMAT::TEXT_HEX) {
-                    append(std::string_view(R"("xid":"0x)"));
-                    appendHex4(lastXid.usn());
-                    append('.');
-                    appendHex3(lastXid.slt());
-                    append('.');
-                    appendHex8(lastXid.sqn());
-                    append('"');
-                } else if (format.xidFormat == Format::XID_FORMAT::TEXT_DEC) {
-                    append(std::string_view(R"("xid":")"));
-                    appendDec(lastXid.usn());
-                    append('.');
-                    appendDec(lastXid.slt());
-                    append('.');
-                    appendDec(lastXid.sqn());
-                    append('"');
-                } else if (format.xidFormat == Format::XID_FORMAT::NUMERIC) {
-                    append(std::string_view(R"("xidn":)"));
-                    appendDec(lastXid.getData());
+                switch (format.xidFormat) {
+                    case Format::XID_FORMAT::TEXT_HEX:
+                        append(std::string_view(R"("xid":"0x)"));
+                        appendHex4(lastXid.usn());
+                        append('.');
+                        appendHex3(lastXid.slt());
+                        append('.');
+                        appendHex8(lastXid.sqn());
+                        append('"');
+                        break;
+                    case Format::XID_FORMAT::TEXT_DEC:
+                        append(std::string_view(R"("xid":")"));
+                        appendDec(lastXid.usn());
+                        append('.');
+                        appendDec(lastXid.slt());
+                        append('.');
+                        appendDec(lastXid.sqn());
+                        append('"');
+                        break;
+                    case Format::XID_FORMAT::NUMERIC:
+                        append(std::string_view(R"("xidn":)"));
+                        appendDec(lastXid.getData());
                 }
             }
 
@@ -298,7 +301,7 @@ namespace OpenLogReplicator {
         }
 
         inline void appendSchema(const DbTable* table, typeObj obj) {
-            if (table == nullptr) {
+            if (unlikely(table == nullptr)) {
                 std::string ownerName;
                 std::string tableName;
                 // try to read object name from ongoing uncommitted transaction data
@@ -460,8 +463,9 @@ namespace OpenLogReplicator {
             append('}');
         }
 
+        template<bool fast = false>
         inline void appendHex2(uint8_t value) {
-            if (likely(lastBuilderSize + messagePosition + 2 < OUTPUT_BUFFER_DATA_SIZE)) {
+            if (likely(fast || lastBuilderSize + messagePosition + 2 < OUTPUT_BUFFER_DATA_SIZE)) {
                 append<true>(Ctx::map16((value >> 4) & 0xF));
                 append<true>(Ctx::map16(value & 0xF));
             } else {
@@ -636,12 +640,14 @@ namespace OpenLogReplicator {
             }
         }
 
+        template<bool fast = false>
         inline void appendEscape(const std::string& str) {
-            appendEscape(str.c_str(), str.length());
+            appendEscape<fast>(str.c_str(), str.length());
         }
 
+        template<bool fast = false>
         inline void appendEscape(const char* str, uint64_t size) {
-            if (likely(lastBuilderSize + messagePosition + size * 5 < OUTPUT_BUFFER_DATA_SIZE)) {
+            if (fast || likely(lastBuilderSize + messagePosition + size * 5 < OUTPUT_BUFFER_DATA_SIZE)) {
                 appendEscapeInternal<true>(str, size);
             } else {
                 appendEscapeInternal<false>(str, size);

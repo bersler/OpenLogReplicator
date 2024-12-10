@@ -238,8 +238,8 @@ namespace OpenLogReplicator {
 
                 if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::TRANSACTION)))
                     metadata->ctx->logTrace(Ctx::TRACE::TRANSACTION, std::to_string(redoLogRecord1->size) + ":" + std::to_string(redoLogRecord2->size) +
-                                                                     " fb: " + std::to_string(static_cast<uint64_t>(redoLogRecord1->fb)) + ":" +
-                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord2->fb)) + " op: " + std::to_string(op) +
+                                                                     " fb: " + std::to_string(static_cast<uint>(redoLogRecord1->fb)) + ":" +
+                                                                     std::to_string(static_cast<uint>(redoLogRecord2->fb)) + " op: " + std::to_string(op) +
                                                                      " scn: " + std::to_string(redoLogRecord1->scn) + " subscn: " +
                                                                      std::to_string(redoLogRecord1->subScn) + " scnrecord: " +
                                                                      std::to_string(redoLogRecord1->scnRecord) + " obj: " +
@@ -249,10 +249,10 @@ namespace OpenLogReplicator {
                                                                      // " uba1: " + PRINTUBA(redoLogRecord1->uba) +
                                                                      // " uba2: " + PRINTUBA(redoLogRecord2->uba) <<
                                                                      " bdba1: " + std::to_string(redoLogRecord1->bdba) + "." +
-                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord1->slot)) + " bdba2: " +
+                                                                     std::to_string(static_cast<uint>(redoLogRecord1->slot)) + " bdba2: " +
                                                                      std::to_string(redoLogRecord2->bdba) + "." +
-                                                                     std::to_string(static_cast<uint64_t>(redoLogRecord2->slot)) +
-                                                                     " supp: (" + std::to_string(static_cast<uint64_t>(redoLogRecord1->suppLogFb)) + ", " +
+                                                                     std::to_string(static_cast<uint>(redoLogRecord2->slot)) +
+                                                                     " supp: (" + std::to_string(static_cast<uint>(redoLogRecord1->suppLogFb)) + ", " +
                                                                      std::to_string(redoLogRecord1->suppLogCC) + ", " +
                                                                      std::to_string(redoLogRecord1->suppLogBefore) + ", " +
                                                                      std::to_string(redoLogRecord1->suppLogAfter) + ", " +
@@ -313,11 +313,11 @@ namespace OpenLogReplicator {
                             std::ostringstream ss;
                             for (typeSize j = 0; j < redoLogRecord2->indKeyDataSize; ++j) {
                                 ss << " " << std::setfill('0') << std::setw(2) << std::hex <<
-                                   static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKeyData + j]);
+                                   static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKeyData + j]);
                             }
 
                             metadata->ctx->logTrace(Ctx::TRACE::LOB_DATA, "index: " + ss.str() + " code: " +
-                                                                          std::to_string(static_cast<uint64_t>(redoLogRecord2->indKeyDataCode)));
+                                                                          std::to_string(static_cast<uint>(redoLogRecord2->indKeyDataCode)));
                         }
 
                         if (redoLogRecord2->dba0 != 0) {

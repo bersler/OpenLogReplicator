@@ -481,8 +481,8 @@ namespace OpenLogReplicator {
                         appendToTransaction(&redoLogRecord[vectorPrev]);
                         continue;
                     } else if (redoLogRecord[vectorPrev].opc == 0x0B01)
-                        ctx->warning(70010, "unknown undo OP: " + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode >> 8)) +
-                                            "." + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode & 0xFF)) + ", opc: " +
+                        ctx->warning(70010, "unknown undo OP: " + std::to_string(static_cast<uint>(redoLogRecord[vectorCur].opCode >> 8)) +
+                                            "." + std::to_string(static_cast<uint>(redoLogRecord[vectorCur].opCode & 0xFF)) + ", opc: " +
                                             std::to_string(redoLogRecord[vectorPrev].opc));
 
                     vectorCur = -1;
@@ -493,8 +493,8 @@ namespace OpenLogReplicator {
                     if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00)
                         appendToTransactionRollback(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     else if (redoLogRecord[vectorCur].opc == 0x0B01)
-                        ctx->warning(70011, "unknown rollback OP: " + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode >> 8)) +
-                                            "." + std::to_string(static_cast<uint64_t>(redoLogRecord[vectorCur].opCode & 0xFF)) + ", opc: " +
+                        ctx->warning(70011, "unknown rollback OP: " + std::to_string(static_cast<uint>(redoLogRecord[vectorCur].opCode >> 8)) +
+                                            "." + std::to_string(static_cast<uint>(redoLogRecord[vectorCur].opCode & 0xFF)) + ", opc: " +
                                             std::to_string(redoLogRecord[vectorPrev].opc));
 
                     vectorCur = -1;
@@ -716,8 +716,8 @@ namespace OpenLogReplicator {
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
             if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
                 ctx->warning(60010, "no match found for transaction rollback, skipping, SLT: " +
-                                    std::to_string(static_cast<uint64_t>(redoLogRecord1->slt)) + ", USN: " +
-                                    std::to_string(static_cast<uint64_t>(redoLogRecord1->usn)));
+                                    std::to_string(static_cast<uint>(redoLogRecord1->slt)) + ", USN: " +
+                                    std::to_string(static_cast<uint>(redoLogRecord1->usn)));
                 transactionBuffer->brokenXidMapList.insert(xidMap);
             }
             return;
@@ -956,8 +956,8 @@ namespace OpenLogReplicator {
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
             if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
                 ctx->warning(60010, "no match found for transaction rollback, skipping, SLT: " +
-                                    std::to_string(static_cast<uint64_t>(redoLogRecord2->slt)) + ", USN: " +
-                                    std::to_string(static_cast<uint64_t>(redoLogRecord2->usn)));
+                                    std::to_string(static_cast<uint>(redoLogRecord2->slt)) + ", USN: " +
+                                    std::to_string(static_cast<uint>(redoLogRecord2->usn)));
                 transactionBuffer->brokenXidMapList.insert(xidMap);
             }
             return;
@@ -1102,10 +1102,10 @@ namespace OpenLogReplicator {
                 redoLogRecord2->indKeyDataSize = 32;
             } else {
                 ctx->warning(60014, "verify redo log file for OP: 10.8, len: " + std::to_string(redoLogRecord2->indKeySize) +
-                                    ", data = [" + std::to_string(static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey])) + ", " +
-                                    std::to_string(static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey + 1])) + ", " +
-                                    std::to_string(static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey + 34])) + ", " +
-                                    std::to_string(static_cast<uint64_t>(redoLogRecord2->data()[redoLogRecord2->indKey + 45])) + "]");
+                                    ", data = [" + std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey])) + ", " +
+                                    std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + 1])) + ", " +
+                                    std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + 34])) + ", " +
+                                    std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + 45])) + "]");
                 return;
             }
 

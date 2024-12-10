@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
     }
 
     Reader::~Reader() {
-        for (uint64_t num = 0; num < ctx->memoryChunksReadBufferMax; ++num)
+        for (uint num = 0; num < ctx->memoryChunksReadBufferMax; ++num)
             bufferFree(this, num);
 
         if (redoBufferList != nullptr) {
@@ -134,7 +134,7 @@ namespace OpenLogReplicator {
             (blockSize == 1024 && buffer[1] != 0x22) ||
             (blockSize == 4096 && buffer[1] != 0x82)) {
             ctx->error(40001, "file: " + fileName + " - block: " + std::to_string(blockNumber) + " - invalid block size: " +
-                              std::to_string(blockSize) + ", header[1]: " + std::to_string(static_cast<uint64_t>(buffer[1])));
+                              std::to_string(blockSize) + ", header[1]: " + std::to_string(static_cast<uint>(buffer[1])));
             return REDO_CODE::ERROR_BAD_DATA;
         }
 
@@ -188,7 +188,7 @@ namespace OpenLogReplicator {
         return REDO_CODE::OK;
     }
 
-    uint64_t Reader::readSize(uint64_t prevRead) {
+    uint Reader::readSize(uint prevRead) {
         if (prevRead < blockSize)
             return blockSize;
 
@@ -203,9 +203,9 @@ namespace OpenLogReplicator {
         if (ctx->softShutdown)
             return REDO_CODE::ERROR;
 
-        int64_t actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : PAGE_SIZE_MAX * 2);
+        int actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : PAGE_SIZE_MAX * 2);
         if (actualRead < 512) {
-            ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
+            ctx->error(40003, "file: " + fileName + " - " + strerror(errno));
             return REDO_CODE::ERROR_READ;
         }
         if (ctx->metrics)
@@ -213,7 +213,7 @@ namespace OpenLogReplicator {
 
         // Check file header
         if (headerBuffer[0] != 0) {
-            ctx->error(40003, "file: " + fileName + " - invalid header[0]: " + std::to_string(static_cast<uint64_t>(headerBuffer[0])));
+            ctx->error(40003, "file: " + fileName + " - invalid header[0]: " + std::to_string(static_cast<uint>(headerBuffer[0])));
             return REDO_CODE::ERROR_BAD_DATA;
         }
 
@@ -221,9 +221,9 @@ namespace OpenLogReplicator {
             if (!ctx->isBigEndian())
                 ctx->setBigEndian();
         } else if (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A || ctx->isBigEndian()) {
-            ctx->error(40004, "file: " + fileName + " - invalid header[28-31]: " + std::to_string(static_cast<uint64_t>(headerBuffer[28])) +
-                              ", " + std::to_string(static_cast<uint64_t>(headerBuffer[29])) + ", " + std::to_string(static_cast<uint64_t>(headerBuffer[30])) +
-                              ", " + std::to_string(static_cast<uint64_t>(headerBuffer[31])));
+            ctx->error(40004, "file: " + fileName + " - invalid header[28-31]: " + std::to_string(static_cast<uint>(headerBuffer[28])) +
+                              ", " + std::to_string(static_cast<uint>(headerBuffer[29])) + ", " + std::to_string(static_cast<uint>(headerBuffer[30])) +
+                              ", " + std::to_string(static_cast<uint>(headerBuffer[31])));
             return REDO_CODE::ERROR_BAD_DATA;
         }
 
@@ -234,19 +234,19 @@ namespace OpenLogReplicator {
 
         if (!blockSizeOK) {
             ctx->error(40005, "file: " + fileName + " - invalid block size: " + std::to_string(blockSize) + ", header[1]: " +
-                              std::to_string(static_cast<uint64_t>(headerBuffer[1])));
+                              std::to_string(static_cast<uint>(headerBuffer[1])));
             blockSize = 0;
             return REDO_CODE::ERROR_BAD_DATA;
         }
 
-        if (actualRead < static_cast<int64_t>(blockSize * 2)) {
-            ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
+        if (actualRead < static_cast<int>(blockSize * 2)) {
+            ctx->error(40003, "file: " + fileName + " - " + strerror(errno));
             return REDO_CODE::ERROR_READ;
         }
 
         if (ctx->redoCopyPath.length() > 0) {
-            if (static_cast<uint64_t>(actualRead) > blockSize * 2)
-                actualRead = static_cast<int64_t>(blockSize * 2);
+            if (static_cast<uint>(actualRead) > blockSize * 2)
+                actualRead = static_cast<int>(blockSize * 2);
 
             typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
             if (fileCopySequence != sequenceHeader) {
@@ -265,7 +265,7 @@ namespace OpenLogReplicator {
                 fileCopySequence = sequenceHeader;
             }
 
-            int64_t bytesWritten = pwrite(fileCopyDes, headerBuffer, actualRead, 0);
+            int bytesWritten = pwrite(fileCopyDes, headerBuffer, actualRead, 0);
             if (bytesWritten != actualRead) {
                 ctx->error(10007, "file: " + fileNameWrite + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
                                   std::to_string(actualRead) + ", code returned: " + strerror(errno));
@@ -387,7 +387,7 @@ namespace OpenLogReplicator {
     }
 
     bool Reader::read1() {
-        uint64_t toRead = readSize(lastRead);
+        uint toRead = readSize(lastRead);
 
         if (bufferScan + toRead > fileSize)
             toRead = fileSize - bufferScan;
@@ -408,13 +408,13 @@ namespace OpenLogReplicator {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
             ctx->logTrace(Ctx::TRACE::DISK, "reading#1 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
                                             std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") bytes: " + std::to_string(toRead));
-        int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferScan, toRead);
+        int actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferScan, toRead);
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
             ctx->logTrace(Ctx::TRACE::DISK, "reading#1 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
                                             std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
         if (actualRead < 0) {
-            ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
+            ctx->error(40003, "file: " + fileName + " - " + strerror(errno));
             ret = REDO_CODE::ERROR_READ;
             return false;
         }
@@ -422,7 +422,7 @@ namespace OpenLogReplicator {
             ctx->metrics->emitBytesRead(actualRead);
 
         if (actualRead > 0 && fileCopyDes != -1 && (ctx->redoVerifyDelayUs == 0 || group == 0)) {
-            int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
+            int bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
                                           static_cast<int64_t>(bufferEnd));
             if (bytesWritten != actualRead) {
                 ctx->error(10007, "file: " + fileNameWrite + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
@@ -434,7 +434,7 @@ namespace OpenLogReplicator {
 
         typeBlk maxNumBlock = actualRead / blockSize;
         typeBlk bufferScanBlock = bufferScan / blockSize;
-        uint64_t goodBlocks = 0;
+        uint goodBlocks = 0;
         REDO_CODE currentRet = REDO_CODE::OK;
 
         // Check which blocks are good
@@ -490,7 +490,7 @@ namespace OpenLogReplicator {
             if (ctx->redoVerifyDelayUs > 0 && group != 0) {
                 bufferScan += goodBlocks * blockSize;
 
-                for (uint64_t numBlock = 0; numBlock < goodBlocks; ++numBlock) {
+                for (uint numBlock = 0; numBlock < goodBlocks; ++numBlock) {
                     auto readTimeP = reinterpret_cast<time_t*>(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
                     *readTimeP = lastReadTime;
                 }
@@ -522,12 +522,12 @@ namespace OpenLogReplicator {
     }
 
     bool Reader::read2() {
-        uint64_t maxNumBlock = (bufferScan - bufferEnd) / blockSize;
-        uint64_t goodBlocks = 0;
+        uint maxNumBlock = (bufferScan - bufferEnd) / blockSize;
+        uint goodBlocks = 0;
         if (maxNumBlock > Ctx::MEMORY_CHUNK_SIZE / blockSize)
             maxNumBlock = Ctx::MEMORY_CHUNK_SIZE / blockSize;
 
-        for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
+        for (uint numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
             uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % Ctx::MEMORY_CHUNK_SIZE;
             uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / Ctx::MEMORY_CHUNK_SIZE) % ctx->memoryChunksReadBufferMax;
 
@@ -541,7 +541,7 @@ namespace OpenLogReplicator {
         }
 
         if (goodBlocks > 0) {
-            uint64_t toRead = readSize(goodBlocks * blockSize);
+            uint toRead = readSize(goodBlocks * blockSize);
             if (toRead > goodBlocks * blockSize)
                 toRead = goodBlocks * blockSize;
 
@@ -561,14 +561,14 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
                 ctx->logTrace(Ctx::TRACE::DISK, "reading#2 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
                                                 std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") bytes: " + std::to_string(toRead));
-            int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferEnd, toRead);
+            int actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferEnd, toRead);
 
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
                 ctx->logTrace(Ctx::TRACE::DISK, "reading#2 " + fileName + " at (" + std::to_string(bufferStart) + "/" +
                                                 std::to_string(bufferEnd) + "/" + std::to_string(bufferScan) + ") got: " + std::to_string(actualRead));
 
             if (actualRead < 0) {
-                ctx->error(40003, "read file: " + fileName + " - " + strerror(errno));
+                ctx->error(40003, "file: " + fileName + " - " + strerror(errno));
                 ret = REDO_CODE::ERROR_READ;
                 return false;
             }
@@ -576,7 +576,7 @@ namespace OpenLogReplicator {
                 ctx->metrics->emitBytesRead(actualRead);
 
             if (actualRead > 0 && fileCopyDes != -1) {
-                int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
+                int bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
                                               static_cast<int64_t>(bufferEnd));
                 if (bytesWritten != actualRead) {
                     ctx->error(10007, "file: " + fileNameWrite + " - " + std::to_string(bytesWritten) +
@@ -592,7 +592,7 @@ namespace OpenLogReplicator {
             typeBlk bufferEndBlock = bufferEnd / blockSize;
 
             // Check which blocks are good
-            for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
+            for (uint numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                 currentRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize,
                                               bufferEndBlock + numBlock, true);
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
@@ -676,7 +676,7 @@ namespace OpenLogReplicator {
                     bufferEnd = blockSize * 2;
                 }
 
-                for (uint64_t num = 0; num < ctx->memoryChunksReadBufferMax; ++num)
+                for (uint num = 0; num < ctx->memoryChunksReadBufferMax; ++num)
                     bufferFree(this, num);
 
                 {
@@ -784,11 +784,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    typeSum Reader::calcChSum(uint8_t* buffer, uint64_t size) const {
+    typeSum Reader::calcChSum(uint8_t* buffer, uint size) const {
         typeSum oldChSum = ctx->read16(buffer + 14);
         uint64_t sum = 0;
 
-        for (uint64_t i = 0; i < size / 8; ++i, buffer += 8)
+        for (uint i = 0; i < size / 8; ++i, buffer += sizeof(uint64_t))
             sum ^= *reinterpret_cast<const uint64_t*>(buffer);
         sum ^= (sum >> 32);
         sum ^= (sum >> 16);
@@ -827,7 +827,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Reader::bufferAllocate(uint64_t num) {
+    void Reader::bufferAllocate(uint num) {
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_ALLOCATE1);
             std::unique_lock<std::mutex> lck(mtx);
@@ -849,7 +849,7 @@ namespace OpenLogReplicator {
         contextSet(CONTEXT::CPU);
     }
 
-    void Reader::bufferFree(Thread* t, uint64_t num) {
+    void Reader::bufferFree(Thread* t, uint num) {
         uint8_t* buffer;
         {
             t->contextSet(CONTEXT::MUTEX, REASON::READER_FREE);
@@ -1046,7 +1046,7 @@ namespace OpenLogReplicator {
         ss << " Enabled redo threads: " << std::dec << enabledRedoThreads << " \n";
     }
 
-    uint64_t Reader::getBlockSize() const {
+    uint Reader::getBlockSize() const {
         return blockSize;
     }
 
