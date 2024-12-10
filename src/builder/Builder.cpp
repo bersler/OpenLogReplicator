@@ -1041,14 +1041,14 @@ namespace OpenLogReplicator {
                     if (unlikely(fieldNum + 1U > redoLogRecord1p->fieldCnt)) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Undo): " +
-                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint>(redoLogRecord1p->cc)) + ", " +
                                                           std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
                                                           std::to_string(redoLogRecord1p->rowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
                                                           ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                         else
                             throw RedoLogException(50014, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                                           std::to_string(redoLogRecord1p->dataObj) + "): out of columns (Undo): " + std::to_string(colNum) +
-                                                          "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          "/" + std::to_string(static_cast<uint>(redoLogRecord1p->cc)) + ", " +
                                                           std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
                                                           std::to_string(redoLogRecord1p->rowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
                                                           ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
@@ -1111,14 +1111,14 @@ namespace OpenLogReplicator {
                     if (unlikely(fieldNum + 1U > redoLogRecord1p->fieldCnt)) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (supp): " +
-                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint>(redoLogRecord1p->cc)) + ", " +
                                                           std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
                                                           std::to_string(redoLogRecord1p->suppLogRowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
                                                           ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
                         else
                             throw RedoLogException(50014, "table: (obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                                           std::to_string(redoLogRecord1p->dataObj) + "): out of columns (Supp): " + std::to_string(colNum) +
-                                                          "/" + std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " +
+                                                          "/" + std::to_string(static_cast<uint>(redoLogRecord1p->cc)) + ", " +
                                                           std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
                                                           std::to_string(redoLogRecord1p->suppLogRowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) +
                                                           ", xid: " + lastXid.toString() + ", offset: " + std::to_string(redoLogRecord1p->dataOffset));
@@ -1219,7 +1219,7 @@ namespace OpenLogReplicator {
                     if (unlikely(fieldNum + 1U > redoLogRecord2p->fieldCnt)) {
                         if (table != nullptr)
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Redo): " +
-                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord2p->cc)) + ", " +
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint>(redoLogRecord2p->cc)) + ", " +
                                                           std::to_string(redoLogRecord2p->sizeDelt) + ", " + std::to_string(fieldNum) + ", " +
                                                           std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
                                                           std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +
@@ -1227,7 +1227,7 @@ namespace OpenLogReplicator {
                         else
                             throw RedoLogException(50014, "table: (obj: " + std::to_string(redoLogRecord2p->obj) + ", dataobj: " +
                                                           std::to_string(redoLogRecord2p->dataObj) + "): out of columns (Redo): " +
-                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint64_t>(redoLogRecord2p->cc)) + ", " +
+                                                          std::to_string(colNum) + "/" + std::to_string(static_cast<uint>(redoLogRecord2p->cc)) + ", " +
                                                           std::to_string(redoLogRecord2p->sizeDelt) + ", " + std::to_string(fieldNum) + ", " +
                                                           std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord2p->rowData) + "-" +
                                                           std::to_string(redoLogRecord2p->fieldCnt) + ", xid: " + lastXid.toString() + ", offset: " +

@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
         ctx.info(0, "database: " + request.database_name());
         send(request, stream, &ctx);
         receive(response, stream, &ctx, buffer, true);
-        ctx.info(0, "- code: " + std::to_string(static_cast<uint64_t>(response.code())) + ", scn: " + std::to_string(response.scn()) +
+        ctx.info(0, "- code: " + std::to_string(static_cast<uint>(response.code())) + ", scn: " + std::to_string(response.scn()) +
                     ", confirmed: " + std::to_string(response.c_scn()) + "," + std::to_string(response.c_idx()));
 
         request.Clear();
@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
 
         send(request, stream, &ctx);
         receive(response, stream, &ctx, buffer, true);
-        ctx.info(0, "- code: " + std::to_string(static_cast<uint64_t>(response.code())));
+        ctx.info(0, "- code: " + std::to_string(static_cast<uint>(response.code())));
 
         // Either after start or after continue, the server is expected to start streaming
         if (response.code() != OpenLogReplicator::pb::ResponseCode::REPLICATE)
@@ -239,10 +239,10 @@ int main(int argc, char** argv) {
                             msg = "??? UNKNOWN ???";
                     }
                     ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", idx: " + std::to_string(response.scn()) + ", code: " +
-                                std::to_string(static_cast<uint64_t>(response.code())) + ", length: " + std::to_string(length) + ", op: " + msg);
+                                std::to_string(static_cast<uint>(response.code())) + ", length: " + std::to_string(length) + ", op: " + msg);
                 } else {
                     ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", code: " +
-                                std::to_string(static_cast<uint64_t>(response.code())) + ", length: " + std::to_string(length) +
+                                std::to_string(static_cast<uint>(response.code())) + ", length: " + std::to_string(length) +
                                 ", payload size: " + std::to_string(response.payload_size()));
                 }
 

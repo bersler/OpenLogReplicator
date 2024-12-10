@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
             SLEEPING, CHECK, UPDATE, READ
         };
 
-        static constexpr size_t PAGE_SIZE_MAX{4096};
+        static constexpr uint PAGE_SIZE_MAX{4096};
         static constexpr uint BAD_CDC_MAX_CNT{20};
 
         std::string database;
@@ -72,11 +72,11 @@ namespace OpenLogReplicator {
         typeScn nextScn;
         typeScn nextScnHeader;
         typeTime nextTime;
-        uint64_t blockSize;
+        uint blockSize;
         uint64_t sumRead;
         uint64_t sumTime;
         uint64_t bufferScan;
-        uint64_t lastRead;
+        uint lastRead;
         time_ut lastReadTime;
         time_ut readTime;
         time_ut loopTime;
@@ -92,8 +92,8 @@ namespace OpenLogReplicator {
 
         virtual void redoClose() = 0;
         virtual REDO_CODE redoOpen() = 0;
-        virtual int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) = 0;
-        virtual uint64_t readSize(uint64_t lastRead);
+        virtual int redoRead(uint8_t* buf, uint64_t offset, uint size) = 0;
+        virtual uint readSize(uint lastRead);
         virtual REDO_CODE reloadHeaderRead();
         REDO_CODE checkBlockHeader(uint8_t* buffer, typeBlk blockNumber, bool showHint);
         REDO_CODE reloadHeader();
@@ -113,12 +113,12 @@ namespace OpenLogReplicator {
         void initialize();
         void wakeUp() override;
         void run() override;
-        void bufferAllocate(uint64_t num);
-        void bufferFree(Thread* t, uint64_t num);
+        void bufferAllocate(uint num);
+        void bufferFree(Thread* t, uint num);
         bool bufferIsFree();
-        typeSum calcChSum(uint8_t* buffer, uint64_t size) const;
+        typeSum calcChSum(uint8_t* buffer, uint size) const;
         void printHeaderInfo(std::ostringstream& ss, const std::string& path) const;
-        [[nodiscard]] uint64_t getBlockSize() const;
+        [[nodiscard]] uint getBlockSize() const;
         [[nodiscard]] uint64_t getBufferStart() const;
         [[nodiscard]] uint64_t getBufferEnd() const;
         [[nodiscard]] REDO_CODE getRet() const;

@@ -184,7 +184,7 @@ namespace OpenLogReplicator {
                 throw RedoLogException(50006, "field missing in vector, field: " + std::to_string(fieldNum) + "/" +
                                               std::to_string(redoLogRecord->fieldCnt) + ", ctx: " + std::to_string(redoLogRecord->rowData) + ", obj: " +
                                               std::to_string(redoLogRecord->obj) + ", dataobj: " + std::to_string(redoLogRecord->dataObj) + ", op: " +
-                                              std::to_string(redoLogRecord->opCode) + ", cc: " + std::to_string(static_cast<uint64_t>(redoLogRecord->cc)) +
+                                              std::to_string(redoLogRecord->opCode) + ", cc: " + std::to_string(static_cast<uint>(redoLogRecord->cc)) +
                                               ", suppCC: " + std::to_string(redoLogRecord->suppLogCC) + ", fieldSize: " + std::to_string(fieldSize) +
                                               ", code: " + std::to_string(code));
 

@@ -1743,7 +1743,7 @@ namespace OpenLogReplicator {
         bool single = DbTable::isSystemTable(options);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "read dictionaries for owner: " + owner + ", table: " + table + ", options: " +
-                                            std::to_string(static_cast<uint64_t>(options)));
+                                            std::to_string(static_cast<uint>(options)));
 
         try {
             DatabaseStatement sysUserStmt(conn);
@@ -1888,7 +1888,7 @@ namespace OpenLogReplicator {
                                                 const std::string& condition, DbTable::OPTIONS options, std::vector<std::string>& msgs) {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "creating table schema for owner: " + owner + " table: " + table + " options: " +
-                                            std::to_string(static_cast<uint64_t>(options)));
+                                            std::to_string(static_cast<uint>(options)));
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);
 

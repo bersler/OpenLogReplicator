@@ -95,12 +95,12 @@ namespace OpenLogReplicator {
         return REDO_CODE::OK;
     }
 
-    int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
+    int ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint size) {
         uint64_t startTime = 0;
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::PERFORMANCE)))
             startTime = ctx->clock->getTimeUt();
-        int64_t bytes = 0;
-        uint64_t tries = ctx->archReadTries;
+        int bytes = 0;
+        uint tries = ctx->archReadTries;
 
         while (tries > 0) {
             if (ctx->hardShutdown)

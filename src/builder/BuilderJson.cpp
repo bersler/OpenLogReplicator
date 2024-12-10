@@ -102,17 +102,31 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
+        if (likely(lastBuilderSize + messagePosition + size * 2 + 6 < OUTPUT_BUFFER_DATA_SIZE)) {
+            if (hasPreviousColumn)
+                append<true>(',');
+            else
+                hasPreviousColumn = true;
 
-        append('"');
-        appendEscape(columnName);
-        append(std::string_view(R"(":")"));
-        for (uint64_t j = 0; j < size; ++j)
-            appendHex2(*(data + j));
-        append('"');
+            append<true>('"');
+            appendEscape<true>(columnName);
+            append<true>(std::string_view(R"(":")"));
+            for (uint64_t j = 0; j < size; ++j)
+                appendHex2<true>(*(data + j));
+            append<true>('"');
+        } else {
+            if (hasPreviousColumn)
+                append(',');
+            else
+                hasPreviousColumn = true;
+
+            append('"');
+            appendEscape(columnName);
+            append(std::string_view(R"(":")"));
+            for (uint64_t j = 0; j < size; ++j)
+                appendHex2(*(data + j));
+            append('"');
+        }
     }
 
     void BuilderJson::columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) {
@@ -742,7 +756,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::addTagData(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, Format::VALUE_TYPE valueType, uint64_t offset) {
-        if (table == nullptr || table->tagCols.size() == 0)
+        if (unlikely(table == nullptr || table->tagCols.size() == 0))
             return;
 
         uint64_t messagePositionOld = messagePosition;
