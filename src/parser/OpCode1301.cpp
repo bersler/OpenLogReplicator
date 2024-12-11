@@ -33,18 +33,18 @@ namespace OpenLogReplicator {
             throw RedoLogException(50061, "too short field 19.1.1: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        redoLogRecord->dataObj = ctx->read32(redoLogRecord->data() + fieldPos + 0);
+        redoLogRecord->dataObj = ctx->read32(redoLogRecord->data(fieldPos + 0));
         redoLogRecord->recordDataObj = redoLogRecord->dataObj;
-        redoLogRecord->lobId.set(redoLogRecord->data() + fieldPos + 4);
-        redoLogRecord->lobPageNo = ctx->read32(redoLogRecord->data() + fieldPos + 24);
+        redoLogRecord->lobId.set(redoLogRecord->data(fieldPos + 4));
+        redoLogRecord->lobPageNo = ctx->read32(redoLogRecord->data(fieldPos + 24));
         redoLogRecord->lobData = fieldPos + 36;
         redoLogRecord->lobDataSize = fieldSize - 36;
         OpCode::process(ctx, redoLogRecord);
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const uint32_t v2 = ctx->read32(redoLogRecord->data() + fieldPos + 16);
-            const uint16_t v1 = ctx->read16(redoLogRecord->data() + fieldPos + 20);
-            const typeDba dba = ctx->read32(redoLogRecord->data() + fieldPos + 28);
+            const uint32_t v2 = ctx->read32(redoLogRecord->data(fieldPos + 16));
+            const uint16_t v1 = ctx->read16(redoLogRecord->data(fieldPos + 20));
+            const typeDba dba = ctx->read32(redoLogRecord->data(fieldPos + 28));
 
             *ctx->dumpStream << "Direct Loader block redo entry\n";
             *ctx->dumpStream << "Long field block dump:\n";
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
                              "  pdba: " << std::setfill(' ') << std::setw(8) << std::dec << std::right << dba << "  \n";
 
             for (typeSize j = 0; j < fieldSize - 36U; ++j) {
-                *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(redoLogRecord->data()[fieldPos + j + 36]) << " ";
+                *ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(*redoLogRecord->data(fieldPos + j + 36)) << " ";
                 if ((j % 24) == 23 && j != fieldSize - 1U)
                     *ctx->dumpStream << "\n    ";
             }

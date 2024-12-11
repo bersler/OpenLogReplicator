@@ -179,7 +179,7 @@ namespace OpenLogReplicator {
                                                 OpenLogReplicator_SCHEMA_VERSION);
 
         if (document.HasMember("dump-redo-log")) {
-            ctx->dumpRedoLog = Ctx::getJsonFieldU64(configFileName, document, "dump-redo-log");
+            ctx->dumpRedoLog = Ctx::getJsonFieldU(configFileName, document, "dump-redo-log");
             if (ctx->dumpRedoLog > 2)
                 throw ConfigurationException(30001, "bad JSON, invalid \"dump-redo-log\" value: " + std::to_string(ctx->dumpRedoLog) +
                                                     ", expected: one of {0 .. 2}");
@@ -189,7 +189,7 @@ namespace OpenLogReplicator {
                     ctx->dumpPath = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, document, "dump-path");
 
                 if (document.HasMember("dump-raw-data")) {
-                    ctx->dumpRawData = Ctx::getJsonFieldU64(configFileName, document, "dump-raw-data");
+                    ctx->dumpRawData = Ctx::getJsonFieldU(configFileName, document, "dump-raw-data");
                     if (ctx->dumpRawData > 1)
                         throw ConfigurationException(30001, "bad JSON, invalid \"dump-raw-data\" value: " +
                                                             std::to_string(ctx->dumpRawData) + ", expected: one of {0, 1}");

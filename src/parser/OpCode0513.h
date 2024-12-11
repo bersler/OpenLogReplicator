@@ -29,10 +29,10 @@ namespace OpenLogReplicator {
     protected:
         static void attribute(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, const char* header,
                               const char* name, Transaction* transaction);
-        static void attributeSessionSerial(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
-        static void attributeFlags(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
-        static void attributeVersion(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
-        static void attributeAuditSessionId(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
+        static void attributeSessionSerial(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
+        static void attributeFlags(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
+        static void attributeVersion(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
+        static void attributeAuditSessionId(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction);
 
     public:
         static void process0513(const Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction);

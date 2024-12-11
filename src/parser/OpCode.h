@@ -142,7 +142,8 @@ namespace OpenLogReplicator {
         static void kdoOpCodeQM(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
         static void ktub(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, bool isKtubl);
         static void dumpMemory(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
-        static void dumpCols(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, typeCCExt colNum, typeSize fieldSize, uint8_t isNull);
+        static void dumpCols(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, typeCCExt colNum, typeSize fieldSize, uint8_t isNull,
+                             bool supp = false);
         static void dumpColVector(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, typeCCExt colNum);
         static void dumpCompressed(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data, typeSize fieldSize);
         static void dumpRows(const Ctx* ctx, const RedoLogRecord* redoLogRecord, const uint8_t* data);

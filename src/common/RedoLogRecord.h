@@ -153,10 +153,10 @@ namespace OpenLogReplicator {
         uint8_t seq;
         bool compressed;
 
-        inline const uint8_t* data() const {
+        inline const uint8_t* data(uint shift = 0) const {
             if (dataExt != nullptr)
-                return dataExt;
-            return reinterpret_cast<const uint8_t*>(this) + sizeof(RedoLogRecord);
+                return dataExt + shift;
+            return reinterpret_cast<const uint8_t*>(this) + sizeof(RedoLogRecord) + shift;
         }
 
         static bool nextFieldOpt(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize, uint32_t code) {
@@ -168,7 +168,7 @@ namespace OpenLogReplicator {
                 fieldPos = redoLogRecord->fieldPos;
             else
                 fieldPos += (fieldSize + 3) & 0xFFFC;
-            fieldSize = ctx->read16(redoLogRecord->data() + redoLogRecord->fieldSizesDelta + (static_cast<uint64_t>(fieldNum) * 2));
+            fieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + static_cast<uint>(fieldNum) * 2));
 
             if (unlikely(fieldPos + fieldSize > redoLogRecord->size))
                 throw RedoLogException(50005, "field size out of vector, field: " + std::to_string(fieldNum) + "/" +
@@ -192,7 +192,7 @@ namespace OpenLogReplicator {
                 fieldPos = redoLogRecord->fieldPos;
             else
                 fieldPos += (fieldSize + 3) & 0xFFFC;
-            fieldSize = ctx->read16(redoLogRecord->data() + redoLogRecord->fieldSizesDelta + (static_cast<uint64_t>(fieldNum) * 2));
+            fieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + static_cast<uint>(fieldNum) * 2));
 
             if (unlikely(fieldPos + fieldSize > redoLogRecord->size))
                 throw RedoLogException(50007, "field size out of vector, field: " + std::to_string(fieldNum) + "/" +
@@ -203,7 +203,7 @@ namespace OpenLogReplicator {
 
         static void skipEmptyFields(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize) {
             while (fieldNum + 1U <= redoLogRecord->fieldCnt) {
-                typeSize nextFieldSize = ctx->read16(redoLogRecord->data() + redoLogRecord->fieldSizesDelta + (static_cast<uint64_t>(fieldNum) + 1) * 2);
+                typeSize nextFieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + (static_cast<uint>(fieldNum) + 1) * 2));
                 if (nextFieldSize != 0)
                     return;
                 ++fieldNum;

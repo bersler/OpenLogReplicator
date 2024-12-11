@@ -58,14 +58,14 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord->dataOffset));
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const uint32_t highwater = ctx->read32(redoLogRecord->data() + fieldPos + 16);
-            const uint32_t ext = ctx->read32(redoLogRecord->data() + fieldPos + 4);
+            const uint32_t highwater = ctx->read32(redoLogRecord->data(fieldPos + 16));
+            const uint32_t ext = ctx->read32(redoLogRecord->data(fieldPos + 4));
             const typeBlk blk = 0; // TODO: find field position/size
-            const uint32_t extSize = ctx->read32(redoLogRecord->data() + fieldPos + 12);
+            const uint32_t extSize = ctx->read32(redoLogRecord->data(fieldPos + 12));
             const uint32_t blocksFreelist = 0; // TODO: find field position/size
             const uint32_t blocksBelow = 0; // TODO: find field position/size
             const typeBlk mapblk = 0; // TODO: find field position/size
-            const uint32_t offset = ctx->read32(redoLogRecord->data() + fieldPos + 24);
+            const uint32_t offset = ctx->read32(redoLogRecord->data(fieldPos + 24));
 
             *ctx->dumpStream << "kteop redo - redo operation on extent map\n";
             *ctx->dumpStream << "   SETHWM:      " <<
@@ -87,18 +87,18 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->xid = typeXid(redoLogRecord->usn,
-                                     ctx->read16(redoLogRecord->data() + fieldPos + 0),
-                                     ctx->read32(redoLogRecord->data() + fieldPos + 4));
-        redoLogRecord->flg = ctx->read16(redoLogRecord->data() + fieldPos + 16);
+                                     ctx->read16(redoLogRecord->data(fieldPos + 0)),
+                                     ctx->read32(redoLogRecord->data(fieldPos + 4)));
+        redoLogRecord->flg = ctx->read16(redoLogRecord->data(fieldPos + 16));
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const typeUba uba = ctx->read56(redoLogRecord->data() + fieldPos + 8);
-            const uint8_t fbi = redoLogRecord->data()[fieldPos + 20];
-            const uint16_t siz = ctx->read16(redoLogRecord->data() + fieldPos + 18);
+            const typeUba uba = ctx->read56(redoLogRecord->data(fieldPos + 8));
+            const uint8_t fbi = *redoLogRecord->data(fieldPos + 20);
+            const uint16_t siz = ctx->read16(redoLogRecord->data(fieldPos + 18));
 
-            const typeXid pXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data() + fieldPos + 24)),
-                                         ctx->read16(redoLogRecord->data() + fieldPos + 26),
-                                         ctx->read32(redoLogRecord->data() + fieldPos + 28));
+            const typeXid pXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data(fieldPos + 24))),
+                                         ctx->read16(redoLogRecord->data(fieldPos + 26)),
+                                         ctx->read32(redoLogRecord->data(fieldPos + 28)));
 
             *ctx->dumpStream << "ktudh redo:" <<
                              " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint>(redoLogRecord->xid.slt()) <<
@@ -119,13 +119,13 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0502::pdb(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
+    void OpCode0502::pdb(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
         if (unlikely(fieldSize < 4))
             throw RedoLogException(50061, "too short field pdb: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const uint32_t pdbId = ctx->read32(redoLogRecord->data() + fieldPos + 0);
+            const uint32_t pdbId = ctx->read32(redoLogRecord->data(fieldPos + 0));
 
             *ctx->dumpStream << "       " <<
                              " pdbid:" << std::dec << pdbId;
