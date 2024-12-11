@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     void OpCode0513::attribute(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, const char* header,
                                const char* name, Transaction* transaction) {
-        std::string value(reinterpret_cast<const char*>(redoLogRecord->data() + fieldPos), fieldSize);
+        std::string value(reinterpret_cast<const char*>(redoLogRecord->data(fieldPos)), fieldSize);
         if (value != "")
             transaction->attributes.insert_or_assign(name, value);
 
@@ -114,14 +114,14 @@ namespace OpenLogReplicator {
         attribute(ctx, redoLogRecord, fieldPos, fieldSize, "Client Id  = ", "client id", transaction);
     }
 
-    void OpCode0513::attributeFlags(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
+    void OpCode0513::attributeFlags(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
         if (unlikely(fieldSize < 2))
             throw RedoLogException(50061, "too short field 5.13.11: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
         std::string value("true");
 
-        const uint16_t flags = ctx->read16(redoLogRecord->data() + fieldPos + 0);
+        const uint16_t flags = ctx->read16(redoLogRecord->data(fieldPos + 0));
         if ((flags & 0x0001) != 0) {
             transaction->attributes.insert_or_assign("DDL transaction", value);
 
@@ -230,7 +230,7 @@ namespace OpenLogReplicator {
                 *ctx->dumpStream << "Tx audit CV flags undefined\n";
         }
 
-        const uint16_t flags2 = ctx->read16(redoLogRecord->data() + fieldPos + 4);
+        const uint16_t flags2 = ctx->read16(redoLogRecord->data(fieldPos + 4));
         if ((flags2 & 0x0001) != 0) {
             transaction->attributes.insert_or_assign("federation PDB replay", value);
 
@@ -260,24 +260,24 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::attributeSessionSerial(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
+    void OpCode0513::attributeSessionSerial(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
         if (unlikely(fieldSize < 4)) {
             ctx->warning(70001, "too short field session serial: " + std::to_string(fieldSize) + " offset: " +
                                 std::to_string(redoLogRecord->dataOffset));
             return;
         }
 
-        const uint16_t serialNumber = ctx->read16(redoLogRecord->data() + fieldPos + 2);
+        const uint16_t serialNumber = ctx->read16(redoLogRecord->data(fieldPos + 2));
         uint32_t sessionNumber;
         if (ctx->version < RedoLogRecord::REDO_VERSION_19_0)
-            sessionNumber = ctx->read16(redoLogRecord->data() + fieldPos + 0);
+            sessionNumber = ctx->read16(redoLogRecord->data(fieldPos + 0));
         else {
             if (fieldSize < 8) {
                 ctx->warning(70001, "too short field session number: " + std::to_string(fieldSize) + " offset: " +
                                     std::to_string(redoLogRecord->dataOffset));
                 return;
             }
-            sessionNumber = ctx->read32(redoLogRecord->data() + fieldPos + 4);
+            sessionNumber = ctx->read32(redoLogRecord->data(fieldPos + 4));
         }
 
         std::string value = std::to_string(sessionNumber);
@@ -295,12 +295,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::attributeVersion(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
+    void OpCode0513::attributeVersion(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
         if (unlikely(fieldSize < 4))
             throw RedoLogException(50061, "too short field 5.13.12: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        const uint32_t version = ctx->read32(redoLogRecord->data() + fieldPos + 0);
+        const uint32_t version = ctx->read32(redoLogRecord->data(fieldPos + 0));
         const std::string value = std::to_string(version);
         if (value != "")
             transaction->attributes.insert_or_assign("version", value);
@@ -310,12 +310,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::attributeAuditSessionId(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
+    void OpCode0513::attributeAuditSessionId(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
         if (unlikely(fieldSize < 4))
             throw RedoLogException(50061, "too short field 5.13.13: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        const uint32_t auditSessionid = ctx->read32(redoLogRecord->data() + fieldPos + 0);
+        const uint32_t auditSessionid = ctx->read32(redoLogRecord->data(fieldPos + 0));
         const std::string value = std::to_string(auditSessionid);
         if (value != "")
             transaction->attributes.insert_or_assign("audit sessionid", value);

@@ -170,10 +170,10 @@ namespace OpenLogReplicator {
             mergeBlocks(transaction->mergeBuffer, redoLogRecord1, last501);
 
             typePos fieldPos = redoLogRecord1->fieldPos;
-            typeSize fieldSize = ctx->read16(redoLogRecord1->data() + redoLogRecord1->fieldSizesDelta + 1 * 2);
+            typeSize fieldSize = ctx->read16(redoLogRecord1->data(redoLogRecord1->fieldSizesDelta + 1 * 2));
             fieldPos += (fieldSize + 3) & 0xFFFC;
 
-            ctx->write16(const_cast<uint8_t*>(redoLogRecord1->data()) + fieldPos + 20, redoLogRecord1->flg);
+            ctx->write16(const_cast<uint8_t*>(redoLogRecord1->data(fieldPos + 20)), redoLogRecord1->flg);
             OpCode0501::process0501(ctx, redoLogRecord1);
             chunkSize = redoLogRecord1->size + redoLogRecord2->size + ROW_HEADER_TOTAL;
 
@@ -243,9 +243,9 @@ namespace OpenLogReplicator {
 
         if ((redoLogRecord1->flg & OpCode::FLG_LASTBUFFERSPLIT) != 0) {
             redoLogRecord1->flg &= ~OpCode::FLG_LASTBUFFERSPLIT;
-            typeSize size1 = ctx->read16(redoLogRecord1->data() + redoLogRecord1->fieldSizesDelta + redoLogRecord1->fieldCnt * 2);
-            typeSize size2 = ctx->read16(redoLogRecord2->data() + redoLogRecord2->fieldSizesDelta + 6);
-            ctx->write16(const_cast<uint8_t*>(redoLogRecord2->data()) + redoLogRecord2->fieldSizesDelta + 6, size1 + size2);
+            typeSize size1 = ctx->read16(redoLogRecord1->data(redoLogRecord1->fieldSizesDelta + redoLogRecord1->fieldCnt * 2));
+            typeSize size2 = ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 6));
+            ctx->write16(const_cast<uint8_t*>(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 6)), size1 + size2);
             --redoLogRecord1->fieldCnt;
         }
 
@@ -253,21 +253,21 @@ namespace OpenLogReplicator {
         fieldCnt = redoLogRecord1->fieldCnt + redoLogRecord2->fieldCnt - 2;
         ctx->write16(mergeBuffer + pos, fieldCnt);
         memcpy(reinterpret_cast<void*>(mergeBuffer + pos + 2),
-               reinterpret_cast<const void*>(redoLogRecord1->data() + redoLogRecord1->fieldSizesDelta + 2), redoLogRecord1->fieldCnt * 2);
+               reinterpret_cast<const void*>(redoLogRecord1->data(redoLogRecord1->fieldSizesDelta + 2)), redoLogRecord1->fieldCnt * 2);
         memcpy(reinterpret_cast<void*>(mergeBuffer + pos + 2 + redoLogRecord1->fieldCnt * 2),
-               reinterpret_cast<const void*>(redoLogRecord2->data() + redoLogRecord2->fieldSizesDelta + 6), redoLogRecord2->fieldCnt * 2 - 4);
+               reinterpret_cast<const void*>(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 6)), redoLogRecord2->fieldCnt * 2 - 4);
         pos += (((fieldCnt + 1) * 2) + 2) & (0xFFFC);
         fieldPos1 = pos;
 
         memcpy(reinterpret_cast<void*>(mergeBuffer + pos),
-               reinterpret_cast<const void*>(redoLogRecord1->data() + redoLogRecord1->fieldPos), redoLogRecord1->size - redoLogRecord1->fieldPos);
+               reinterpret_cast<const void*>(redoLogRecord1->data(redoLogRecord1->fieldPos)), redoLogRecord1->size - redoLogRecord1->fieldPos);
         pos += (redoLogRecord1->size - redoLogRecord1->fieldPos + 3) & (0xFFFC);
         fieldPos2 = redoLogRecord2->fieldPos +
-                    ((ctx->read16(redoLogRecord2->data() + redoLogRecord2->fieldSizesDelta + 2) + 3) & 0xFFFC) +
-                    ((ctx->read16(redoLogRecord2->data() + redoLogRecord2->fieldSizesDelta + 4) + 3) & 0xFFFC);
+                    ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 2) + 3) & 0xFFFC)) +
+                    ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 4) + 3) & 0xFFFC));
 
         memcpy(reinterpret_cast<void*>(mergeBuffer + pos),
-               reinterpret_cast<const void*>(redoLogRecord2->data() + fieldPos2), redoLogRecord2->size - fieldPos2);
+               reinterpret_cast<const void*>(redoLogRecord2->data(fieldPos2)), redoLogRecord2->size - fieldPos2);
         pos += (redoLogRecord2->size - fieldPos2 + 3) & (0xFFFC);
 
         redoLogRecord1->size = pos;

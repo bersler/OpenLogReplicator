@@ -50,13 +50,13 @@ namespace OpenLogReplicator {
                                           std::to_string(redoLogRecord->dataOffset));
 
         redoLogRecord->xid = typeXid(redoLogRecord->usn,
-                                     ctx->read16(redoLogRecord->data() + fieldPos + 0),
-                                     ctx->read32(redoLogRecord->data() + fieldPos + 4));
-        redoLogRecord->flg = redoLogRecord->data()[fieldPos + 16];
+                                     ctx->read16(redoLogRecord->data(fieldPos + 0)),
+                                     ctx->read32(redoLogRecord->data(fieldPos + 4)));
+        redoLogRecord->flg = *redoLogRecord->data(fieldPos + 16);
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const uint16_t srt = ctx->read16(redoLogRecord->data() + fieldPos + 8);  // TODO: find field position/size
-            const uint32_t sta = ctx->read32(redoLogRecord->data() + fieldPos + 12);
+            const uint16_t srt = ctx->read16(redoLogRecord->data(fieldPos + 8));  // TODO: find field position/size
+            const uint32_t sta = ctx->read32(redoLogRecord->data(fieldPos + 12));
 
             *ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex <<
                              static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
@@ -67,16 +67,16 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0504::ktucf(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
+    void OpCode0504::ktucf(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
         if (unlikely(fieldSize < 16))
             throw RedoLogException(50061, "too short field ktucf: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const typeUba uba = ctx->read56(redoLogRecord->data() + fieldPos + 0);
-            const uint16_t ext = ctx->read16(redoLogRecord->data() + fieldPos + 8);
-            const uint16_t spc = ctx->read16(redoLogRecord->data() + fieldPos + 10);
-            const uint8_t fbi = redoLogRecord->data()[fieldPos + 12];
+            const typeUba uba = ctx->read56(redoLogRecord->data(fieldPos + 0));
+            const uint16_t ext = ctx->read16(redoLogRecord->data(fieldPos + 8));
+            const uint16_t spc = ctx->read16(redoLogRecord->data(fieldPos + 10));
+            const uint8_t fbi = *redoLogRecord->data(fieldPos + 12);
 
             *ctx->dumpStream << "ktucf redo:" <<
                              " uba: " << PRINTUBA(uba) <<

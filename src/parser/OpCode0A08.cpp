@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
             }
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
-                uint32_t kdxlenxt = ctx->read32(redoLogRecord->data() + fieldPos + 0);
+                uint32_t kdxlenxt = ctx->read32(redoLogRecord->data(fieldPos + 0));
                 *ctx->dumpStream << "zeroed lock count and free space, kdxlenxt = 0x" << std::hex << kdxlenxt << '\n';
             }
         }
@@ -90,13 +90,13 @@ namespace OpenLogReplicator {
         }
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const auto itl = static_cast<uint8_t>(redoLogRecord->data()[fieldPos]);
-            const auto nco = static_cast<uint8_t>(redoLogRecord->data()[fieldPos + 1]);
-            const auto dsz = static_cast<uint8_t>(redoLogRecord->data()[fieldPos + 2]);
-            const auto col = static_cast<uint8_t>(redoLogRecord->data()[fieldPos + 3]);
-            const auto flg = static_cast<uint8_t>(redoLogRecord->data()[fieldPos + 4]);
-            const typeDba nxt = ctx->read32(redoLogRecord->data() + fieldPos + 8);
-            const typeDba prv = ctx->read32(redoLogRecord->data() + fieldPos + 12);
+            const auto itl = static_cast<uint8_t>(*redoLogRecord->data(fieldPos));
+            const auto nco = static_cast<uint8_t>(*redoLogRecord->data(fieldPos + 1));
+            const auto dsz = static_cast<uint8_t>(*redoLogRecord->data(fieldPos + 2));
+            const auto col = static_cast<uint8_t>(*redoLogRecord->data(fieldPos + 3));
+            const auto flg = static_cast<uint8_t>(*redoLogRecord->data(fieldPos + 4));
+            const typeDba nxt = ctx->read32(redoLogRecord->data(fieldPos + 8));
+            const typeDba prv = ctx->read32(redoLogRecord->data(fieldPos + 12));
 
             *ctx->dumpStream << "kdxlnitl = " << std::dec << static_cast<uint>(itl) << '\n';
             *ctx->dumpStream << "kdxlnnco = " << std::dec << static_cast<uint>(nco) << '\n';

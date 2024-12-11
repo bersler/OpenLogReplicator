@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
     protected:
         static void init(const Ctx* ctx, RedoLogRecord* redoLogRecord);
         static void ktudb(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
-        static void kteoputrn(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
+        static void kteoputrn(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
         static void kdilk(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
-        static void rowDeps(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
+        static void rowDeps(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize);
         static void suppLog(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize);
         static void opc0A16(const Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize);
         static void opc0B01(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize);

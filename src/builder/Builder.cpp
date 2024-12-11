@@ -753,7 +753,7 @@ namespace OpenLogReplicator {
         for (typeCC r = 0; r < redoLogRecord2->nRow; ++r) {
             typePos pos = 0;
             fieldPos = fieldPosStart;
-            typeCC jcc = redoLogRecord2->data()[fieldPos + pos + 2];
+            typeCC jcc = *redoLogRecord2->data(fieldPos + pos + 2);
             pos = 3;
 
             if ((redoLogRecord2->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
@@ -773,24 +773,24 @@ namespace OpenLogReplicator {
                 if (i >= jcc) {
                     colSize = 0;
                 } else {
-                    colSize = redoLogRecord2->data()[fieldPos + pos];
+                    colSize = *redoLogRecord2->data(fieldPos + pos);
                     ++pos;
                     if (colSize == 0xFF) {
                         colSize = 0;
                     } else if (colSize == 0xFE) {
-                        colSize = ctx->read16(redoLogRecord2->data() + fieldPos + pos);
+                        colSize = ctx->read16(redoLogRecord2->data(fieldPos + pos));
                         pos += 2;
                     }
                 }
 
                 if (colSize > 0 || format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
-                    valueSet(Format::VALUE_TYPE::AFTER, i, redoLogRecord2->data() + fieldPos + pos, colSize, 0, dump);
+                    valueSet(Format::VALUE_TYPE::AFTER, i, redoLogRecord2->data(fieldPos + pos), colSize, 0, dump);
                 pos += colSize;
             }
 
             if (system && table != nullptr && DbTable::isSystemTable(table->options))
                 systemTransaction->processInsert(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                                 ctx->read16(redoLogRecord2->data() + redoLogRecord2->slotsDelta + r * 2),
+                                                 ctx->read16(redoLogRecord2->data(redoLogRecord2->slotsDelta + r * 2)),
                                                  redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && !DbTable::isSystemTable(table->options) && !DbTable::isDebugTable(table->options) &&
@@ -798,7 +798,7 @@ namespace OpenLogReplicator {
                 ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS)) {
 
                 processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                              ctx->read16(redoLogRecord2->data() + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid,
+                              ctx->read16(redoLogRecord2->data(redoLogRecord2->slotsDelta + r * 2)), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
                     if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
@@ -823,7 +823,7 @@ namespace OpenLogReplicator {
 
             valuesRelease();
 
-            fieldPosStart += ctx->read16(redoLogRecord2->data() + redoLogRecord2->rowSizesDelta + r * 2);
+            fieldPosStart += ctx->read16(redoLogRecord2->data(redoLogRecord2->rowSizesDelta + r * 2));
         }
     }
 
@@ -847,7 +847,7 @@ namespace OpenLogReplicator {
         for (typeCC r = 0; r < redoLogRecord1->nRow; ++r) {
             typePos pos = 0;
             fieldPos = fieldPosStart;
-            typeCC jcc = redoLogRecord1->data()[fieldPos + pos + 2];
+            typeCC jcc = *redoLogRecord1->data(fieldPos + pos + 2);
             pos = 3;
 
             if ((redoLogRecord1->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
@@ -867,24 +867,24 @@ namespace OpenLogReplicator {
                 if (i >= jcc) {
                     colSize = 0;
                 } else {
-                    colSize = redoLogRecord1->data()[fieldPos + pos];
+                    colSize = *redoLogRecord1->data(fieldPos + pos);
                     ++pos;
                     if (colSize == 0xFF) {
                         colSize = 0;
                     } else if (colSize == 0xFE) {
-                        colSize = ctx->read16(redoLogRecord1->data() + fieldPos + pos);
+                        colSize = ctx->read16(redoLogRecord1->data(fieldPos + pos));
                         pos += 2;
                     }
                 }
 
                 if (colSize > 0 || format.columnFormat >= Format::COLUMN_FORMAT::FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
-                    valueSet(Format::VALUE_TYPE::BEFORE, i, redoLogRecord1->data() + fieldPos + pos, colSize, 0, dump);
+                    valueSet(Format::VALUE_TYPE::BEFORE, i, redoLogRecord1->data(fieldPos + pos), colSize, 0, dump);
                 pos += colSize;
             }
 
             if (system && table != nullptr && DbTable::isSystemTable(table->options))
                 systemTransaction->processDelete(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                                 ctx->read16(redoLogRecord1->data() + redoLogRecord1->slotsDelta + r * 2),
+                                                 ctx->read16(redoLogRecord1->data(redoLogRecord1->slotsDelta + r * 2)),
                                                  redoLogRecord1->dataOffset);
 
             if ((!schema && table != nullptr && !DbTable::isSystemTable(table->options) && !DbTable::isDebugTable(table->options) &&
@@ -892,7 +892,7 @@ namespace OpenLogReplicator {
                 ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS)) {
 
                 processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                              ctx->read16(redoLogRecord1->data() + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid,
+                              ctx->read16(redoLogRecord1->data(redoLogRecord1->slotsDelta + r * 2)), redoLogRecord1->xid,
                               redoLogRecord1->dataOffset);
                 if (ctx->metrics) {
                     if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
@@ -917,7 +917,7 @@ namespace OpenLogReplicator {
 
             valuesRelease();
 
-            fieldPosStart += ctx->read16(redoLogRecord1->data() + redoLogRecord1->rowSizesDelta + r * 2);
+            fieldPosStart += ctx->read16(redoLogRecord1->data(redoLogRecord1->rowSizesDelta + r * 2));
         }
     }
 
@@ -999,7 +999,7 @@ namespace OpenLogReplicator {
                     ctx->logTrace(Ctx::TRACE::DML, "UNDO");
                 }
 
-                nulls = redoLogRecord1p->data() + redoLogRecord1p->nullsDelta;
+                nulls = redoLogRecord1p->data(redoLogRecord1p->nullsDelta);
                 bits = 1;
 
                 if (redoLogRecord1p->suppLogBefore > 0)
@@ -1008,7 +1008,7 @@ namespace OpenLogReplicator {
                     colShift = 0;
 
                 if (redoLogRecord1p->colNumsDelta > 0 && !redoLogRecord1p->compressed) {
-                    colNums = redoLogRecord1p->data() + redoLogRecord1p->colNumsDelta;
+                    colNums = redoLogRecord1p->data(redoLogRecord1p->colNumsDelta);
                     colShift -= ctx->read16(colNums);
                 } else {
                     colNums = nullptr;
@@ -1084,7 +1084,7 @@ namespace OpenLogReplicator {
                         colSize = fieldSize;
                     }
 
-                    valueSet(Format::VALUE_TYPE::BEFORE, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
+                    valueSet(Format::VALUE_TYPE::BEFORE, colNum, redoLogRecord1p->data(fieldPos), colSize, fb, dump);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -1103,8 +1103,8 @@ namespace OpenLogReplicator {
                 while (fieldNum < redoLogRecord1p->suppLogRowData - 1U)
                     RedoLogRecord::nextField(ctx, redoLogRecord1p, fieldNum, fieldPos, fieldSize, 0x000005);
 
-                colNums = redoLogRecord1p->data() + redoLogRecord1p->suppLogNumsDelta;
-                const uint8_t* colSizes = redoLogRecord1p->data() + redoLogRecord1p->suppLogLenDelta;
+                colNums = redoLogRecord1p->data(redoLogRecord1p->suppLogNumsDelta);
+                const uint8_t* colSizes = redoLogRecord1p->data(redoLogRecord1p->suppLogLenDelta);
 
                 for (uint16_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
                     colNum = ctx->read16(colNums) - 1;
@@ -1161,12 +1161,12 @@ namespace OpenLogReplicator {
                     // Insert, lock, update, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 ||
                         redoLogRecord2p->opCode == 0x0B10)
-                        valueSet(Format::VALUE_TYPE::AFTER_SUPP, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
+                        valueSet(Format::VALUE_TYPE::AFTER_SUPP, colNum, redoLogRecord1p->data(fieldPos), colSize, fb, dump);
 
                     // Delete, update, overwrite, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 ||
                         redoLogRecord2p->opCode == 0x0B10)
-                        valueSet(Format::VALUE_TYPE::BEFORE_SUPP, colNum, redoLogRecord1p->data() + fieldPos, colSize, fb, dump);
+                        valueSet(Format::VALUE_TYPE::BEFORE_SUPP, colNum, redoLogRecord1p->data(fieldPos), colSize, fb, dump);
 
                     colSizes += 2;
                 }
@@ -1181,7 +1181,7 @@ namespace OpenLogReplicator {
                 fieldPos = 0;
                 fieldNum = 0;
                 fieldSize = 0;
-                nulls = redoLogRecord2p->data() + redoLogRecord2p->nullsDelta;
+                nulls = redoLogRecord2p->data(redoLogRecord2p->nullsDelta);
                 bits = 1;
 
                 if (redoLogRecord2p->suppLogAfter > 0)
@@ -1190,7 +1190,7 @@ namespace OpenLogReplicator {
                     colShift = 0;
 
                 if (redoLogRecord2p->colNumsDelta > 0 && !redoLogRecord2p->compressed) {
-                    colNums = redoLogRecord2p->data() + redoLogRecord2p->colNumsDelta;
+                    colNums = redoLogRecord2p->data(redoLogRecord2p->colNumsDelta);
                     colShift -= ctx->read16(colNums);
                 } else {
                     colNums = nullptr;
@@ -1269,7 +1269,7 @@ namespace OpenLogReplicator {
                     else
                         colSize = fieldSize;
 
-                    valueSet(Format::VALUE_TYPE::AFTER, colNum, redoLogRecord2p->data() + fieldPos, colSize, fb, dump);
+                    valueSet(Format::VALUE_TYPE::AFTER, colNum, redoLogRecord2p->data(fieldPos), colSize, fb, dump);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -1776,9 +1776,9 @@ namespace OpenLogReplicator {
 
         RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldSize, 0x000009);
         // Field: 1
-        uint16_t ddlType = ctx->read16(redoLogRecord1->data() + fieldPos + 12);
-        uint16_t seq = ctx->read16(redoLogRecord1->data() + fieldPos + 18);
-        // uint16_t cnt = ctx->read16(redoLogRecord1->data() + fieldPos + 20);
+        uint16_t ddlType = ctx->read16(redoLogRecord1->data(fieldPos + 12));
+        uint16_t seq = ctx->read16(redoLogRecord1->data(fieldPos + 18));
+        // uint16_t cnt = ctx->read16(redoLogRecord1->data(fieldPos + 20));
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldSize, 0x00000A))
             return;
@@ -1811,7 +1811,7 @@ namespace OpenLogReplicator {
         if (ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_DDL)) {
             // Track DDL
             typeSize sqlSize = fieldSize;
-            const char* sqlText = reinterpret_cast<const char*>(redoLogRecord1->data()) + fieldPos;
+            const char* sqlText = reinterpret_cast<const char*>(redoLogRecord1->data(fieldPos));
             processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj, redoLogRecord1->dataObj, ddlType, seq, sqlText, sqlSize - 1U);
         }
 

@@ -35,11 +35,11 @@ namespace OpenLogReplicator {
             throw RedoLogException(50061, "too short field 24.1.1: " +
                                           std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
-        redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data() + fieldPos + 4)),
-                                     ctx->read16(redoLogRecord->data() + fieldPos + 6),
-                                     ctx->read32(redoLogRecord->data() + fieldPos + 8));
+        redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data(fieldPos + 4))),
+                                     ctx->read16(redoLogRecord->data(fieldPos + 6)),
+                                     ctx->read32(redoLogRecord->data(fieldPos + 8)));
         // uint16_t type = ctx->read16(redoLogRecord->ctx + fieldPos + 12);
-        const uint16_t ddlType = ctx->read16(redoLogRecord->data() + fieldPos + 16);
+        const uint16_t ddlType = ctx->read16(redoLogRecord->data(fieldPos + 16));
         // uint16_t seq = ctx->read16(redoLogRecord->ctx + fieldPos + 18);
         // uint16_t cnt = ctx->read16(redoLogRecord->ctx + fieldPos + 20);
 
@@ -92,6 +92,6 @@ namespace OpenLogReplicator {
         // Field: 12
 
         if (validDdl)
-            redoLogRecord->obj = ctx->read32(redoLogRecord->data() + fieldPos + 0);
+            redoLogRecord->obj = ctx->read32(redoLogRecord->data(fieldPos + 0));
     }
 }

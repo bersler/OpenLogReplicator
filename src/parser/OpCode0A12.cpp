@@ -44,9 +44,9 @@ namespace OpenLogReplicator {
             if (fieldSize < 6)
                 return;
 
-            const uint16_t itl = ctx->read16(redoLogRecord->data() + fieldPos);
-            const uint16_t sno = ctx->read16(redoLogRecord->data() + fieldPos + 2);
-            const uint16_t rowSize = ctx->read16(redoLogRecord->data() + fieldPos + 4);
+            const uint16_t itl = ctx->read16(redoLogRecord->data(fieldPos));
+            const uint16_t sno = ctx->read16(redoLogRecord->data(fieldPos + 2));
+            const uint16_t rowSize = ctx->read16(redoLogRecord->data(fieldPos + 4));
 
             *ctx->dumpStream << "REDO: SINGLE / -- / -- \n";
             *ctx->dumpStream << "itl: " << std::dec << itl <<
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
                 *ctx->dumpStream << '\n';
 
             for (typeSize j = 0; j < fieldSize; ++j) {
-                *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(redoLogRecord->data()[fieldPos + j]);
+                *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(*redoLogRecord->data(fieldPos + j));
                 if ((j % 25) == 24 && j != fieldSize - 1U)
                     *ctx->dumpStream << '\n';
             }

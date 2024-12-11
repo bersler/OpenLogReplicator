@@ -251,9 +251,9 @@ namespace OpenLogReplicator {
                                               std::to_string(redoLogRecord[vectorCur].fieldSizesDelta) +
                                               ") outside of record, size: " + std::to_string(recordSize));
             }
-            redoLogRecord[vectorCur].fieldCnt = (ctx->read16(redoLogRecord[vectorCur].data() + redoLogRecord[vectorCur].fieldSizesDelta) - 2) / 2;
+            redoLogRecord[vectorCur].fieldCnt = (ctx->read16(redoLogRecord[vectorCur].data(redoLogRecord[vectorCur].fieldSizesDelta)) - 2) / 2;
             redoLogRecord[vectorCur].fieldPos = fieldOffset +
-                                                ((ctx->read16(redoLogRecord[vectorCur].data() + redoLogRecord[vectorCur].fieldSizesDelta) + 2) & 0xFFFC);
+                                                ((ctx->read16(redoLogRecord[vectorCur].data(redoLogRecord[vectorCur].fieldSizesDelta)) + 2) & 0xFFFC);
             if (unlikely(redoLogRecord[vectorCur].fieldPos >= recordSize)) {
                 dumpRedoVector(data, recordSize);
                 throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
@@ -1083,29 +1083,29 @@ namespace OpenLogReplicator {
         }
 
         if (redoLogRecord2->opCode == 0x0A02) {
-            if (redoLogRecord2->indKeySize == 16 && redoLogRecord2->data()[redoLogRecord2->indKey] == 10 &&
-                redoLogRecord2->data()[redoLogRecord2->indKey + 11] == 4) {
-                redoLogRecord2->lobId.set(redoLogRecord2->data() + redoLogRecord2->indKey + 1);
-                redoLogRecord2->lobPageNo = ctx->read32Big(redoLogRecord2->data() + redoLogRecord2->indKey + 12);
+            if (redoLogRecord2->indKeySize == 16 && *redoLogRecord2->data(redoLogRecord2->indKey) == 10 &&
+                *redoLogRecord2->data(redoLogRecord2->indKey + 11) == 4) {
+                redoLogRecord2->lobId.set(redoLogRecord2->data(redoLogRecord2->indKey + 1));
+                redoLogRecord2->lobPageNo = ctx->read32Big(redoLogRecord2->data(redoLogRecord2->indKey + 12));
             } else
                 return;
         } else if (redoLogRecord2->opCode == 0x0A08) {
             if (redoLogRecord2->indKey == 0)
                 return;
 
-            if (redoLogRecord2->indKeySize == 50 && redoLogRecord2->data()[redoLogRecord2->indKey] == 0x01 &&
-                redoLogRecord2->data()[redoLogRecord2->indKey + 1] == 0x01 &&
-                redoLogRecord2->data()[redoLogRecord2->indKey + 34] == 10 && redoLogRecord2->data()[redoLogRecord2->indKey + 45] == 4) {
-                redoLogRecord2->lobId.set(redoLogRecord2->data() + redoLogRecord2->indKey + 35);
-                redoLogRecord2->lobPageNo = ctx->read32Big(redoLogRecord2->data() + redoLogRecord2->indKey + 46);
+            if (redoLogRecord2->indKeySize == 50 && *redoLogRecord2->data(redoLogRecord2->indKey) == 0x01 &&
+                *redoLogRecord2->data(redoLogRecord2->indKey + 1) == 0x01 &&
+                *redoLogRecord2->data(redoLogRecord2->indKey + 34) == 10 && *redoLogRecord2->data(redoLogRecord2->indKey + 45) == 4) {
+                redoLogRecord2->lobId.set(redoLogRecord2->data(redoLogRecord2->indKey + 35));
+                redoLogRecord2->lobPageNo = ctx->read32Big(redoLogRecord2->data(redoLogRecord2->indKey + 46));
                 redoLogRecord2->indKeyData = redoLogRecord2->indKey + 2;
                 redoLogRecord2->indKeyDataSize = 32;
             } else {
                 ctx->warning(60014, "verify redo log file for OP: 10.8, len: " + std::to_string(redoLogRecord2->indKeySize) +
-                                    ", data = [" + std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey])) + ", " +
-                                    std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + 1])) + ", " +
-                                    std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + 34])) + ", " +
-                                    std::to_string(static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + 45])) + "]");
+                                    ", data = [" + std::to_string(static_cast<uint>(*redoLogRecord2->data(redoLogRecord2->indKey))) + ", " +
+                                    std::to_string(static_cast<uint>(*redoLogRecord2->data(redoLogRecord2->indKey + 1))) + ", " +
+                                    std::to_string(static_cast<uint>(*redoLogRecord2->data(redoLogRecord2->indKey + 34))) + ", " +
+                                    std::to_string(static_cast<uint>(*redoLogRecord2->data(redoLogRecord2->indKey + 45))) + "]");
                 return;
             }
 
@@ -1131,12 +1131,12 @@ namespace OpenLogReplicator {
                 }
             }
         } else if (redoLogRecord2->opCode == 0x0A12) {
-            if (redoLogRecord1->indKeySize == 16 && redoLogRecord1->data()[redoLogRecord1->indKey] == 10 &&
-                redoLogRecord1->data()[redoLogRecord1->indKey + 11] == 4) {
-                redoLogRecord2->lobId.set(redoLogRecord1->data() + redoLogRecord1->indKey + 1);
-                redoLogRecord2->lobPageNo = ctx->read32Big(redoLogRecord1->data() + redoLogRecord1->indKey + 12);
-                redoLogRecord2->lobSizePages = ctx->read32Big(redoLogRecord2->data() + redoLogRecord2->indKeyData + 4);
-                redoLogRecord2->lobSizeRest = ctx->read16Big(redoLogRecord2->data() + redoLogRecord2->indKeyData + 8);
+            if (redoLogRecord1->indKeySize == 16 && *redoLogRecord1->data(redoLogRecord1->indKey) == 10 &&
+                *redoLogRecord1->data(redoLogRecord1->indKey + 11) == 4) {
+                redoLogRecord2->lobId.set(redoLogRecord1->data(redoLogRecord1->indKey + 1));
+                redoLogRecord2->lobPageNo = ctx->read32Big(redoLogRecord1->data(redoLogRecord1->indKey + 12));
+                redoLogRecord2->lobSizePages = ctx->read32Big(redoLogRecord2->data(redoLogRecord2->indKeyData + 4));
+                redoLogRecord2->lobSizeRest = ctx->read16Big(redoLogRecord2->data(redoLogRecord2->indKeyData + 8));
             } else
                 return;
         }
@@ -1167,11 +1167,11 @@ namespace OpenLogReplicator {
             if (redoLogRecord1->indKeySize > 0)
                 ss << "0x";
             for (typeSize i = 0; i < redoLogRecord1->indKeySize; ++i)
-                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(redoLogRecord1->data()[redoLogRecord1->indKey + i]);
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(*redoLogRecord1->data(redoLogRecord1->indKey + i));
             if (redoLogRecord2->indKeySize > 0)
                 ss << " 0x";
             for (typeSize i = 0; i < redoLogRecord2->indKeySize; ++i)
-                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKey + i]);
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(*redoLogRecord2->data(redoLogRecord2->indKey + i));
 
             ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + redoLogRecord1->xid.toString() + " obj: " +
                                            std::to_string(redoLogRecord2->dataObj) + " op: " + std::to_string(redoLogRecord1->opCode) + ":" +

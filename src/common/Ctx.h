@@ -147,11 +147,11 @@ namespace OpenLogReplicator {
         Metrics* metrics;
         Clock* clock;
         bool version12;
-        std::atomic<uint64_t> version;                   // Compatibility level of redo logs
-        uint64_t columnLimit;
+        std::atomic<uint32_t> version;                   // Compatibility level of redo logs
+        typeCol columnLimit;
         std::string versionStr;
-        std::atomic<uint64_t> dumpRedoLog;
-        std::atomic<uint64_t> dumpRawData;
+        std::atomic<uint> dumpRedoLog;
+        std::atomic<uint> dumpRawData;
         std::unique_ptr<std::ofstream> dumpStream;
         int64_t dbTimezone;
         int64_t hostTimezone;

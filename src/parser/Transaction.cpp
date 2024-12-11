@@ -313,7 +313,7 @@ namespace OpenLogReplicator {
                             std::ostringstream ss;
                             for (typeSize j = 0; j < redoLogRecord2->indKeyDataSize; ++j) {
                                 ss << " " << std::setfill('0') << std::setw(2) << std::hex <<
-                                   static_cast<uint>(redoLogRecord2->data()[redoLogRecord2->indKeyData + j]);
+                                   static_cast<uint>(*redoLogRecord2->data(redoLogRecord2->indKeyData + j));
                             }
 
                             metadata->ctx->logTrace(Ctx::TRACE::LOB_DATA, "index: " + ss.str() + " code: " +
@@ -338,13 +338,13 @@ namespace OpenLogReplicator {
                         switch (redoLogRecord2->indKeyDataCode) {
                             case OpCode::KDLI_CODE_LMAP:
                             case OpCode::KDLI_CODE_LOAD_ITREE:
-                                lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data() + redoLogRecord2->indKeyData,
+                                lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data(redoLogRecord2->indKeyData),
                                                redoLogRecord2->indKeyDataSize);
                                 break;
 
                             case OpCode::KDLI_CODE_IMAP:
                             case OpCode::KDLI_CODE_ALMAP:
-                                lobCtx.appendList(metadata->ctx, redoLogRecord2->dba, redoLogRecord2->data() + redoLogRecord2->indKeyData);
+                                lobCtx.appendList(metadata->ctx, redoLogRecord2->dba, redoLogRecord2->data(redoLogRecord2->indKeyData));
                                 break;
 
                             case OpCode::KDLI_CODE_FILL:
@@ -383,7 +383,7 @@ namespace OpenLogReplicator {
                             start = 0;
 
                         for (typeSize j = start; j < redoLogRecord2->indKeyDataSize; j += 4) {
-                            typeDba page = metadata->ctx->read32Big(redoLogRecord2->data() + redoLogRecord2->indKeyData + j);
+                            typeDba page = metadata->ctx->read32Big(redoLogRecord2->data(redoLogRecord2->indKeyData + j));
                             if (page > 0) {
                                 lobCtx.setPage(redoLogRecord2->lobId, page, pageNo, xid, redoLogRecord1->dataOffset);
                                 pages << " [0x" << std::setfill('0') << std::setw(8) << std::hex << page << "]";

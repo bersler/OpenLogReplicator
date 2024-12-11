@@ -48,6 +48,6 @@ namespace OpenLogReplicator {
             return;
         // Field: 4
         redoLogRecord->rowData = fieldNum;
-        dumpRows(ctx, redoLogRecord, redoLogRecord->data() + fieldPos);
+        dumpRows(ctx, redoLogRecord, redoLogRecord->data(fieldPos));
     }
 }

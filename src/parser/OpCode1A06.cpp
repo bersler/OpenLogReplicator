@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
             throw RedoLogException(50061, "too short field 26.6.2: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        redoLogRecord->recordDataObj = ctx->read32(redoLogRecord->data() + fieldPos + 24);
+        redoLogRecord->recordDataObj = ctx->read32(redoLogRecord->data(fieldPos + 24));
 
         OpCode::process(ctx, redoLogRecord);
         fieldPos = 0;

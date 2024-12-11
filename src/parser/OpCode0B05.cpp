@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
             return;
         // Field: 2
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldSize);
-        const typeCC* nulls = redoLogRecord->data() + redoLogRecord->nullsDelta;
+        const typeCC* nulls = redoLogRecord->data(redoLogRecord->nullsDelta);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0503))
             return;
@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         const typeCC* colNums = nullptr;
         if (fieldSize > 0 && redoLogRecord->cc > 0) {
             redoLogRecord->colNumsDelta = fieldPos;
-            colNums = redoLogRecord->data() + redoLogRecord->colNumsDelta;
+            colNums = redoLogRecord->data(redoLogRecord->colNumsDelta);
         }
 
         if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
             // Field: 4
             redoLogRecord->rowData = fieldNum;
             if (unlikely(ctx->dumpRedoLog >= 1))
-                dumpColVector(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, ctx->read16(colNums));
+                dumpColVector(ctx, redoLogRecord, redoLogRecord->data(fieldPos), ctx->read16(colNums));
         } else if (colNums != nullptr) {
             redoLogRecord->rowData = fieldNum + 1;
             uint8_t bits = 1;
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
                                                   std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
-                    dumpCols(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, ctx->read16(colNums), fieldSize, *nulls & bits);
+                    dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), ctx->read16(colNums), fieldSize, *nulls & bits);
 
                 bits <<= 1;
                 colNums += 2;

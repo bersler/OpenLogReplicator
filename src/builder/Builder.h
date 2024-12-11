@@ -607,7 +607,7 @@ namespace OpenLogReplicator {
                     const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
 
                     valueBufferCheck(chunkSize * 4, offset);
-                    addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset, appendData, isClob,
+                    addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset, appendData, isClob,
                                    hasPrev, hasNext, isSystem);
                     appendData = true;
                     hasPrev = true;
@@ -702,7 +702,7 @@ namespace OpenLogReplicator {
                                 hasNext = false;
 
                             valueBufferCheck(chunkSize * 4, offset);
-                            addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset, appendData, isClob,
+                            addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset, appendData, isClob,
                                            hasPrev, hasNext, isSystem);
                             appendData = true;
                             hasPrev = true;
@@ -879,7 +879,7 @@ namespace OpenLogReplicator {
                                             hasNext = false;
 
                                         valueBufferCheck(chunkSize * 4, offset);
-                                        addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset,
+                                        addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset,
                                                        appendData, isClob, hasPrev, hasNext, isSystem);
                                         appendData = true;
                                         hasPrev = true;
@@ -935,7 +935,7 @@ namespace OpenLogReplicator {
                                             hasNext = false;
 
                                         valueBufferCheck(chunkSize * 4, offset);
-                                        addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset,
+                                        addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset,
                                                        appendData, isClob, hasPrev, hasNext, isSystem);
                                         appendData = true;
                                         hasPrev = true;
@@ -1015,7 +1015,7 @@ namespace OpenLogReplicator {
                                     hasNext = false;
 
                                 valueBufferCheck(chunkSize * 4, offset);
-                                addLobToOutput(redoLogRecordLob->data() + redoLogRecordLob->lobData, chunkSize, charsetId, offset, appendData,
+                                addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset, appendData,
                                                isClob, hasPrev, hasNext, isSystem);
                                 appendData = true;
                                 hasPrev = true;

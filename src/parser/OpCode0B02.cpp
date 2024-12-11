@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
             return;
         // Field: 2
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldSize);
-        const uint8_t* nulls = redoLogRecord->data() + redoLogRecord->nullsDelta;
+        const uint8_t* nulls = redoLogRecord->data(redoLogRecord->nullsDelta);
         uint8_t bits = 1;
 
         redoLogRecord->rowData = fieldNum + 1;
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         if (fieldSize == redoLogRecord->sizeDelt && (redoLogRecord->cc > 1 || redoLogRecord->cc == 0)) {
             redoLogRecord->compressed = true;
             if (unlikely(ctx->dumpRedoLog >= 1))
-                dumpCompressed(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, fieldSize);
+                dumpCompressed(ctx, redoLogRecord, redoLogRecord->data(fieldPos), fieldSize);
         } else {
             // Fields: 3 to 3 + cc - 1
             for (typeCC i = 0; i < redoLogRecord->cc; ++i) {
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
                                                   std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
-                    dumpCols(ctx, redoLogRecord, redoLogRecord->data() + fieldPos, i, fieldSize, *nulls & bits);
+                    dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), i, fieldSize, *nulls & bits);
                 bits <<= 1;
                 if (bits == 0) {
                     bits = 1;
