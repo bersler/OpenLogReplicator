@@ -50,7 +50,6 @@ namespace OpenLogReplicator {
             shutdown(false),
             lastSplit(false),
             dump(false),
-            swap(false),
             size(0) {
         lobCtx.orphanedLobs = newOrphanedLobs;
     }
@@ -499,8 +498,7 @@ namespace OpenLogReplicator {
 
                     case 0x18010000:
                         // DDL operation
-                        builder->processDdlHeader(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
-                                                  redoLogRecord1);
+                        builder->processDdl(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone), redoLogRecord1);
                         opFlush = true;
                         break;
 

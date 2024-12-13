@@ -855,6 +855,10 @@ namespace OpenLogReplicator {
                     metrics->emitMemoryUsedMbBuilder(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
+                case MEMORY::MISC:
+                    metrics->emitMemoryUsedMbMisc(allocatedModule * MEMORY_CHUNK_SIZE_MB);
+                    break;
+
                 case MEMORY::PARSER:
                     metrics->emitMemoryUsedMbParser(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
@@ -909,6 +913,10 @@ namespace OpenLogReplicator {
             switch (module) {
                 case MEMORY::BUILDER:
                     metrics->emitMemoryUsedMbBuilder(allocatedModule * MEMORY_CHUNK_SIZE_MB);
+                    break;
+
+                case MEMORY::MISC:
+                    metrics->emitMemoryUsedMbMisc(allocatedModule * MEMORY_CHUNK_SIZE_MB);
                     break;
 
                 case MEMORY::PARSER:
@@ -1554,7 +1562,8 @@ namespace OpenLogReplicator {
 
     void Ctx::printMemoryUsageHWM() const {
         info(0, "Memory HWM: " + std::to_string(getMemoryHWM()) + "MB, builder HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, misc HWM: " +
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
                 std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer HWM: " +
                 std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction HWM: " +
                 std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
@@ -1564,7 +1573,8 @@ namespace OpenLogReplicator {
         info(0, "Memory current swap: " + std::to_string(memoryChunksSwap * MEMORY_CHUNK_SIZE_MB) + "MB, allocated: " +
                 std::to_string(memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB) + "MB, free: " +
                 std::to_string(memoryChunksFree * MEMORY_CHUNK_SIZE_MB) + "MB, memory builder: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, misc: " +
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
                 std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer: " +
                 std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction: " +
                 std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");

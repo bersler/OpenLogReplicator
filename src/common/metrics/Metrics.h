@@ -100,6 +100,7 @@ namespace OpenLogReplicator {
 
         // memory_used_mb
         virtual void emitMemoryUsedMbBuilder(int64_t gauge) = 0;
+        virtual void emitMemoryUsedMbMisc(int64_t gauge) = 0;
         virtual void emitMemoryUsedMbParser(int64_t gauge) = 0;
         virtual void emitMemoryUsedMbReader(int64_t gauge) = 0;
         virtual void emitMemoryUsedMbTransactions(int64_t gauge) = 0;

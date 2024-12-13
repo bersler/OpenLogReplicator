@@ -4,6 +4,7 @@
 - enhancement: add key data to messages
 - fix: minor bug related to swapping
 - enhancement: performance optimizations
+- enhancement: add support for DDL text > 4k
 
 1.7.0
 - fix: welcome banner

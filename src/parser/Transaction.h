@@ -62,7 +62,6 @@ namespace OpenLogReplicator {
         bool shutdown;
         bool lastSplit;
         bool dump;
-        bool swap;
         typeTransactionSize size;
 
         // Attributes
