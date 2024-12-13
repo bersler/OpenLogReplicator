@@ -143,6 +143,9 @@ namespace OpenLogReplicator {
         typeCol valuesMax;
         uint8_t* merges[Ctx::COLUMN_LIMIT_23_0 * static_cast<int>(Format::VALUE_TYPE::LENGTH)];
         typeCol mergesMax;
+        uint8_t* ddlFirst;
+        uint8_t* ddlLast;
+        uint64_t ddlSize;
         uint64_t id;
         uint64_t num;
         uint64_t maxMessageMb;      // Maximum message size able to handle by writer
@@ -200,7 +203,7 @@ namespace OpenLogReplicator {
         void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeCol col, const uint8_t* data, uint32_t size, uint64_t offset,
                           bool after, bool compressed);
 
-        inline void valuesRelease() {
+        inline void releaseValues() {
             for (typeCol i = 0; i < mergesMax; ++i)
                 delete[] merges[i];
             mergesMax = 0;
@@ -1205,8 +1208,7 @@ namespace OpenLogReplicator {
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
         virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
-        virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj, typeDataObj dataObj, uint16_t type,
-                                uint16_t seq, const char* sql, uint64_t sqlSize) = 0;
+        virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) = 0;
         virtual void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
         bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t size, uint64_t offset);
 
@@ -1231,11 +1233,13 @@ namespace OpenLogReplicator {
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
         void processDml(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const std::deque<const RedoLogRecord*>& redo1,
                         const std::deque<const RedoLogRecord*>& redo2, Format::TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump);
-        void processDdlHeader(typeScn scn, typeSeq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1);
+        void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1);
         virtual void initialize();
         virtual void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
         virtual void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) = 0;
         void releaseBuffers(Thread* t, uint64_t maxId);
+        void releaseDdl();
+        void appendDdlChunk(const uint8_t* data, typeTransactionSize size);
         void sleepForWriterWork(Thread* t, uint64_t queueSize, uint64_t nanoseconds);
         void wakeUp();
 

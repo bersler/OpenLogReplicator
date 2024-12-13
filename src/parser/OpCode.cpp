@@ -115,7 +115,7 @@ namespace OpenLogReplicator {
                 *ctx->dumpStream << "KDO undo record:\n";
         }
 
-        const auto ktbOp = static_cast<uint8_t>(*redoLogRecord->data(fieldPos + 0));
+        const auto ktbOp = *redoLogRecord->data(fieldPos + 0);
         const uint8_t flg = *redoLogRecord->data(fieldPos + 1);
         const uint8_t ver = flg & 0x03;
         if (unlikely(ctx->dumpRedoLog >= 1)) {

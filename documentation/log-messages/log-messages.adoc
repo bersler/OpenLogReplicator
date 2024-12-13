@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-10-26
+:revdate: 2024-12-14
 :imagesdir: ./images
 :toc: preamble
 
@@ -969,6 +969,10 @@ To achieve this behavior, the xref:../reference-manual/reference-manual.adoc#fla
 The client requested a database which is not configured in the program.
 
 ==== code 60036, "incorrect XML data: <message>"
+
+Data for XMLTYPE column type is not correct.
+
+==== code 60037, "incorrect DDL data, pos: <number>"
 
 Data for XMLTYPE column type is not correct.
 

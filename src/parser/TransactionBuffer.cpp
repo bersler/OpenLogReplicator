@@ -263,8 +263,8 @@ namespace OpenLogReplicator {
                reinterpret_cast<const void*>(redoLogRecord1->data(redoLogRecord1->fieldPos)), redoLogRecord1->size - redoLogRecord1->fieldPos);
         pos += (redoLogRecord1->size - redoLogRecord1->fieldPos + 3) & (0xFFFC);
         fieldPos2 = redoLogRecord2->fieldPos +
-                    ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 2) + 3) & 0xFFFC)) +
-                    ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 4) + 3) & 0xFFFC));
+                    ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 2)) + 3) & 0xFFFC) +
+                    ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 4)) + 3) & 0xFFFC);
 
         memcpy(reinterpret_cast<void*>(mergeBuffer + pos),
                reinterpret_cast<const void*>(redoLogRecord2->data(fieldPos2)), redoLogRecord2->size - fieldPos2);

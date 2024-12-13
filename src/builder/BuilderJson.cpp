@@ -688,9 +688,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj,
-                                 typeDataObj dataObj __attribute__((unused)), uint16_t ddlType __attribute__((unused)), uint16_t seq __attribute__((unused)),
-                                 const char* sql, uint64_t sqlSize) {
+    void BuilderJson::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -719,7 +717,16 @@ namespace OpenLogReplicator {
         append(std::string_view(R"({"op":"ddl",)"));
         appendSchema(table, obj);
         append(std::string_view(R"(,"sql":")"));
-        appendEscape(sql, sqlSize);
+        if (ddlFirst != nullptr) {
+            uint8_t* chunk = ddlFirst;
+            while (chunk != nullptr) {
+                uint8_t* chunkNext = *reinterpret_cast<uint8_t**>(chunk);
+                const typeTransactionSize* chunkSize = reinterpret_cast<typeTransactionSize*>(chunk + sizeof(uint8_t*));
+                const uint8_t* chunkData = chunk + sizeof(uint8_t*) + sizeof(uint64_t);
+                appendEscape(reinterpret_cast<const char*>(chunkData), *chunkSize);
+                chunk = chunkNext;
+            }
+        }
         append(std::string_view(R"("})"));
 
         if (!format.isMessageFormatFull()) {

@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-12-01
+:revdate: 2024-12-14
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -22,6 +22,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: add key data to messages
 - fix: minor bug related to swapping
 - enhancement: performance optimizations
+- enhancement: add support for DDL text > 4k
 
 === Version 1.7.0
 - fix: welcome banner

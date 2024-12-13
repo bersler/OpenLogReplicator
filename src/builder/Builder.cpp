@@ -53,6 +53,9 @@ namespace OpenLogReplicator {
             lastXid(typeXid()),
             valuesMax(0),
             mergesMax(0),
+            ddlFirst(nullptr),
+            ddlLast(nullptr),
+            ddlSize(0),
             id(0),
             num(0),
             maxMessageMb(0),
@@ -73,7 +76,9 @@ namespace OpenLogReplicator {
     }
 
     Builder::~Builder() {
-        valuesRelease();
+        releaseValues();
+        if (ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_DDL))
+            releaseDdl();
         tables.clear();
 
         while (firstBuilderQueue != nullptr) {
@@ -219,7 +224,7 @@ namespace OpenLogReplicator {
                         year = -(val1 * 100 + val2);
                     }
 
-                    uint32_t fraction = 0;
+                    uint64_t fraction = 0;
                     if (size == 11)
                         fraction = ctx->read32Big(data + 7);
 
@@ -263,7 +268,7 @@ namespace OpenLogReplicator {
                         year = -(val1 * 100 + val2);
                     }
 
-                    uint32_t fraction = 0;
+                    uint64_t fraction = 0;
                     if (size == 11)
                         fraction = ctx->read32Big(data + 7);
 
@@ -324,7 +329,7 @@ namespace OpenLogReplicator {
                         year = -(val1 * 100 + val2);
                     }
 
-                    uint32_t fraction = 0;
+                    uint64_t fraction = 0;
                     if (size == 13)
                         fraction = ctx->read32Big(data + 7);
 
@@ -386,7 +391,7 @@ namespace OpenLogReplicator {
                     columnUnknown(column->name, data, size);
                 else {
                     bool minus = false;
-                    uint32_t year;
+                    uint64_t year;
                     if ((data[0] & 0x80) != 0)
                         year = ctx->read32Big(data) - 0x80000000;
                     else {
@@ -397,7 +402,7 @@ namespace OpenLogReplicator {
                     if (year > 999999999)
                         columnUnknown(column->name, data, size);
                     else {
-                        uint month;
+                        uint64_t month;
                         if (data[4] >= 60)
                             month = data[4] - 60;
                         else {
@@ -406,7 +411,7 @@ namespace OpenLogReplicator {
                         }
 
                         char buffer[12];
-                        uint len = 0;
+                        uint64_t len = 0;
                         valueSize = 0;
 
                         if (minus)
@@ -414,7 +419,7 @@ namespace OpenLogReplicator {
 
                         if (format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::MONTHS ||
                                 format.intervalYtmFormat == Format::INTERVAL_YTM_FORMAT::MONTHS_STRING) {
-                            uint val = year * 12 + month;
+                            uint64_t val = year * 12 + month;
                             if (val == 0) {
                                 valueBuffer[valueSize++] = '0';
                             } else {
@@ -431,7 +436,7 @@ namespace OpenLogReplicator {
                             else
                                 columnString(column->name);
                         } else {
-                            uint val = year;
+                            uint64_t val = year;
                             if (val == 0) {
                                 valueBuffer[valueSize++] = '0';
                             } else {
@@ -467,7 +472,7 @@ namespace OpenLogReplicator {
                     columnUnknown(column->name, data, size);
                 else {
                     bool minus = false;
-                    uint32_t day;
+                    uint64_t day;
                     if ((data[0] & 0x80) != 0)
                         day = ctx->read32Big(data) - 0x80000000;
                     else {
@@ -486,7 +491,7 @@ namespace OpenLogReplicator {
                     if (day > 999999999 || us > 999999999)
                         columnUnknown(column->name, data, size);
                     else {
-                        int hour;
+                        int64_t hour;
                         if (data[4] >= 60)
                             hour = data[4] - 60;
                         else {
@@ -494,7 +499,7 @@ namespace OpenLogReplicator {
                             minus = true;
                         }
 
-                        int minute;
+                        int64_t minute;
                         if (data[5] >= 60)
                             minute = data[5] - 60;
                         else {
@@ -502,7 +507,7 @@ namespace OpenLogReplicator {
                             minus = true;
                         }
 
-                        int second;
+                        int64_t second;
                         if (data[6] >= 60)
                             second = data[6] - 60;
                         else {
@@ -512,8 +517,8 @@ namespace OpenLogReplicator {
 
                         char buffer[30];
                         valueSize = 0;
-                        uint val = 0;
-                        uint len = 0;
+                        uint64_t val = 0;
+                        uint64_t len = 0;
 
                         if (minus)
                             valueBuffer[valueSize++] = '-';
@@ -821,7 +826,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            valuesRelease();
+            releaseValues();
 
             fieldPosStart += ctx->read16(redoLogRecord2->data(redoLogRecord2->rowSizesDelta + r * 2));
         }
@@ -915,7 +920,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            valuesRelease();
+            releaseValues();
 
             fieldPosStart += ctx->read16(redoLogRecord1->data(redoLogRecord1->rowSizesDelta + r * 2));
         }
@@ -1762,11 +1767,11 @@ namespace OpenLogReplicator {
             }
         }
 
-        valuesRelease();
+        releaseValues();
     }
 
     // 0x18010000
-    void Builder::processDdlHeader(typeScn scn, typeSeq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1) {
+    void Builder::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1) {
         typePos fieldPos = 0;
         typeField fieldNum = 0;
         typeSize fieldSize = 0;
@@ -1778,10 +1783,25 @@ namespace OpenLogReplicator {
         // Field: 1
         uint16_t ddlType = ctx->read16(redoLogRecord1->data(fieldPos + 12));
         uint16_t seq = ctx->read16(redoLogRecord1->data(fieldPos + 18));
-        // uint16_t cnt = ctx->read16(redoLogRecord1->data(fieldPos + 20));
+        uint16_t cnt = ctx->read16(redoLogRecord1->data(fieldPos + 20));
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldSize, 0x00000A))
             return;
+
+        if (ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_DDL)) {
+            if (seq == 0 && ddlFirst != nullptr) {
+                ctx->warning(60037, "incorrect DDL data, pos: " + std::to_string(redoLogRecord1->dataOffset));
+                releaseDdl();
+            }
+
+            if (seq <= cnt) {
+                appendDdlChunk(redoLogRecord1->data(fieldPos), fieldSize - 1U);
+                if (seq == cnt) {
+                    processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj);
+                    releaseDdl();
+                }
+            }
+        }
         // Field: 2
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldSize, 0x00000B))
@@ -1809,10 +1829,11 @@ namespace OpenLogReplicator {
 
         // Field: 8
         if (ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_DDL)) {
-            // Track DDL
-            typeSize sqlSize = fieldSize;
-            const char* sqlText = reinterpret_cast<const char*>(redoLogRecord1->data(fieldPos));
-            processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj, redoLogRecord1->dataObj, ddlType, seq, sqlText, sqlSize - 1U);
+            appendDdlChunk(redoLogRecord1->data(fieldPos), fieldSize - 1U);
+            if (seq == cnt) {
+                processDdl(scn, sequence, timestamp, table, redoLogRecord1->obj);
+                releaseDdl();
+            }
         }
 
         switch (ddlType) {
@@ -2381,6 +2402,53 @@ namespace OpenLogReplicator {
             BuilderQueue* nextBuffer = builderQueue->next;
             ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY::BUILDER, reinterpret_cast<uint8_t*>(builderQueue));
             builderQueue = nextBuffer;
+        }
+    }
+
+    void Builder::releaseDdl() {
+        while (ddlFirst != nullptr) {
+            uint8_t* next = *reinterpret_cast<uint8_t**>(ddlFirst);
+            ctx->freeMemoryChunk(ctx->parserThread, Ctx::MEMORY::MISC, ddlFirst);
+            ddlFirst = next;
+        }
+        ddlLast = nullptr;
+        ddlSize = 0;
+    }
+
+    void Builder::appendDdlChunk(const uint8_t* data, typeTransactionSize size) {
+        while (size > 0) {
+            typeTransactionSize* chunkSize;
+            typeTransactionSize left = 0;
+
+            if (ddlLast != nullptr) {
+                chunkSize = reinterpret_cast<typeTransactionSize*>(ddlLast + sizeof(uint8_t*));
+                left = Ctx::MEMORY_CHUNK_SIZE - sizeof(uint8_t*) - sizeof(uint64_t) - *chunkSize;
+            }
+
+            if (left == 0) {
+                uint8_t* ddlNew = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY::MISC, false);
+
+                if (ddlLast != nullptr) {
+                    uint8_t** ddlNext = reinterpret_cast<uint8_t**>(ddlLast);
+                    *ddlNext = ddlNew;
+                } else
+                    ddlFirst = ddlNew;
+
+                ddlLast = ddlNew;
+                chunkSize = reinterpret_cast<typeTransactionSize*>(ddlLast + sizeof(uint8_t*));
+                *chunkSize = 0;
+                uint8_t** ddlNext = reinterpret_cast<uint8_t**>(ddlLast);
+                *ddlNext = nullptr;
+                left = Ctx::MEMORY_CHUNK_SIZE - sizeof(uint8_t*) - sizeof(uint64_t);
+            }
+
+            typeTransactionSize move = std::min(size, left);
+            uint8_t* chunkData = ddlLast + sizeof(uint8_t*) + sizeof(uint64_t) + *chunkSize;
+            memcpy(reinterpret_cast<void*>(chunkData), reinterpret_cast<const void*>(data), move);
+            *chunkSize += move;
+            ddlSize += move;
+            size -= move;
+            data += move;
         }
     }
 

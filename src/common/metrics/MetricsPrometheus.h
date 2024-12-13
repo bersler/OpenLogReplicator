@@ -104,6 +104,7 @@ namespace OpenLogReplicator {
         // memory_used_mb
         prometheus::Family<prometheus::Gauge>* memoryUsedMb;
         prometheus::Gauge* memoryUsedMbBuilderGauge;
+        prometheus::Gauge* memoryUsedMbMiscGauge;
         prometheus::Gauge* memoryUsedMbParserGauge;
         prometheus::Gauge* memoryUsedMbReaderGauge;
         prometheus::Gauge* memoryUsedMbTransactionsGauge;
@@ -199,6 +200,7 @@ namespace OpenLogReplicator {
 
         // memory_used_mb
         virtual void emitMemoryUsedMbBuilder(int64_t gauge) override;
+        virtual void emitMemoryUsedMbMisc(int64_t gauge) override;
         virtual void emitMemoryUsedMbParser(int64_t gauge) override;
         virtual void emitMemoryUsedMbReader(int64_t gauge) override;
         virtual void emitMemoryUsedMbTransactions(int64_t gauge) override;

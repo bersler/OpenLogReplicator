@@ -79,9 +79,9 @@ namespace OpenLogReplicator {
             SILENT, ERROR, WARNING, INFO, DEBUG
         };
         enum class MEMORY {
-            BUILDER, PARSER, READER, TRANSACTIONS
+            BUILDER, MISC, PARSER, READER, TRANSACTIONS
         };
-        static constexpr uint MEMORY_COUNT{4};
+        static constexpr uint MEMORY_COUNT{5};
         enum class DISABLE_CHECKS {
             GRANTS = 1 << 0, SUPPLEMENTAL_LOG = 1 << 1, BLOCK_SUM = 1 << 2, JSON_TAGS = 1 << 3
         };
@@ -252,18 +252,18 @@ namespace OpenLogReplicator {
             return bigEndian;
         }
 
-        static inline char map10(uint64_t x) {
+        static inline char map10(uint x) {
             return static_cast<char>('0' + x);
         }
 
-        static inline char map16(uint64_t x) {
+        static inline char map16(uint x) {
             if (x < 10)
                 return static_cast<char>('0' + x);
             else
                 return static_cast<char>('a' + (x - 10));
         }
 
-        static inline char map16U(uint64_t x) {
+        static inline char map16U(uint x) {
             if (x < 10)
                 return static_cast<char>('0' + x);
             else

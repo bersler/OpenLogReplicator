@@ -237,9 +237,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table __attribute__((unused)), typeObj obj,
-                                     typeDataObj dataObj __attribute__((unused)), uint16_t ddlType __attribute__((unused)), uint16_t seq __attribute__((unused)),
-                                     const char* sql, uint64_t sqlSize) {
+    void BuilderProtobuf::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table __attribute__((unused)), typeObj obj) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -255,7 +253,12 @@ namespace OpenLogReplicator {
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::DDL);
             appendSchema(table, obj);
-            payloadPB->set_ddl(sql, sqlSize);
+            // truncated to 1M
+            if (ddlFirst != nullptr) {
+                const typeTransactionSize* chunkSize = reinterpret_cast<uint64_t*>(ddlFirst) + sizeof(uint8_t*);
+                const char* chunkData = reinterpret_cast<const char*>(ddlFirst) + sizeof(uint8_t*) + sizeof(uint64_t);
+                payloadPB->set_ddl(chunkData, *chunkSize);
+            }
         }
 
         if (!format.isMessageFormatFull()) {

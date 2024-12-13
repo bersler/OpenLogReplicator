@@ -64,6 +64,7 @@ namespace OpenLogReplicator {
             memoryUsedTotalMbGauge(nullptr),
             memoryUsedMb(nullptr),
             memoryUsedMbBuilderGauge(nullptr),
+            memoryUsedMbMiscGauge(nullptr),
             memoryUsedMbParserGauge(nullptr),
             memoryUsedMbReaderGauge(nullptr),
             memoryUsedMbTransactionsGauge(nullptr),
@@ -173,6 +174,7 @@ namespace OpenLogReplicator {
         // memory_used_mb
         memoryUsedMb = &prometheus::BuildGauge().Name("memory_used_mb").Help("Memory used by module: builder").Register(*registry);
         memoryUsedMbBuilderGauge = &memoryUsedMb->Add({{"type", "builder"}});
+        memoryUsedMbMiscGauge = &memoryUsedMb->Add({{"type", "misc"}});
         memoryUsedMbParserGauge = &memoryUsedMb->Add({{"type", "parser"}});
         memoryUsedMbReaderGauge = &memoryUsedMb->Add({{"type", "reader"}});
         memoryUsedMbTransactionsGauge = &memoryUsedMb->Add({{"type", "transactions"}});
@@ -427,6 +429,10 @@ namespace OpenLogReplicator {
     // memory_used_mb
     void MetricsPrometheus::emitMemoryUsedMbBuilder(int64_t gauge) {
         memoryUsedMbBuilderGauge->Set(gauge);
+    }
+
+    void MetricsPrometheus::emitMemoryUsedMbMisc(int64_t gauge) {
+        memoryUsedMbMiscGauge->Set(gauge);
     }
 
     void MetricsPrometheus::emitMemoryUsedMbParser(int64_t gauge) {
