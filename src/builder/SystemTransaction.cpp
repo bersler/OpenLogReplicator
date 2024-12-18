@@ -54,9 +54,6 @@ namespace OpenLogReplicator {
         ctx->logTrace(Ctx::TRACE::SYSTEM, "begin");
     }
 
-    SystemTransaction::~SystemTransaction() {
-    }
-
     template<class VALUE, SysCol::COLTYPE COLTYPE> void SystemTransaction::updateValue(VALUE& val, typeCol column, const DbTable* table, uint64_t offset,
             int defVal, uint maxLength) {
         if (builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
@@ -76,21 +73,21 @@ namespace OpenLogReplicator {
                                                   table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + std::to_string(offset));
 
                 VALUE newVal;
-                if constexpr (std::is_same<VALUE, int>::value || std::is_same<VALUE, int16_t>::value || std::is_same<VALUE, int32_t>::value ||
-                              std::is_same<VALUE, int64_t>::value) {
+                if constexpr (std::is_same_v<VALUE, int> || std::is_same_v<VALUE, int16_t> || std::is_same_v<VALUE, int32_t> ||
+                              std::is_same_v<VALUE, int64_t>) {
                     if (unlikely(builder->valueSize == 0))
                         throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " +
                                                       std::to_string(offset));
                     newVal = static_cast<VALUE>(strtol(builder->valueBuffer, &retPtr, 10));
-                } else if constexpr (std::is_same<VALUE, uint>::value || std::is_same<VALUE, uint16_t>::value || std::is_same<VALUE, uint32_t>::value ||
-                                     std::is_same<VALUE, uint64_t>::value) {
+                } else if constexpr (std::is_same_v<VALUE, uint> || std::is_same_v<VALUE, uint16_t> || std::is_same_v<VALUE, uint32_t> ||
+                                     std::is_same_v<VALUE, uint64_t>) {
                     if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                         throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " +
                                                       std::to_string(offset));
                     newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-                } else if constexpr (std::is_same<VALUE, typeIntX>::value) {
+                } else if constexpr (std::is_same_v<VALUE, typeIntX>) {
                     if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                         throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                                       table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " +
@@ -98,12 +95,12 @@ namespace OpenLogReplicator {
 
                     std::string err;
                     newVal.setStr(builder->valueBuffer, builder->valueSize, err);
-                    if (err != "")
+                    if (!err.empty())
                         ctx->error(50021, err);
                 }
 
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM))) {
-                    if constexpr (std::is_same<VALUE, typeIntX>::value)
+                    if constexpr (std::is_same_v<VALUE, typeIntX>)
                         ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> " +
                                                           newVal.toString() + ")");
                     else
@@ -140,27 +137,27 @@ namespace OpenLogReplicator {
         } else if (builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr ||
                    builder->values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM))) {
-                if constexpr (std::is_same<VALUE, typeIntX>::value)
+                if constexpr (std::is_same_v<VALUE, typeIntX>)
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL) defVal: " +
                                                       std::to_string(defVal));
-                else if constexpr (std::is_same<VALUE, std::string>::value)
+                else if constexpr (std::is_same_v<VALUE, std::string>)
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL) defVal: " + std::to_string(defVal));
                 else
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL) defVal: " +
                                                       std::to_string(defVal));
             }
-            if constexpr (std::is_same<VALUE, int>::value || std::is_same<VALUE, int16_t>::value || std::is_same<VALUE, int32_t>::value ||
-                          std::is_same<VALUE, int64_t>::value || std::is_same<VALUE, uint>::value || std::is_same<VALUE, uint16_t>::value ||
-                          std::is_same<VALUE, uint32_t>::value || std::is_same<VALUE, uint64_t>::value || std::is_same<VALUE, typeIntX>::value) {
+            if constexpr (std::is_same_v<VALUE, int> || std::is_same_v<VALUE, int16_t> || std::is_same_v<VALUE, int32_t> || std::is_same_v<VALUE, int64_t> ||
+                          std::is_same_v<VALUE, uint> || std::is_same_v<VALUE, uint16_t> || std::is_same_v<VALUE, uint32_t> ||
+                                  std::is_same_v<VALUE, uint64_t> || std::is_same_v<VALUE, typeIntX>) {
                 val = defVal;
-            } else if constexpr (std::is_same<VALUE, std::string>::value) {
+            } else if constexpr (std::is_same_v<VALUE, std::string>) {
                 val.assign("");
             }
         }
     }
 
     template<class TABLE> void SystemTransaction::updateValues(const DbTable* table, TABLE* row, typeCol column, uint64_t offset) {
-        if constexpr (std::is_same<TABLE, SysCCol>::value) {
+        if constexpr (std::is_same_v<TABLE, SysCCol>) {
             if (table->columns[column]->name == "CON#") {
                 updateValue<typeCon, SysCol::COLTYPE::NUMBER>(row->con, column, table, offset);
             } else if (table->columns[column]->name == "INTCOL#") {
@@ -172,19 +169,19 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysCDef>::value) {
+        if constexpr (std::is_same_v<TABLE, SysCDef>) {
             if (table->columns[column]->name == "CON#") {
                 updateValue<typeCon, SysCol::COLTYPE::NUMBER>(row->con, column, table, offset);
             } else if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "TYPE#") {
-                uint16_t x = static_cast<uint16_t>(row->type);
+                auto x = static_cast<uint16_t>(row->type);
                 updateValue<uint16_t, SysCol::COLTYPE::NUMBER>(x, column, table, offset);
                 row->type = static_cast<SysCDef::CDEFTYPE>(x);
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysCol>::value) {
+        if constexpr (std::is_same_v<TABLE, SysCol>) {
             if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "COL#") {
@@ -196,7 +193,7 @@ namespace OpenLogReplicator {
             } else if (table->columns[column]->name == "NAME") {
                 updateValue<std::string, SysCol::COLTYPE::VARCHAR>(row->name, column, table, offset, 0, SysCol::NAME_LENGTH);
             } else if (table->columns[column]->name == "TYPE#") {
-                uint16_t x = static_cast<uint16_t>(row->type);
+                auto x = static_cast<uint16_t>(row->type);
                 updateValue<uint16_t, SysCol::COLTYPE::NUMBER>(x, column, table, offset);
                 row->type = static_cast<SysCol::COLTYPE>(x);
             } else if (table->columns[column]->name == "SIZE") {
@@ -216,7 +213,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysDeferredStg>::value) {
+        if constexpr (std::is_same_v<TABLE, SysDeferredStg>) {
             if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "FLAGS_STG") {
@@ -224,7 +221,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysECol>::value) {
+        if constexpr (std::is_same_v<TABLE, SysECol>) {
             if (table->columns[column]->name == "TABOBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->tabObj, column, table, offset);
             } else if (table->columns[column]->name == "COLNUM") {
@@ -234,7 +231,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysLob>::value) {
+        if constexpr (std::is_same_v<TABLE, SysLob>) {
             if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "COL#") {
@@ -248,7 +245,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysLobCompPart>::value) {
+        if constexpr (std::is_same_v<TABLE, SysLobCompPart>) {
             if (table->columns[column]->name == "PARTOBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->partObj, column, table, offset);
             } else if (table->columns[column]->name == "LOBJ#") {
@@ -256,7 +253,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysLobFrag>::value) {
+        if constexpr (std::is_same_v<TABLE, SysLobFrag>) {
             if (table->columns[column]->name == "FRAGOBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->fragObj, column, table, offset);
             } else if (table->columns[column]->name == "PARENTOBJ#") {
@@ -266,7 +263,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysObj>::value) {
+        if constexpr (std::is_same_v<TABLE, SysObj>) {
             if (table->columns[column]->name == "OWNER#") {
                 updateValue<typeUser, SysCol::COLTYPE::NUMBER>(row->owner, column, table, offset);
             } else if (table->columns[column]->name == "OBJ#") {
@@ -276,7 +273,7 @@ namespace OpenLogReplicator {
             } else if (table->columns[column]->name == "NAME") {
                 updateValue<std::string, SysCol::COLTYPE::VARCHAR>(row->name, column, table, offset, 0, SysObj::NAME_LENGTH);
             } else if (table->columns[column]->name == "TYPE#") {
-                uint16_t x = static_cast<uint16_t>(row->type);
+                auto x = static_cast<uint16_t>(row->type);
                 updateValue<uint16_t, SysCol::COLTYPE::NUMBER>(x, column, table, offset);
                 row->type = static_cast<SysObj::OBJTYPE>(x);
             } else if (table->columns[column]->name == "FLAGS") {
@@ -284,7 +281,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysTab>::value) {
+        if constexpr (std::is_same_v<TABLE, SysTab>) {
             if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "DATAOBJ#") {
@@ -300,7 +297,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysTabComPart>::value) {
+        if constexpr (std::is_same_v<TABLE, SysTabComPart>) {
             if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "DATAOBJ#") {
@@ -310,7 +307,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysTabPart>::value) {
+        if constexpr (std::is_same_v<TABLE, SysTabPart>) {
             if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "DATAOBJ#") {
@@ -320,7 +317,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysTabSubPart>::value) {
+        if constexpr (std::is_same_v<TABLE, SysTabSubPart>) {
             if (table->columns[column]->name == "OBJ#") {
                 updateValue<typeObj, SysCol::COLTYPE::NUMBER>(row->obj, column, table, offset);
             } else if (table->columns[column]->name == "DATAOBJ#") {
@@ -330,7 +327,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysTs>::value) {
+        if constexpr (std::is_same_v<TABLE, SysTs>) {
             if (table->columns[column]->name == "TS#") {
                 updateValue<typeTs, SysCol::COLTYPE::NUMBER>(row->ts, column, table, offset);
             } else if (table->columns[column]->name == "NAME") {
@@ -340,7 +337,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, SysUser>::value) {
+        if constexpr (std::is_same_v<TABLE, SysUser>) {
             if (table->columns[column]->name == "USER#") {
                 updateValue<typeUser, SysCol::COLTYPE::NUMBER>(row->user, column, table, offset);
             } else if (table->columns[column]->name == "NAME") {
@@ -350,7 +347,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, XdbTtSet>::value) {
+        if constexpr (std::is_same_v<TABLE, XdbTtSet>) {
             if (table->columns[column]->name == "GUID") {
                 updateValue<std::string, SysCol::COLTYPE::RAW>(row->guid, column, table, offset, 0, XdbTtSet::GUID_LENGTH);
             } else if (table->columns[column]->name == "TOKSUF") {
@@ -362,7 +359,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, XdbXNm>::value) {
+        if constexpr (std::is_same_v<TABLE, XdbXNm>) {
             if (table->columns[column]->name == "NMSPCURI") {
                 updateValue<std::string, SysCol::COLTYPE::VARCHAR>(row->nmSpcUri, column, table, offset, 0, XdbXNm::NMSPCURI_LENGTH);
             } else if (table->columns[column]->name == "ID") {
@@ -370,7 +367,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, XdbXPt>::value) {
+        if constexpr (std::is_same_v<TABLE, XdbXPt>) {
             if (table->columns[column]->name == "PATH") {
                 updateValue<std::string, SysCol::COLTYPE::RAW>(row->path, column, table, offset, 0, XdbXPt::PATH_LENGTH);
             } else if (table->columns[column]->name == "ID") {
@@ -378,7 +375,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if constexpr (std::is_same<TABLE, XdbXQn>::value) {
+        if constexpr (std::is_same_v<TABLE, XdbXQn>) {
             if (table->columns[column]->name == "NMSPCID") {
                 updateValue<std::string, SysCol::COLTYPE::RAW>(row->nmSpcId, column, table, offset, 0, XdbXQn::NMSPCID_LENGTH);
             } else if (table->columns[column]->name == "LOCALNAME") {
@@ -393,14 +390,14 @@ namespace OpenLogReplicator {
 
     template<class TABLE, class TABLEKEY, class TABLEUNORDEREDKEY>
     void SystemTransaction::updateAllValues(TablePack<TABLE, TABLEKEY, TABLEUNORDEREDKEY>* pack, const DbTable* table, TABLE* row, uint64_t offset) {
-        typeCol baseMax = builder->valuesMax >> 6;
+        const typeCol baseMax = builder->valuesMax >> 6;
         for (typeCol base = 0; base <= baseMax; ++base) {
-            typeCol columnBase = static_cast<typeCol>(base << 6);
+            const auto columnBase = static_cast<typeCol>(base << 6);
             typeMask set = builder->valuesSet[base];
             while (set != 0) {
-                typeCol pos = ffsl(set) - 1;
+                const typeCol pos = ffsll(set) - 1;
                 set &= ~(1ULL << pos);
-                typeCol column = columnBase + pos;
+                const typeCol column = columnBase + pos;
 
                 updateValues<TABLE>(table, row, column, offset);
             }
@@ -431,7 +428,7 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsert(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
-        typeRowId rowId(dataObj, bdba, slot);
+        const typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
@@ -506,19 +503,19 @@ namespace OpenLogReplicator {
                 break;
 
             case DbTable::TABLE::XDB_XNM: {
-                auto xmlCtx = findMatchingXmlCtx(table);
+                auto* xmlCtx = findMatchingXmlCtx(table);
                 updateAllValues(&xmlCtx->xdbXNmPack, table, xmlCtx->xdbXNmPack.forInsert(ctx, rowId, offset), offset);
                 break;
             }
 
             case DbTable::TABLE::XDB_XPT: {
-                auto xmlCtx = findMatchingXmlCtx(table);
+                auto* xmlCtx = findMatchingXmlCtx(table);
                 updateAllValues(&xmlCtx->xdbXPtPack, table, xmlCtx->xdbXPtPack.forInsert(ctx, rowId, offset), offset);
                 break;
             }
 
             case DbTable::TABLE::XDB_XQN: {
-                auto xmlCtx = findMatchingXmlCtx(table);
+                auto* xmlCtx = findMatchingXmlCtx(table);
                 updateAllValues(&xmlCtx->xdbXQnPack, table, xmlCtx->xdbXQnPack.forInsert(ctx, rowId, offset), offset);
                 break;
             }
@@ -527,7 +524,7 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processUpdate(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
-        typeRowId rowId(dataObj, bdba, slot);
+        const typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
@@ -538,103 +535,103 @@ namespace OpenLogReplicator {
                 break;
 
             case DbTable::TABLE::SYS_CCOL:
-                if (auto sysCCol = metadata->schema->sysCColPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysCCol = metadata->schema->sysCColPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysCColPack, table, sysCCol, offset);
                 break;
 
             case DbTable::TABLE::SYS_CDEF:
-                if (auto sysCDef = metadata->schema->sysCDefPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysCDef = metadata->schema->sysCDefPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysCDefPack, table, sysCDef, offset);
                 break;
 
             case DbTable::TABLE::SYS_COL:
-                if (auto sysCol = metadata->schema->sysColPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysCol = metadata->schema->sysColPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysColPack, table, sysCol, offset);
                 break;
 
             case DbTable::TABLE::SYS_DEFERRED_STG:
-                if (auto sysDeferredStg = metadata->schema->sysDeferredStgPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysDeferredStg = metadata->schema->sysDeferredStgPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysDeferredStgPack, table, sysDeferredStg, offset);
                 break;
 
             case DbTable::TABLE::SYS_ECOL:
-                if (auto sysECol = metadata->schema->sysEColPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysECol = metadata->schema->sysEColPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysEColPack, table, sysECol, offset);
                 break;
 
             case DbTable::TABLE::SYS_LOB:
-                if (auto sysLob = metadata->schema->sysLobPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysLob = metadata->schema->sysLobPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysLobPack, table, sysLob, offset);
                 break;
 
             case DbTable::TABLE::SYS_LOB_COMP_PART:
-                if (auto sysLobCompPart = metadata->schema->sysLobCompPartPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysLobCompPart = metadata->schema->sysLobCompPartPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysLobCompPartPack, table, sysLobCompPart, offset);
                 break;
 
             case DbTable::TABLE::SYS_LOB_FRAG:
-                if (auto sysLobFrag = metadata->schema->sysLobFragPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysLobFrag = metadata->schema->sysLobFragPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysLobFragPack, table, sysLobFrag, offset);
                 break;
 
             case DbTable::TABLE::SYS_OBJ:
-                if (auto sysObj = metadata->schema->sysObjPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysObj = metadata->schema->sysObjPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysObjPack, table, sysObj, offset);
                 break;
 
             case DbTable::TABLE::SYS_TAB:
-                if (auto sysTab = metadata->schema->sysTabPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysTab = metadata->schema->sysTabPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysTabPack, table, sysTab, offset);
                 break;
 
 
             case DbTable::TABLE::SYS_TABCOMPART:
-                if (auto sysTabComPart = metadata->schema->sysTabComPartPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysTabComPart = metadata->schema->sysTabComPartPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysTabComPartPack, table, sysTabComPart, offset);
                 break;
 
             case DbTable::TABLE::SYS_TABPART:
-                if (auto sysTabPart = metadata->schema->sysTabPartPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysTabPart = metadata->schema->sysTabPartPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysTabPartPack, table, sysTabPart, offset);
                 break;
 
             case DbTable::TABLE::SYS_TABSUBPART:
-                if (auto sysTabSubPart = metadata->schema->sysTabSubPartPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysTabSubPart = metadata->schema->sysTabSubPartPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysTabSubPartPack, table, sysTabSubPart, offset);
                 break;
 
             case DbTable::TABLE::SYS_TS:
-                if (auto sysTs = metadata->schema->sysTsPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysTs = metadata->schema->sysTsPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysTsPack, table, sysTs, offset);
                 break;
 
             case DbTable::TABLE::SYS_USER:
-                if (auto sysUser = metadata->schema->sysUserPack.forUpdate(ctx, rowId, offset))
+                if (auto* sysUser = metadata->schema->sysUserPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->sysUserPack, table, sysUser, offset);
                 break;
 
             case DbTable::TABLE::XDB_TTSET:
-                if (auto xdbTtSet = metadata->schema->xdbTtSetPack.forUpdate(ctx, rowId, offset))
+                if (auto* xdbTtSet = metadata->schema->xdbTtSetPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&metadata->schema->xdbTtSetPack, table, xdbTtSet, offset);
                 break;
 
             case DbTable::TABLE::XDB_XNM: {
-                auto xmlCtx = findMatchingXmlCtx(table);
-                if (auto xdbXNm = xmlCtx->xdbXNmPack.forUpdate(ctx, rowId, offset))
+                auto* xmlCtx = findMatchingXmlCtx(table);
+                if (auto* xdbXNm = xmlCtx->xdbXNmPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&xmlCtx->xdbXNmPack, table, xdbXNm, offset);
                 break;
             }
 
             case DbTable::TABLE::XDB_XPT: {
-                auto xmlCtx = findMatchingXmlCtx(table);
-                if (auto xdbXPt = xmlCtx->xdbXPtPack.forUpdate(ctx, rowId, offset))
+                auto* xmlCtx = findMatchingXmlCtx(table);
+                if (auto* xdbXPt = xmlCtx->xdbXPtPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&xmlCtx->xdbXPtPack, table, xdbXPt, offset);
                 break;
             }
 
             case DbTable::TABLE::XDB_XQN: {
-                auto xmlCtx = findMatchingXmlCtx(table);
-                if (auto xdbXQn = xmlCtx->xdbXQnPack.forUpdate(ctx, rowId, offset))
+                auto* xmlCtx = findMatchingXmlCtx(table);
+                if (auto* xdbXQn = xmlCtx->xdbXQnPack.forUpdate(ctx, rowId, offset))
                     updateAllValues(&xmlCtx->xdbXQnPack, table, xdbXQn, offset);
                 break;
             }
@@ -642,7 +639,7 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
-        typeRowId rowId(dataObj, bdba, slot);
+        const typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))

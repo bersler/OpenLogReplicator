@@ -28,15 +28,15 @@ namespace OpenLogReplicator {
     class Metrics {
     public:
         enum class TAG_NAMES {
-            NONE, FILTER = 1 << 0, SYS = 1 << 2
+            NONE = 0, FILTER = 1 << 0, SYS = 1 << 2
         };
 
     protected:
         TAG_NAMES tagNames;
 
     public:
-        Metrics(TAG_NAMES newTagNames);
-        virtual ~Metrics();
+        explicit Metrics(TAG_NAMES newTagNames);
+        virtual ~Metrics() = default;
 
         virtual void initialize(const Ctx* ctx) = 0;
         virtual void shutdown() = 0;

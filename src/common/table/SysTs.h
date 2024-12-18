@@ -29,9 +29,9 @@ namespace OpenLogReplicator {
         static constexpr uint NAME_LENGTH{30};
 
         typeRowId rowId;
-        typeTs ts;
+        typeTs ts{0};
         std::string name;
-        uint32_t blockSize;
+        uint32_t blockSize{0};
 
         SysTs(typeRowId newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
                 rowId(newRowId),
@@ -41,37 +41,34 @@ namespace OpenLogReplicator {
         }
 
         explicit SysTs(typeRowId newRowId) :
-                rowId(newRowId),
-                ts(0),
-                name(""),
-                blockSize(0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysTs& other) const {
             return (other.rowId != rowId) || (other.ts != ts) || (other.name != name) || (other.blockSize != blockSize);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.TS$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", TS#: " + std::to_string(ts) + ", NAME: '" + name + "', BLOCKSIZE: " + std::to_string(blockSize);
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return false;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
     };

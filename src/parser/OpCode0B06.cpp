@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
                                                   std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
-                    dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), i, fieldSize, *nulls & bits);
+                    dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), i, fieldSize, (*nulls & bits) != 0);
                 bits <<= 1;
                 if (bits == 0) {
                     bits = 1;

@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/types.h"
-
 #ifndef STREAM_H_
 #define STREAM_H_
+
+#include "../common/types.h"
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         static constexpr uint64_t READ_NETWORK_BUFFER{1024};
 
         Stream(Ctx* newCtx, const char* newUri);
-        virtual ~Stream();
+        virtual ~Stream() = default;
         Stream(const Stream&) = delete;
         Stream& operator=(const Stream&) = delete;
 

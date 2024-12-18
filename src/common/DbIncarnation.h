@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-
 #ifndef DB_INCARNATION_H_
 #define DB_INCARNATION_H_
+
+#include "types.h"
 
 namespace OpenLogReplicator {
     class DbIncarnation {

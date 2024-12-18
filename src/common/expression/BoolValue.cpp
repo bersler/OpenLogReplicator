@@ -24,7 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     BoolValue::BoolValue(VALUE newBoolType, Expression* newLeft, Expression* newRight) :
-            Expression(),
             boolType(newBoolType),
             left(newLeft),
             right(newRight) {

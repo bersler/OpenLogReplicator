@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/types.h"
-
 #ifndef FORMAT_H_
 #define FORMAT_H_
+
+#include "../common/types.h"
 
 namespace OpenLogReplicator {
 
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         };
 
         enum class MESSAGE_FORMAT {
-            DEFAULT, FULL = 1 << 0, ADD_SEQUENCES = 1 << 1,
+            DEFAULT = 0, FULL = 1 << 0, ADD_SEQUENCES = 1 << 1,
             // JSON only:
             SKIP_BEGIN = 1 << 2, SKIP_COMMIT = 1 << 3, ADD_OFFSET = 1 << 4
         };
@@ -151,74 +151,71 @@ namespace OpenLogReplicator {
                 unknownType(newUnknownType) {
         }
 
-        virtual ~Format() {
-        }
-
-        bool isAttributesFormatBegin() const {
+        [[nodiscard]] bool isAttributesFormatBegin() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::BEGIN)) != 0;
         };
 
-        bool isAttributesFormatDml() const {
+        [[nodiscard]] bool isAttributesFormatDml() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::DML)) != 0;
         };
 
-        bool isAttributesFormatCommit() const {
+        [[nodiscard]] bool isAttributesFormatCommit() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::COMMIT)) != 0;
         };
 
-        bool isCharFormatNoMapping() const {
+        [[nodiscard]] bool isCharFormatNoMapping() const {
             return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::NOMAPPING)) != 0;
         };
 
-        bool isCharFormatHex() const {
+        [[nodiscard]] bool isCharFormatHex() const {
             return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::HEX)) != 0;
         };
 
-        bool isScnTypeAllPayloads() const {
+        [[nodiscard]] bool isScnTypeAllPayloads() const {
             return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::ALL_PAYLOADS)) != 0;
         };
 
-        bool isScnTypeCommitValue() const {
+        [[nodiscard]] bool isScnTypeCommitValue() const {
             return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::COMMIT_VALUE)) != 0;
         };
 
-        bool isSchemaFormatFull() const {
+        [[nodiscard]] bool isSchemaFormatFull() const {
             return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::FULL)) != 0;
         };
 
-        bool isSchemaFormatRepeated() const {
+        [[nodiscard]] bool isSchemaFormatRepeated() const {
             return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::REPEATED)) != 0;
         };
 
-        bool isSchemaFormatObj() const {
+        [[nodiscard]] bool isSchemaFormatObj() const {
             return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::OBJ)) != 0;
         };
 
-        bool isMessageFormatFull() const {
+        [[nodiscard]] bool isMessageFormatFull() const {
             return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::FULL)) != 0;
         }
 
-        bool isMessageFormatAddSequences() const {
+        [[nodiscard]] bool isMessageFormatAddSequences() const {
             return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_SEQUENCES)) != 0;
         }
 
-        bool isMessageFormatSkipBegin() const {
+        [[nodiscard]] bool isMessageFormatSkipBegin() const {
             return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_BEGIN)) != 0;
         }
 
-        bool isMessageFormatSkipCommit() const {
+        [[nodiscard]] bool isMessageFormatSkipCommit() const {
             return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_COMMIT)) != 0;
         }
 
-        bool isMessageFormatAddOffset() const {
+        [[nodiscard]] bool isMessageFormatAddOffset() const {
             return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_OFFSET)) != 0;
         }
 
-        bool isDbFormatAddDml() const {
+        [[nodiscard]] bool isDbFormatAddDml() const {
             return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DML)) != 0;
         }
 
-        bool isDbFormatAddDdl() const {
+        [[nodiscard]] bool isDbFormatAddDdl() const {
             return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DDL)) != 0;
         }
     };

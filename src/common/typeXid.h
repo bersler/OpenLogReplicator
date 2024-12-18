@@ -17,15 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TYPE_XID_H_
+#define TYPE_XID_H_
+
 #include <cstring>
 #include <iomanip>
 #include <ostream>
 
 #include "types.h"
 #include "exception/DataException.h"
-
-#ifndef TYPE_XID_H_
-#define TYPE_XID_H_
 
 namespace OpenLogReplicator {
     class typeXid final {
@@ -103,23 +103,23 @@ namespace OpenLogReplicator {
                    static_cast<uint64_t>(stoul(sqn_, nullptr, 16));
         }
 
-        uint64_t getData() const {
+        [[nodiscard]] uint64_t getData() const {
             return data;
         }
 
-        bool isEmpty() {
+        [[nodiscard]] bool isEmpty() const {
             return (data == 0);
         }
 
-        typeUsn usn() const {
+        [[nodiscard]] typeUsn usn() const {
             return static_cast<typeUsn>(data >> 48);
         }
 
-        typeSlt slt() const {
+        [[nodiscard]] typeSlt slt() const {
             return static_cast<typeSlt>((data >> 32) & 0xFFFF);
         }
 
-        typeSqn sqn() const {
+        [[nodiscard]] typeSqn sqn() const {
             return static_cast<typeSqn>(data & 0xFFFFFFFF);
         }
 
@@ -140,11 +140,11 @@ namespace OpenLogReplicator {
             return *this;
         }
 
-        uint64_t toUint() {
+        [[nodiscard]] uint64_t toUint() const {
             return data;
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             std::ostringstream ss;
             ss << "0x" << std::setfill('0') << std::setw(4) << std::hex << (data >> 48) << "." << std::setw(3) <<
                ((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);

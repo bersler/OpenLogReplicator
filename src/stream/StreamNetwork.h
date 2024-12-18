@@ -17,24 +17,24 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef STREAM_NETWORK_H_
+#define STREAM_NETWORK_H_
+
 #include <netinet/in.h>
 
 #include "Stream.h"
 
-#ifndef STREAM_NETWORK_H_
-#define STREAM_NETWORK_H_
-
 namespace OpenLogReplicator {
     class StreamNetwork final : public Stream {
     protected:
-        int socketFD;
-        int serverFD;
-        struct sockaddr_storage address;
+        int socketFD{-1};
+        int serverFD{-1};
+        struct sockaddr_storage address{};
         std::string host;
         std::string port;
-        uint8_t readBuffer[READ_NETWORK_BUFFER];
-        uint64_t readBufferLen;
-        struct addrinfo* res;
+        uint8_t readBuffer[READ_NETWORK_BUFFER]{};
+        uint64_t readBufferLen{0};
+        struct addrinfo* res{nullptr};
 
     public:
         StreamNetwork(Ctx* newCtx, const char* newUri);

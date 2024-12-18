@@ -17,18 +17,17 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "CharacterSet.h"
-
 #ifndef CHARACTER_SET_AL32UTF8_H_
 #define CHARACTER_SET_AL32UTF8_H_
+
+#include "CharacterSet.h"
 
 namespace OpenLogReplicator {
     class CharacterSetAL32UTF8 final : public CharacterSet {
     public:
         CharacterSetAL32UTF8();
-        virtual ~CharacterSetAL32UTF8() override;
 
-        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
     };
 }
 

@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
         static BoolValue* buildCondition(const std::string& condition, std::vector<Token*>& tokens, std::vector<Expression*>& stack);
 
         Expression();
-        virtual ~Expression();
+        virtual ~Expression() = default;
 
         virtual bool isBool() { return false; }
 

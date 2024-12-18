@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define _LARGEFILE_SOURCE
 #define _FILE_OFFSET_BITS 64
 
+#include <algorithm>
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
@@ -36,22 +37,11 @@ namespace OpenLogReplicator {
     WriterFile::WriterFile(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
                            const char* newOutput, const char* newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend) :
             Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
-            prefixPos(0),
-            suffixPos(0),
-            mode(MODE::STDOUT),
-            fill(0),
             output(newOutput),
             timestampFormat(newTimestampFormat),
-            fileNameNum(0),
-            fileSize(0),
             maxFileSize(newMaxFileSize),
-            outputDes(-1),
             newLine(newNewLine),
-            append(newAppend),
-            lastSequence(Ctx::ZERO_SEQ),
-            newLineMsg(nullptr),
-            warningDisplayed(false),
-            bufferFill(0) {
+            append(newAppend) {
     }
 
     WriterFile::~WriterFile() {
@@ -67,7 +57,7 @@ namespace OpenLogReplicator {
             newLineMsg = reinterpret_cast<const uint8_t*>("\r\n");
         }
 
-        if (this->output.length() == 0) {
+        if (this->output.empty()) {
             outputDes = STDOUT_FILENO;
             return;
         }
@@ -150,9 +140,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 struct stat fileStat;
-                std::string fileName(ent->d_name);
+                const std::string fileName(ent->d_name);
 
-                std::string fileNameFull(pathName + "/" + ent->d_name);
+                const std::string fileNameFull(pathName + "/" + ent->d_name);
                 if (stat(fileNameFull.c_str(), &fileStat) != 0) {
                     ctx->warning(10003, "file: " + fileNameFull + " - get metadata returned: " + strerror(errno));
                     continue;
@@ -161,17 +151,17 @@ namespace OpenLogReplicator {
                 if (S_ISDIR(fileStat.st_mode))
                     continue;
 
-                std::string prefix(fileNameMask.substr(0, prefixPos));
+                const std::string prefix(fileNameMask.substr(0, prefixPos));
                 if (fileName.length() < prefix.length() || fileName.substr(0, prefix.length()) != prefix)
                     continue;
 
-                std::string suffix(fileNameMask.substr(suffixPos));
+                const std::string suffix(fileNameMask.substr(suffixPos));
                 if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length()) != suffix)
                     continue;
 
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
                     ctx->logTrace(Ctx::TRACE::WRITER, "found previous output file: " + pathName + "/" + fileName);
-                std::string fileNameFoundNum(fileName.substr(prefix.length(), fileName.length() - suffix.length() - prefix.length()));
+                const std::string fileNameFoundNum(fileName.substr(prefix.length(), fileName.length() - suffix.length() - prefix.length()));
                 typeScn fileNum;
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
@@ -180,8 +170,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
                 if (append > 0) {
-                    if (fileNameNum < fileNum)
-                        fileNameNum = fileNum;
+                    fileNameNum = std::max(fileNameNum, fileNum);
                 } else {
                     if (fileNameNum <= fileNum)
                         fileNameNum = fileNum + 1;
@@ -221,7 +210,7 @@ namespace OpenLogReplicator {
                                     std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1) {
-                std::string outputFileNumStr(std::to_string(fileNameNum));
+                const std::string outputFileNumStr(std::to_string(fileNameNum));
                 uint64_t zeros = 0;
                 if (fill > outputFileNumStr.length())
                     zeros = fill - outputFileNumStr.length();
@@ -238,11 +227,11 @@ namespace OpenLogReplicator {
                                     std::to_string(maxFileSize) + ")");
 
             if (outputDes == -1 || shouldSwitch) {
-                time_t now = time(nullptr);
-                tm nowTm = *localtime(&now);
+                const time_t now = time(nullptr);
+                const tm nowTm = *localtime(&now);
                 char str[50];
                 strftime(str, sizeof(str), timestampFormat.c_str(), &nowTm);
-                std::string newOutputFile = pathName + "/" + fileNameMask.substr(0, prefixPos) + str + fileNameMask.substr(suffixPos);
+                const std::string newOutputFile = pathName + "/" + fileNameMask.substr(0, prefixPos) + str + fileNameMask.substr(suffixPos);
                 if (fullFileName == newOutputFile) {
                     if (!warningDisplayed) {
                         ctx->warning(60030, "rotation size is set too low (" + std::to_string(maxFileSize) +
@@ -275,7 +264,7 @@ namespace OpenLogReplicator {
         if (outputDes == -1) {
             struct stat fileStat;
             contextSet(CONTEXT::OS, REASON::OS);
-            int statRet = stat(fullFileName.c_str(), &fileStat);
+            const int statRet = stat(fullFileName.c_str(), &fileStat);
             contextSet(CONTEXT::CPU);
             if (statRet == 0) {
                 // File already exists, append?
@@ -295,7 +284,7 @@ namespace OpenLogReplicator {
                 throw RuntimeException(10006, "file: " + fullFileName + " - open for write returned: " + strerror(errno));
 
             contextSet(CONTEXT::OS, REASON::OS);
-            int lseekRet = lseek(outputDes, 0, SEEK_END);
+            const int lseekRet = lseek(outputDes, 0, SEEK_END);
             contextSet(CONTEXT::CPU);
             if (lseekRet == -1)
                 throw RuntimeException(10011, "file: " + fullFileName + " - seek returned: " + strerror(errno));
@@ -338,7 +327,7 @@ namespace OpenLogReplicator {
 
     void WriterFile::unbufferedWrite(const uint8_t* data, uint64_t size) {
         contextSet(CONTEXT::OS, REASON::OS);
-        int64_t bytesWritten = write(outputDes, data, size);
+        const int64_t bytesWritten = write(outputDes, data, size);
         contextSet(CONTEXT::CPU);
         if (bytesWritten <= 0 || static_cast<uint64_t>(bytesWritten) != size)
             throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +

@@ -17,27 +17,24 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TYPE_LOBID_H_
+#define TYPE_LOBID_H_
+
 #include <cstring>
 #include <iostream>
 #include <string>
 
 #include "types.h"
 
-#ifndef TYPE_LOBID_H_
-#define TYPE_LOBID_H_
-
 namespace OpenLogReplicator {
     class typeLobId final {
     public:
         static constexpr uint64_t LENGTH{10};
 
-        uint8_t data[LENGTH];
+        uint8_t data[LENGTH]{};
 
         typeLobId() {
             memset(reinterpret_cast<void*>(data), 0, LENGTH);
-        }
-
-        ~typeLobId() {
         }
 
         typeLobId(const typeLobId& other) {
@@ -51,17 +48,17 @@ namespace OpenLogReplicator {
         }
 
         bool operator!=(const typeLobId& other) const {
-            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
+            const int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
             return ret != 0;
         }
 
         bool operator==(const typeLobId& other) const {
-            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
+            const int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
             return ret == 0;
         }
 
         bool operator<(const typeLobId& other) const {
-            int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
+            const int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
             return ret < 0;
         }
 
@@ -77,7 +74,7 @@ namespace OpenLogReplicator {
                    reinterpret_cast<const void*>(newData), LENGTH);
         }
 
-        std::string lower() const {
+        [[nodiscard]] std::string lower() const {
             std::ostringstream ss;
             ss << std::setfill('0') << std::hex <<
                std::setw(2) << static_cast<uint>(data[0]) << std::setw(2) << static_cast<uint>(data[1]) <<
@@ -88,7 +85,7 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        std::string upper() const {
+        [[nodiscard]] std::string upper() const {
             std::ostringstream ss;
             ss << std::uppercase << std::setfill('0') << std::hex <<
                std::setw(2) << static_cast<uint>(data[0]) << std::setw(2) << static_cast<uint>(data[1]) <<
@@ -99,7 +96,7 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        std::string narrow() const {
+        [[nodiscard]] std::string narrow() const {
             std::ostringstream ss;
             ss << std::uppercase << std::setfill('0') << std::hex << static_cast<uint>(data[0]) << static_cast<uint>(data[1]) <<
                static_cast<uint64_t>(data[2]) << static_cast<uint>(data[3]) <<

@@ -25,8 +25,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class ReaderFilesystem final : public Reader {
     protected:
-        int fileDes;
-        int flags;
+        int fileDes{-1};
+        int flags{0};
         void redoClose() override;
         REDO_CODE redoOpen() override;
         int redoRead(uint8_t* buf, uint64_t offset, uint size) override;

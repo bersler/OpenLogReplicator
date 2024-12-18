@@ -17,23 +17,23 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef WRITER_KAFKA_H_
+#define WRITER_KAFKA_H_
+
 #include <librdkafka/rdkafka.h>
 
 #include <map>
 #include "Writer.h"
 
-#ifndef WRITER_KAFKA_H_
-#define WRITER_KAFKA_H_
-
 namespace OpenLogReplicator {
     class WriterKafka final : public Writer {
     protected:
         std::string topic;
-        char errStr[512];
+        char errStr[512]{};
         std::map<std::string, std::string> properties;
-        rd_kafka_t* rk;
-        rd_kafka_topic_t* rkt;
-        rd_kafka_conf_t* conf;
+        rd_kafka_t* rk{nullptr};
+        rd_kafka_topic_t* rkt{nullptr};
+        rd_kafka_conf_t* conf{nullptr};
         static void dr_msg_cb(rd_kafka_t* rkCb, const rd_kafka_message_t* rkMessage, void* opaque);
         static void error_cb(rd_kafka_t* rkCb, int err, const char* reason, void* opaque);
         static void logger_cb(const rd_kafka_t* rkCb, int level, const char* fac, const char* buf);

@@ -54,14 +54,14 @@ namespace OpenLogReplicator {
             }
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
-                uint32_t kdxlenxt = ctx->read32(redoLogRecord->data(fieldPos + 0));
+                const uint32_t kdxlenxt = ctx->read32(redoLogRecord->data(fieldPos + 0));
                 *ctx->dumpStream << "zeroed lock count and free space, kdxlenxt = 0x" << std::hex << kdxlenxt << '\n';
             }
         }
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0A0804);
         // Field: 3
-        typeSize rows = fieldSize / 2 - 1;
+        const typeSize rows = (fieldSize / 2) - 1;
         if (unlikely(ctx->dumpRedoLog >= 1)) {
             *ctx->dumpStream << "new block has " << std::dec << rows << " rows\n";
             *ctx->dumpStream << "dumping row index\n";

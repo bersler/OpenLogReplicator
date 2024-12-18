@@ -17,11 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "CharacterSet.h"
-
 #ifndef CHARACTER_SET_ZHT32TRIS_H_
 #define CHARACTER_SET_ZHT32TRIS_H_
 
+#include "CharacterSet.h"
 
 namespace OpenLogReplicator {
     class CharacterSetZHT32TRIS final : public CharacterSet {
@@ -41,9 +40,8 @@ namespace OpenLogReplicator {
 
     public:
         CharacterSetZHT32TRIS();
-        ~CharacterSetZHT32TRIS() override;
 
-        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
     };
 }
 

@@ -17,23 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "CharacterSet7bit.h"
-
 #ifndef CHARACTER_SET_8BIT_H_
 #define CHARACTER_SET_8BIT_H_
+
+#include "CharacterSet7bit.h"
 
 namespace OpenLogReplicator {
     class CharacterSet8bit final : public CharacterSet7bit {
     protected:
         [[nodiscard]] typeUnicode readMap(uint64_t character) const override;
-        bool customAscii;
+        bool customAscii{false};
 
     public:
         CharacterSet8bit(const char* newName, const typeUnicode16* newMap);
         CharacterSet8bit(const char* newName, const typeUnicode16* newMap, bool newCustomAscii);
-        ~CharacterSet8bit() override;
 
-        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
 
         static typeUnicode16 unicode_map_AR8ADOS710[128];
         static typeUnicode16 unicode_map_AR8ADOS710T[128];

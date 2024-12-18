@@ -24,10 +24,8 @@ namespace OpenLogReplicator {
             CharacterSet("UTF8") {
     }
 
-    CharacterSetUTF8::~CharacterSetUTF8() = default;
-
     typeUnicode CharacterSetUTF8::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
 
         // 0xxxxxxx
@@ -37,7 +35,7 @@ namespace OpenLogReplicator {
         if (length == 0)
             return badChar(ctx, xid, byte1);
 
-        uint64_t byte2 = *str++;
+        const uint64_t byte2 = *str++;
         --length;
 
         // 110xxxxx 10xxxxxx
@@ -51,7 +49,7 @@ namespace OpenLogReplicator {
         if (length == 0)
             return badChar(ctx, xid, byte1, byte2);
 
-        uint64_t byte3 = *str++;
+        const uint64_t byte3 = *str++;
         --length;
 
         // 11101101 1010xxxx 10xxxxxx 11101101 1011xxxx 10xxxxxx
@@ -59,25 +57,25 @@ namespace OpenLogReplicator {
             if ((byte3 & 0xC0) != 0x80 || length == 0)
                 return badChar(ctx, xid, byte1, byte2, byte3);
 
-            uint64_t byte4 = *str++;
+            const uint64_t byte4 = *str++;
             --length;
 
             if (byte4 != 0xED || length == 0)
                 return badChar(ctx, xid, byte1, byte2, byte3, byte4);
 
-            uint64_t byte5 = *str++;
+            const uint64_t byte5 = *str++;
             --length;
 
             if ((byte5 & 0xF0) != 0xB0 || length == 0)
                 return badChar(ctx, xid, byte1, byte2, byte3, byte4, byte5);
 
-            uint64_t byte6 = *str++;
+            const uint64_t byte6 = *str++;
             --length;
 
             if ((byte6 & 0xC0) != 0x80)
                 return badChar(ctx, xid, byte1, byte2, byte3, byte4, byte5, byte6);
 
-            typeUnicode character = (((byte2 & 0x0F) << 16) | ((byte3 & 0x3F) << 10) | ((byte5 & 0x0F) << 6) | (byte6 & 0x3F)) + 0x10000;
+            const typeUnicode character = (((byte2 & 0x0F) << 16) | ((byte3 & 0x3F) << 10) | ((byte5 & 0x0F) << 6) | (byte6 & 0x3F)) + 0x10000;
             if (character <= 0x10FFFF)
                 return character;
 

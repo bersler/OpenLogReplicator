@@ -24,8 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     void OpCode0513::attribute(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, const char* header,
                                const char* name, Transaction* transaction) {
-        std::string value(reinterpret_cast<const char*>(redoLogRecord->data(fieldPos)), fieldSize);
-        if (value != "")
+        const std::string value(reinterpret_cast<const char*>(redoLogRecord->data(fieldPos)), fieldSize);
+        if (!value.empty())
             transaction->attributes.insert_or_assign(name, value);
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
@@ -119,7 +119,7 @@ namespace OpenLogReplicator {
             throw RedoLogException(50061, "too short field 5.13.11: " + std::to_string(fieldSize) + " offset: " +
                                           std::to_string(redoLogRecord->dataOffset));
 
-        std::string value("true");
+        const std::string value("true");
 
         const uint16_t flags = ctx->read16(redoLogRecord->data(fieldPos + 0));
         if ((flags & 0x0001) != 0) {
@@ -281,11 +281,11 @@ namespace OpenLogReplicator {
         }
 
         std::string value = std::to_string(sessionNumber);
-        if (value != "")
+        if (!value.empty())
             transaction->attributes.insert_or_assign("session number", value);
 
         value = std::to_string(serialNumber);
-        if (value != "")
+        if (!value.empty())
             transaction->attributes.insert_or_assign("serial number", value);
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
@@ -302,7 +302,7 @@ namespace OpenLogReplicator {
 
         const uint32_t version = ctx->read32(redoLogRecord->data(fieldPos + 0));
         const std::string value = std::to_string(version);
-        if (value != "")
+        if (!value.empty())
             transaction->attributes.insert_or_assign("version", value);
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
@@ -317,7 +317,7 @@ namespace OpenLogReplicator {
 
         const uint32_t auditSessionid = ctx->read32(redoLogRecord->data(fieldPos + 0));
         const std::string value = std::to_string(auditSessionid);
-        if (value != "")
+        if (!value.empty())
             transaction->attributes.insert_or_assign("audit sessionid", value);
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {

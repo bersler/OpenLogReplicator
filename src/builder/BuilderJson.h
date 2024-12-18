@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef BUILDER_JSON_H_
+#define BUILDER_JSON_H_
+
 #include "Builder.h"
 #include "../common/DbColumn.h"
 #include "../common/DbTable.h"
@@ -24,17 +27,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 
-#ifndef BUILDER_JSON_H_
-#define BUILDER_JSON_H_
-
 namespace OpenLogReplicator {
     class BuilderJson final : public Builder {
     protected:
-        bool hasPreviousValue;
-        bool hasPreviousRedo;
-        bool hasPreviousColumn;
+        bool hasPreviousValue{false};
+        bool hasPreviousRedo{false};
+        bool hasPreviousColumn{false};
 
-        inline void columnNull(const DbTable* table, typeCol col, bool after) {
+        void columnNull(const DbTable* table, typeCol col, bool after) {
             if (unlikely(table != nullptr && format.unknownType == Format::UNKNOWN_TYPE::HIDE)) {
                 const DbColumn* column = table->columns[col];
                 if (column->guard && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_GUARD_COLUMNS))
@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
                 if (column->unused && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_UNUSED_COLUMNS))
                     return;
 
-                SysCol::COLTYPE typeNo = table->columns[col]->type;
+                const SysCol::COLTYPE typeNo = table->columns[col]->type;
                 if (typeNo != SysCol::COLTYPE::VARCHAR
                     && typeNo != SysCol::COLTYPE::NUMBER
                     && typeNo != SysCol::COLTYPE::DATE
@@ -75,13 +75,13 @@ namespace OpenLogReplicator {
             if (likely(table != nullptr))
                 appendEscape(table->columns[col]->name);
             else {
-                std::string columnName("COL_" + std::to_string(col));
+                const std::string columnName("COL_" + std::to_string(col));
                 append(columnName);
             }
             append(std::string_view(R"(":null)"));
         }
 
-        inline void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
+        void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
             if (format.isMessageFormatAddSequences()) {
                 append(std::string_view(R"(,"num":)"));
                 appendDec(num);
@@ -89,8 +89,9 @@ namespace OpenLogReplicator {
 
             if (format.ridFormat == Format::RID_FORMAT::SKIP)
                 return;
-            else if (format.ridFormat == Format::RID_FORMAT::TEXT) {
-                typeRowId rowId(dataObj, bdba, slot);
+
+            if (format.ridFormat == Format::RID_FORMAT::TEXT) {
+                const typeRowId rowId(dataObj, bdba, slot);
                 char str[19];
                 rowId.toString(str);
                 append(std::string_view(R"(,"rid":")"));
@@ -99,7 +100,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
+        void appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
             if (first || format.isScnTypeAllPayloads()) {
                 if (hasPreviousValue)
                     append(',');
@@ -182,49 +183,49 @@ namespace OpenLogReplicator {
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_NANO_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                         append(std::string_view(R"(.000000000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MICRO_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, true));
                         append(std::string_view(R"(.000000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MILLI_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                         append(std::string_view(R"(.000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, true));
                         append('"');
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_NANO:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                         append(std::string_view(R"(.000000000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MICRO:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                         append(std::string_view(R"(.000000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MILLI:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                         append(std::string_view(R"(.000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                         append('"');
                         break;
                 }
@@ -282,7 +283,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendAttributes() {
+        void appendAttributes() {
             append(std::string_view(R"("attributes":{)"));
             bool hasPreviousAttribute = false;
             for (const auto& attributeIt: *attributes) {
@@ -300,7 +301,7 @@ namespace OpenLogReplicator {
             append(std::string_view("},"));
         }
 
-        inline void appendSchema(const DbTable* table, typeObj obj) {
+        void appendSchema(const DbTable* table, typeObj obj) {
             if (unlikely(table == nullptr)) {
                 std::string ownerName;
                 std::string tableName;
@@ -310,6 +311,13 @@ namespace OpenLogReplicator {
                     appendEscape(ownerName);
                     append(std::string_view(R"(","table":")"));
                     appendEscape(tableName);
+                    append('"');
+                } else if (ddlSchemaSize > 0) {
+                    append(std::string_view(R"("schema":{"owner":")"));
+                    appendEscape(ddlSchemaName, ddlSchemaSize);
+                    append(std::string_view(R"(","table":")"));
+                    tableName = "OBJ_" + std::to_string(obj);
+                    append(tableName);
                     append('"');
                 } else {
                     append(std::string_view(R"("schema":{"table":")"));
@@ -342,8 +350,8 @@ namespace OpenLogReplicator {
                     if (tables.count(table) > 0) {
                         append('}');
                         return;
-                    } else
-                        tables.insert(table);
+                    }
+                    tables.insert(table);
                 }
 
                 append(std::string_view(R"(,"columns":[)"));
@@ -464,7 +472,7 @@ namespace OpenLogReplicator {
         }
 
         template<bool fast = false>
-        inline void appendHex2(uint8_t value) {
+        void appendHex2(uint8_t value) {
             if (likely(fast || lastBuilderSize + messagePosition + 2 < OUTPUT_BUFFER_DATA_SIZE)) {
                 append<true>(Ctx::map16((value >> 4) & 0xF));
                 append<true>(Ctx::map16(value & 0xF));
@@ -474,7 +482,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendHex3(uint16_t value) {
+        void appendHex3(uint16_t value) {
             if (likely(lastBuilderSize + messagePosition + 3 < OUTPUT_BUFFER_DATA_SIZE)) {
                 append<true>(Ctx::map16((value >> 8) & 0xF));
                 append<true>(Ctx::map16((value >> 4) & 0xF));
@@ -486,7 +494,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendHex4(uint16_t value) {
+        void appendHex4(uint16_t value) {
             if (likely(lastBuilderSize + messagePosition + 4 < OUTPUT_BUFFER_DATA_SIZE)) {
                 append<true>(Ctx::map16((value >> 12) & 0xF));
                 append<true>(Ctx::map16((value >> 8) & 0xF));
@@ -500,7 +508,7 @@ namespace OpenLogReplicator {
             };
         }
 
-        inline void appendHex8(uint32_t value) {
+        void appendHex8(uint32_t value) {
             if (likely(lastBuilderSize + messagePosition + 8 < OUTPUT_BUFFER_DATA_SIZE)) {
                 append<true>(Ctx::map16((value >> 28) & 0xF));
                 append<true>(Ctx::map16((value >> 24) & 0xF));
@@ -522,7 +530,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendHex16(uint64_t value) {
+        void appendHex16(uint64_t value) {
             if (likely(lastBuilderSize + messagePosition + 16 < OUTPUT_BUFFER_DATA_SIZE)) {
                 append<true>(Ctx::map16((value >> 60) & 0xF));
                 append<true>(Ctx::map16((value >> 56) & 0xF));
@@ -561,7 +569,7 @@ namespace OpenLogReplicator {
         }
 
         template<uint size, bool fast = false>
-        inline void appendDecN(uint64_t value) {
+        void appendDecN(uint64_t value) {
             char buffer[21];
 
             for (uint i = 0; i < size; ++i) {
@@ -574,6 +582,7 @@ namespace OpenLogReplicator {
                 for (uint i = 0; i < size; ++i)
                     *ptr++ = buffer[size - i - 1];
                 messagePosition += size;
+                ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
             } else {
                 for (uint i = 0; i < size; ++i)
                     append(buffer[size - i - 1]);
@@ -581,7 +590,7 @@ namespace OpenLogReplicator {
         }
 
         template<bool fast = false>
-        inline void appendDec(uint64_t value) {
+        void appendDec(uint64_t value) {
             char buffer[21];
             uint size = 0;
 
@@ -600,13 +609,14 @@ namespace OpenLogReplicator {
                 for (uint i = 0; i < size; ++i)
                     *ptr++ = buffer[size - i - 1];
                 messagePosition += size;
+                ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
             } else {
                 for (uint i = 0; i < size; ++i)
                     append(buffer[size - i - 1]);
             }
         }
 
-        inline void appendSDec(int64_t value) {
+        void appendSDec(int64_t value) {
             char buffer[22];
             uint size = 0;
 
@@ -634,6 +644,7 @@ namespace OpenLogReplicator {
                 for (uint i = 0; i < size; ++i)
                     *ptr++ = buffer[size - i - 1];
                 messagePosition += size;
+                ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
             } else {
                 for (uint i = 0; i < size; ++i)
                     append(buffer[size - i - 1]);
@@ -641,12 +652,12 @@ namespace OpenLogReplicator {
         }
 
         template<bool fast = false>
-        inline void appendEscape(const std::string& str) {
+        void appendEscape(const std::string& str) {
             appendEscape<fast>(str.c_str(), str.length());
         }
 
         template<bool fast = false>
-        inline void appendEscape(const char* str, uint64_t size) {
+        void appendEscape(const char* str, uint64_t size) {
             if (fast || likely(lastBuilderSize + messagePosition + size * 5 < OUTPUT_BUFFER_DATA_SIZE)) {
                 appendEscapeInternal<true>(str, size);
             } else {
@@ -655,7 +666,7 @@ namespace OpenLogReplicator {
         }
 
         template<bool fast = false>
-        inline void appendEscapeInternal(const char* str, uint64_t size) {
+        void appendEscapeInternal(const char* str, uint64_t size) {
             while (size > 0) {
                 switch (*str) {
                     case '\t':
@@ -721,7 +732,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
+        void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
             append(std::string_view(R"(,"after":{)"));
 
             hasPreviousColumn = false;
@@ -738,14 +749,14 @@ namespace OpenLogReplicator {
                         columnNull(table, column, true);
                 }
             } else {
-                typeCol baseMax = valuesMax >> 6;
+                const typeCol baseMax = valuesMax >> 6;
                 for (typeCol base = 0; base <= baseMax; ++base) {
-                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    const auto columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
                     while (set != 0) {
-                        typeCol pos = ffsl(set) - 1;
+                        const typeCol pos = ffsll(set) - 1;
                         set &= ~(1ULL << pos);
-                        typeCol column = columnBase + pos;
+                        const typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0)
@@ -761,7 +772,7 @@ namespace OpenLogReplicator {
             append('}');
         }
 
-        inline void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
+        void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
             append(std::string_view(R"(,"before":{)"));
 
             hasPreviousColumn = false;
@@ -778,14 +789,14 @@ namespace OpenLogReplicator {
                         columnNull(table, column, false);
                 }
             } else {
-                typeCol baseMax = valuesMax >> 6;
+                const typeCol baseMax = valuesMax >> 6;
                 for (typeCol base = 0; base <= baseMax; ++base) {
-                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    auto columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
                     while (set != 0) {
-                        typeCol pos = ffsl(set) - 1;
+                        const typeCol pos = ffsll(set) - 1;
                         set &= ~(1ULL << pos);
-                        typeCol column = columnBase + pos;
+                        const typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0)
@@ -802,29 +813,29 @@ namespace OpenLogReplicator {
         }
 
 
-        virtual void columnFloat(const std::string& columnName, double value) override;
-        virtual void columnDouble(const std::string& columnName, long double value) override;
-        virtual void columnString(const std::string& columnName) override;
-        virtual void columnNumber(const std::string& columnName, int precision, int scale) override;
-        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
-        virtual void columnRowId(const std::string& columnName, typeRowId rowId) override;
-        virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
-        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
-        virtual void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        virtual void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
-        virtual void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
+        void columnFloat(const std::string& columnName, double value) override;
+        void columnDouble(const std::string& columnName, long double value) override;
+        void columnString(const std::string& columnName) override;
+        void columnNumber(const std::string& columnName, int precision, int scale) override;
+        void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
+        void columnRowId(const std::string& columnName, typeRowId rowId) override;
+        void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
+        void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
+        void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
+        void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
         void addTagData(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, Format::VALUE_TYPE valueType, uint64_t offset);
 
     public:
         BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
 
-        virtual void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) override;
-        virtual void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) override;
+        void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) override;
+        void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) override;
     };
 }
 

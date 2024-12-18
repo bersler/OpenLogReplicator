@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef METADATA_H_
+#define METADATA_H_
+
 #include <atomic>
 #include <condition_variable>
 #include <functional>
@@ -29,10 +32,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
+#include "../common/Ctx.h"
 #include "../common/DbTable.h"
-
-#ifndef METADATA_H_
-#define METADATA_H_
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -41,7 +42,6 @@ namespace OpenLogReplicator {
     class RedoLog;
     class Schema;
     class SchemaElement;
-    class SchemaKey;
     class Serializer;
     class State;
     class StateDisk;
@@ -63,10 +63,10 @@ namespace OpenLogReplicator {
         Schema* schema;
         Ctx* ctx;
         Locales* locales;
-        State* state;
-        State* stateDisk;
-        Serializer* serializer;
-        std::atomic<STATUS> status;
+        State* state{nullptr};
+        State* stateDisk{nullptr};
+        Serializer* serializer{nullptr};
+        std::atomic<STATUS> status{STATUS::READY};
 
         // Startup parameters
         std::string database;
@@ -76,28 +76,28 @@ namespace OpenLogReplicator {
         uint64_t startTimeRel;
 
         // Database parameters
-        bool onlineData;
-        bool suppLogDbPrimary;
-        bool suppLogDbAll;
-        bool logArchiveFormatCustom;
-        bool allowedCheckpoints;
+        bool onlineData{false};
+        bool suppLogDbPrimary{false};
+        bool suppLogDbAll{false};
+        bool logArchiveFormatCustom{false};
+        bool allowedCheckpoints{false};
         // The writer is controlling the boot parameters. If the data is not available on startup, don't fail immediately.
-        bool bootFailsafe;
+        bool bootFailsafe{false};
         typeConId conId;
         std::string conName;
         std::string context;
         std::string dbTimezoneStr;
-        int64_t dbTimezone;
+        int64_t dbTimezone{0};
         std::string dbRecoveryFileDest;
         std::string logArchiveDest;
         std::string dbBlockChecksum;
         std::string nlsCharacterSet;
-        std::string logArchiveFormat;
+        std::string logArchiveFormat{"o1_mf_%t_%s_%h_.arc"};
         std::string nlsNcharCharacterSet;
-        uint64_t defaultCharacterMapId;
-        uint64_t defaultCharacterNcharMapId;
-        typeScn firstDataScn;
-        typeScn firstSchemaScn;
+        uint64_t defaultCharacterMapId{0};
+        uint64_t defaultCharacterNcharMapId{0};
+        typeScn firstDataScn{Ctx::ZERO_SCN};
+        typeScn firstSchemaScn{Ctx::ZERO_SCN};
         std::set<RedoLog*> redoLogs;
 
         // Transaction schema consistency mutex
@@ -105,31 +105,31 @@ namespace OpenLogReplicator {
 
         // Checkpoint information
         std::mutex mtxCheckpoint;
-        typeResetlogs resetlogs;
+        typeResetlogs resetlogs{0};
         std::set<DbIncarnation*> dbIncarnations;
-        DbIncarnation* dbIncarnationCurrent;
-        typeActivation activation;
-        typeSeq sequence;
-        typeSeq lastSequence;
-        uint64_t offset;
-        typeScn firstScn;
-        typeScn nextScn;
-        typeScn clientScn;
-        typeIdx clientIdx;
-        uint64_t checkpoints;
-        typeScn checkpointScn;
-        typeScn lastCheckpointScn;
-        typeTime checkpointTime;
+        DbIncarnation* dbIncarnationCurrent{nullptr};
+        typeActivation activation{0};
+        typeSeq sequence{Ctx::ZERO_SEQ};
+        typeSeq lastSequence{Ctx::ZERO_SEQ};
+        uint64_t offset{0};
+        typeScn firstScn{Ctx::ZERO_SCN};
+        typeScn nextScn{Ctx::ZERO_SCN};
+        typeScn clientScn{Ctx::ZERO_SCN};
+        typeIdx clientIdx{0};
+        uint64_t checkpoints{0};
+        typeScn checkpointScn{Ctx::ZERO_SCN};
+        typeScn lastCheckpointScn{Ctx::ZERO_SCN};
+        typeTime checkpointTime{0};
         typeTime lastCheckpointTime;
-        typeSeq checkpointSequence;
-        uint64_t checkpointOffset;
-        uint64_t lastCheckpointOffset;
-        uint64_t checkpointBytes;
-        uint64_t lastCheckpointBytes;
-        typeSeq minSequence;
-        uint64_t minOffset;
+        typeSeq checkpointSequence{Ctx::ZERO_SEQ};
+        uint64_t checkpointOffset{0};
+        uint64_t lastCheckpointOffset{0};
+        uint64_t checkpointBytes{0};
+        uint64_t lastCheckpointBytes{0};
+        typeSeq minSequence{Ctx::ZERO_SEQ};
+        uint64_t minOffset{0};
         typeXid minXid;
-        uint64_t schemaInterval;
+        uint64_t schemaInterval{0};
         std::set<typeScn> checkpointScnList;
         std::unordered_map<typeScn, bool> checkpointSchemaMap;
 
@@ -151,10 +151,10 @@ namespace OpenLogReplicator {
         void setActivation(typeActivation newActivation);
         void setFirstNextScn(typeScn newFirstScn, typeScn newNextScn);
         void setNextSequence();
-        [[nodiscard]] bool stateRead(const std::string& name, uint64_t maxSize, std::string& in);
-        [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in);
-        [[nodiscard]] bool stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out);
-        [[nodiscard]] bool stateDrop(const std::string& name);
+        [[nodiscard]] bool stateRead(const std::string& name, uint64_t maxSize, std::string& in) const;
+        [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in) const;
+        [[nodiscard]] bool stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out) const;
+        [[nodiscard]] bool stateDrop(const std::string& name) const;
         SchemaElement* addElement(const char* owner, const char* table, DbTable::OPTIONS options1, DbTable::OPTIONS options2);
         SchemaElement* addElement(const char* owner, const char* table, DbTable::OPTIONS options);
         void resetElements();
@@ -175,7 +175,7 @@ namespace OpenLogReplicator {
         void deleteOldCheckpoints(Thread* t);
         void loadAdaptiveSchema();
         void allowCheckpoints();
-        bool isNewData(typeScn scn, typeIdx idx);
+        bool isNewData(typeScn scn, typeIdx idx) const;
     };
 }
 

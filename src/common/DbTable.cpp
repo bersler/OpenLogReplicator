@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <algorithm>
+#include <utility>
+
 #include "Ctx.h"
 #include "DbColumn.h"
 #include "DbLob.h"
@@ -26,21 +29,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "expression/Token.h"
 
 namespace OpenLogReplicator {
-    DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, DbTable::OPTIONS newOptions, const std::string& newOwner,
-                     const std::string& newName) :
+    DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, DbTable::OPTIONS newOptions, std::string newOwner,
+                     std::string newName) :
             obj(newObj),
             dataObj(newDataObj),
             user(newUser),
             cluCols(newCluCols),
-            totalPk(0),
-            totalLobs(0),
             options(newOptions),
-            maxSegCol(0),
-            guardSegNo(-1),
-            owner(newOwner),
-            name(newName),
-            condition(""),
-            conditionValue(nullptr) {
+            owner(std::move(newOwner)),
+            name(std::move(newName)) {
 
         systemTable = TABLE::NONE;
         if (this->owner == "SYS") {
@@ -113,8 +110,7 @@ namespace OpenLogReplicator {
             delete token;
         tokens.clear();
 
-        if (conditionValue != nullptr)
-            delete conditionValue;
+        delete conditionValue;
         conditionValue = nullptr;
     }
 
@@ -131,8 +127,7 @@ namespace OpenLogReplicator {
         if (column->numPk > 0)
             pk.push_back(columns.size());
 
-        if (column->segCol > maxSegCol)
-            maxSegCol = column->segCol;
+        maxSegCol = std::max(column->segCol, maxSegCol);
 
         columns.push_back(column);
     }
@@ -143,24 +138,24 @@ namespace OpenLogReplicator {
     }
 
     void DbTable::addTablePartition(typeObj newObj, typeDataObj newDataObj) {
-        typeObj2 objx = (static_cast<typeObj2>(newObj) << 32) | static_cast<typeObj2>(newDataObj);
+        const typeObj2 objx = (static_cast<typeObj2>(newObj) << 32) | static_cast<typeObj2>(newDataObj);
         tablePartitions.push_back(objx);
     }
 
-    bool DbTable::matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) {
+    bool DbTable::matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) const {
         bool result = true;
         if (conditionValue != nullptr)
             result = conditionValue->evaluateToBool(op, attributes);
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CONDITION)))
             ctx->logTrace(Ctx::TRACE::CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + condition + ", result: " +
-                                                 std::to_string(result));
+                                                 std::to_string(result ? 1 : 0));
         return result;
     }
 
     void DbTable::setCondition(const std::string& newCondition) {
         this->condition = newCondition;
-        if (newCondition == "")
+        if (newCondition.empty())
             return;
 
         Expression::buildTokens(newCondition, tokens);

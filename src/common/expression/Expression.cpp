@@ -278,9 +278,5 @@ namespace OpenLogReplicator {
         return root;
     }
 
-    Expression::Expression() {
-    }
-
-    Expression::~Expression() {
-    }
+    Expression::Expression() = default;
 }

@@ -31,51 +31,51 @@ namespace OpenLogReplicator {
     class MetricsPrometheus final : public Metrics {
     protected:
         std::string bind;
-        prometheus::Exposer* exposer;
+        prometheus::Exposer* exposer{nullptr};
         std::shared_ptr<prometheus::Registry> registry;
 
         // bytes_confirmed
-        prometheus::Family<prometheus::Counter>* bytesConfirmed;
-        prometheus::Counter* bytesConfirmedCounter;
+        prometheus::Family<prometheus::Counter>* bytesConfirmed{nullptr};
+        prometheus::Counter* bytesConfirmedCounter{nullptr};
 
         // bytes_parsed
-        prometheus::Family<prometheus::Counter>* bytesParsed;
-        prometheus::Counter* bytesParsedCounter;
+        prometheus::Family<prometheus::Counter>* bytesParsed{nullptr};
+        prometheus::Counter* bytesParsedCounter{nullptr};
 
         // bytes_read
-        prometheus::Family<prometheus::Counter>* bytesRead;
-        prometheus::Counter* bytesReadCounter;
+        prometheus::Family<prometheus::Counter>* bytesRead{nullptr};
+        prometheus::Counter* bytesReadCounter{nullptr};
 
         // bytes_sent
-        prometheus::Family<prometheus::Counter>* bytesSent;
-        prometheus::Counter* bytesSentCounter;
+        prometheus::Family<prometheus::Counter>* bytesSent{nullptr};
+        prometheus::Counter* bytesSentCounter{nullptr};
 
         // checkpoints
-        prometheus::Family<prometheus::Counter>* checkpoints;
-        prometheus::Counter* checkpointsOutCounter;
-        prometheus::Counter* checkpointsSkipCounter;
+        prometheus::Family<prometheus::Counter>* checkpoints{nullptr};
+        prometheus::Counter* checkpointsOutCounter{nullptr};
+        prometheus::Counter* checkpointsSkipCounter{nullptr};
 
         // checkpoint_lag
-        prometheus::Family<prometheus::Gauge>* checkpointLag;
-        prometheus::Gauge* checkpointLagGauge;
+        prometheus::Family<prometheus::Gauge>* checkpointLag{nullptr};
+        prometheus::Gauge* checkpointLagGauge{nullptr};
 
         // ddl_ops
-        prometheus::Family<prometheus::Counter>* ddlOps;
-        prometheus::Counter* ddlOpsAlterCounter;
-        prometheus::Counter* ddlOpsCreateCounter;
-        prometheus::Counter* ddlOpsDropCounter;
-        prometheus::Counter* ddlOpsOtherCounter;
-        prometheus::Counter* ddlOpsPurgeCounter;
-        prometheus::Counter* ddlOpsTruncateCounter;
+        prometheus::Family<prometheus::Counter>* ddlOps{nullptr};
+        prometheus::Counter* ddlOpsAlterCounter{nullptr};
+        prometheus::Counter* ddlOpsCreateCounter{nullptr};
+        prometheus::Counter* ddlOpsDropCounter{nullptr};
+        prometheus::Counter* ddlOpsOtherCounter{nullptr};
+        prometheus::Counter* ddlOpsPurgeCounter{nullptr};
+        prometheus::Counter* ddlOpsTruncateCounter{nullptr};
 
         // dml_ops
-        prometheus::Family<prometheus::Counter>* dmlOps;
-        prometheus::Counter* dmlOpsDeleteOutCounter;
-        prometheus::Counter* dmlOpsInsertOutCounter;
-        prometheus::Counter* dmlOpsUpdateOutCounter;
-        prometheus::Counter* dmlOpsDeleteSkipCounter;
-        prometheus::Counter* dmlOpsInsertSkipCounter;
-        prometheus::Counter* dmlOpsUpdateSkipCounter;
+        prometheus::Family<prometheus::Counter>* dmlOps{nullptr};
+        prometheus::Counter* dmlOpsDeleteOutCounter{nullptr};
+        prometheus::Counter* dmlOpsInsertOutCounter{nullptr};
+        prometheus::Counter* dmlOpsUpdateOutCounter{nullptr};
+        prometheus::Counter* dmlOpsDeleteSkipCounter{nullptr};
+        prometheus::Counter* dmlOpsInsertSkipCounter{nullptr};
+        prometheus::Counter* dmlOpsUpdateSkipCounter{nullptr};
         std::unordered_map<std::string, prometheus::Counter*> dmlOpsDeleteOutCounterMap;
         std::unordered_map<std::string, prometheus::Counter*> dmlOpsInsertOutCounterMap;
         std::unordered_map<std::string, prometheus::Counter*> dmlOpsUpdateOutCounterMap;
@@ -84,148 +84,148 @@ namespace OpenLogReplicator {
         std::unordered_map<std::string, prometheus::Counter*> dmlOpsUpdateSkipCounterMap;
 
         // log_switches
-        prometheus::Family<prometheus::Counter>* logSwitches;
-        prometheus::Counter* logSwitchesOnlineCounter;
-        prometheus::Counter* logSwitchesArchivedCounter;
+        prometheus::Family<prometheus::Counter>* logSwitches{nullptr};
+        prometheus::Counter* logSwitchesOnlineCounter{nullptr};
+        prometheus::Counter* logSwitchesArchivedCounter{nullptr};
 
         // log_switches_lag
-        prometheus::Family<prometheus::Gauge>* logSwitchesLag;
-        prometheus::Gauge* logSwitchesLagOnlineGauge;
-        prometheus::Gauge* logSwitchesLagArchivedGauge;
+        prometheus::Family<prometheus::Gauge>* logSwitchesLag{nullptr};
+        prometheus::Gauge* logSwitchesLagOnlineGauge{nullptr};
+        prometheus::Gauge* logSwitchesLagArchivedGauge{nullptr};
 
         // memory_allocated_mb
-        prometheus::Family<prometheus::Gauge>* memoryAllocatedMb;
-        prometheus::Gauge* memoryAllocatedMbGauge;
+        prometheus::Family<prometheus::Gauge>* memoryAllocatedMb{nullptr};
+        prometheus::Gauge* memoryAllocatedMbGauge{nullptr};
 
         // memory_used_total_mb
-        prometheus::Family<prometheus::Gauge>* memoryUsedTotalMb;
-        prometheus::Gauge* memoryUsedTotalMbGauge;
+        prometheus::Family<prometheus::Gauge>* memoryUsedTotalMb{nullptr};
+        prometheus::Gauge* memoryUsedTotalMbGauge{nullptr};
 
         // memory_used_mb
-        prometheus::Family<prometheus::Gauge>* memoryUsedMb;
-        prometheus::Gauge* memoryUsedMbBuilderGauge;
-        prometheus::Gauge* memoryUsedMbMiscGauge;
-        prometheus::Gauge* memoryUsedMbParserGauge;
-        prometheus::Gauge* memoryUsedMbReaderGauge;
-        prometheus::Gauge* memoryUsedMbTransactionsGauge;
+        prometheus::Family<prometheus::Gauge>* memoryUsedMb{nullptr};
+        prometheus::Gauge* memoryUsedMbBuilderGauge{nullptr};
+        prometheus::Gauge* memoryUsedMbMiscGauge{nullptr};
+        prometheus::Gauge* memoryUsedMbParserGauge{nullptr};
+        prometheus::Gauge* memoryUsedMbReaderGauge{nullptr};
+        prometheus::Gauge* memoryUsedMbTransactionsGauge{nullptr};
 
         // messages_confirmed
-        prometheus::Family<prometheus::Counter>* messagesConfirmed;
-        prometheus::Counter* messagesConfirmedCounter;
+        prometheus::Family<prometheus::Counter>* messagesConfirmed{nullptr};
+        prometheus::Counter* messagesConfirmedCounter{nullptr};
 
         // messages_sent
-        prometheus::Family<prometheus::Counter>* messagesSent;
-        prometheus::Counter* messagesSentCounter;
+        prometheus::Family<prometheus::Counter>* messagesSent{nullptr};
+        prometheus::Counter* messagesSentCounter{nullptr};
 
         // swap_operations
-        prometheus::Family<prometheus::Counter>* swapOperationsMb;
-        prometheus::Counter* swapOperationsMbDiscardCounter;
-        prometheus::Counter* swapOperationsMbReadCounter;
-        prometheus::Counter* swapOperationsMbWriteCounter;
+        prometheus::Family<prometheus::Counter>* swapOperationsMb{nullptr};
+        prometheus::Counter* swapOperationsMbDiscardCounter{nullptr};
+        prometheus::Counter* swapOperationsMbReadCounter{nullptr};
+        prometheus::Counter* swapOperationsMbWriteCounter{nullptr};
 
         // swap_usage_mb
-        prometheus::Family<prometheus::Gauge>* swapUsageMb;
-        prometheus::Gauge* swapUsageMbGauge;
+        prometheus::Family<prometheus::Gauge>* swapUsageMb{nullptr};
+        prometheus::Gauge* swapUsageMbGauge{nullptr};
 
         // transactions
-        prometheus::Family<prometheus::Counter>* transactions;
-        prometheus::Counter* transactionsCommitOutCounter;
-        prometheus::Counter* transactionsRollbackOutCounter;
-        prometheus::Counter* transactionsCommitPartialCounter;
-        prometheus::Counter* transactionsRollbackPartialCounter;
-        prometheus::Counter* transactionsCommitSkipCounter;
-        prometheus::Counter* transactionsRollbackSkipCounter;
+        prometheus::Family<prometheus::Counter>* transactions{nullptr};
+        prometheus::Counter* transactionsCommitOutCounter{nullptr};
+        prometheus::Counter* transactionsRollbackOutCounter{nullptr};
+        prometheus::Counter* transactionsCommitPartialCounter{nullptr};
+        prometheus::Counter* transactionsRollbackPartialCounter{nullptr};
+        prometheus::Counter* transactionsCommitSkipCounter{nullptr};
+        prometheus::Counter* transactionsRollbackSkipCounter{nullptr};
 
     public:
         MetricsPrometheus(TAG_NAMES newTagNames, const char* newBind);
-        virtual ~MetricsPrometheus() override;
+        ~MetricsPrometheus() override;
 
-        virtual void initialize(const Ctx* ctx) override;
-        virtual void shutdown() override;
+        void initialize(const Ctx* ctx) override;
+        void shutdown() override;
 
         // bytes_confirmed
-        virtual void emitBytesConfirmed(uint64_t counter) override;
+        void emitBytesConfirmed(uint64_t counter) override;
 
         // bytes parsed
-        virtual void emitBytesParsed(uint64_t counter) override;
+        void emitBytesParsed(uint64_t counter) override;
 
         // bytes read
-        virtual void emitBytesRead(uint64_t counter) override;
+        void emitBytesRead(uint64_t counter) override;
 
         // bytes sent
-        virtual void emitBytesSent(uint64_t counter) override;
+        void emitBytesSent(uint64_t counter) override;
 
         // checkpoints
-        virtual void emitCheckpointsOut(uint64_t counter) override;
-        virtual void emitCheckpointsSkip(uint64_t counter) override;
+        void emitCheckpointsOut(uint64_t counter) override;
+        void emitCheckpointsSkip(uint64_t counter) override;
 
         // checkpoint_lag
-        virtual void emitCheckpointLag(int64_t gauge) override;
+        void emitCheckpointLag(int64_t gauge) override;
 
         // ddl_ops
-        virtual void emitDdlOpsAlter(uint64_t counter) override;
-        virtual void emitDdlOpsCreate(uint64_t counter) override;
-        virtual void emitDdlOpsDrop(uint64_t counter) override;
-        virtual void emitDdlOpsOther(uint64_t counter) override;
-        virtual void emitDdlOpsPurge(uint64_t counter) override;
-        virtual void emitDdlOpsTruncate(uint64_t counter) override;
+        void emitDdlOpsAlter(uint64_t counter) override;
+        void emitDdlOpsCreate(uint64_t counter) override;
+        void emitDdlOpsDrop(uint64_t counter) override;
+        void emitDdlOpsOther(uint64_t counter) override;
+        void emitDdlOpsPurge(uint64_t counter) override;
+        void emitDdlOpsTruncate(uint64_t counter) override;
 
         // dml_ops
-        virtual void emitDmlOpsDeleteOut(uint64_t counter) override;
-        virtual void emitDmlOpsInsertOut(uint64_t counter) override;
-        virtual void emitDmlOpsUpdateOut(uint64_t counter) override;
-        virtual void emitDmlOpsDeleteSkip(uint64_t counter) override;
-        virtual void emitDmlOpsInsertSkip(uint64_t counter) override;
-        virtual void emitDmlOpsUpdateSkip(uint64_t counter) override;
-        virtual void emitDmlOpsDeleteOut(uint64_t counter, const std::string& owner, const std::string& table) override;
-        virtual void emitDmlOpsInsertOut(uint64_t counter, const std::string& owner, const std::string& table) override;
-        virtual void emitDmlOpsUpdateOut(uint64_t counter, const std::string& owner, const std::string& table) override;
-        virtual void emitDmlOpsDeleteSkip(uint64_t counter, const std::string& owner, const std::string& table) override;
-        virtual void emitDmlOpsInsertSkip(uint64_t counter, const std::string& owner, const std::string& table) override;
-        virtual void emitDmlOpsUpdateSkip(uint64_t counter, const std::string& owner, const std::string& table) override;
+        void emitDmlOpsDeleteOut(uint64_t counter) override;
+        void emitDmlOpsInsertOut(uint64_t counter) override;
+        void emitDmlOpsUpdateOut(uint64_t counter) override;
+        void emitDmlOpsDeleteSkip(uint64_t counter) override;
+        void emitDmlOpsInsertSkip(uint64_t counter) override;
+        void emitDmlOpsUpdateSkip(uint64_t counter) override;
+        void emitDmlOpsDeleteOut(uint64_t counter, const std::string& owner, const std::string& table) override;
+        void emitDmlOpsInsertOut(uint64_t counter, const std::string& owner, const std::string& table) override;
+        void emitDmlOpsUpdateOut(uint64_t counter, const std::string& owner, const std::string& table) override;
+        void emitDmlOpsDeleteSkip(uint64_t counter, const std::string& owner, const std::string& table) override;
+        void emitDmlOpsInsertSkip(uint64_t counter, const std::string& owner, const std::string& table) override;
+        void emitDmlOpsUpdateSkip(uint64_t counter, const std::string& owner, const std::string& table) override;
 
         // log_switches
-        virtual void emitLogSwitchesArchived(uint64_t counter) override;
-        virtual void emitLogSwitchesOnline(uint64_t counter) override;
+        void emitLogSwitchesArchived(uint64_t counter) override;
+        void emitLogSwitchesOnline(uint64_t counter) override;
 
         // log_switches_lag
-        virtual void emitLogSwitchesLagArchived(int64_t gauge) override;
-        virtual void emitLogSwitchesLagOnline(int64_t gauge) override;
+        void emitLogSwitchesLagArchived(int64_t gauge) override;
+        void emitLogSwitchesLagOnline(int64_t gauge) override;
 
         // memory_allocated_mb
-        virtual void emitMemoryAllocatedMb(int64_t gauge) override;
+        void emitMemoryAllocatedMb(int64_t gauge) override;
 
         // memory_used_total_mb
-        virtual void emitMemoryUsedTotalMb(int64_t gauge) override;
+        void emitMemoryUsedTotalMb(int64_t gauge) override;
 
         // memory_used_mb
-        virtual void emitMemoryUsedMbBuilder(int64_t gauge) override;
-        virtual void emitMemoryUsedMbMisc(int64_t gauge) override;
-        virtual void emitMemoryUsedMbParser(int64_t gauge) override;
-        virtual void emitMemoryUsedMbReader(int64_t gauge) override;
-        virtual void emitMemoryUsedMbTransactions(int64_t gauge) override;
+        void emitMemoryUsedMbBuilder(int64_t gauge) override;
+        void emitMemoryUsedMbMisc(int64_t gauge) override;
+        void emitMemoryUsedMbParser(int64_t gauge) override;
+        void emitMemoryUsedMbReader(int64_t gauge) override;
+        void emitMemoryUsedMbTransactions(int64_t gauge) override;
 
         // messages_confirmed
-        virtual void emitMessagesConfirmed(uint64_t counter) override;
+        void emitMessagesConfirmed(uint64_t counter) override;
 
         // messages sent
-        virtual void emitMessagesSent(uint64_t counter) override;
+        void emitMessagesSent(uint64_t counter) override;
 
         // swap_operations
-        virtual void emitSwapOperationsMbDiscard(uint64_t counter) override;
-        virtual void emitSwapOperationsMbRead(uint64_t counter) override;
-        virtual void emitSwapOperationsMbWrite(uint64_t counter) override;
+        void emitSwapOperationsMbDiscard(uint64_t counter) override;
+        void emitSwapOperationsMbRead(uint64_t counter) override;
+        void emitSwapOperationsMbWrite(uint64_t counter) override;
 
         // swap_usage_mb
-        virtual void emitSwapUsageMb(int64_t gauge) override;
+        void emitSwapUsageMb(int64_t gauge) override;
 
         // transactions
-        virtual void emitTransactionsCommitOut(uint64_t counter) override;
-        virtual void emitTransactionsRollbackOut(uint64_t counter) override;
-        virtual void emitTransactionsCommitPartial(uint64_t counter) override;
-        virtual void emitTransactionsRollbackPartial(uint64_t counter) override;
-        virtual void emitTransactionsCommitSkip(uint64_t counter) override;
-        virtual void emitTransactionsRollbackSkip(uint64_t counter) override;
+        void emitTransactionsCommitOut(uint64_t counter) override;
+        void emitTransactionsRollbackOut(uint64_t counter) override;
+        void emitTransactionsCommitPartial(uint64_t counter) override;
+        void emitTransactionsRollbackPartial(uint64_t counter) override;
+        void emitTransactionsCommitSkip(uint64_t counter) override;
+        void emitTransactionsRollbackSkip(uint64_t counter) override;
     };
 }
 

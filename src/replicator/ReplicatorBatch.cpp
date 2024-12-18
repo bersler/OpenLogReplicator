@@ -28,8 +28,6 @@ namespace OpenLogReplicator {
             Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, newAlias, newDatabase) {
     }
 
-    ReplicatorBatch::~ReplicatorBatch() = default;
-
     void ReplicatorBatch::positionReader() {
         if (metadata->startSequence != Ctx::ZERO_SEQ)
             metadata->setSeqOffset(metadata->startSequence, 0);

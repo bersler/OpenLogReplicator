@@ -24,8 +24,6 @@ namespace OpenLogReplicator {
             CharacterSetJA16SJIS("JA16SJISTILDE") {
     }
 
-    CharacterSetJA16SJISTILDE::~CharacterSetJA16SJISTILDE() = default;
-
     typeUnicode CharacterSetJA16SJISTILDE::readMap(uint64_t byte1, uint64_t byte2) const {
         if (byte1 == 0x81 && byte2 == 0x60)
             return 0xFF5E;

@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef REPLICATOR_ONLINE_H_
+#define REPLICATOR_ONLINE_H_
+
 #include "Replicator.h"
 #include "../common/DbTable.h"
 #include "../metadata/SchemaElement.h"
-
-#ifndef REPLICATOR_ONLINE_H_
-#define REPLICATOR_ONLINE_H_
 
 namespace OpenLogReplicator {
     class DatabaseConnection;
@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SYS_USER;
         static const char* SQL_GET_XDB_TTSET;
         static const char* SQL_CHECK_CONNECTION;
-        bool standby;
+        bool standby{false};
 
         void positionReader() override;
         void loadDatabaseMetadata() override;

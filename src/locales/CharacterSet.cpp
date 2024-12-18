@@ -26,8 +26,6 @@ namespace OpenLogReplicator {
             name(newName) {
     }
 
-    CharacterSet::~CharacterSet() = default;
-
     uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1) const {
         ctx->warning(60008, "can't decode character: (" + std::to_string(byte1) + ") using character set " + name + ", xid: " +
                             xid.toString());

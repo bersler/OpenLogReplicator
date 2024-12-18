@@ -17,24 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef LOB_DATA_H_
+#define LOB_DATA_H_
+
 #include <map>
 
 #include "types.h"
 
-#ifndef LOB_DATA_H_
-#define LOB_DATA_H_
-
 namespace OpenLogReplicator {
     class LobDataElement final {
     public:
-        LobDataElement();
         LobDataElement(typeDba newDba, uint32_t newOffset);
 
-        virtual ~LobDataElement();
         bool operator<(const LobDataElement& other) const;
 
-        typeDba dba;
-        uint32_t offset;
+        typeDba dba{0};
+        uint32_t offset{0};
     };
 
     class LobData final {

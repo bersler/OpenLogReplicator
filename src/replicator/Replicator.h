@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef REPLICATOR_H_
+#define REPLICATOR_H_
+
 #include <fstream>
 #include <queue>
 #include <set>
@@ -27,9 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RedoLogRecord.h"
 #include "../common/Thread.h"
 #include "../common/exception/RedoLogException.h"
-
-#ifndef REPLICATOR_H_
-#define REPLICATOR_H_
 
 namespace OpenLogReplicator {
     class Parser;
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
     class TransactionBuffer;
 
     struct parserCompare {
-        bool operator()(const Parser* const p1, const Parser* const p2);
+        bool operator()(const Parser* p1, const Parser* p2);
     };
 
     class Replicator : public Thread {
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         std::string database;
         std::string redoCopyPath;
         // Redo log files
-        Reader* archReader;
+        Reader* archReader{nullptr};
         std::string lastCheckedDay;
         std::priority_queue<Parser*, std::vector<Parser*>, parserCompare> archiveRedoQueue;
         std::set<Parser*> onlineRedoSet;
@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
 
         void cleanArchList();
         void updateOnlineLogs();
-        void readerDropAll(void);
+        void readerDropAll();
         static uint64_t getSequenceFromFileName(Replicator* replicator, const std::string& file);
         virtual const char* getModeName() const;
         virtual bool checkConnection();
@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
         friend class ReplicatorOnline;
 
         const std::string getName() const override {
-            return std::string{"Replicator: " + alias};
+            return {"Replicator: " + alias};
         }
     };
 }

@@ -30,8 +30,8 @@ namespace OpenLogReplicator {
         static constexpr uint64_t FLAGSSTG_COMPRESSED{4};
 
         typeRowId rowId;
-        typeObj obj;
-        typeIntX flagsStg;          // NULL
+        typeObj obj{0};
+        typeIntX flagsStg{0, 0};          // NULL
 
         SysDeferredStg(typeRowId newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
                 rowId(newRowId),
@@ -40,44 +40,42 @@ namespace OpenLogReplicator {
         }
 
         explicit SysDeferredStg(typeRowId newRowId) :
-                rowId(newRowId),
-                obj(0),
-                flagsStg(0, 0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysDeferredStg& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.flagsStg != flagsStg);
         }
 
-        [[nodiscard]] bool isCompressed() {
+        [[nodiscard]] bool isCompressed() const {
             return flagsStg.isSet64(FLAGSSTG_COMPRESSED);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.DEFERRED_STG$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", FLAGS_STG: " + flagsStg.toString();
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return obj;
         }
     };

@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SCHEMA_H_
+#define SCHEMA_H_
+
 #include <list>
 #include <map>
 #include <rapidjson/document.h>
@@ -50,9 +53,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/table/XdbXQn.h"
 #include "SchemaElement.h"
 
-#ifndef SCHEMA_H_
-#define SCHEMA_H_
-
 namespace OpenLogReplicator {
     class Ctx;
     class DbColumn;
@@ -68,29 +68,26 @@ namespace OpenLogReplicator {
         typeRowId sysUserRowId;
         SysUser sysUserAdaptive;
 
-        bool compareXdbXNm(Schema* otherSchema, std::string& msgs) const;
-        bool compareXdbXQn(Schema* otherSchema, std::string& msgs) const;
-        bool compareXdbXPt(Schema* otherSchema, std::string& msgs) const;
         void addTableToDict(DbTable* table);
         void removeTableFromDict(DbTable* table);
-        uint16_t getLobBlockSize(typeTs ts) const;
+        [[nodiscard]] uint16_t getLobBlockSize(typeTs ts) const;
 
     public:
-        typeScn scn;
-        typeScn refScn;
-        bool loaded;
+        typeScn scn{Ctx::ZERO_SCN};
+        typeScn refScn{Ctx::ZERO_SCN};
+        bool loaded{false};
 
         std::unordered_map<typeDataObj, DbLob*> lobPartitionMap;
         std::unordered_map<typeDataObj, DbLob*> lobIndexMap;
         std::unordered_map<typeObj, DbTable*> tableMap;
         std::unordered_map<typeObj, DbTable*> tablePartitionMap;
-        XmlCtx* xmlCtxDefault;
-        DbColumn* columnTmp;
-        DbLob* lobTmp;
-        DbTable* tableTmp;
+        XmlCtx* xmlCtxDefault{nullptr};
+        DbColumn* columnTmp{nullptr};
+        DbLob* lobTmp{nullptr};
+        DbTable* tableTmp{nullptr};
         std::set<DbTable*> tablesTouched;
         std::set<typeObj> identifiersTouched;
-        bool touched;
+        bool touched{false};
 
         TablePack<SysCCol, SysCColKey, TabRowIdUnorderedKeyDefault> sysCColPack;
         TablePack<SysCDef, SysCDefKey, SysCDefCon> sysCDefPack;

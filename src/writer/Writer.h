@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <mutex>
-#include "../common/Thread.h"
-
 #ifndef WRITER_H_
 #define WRITER_H_
+
+#include <mutex>
+#include "../common/Thread.h"
 
 namespace OpenLogReplicator {
     class Builder;
@@ -37,21 +37,21 @@ namespace OpenLogReplicator {
         Builder* builder;
         Metadata* metadata;
         // Information about local checkpoint
-        BuilderQueue* builderQueue;
-        typeScn checkpointScn;
-        typeIdx checkpointIdx;
+        BuilderQueue* builderQueue{nullptr};
+        typeScn checkpointScn{Ctx::ZERO_SCN};
+        typeIdx checkpointIdx{0};
         time_t checkpointTime;
-        uint64_t sentMessages;
-        uint64_t oldSize;
-        uint64_t currentQueueSize;
-        uint64_t hwmQueueSize;
-        bool streaming;
+        uint64_t sentMessages{0};
+        uint64_t oldSize{0};
+        uint64_t currentQueueSize{0};
+        uint64_t hwmQueueSize{0};
+        bool streaming{false};
 
         std::mutex mtx;
         // scn,idx confirmed by client
-        typeScn confirmedScn;
-        typeIdx confirmedIdx;
-        BuilderMsg** queue;
+        typeScn confirmedScn{Ctx::ZERO_SCN};
+        typeIdx confirmedIdx{0};
+        BuilderMsg** queue{nullptr};
 
         void createMessage(BuilderMsg* msg);
         virtual void sendMessage(BuilderMsg* msg) = 0;
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
         void resetMessageQueue();
 
     public:
-        Writer(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata);
+        Writer(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata);
         ~Writer() override;
 
         virtual void initialize();
@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
         virtual void flush() {};
 
         const std::string getName() const override {
-            return std::string{"Writer: " + getType()};
+            return {"Writer: " + getType()};
         }
     };
 }

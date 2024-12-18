@@ -17,24 +17,24 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef BUILDER_PROTOBUF_H_
+#define BUILDER_PROTOBUF_H_
+
 #include "../common/DbTable.h"
 #include "../common/OraProtoBuf.pb.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 #include "Builder.h"
 
-#ifndef BUILDER_PROTOBUF_H_
-#define BUILDER_PROTOBUF_H_
-
 namespace OpenLogReplicator {
     class BuilderProtobuf final : public Builder {
     protected:
-        pb::RedoResponse* redoResponsePB;
-        pb::Value* valuePB;
-        pb::Payload* payloadPB;
-        pb::Schema* schemaPB;
+        pb::RedoResponse* redoResponsePB{nullptr};
+        pb::Value* valuePB{nullptr};
+        pb::Payload* payloadPB{nullptr};
+        pb::Schema* schemaPB{nullptr};
 
-        inline void columnNull(const DbTable* table, typeCol col, bool after) {
+        void columnNull(const DbTable* table, typeCol col, bool after) {
             if (table != nullptr && format.unknownType == Format::UNKNOWN_TYPE::HIDE) {
                 DbColumn* column = table->columns[col];
                 if (column->storedAsLob)
@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
                 if (column->unused && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_UNUSED_COLUMNS))
                     return;
 
-                SysCol::COLTYPE typeNo = table->columns[col]->type;
+                const SysCol::COLTYPE typeNo = table->columns[col]->type;
                 if (typeNo != SysCol::COLTYPE::VARCHAR
                     && typeNo != SysCol::COLTYPE::NUMBER
                     && typeNo != SysCol::COLTYPE::DATE
@@ -77,21 +77,21 @@ namespace OpenLogReplicator {
             valuePB->set_name(table->columns[col]->name);
         }
 
-        inline void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
+        void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
             if (format.isMessageFormatAddSequences())
                 payloadPB->set_num(num);
 
             if (format.ridFormat == Format::RID_FORMAT::SKIP)
                 return;
-            else if (format.ridFormat == Format::RID_FORMAT::TEXT) {
-                typeRowId rowId(dataObj, bdba, slot);
+            if (format.ridFormat == Format::RID_FORMAT::TEXT) {
+                const typeRowId rowId(dataObj, bdba, slot);
                 char str[19];
                 rowId.toString(str);
                 payloadPB->set_rid(str, 18);
             }
         }
 
-        inline void appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
+        void appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
             redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
             if (first || format.isScnTypeAllPayloads()) {
                 if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
@@ -144,7 +144,7 @@ namespace OpenLogReplicator {
 
                     case Format::TIMESTAMP_FORMAT::ISO8601:
                         char buffer[22];
-                        str.assign(buffer, ctx->epochToIso8601(timestamp, buffer, true, true));
+                        str.assign(buffer, Ctx::epochToIso8601(timestamp, buffer, true, true));
                         redoResponsePB->set_tms(str);
                         break;
 
@@ -183,7 +183,7 @@ namespace OpenLogReplicator {
                 redoResponsePB->set_db(metadata->conName);
         }
 
-        inline void appendSchema(const DbTable* table, typeObj obj) {
+        void appendSchema(const DbTable* table, typeObj obj) {
             if (table == nullptr) {
                 std::string ownerName;
                 std::string tableName;
@@ -212,8 +212,7 @@ namespace OpenLogReplicator {
                 if (!format.isSchemaFormatRepeated()) {
                     if (tables.count(table) > 0)
                         return;
-                    else
-                        tables.insert(table);
+                    tables.insert(table);
                 }
 
                 schemaPB->add_column();
@@ -316,7 +315,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
+        void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
             if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
@@ -333,14 +332,14 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                typeCol baseMax = valuesMax >> 6;
+                const typeCol baseMax = valuesMax >> 6;
                 for (typeCol base = 0; base <= baseMax; ++base) {
-                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    const auto columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
                     while (set != 0) {
-                        typeCol pos = ffsl(set) - 1;
+                        const typeCol pos = ffsll(set) - 1;
                         set &= ~(1ULL << pos);
-                        typeCol column = columnBase + pos;
+                        const typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0) {
@@ -359,7 +358,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
+        void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
             if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
@@ -376,14 +375,14 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                typeCol baseMax = valuesMax >> 6;
+                const typeCol baseMax = valuesMax >> 6;
                 for (typeCol base = 0; base <= baseMax; ++base) {
-                    typeCol columnBase = static_cast<typeCol>(base << 6);
+                    const auto columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
                     while (set != 0) {
-                        typeCol pos = ffsl(set) - 1;
+                        const typeCol pos = ffsll(set) - 1;
                         set &= ~(1ULL << pos);
-                        typeCol column = columnBase + pos;
+                        const typeCol column = columnBase + pos;
 
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0) {
@@ -402,13 +401,13 @@ namespace OpenLogReplicator {
             }
         }
 
-        inline void createResponse() {
+        void createResponse() {
             if (unlikely(redoResponsePB != nullptr))
                 throw RuntimeException(50016, "PB commit processing failed, message already exists");
             redoResponsePB = new pb::RedoResponse;
         }
 
-        void numToString(uint64_t value, char* buf, uint64_t size) {
+        static void numToString(uint64_t value, char* buf, uint64_t size) {
             uint64_t j = (size - 1) * 4;
             for (uint64_t i = 0; i < size; ++i) {
                 buf[i] = Ctx::map16((value >> j) & 0xF);
@@ -417,31 +416,30 @@ namespace OpenLogReplicator {
             buf[size] = 0;
         }
 
-        virtual void columnFloat(const std::string& columnName, double value) override;
-        virtual void columnDouble(const std::string& columnName, long double value) override;
-        virtual void columnString(const std::string& columnName) override;
-        virtual void columnNumber(const std::string& columnName, int precision, int scale) override;
-        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
-        virtual void columnRowId(const std::string& columnName, typeRowId rowId) override;
-        virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
-        virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
-        virtual void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        virtual void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
-        virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj)
-                override;
+        void columnFloat(const std::string& columnName, double value) override;
+        void columnDouble(const std::string& columnName, long double value) override;
+        void columnString(const std::string& columnName) override;
+        void columnNumber(const std::string& columnName, int precision, int scale) override;
+        void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
+        void columnRowId(const std::string& columnName, typeRowId rowId) override;
+        void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
+        void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
+        void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+        void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
         void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
 
     public:
         BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
-        virtual ~BuilderProtobuf() override;
+        ~BuilderProtobuf() override;
 
-        virtual void initialize() override;
-        virtual void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) override;
-        virtual void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) override;
+        void initialize() override;
+        void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) override;
+        void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) override;
     };
 }
 

@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "CharacterSet16bit.h"
-
 #ifndef CHARACTER_SET_KO16KSCCS_H_
 #define CHARACTER_SET_KO16KSCCS_H_
+
+#include "CharacterSet16bit.h"
 
 namespace OpenLogReplicator {
     class CharacterSetKO16KSCCS final : public CharacterSet16bit {
@@ -37,7 +37,6 @@ namespace OpenLogReplicator {
 
     public:
         CharacterSetKO16KSCCS();
-        virtual ~CharacterSetKO16KSCCS() override;
     };
 }
 

@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TYPES_H_
+#define TYPES_H_
+
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -25,51 +28,48 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../../config.h"
 
-#ifndef TYPES_H_
-#define TYPES_H_
+using typeResetlogs = uint32_t;
+using typeActivation = uint32_t;
+using typeSum = uint16_t;
+using typeOp1 = uint16_t;
+using typeOp2 = uint32_t;
+using typeConId = int16_t;
+using typeUba = uint64_t;
+using typeSeq = uint32_t;
+using typeScn = uint64_t;
+using typeSubScn = uint16_t;
+using typeIdx = uint64_t;
+using typeSlt = uint16_t;
+using typeSqn = uint32_t;
+using typeRci = uint8_t;
+using typeUsn = int16_t;
+using typeXidMap = uint64_t;
+using typeAfn = uint16_t;
+using typeDba = uint32_t;
+using typeSlot = uint16_t;
+using typeBlk = uint32_t;
+using typeObj = uint32_t;
+using typeDataObj = uint32_t;
+using typeObj2 = uint64_t;
+using typeCol = int16_t;
+using typeCon = uint32_t;
+using typeTs = uint32_t;
+using typeUser = uint32_t;
+using typeField = uint16_t;
+using typePos = uint16_t;
+using typeSize = uint16_t;
+using typeCC = uint8_t;
+using typeCCExt = uint16_t;
+using typeLwn = uint16_t;
+using typeLwnSize = uint64_t;
+using typeTransactionSize = uint64_t;
+using typeChunkSize = uint32_t;
 
-typedef uint32_t typeResetlogs;
-typedef uint32_t typeActivation;
-typedef uint16_t typeSum;
-typedef uint16_t typeOp1;
-typedef uint32_t typeOp2;
-typedef int16_t typeConId;
-typedef uint64_t typeUba;
-typedef uint32_t typeSeq;
-typedef uint64_t typeScn;
-typedef uint16_t typeSubScn;
-typedef uint64_t typeIdx;
-typedef uint16_t typeSlt;
-typedef uint32_t typeSqn;
-typedef uint8_t typeRci;
-typedef int16_t typeUsn;
-typedef uint64_t typeXidMap;
-typedef uint16_t typeAfn;
-typedef uint32_t typeDba;
-typedef uint16_t typeSlot;
-typedef uint32_t typeBlk;
-typedef uint32_t typeObj;
-typedef uint32_t typeDataObj;
-typedef uint64_t typeObj2;
-typedef int16_t typeCol;
-typedef uint32_t typeCon;
-typedef uint32_t typeTs;
-typedef uint32_t typeUser;
-typedef uint16_t typeField;
-typedef uint16_t typePos;
-typedef uint16_t typeSize;
-typedef uint8_t typeCC;
-typedef uint16_t typeCCExt;
-typedef uint16_t typeLwn;
-typedef uint64_t typeLwnSize;
-typedef uint64_t typeTransactionSize;
-typedef uint32_t typeChunkSize;
-
-typedef uint16_t typeUnicode16;
-typedef uint32_t typeUnicode32;
-typedef uint64_t typeUnicode;
-typedef int64_t time_ut;
-typedef uint64_t typeMask;
+using typeUnicode16 = uint16_t;
+using typeUnicode32 = uint32_t;
+using typeUnicode = uint64_t;
+using time_ut = int64_t;
+using typeMask = uint64_t;
 
 #define likely(x)                               __builtin_expect(!!(x),1)
 #define unlikely(x)                             __builtin_expect(!!(x),0)

@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iomanip>
-#include <ostream>
-
 #ifndef TYPE_TIME_H_
 #define TYPE_TIME_H_
+
+#include <iomanip>
+#include <ostream>
 
 namespace OpenLogReplicator {
     class typeTime final {
@@ -48,15 +48,15 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] time_t toEpoch(int64_t hostTimezone) const {
             uint64_t rest = data;
-            uint64_t sec = rest % 60;
+            const uint64_t sec = rest % 60;
             rest /= 60;
-            uint64_t min = rest % 60;
+            const uint64_t min = rest % 60;
             rest /= 60;
-            uint64_t hour = rest % 24;
+            const uint64_t hour = rest % 24;
             rest /= 24;
-            uint64_t day = (rest % 31) + 1;
+            const uint64_t day = (rest % 31) + 1;
             rest /= 31;
-            uint64_t mon = rest % 12 + 1;
+            uint64_t mon = (rest % 12) + 1;
             rest /= 12;
             uint64_t year = rest + 1988;
 
@@ -66,23 +66,23 @@ namespace OpenLogReplicator {
             } else
                 mon -= 2;
 
-            return (((static_cast<time_t>(year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day) + year * 365 - 719499) * 24
-                     + hour) * 60 + min) * 60 + sec - hostTimezone;
+            return (((((static_cast<time_t>((year / 4) - (year / 100) + (year / 400) + (367 * mon / 12) + day) + (year * 365) - 719499) * 24
+                     + hour) * 60) + min) * 60) + sec - hostTimezone;
         }
 
         friend std::ostream& operator<<(std::ostream& os, const typeTime other) {
             uint64_t rest = other.data;
-            uint64_t ss = rest % 60;
+            const uint64_t ss = rest % 60;
             rest /= 60;
-            uint64_t mi = rest % 60;
+            const uint64_t mi = rest % 60;
             rest /= 60;
-            uint64_t hh = rest % 24;
+            const uint64_t hh = rest % 24;
             rest /= 24;
-            uint64_t dd = (rest % 31) + 1;
+            const uint64_t dd = (rest % 31) + 1;
             rest /= 31;
-            uint64_t mm = (rest % 12) + 1;
+            const uint64_t mm = (rest % 12) + 1;
             rest /= 12;
-            uint64_t yy = rest + 1988;
+            const uint64_t yy = rest + 1988;
             os << std::setfill('0') << std::setw(2) << std::dec << mm << "/" <<
                std::setfill('0') << std::setw(2) << std::dec << dd << "/" <<
                yy << " " << std::setfill('0') << std::setw(2) << std::dec << hh << ":" <<

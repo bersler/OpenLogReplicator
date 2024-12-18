@@ -27,12 +27,7 @@ namespace OpenLogReplicator {
             password(newPassword),
             connectString(newConnectString),
             sysAsm(newSysAsm),
-            connected(false),
-            env(newEnv),
-            errhp(nullptr),
-            srvhp(nullptr),
-            svchp(nullptr),
-            authp(nullptr) {
+            env(newEnv) {
     }
 
     void DatabaseConnection::connect() {
@@ -50,13 +45,13 @@ namespace OpenLogReplicator {
         env->checkErr(errhp, OCIServerAttach(srvhp, errhp, reinterpret_cast<const OraText*>(connectString.c_str()),
                                              connectString.length(), OCI_DEFAULT));
         env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX, srvhp, 0,
-                                        OCI_ATTR_SERVER, reinterpret_cast<OCIError*>(errhp)));
+                                        OCI_ATTR_SERVER, errhp));
         env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION,
                                         const_cast<dvoid*>(reinterpret_cast<const dvoid*>(user.c_str())), user.length(),
-                                        OCI_ATTR_USERNAME, reinterpret_cast<OCIError*>(errhp)));
+                                        OCI_ATTR_USERNAME, errhp));
         env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION,
                                         const_cast<dvoid*>(reinterpret_cast<const dvoid*>(password.c_str())), password.length(),
-                                        OCI_ATTR_PASSWORD, reinterpret_cast<OCIError*>(errhp)));
+                                        OCI_ATTR_PASSWORD, errhp));
 
         if (sysAsm)
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_SYSASM));

@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "State.h"
-
 #ifndef STATE_DISK_H_
 #define STATE_DISK_H_
+
+#include "State.h"
 
 namespace OpenLogReplicator {
     class StateDisk final : public State {
@@ -29,7 +29,6 @@ namespace OpenLogReplicator {
 
     public:
         explicit StateDisk(Ctx* newCtx, const char* newPath);
-        ~StateDisk() override;
         StateDisk(const StateDisk&) = delete;
         StateDisk& operator=(const StateDisk&) = delete;
 

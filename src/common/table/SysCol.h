@@ -47,19 +47,19 @@ namespace OpenLogReplicator {
         };
 
         typeRowId rowId;
-        typeObj obj;
-        typeCol col;
-        typeCol segCol;
-        typeCol intCol;
+        typeObj obj{0};
+        typeCol col{0};
+        typeCol segCol{0};
+        typeCol intCol{0};
         std::string name;
-        SysCol::COLTYPE type;
-        uint length;
-        int precision;          // NULL
-        int scale;              // NULL
-        uint charsetForm;       // NULL
-        uint charsetId;         // NULL
-        int null_;
-        typeIntX property;
+        SysCol::COLTYPE type{COLTYPE::NONE};
+        uint length{0};
+        int precision{-1};          // NULL
+        int scale{-1};              // NULL
+        uint charsetForm{0};       // NULL
+        uint charsetId{0};         // NULL
+        int null_{0};
+        typeIntX property{0, 0};
 
         SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, SysCol::COLTYPE newType,
                uint newLength, int newPrecision, int newScale, uint newCharsetForm, uint newCharsetId, int newNull,
@@ -81,20 +81,7 @@ namespace OpenLogReplicator {
         }
 
         explicit SysCol(typeRowId newRowId) :
-                rowId(newRowId),
-                obj(0),
-                col(0),
-                segCol(0),
-                intCol(0),
-                name(""),
-                type(COLTYPE::NONE),
-                length(0),
-                precision(-1),
-                scale(-1),
-                charsetForm(0),
-                charsetId(0),
-                null_(0),
-                property(0, 0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysCol& other) const {
@@ -144,11 +131,11 @@ namespace OpenLogReplicator {
             // Else in bytes
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.COL$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", COL#: " + std::to_string(col) + ", SEGCOL#: " +
                    std::to_string(segCol) + ", INTCOL#: " + std::to_string(intCol) + ", NAME: '" + name + "', TYPE#: " +
                    std::to_string(static_cast<uint>(type)) + ", SIZE: " + std::to_string(length) + ", PRECISION#: " + std::to_string(precision) + ", SCALE: " +
@@ -156,23 +143,23 @@ namespace OpenLogReplicator {
                    std::to_string(null_) + ", PROPERTY: " + property.toString();
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return obj;
         };
     };

@@ -28,11 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer),
-            redoResponsePB(nullptr),
-            valuePB(nullptr),
-            payloadPB(nullptr),
-            schemaPB(nullptr) {
+            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer) {
     }
 
     BuilderProtobuf::~BuilderProtobuf() {
@@ -65,13 +61,13 @@ namespace OpenLogReplicator {
         char* retPtr;
 
         if (scale == 0 && precision <= 17) {
-            int64_t value = strtol(valueBuffer, &retPtr, 10);
+            const int64_t value = strtol(valueBuffer, &retPtr, 10);
             valuePB->set_value_int(value);
         } else if (precision <= 6 && scale < 38) {
-            float value = strtof(valueBuffer, &retPtr);
+            const float value = strtof(valueBuffer, &retPtr);
             valuePB->set_value_float(value);
         } else if (precision <= 15 && scale <= 307) {
-            double value = strtod(valueBuffer, &retPtr);
+            const double value = strtod(valueBuffer, &retPtr);
             valuePB->set_value_double(value);
         } else {
             valuePB->set_value_string(valueBuffer, valueSize);
@@ -114,7 +110,7 @@ namespace OpenLogReplicator {
             payloadPB->set_op(pb::BEGIN);
 
             std::string output;
-            bool ret = redoResponsePB->SerializeToString(&output);
+            const bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
@@ -150,7 +146,7 @@ namespace OpenLogReplicator {
 
         if (!format.isMessageFormatFull()) {
             std::string output;
-            bool ret = redoResponsePB->SerializeToString(&output);
+            const bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
@@ -188,7 +184,7 @@ namespace OpenLogReplicator {
 
         if (!format.isMessageFormatFull()) {
             std::string output;
-            bool ret = redoResponsePB->SerializeToString(&output);
+            const bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
@@ -225,7 +221,7 @@ namespace OpenLogReplicator {
 
         if (!format.isMessageFormatFull()) {
             std::string output;
-            bool ret = redoResponsePB->SerializeToString(&output);
+            const bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
@@ -263,7 +259,7 @@ namespace OpenLogReplicator {
 
         if (!format.isMessageFormatFull()) {
             std::string output;
-            bool ret = redoResponsePB->SerializeToString(&output);
+            const bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
@@ -302,7 +298,7 @@ namespace OpenLogReplicator {
         }
 
         std::string output;
-        bool ret = redoResponsePB->SerializeToString(&output);
+        const bool ret = redoResponsePB->SerializeToString(&output);
         delete redoResponsePB;
         redoResponsePB = nullptr;
 
@@ -332,7 +328,7 @@ namespace OpenLogReplicator {
         payloadPB->set_redo(redo);
 
         std::string output;
-        bool ret = redoResponsePB->SerializeToString(&output);
+        const bool ret = redoResponsePB->SerializeToString(&output);
         delete redoResponsePB;
         redoResponsePB = nullptr;
 

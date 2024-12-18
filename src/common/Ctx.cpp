@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define GLOBALS 1
 
+#include <algorithm>
 #include <cstdlib>
 #include <csignal>
 #include <execinfo.h>
@@ -66,67 +67,10 @@ namespace OpenLogReplicator {
     typeIntX typeIntX::BASE10[typeIntX::DIGITS][10];
 
     Ctx::Ctx() :
-            trace(0),
-            flags(0),
-            disableChecks(0),
-            logLevel(LOG::INFO),
-            bigEndian(false),
-            memoryChunks(nullptr),
-            memoryChunksMin(0),
-            memoryChunksMax(0),
-            memoryChunksSwap(0),
-            memoryChunksAllocated(0),
-            memoryChunksFree(0),
-            memoryChunksHWM(0),
-            memoryModulesAllocated{0, 0, 0, 0},
-            outOfMemoryParser(false),
             mainThread(pthread_self()),
-            memoryModulesHWM{0, 0, 0, 0},
-            metrics(nullptr),
-            clock(nullptr),
-            version12(false),
-            version(0),
-            columnLimit(COLUMN_LIMIT),
-            dumpRedoLog(0),
-            dumpRawData(0),
-            dumpStream(std::make_unique<std::ofstream>()),
-
-            memoryChunksReadBufferMax(0),
-            memoryChunksReadBufferMin(0),
-            memoryChunksUnswapBufferMin(0),
-            memoryChunksWriteBufferMin(0),
-
-            bufferSizeMax(0),
-            bufferSizeFree(0),
-            bufferSizeHWM(0),
-            suppLogSize(0),
-            checkpointIntervalS(600),
-            checkpointIntervalMb(500),
-            checkpointKeep(100),
-            schemaForceInterval(20),
-            redoReadSleepUs(50000),
-            redoVerifyDelayUs(0),
-            archReadSleepUs(10000000),
-            archReadTries(10),
-            refreshIntervalUs(10000000),
-            pollIntervalUs(100000),
-            queueSize(65536),
-            dumpPath("."),
-            stopLogSwitches(0),
-            stopCheckpoints(0),
-            stopTransactions(0),
-            transactionSizeMax(0),
-            hardShutdown(false),
-            softShutdown(false),
-            replicatorFinished(false),
-            parserThread(nullptr),
-            writerThread(nullptr),
-            swappedMB(0),
-            swappedFlushXid(0, 0, 0),
-            swappedShrinkXid(0, 0, 0) {
+            dumpStream(std::make_unique<std::ofstream>()) {
         clock = new ClockHW();
         tzset();
-        dbTimezone = BAD_TIMEZONE;
         logTimezone = -timezone;
         hostTimezone = -timezone;
     }
@@ -189,7 +133,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[field];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
-        uint64_t val = ret.GetUint64();
+        const uint64_t val = ret.GetUint64();
         if (unlikely(val > 0xFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return val;
@@ -201,7 +145,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[field];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
-        int64_t val = ret.GetInt64();
+        const int64_t val = ret.GetInt64();
         if (unlikely((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<int16_t>(val);
@@ -213,7 +157,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[field];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not an unsigned 64-bit number");
-        uint64_t val = ret.GetUint64();
+        const uint64_t val = ret.GetUint64();
         if (unlikely(val > 0xFFFFFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
@@ -225,7 +169,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[field];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a signed 64-bit number");
-        int64_t val = ret.GetInt64();
+        const int64_t val = ret.GetInt64();
         if (unlikely((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too big (" + std::to_string(val) + ")");
         return static_cast<int32_t>(val);
@@ -301,7 +245,7 @@ namespace OpenLogReplicator {
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not an unsigned 64-bit number");
-        uint64_t val = ret.GetUint64();
+        const uint64_t val = ret.GetUint64();
         if (unlikely(val > 0xFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
@@ -313,7 +257,7 @@ namespace OpenLogReplicator {
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not a signed 64-bit number");
-        int64_t val = ret.GetInt64();
+        const int64_t val = ret.GetInt64();
         if (unlikely((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
@@ -325,7 +269,7 @@ namespace OpenLogReplicator {
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not an unsigned 64-bit number");
-        uint64_t val = ret.GetUint64();
+        const uint64_t val = ret.GetUint64();
         if (unlikely(val > 0xFFFFFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
@@ -337,7 +281,7 @@ namespace OpenLogReplicator {
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is not a signed 64-bit number");
-        int64_t val = ret.GetInt64();
+        const int64_t val = ret.GetInt64();
         if (unlikely((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too big (" + std::to_string(val) + ")");
@@ -395,7 +339,7 @@ namespace OpenLogReplicator {
         return ret.GetString();
     }
 
-    bool Ctx::parseTimezone(const char* str, int64_t& out) const {
+    bool Ctx::parseTimezone(const char* str, int64_t& out) {
         if (strcmp(str, "Etc/GMT-14") == 0) str = "-14:00";
         if (strcmp(str, "Etc/GMT-13") == 0) str = "-13:00";
         if (strcmp(str, "Etc/GMT-12") == 0) str = "-12:00";
@@ -454,7 +398,7 @@ namespace OpenLogReplicator {
         if (strcmp(str, "Etc/GMT+11") == 0) str = "+11:00";
         if (strcmp(str, "Etc/GMT+12") == 0) str = "+12:00";
 
-        uint64_t len = strlen(str);
+        const uint64_t len = strlen(str);
 
         if (len == 5) {
             if (str[1] >= '0' && str[1] <= '9' &&
@@ -484,7 +428,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    std::string Ctx::timezoneToString(int64_t tz) const {
+    std::string Ctx::timezoneToString(int64_t tz) {
         char result[7];
 
         if (tz < 0) {
@@ -508,7 +452,7 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    time_t Ctx::valuesToEpoch(int year, int month, int day, int hour, int minute, int second, int tz) const {
+    time_t Ctx::valuesToEpoch(int year, int month, int day, int hour, int minute, int second, int tz) {
         time_t result;
 
         if (year > 0) {
@@ -533,7 +477,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t Ctx::epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) const {
+    uint64_t Ctx::epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) {
         // (-)YYYY-MM-DD hh:mm:ss or (-)YYYY-MM-DDThh:mm:ssZ
 
         if (unlikely(timestamp < UNIX_BC4712_01_01 || timestamp > UNIX_AD9999_12_31))
@@ -549,7 +493,7 @@ namespace OpenLogReplicator {
             int64_t hour = (timestamp % 24);
             timestamp /= 24;
 
-            int64_t year = timestamp / 365 + 1;
+            int64_t year = (timestamp / 365) + 1;
             int64_t day = yearToDays(year, 0);
 
             while (day > timestamp) {
@@ -559,7 +503,7 @@ namespace OpenLogReplicator {
             day = timestamp - day;
 
             int64_t month = day / 27;
-            if (month > 11) month = 11;
+            month = std::min<int64_t>(month, 11);
 
             if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0)) {
                 // leap year
@@ -623,8 +567,8 @@ namespace OpenLogReplicator {
             int64_t hour = (timestamp % 24);
             timestamp /= 24;
 
-            int64_t year = timestamp / 366 - 1;
-            if (year < 0) year = 0;
+            int64_t year = (timestamp / 366) - 1;
+            year = std::max<int64_t>(year, 0);
             int64_t day = yearToDaysBC(year, 0);
 
             while (day < timestamp) {
@@ -634,7 +578,7 @@ namespace OpenLogReplicator {
             day -= timestamp;
 
             int64_t month = day / 27;
-            if (month > 11) month = 11;
+            month = std::min<int64_t>(month, 11);
 
             if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0)) {
                 // leap year
@@ -718,7 +662,7 @@ namespace OpenLogReplicator {
             memoryChunksHWM = memoryChunksMin;
         }
 
-        if (metrics) {
+        if (metrics != nullptr) {
             metrics->emitMemoryAllocatedMb(memoryChunksAllocated);
             metrics->emitMemoryUsedTotalMb(0);
         }
@@ -810,8 +754,7 @@ namespace OpenLogReplicator {
                         ++memoryChunksFree;
                         allocatedTotal = ++memoryChunksAllocated;
 
-                        if (memoryChunksAllocated > memoryChunksHWM)
-                            memoryChunksHWM = memoryChunksAllocated;
+                        memoryChunksHWM = std::max(memoryChunksAllocated, memoryChunksHWM);
                         break;
                     }
                 }
@@ -835,8 +778,7 @@ namespace OpenLogReplicator {
             --memoryChunksFree;
             usedTotal = memoryChunksAllocated - memoryChunksFree;
             allocatedModule = ++memoryModulesAllocated[static_cast<uint>(module)];
-            if (memoryModulesAllocated[static_cast<uint>(module)] > memoryModulesHWM[static_cast<uint>(module)])
-                memoryModulesHWM[static_cast<uint>(module)] = memoryModulesAllocated[static_cast<uint>(module)];
+            memoryModulesHWM[static_cast<uint>(module)] = std::max(memoryModulesAllocated[static_cast<uint>(module)], memoryModulesHWM[static_cast<uint>(module)]);
             chunk = memoryChunks[memoryChunksFree];
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -844,7 +786,7 @@ namespace OpenLogReplicator {
         if (unlikely(hardShutdown))
             throw RuntimeException(10018, "shutdown during memory allocation");
 
-        if (metrics) {
+        if (metrics != nullptr) {
             if (allocatedTotal > 0)
                 metrics->emitMemoryAllocatedMb(allocatedTotal * MEMORY_CHUNK_SIZE_MB);
 
@@ -904,7 +846,7 @@ namespace OpenLogReplicator {
         }
 
         t->contextSet(Thread::CONTEXT::CPU);
-        if (metrics) {
+        if (metrics != nullptr) {
             if (allocatedTotal > 0)
                 metrics->emitMemoryAllocatedMb(allocatedTotal * MEMORY_CHUNK_SIZE_MB);
 
@@ -935,7 +877,7 @@ namespace OpenLogReplicator {
 
     void Ctx::swappedMemoryInit(Thread* t, typeXid xid) {
         bool slept = false;
-        SwapChunk* sc = new SwapChunk();
+        auto* sc = new SwapChunk();
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_MEMORY_INIT);
             std::unique_lock<std::mutex> lck(swapMtx);
@@ -1056,11 +998,11 @@ namespace OpenLogReplicator {
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SHRINK2);
             std::unique_lock<std::mutex> lck(swapMtx);
-            if (sc->chunks.size() == 0) {
+            if (sc->chunks.empty()) {
                 t->contextSet(Thread::CONTEXT::CPU);
                 return nullptr;
             }
-            int64_t index = sc->chunks.size() - 1;
+            const int64_t index = sc->chunks.size() - 1;
 
             swappedShrinkXid = xid;
             while (!hardShutdown) {
@@ -1100,7 +1042,7 @@ namespace OpenLogReplicator {
         }
         t->contextSet(Thread::CONTEXT::CPU);
 
-        for (auto tc: sc->chunks)
+        for (auto* tc: sc->chunks)
             if (tc != nullptr)
                 freeMemoryChunk(t, Ctx::MEMORY::TRANSACTIONS, tc);
 
@@ -1341,7 +1283,7 @@ namespace OpenLogReplicator {
     bool Ctx::checkNameCase(const char* name) {
         uint64_t num = 0;
         while (*(name + num) != 0) {
-            if (islower(static_cast<unsigned char>(*(name + num))))
+            if (islower(static_cast<unsigned char>(*(name + num))) != 0)
                 return false;
 
             if (unlikely(num == 1024))
@@ -1368,7 +1310,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::welcome(const std::string& message) const {
-        int code = 0;
+        const int code = 0;
         if (OLR_LOCALES == LOCALES::TIMESTAMP) {
             std::ostringstream s;
             char timestamp[30];

@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Writer.h"
-#include "../common/OraProtoBuf.pb.h"
-
 #ifndef WRITER_STREAM_H_
 #define WRITER_STREAM_H_
+
+#include "Writer.h"
+#include "../common/OraProtoBuf.pb.h"
 
 namespace OpenLogReplicator {
     class Stream;

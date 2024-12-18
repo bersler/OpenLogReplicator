@@ -21,6 +21,4 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Serializer::Serializer() = default;
-
-    Serializer::~Serializer() = default;
 }

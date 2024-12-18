@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef STATE_H_
+#define STATE_H_
+
 #include <set>
 
 #include "../common/types.h"
-
-#ifndef STATE_H_
-#define STATE_H_
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -34,8 +34,8 @@ namespace OpenLogReplicator {
     public:
         static constexpr uint64_t TYPE_DISK{0};
 
-        State(Ctx* newCtx);
-        virtual ~State();
+        explicit State(Ctx* newCtx);
+        virtual ~State() = default;
 
         virtual void list(std::set<std::string>& namesList) const = 0;
         [[nodiscard]] virtual bool read(const std::string& name, uint64_t maxSize, std::string& in) = 0;

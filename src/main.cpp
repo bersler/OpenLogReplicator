@@ -76,30 +76,30 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #endif /* THREAD_INFO */
 
 namespace OpenLogReplicator {
-    Ctx* mainCtx = nullptr;
+    static Ctx* mainCtx = nullptr;
 
-    void printStacktrace() {
+    static void printStacktrace() {
         mainCtx->printStacktrace();
     }
 
-    void signalHandler(int s) {
+    static void signalHandler(int s) {
         mainCtx->signalHandler(s);
     }
 
-    void signalCrash(int sig __attribute__((unused))) {
+    static void signalCrash(int sig __attribute__((unused))) {
         printStacktrace();
         exit(1);
     }
 
-    void signalDump(int sig __attribute__((unused))) {
+    static void signalDump(int sig __attribute__((unused))) {
         printStacktrace();
         mainCtx->signalDump();
     }
 
-    int mainFunction(int argc, char** argv) {
+    static int mainFunction(int argc, char** argv) {
         int ret = 1;
-        struct utsname name;
-        if (uname(&name)) exit(-1);
+        struct utsname name{};
+        if (uname(&name) != 0) exit(-1);
         std::string buildArch;
         if (strlen(OpenLogReplicator_CMAKE_BUILD_TIMESTAMP) > 0)
             buildArch = ", build-arch: " OpenLogReplicator_CPU_ARCH;
@@ -115,9 +115,9 @@ namespace OpenLogReplicator {
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {
             bool forceRoot = false;
-            std::regex regexTest(".*");
-            std::string regexString("check if matches!");
-            bool regexWorks = regex_search(regexString, regexTest);
+            const std::regex regexTest(".*");
+            const std::string regexString("check if matches!");
+            const bool regexWorks = regex_search(regexString, regexTest);
             if (!regexWorks)
                 throw RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
@@ -200,7 +200,7 @@ int main(int argc, char** argv) {
 
     const char* logTimezone = std::getenv("OLR_LOG_TIMEZONE");
     if (logTimezone != nullptr)
-        if (!ctx.parseTimezone(logTimezone, ctx.logTimezone))
+        if (!OpenLogReplicator::Ctx::parseTimezone(logTimezone, ctx.logTimezone))
             ctx.warning(10070, "invalid environment variable OLR_LOG_TIMEZONE value: " + std::string(logTimezone));
 
     std::string olrLocales;
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
     if (olrLocales == "MOCK")
         OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::MOCK;
 
-    int ret = OpenLogReplicator::mainFunction(argc, argv);
+    const int ret = OpenLogReplicator::mainFunction(argc, argv);
 
     signal(SIGINT, nullptr);
     signal(SIGPIPE, nullptr);

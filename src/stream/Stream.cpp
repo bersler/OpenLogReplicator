@@ -25,6 +25,4 @@ namespace OpenLogReplicator {
             ctx(newCtx),
             uri(newUri) {
     }
-
-    Stream::~Stream() = default;
 }

@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TRANSACTION_BUFFER_H_
+#define TRANSACTION_BUFFER_H_
+
 #include <map>
 #include <mutex>
 #include <set>
@@ -27,9 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RedoLogRecord.h"
 #include "../common/types.h"
 #include "../common/typeXid.h"
-
-#ifndef TRANSACTION_BUFFER_H_
-#define TRANSACTION_BUFFER_H_
 
 namespace OpenLogReplicator {
     class Transaction;
@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
 
     protected:
         Ctx* ctx;
-        uint8_t buffer[TransactionChunk::DATA_BUFFER_SIZE];
+        uint8_t buffer[TransactionChunk::DATA_BUFFER_SIZE]{};
 
         std::mutex mtx;
         std::unordered_map<typeXidMap, Transaction*> xidTransactionMap;
@@ -79,7 +79,7 @@ namespace OpenLogReplicator {
         void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
         void addOrphanedLob(RedoLogRecord* redoLogRecord1);
-        uint8_t* allocateLob(const RedoLogRecord* redoLogRecord1) const;
+        static uint8_t* allocateLob(const RedoLogRecord* redoLogRecord1);
     };
 }
 

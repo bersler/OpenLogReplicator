@@ -24,10 +24,8 @@ namespace OpenLogReplicator {
             CharacterSet("ZHT32EUC") {
     }
 
-    CharacterSetZHT32EUC::~CharacterSetZHT32EUC() = default;
-
     typeUnicode CharacterSetZHT32EUC::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
 
         if ((byte1 & 0x80) == 0)
@@ -38,25 +36,25 @@ namespace OpenLogReplicator {
 
         // 4 bytes sequence
         if (byte1 == ZHT32EUC_4_b1) {
-            uint64_t byte2 = *str++;
+            const uint64_t byte2 = *str++;
             --length;
 
             if (byte2 < ZHT32EUC_4_b2_min || byte2 > ZHT32EUC_4_b2_max || length == 0)
                 return badChar(ctx, xid, byte1, byte2);
 
-            uint64_t byte3 = *str++;
+            const uint64_t byte3 = *str++;
             --length;
 
             if (byte3 < ZHT32EUC_4_b3_min || byte3 > ZHT32EUC_4_b3_max || length == 0)
                 return badChar(ctx, xid, byte1, byte2, byte3);
 
-            uint64_t byte4 = *str++;
+            const uint64_t byte4 = *str++;
             --length;
 
             if (byte4 >= ZHT32EUC_4_b4_min && byte4 <= ZHT32EUC_4_b4_max)
                 return unicode_map_ZHT32EUC_4b[
-                        (byte2 - ZHT32EUC_4_b2_min) * (ZHT32EUC_4_b4_max - ZHT32EUC_4_b4_min + 1) * (ZHT32EUC_4_b3_max - ZHT32EUC_4_b3_min + 1) +
-                        (byte3 - ZHT32EUC_4_b3_min) * (ZHT32EUC_4_b4_max - ZHT32EUC_4_b4_min + 1) +
+                        ((byte2 - ZHT32EUC_4_b2_min) * (ZHT32EUC_4_b4_max - ZHT32EUC_4_b4_min + 1) * (ZHT32EUC_4_b3_max - ZHT32EUC_4_b3_min + 1)) +
+                        ((byte3 - ZHT32EUC_4_b3_min) * (ZHT32EUC_4_b4_max - ZHT32EUC_4_b4_min + 1)) +
                         (byte4 - ZHT32EUC_4_b4_min)];
 
             return badChar(ctx, xid, byte1, byte2, byte3, byte4);
@@ -66,13 +64,13 @@ namespace OpenLogReplicator {
         if (byte1 < ZHT32EUC_2_b1_min || byte1 > ZHT32EUC_2_b1_max)
             return badChar(ctx, xid, byte1);
 
-        uint64_t byte2 = *str++;
+        const uint64_t byte2 = *str++;
         --length;
 
         if (byte2 < ZHT32EUC_2_b2_min || byte2 > ZHT32EUC_2_b2_max)
             return badChar(ctx, xid, byte1, byte2);
 
-        return unicode_map_ZHT32EUC_2b[(byte1 - ZHT32EUC_2_b1_min) * (ZHT32EUC_2_b2_max - ZHT32EUC_2_b2_min + 1) +
+        return unicode_map_ZHT32EUC_2b[((byte1 - ZHT32EUC_2_b1_min) * (ZHT32EUC_2_b2_max - ZHT32EUC_2_b2_min + 1)) +
                                        (byte2 - ZHT32EUC_2_b2_min)];
     }
 

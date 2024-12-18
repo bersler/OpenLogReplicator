@@ -25,10 +25,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class ClockHW final : public Clock {
     public:
-        virtual ~ClockHW() = default;
-
-        virtual time_ut getTimeUt() const override;
-        virtual time_t getTimeT() const override;
+        [[nodiscard]] time_ut getTimeUt() const override;
+        [[nodiscard]] time_t getTimeT() const override;
     };
 }
 

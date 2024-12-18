@@ -17,14 +17,14 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef DB_TABLE_H_
+#define DB_TABLE_H_
+
 #include <unordered_map>
 #include <vector>
 
 #include "types.h"
 #include "expression/Token.h"
-
-#ifndef DB_TABLE_H_
-#define DB_TABLE_H_
 
 namespace OpenLogReplicator {
     class BoolValue;
@@ -52,16 +52,16 @@ namespace OpenLogReplicator {
         typeDataObj dataObj;
         typeUser user;
         typeCol cluCols;
-        typeCol totalPk;
-        typeCol totalLobs;
+        typeCol totalPk{0};
+        typeCol totalLobs{0};
         OPTIONS options;
-        typeCol maxSegCol;
-        typeCol guardSegNo;
+        typeCol maxSegCol{0};
+        typeCol guardSegNo{-1};
         std::string owner;
         std::string name;
         std::string tokSuf;
         std::string condition;
-        BoolValue* conditionValue;
+        BoolValue* conditionValue{nullptr};
         std::vector<DbColumn*> columns;
         std::vector<DbLob*> lobs;
         std::vector<typeObj2> tablePartitions;
@@ -72,14 +72,14 @@ namespace OpenLogReplicator {
         TABLE systemTable;
         bool sys;
 
-        DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, OPTIONS newOptions, const std::string& newOwner,
-                const std::string& newName);
+        DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, OPTIONS newOptions, std::string newOwner,
+                std::string newName);
         virtual ~DbTable();
 
         void addColumn(DbColumn* column);
         void addLob(DbLob* lob);
         void addTablePartition(typeObj newObj, typeDataObj newDataObj);
-        bool matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes);
+        bool matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) const;
         void setCondition(const std::string& newCondition);
 
         static bool isDebugTable(OPTIONS options) {

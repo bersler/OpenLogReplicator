@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Replicator.h"
-
 #ifndef REPLICATOR_BATCH_H_
 #define REPLICATOR_BATCH_H_
+
+#include "Replicator.h"
 
 namespace OpenLogReplicator {
     class ReplicatorBatch final : public Replicator {
@@ -29,12 +29,12 @@ namespace OpenLogReplicator {
         bool continueWithOnline() override;
         void positionReader() override;
         void createSchema() override;
-        virtual void updateOnlineRedoLogData() override;
+        void updateOnlineRedoLogData() override;
 
     public:
         ReplicatorBatch(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
                         TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase);
-        ~ReplicatorBatch() override;
+        ~ReplicatorBatch() override = default;
     };
 }
 

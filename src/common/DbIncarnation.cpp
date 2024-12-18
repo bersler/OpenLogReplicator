@@ -29,10 +29,7 @@ namespace OpenLogReplicator {
             resetlogs(newResetlogs),
             priorIncarnation(newPriorIncarnation) {
 
-        if (this->status == "CURRENT")
-            current = true;
-        else
-            current = false;
+        current = this->status == "CURRENT";
     }
 
     std::ostream& operator<<(std::ostream& os, const DbIncarnation& i) {

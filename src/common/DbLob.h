@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef DB_LOB_H_
+#define DB_LOB_H_
+
 #include <unordered_map>
 #include <vector>
 
 #include "types.h"
-
-#ifndef DB_LOB_H_
-#define DB_LOB_H_
 
 namespace OpenLogReplicator {
     class DbTable;
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
         void addPartition(typeDataObj newDataObj, uint16_t pageSize);
         [[nodiscard]] uint32_t checkLobPageSize(typeDataObj newDataObj);
 
-        friend std::ostream& operator<<(std::ostream& os, const DbLob& column);
+        friend std::ostream& operator<<(std::ostream& os, const DbLob& lob);
     };
 }
 

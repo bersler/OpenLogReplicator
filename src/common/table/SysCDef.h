@@ -33,9 +33,9 @@ namespace OpenLogReplicator {
         };
 
         typeRowId rowId;
-        typeCon con;
-        typeObj obj;
-        CDEFTYPE type;
+        typeCon con{0};
+        typeObj obj{0};
+        CDEFTYPE type{CDEFTYPE::NONE};
 
         SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, CDEFTYPE newType) :
                 rowId(newRowId),
@@ -45,10 +45,7 @@ namespace OpenLogReplicator {
         }
 
         explicit SysCDef(typeRowId newRowId) :
-                rowId(newRowId),
-                con(0),
-                obj(0),
-                type(CDEFTYPE::NONE) {
+                rowId(newRowId) {
         }
 
         [[nodiscard]] bool operator!=(const SysCDef& other) const {
@@ -71,32 +68,32 @@ namespace OpenLogReplicator {
             return (type == CDEFTYPE::SUPPLEMENTAL_LOG_ALL);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.CDEF$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", CON#: " + std::to_string(con) + ", OBJ#: " + std::to_string(obj) + ", TYPE: " +
                     std::to_string(static_cast<uint>(type));
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return obj;
         }
     };

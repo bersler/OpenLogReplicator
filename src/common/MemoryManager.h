@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/Thread.h"
-
 #ifndef MEMORY_MANAGER_H_
 #define MEMORY_MANAGER_H_
+
+#include "../common/Thread.h"
 
 namespace OpenLogReplicator {
 
@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
 
     public:
         MemoryManager(Ctx* newCtx, const std::string& newAlias, const char* newSwapPath);
-        virtual ~MemoryManager();
+        ~MemoryManager() override;
 
         void wakeUp() override;
         void run() override;
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         bool swap(typeXid xid, int64_t index);
 
         const std::string getName() const override {
-            return std::string{"MemoryManager"};
+            return {"MemoryManager"};
         }
     };
 }

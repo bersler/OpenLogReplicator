@@ -25,10 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer),
-            hasPreviousValue(false),
-            hasPreviousRedo(false),
-            hasPreviousColumn(false) {
+            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer) {
     }
 
     void BuilderJson::columnFloat(const std::string& columnName, double value) {
@@ -102,7 +99,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) {
-        if (likely(lastBuilderSize + messagePosition + size * 2 + 6 < OUTPUT_BUFFER_DATA_SIZE)) {
+        if (likely(lastBuilderSize + messagePosition + size * 2 + columnName.size() * 3 + 8 < OUTPUT_BUFFER_DATA_SIZE)) {
             if (hasPreviousColumn)
                 append<true>(',');
             else
@@ -144,28 +141,28 @@ namespace OpenLogReplicator {
             case Format::TIMESTAMP_FORMAT::UNIX_NANO:
                 // 1712345678123456789
                 if (timestamp < 1000000000 && timestamp > -1000000000)
-                    appendSDec(timestamp * 1000000000L + fraction);
+                    appendSDec((timestamp * 1000000000L) + fraction);
                 else {
                     // Big number
-                    int64_t firstDigits = timestamp / 1000000000;
+                    const int64_t firstDigits = timestamp / 1000000000;
                     if (timestamp < 0) {
                         timestamp = -timestamp;
                         fraction = -fraction;
                     }
                     timestamp %= 1000000000;
                     appendSDec(firstDigits);
-                    appendDecN<18>(timestamp * 1000000000L + fraction);
+                    appendDecN<18>((timestamp * 1000000000L) + fraction);
                 }
                 break;
 
             case Format::TIMESTAMP_FORMAT::UNIX_MICRO:
                 // 1712345678123457
-                appendSDec(timestamp * 1000000L + ((fraction + 500) / 1000));
+                appendSDec((timestamp * 1000000L) + ((fraction + 500) / 1000));
                 break;
 
             case Format::TIMESTAMP_FORMAT::UNIX_MILLI:
                 // 1712345678123
-                appendSDec(timestamp * 1000L + ((fraction + 500000) / 1000000));
+                appendSDec((timestamp * 1000L) + ((fraction + 500000) / 1000000));
                 break;
 
             case Format::TIMESTAMP_FORMAT::UNIX:
@@ -177,17 +174,17 @@ namespace OpenLogReplicator {
                 // "1712345678123456789"
                 append('"');
                 if (timestamp < 1000000000 && timestamp > -1000000000)
-                    appendSDec(timestamp * 1000000000L + fraction);
+                    appendSDec((timestamp * 1000000000L) + fraction);
                 else {
                     // Big number
-                    int64_t firstDigits = timestamp / 1000000000;
+                    const int64_t firstDigits = timestamp / 1000000000;
                     if (timestamp < 0) {
                         timestamp = -timestamp;
                         fraction = -fraction;
                     }
                     timestamp %= 1000000000;
                     appendSDec(firstDigits);
-                    appendDecN<18>(timestamp * 1000000000L + fraction);
+                    appendDecN<18>((timestamp * 1000000000L) + fraction);
                 }
                 append('"');
                 break;
@@ -195,14 +192,14 @@ namespace OpenLogReplicator {
             case Format::TIMESTAMP_FORMAT::UNIX_MICRO_STRING:
                 // "1712345678123457"
                 append('"');
-                appendSDec(timestamp * 1000000L + ((fraction + 500) / 1000));
+                appendSDec((timestamp * 1000000L) + ((fraction + 500) / 1000));
                 append('"');
                 break;
 
             case Format::TIMESTAMP_FORMAT::UNIX_MILLI_STRING:
                 // "1712345678123"
                 append('"');
-                appendSDec(timestamp * 1000L + ((fraction + 500000) / 1000000));
+                appendSDec((timestamp * 1000L) + ((fraction + 500000) / 1000000));
                 append('"');
                 break;
 
@@ -216,7 +213,7 @@ namespace OpenLogReplicator {
             case Format::TIMESTAMP_FORMAT::ISO8601_NANO_TZ:
                 // "2024-04-05T19:34:38.123456789Z"
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append('.');
                 appendDecN<9>(fraction);
                 append(std::string_view(R"(Z")"));
@@ -231,7 +228,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append('.');
                 appendDecN<6>(fraction);
                 append(std::string_view(R"(Z")"));
@@ -246,7 +243,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append('.');
                 appendDecN<3>(fraction);
                 append(std::string_view(R"(Z")"));
@@ -257,13 +254,13 @@ namespace OpenLogReplicator {
                 if (fraction >= 500000000)
                     ++timestamp;
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append(std::string_view(R"(Z")"));
                 break;
             case Format::TIMESTAMP_FORMAT::ISO8601_NANO:
                 // "2024-04-05 19:34:38.123456789"
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append('.');
                 appendDecN<9>(fraction);
                 append('"');
@@ -278,7 +275,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append('.');
                 appendDecN<6>(fraction);
                 append('"');
@@ -293,7 +290,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append('.');
                 appendDecN<3>(fraction);
                 append('"');
@@ -304,7 +301,7 @@ namespace OpenLogReplicator {
                 if (fraction >= 500000000)
                     ++timestamp;
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append('"');
                 break;
         }
@@ -326,17 +323,17 @@ namespace OpenLogReplicator {
                 // "1700000000.123456789,Europe/Warsaw"
                 append('"');
                 if (timestamp < 1000000000 && timestamp > -1000000000)
-                    appendSDec(timestamp * 1000000000L + fraction);
+                    appendSDec((timestamp * 1000000000L) + fraction);
                 else {
                     // Big number
-                    int64_t firstDigits = timestamp / 1000000000;
+                    const int64_t firstDigits = timestamp / 1000000000;
                     if (timestamp < 0) {
                         timestamp = -timestamp;
                         fraction = -fraction;
                     }
                     timestamp %= 1000000000;
                     appendSDec(firstDigits);
-                    appendDecN<18>(timestamp * 1000000000L + fraction);
+                    appendDecN<18>((timestamp * 1000000000L) + fraction);
                 }
                 append(',');
                 append(tz);
@@ -346,7 +343,7 @@ namespace OpenLogReplicator {
             case Format::TIMESTAMP_TZ_FORMAT::UNIX_MICRO_STRING:
                 // "1700000000.123456,Europe/Warsaw"
                 append('"');
-                appendSDec(timestamp * 1000000L + ((fraction + 500) / 1000));
+                appendSDec((timestamp * 1000000L) + ((fraction + 500) / 1000));
                 append(',');
                 append(tz);
                 append('"');
@@ -355,7 +352,7 @@ namespace OpenLogReplicator {
             case Format::TIMESTAMP_TZ_FORMAT::UNIX_MILLI_STRING:
                 // "1700000000.123,Europe/Warsaw"
                 append('"');
-                appendSDec(timestamp * 1000L + ((fraction + 500000) / 1000000));
+                appendSDec((timestamp * 1000L) + ((fraction + 500000) / 1000000));
                 append(',');
                 append(tz);
                 append('"');
@@ -373,7 +370,7 @@ namespace OpenLogReplicator {
             case Format::TIMESTAMP_TZ_FORMAT::ISO8601_NANO_TZ:
                 // "2024-04-05T19:34:38.123456789Z Europe/Warsaw"
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append('.');
                 appendDecN<9>(fraction);
                 append(std::string_view("Z "));
@@ -390,7 +387,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append('.');
                 appendDecN<6>(fraction);
                 append(std::string_view("Z "));
@@ -407,7 +404,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append('.');
                 appendDecN<3>(fraction);
                 append(std::string_view("Z "));
@@ -420,7 +417,7 @@ namespace OpenLogReplicator {
                 if (fraction >= 500000000)
                     ++timestamp;
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, true, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
                 append(std::string_view("Z "));
                 append(tz);
                 append('"');
@@ -429,7 +426,7 @@ namespace OpenLogReplicator {
             case Format::TIMESTAMP_TZ_FORMAT::ISO8601_NANO:
                 // "2024-04-05 19:34:38.123456789,Europe/Warsaw"
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append('.');
                 appendDecN<9>(fraction);
                 append(' ');
@@ -446,7 +443,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append('.');
                 appendDecN<6>(fraction);
                 append(' ');
@@ -463,7 +460,7 @@ namespace OpenLogReplicator {
                     ++timestamp;
                 }
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append('.');
                 appendDecN<3>(fraction);
                 append(' ');
@@ -476,7 +473,7 @@ namespace OpenLogReplicator {
                 if (fraction >= 500000000)
                     ++timestamp;
                 append('"');
-                appendArr(buffer, ctx->epochToIso8601(timestamp, buffer, false, false));
+                appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
                 append(' ');
                 append(tz);
                 append('"');
@@ -763,13 +760,13 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::addTagData(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, Format::VALUE_TYPE valueType, uint64_t offset) {
-        if (unlikely(table == nullptr || table->tagCols.size() == 0))
+        if (unlikely(table == nullptr || table->tagCols.empty()))
             return;
 
-        uint64_t messagePositionOld = messagePosition;
+        const uint64_t messagePositionOld = messagePosition;
         hasPreviousColumn = false;
         for (uint x = 0; x < table->tagCols.size(); ++x) {
-            typeCol column = table->tagCols[x] - 1;
+            const typeCol column = table->tagCols[x] - 1;
             if (values[column][static_cast<uint>(valueType)] == nullptr)
                 continue;
 

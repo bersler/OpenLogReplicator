@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SYSTEM_TRANSACTION_H_
+#define SYSTEM_TRANSACTION_H_
+
 #include <set>
 
 #include "../common/types.h"
@@ -25,9 +28,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/typeXid.h"
 #include "../common/table/SysCol.h"
 #include "../common/table/TablePack.h"
-
-#ifndef SYSTEM_TRANSACTION_H_
-#define SYSTEM_TRANSACTION_H_
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -53,7 +53,6 @@ namespace OpenLogReplicator {
     class XdbXPt;
     class XdbXQn;
 
-    using Pack = TablePack<TabRowId, TabRowIdKey, TabRowIdUnorderedKey>;
     class SystemTransaction final {
     protected:
         Ctx* ctx;
@@ -71,7 +70,6 @@ namespace OpenLogReplicator {
 
     public:
         SystemTransaction(Builder* newBuilder, Metadata* newMetadata);
-        ~SystemTransaction();
 
         void processInsert(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset);
         void processUpdate(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset);

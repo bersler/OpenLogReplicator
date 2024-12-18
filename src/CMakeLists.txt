@@ -26,7 +26,6 @@ list(APPEND ListCommon
         common/LobCtx.cpp
         common/LobData.cpp
         common/LobKey.cpp
-        common/RedoLogRecord.cpp
         common/MemoryManager.cpp
         common/Thread.cpp
         common/XmlCtx.cpp

@@ -17,22 +17,20 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <utility>
+
 #include "RedoLogException.h"
 
 namespace OpenLogReplicator {
     RedoLogException::RedoLogException(int newCode, std::string newMsg) :
-            exception(),
             code(newCode),
             msg(std::move(newMsg)) {
     }
 
     RedoLogException::RedoLogException(int newCode, const char* newMsg) :
-            exception(),
             code(newCode),
             msg(newMsg) {
     }
-
-    RedoLogException::~RedoLogException() = default;
 
     std::ostream& operator<<(std::ostream& os, const RedoLogException& exception) {
         os << exception.msg;

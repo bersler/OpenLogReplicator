@@ -22,19 +22,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "NetworkException.h"
 
 namespace OpenLogReplicator {
-    NetworkException::NetworkException(int newCode, const std::string& newMsg) :
-            exception(),
+    NetworkException::NetworkException(int newCode, std::string newMsg) :
             code(newCode),
             msg(std::move(newMsg)) {
     }
 
     NetworkException::NetworkException(int newCode, const char* newMsg) :
-            exception(),
             code(newCode),
             msg(newMsg) {
     }
-
-    NetworkException::~NetworkException() = default;
 
     std::ostream& operator<<(std::ostream& os, const NetworkException& exception) {
         os << exception.msg;

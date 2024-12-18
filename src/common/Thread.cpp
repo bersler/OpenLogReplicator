@@ -19,17 +19,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Ctx.h"
 #include "Thread.h"
+
+#include <utility>
 #include "exception/RuntimeException.h"
 
 namespace OpenLogReplicator {
-    Thread::Thread(Ctx* newCtx, const std::string& newAlias) :
+    Thread::Thread(Ctx* newCtx, std::string newAlias) :
             ctx(newCtx),
-            pthread(0),
-            alias(newAlias),
-            finished(false) {
+            alias(std::move(newAlias)) {
     }
-
-    Thread::~Thread() = default;
 
     void Thread::wakeUp() {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {
@@ -40,7 +38,7 @@ namespace OpenLogReplicator {
     }
 
     void* Thread::runStatic(void* voidThread) {
-        Thread* thread = reinterpret_cast<Thread*>(voidThread);
+        auto* thread = reinterpret_cast<Thread*>(voidThread);
         thread->contextRun();
         thread->finished = true;
         return nullptr;

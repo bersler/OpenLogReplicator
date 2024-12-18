@@ -17,15 +17,17 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef PARSER_H_
+#define PARSER_H_
+
+#include <cstddef>
+
 #include "../common/Ctx.h"
 #include "../common/RedoLogRecord.h"
 #include "../common/types.h"
 #include "../common/typeTime.h"
 #include "../common/typeXid.h"
 #include "../reader/Reader.h"
-
-#ifndef PARSER_H_
-#define PARSER_H_
 
 namespace OpenLogReplicator {
     class Builder;
@@ -60,7 +62,7 @@ namespace OpenLogReplicator {
 
     class Parser final {
     protected:
-        static constexpr uint64_t MAX_LWN_CHUNKS = 512 * 2 / Ctx::MEMORY_CHUNK_SIZE_MB;
+        static constexpr uint64_t MAX_LWN_CHUNKS = static_cast<uint64_t>(512 * 2) / Ctx::MEMORY_CHUNK_SIZE_MB;
         static constexpr uint64_t MAX_RECORDS_IN_LWN = 1048576;
 
         Ctx* ctx;
@@ -68,15 +70,15 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         TransactionBuffer* transactionBuffer;
         RedoLogRecord zero;
-        Transaction* lastTransaction;
+        Transaction* lastTransaction{nullptr};
 
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN + 1];
-        uint64_t lwnAllocated;
-        uint64_t lwnAllocatedMax;
-        typeTime lwnTimestamp;
-        typeScn lwnScn;
-        typeBlk lwnCheckpointBlock;
+        uint64_t lwnAllocated{0};
+        uint64_t lwnAllocatedMax{0};
+        typeTime lwnTimestamp{0};
+        typeScn lwnScn{0};
+        typeBlk lwnCheckpointBlock{0};
 
         void freeLwn();
         void analyzeLwn(LwnMember* lwnMember);
@@ -94,16 +96,16 @@ namespace OpenLogReplicator {
     public:
         int64_t group;
         std::string path;
-        typeSeq sequence;
-        typeScn firstScn;
-        typeScn nextScn;
-        Reader* reader;
+        typeSeq sequence{0};
+        typeScn firstScn{Ctx::ZERO_SCN};
+        typeScn nextScn{Ctx::ZERO_SCN};
+        Reader* reader{nullptr};
 
-        Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, const std::string& newPath);
+        Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, std::string newPath);
         virtual ~Parser();
 
         Reader::REDO_CODE parse();
-        std::string toString() const;
+        [[nodiscard]] std::string toString() const;
     };
 }
 

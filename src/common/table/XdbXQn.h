@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <utility>
+
 #include "../types.h"
 #include "../typeRowId.h"
 
@@ -47,38 +49,34 @@ namespace OpenLogReplicator {
         }
 
         explicit XdbXQn(typeRowId newRowId) :
-                rowId(newRowId),
-                nmSpcId(""),
-                localName(""),
-                flags(""),
-                id("") {
+                rowId(newRowId) {
         }
 
         bool operator!=(const XdbXQn& other) const {
             return (other.rowId != rowId) || (other.nmSpcId != nmSpcId) || (other.localName != localName) || (other.flags != flags) || (other.id != id);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "XDB.X$QN";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", NMSPCID: '" + nmSpcId + "', LOCALNAME: '" + localName + "', FLAGS: '" + flags + "', ID: '" + id + "'";
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return false;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
     };
@@ -87,8 +85,8 @@ namespace OpenLogReplicator {
     public:
         std::string id;
 
-        explicit XdbXQnKey(const std::string& newId) :
-                id(newId) {
+        explicit XdbXQnKey(std::string newId) :
+                id(std::move(newId)) {
         }
 
         explicit XdbXQnKey(const XdbXQn* xdbXQn) :

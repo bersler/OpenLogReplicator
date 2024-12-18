@@ -32,14 +32,12 @@ namespace OpenLogReplicator {
         TYPE stringType;
         std::string stringValue;
 
-    public:
-        StringValue(TYPE newStringType, const std::string& newStringValue);
-        virtual ~StringValue();
+        StringValue(TYPE newStringType, std::string newStringValue);
 
-        virtual bool isString() override { return true; }
+        bool isString() override { return true; }
 
-        virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
-        virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
     };
 }
 

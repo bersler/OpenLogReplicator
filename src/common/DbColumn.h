@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "table/SysCol.h"
-
 #ifndef DB_COLUMN_H_
 #define DB_COLUMN_H_
+
+#include "types.h"
+#include "table/SysCol.h"
 
 namespace OpenLogReplicator {
     class DbColumn final {
@@ -45,9 +45,9 @@ namespace OpenLogReplicator {
         bool added;
         bool guard;
         bool xmlType;
-        bool nullWarning;
+        bool nullWarning{false};
 
-        DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, SysCol::COLTYPE newType, uint newLength,
+        DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, std::string newName, SysCol::COLTYPE newType, uint newLength,
                  int newPrecision, int newScale, uint64_t newCharsetId, typeCol newNumPk, bool newNullable, bool newHidden,
                  bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType);
 

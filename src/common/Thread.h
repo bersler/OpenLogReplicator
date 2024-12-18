@@ -17,15 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef THREAD_H_
+#define THREAD_H_
+
 #include <atomic>
 #include <sys/time.h>
 
 #include "types.h"
 #include "Clock.h"
 #include "Ctx.h"
-
-#ifndef THREAD_H_
-#define THREAD_H_
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -64,12 +64,13 @@ namespace OpenLogReplicator {
         };
 
         Ctx* ctx;
-        pthread_t pthread;
+        pthread_t pthread{0};
         std::string alias;
-        std::atomic<bool> finished;
+        std::atomic<bool> finished{false};
 
-        explicit Thread(Ctx* newCtx, const std::string& newAlias);
-        virtual ~Thread();
+        explicit Thread(Ctx* newCtx, std::string newAlias);
+        virtual ~Thread() = default;
+
         virtual void wakeUp();
         static void* runStatic(void* thread);
 
@@ -94,16 +95,16 @@ namespace OpenLogReplicator {
             contextStop();
         }
 
-        void inline contextStart() {
+        void contextStart() {
             if constexpr  (contextCompiled) {
                 contextTimeLast = ctx->clock->getTimeUt();
             }
         }
 
-        void inline contextSet(CONTEXT context, REASON reason = REASON::NONE) {
+        void contextSet(CONTEXT context, REASON reason = REASON::NONE) {
             if constexpr (contextCompiled) {
                 ++contextSwitches;
-                time_ut contextTimeNow = ctx->clock->getTimeUt();
+                const time_ut contextTimeNow = ctx->clock->getTimeUt();
                 contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
                 ++contextCnt[static_cast<uint>(curContext)];
                 ++reasonCnt[static_cast<uint>(reason)];
@@ -113,10 +114,10 @@ namespace OpenLogReplicator {
             }
         }
 
-        void inline contextStop() {
+        void contextStop() {
             if constexpr (contextCompiled) {
                 ++contextSwitches;
-                time_ut contextTimeNow = ctx->clock->getTimeUt();
+                const time_ut contextTimeNow = ctx->clock->getTimeUt();
                 contextTime[static_cast<uint>(curContext)] += contextTimeNow - contextTimeLast;
                 ++contextCnt[static_cast<uint>(curContext)];
 

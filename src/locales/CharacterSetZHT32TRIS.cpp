@@ -24,10 +24,8 @@ namespace OpenLogReplicator {
             CharacterSet("ZHT32TRIS") {
     }
 
-    CharacterSetZHT32TRIS::~CharacterSetZHT32TRIS() = default;
-
     typeUnicode CharacterSetZHT32TRIS::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)
             return byte1;
@@ -35,26 +33,26 @@ namespace OpenLogReplicator {
         if (byte1 != ZHT32TRIS_b1 || length == 0)
             return badChar(ctx, xid, byte1);
 
-        uint64_t byte2 = *str++;
+        const uint64_t byte2 = *str++;
         --length;
 
         if (byte2 < ZHT32TRIS_b2_min || byte2 > ZHT32TRIS_b2_max || length == 0)
             return badChar(ctx, xid, byte1, byte2);
 
-        uint64_t byte3 = *str++;
+        const uint64_t byte3 = *str++;
         --length;
 
         if (byte3 < ZHT32TRIS_b3_min || byte3 > ZHT32TRIS_b3_max || length == 0)
             return badChar(ctx, xid, byte1, byte2, byte3);
 
-        uint64_t byte4 = *str++;
+        const uint64_t byte4 = *str++;
         --length;
 
         if (byte4 < ZHT32TRIS_b4_min || byte4 > ZHT32TRIS_b4_max)
             return badChar(ctx, xid, byte1, byte2, byte3, byte4);
 
-        return unicode_map_ZHT32TRIS_4b[(byte2 - ZHT32TRIS_b2_min) * (ZHT32TRIS_b3_max - ZHT32TRIS_b3_min + 1) * (ZHT32TRIS_b4_max - ZHT32TRIS_b4_min + 1)
-                                        + (byte3 - ZHT32TRIS_b3_min) * (ZHT32TRIS_b4_max - ZHT32TRIS_b4_min + 1)
+        return unicode_map_ZHT32TRIS_4b[((byte2 - ZHT32TRIS_b2_min) * (ZHT32TRIS_b3_max - ZHT32TRIS_b3_min + 1) * (ZHT32TRIS_b4_max - ZHT32TRIS_b4_min + 1))
+                                        + ((byte3 - ZHT32TRIS_b3_min) * (ZHT32TRIS_b4_max - ZHT32TRIS_b4_min + 1))
                                         + (byte4 - ZHT32TRIS_b4_min)];
     }
 

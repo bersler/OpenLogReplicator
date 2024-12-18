@@ -28,10 +28,8 @@ namespace OpenLogReplicator {
             CharacterSet(newName) {
     }
 
-    CharacterSetJA16EUC::~CharacterSetJA16EUC() = default;
-
     uint64_t CharacterSetJA16EUC::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)
             return byte1;
@@ -39,7 +37,7 @@ namespace OpenLogReplicator {
         if (length == 0)
             return badChar(ctx, xid, byte1);
 
-        uint64_t byte2 = *str++;
+        const uint64_t byte2 = *str++;
         --length;
 
         // 3 bytes sequence
@@ -47,7 +45,7 @@ namespace OpenLogReplicator {
             if (length == 0)
                 return badChar(ctx, xid, byte1, byte2);
 
-            uint64_t byte3 = *str++;
+            const uint64_t byte3 = *str++;
             --length;
 
             if (byte2 < JA16EUC_b2_min || byte2 > JA16EUC_b2_max || byte3 < JA16EUC_b3_min || byte3 > JA16EUC_b3_max)
@@ -64,19 +62,17 @@ namespace OpenLogReplicator {
     }
 
     uint64_t CharacterSetJA16EUC::readMap2(uint64_t byte1, uint64_t byte2) const {
-        return unicode_map_JA16EUC_2b[(byte1 - JA16EUC_b1_min) * (JA16EUC_b2_max - JA16EUC_b2_min + 1) +
+        return unicode_map_JA16EUC_2b[((byte1 - JA16EUC_b1_min) * (JA16EUC_b2_max - JA16EUC_b2_min + 1)) +
                                       (byte2 - JA16EUC_b2_min)];
     }
 
     uint64_t CharacterSetJA16EUC::readMap3(uint64_t byte2, uint64_t byte3) const {
-        return unicode_map_JA16EUC_3b[(byte2 - JA16EUC_b2_min) * (JA16EUC_b3_max - JA16EUC_b3_min + 1) +
+        return unicode_map_JA16EUC_3b[((byte2 - JA16EUC_b2_min) * (JA16EUC_b3_max - JA16EUC_b3_min + 1)) +
                                       (byte3 - JA16EUC_b3_min)];
     }
 
     bool CharacterSetJA16EUC::validCode(uint64_t byte1, uint64_t byte2 __attribute__((unused))) const {
-        if (byte1 >= 0x90 && byte1 <= 0xA0)
-            return false;
-        return true;
+        return  byte1 < 0x90 || byte1 > 0xA0;
     }
 
     typeUnicode16 CharacterSetJA16EUC::unicode_map_JA16EUC_2b[(JA16EUC_b1_max - JA16EUC_b1_min + 1) *

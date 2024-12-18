@@ -24,6 +24,4 @@ namespace OpenLogReplicator {
     State::State(Ctx* newCtx) :
             ctx(newCtx) {
     }
-
-    State::~State() = default;
 }

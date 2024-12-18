@@ -32,11 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     StreamNetwork::StreamNetwork(Ctx* newCtx, const char* newUri) :
-            Stream(newCtx, newUri),
-            socketFD(-1),
-            serverFD(-1),
-            readBufferLen(0),
-            res(nullptr) {
+            Stream(newCtx, newUri) {
         readBuffer[0] = 0;
     }
 
@@ -72,7 +68,7 @@ namespace OpenLogReplicator {
     }
 
     void StreamNetwork::initializeClient() {
-        struct sockaddr_in addressC;
+        struct sockaddr_in addressC{};
         memset(reinterpret_cast<void*>(&addressC), 0, sizeof(addressC));
         addressC.sin_family = AF_INET;
         addressC.sin_port = htons(atoi(port.c_str()));
@@ -92,7 +88,7 @@ namespace OpenLogReplicator {
     }
 
     void StreamNetwork::initializeServer() {
-        struct addrinfo hints;
+        struct addrinfo hints{};
         memset(reinterpret_cast<void*>(&hints), 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
@@ -105,14 +101,14 @@ namespace OpenLogReplicator {
         if (serverFD == 0)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (4)");
 
-        int flags = fcntl(serverFD, F_GETFL);
+        const int flags = fcntl(serverFD, F_GETFL);
         if (flags < 0)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (5)");
         if (fcntl(serverFD, F_SETFL, flags | O_NONBLOCK) < 0)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (6)");
 
         int64_t opt = 1;
-        if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+        if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) != 0)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (7)");
 
         if (bind(serverFD, res->ai_addr, res->ai_addrlen) < 0)
@@ -238,7 +234,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
+            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -269,7 +265,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     return 0;
 
-                int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
+                const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -297,7 +293,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
+            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -323,7 +319,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
+            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -347,7 +343,7 @@ namespace OpenLogReplicator {
 
         if (*reinterpret_cast<const uint32_t*>(msg) < 0xFFFFFFFF) {
             // 32-bit message length
-            uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
+            const uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");
@@ -361,7 +357,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     return 0;
 
-                int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
+                const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -383,7 +379,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
+            const uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");
@@ -392,7 +388,7 @@ namespace OpenLogReplicator {
         }
 
         while (recvd < length) {
-            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
+            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -427,7 +423,7 @@ namespace OpenLogReplicator {
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (18)");
         }
 
-        int flags = fcntl(socketFD, F_GETFL);
+        const int flags = fcntl(socketFD, F_GETFL);
         if (flags < 0)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (19)");
         if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0)

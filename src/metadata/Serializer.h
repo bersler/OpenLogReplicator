@@ -17,14 +17,14 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SERIALIZER_H_
+#define SERIALIZER_H_
+
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 #include <vector>
 
 #include "../common/types.h"
-
-#ifndef SERIALIZER_H_
-#define SERIALIZER_H_
 
 namespace OpenLogReplicator {
     class Metadata;
@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
     class Serializer {
     public:
         Serializer();
-        virtual ~Serializer();
+        virtual ~Serializer() = default;
 
         [[nodiscard]] virtual bool deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::vector<std::string>& msgs,
                                                bool loadMetadata, bool storeSchema) = 0;

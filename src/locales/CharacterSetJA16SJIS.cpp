@@ -28,19 +28,14 @@ namespace OpenLogReplicator {
             CharacterSet16bit(newName, unicode_map_JA16SJIS_2b, JA16SJIS_b1_min, JA16SJIS_b1_max, JA16SJIS_b2_min, JA16SJIS_b2_max) {
     }
 
-    CharacterSetJA16SJIS::~CharacterSetJA16SJIS() = default;
-
     bool CharacterSetJA16SJIS::validCode(uint64_t byte1, uint64_t byte2 __attribute__((unused))) const {
-        if (byte1 == 0x85 || byte1 == 0x86 ||
-            (byte1 >= 0xA0 && byte1 <= 0xDF) ||
-            byte1 == 0xEB || byte1 == 0xEC || byte1 == 0xEF)
-            return false;
-
-        return true;
+        return byte1 != 0x85 && byte1 != 0x86 &&
+            (byte1 < 0xA0 || byte1 > 0xDF) &&
+            byte1 != 0xEB && byte1 != 0xEC && byte1 != 0xEF;
     }
 
     typeUnicode CharacterSetJA16SJIS::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)
             return byte1;
@@ -51,7 +46,7 @@ namespace OpenLogReplicator {
         if (length == 0)
             return badChar(ctx, xid, byte1);
 
-        uint64_t byte2 = *str++;
+        const uint64_t byte2 = *str++;
         --length;
 
         if (byte1 < byte1min || byte1 > byte1max || byte2 < byte2min || byte2 > byte2max)

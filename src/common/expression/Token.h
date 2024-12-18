@@ -36,13 +36,12 @@ namespace OpenLogReplicator {
         TYPE tokenType;
         std::string stringValue;
 
-        Token(TYPE newTokenType, const std::string& newStringValue);
-        virtual ~Token();
+        Token(TYPE newTokenType, std::string newStringValue);
 
-        virtual bool isToken() override { return true; }
+        bool isToken() override { return true; }
 
-        virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
-        virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
     };
 }
 
