@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SCHEMA_ELEMENT_H_
+#define SCHEMA_ELEMENT_H_
+
 #include <vector>
 
 #include "../common/DbTable.h"
 #include "../common/types.h"
-
-#ifndef SCHEMA_ELEMENT_H_
-#define SCHEMA_ELEMENT_H_
 
 namespace OpenLogReplicator {
     class SchemaElement final {
@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
         std::string table;
         std::string tag;
         DbTable::OPTIONS options;
-        TAG_TYPE tagType;
+        TAG_TYPE tagType{TAG_TYPE::NONE};
         std::vector<std::string> keyList;
         std::vector<std::string> tagList;
 

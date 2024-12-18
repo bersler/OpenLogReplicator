@@ -35,19 +35,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #endif /* LINK_LIBRARY_ZEROMQ */
 
-#define MAX_CLIENT_MESSAGE_SIZE (2*1024*1024*1024ul - 1)
+enum {
+MAX_CLIENT_MESSAGE_SIZE = (2*1024*1024*1024UL - 1)
+};
 
-void send(OpenLogReplicator::pb::RedoRequest& request, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx __attribute__((unused))) {
+static void send(OpenLogReplicator::pb::RedoRequest& request, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx __attribute__((unused))) {
     std::string buffer;
-    bool ret = request.SerializeToString(&buffer);
+    const bool ret = request.SerializeToString(&buffer);
     if (!ret)
         throw OpenLogReplicator::RuntimeException(0, "message serialization");
 
     stream->sendMessage(buffer.c_str(), buffer.length());
 }
 
-uint64_t receive(OpenLogReplicator::pb::RedoResponse& response, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx, uint8_t* buffer, bool decode) {
-    uint64_t length = stream->receiveMessage(buffer, MAX_CLIENT_MESSAGE_SIZE);
+static uint64_t receive(OpenLogReplicator::pb::RedoResponse& response, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx, uint8_t* buffer, bool decode) {
+    const uint64_t length = stream->receiveMessage(buffer, MAX_CLIENT_MESSAGE_SIZE);
 
     response.Clear();
     if (decode && !response.ParseFromArray(buffer, length)) {
@@ -69,7 +71,7 @@ int main(int argc, char** argv) {
     OpenLogReplicator::Ctx ctx;
     const char* logTimezone = std::getenv("OLR_LOG_TIMEZONE");
     if (logTimezone != nullptr)
-        if (!ctx.parseTimezone(logTimezone, ctx.logTimezone))
+        if (!OpenLogReplicator::Ctx::parseTimezone(logTimezone, ctx.logTimezone))
             ctx.error(10070, "invalid environment variable OLR_LOG_TIMEZONE value: " + std::string(logTimezone));
 
     ctx.welcome("OpenLogReplicator v." + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
@@ -104,7 +106,7 @@ int main(int argc, char** argv) {
     OpenLogReplicator::pb::RedoRequest request;
     OpenLogReplicator::pb::RedoResponse response;
     OpenLogReplicator::Stream* stream = nullptr;
-    uint8_t* buffer = new uint8_t[MAX_CLIENT_MESSAGE_SIZE];
+    auto* buffer = new uint8_t[MAX_CLIENT_MESSAGE_SIZE];
 
     try {
         if (strcmp(argv[1], "network") == 0) {
@@ -149,8 +151,8 @@ int main(int argc, char** argv) {
                 if (strncmp(argv[5], "c:", 2) != 0 || strlen(argv[5]) <= 4 || (idxPtr = strchr(argv[5] + 2, ',')) == nullptr)
                     throw OpenLogReplicator::RuntimeException(1, "server already stared, expected: [c:<scn>,<idx>]");
                 *idxPtr = 0;
-                typeScn confirmedScn = atoi(argv[5] + 2);
-                typeIdx confirmedIdx = atoi(idxPtr + 1);
+                const typeScn confirmedScn = atoi(argv[5] + 2);
+                const typeIdx confirmedIdx = atoi(idxPtr + 1);
 
                 request.set_c_scn(confirmedScn);
                 request.set_c_idx(confirmedIdx);
@@ -199,7 +201,7 @@ int main(int argc, char** argv) {
                                                          " for request code: " + std::to_string(request.code()));
 
         for (;;) {
-            uint64_t length = receive(response, stream, &ctx, buffer, formatProtobuf);
+            const uint64_t length = receive(response, stream, &ctx, buffer, formatProtobuf);
 
             typeScn cScn;
             uint64_t cIdx;
@@ -262,8 +264,8 @@ int main(int argc, char** argv) {
             }
 
             ++num;
-            time_ut now = ctx.clock->getTimeUt();
-            double timeDelta = static_cast<double>(now - last) / 1000000.0;
+            const time_ut now = ctx.clock->getTimeUt();
+            const double timeDelta = static_cast<double>(now - last) / 1000000.0;
 
             // Confirm every 1000 messages or every 10 seconds
             if (num > 1000 || timeDelta > 10) {
@@ -293,9 +295,7 @@ int main(int argc, char** argv) {
     }
 
     delete[] buffer;
-
-    if (stream != nullptr)
-        delete stream;
+    delete stream;
 
     return 0;
 }

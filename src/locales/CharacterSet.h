@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/types.h"
-#include "../common/typeXid.h"
-
 #ifndef CHARACTER_SET_H_
 #define CHARACTER_SET_H_
+
+#include "../common/types.h"
+#include "../common/typeXid.h"
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         const char* name;
 
         explicit CharacterSet(const char* newName);
-        virtual ~CharacterSet();
+        virtual ~CharacterSet() = default;
 
         virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const = 0;
     };

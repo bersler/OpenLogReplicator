@@ -17,7 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http:////www.gnu.org/licenses/>.  */
 
+#include <algorithm>
 #include <thread>
+#include <utility>
 #include <unistd.h>
 
 #include "../builder/Builder.h"
@@ -30,31 +32,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 
 namespace OpenLogReplicator {
-    Writer::Writer(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata) :
+    Writer::Writer(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata) :
             Thread(newCtx, newAlias),
-            database(newDatabase),
+            database(std::move(newDatabase)),
             builder(newBuilder),
             metadata(newMetadata),
-            builderQueue(nullptr),
-            checkpointScn(Ctx::ZERO_SCN),
-            checkpointIdx(0),
-            checkpointTime(time(nullptr)),
-            sentMessages(0),
-            oldSize(0),
-            currentQueueSize(0),
-            hwmQueueSize(0),
-            streaming(false),
-            confirmedScn(Ctx::ZERO_SCN),
-            confirmedIdx(0),
-            queue(nullptr) {
+            checkpointTime(time(nullptr)) {
         ctx->writerThread = this;
     }
 
     Writer::~Writer() {
-        if (queue != nullptr) {
-            delete[] queue;
-            queue = nullptr;
-        }
+        delete[] queue;
+        queue = nullptr;
     }
 
     void Writer::initialize() {
@@ -67,8 +56,7 @@ namespace OpenLogReplicator {
         ++sentMessages;
 
         queue[currentQueueSize++] = msg;
-        if (currentQueueSize > hwmQueueSize)
-            hwmQueueSize = currentQueueSize;
+        hwmQueueSize = std::max(currentQueueSize, hwmQueueSize);
     }
 
     void Writer::sortQueue() {
@@ -84,16 +72,16 @@ namespace OpenLogReplicator {
             uint64_t i = 0;
             --oldQueueSize;
             while (i < oldQueueSize) {
-                if (i * 2 + 2 < oldQueueSize && oldQueue[i * 2 + 2]->id < oldQueue[oldQueueSize]->id) {
-                    if (oldQueue[i * 2 + 1]->id < oldQueue[i * 2 + 2]->id) {
-                        oldQueue[i] = oldQueue[i * 2 + 1];
+                if (i * 2 + 2 < oldQueueSize && oldQueue[(i * 2) + 2]->id < oldQueue[oldQueueSize]->id) {
+                    if (oldQueue[(i * 2) + 1]->id < oldQueue[(i * 2) + 2]->id) {
+                        oldQueue[i] = oldQueue[(i * 2) + 1];
                         i = i * 2 + 1;
                     } else {
-                        oldQueue[i] = oldQueue[i * 2 + 2];
+                        oldQueue[i] = oldQueue[(i * 2) + 2];
                         i = i * 2 + 2;
                     }
-                } else if (i * 2 + 1 < oldQueueSize && oldQueue[i * 2 + 1]->id < oldQueue[oldQueueSize]->id) {
-                    oldQueue[i] = oldQueue[i * 2 + 1];
+                } else if (i * 2 + 1 < oldQueueSize && oldQueue[(i * 2) + 1]->id < oldQueue[oldQueueSize]->id) {
+                    oldQueue[i] = oldQueue[(i * 2) + 1];
                     i = i * 2 + 1;
                 } else
                     break;
@@ -101,8 +89,7 @@ namespace OpenLogReplicator {
             oldQueue[i] = oldQueue[oldQueueSize];
         }
 
-        if (oldQueue != nullptr)
-            delete[] oldQueue;
+        delete[] oldQueue;
     }
 
     void Writer::resetMessageQueue() {
@@ -117,13 +104,13 @@ namespace OpenLogReplicator {
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
-        if (ctx->metrics && msg != nullptr) {
+        if (ctx->metrics != nullptr && msg != nullptr) {
             ctx->metrics->emitBytesConfirmed(msg->size);
             ctx->metrics->emitMessagesConfirmed(1);
         }
 
         contextSet(CONTEXT::MUTEX, REASON::WRITER_CONFIRM);
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> const lck(mtx);
 
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
@@ -155,17 +142,17 @@ namespace OpenLogReplicator {
 
                 uint64_t i = 0;
                 while (i < currentQueueSize) {
-                    if (i * 2 + 2 < currentQueueSize && queue[i * 2 + 2]->id < queue[currentQueueSize]->id) {
-                        if (queue[i * 2 + 1]->id < queue[i * 2 + 2]->id) {
-                            queue[i] = queue[i * 2 + 1];
-                            i = i * 2 + 1;
+                    if ((i * 2) + 2 < currentQueueSize && queue[(i * 2) + 2]->id < queue[currentQueueSize]->id) {
+                        if (queue[(i * 2) + 1]->id < queue[(i * 2) + 2]->id) {
+                            queue[i] = queue[(i * 2) + 1];
+                            i = (i * 2) + 1;
                         } else {
-                            queue[i] = queue[i * 2 + 2];
-                            i = i * 2 + 2;
+                            queue[i] = queue[(i * 2) + 2];
+                            i = (i * 2) + 2;
                         }
-                    } else if (i * 2 + 1 < currentQueueSize && queue[i * 2 + 1]->id < queue[currentQueueSize]->id) {
-                        queue[i] = queue[i * 2 + 1];
-                        i = i * 2 + 1;
+                    } else if ((i * 2) + 1 < currentQueueSize && queue[(i * 2) + 1]->id < queue[currentQueueSize]->id) {
+                        queue[i] = queue[(i * 2) + 1];
+                        i = (i * 2) + 1;
                     } else
                         break;
                 }
@@ -293,7 +280,7 @@ namespace OpenLogReplicator {
                 if (ctx->hardShutdown)
                     break;
 
-                uint64_t size8 = (msg->size + 7) & 0xFFFFFFFFFFFFFFF8;
+                const uint64_t size8 = (msg->size + 7) & 0xFFFFFFFFFFFFFFF8;
                 oldSize += sizeof(struct BuilderMsg);
 
                 // Message in one part - sent directly from buffer
@@ -304,9 +291,9 @@ namespace OpenLogReplicator {
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
-                        uint64_t msgSize = msg->size;
+                        const uint64_t msgSize = msg->size;
                         sendMessage(msg);
-                        if (ctx->metrics) {
+                        if (ctx->metrics != nullptr) {
                             ctx->metrics->emitBytesSent(msgSize);
                             ctx->metrics->emitMessagesSent(1);
                         }
@@ -344,9 +331,9 @@ namespace OpenLogReplicator {
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
                         confirmMessage(msg);
                     else {
-                        uint64_t msgSize = msg->size;
+                        const uint64_t msgSize = msg->size;
                         sendMessage(msg);
-                        if (ctx->metrics) {
+                        if (ctx->metrics != nullptr) {
                             ctx->metrics->emitBytesSent(msgSize);
                             ctx->metrics->emitMessagesSent(1);
                         }
@@ -378,8 +365,8 @@ namespace OpenLogReplicator {
             force = true;
 
         // Not yet
-        time_t now = time(nullptr);
-        uint64_t timeSinceCheckpoint = (now - checkpointTime);
+        const time_t now = time(nullptr);
+        const uint64_t timeSinceCheckpoint = (now - checkpointTime);
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
@@ -392,7 +379,7 @@ namespace OpenLogReplicator {
                                                       std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
                                                       std::to_string(checkpointIdx));
         }
-        std::string name(database + "-chkpt");
+        const std::string name(database + "-chkpt");
         std::ostringstream ss;
         ss << R"({"database":")" << database
            << R"(","scn":)" << std::dec << confirmedScn
@@ -408,7 +395,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::readCheckpoint() {
-        std::string name(database + "-chkpt");
+        const std::string name(database + "-chkpt");
 
         // Checkpoint is present - read it
         std::string checkpoint;
@@ -416,7 +403,7 @@ namespace OpenLogReplicator {
         if (!metadata->stateRead(name, CHECKPOINT_FILE_MAX_SIZE, checkpoint))
             return;
 
-        if (unlikely(checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError()))
+        if (unlikely(checkpoint.empty() || document.Parse(checkpoint.c_str()).HasParseError()))
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
                                        " - parse error: " + GetParseError_En(document.GetParseError()));
 

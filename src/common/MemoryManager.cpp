@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
     }
 
     void MemoryManager::wakeUp() {
-        std::unique_lock<std::mutex> lck(ctx->swapMtx);
+        std::unique_lock<std::mutex> const lck(ctx->swapMtx);
         ctx->chunksMemoryManager.notify_all();
     }
 
@@ -51,12 +51,15 @@ namespace OpenLogReplicator {
 
         try {
             while (!ctx->hardShutdown) {
-                uint64_t discard = cleanOldTransactions();
-                if (discard > 0)
+                const uint64_t discard = cleanOldTransactions();
+                if (discard > 0 && ctx->metrics != nullptr)
                     ctx->metrics->emitSwapOperationsMbDiscard(discard);
 
-                if (ctx->softShutdown && ctx->replicatorFinished)
+                if (ctx->softShutdown && ctx->replicatorFinished) {
+                    if (!ctx->swapChunks.empty())
+                        cleanOldTransactions();
                     break;
+                }
 
                 typeXid swapXid;
                 int64_t swapIndex = -1;
@@ -82,16 +85,16 @@ namespace OpenLogReplicator {
                 contextSet(Thread::CONTEXT::CPU);
 
                 if (unswapIndex != -1) {
-                    if (unswap(unswapXid, unswapIndex) && ctx->metrics)
+                    if (unswap(unswapXid, unswapIndex) && ctx->metrics != nullptr)
                         ctx->metrics->emitSwapOperationsMbRead(1);
                     {
                         contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_RUN2);
-                        std::unique_lock<std::mutex> lck(ctx->swapMtx);
+                        std::unique_lock<std::mutex> const lck(ctx->swapMtx);
                         ctx->chunksTransaction.notify_all();
                     }
                     contextSet(Thread::CONTEXT::CPU);
                 }
-                if (swapIndex != -1 && swap(swapXid, swapIndex) && ctx->metrics)
+                if (swapIndex != -1 && swap(swapXid, swapIndex) && ctx->metrics != nullptr)
                     ctx->metrics->emitSwapOperationsMbWrite(1);
             }
         } catch (RuntimeException& ex) {
@@ -117,7 +120,7 @@ namespace OpenLogReplicator {
             SwapChunk* sc;
             {
                 contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_CLEAN);
-                std::unique_lock<std::mutex> lck(ctx->swapMtx);
+                std::unique_lock<std::mutex> const lck(ctx->swapMtx);
                 if (ctx->commitedXids.empty()) {
                     contextSet(Thread::CONTEXT::CPU);
                     return discard;
@@ -137,8 +140,8 @@ namespace OpenLogReplicator {
             contextSet(Thread::CONTEXT::CPU);
             delete sc;
 
-            struct stat fileStat;
-            std::string fileName(swapPath + "/" + xid.toString() + ".swap");
+            struct stat fileStat{};
+            const std::string fileName(swapPath + "/" + xid.toString() + ".swap");
             if (stat(fileName.c_str(), &fileStat) == 0) {
                 if (unlink(fileName.c_str()) != 0)
                     ctx->error(10010, "file: " + fileName + " - delete returned: " + strerror(errno));
@@ -151,18 +154,21 @@ namespace OpenLogReplicator {
             return;
 
         DIR* dir;
-        if ((dir = opendir(swapPath.c_str())) == nullptr)
+        if ((dir = opendir(swapPath.c_str())) == nullptr) {
+            if (silent)
+                return;
             throw RuntimeException(10012, "directory: " + swapPath + " - can't read");
+        }
 
         struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                 continue;
 
-            struct stat fileStat;
-            std::string fileName(ent->d_name);
+            struct stat fileStat{};
+            const std::string fileName(ent->d_name);
 
-            std::string fullName(swapPath + "/" + ent->d_name);
+            const std::string fullName(swapPath + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat) != 0) {
                 ctx->warning(10003, "file: " + fileName + " - get metadata returned: " + strerror(errno));
                 continue;
@@ -172,15 +178,18 @@ namespace OpenLogReplicator {
                 continue;
 
             //ctx->warning(0, "checking file name: " + fileName);
-            std::string suffix(".swap");
+            const std::string suffix(".swap");
             if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()) != suffix)
                 continue;
 
             if (!silent)
                 ctx->warning(10067, "deleting old swap file from previous execution: " + fullName);
 
-            if (unlink(fullName.c_str()) != 0)
+            if (unlink(fullName.c_str()) != 0) {
+                if (silent)
+                    return;
                 throw RuntimeException(10010, "file: " + fullName + " - delete returned: " + strerror(errno));
+            }
         }
         closedir(dir);
     }
@@ -235,14 +244,14 @@ namespace OpenLogReplicator {
         if (tc == nullptr)
             return false;
 
-        std::string fileName = swapPath + "/" + xid.toString() + ".swap";
-        struct stat fileStat;
+        const std::string fileName = swapPath + "/" + xid.toString() + ".swap";
+        struct stat fileStat{};
 
         if (stat(fileName.c_str(), &fileStat) != 0)
             throw RuntimeException(50072, "swap file: " + fileName + " - get metadata returned: " + strerror(errno));
 
         int flags = O_RDONLY;
-        uint64_t fileSize = fileStat.st_size;
+        const uint64_t fileSize = fileStat.st_size;
         if ((fileSize & (Ctx::MEMORY_CHUNK_SIZE - 1)) != 0)
             throw RuntimeException(50072, "swap file: " + fileName + " - wrong file size: " + std::to_string(fileSize));
 
@@ -255,7 +264,7 @@ namespace OpenLogReplicator {
             flags |= O_DIRECT;
 #endif
 
-        int fileDes = open(fileName.c_str(), flags);
+        const int fileDes = open(fileName.c_str(), flags);
         if (fileDes == -1)
             throw RuntimeException(50072, "swap file: " + fileName + " - open for read returned: " + strerror(errno));
 
@@ -266,7 +275,7 @@ namespace OpenLogReplicator {
         }
 #endif
 
-        uint64_t bytes = pread(fileDes, tc, Ctx::MEMORY_CHUNK_SIZE, index * Ctx::MEMORY_CHUNK_SIZE);
+        const uint64_t bytes = pread(fileDes, tc, Ctx::MEMORY_CHUNK_SIZE, index * Ctx::MEMORY_CHUNK_SIZE);
         close(fileDes);
 
         if (bytes != Ctx::MEMORY_CHUNK_SIZE)
@@ -274,7 +283,7 @@ namespace OpenLogReplicator {
 
         {
             contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_UNSWAP);
-            std::unique_lock<std::mutex> lck(ctx->swapMtx);
+            std::unique_lock<std::mutex> const lck(ctx->swapMtx);
             auto it = ctx->swapChunks.find(xid);
             if (unlikely(it == ctx->swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during unswap read");
@@ -315,7 +324,7 @@ namespace OpenLogReplicator {
         SwapChunk* sc;
         {
             contextSet(CONTEXT::MUTEX, REASON::MEMORY_SWAP1);
-            std::unique_lock<std::mutex> lck(ctx->swapMtx);
+            std::unique_lock<std::mutex> const lck(ctx->swapMtx);
             auto it = ctx->swapChunks.find(xid);
             if (unlikely(it == ctx->swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during swap write");
@@ -336,7 +345,7 @@ namespace OpenLogReplicator {
         }
         contextSet(CONTEXT::CPU);
 
-        std::string fileName = swapPath + "/" + xid.toString() + ".swap";
+        const std::string fileName = swapPath + "/" + xid.toString() + ".swap";
 
         int flags = O_WRONLY | O_CREAT;
 #if __linux__
@@ -344,8 +353,8 @@ namespace OpenLogReplicator {
             flags |= O_DIRECT;
 #endif
 
-        int mode = S_IWUSR | S_IRUSR;
-        int fileDes = open(fileName.c_str(), flags, mode);
+        const int mode = S_IWUSR | S_IRUSR;
+        const int fileDes = open(fileName.c_str(), flags, mode);
         if (fileDes == -1)
             throw RuntimeException(50072, "swap file: " + fileName + " - open for write returned: " + strerror(errno));
 
@@ -356,7 +365,7 @@ namespace OpenLogReplicator {
         }
 #endif
 
-        uint64_t bytes = pwrite(fileDes, tc, Ctx::MEMORY_CHUNK_SIZE, index * Ctx::MEMORY_CHUNK_SIZE);
+        const uint64_t bytes = pwrite(fileDes, tc, Ctx::MEMORY_CHUNK_SIZE, index * Ctx::MEMORY_CHUNK_SIZE);
         if (bytes != Ctx::MEMORY_CHUNK_SIZE) {
             close(fileDes);
             throw RuntimeException(50072, "swap file: " + fileName + " - write returned: " + strerror(errno));
@@ -368,7 +377,7 @@ namespace OpenLogReplicator {
 
         {
             contextSet(CONTEXT::MUTEX, REASON::MEMORY_SWAP2);
-            std::unique_lock<std::mutex> lck(ctx->swapMtx);
+            std::unique_lock<std::mutex> const lck(ctx->swapMtx);
 
             if (ctx->swappedShrinkXid == xid) {
                 sc->chunks[index] = tc;
@@ -385,7 +394,7 @@ namespace OpenLogReplicator {
         }
         contextSet(CONTEXT::CPU);
 
-        // discard write
+        // discard writes
         if (remove) {
             if (unlink(fileName.c_str()) != 0)
                 throw RuntimeException(50072, "swap file: " + fileName + " - delete returned: " + strerror(errno));

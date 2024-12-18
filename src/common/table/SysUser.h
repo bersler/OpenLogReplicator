@@ -34,10 +34,10 @@ namespace OpenLogReplicator {
         };
 
         typeRowId rowId;
-        typeUser user;
+        typeUser user{0};
         std::string name;
-        typeIntX spare1;            // NULL
-        bool single;
+        typeIntX spare1{0, 0};            // NULL
+        bool single{false};
 
         SysUser(typeRowId newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),
@@ -48,11 +48,7 @@ namespace OpenLogReplicator {
         }
 
         explicit SysUser(typeRowId newRowId) :
-                rowId(newRowId),
-                user(0),
-                name(""),
-                spare1(0, 0),
-                single(false) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysUser& other) const {
@@ -71,27 +67,27 @@ namespace OpenLogReplicator {
             return isSpare1(SPARE1::SUPP_LOG_ALL);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.USER$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", USER#: " + std::to_string(user) + ", NAME: '" + name + "', SPARE1: " + spare1.toString();
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return false;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
     };

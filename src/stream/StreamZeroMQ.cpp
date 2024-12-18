@@ -28,9 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     StreamZeroMQ::StreamZeroMQ(Ctx* newCtx, const char* newUri) :
-            Stream(newCtx, newUri),
-            socket(nullptr),
-            context(nullptr) {
+            Stream(newCtx, newUri) {
     }
 
     StreamZeroMQ::~StreamZeroMQ() {
@@ -65,7 +63,7 @@ namespace OpenLogReplicator {
 
     void StreamZeroMQ::sendMessage(const void* msg, uint64_t length) {
         while (!ctx->softShutdown) {
-            int64_t ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
+            const int64_t ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
             if (ret == static_cast<int64_t>(length))
                 return;
 
@@ -81,7 +79,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t StreamZeroMQ::receiveMessage(void* msg, uint64_t length) {
-        int64_t ret = zmq_recv(socket, msg, length, 0);
+        const int64_t ret = zmq_recv(socket, msg, length, 0);
 
         if (ret < 0)
             throw NetworkException(10053, "network receive error");
@@ -90,7 +88,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t StreamZeroMQ::receiveMessageNB(void* msg, uint64_t length) {
-        int64_t ret = zmq_recv(socket, msg, length, ZMQ_DONTWAIT);
+        const int64_t ret = zmq_recv(socket, msg, length, ZMQ_DONTWAIT);
         if (ret < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN)
                 return 0;

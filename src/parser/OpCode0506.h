@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCode.h"
-
 #ifndef OP_CODE_05_06_H_
 #define OP_CODE_05_06_H_
+
+#include "OpCode.h"
 
 namespace OpenLogReplicator {
     class OpCode0506 final : public OpCode {

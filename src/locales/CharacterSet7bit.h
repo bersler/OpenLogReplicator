@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "CharacterSet.h"
-
 #ifndef CHARACTER_SET_7BIT_H_
 #define CHARACTER_SET_7BIT_H_
+
+#include "CharacterSet.h"
 
 namespace OpenLogReplicator {
     class CharacterSet7bit : public CharacterSet {
@@ -30,9 +30,8 @@ namespace OpenLogReplicator {
 
     public:
         CharacterSet7bit(const char* newName, const typeUnicode16* newMap);
-        ~CharacterSet7bit() override;
 
-        virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
+        typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
 
         // Conversion arrays for 7-bit character sets
         static typeUnicode16 unicode_map_D7DEC[128];

@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef DATABASE_STATEMENT_H_
+#define DATABASE_STATEMENT_H_
+
 #include <oci.h>
 #include <vector>
 
 #include "../common/types.h"
-
-#ifndef DATABASE_STATEMENT_H_
-#define DATABASE_STATEMENT_H_
 
 namespace OpenLogReplicator {
     class DatabaseConnection;
@@ -31,8 +31,8 @@ namespace OpenLogReplicator {
     class DatabaseStatement final {
     protected:
         DatabaseConnection* conn;
-        bool executed;
-        OCIStmt* stmthp;
+        bool executed{false};
+        OCIStmt* stmthp{nullptr};
         std::vector<OCIBind*> binds;
         std::vector<OCIDefine*> defines;
 

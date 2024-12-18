@@ -24,16 +24,14 @@ namespace OpenLogReplicator {
             CharacterSet("AL16UTF16") {
     }
 
-    CharacterSetAL16UTF16::~CharacterSetAL16UTF16() = default;
-
     typeUnicode CharacterSetAL16UTF16::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
 
         if (length == 0)
             return badChar(ctx, xid, byte1);
 
-        uint64_t byte2 = *str++;
+        const uint64_t byte2 = *str++;
         --length;
 
         if ((byte1 & 0xFC) == 0xDC)
@@ -45,13 +43,13 @@ namespace OpenLogReplicator {
         if (length == 0)
             return badChar(ctx, xid, byte1, byte2);
 
-        uint64_t byte3 = *str++;
+        const uint64_t byte3 = *str++;
         --length;
 
         if (length == 0)
             return badChar(ctx, xid, byte1, byte2, byte3);
 
-        uint64_t byte4 = *str++;
+        const uint64_t byte4 = *str++;
         --length;
 
         // U' = yyyy yyyy yyxx xxxx xxxx   // U - 0x10000
@@ -60,7 +58,7 @@ namespace OpenLogReplicator {
 
         if ((byte3 & 0xFC) == 0xDC) {
             return 0x10000 + (((byte1 & 0x03) << 18) | (byte2 << 10) | ((byte3 & 0x03) << 8) | byte4);
-        } else
-            return badChar(ctx, xid, byte1, byte2, byte3, byte4);
+        }
+        return badChar(ctx, xid, byte1, byte2, byte3, byte4);
     }
 }

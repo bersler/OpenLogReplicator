@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Writer.h"
-
 #ifndef WRITER_DISCARD_H_
 #define WRITER_DISCARD_H_
+
+#include "Writer.h"
 
 namespace OpenLogReplicator {
     class WriterDiscard final : public Writer {
@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
 
     public:
         WriterDiscard(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata);
-        ~WriterDiscard() override;
+        ~WriterDiscard() override = default;
 
         void initialize() override;
     };

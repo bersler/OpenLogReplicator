@@ -18,7 +18,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #define _LARGEFILE_SOURCE
-#define _FILE_OFFSET_BITS 64
+enum {
+_FILE_OFFSET_BITS = 64
+};
 
 #include <cerrno>
 #include <cstring>
@@ -32,9 +34,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int newGroup, bool newConfiguredBlockSum) :
-            Reader(newCtx, newAlias, newDatabase, newGroup, newConfiguredBlockSum),
-            fileDes(-1),
-            flags(0) {
+            Reader(newCtx, newAlias, newDatabase, newGroup, newConfiguredBlockSum) {
     }
 
     ReaderFilesystem::~ReaderFilesystem() {
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         struct stat fileStat;
 
         contextSet(CONTEXT::OS, REASON::OS);
-        int statRet = stat(fileName.c_str(), &fileStat);
+        const int statRet = stat(fileName.c_str(), &fileStat);
         contextSet(CONTEXT::CPU);
         if (statRet != 0) {
             ctx->error(10003, "file: " + fileName + " - get metadata returned: " + strerror(errno));
@@ -85,7 +85,7 @@ namespace OpenLogReplicator {
 #if __APPLE__
         if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
             contextSet(CONTEXT::OS, REASON::OS);
-            int fcntlRet = fcntl(fileDes, F_GLOBAL_NOCACHE, 1);
+            const int fcntlRet = fcntl(fileDes, F_GLOBAL_NOCACHE, 1);
             contextSet(CONTEXT::CPU);
             if (fcntlRet < 0)
                 ctx->error(10008, "file: " + fileName + " - set no cache for file returned: " + strerror(errno));

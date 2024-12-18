@@ -540,7 +540,6 @@ namespace OpenLogReplicator {
                                        TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase, const char* newUser,
                                        const char* newPassword, const char* newConnectString, bool newKeepConnection) :
             Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, newAlias, newDatabase),
-            standby(false),
             keepConnection(newKeepConnection) {
 
         env = new DatabaseEnvironment(ctx);
@@ -566,8 +565,8 @@ namespace OpenLogReplicator {
 
         typeScn currentScn;
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::GRANTS)) {
-            std::vector<std::string> tables {"SYS.V_$ARCHIVED_LOG", "SYS.V_$DATABASE", "SYS.V_$DATABASE_INCARNATION", "SYS.V_$LOG", "SYS.V_$LOGFILE",
-                                             "SYS.V_$PARAMETER", "SYS.V_$STANDBY_LOG", "SYS.V_$TRANSPORTABLE_PLATFORM"};
+            const std::vector<std::string> tables {"SYS.V_$ARCHIVED_LOG", "SYS.V_$DATABASE", "SYS.V_$DATABASE_INCARNATION", "SYS.V_$LOG", "SYS.V_$LOGFILE",
+                                                   "SYS.V_$PARAMETER", "SYS.V_$STANDBY_LOG", "SYS.V_$TRANSPORTABLE_PLATFORM"};
             for (const auto& tableName : tables)
                 checkTableForGrants(tableName);
         }
@@ -597,7 +596,7 @@ namespace OpenLogReplicator {
             char dbTimezoneStr[81];
             stmt.defineString(9, dbTimezoneStr, sizeof(dbTimezoneStr));
 
-            if (stmt.executeQuery()) {
+            if (stmt.executeQuery() != 0) {
                 if (logMode == 0) {
                     ctx->hint("run: SHUTDOWN IMMEDIATE;");
                     ctx->hint("run: STARTUP MOUNT;");
@@ -612,17 +611,17 @@ namespace OpenLogReplicator {
                     throw RuntimeException(10022, "SUPPLEMENTAL_LOG_DATA_MIN missing");
                 }
 
-                if (bigEndian)
+                if (bigEndian != 0)
                     ctx->setBigEndian();
 
-                metadata->suppLogDbPrimary = suppLogDbPrimary;
-                metadata->suppLogDbAll = suppLogDbAll;
+                metadata->suppLogDbPrimary = suppLogDbPrimary != 0;
+                metadata->suppLogDbAll = suppLogDbAll != 0;
                 metadata->context = context;
                 metadata->dbTimezoneStr = dbTimezoneStr;
                 if (metadata->ctx->dbTimezone != Ctx::BAD_TIMEZONE) {
                     metadata->dbTimezone = metadata->ctx->dbTimezone;
                 } else {
-                    if (!ctx->parseTimezone(dbTimezoneStr, metadata->dbTimezone))
+                    if (!Ctx::parseTimezone(dbTimezoneStr, metadata->dbTimezone))
                         throw RuntimeException(10068, "invalid DBTIMEZONE value: " + std::string(dbTimezoneStr));
                 }
 
@@ -641,7 +640,7 @@ namespace OpenLogReplicator {
                     char conContext[81];
                     stmt2.defineString(3, conContext, sizeof(conContext));
 
-                    if (stmt2.executeQuery()) {
+                    if (stmt2.executeQuery() != 0) {
                         metadata->conId = conId;
                         metadata->conName = conNameChar;
                         metadata->context = conContext;
@@ -657,29 +656,29 @@ namespace OpenLogReplicator {
         }
 
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::GRANTS) && !standby) {
-            std::vector<std::string> tables {SysCCol::tableName(), SysCDef::tableName(), SysCol::tableName(), SysDeferredStg::tableName(),
-                                             SysECol::tableName(), SysLob::tableName(), SysLobCompPart::tableName(), SysLobFrag::tableName(),
-                                             SysObj::tableName(), SysTab::tableName(), SysTabComPart::tableName(), SysTabSubPart::tableName(),
-                                             SysTs::tableName(), SysUser::tableName(), XdbTtSet::tableName()};
+            const std::vector<std::string> tables {SysCCol::tableName(), SysCDef::tableName(), SysCol::tableName(), SysDeferredStg::tableName(),
+                                                   SysECol::tableName(), SysLob::tableName(), SysLobCompPart::tableName(), SysLobFrag::tableName(),
+                                                   SysObj::tableName(), SysTab::tableName(), SysTabComPart::tableName(), SysTabSubPart::tableName(),
+                                                   SysTs::tableName(), SysUser::tableName(), XdbTtSet::tableName()};
             for (const auto& tableName : tables)
                 checkTableForGrantsFlashback(tableName, currentScn);
         }
 
         metadata->dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
-        if (metadata->dbRecoveryFileDest.length() > 0 && metadata->dbRecoveryFileDest.back() == '/') {
-            while (metadata->dbRecoveryFileDest.length() > 0 && metadata->dbRecoveryFileDest.back() == '/')
+        if (!metadata->dbRecoveryFileDest.empty() && metadata->dbRecoveryFileDest.back() == '/') {
+            while (!metadata->dbRecoveryFileDest.empty() && metadata->dbRecoveryFileDest.back() == '/')
                 metadata->dbRecoveryFileDest.pop_back();
             ctx->warning(60026, "stripping trailing '/' from db_recovery_file_dest parameter; new value: " + metadata->dbRecoveryFileDest);
         }
         metadata->logArchiveDest = getParameterValue("log_archive_dest");
-        if (metadata->logArchiveDest.length() > 0 && metadata->logArchiveDest.back() == '/') {
-            while (metadata->logArchiveDest.length() > 0 && metadata->logArchiveDest.back() == '/')
+        if (!metadata->logArchiveDest.empty() && metadata->logArchiveDest.back() == '/') {
+            while (!metadata->logArchiveDest.empty() && metadata->logArchiveDest.back() == '/')
                 metadata->logArchiveDest.pop_back();
             ctx->warning(60026, "stripping trailing '/' from log_archive_dest parameter; new value: " + metadata->logArchiveDest);
         }
         metadata->dbBlockChecksum = getParameterValue("db_block_checksum");
         std::transform(metadata->dbBlockChecksum.begin(), metadata->dbBlockChecksum.end(), metadata->dbBlockChecksum.begin(), ::toupper);
-        if (metadata->dbRecoveryFileDest.length() == 0)
+        if (metadata->dbRecoveryFileDest.empty())
             metadata->logArchiveFormat = getParameterValue("log_archive_format");
         metadata->nlsCharacterSet = getPropertyValue("NLS_CHARACTERSET");
         metadata->nlsNcharCharacterSet = getPropertyValue("NLS_NCHAR_CHARACTERSET");
@@ -692,7 +691,7 @@ namespace OpenLogReplicator {
 
     void ReplicatorOnline::positionReader() {
         // Position by time
-        if (metadata->startTime.length() > 0) {
+        if (!metadata->startTime.empty()) {
             DatabaseStatement stmt(conn);
             if (standby)
                 throw BootException(10024, "can't position by time for standby database");
@@ -707,7 +706,7 @@ namespace OpenLogReplicator {
             typeScn firstDataScn;
             stmt.defineUInt64(1, firstDataScn);
 
-            if (!stmt.executeQuery())
+            if (stmt.executeQuery() == 0)
                 throw BootException(10025, "can't find scn for: " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
@@ -725,7 +724,7 @@ namespace OpenLogReplicator {
             typeScn firstDataScn;
             stmt.defineUInt64(1, firstDataScn);
 
-            if (!stmt.executeQuery())
+            if (stmt.executeQuery() == 0)
                 throw BootException(10025, "can't find scn for " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
@@ -738,7 +737,7 @@ namespace OpenLogReplicator {
             typeScn firstDataScn;
             stmt.defineUInt64(1, firstDataScn);
 
-            if (!stmt.executeQuery())
+            if (stmt.executeQuery() == 0)
                 throw BootException(10029, "can't find database current scn");
             metadata->firstDataScn = firstDataScn;
         }
@@ -776,7 +775,7 @@ namespace OpenLogReplicator {
             typeSeq sequence;
             stmt.defineUInt32(1, sequence);
 
-            if (!stmt.executeQuery())
+            if (stmt.executeQuery() == 0)
                 throw BootException(10030, "getting database sequence for scn: " + std::to_string(metadata->firstDataScn));
 
             metadata->setSeqOffset(sequence, 0);
@@ -849,7 +848,7 @@ namespace OpenLogReplicator {
         stmt.bindString(1, parameter);
         stmt.defineString(1, value, sizeof(value));
 
-        if (stmt.executeQuery())
+        if (stmt.executeQuery() != 0)
             return value;
 
         // No value found
@@ -867,7 +866,7 @@ namespace OpenLogReplicator {
         stmt.bindString(1, property);
         stmt.defineString(1, value, sizeof(value));
 
-        if (stmt.executeQuery())
+        if (stmt.executeQuery() != 0)
             return value;
 
         // No value found
@@ -876,7 +875,7 @@ namespace OpenLogReplicator {
 
     void ReplicatorOnline::checkTableForGrants(const std::string& tableName) {
         try {
-            std::string query("SELECT 1 FROM " + tableName + " WHERE 0 = 1");
+            const std::string query("SELECT 1 FROM " + tableName + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, query);
@@ -894,15 +893,14 @@ namespace OpenLogReplicator {
                     ctx->hint("run: GRANT SELECT ON " + tableName + " TO " + conn->user + ";");
                 }
                 throw RuntimeException(10034, "grants missing for table " + tableName);
-            } else {
-                throw RuntimeException(ex.code, ex.msg);
             }
+            throw RuntimeException(ex.code, ex.msg);
         }
     }
 
     void ReplicatorOnline::checkTableForGrantsFlashback(const std::string& tableName, typeScn scn) {
         try {
-            std::string query("SELECT 1 FROM " + tableName + " AS OF SCN " + std::to_string(scn) + " WHERE 0 = 1");
+            const std::string query("SELECT 1 FROM " + tableName + " AS OF SCN " + std::to_string(scn) + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
                 ctx->logTrace(Ctx::TRACE::SQL, query);
@@ -920,11 +918,10 @@ namespace OpenLogReplicator {
                     ctx->hint("run: GRANT SELECT, FLASHBACK ON " + tableName + " TO " + conn->user + ";");
                 }
                 throw RuntimeException(10034, "grants missing for table " + tableName);
-            } else if (ex.supCode == 8181)
-                throw RuntimeException(10035, "specified SCN number is not a valid system change number");
-            else {
-                throw RuntimeException(ex.code, ex.msg);
             }
+            if (ex.supCode == 8181)
+                throw RuntimeException(10035, "specified SCN number is not a valid system change number");
+            throw RuntimeException(ex.code, ex.msg);
         }
     }
 
@@ -942,7 +939,7 @@ namespace OpenLogReplicator {
             for (const SchemaElement* element: metadata->schemaElements)
                 readSystemDictionaries(&otherSchema, currentScn, element->owner, element->table, element->options);
             std::string errMsg;
-            bool result = metadata->schema->compare(&otherSchema, errMsg);
+            const bool result = metadata->schema->compare(&otherSchema, errMsg);
             if (result) {
                 ctx->warning(70000, "schema incorrect: " + errMsg);
             }
@@ -963,7 +960,7 @@ namespace OpenLogReplicator {
         std::vector<std::string> msgs;
         {
             contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_SCHEMA);
-            std::unique_lock<std::mutex> lck(metadata->mtxSchema);
+            std::unique_lock<std::mutex> const lck(metadata->mtxSchema);
             metadata->schema->purgeMetadata();
             metadata->schema->purgeDicts();
             metadata->schema->scn = metadata->firstDataScn;
@@ -1009,7 +1006,7 @@ namespace OpenLogReplicator {
             sysTsStmt.defineUInt32(4, sysTsBlockSize);
 
             int64_t sysTsRet = sysTsStmt.executeQuery();
-            while (sysTsRet) {
+            while (sysTsRet != 0) {
                 schema->sysTsPack.addWithKeys(ctx, new SysTs(typeRowId(sysTsRowidStr), sysTsTs, sysTsName, sysTsBlockSize));
                 sysTsRet = sysTsStmt.next();
             }
@@ -1034,13 +1031,13 @@ namespace OpenLogReplicator {
             xdbTtSetStmt.defineUInt32(5, xdbTtSetObj);
 
             int64_t xdbTtSetRet = xdbTtSetStmt.executeQuery();
-            while (xdbTtSetRet) {
+            while (xdbTtSetRet != 0) {
                 schema->xdbTtSetPack.addWithKeys(ctx, new XdbTtSet(typeRowId(xdbTtSetRowidStr), xdbTtSetGuid, xdbTtSetTokSuf, xdbTtSetFlags, xdbTtSetObj));
                 xdbTtSetRet = xdbTtSetStmt.next();
             }
 
             for (auto ttSetIt: schema->xdbTtSetPack.mapRowId) {
-                XmlCtx* xmlCtx = new XmlCtx(ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
+                auto* xmlCtx = new XmlCtx(ctx, ttSetIt.second->tokSuf, ttSetIt.second->flags);
                 schema->schemaXmlMap.insert_or_assign(ttSetIt.second->tokSuf, xmlCtx);
 
                 // Check permissions before reading data
@@ -1053,10 +1050,10 @@ namespace OpenLogReplicator {
 
                 // Reading XDB.X$NMxxxx
                 DatabaseStatement xdbXNmStmt(conn);
-                std::string SQL_GET_XDB_XNM = "SELECT"
-                                              "   T.ROWID, T.NMSPCURI, T.ID "
-                                              " FROM"
-                                              "   XDB.X$NM" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
+                const std::string SQL_GET_XDB_XNM = "SELECT"
+                                                    "   T.ROWID, T.NMSPCURI, T.ID "
+                                                    " FROM"
+                                                    "   XDB.X$NM" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_XDB_XNM);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
@@ -1071,17 +1068,17 @@ namespace OpenLogReplicator {
                 xdbXNmStmt.defineString(3, xdbNmId, sizeof(xdbNmId));
 
                 int64_t xdbXNmRet = xdbXNmStmt.executeQuery();
-                while (xdbXNmRet) {
+                while (xdbXNmRet != 0) {
                     xmlCtx->xdbXNmPack.addWithKeys(ctx, new XdbXNm(typeRowId(xdbXNmRowidStr), xdbNmNmSpcUri, xdbNmId));
                     xdbXNmRet = xdbXNmStmt.next();
                 }
 
                 // Reading XDB.X$PTxxxx
                 DatabaseStatement xdbXPtStmt(conn);
-                std::string SQL_GET_XDB_XPT = "SELECT"
-                                              "   T.ROWID, T.PATH, T.ID "
-                                              " FROM"
-                                              "   XDB.X$PT" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
+                const std::string SQL_GET_XDB_XPT = "SELECT"
+                                                    "   T.ROWID, T.PATH, T.ID "
+                                                    " FROM"
+                                                    "   XDB.X$PT" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_XDB_XPT);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
@@ -1096,17 +1093,17 @@ namespace OpenLogReplicator {
                 xdbXPtStmt.defineString(3, xdbPtId, sizeof(xdbPtId));
 
                 int64_t xdbXPtRet = xdbXPtStmt.executeQuery();
-                while (xdbXPtRet) {
+                while (xdbXPtRet != 0) {
                     xmlCtx->xdbXPtPack.addWithKeys(ctx, new XdbXPt(typeRowId(xdbXPtRowidStr), xdbPtPath, xdbPtId));
                     xdbXPtRet = xdbXPtStmt.next();
                 }
 
                 // Reading XDB.X$QNxxxx
                 DatabaseStatement xdbXQnStmt(conn);
-                std::string SQL_GET_XDB_XQN = "SELECT"
-                                              "   T.ROWID, T.NMSPCID, T.LOCALNAME, T.FLAGS, T.ID "
-                                              " FROM"
-                                              "   XDB.X$QN" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
+                const std::string SQL_GET_XDB_XQN = "SELECT"
+                                                    "   T.ROWID, T.NMSPCID, T.LOCALNAME, T.FLAGS, T.ID "
+                                                    " FROM"
+                                                    "   XDB.X$QN" + ttSetIt.second->tokSuf + " AS OF SCN :i T";
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                     ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_XDB_XQN);
                     ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(targetScn));
@@ -1125,7 +1122,7 @@ namespace OpenLogReplicator {
                 xdbXQnStmt.defineString(5, xdbXQnId, sizeof(xdbXQnId));
 
                 int64_t xdbXQnRet = xdbXQnStmt.executeQuery();
-                while (xdbXQnRet) {
+                while (xdbXQnRet != 0) {
                     xmlCtx->xdbXQnPack.addWithKeys(ctx, new XdbXQn(typeRowId(xdbXQnRowidStr), xdbXQnNmSpcId, xdbXQnLocalName, xdbXQnFlags, xdbXQnId));
                     xdbXQnRet = xdbXQnStmt.next();
                 }
@@ -1133,9 +1130,8 @@ namespace OpenLogReplicator {
         } catch (RuntimeException& ex) {
             if (ex.supCode == 8181) {
                 throw BootException(10035, "can't read metadata from flashback, provide a valid starting SCN value");
-            } else {
-                throw BootException(ex.code, ex.msg);
             }
+            throw BootException(ex.code, ex.msg);
         }
     }
 
@@ -1181,7 +1177,7 @@ namespace OpenLogReplicator {
         sysCColStmt.defineUInt64(6, sysCColSpare12);
 
         int64_t sysCColRet = sysCColStmt.executeQuery();
-        while (sysCColRet) {
+        while (sysCColRet != 0) {
             schema->sysCColPack.addWithKeys(ctx, new SysCCol(typeRowId(sysCColRowidStr), sysCColCon, sysCColIntCol, sysCColObj, sysCColSpare11, sysCColSpare12));
             schema->touchTable(sysCColObj);
             sysCColSpare11 = 0;
@@ -1223,7 +1219,7 @@ namespace OpenLogReplicator {
         sysCDefStmt.defineUInt64(4, sysCDefType);
 
         int64_t sysCDefRet = sysCDefStmt.executeQuery();
-        while (sysCDefRet) {
+        while (sysCDefRet != 0) {
             schema->sysCDefPack.addWithKeys(ctx, new SysCDef(typeRowId(sysCDefRowidStr), sysCDefCon, sysCDefObj, static_cast<SysCDef::CDEFTYPE>(sysCDefType)));
             schema->touchTable(sysCDefObj);
             sysCDefRet = sysCDefStmt.next();
@@ -1285,7 +1281,7 @@ namespace OpenLogReplicator {
         sysColStmt.defineUInt64(15, sysColProperty2);
 
         int64_t sysColRet = sysColStmt.executeQuery();
-        while (sysColRet) {
+        while (sysColRet != 0) {
             schema->sysColPack.addWithKeys(ctx, new SysCol(typeRowId(sysColRowidStr), sysColObj, sysColCol, sysColSegCol, sysColIntCol, sysColName,
                                                            static_cast<SysCol::COLTYPE>(sysColType), sysColLength, sysColPrecision, sysColScale,
                                                            sycColCharsetForm, sysColCharsetId, sysColNull, sysColProperty1, sysColProperty2));
@@ -1331,7 +1327,7 @@ namespace OpenLogReplicator {
         sysDeferredStgStmt.defineUInt64(4, sysDeferredStgFlagsStg2);
 
         int64_t sysDeferredStgRet = sysDeferredStgStmt.executeQuery();
-        while (sysDeferredStgRet) {
+        while (sysDeferredStgRet != 0) {
             schema->sysDeferredStgPack.addWithKeys(ctx, new SysDeferredStg(typeRowId(sysDeferredStgRowidStr), sysDeferredStgObj,
                                                                            sysDeferredStgFlagsStg1, sysDeferredStgFlagsStg2));
             schema->touchTable(sysDeferredStgObj);
@@ -1398,7 +1394,7 @@ namespace OpenLogReplicator {
         sysEColStmt.defineInt16(4, sysEColGuardId);
 
         int64_t sysEColRet = sysEColStmt.executeQuery();
-        while (sysEColRet) {
+        while (sysEColRet != 0) {
             schema->sysEColPack.addWithKeys(ctx, new SysECol(typeRowId(sysEColRowidStr), sysEColTabObj, sysEColColNum, sysEColGuardId));
             schema->touchTable(sysEColTabObj);
             sysEColColNum = 0;
@@ -1444,7 +1440,7 @@ namespace OpenLogReplicator {
         sysLobStmt.defineUInt32(6, sysLobTs);
 
         int64_t sysLobRet = sysLobStmt.executeQuery();
-        while (sysLobRet) {
+        while (sysLobRet != 0) {
             schema->sysLobPack.addWithKeys(ctx, new SysLob(typeRowId(sysLobRowidStr), sysLobObj, sysLobCol, sysLobIntCol, sysLobLObj, sysLobTs));
             schema->touchTable(sysLobObj);
             sysLobRet = sysLobStmt.next();
@@ -1486,7 +1482,7 @@ namespace OpenLogReplicator {
         sysLobCompPartStmt.defineUInt32(3, sysLobCompPartLObj);
 
         int64_t sysLobCompPartRet = sysLobCompPartStmt.executeQuery();
-        while (sysLobCompPartRet) {
+        while (sysLobCompPartRet != 0) {
             schema->sysLobCompPartPack.addWithKeys(ctx, new SysLobCompPart(typeRowId(sysLobCompPartRowidStr), sysLobCompPartPartObj, sysLobCompPartLObj));
             metadata->schema->touchTableLob(sysLobCompPartLObj);
             sysLobCompPartRet = sysLobCompPartStmt.next();
@@ -1548,7 +1544,7 @@ namespace OpenLogReplicator {
         sysLobFragStmt.defineUInt32(4, sysLobFragTs);
 
         int64_t sysLobFragRet = sysLobFragStmt.executeQuery();
-        while (sysLobFragRet) {
+        while (sysLobFragRet != 0) {
             schema->sysLobFragPack.addWithKeys(ctx, new SysLobFrag(typeRowId(sysLobFragRowidStr), sysLobFragFragObj, sysLobFragParentObj, sysLobFragTs));
             metadata->schema->touchTableLobFrag(sysLobFragParentObj);
             metadata->schema->touchTableLob(sysLobFragParentObj);
@@ -1599,7 +1595,7 @@ namespace OpenLogReplicator {
         sysTabStmt.defineUInt64(9, sysTabProperty2);
 
         int64_t sysTabRet = sysTabStmt.executeQuery();
-        while (sysTabRet) {
+        while (sysTabRet != 0) {
             schema->sysTabPack.addWithKeys(ctx, new SysTab(typeRowId(sysTabRowidStr), sysTabObj, sysTabDataObj, sysTabTs, sysTabCluCols, sysTabFlags1,
                                                            sysTabFlags2, sysTabProperty1, sysTabProperty2));
             metadata->schema->touchTable(sysTabObj);
@@ -1642,7 +1638,7 @@ namespace OpenLogReplicator {
         sysTabComPartStmt.defineUInt32(4, sysTabComPartBo);
 
         int64_t sysTabComPartRet = sysTabComPartStmt.executeQuery();
-        while (sysTabComPartRet) {
+        while (sysTabComPartRet != 0) {
             schema->sysTabComPartPack.addWithKeys(ctx, new SysTabComPart(typeRowId(sysTabComPartRowidStr), sysTabComPartObj, sysTabComPartDataObj,
                                                                          sysTabComPartBo));
             metadata->schema->touchTable(sysTabComPartBo);
@@ -1684,7 +1680,7 @@ namespace OpenLogReplicator {
         sysTabPartStmt.defineUInt32(4, sysTabPartBo);
 
         int64_t sysTabPartRet = sysTabPartStmt.executeQuery();
-        while (sysTabPartRet) {
+        while (sysTabPartRet != 0) {
             schema->sysTabPartPack.addWithKeys(ctx, new SysTabPart(typeRowId(sysTabPartRowidStr), sysTabPartObj, sysTabPartDataObj, sysTabPartBo));
             metadata->schema->touchTable(sysTabPartBo);
             sysTabPartDataObj = 0;
@@ -1725,7 +1721,7 @@ namespace OpenLogReplicator {
         sysTabSubPartStmt.defineUInt32(4, sysTabSubPartPobj);
 
         int64_t sysTabSubPartRet = sysTabSubPartStmt.executeQuery();
-        while (sysTabSubPartRet) {
+        while (sysTabSubPartRet != 0) {
             schema->sysTabSubPartPack.addWithKeys(ctx, new SysTabSubPart(typeRowId(sysTabSubPartRowidStr), sysTabSubPartObj, sysTabSubPartDataObj,
                                                                          sysTabSubPartPobj));
             metadata->schema->touchTablePart(sysTabSubPartObj);
@@ -1740,7 +1736,7 @@ namespace OpenLogReplicator {
                                                   DbTable::OPTIONS options) {
         std::string ownerRegexp("^" + owner + "$");
         std::string tableRegexp("^" + table + "$");
-        bool single = DbTable::isSystemTable(options);
+        const bool single = DbTable::isSystemTable(options);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "read dictionaries for owner: " + owner + ", table: " + table + ", options: " +
                                             std::to_string(static_cast<uint>(options)));
@@ -1769,8 +1765,8 @@ namespace OpenLogReplicator {
             sysUserStmt.defineUInt64(5, sysUserSpare12);
 
             int64_t sysUserRet = sysUserStmt.executeQuery();
-            while (sysUserRet) {
-                typeRowId sysUserRowid(sysUserRowidStr);
+            while (sysUserRet != 0) {
+                const typeRowId sysUserRowid(sysUserRowidStr);
                 auto sysUserMapRowIdIt = schema->sysUserPack.mapRowId.find(sysUserRowid);
                 if (sysUserMapRowIdIt != schema->sysUserPack.mapRowId.end()) {
                     if (!single) {
@@ -1832,8 +1828,8 @@ namespace OpenLogReplicator {
                 sysObjStmt.defineUInt64(8, sysObjFlags2);
 
                 int64_t sysObjRet = sysObjStmt.executeQuery();
-                while (sysObjRet) {
-                    typeRowId sysObjRowId(sysObjRowidStr);
+                while (sysObjRet != 0) {
+                    const typeRowId sysObjRowId(sysObjRowidStr);
                     auto sysObjMapRowIdIt = schema->sysObjPack.mapRowId.find(sysObjRowId);
                     if (sysObjMapRowIdIt != schema->sysObjPack.mapRowId.end()) {
                         SysObj* sysObj = sysObjMapRowIdIt->second;
@@ -1877,9 +1873,8 @@ namespace OpenLogReplicator {
         } catch (RuntimeException& ex) {
             if (ex.supCode == 8181) {
                 throw BootException(10035, "can't read schema from flashback, provide a valid starting SCN value");
-            } else {
-                throw BootException(ex.code, ex.msg);
             }
+            throw BootException(ex.code, ex.msg);
         }
     }
 
@@ -1902,10 +1897,10 @@ namespace OpenLogReplicator {
             return;
 
         contextSet(CONTEXT::CHKPT, REASON::CHKPT);
-        std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
+        std::unique_lock<std::mutex> const lck(metadata->mtxCheckpoint);
 
         // Reload incarnation ctx
-        typeResetlogs oldResetlogs = metadata->resetlogs;
+        typeResetlogs const oldResetlogs = metadata->resetlogs;
         for (DbIncarnation* oi: metadata->dbIncarnations)
             delete oi;
         metadata->dbIncarnations.clear();
@@ -1919,8 +1914,8 @@ namespace OpenLogReplicator {
             char databaseRole[129];
             stmt.defineString(1, databaseRole, sizeof(databaseRole));
 
-            if (stmt.executeQuery()) {
-                std::string roleStr(databaseRole);
+            if (stmt.executeQuery() != 0) {
+                const std::string roleStr(databaseRole);
                 if (roleStr == "PRIMARY") {
                     if (standby) {
                         standby = false;
@@ -1956,9 +1951,9 @@ namespace OpenLogReplicator {
             stmt.defineUInt32(6, priorIncarnation);
 
             int64_t ret = stmt.executeQuery();
-            while (ret) {
-                auto oi = new DbIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status,
-                                            resetlogs, priorIncarnation);
+            while (ret != 0) {
+                auto* oi = new DbIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status,
+                                             resetlogs, priorIncarnation);
                 metadata->dbIncarnations.insert(oi);
 
                 // Search prev value
@@ -1978,7 +1973,7 @@ namespace OpenLogReplicator {
             DatabaseStatement stmt(conn);
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
                 ctx->logTrace(Ctx::TRACE::SQL, SQL_GET_LOGFILE_LIST);
-                ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(standby));
+                ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(standby ? 1 : 0));
             }
             stmt.createStatement(SQL_GET_LOGFILE_LIST);
             if (standby)
@@ -1994,15 +1989,15 @@ namespace OpenLogReplicator {
             int64_t lastGroup = -1;
 
             int64_t ret = stmt.executeQuery();
-            while (ret) {
-                if (group != lastGroup) {
+            while (ret != 0) {
+                if (group != lastGroup || onlineReader == nullptr) {
                     onlineReader = readerCreate(group);
                     onlineReader->paths.clear();
                     lastGroup = group;
                 }
-                std::string path(pathStr);
+                const std::string path(pathStr);
                 onlineReader->paths.push_back(path);
-                auto redoLog = new RedoLog(group, pathStr);
+                auto* redoLog = new RedoLog(group, pathStr);
                 metadata->redoLogs.insert(redoLog);
 
                 ret = stmt.next();
@@ -2011,8 +2006,7 @@ namespace OpenLogReplicator {
             if (readers.empty()) {
                 if (standby)
                     throw RuntimeException(10036, "failed to find standby redo log files");
-                else
-                    throw RuntimeException(10037, "failed to find online redo log files");
+                throw RuntimeException(10037, "failed to find online redo log files");
             }
         }
         checkOnlineRedoLogs();
@@ -2020,7 +2014,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::archGetLogOnline(Replicator* replicator) {
-        ReplicatorOnline* replicatorOnline = dynamic_cast<ReplicatorOnline*>(replicator);
+        auto* replicatorOnline = dynamic_cast<ReplicatorOnline*>(replicator);
         if (replicatorOnline == nullptr)
             return;
 
@@ -2050,12 +2044,12 @@ namespace OpenLogReplicator {
             stmt.defineUInt64(4, nextScn);
 
             int64_t ret = stmt.executeQuery();
-            while (ret) {
+            while (ret != 0) {
                 std::string mappedPath(path);
                 replicator->applyMapping(mappedPath);
 
-                auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
-                                         replicator->transactionBuffer, 0, mappedPath);
+                auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
+                                          replicator->transactionBuffer, 0, mappedPath);
                 parser->firstScn = firstScn;
                 parser->nextScn = nextScn;
                 parser->sequence = sequence;

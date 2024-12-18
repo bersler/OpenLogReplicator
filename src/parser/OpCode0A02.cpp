@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
                     return;
                 *ctx->dumpStream << "slots: \n";
                 for (uint i = 0; i < keys; ++i) {
-                    const uint16_t val = ctx->read16(redoLogRecord->data(fieldPos + 12 + i * 2));
+                    const uint16_t val = ctx->read16(redoLogRecord->data(fieldPos + 12 + (i * 2)));
                     *ctx->dumpStream << " " << std::dec << val;
                 }
                 *ctx->dumpStream << '\n';
@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
 
             *ctx->dumpStream << "each key size is: \n";
             for (uint i = 0; i < keys; ++i) {
-                const uint16_t val = ctx->read16(redoLogRecord->data(fieldPos + i * 2));
+                const uint16_t val = ctx->read16(redoLogRecord->data(fieldPos + (i * 2)));
                 *ctx->dumpStream << " " << std::dec << val;
             }
             *ctx->dumpStream << '\n';

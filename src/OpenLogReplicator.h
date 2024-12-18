@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef OPEN_LOG_REPLICATOR_H_
+#define OPEN_LOG_REPLICATOR_H_
+
 #include <list>
 #include <rapidjson/document.h>
 #include <string>
-
-#ifndef OPENLOGREPLICATOR_H_
-#define OPENLOGREPLICATOR_H_
 
 namespace OpenLogReplicator {
     class Builder;
@@ -45,16 +45,16 @@ namespace OpenLogReplicator {
         std::vector<MemoryManager*> memoryManagers;
         std::vector<TransactionBuffer*> transactionBuffers;
         std::vector<Writer*> writers;
-        Replicator* replicator;
-        int fid;
-        char* configFileBuffer;
+        Replicator* replicator{nullptr};
+        int fid{-1};
+        char* configFileBuffer{nullptr};
         std::string configFileName;
         Ctx* ctx;
 
         void mainProcessMapping(const rapidjson::Value& readerJson);
 
     public:
-        OpenLogReplicator(const std::string& newConfigFileName, Ctx* newCtx);
+        OpenLogReplicator(std::string  newConfigFileName, Ctx* newCtx);
         virtual ~OpenLogReplicator();
         int run();
     };

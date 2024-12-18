@@ -36,12 +36,12 @@ namespace OpenLogReplicator {
 
     public:
         BoolValue(VALUE newBoolType, Expression* newLeft, Expression* newRight);
-        virtual ~BoolValue();
+        ~BoolValue() override;
 
-        virtual bool isBool() override { return true; }
+        bool isBool() override { return true; }
 
-        virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
-        virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
     };
 }
 

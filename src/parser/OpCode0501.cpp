@@ -131,7 +131,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMD) {
                 for (typeCC i = 0; i < redoLogRecord->nRow; ++i)
                     *ctx->dumpStream << "slot[" << static_cast<uint>(i) << "]: " << std::dec <<
-                            ctx->read16(redoLogRecord->data(redoLogRecord->slotsDelta + i * 2)) << '\n';
+                            ctx->read16(redoLogRecord->data(redoLogRecord->slotsDelta + (i * 2))) << '\n';
             }
         }
 
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
                     }
 
                     if (unlikely(ctx->dumpRedoLog >= 1))
-                        dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), ctx->read16(colNums), fieldSize, *nulls & bits);
+                        dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), ctx->read16(colNums), fieldSize, (*nulls & bits) != 0);
                     colNums += 2;
                     bits <<= 1;
                     if (bits == 0) {
@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
                                                           std::to_string(redoLogRecord->dataOffset));
 
                         if (unlikely(ctx->dumpRedoLog >= 1))
-                            dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), i, fieldSize, *nulls & bits);
+                            dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), i, fieldSize, (*nulls & bits) != 0);
                         bits <<= 1;
                         if (bits == 0) {
                             bits = 1;
@@ -459,7 +459,7 @@ namespace OpenLogReplicator {
                 *ctx->dumpStream << "number of keys: " << std::dec << keySizes << " \n";
                 *ctx->dumpStream << "key sizes:\n";
                 for (uint16_t j = 0; j < keySizes; ++j) {
-                    const uint16_t key = ctx->read16(redoLogRecord->data(fieldPos + 24 + j * 2));
+                    const uint16_t key = ctx->read16(redoLogRecord->data(fieldPos + 24 + (j * 2)));
                     *ctx->dumpStream << " " << std::dec << key;
                     if ((j % 128) == 127 && j != keySizes - 1)
                         *ctx->dumpStream << '\n';
@@ -542,13 +542,13 @@ namespace OpenLogReplicator {
         redoLogRecord->suppLogLenDelta = fieldPos;
         redoLogRecord->suppLogRowData = fieldNum + 1;
 
-        for (typeCC i = 0; i < redoLogRecord->suppLogCC; ++i) {
+        for (uint16_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
             RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x05011A);
 
             ++suppLogFieldCnt;
             suppLogSize += (fieldSize + 3) & 0xFFFC;
             if (unlikely(ctx->dumpRedoLog >= 2))
-                dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), ctx->read16(colNumsSupp), fieldSize, 0, true);
+                dumpCols(ctx, redoLogRecord, redoLogRecord->data(fieldPos), ctx->read16(colNumsSupp), fieldSize, false, true);
             colNumsSupp += 2;
         }
 

@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
     class SysECol final {
     public:
         typeRowId rowId;
-        typeObj tabObj;
-        typeCol colNum;            // NULL
-        typeCol guardId;           // NULL
+        typeObj tabObj{0};
+        typeCol colNum{0};            // NULL
+        typeCol guardId{-1};           // NULL
 
         SysECol(typeRowId newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId) :
                 rowId(newRowId),
@@ -39,42 +39,39 @@ namespace OpenLogReplicator {
         }
 
         explicit SysECol(typeRowId newRowId) :
-                rowId(newRowId),
-                tabObj(0),
-                colNum(0),
-                guardId(-1) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysECol& other) const {
             return (other.rowId != rowId) || (other.tabObj != tabObj) || (other.colNum != colNum) || (other.guardId != guardId);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.ECOL$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", TABOBJ#: " + std::to_string(tabObj) + ", COLNUM: " + std::to_string(colNum) + ", GUARD_ID: " +
                    std::to_string(guardId);
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return tabObj;
         }
     };

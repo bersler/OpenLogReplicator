@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef CHECKPOINT_H_
+#define CHECKPOINT_H_
+
 #include <condition_variable>
 #include <mutex>
 #include <set>
@@ -26,9 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Thread.h"
 #include "../common/types.h"
 #include "../common/typeXid.h"
-
-#ifndef CHECKPOINT_H_
-#define CHECKPOINT_H_
 
 namespace OpenLogReplicator {
     class Metadata;
@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         std::mutex mtx;
         std::condition_variable condLoop;
-        char* configFileBuffer;
+        char* configFileBuffer{nullptr};
         std::string configFileName;
         time_t configFileChange;
 
@@ -51,14 +51,14 @@ namespace OpenLogReplicator {
         void updateConfigFile();
 
     public:
-        Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, const std::string& newConfigFileName, time_t newConfigFileChange);
-        virtual ~Checkpoint();
+        Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, std::string newConfigFileName, time_t newConfigFileChange);
+        ~Checkpoint() override;
 
         void wakeUp() override;
         void run() override;
 
         const std::string getName() const override {
-            return std::string{"Checkpoint"};
+            return {"Checkpoint"};
         }
     };
 }

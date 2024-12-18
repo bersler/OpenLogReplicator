@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.7.1
-:revdate: 2024-12-14
+:revdate: 2024-12-19
 :imagesdir: ./images
 :toc: preamble
 
@@ -715,7 +715,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50038: "can't remove table (obj: <number>, dataobj: <number>)"
 
-==== code 50039: "transaction <xid> conflicts with <xid>"
+==== code 50039: "transaction <xid> conflicts with <xid>, offset: <number>"
 
 ==== code 50040: "block size (<number>) exceeding max block size (<number>), please report this issue"
 

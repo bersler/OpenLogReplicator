@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
     class SysTabSubPart final {
     public:
         typeRowId rowId;
-        typeObj obj;
-        typeDataObj dataObj;        // NULL
-        typeObj pObj;
+        typeObj obj{0};
+        typeDataObj dataObj{0};        // NULL
+        typeObj pObj{0};
 
         SysTabSubPart(typeRowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newPObj) :
                 rowId(newRowId),
@@ -39,42 +39,39 @@ namespace OpenLogReplicator {
         }
 
         explicit SysTabSubPart(typeRowId newRowId) :
-                rowId(newRowId),
-                obj(0),
-                dataObj(0),
-                pObj(0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysTabSubPart& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.pObj != pObj);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.TABSUBPART$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", DATAOBJ#: " + std::to_string(dataObj) + ", POBJ#: " +
                    std::to_string(pObj);
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return false;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return true;
         }
 
-        typeObj getDependentTablePart() const {
+        [[nodiscard]] typeObj getDependentTablePart() const {
             return obj;
         }
     };

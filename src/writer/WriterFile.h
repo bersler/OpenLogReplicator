@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Writer.h"
-
 #ifndef WRITER_FILE_H_
 #define WRITER_FILE_H_
+
+#include "Writer.h"
 
 namespace OpenLogReplicator {
     class WriterFile final : public Writer {
@@ -31,26 +31,26 @@ namespace OpenLogReplicator {
         static constexpr uint BUFFER_SIZE = 1024 * 1024;
         static constexpr uint BUFFER_FLUSH = 512 * 1024;
 
-        size_t prefixPos;
-        size_t suffixPos;
-        MODE mode;
-        uint64_t fill;
+        size_t prefixPos{0};
+        size_t suffixPos{0};
+        MODE mode{MODE::STDOUT};
+        uint64_t fill{0};
         std::string output;
         std::string pathName;
         std::string fullFileName;
         std::string fileNameMask;
         std::string timestampFormat;
-        uint64_t fileNameNum;
-        uint64_t fileSize;
+        uint64_t fileNameNum{0};
+        uint64_t fileSize{0};
         uint64_t maxFileSize;
-        int outputDes;
+        int outputDes{-1};
         uint64_t newLine;
         uint64_t append;
-        typeSeq lastSequence;
-        const uint8_t* newLineMsg;
-        bool warningDisplayed;
+        typeSeq lastSequence{Ctx::ZERO_SEQ};
+        const uint8_t* newLineMsg{nullptr};
+        bool warningDisplayed{false};
         uint8_t buffer[BUFFER_SIZE];
-        uint bufferFill;
+        uint bufferFill{0};
 
         void closeFile();
         void checkFile(typeScn scn, typeSeq sequence, uint64_t size);

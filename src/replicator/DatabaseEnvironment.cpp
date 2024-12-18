@@ -25,8 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     DatabaseEnvironment::DatabaseEnvironment(Ctx* newCtx) :
-            ctx(newCtx),
-            envhp(nullptr) {
+            ctx(newCtx) {
     }
 
     DatabaseEnvironment::~DatabaseEnvironment() {
@@ -96,7 +95,7 @@ namespace OpenLogReplicator {
                 throw RuntimeException(10051, "OCI: OCI_CONTINUE");
 
             case OCI_ROWCBK_DONE:
-                throw RuntimeException(10051, "OCI: OCI_CONTINUE");
+                throw RuntimeException(10051, "OCI: OCI_ROWCBK_DONE");
         }
     }
 }

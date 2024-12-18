@@ -25,14 +25,6 @@ namespace OpenLogReplicator {
             page(newPage) {
     }
 
-    LobKey::LobKey(const LobKey& other) :
-            lobId(other.lobId),
-            page(other.page) {
-    }
-
-    LobKey::~LobKey() {
-    }
-
     bool LobKey::operator==(const LobKey& other) const {
         return (other.lobId == lobId) && (other.page == page);
     }
@@ -49,12 +41,6 @@ namespace OpenLogReplicator {
 
     bool LobKey::operator!=(const LobKey& other) const {
         return (other.lobId != lobId) || (other.page != page);
-    }
-
-    LobKey& LobKey::operator=(const LobKey& other) {
-        lobId = other.lobId;
-        page = other.page;
-        return *this;
     }
 }
 

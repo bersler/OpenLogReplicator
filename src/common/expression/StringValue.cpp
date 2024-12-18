@@ -17,17 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <utility>
+
 #include "../exception/RuntimeException.h"
 #include "StringValue.h"
 
 namespace OpenLogReplicator {
-    StringValue::StringValue(TYPE newStringType, const std::string& newStringValue) :
-            Expression(),
+    StringValue::StringValue(TYPE newStringType, std::string newStringValue) :
             stringType(newStringType),
-            stringValue(newStringValue) {
-    }
-
-    StringValue::~StringValue() {
+            stringValue(std::move(newStringValue)) {
     }
 
     bool StringValue::evaluateToBool(char op __attribute__((unused)), const std::unordered_map<std::string, std::string>* attributes __attribute__((unused))) {
@@ -44,7 +42,7 @@ namespace OpenLogReplicator {
             }
 
             case TYPE::OP:
-                return std::string(1, op);
+                return {op};
 
             case TYPE::VALUE:
                 return stringValue;

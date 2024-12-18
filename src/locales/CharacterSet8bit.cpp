@@ -21,8 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     CharacterSet8bit::CharacterSet8bit(const char* newName, const typeUnicode16* newMap) :
-            CharacterSet7bit(newName, newMap),
-            customAscii(false) {
+            CharacterSet7bit(newName, newMap) {
     }
 
     CharacterSet8bit::CharacterSet8bit(const char* newName, const typeUnicode16* newMap, bool newCustomAscii) :
@@ -30,10 +29,8 @@ namespace OpenLogReplicator {
             customAscii(newCustomAscii) {
     }
 
-    CharacterSet8bit::~CharacterSet8bit() = default;
-
     typeUnicode CharacterSet8bit::decode(const Ctx* ctx __attribute__((unused)), typeXid xid __attribute__((unused)), const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
         return readMap(byte1);
     }
@@ -41,10 +38,9 @@ namespace OpenLogReplicator {
     typeUnicode CharacterSet8bit::readMap(uint64_t character) const {
         if (customAscii)
             return map[character];
-        else if (character <= 127)
+        if (character <= 127)
             return character;
-        else
-            return map[character - 128];
+        return map[character - 128];
     }
 
     typeUnicode16 CharacterSet8bit::unicode_map_AR8ADOS710[128]{

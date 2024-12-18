@@ -17,14 +17,14 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef REDO_LOG_RECORD_H_
+#define REDO_LOG_RECORD_H_
+
 #include "Ctx.h"
 #include "types.h"
 #include "typeLobId.h"
 #include "typeXid.h"
 #include "exception/RedoLogException.h"
-
-#ifndef REDO_LOG_RECORD_H_
-#define REDO_LOG_RECORD_H_
 
 namespace OpenLogReplicator {
     class RedoLogRecord final {
@@ -153,7 +153,41 @@ namespace OpenLogReplicator {
         uint8_t seq;
         bool compressed;
 
-        inline const uint8_t* data(uint shift = 0) const {
+        [[nodiscard]] std::string toString() const {
+            std::ostringstream ss;
+            ss << "O scn: " << PRINTSCN64(scnRecord) <<
+               " scn: " << std::dec << scn <<
+               " subScn: " << std::dec << subScn <<
+               " xid: " << xid.toString() <<
+               " op: " << std::setfill('0') << std::setw(4) << std::hex << opCode <<
+               " cls: " << std::dec << cls <<
+               " rbl: " << std::dec << rbl <<
+               " seq: " << std::dec << static_cast<uint>(seq) <<
+               " typ: " << std::dec << static_cast<uint>(typ) <<
+               " conId: " << std::dec << conId <<
+               " flgRecord: " << std::dec << flgRecord <<
+               " robj: " << std::dec << recordObj <<
+               " rdataObj: " << std::dec << recordDataObj <<
+               " nrow: " << std::dec << static_cast<uint>(nRow) <<
+               " afn: " << std::dec << afn <<
+               " size: " << std::dec << size <<
+               " dba: 0x" << std::hex << dba <<
+               " bdba: 0x" << std::hex << bdba <<
+               " obj: " << std::dec << obj <<
+               " dataobj: " << std::dec << dataObj <<
+               " usn: " << std::dec << usn <<
+               " slt: " << std::dec << static_cast<uint>(slt) <<
+               " flg: " << std::dec << static_cast<uint>(flg) <<
+               " opc: 0x" << std::hex << opc <<
+               " op: " << std::dec << static_cast<uint>(op) <<
+               " cc: " << std::dec << static_cast<uint>(cc) <<
+               " slot: " << std::dec << slot <<
+               " flags: 0x" << std::hex << static_cast<uint>(flags) <<
+               " fb: 0x" << std::hex << static_cast<uint>(fb);
+            return ss.str();
+        }
+
+        [[nodiscard]] const uint8_t* data(uint shift = 0) const {
             if (dataExt != nullptr)
                 return dataExt + shift;
             return reinterpret_cast<const uint8_t*>(this) + sizeof(RedoLogRecord) + shift;
@@ -168,7 +202,7 @@ namespace OpenLogReplicator {
                 fieldPos = redoLogRecord->fieldPos;
             else
                 fieldPos += (fieldSize + 3) & 0xFFFC;
-            fieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + static_cast<uint>(fieldNum) * 2));
+            fieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + (static_cast<uint>(fieldNum) * 2)));
 
             if (unlikely(fieldPos + fieldSize > redoLogRecord->size))
                 throw RedoLogException(50005, "field size out of vector, field: " + std::to_string(fieldNum) + "/" +
@@ -192,7 +226,7 @@ namespace OpenLogReplicator {
                 fieldPos = redoLogRecord->fieldPos;
             else
                 fieldPos += (fieldSize + 3) & 0xFFFC;
-            fieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + static_cast<uint>(fieldNum) * 2));
+            fieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + (static_cast<uint>(fieldNum) * 2)));
 
             if (unlikely(fieldPos + fieldSize > redoLogRecord->size))
                 throw RedoLogException(50007, "field size out of vector, field: " + std::to_string(fieldNum) + "/" +
@@ -203,7 +237,7 @@ namespace OpenLogReplicator {
 
         static void skipEmptyFields(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize) {
             while (fieldNum + 1U <= redoLogRecord->fieldCnt) {
-                typeSize nextFieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + (static_cast<uint>(fieldNum) + 1) * 2));
+                const typeSize nextFieldSize = ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + ((static_cast<uint>(fieldNum) + 1) * 2)));
                 if (nextFieldSize != 0)
                     return;
                 ++fieldNum;

@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TYPE_INTX_H_
+#define TYPE_INTX_H_
+
 #include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <string>
-
-#ifndef TYPE_INTX_H_
-#define TYPE_INTX_H_
 
 namespace OpenLogReplicator {
     class typeIntX final {
@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         static constexpr uint DIGITS{39};
 
     private:
-        uint64_t data[LENGTH];
+        uint64_t data[LENGTH]{};
         static typeIntX BASE10[DIGITS][10];
 
     public:
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
                 data[i] = 0;
         }
 
-        explicit typeIntX(const typeIntX& other) {
+        typeIntX(const typeIntX& other) {
             for (uint i = 0; i < LENGTH; ++i)
                 data[i] = other.data[i];
         }
@@ -55,11 +55,8 @@ namespace OpenLogReplicator {
         }
 
         typeIntX() {
-            for (uint i = 0; i < LENGTH; ++i)
-                data[i] = 0;
-        }
-
-        ~typeIntX() {
+            for (uint64_t& i : data)
+                i = 0;
         }
 
         static void initializeBASE10() {
@@ -143,17 +140,17 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isSet64(uint64_t mask) const {
-            return data[0] & mask;
+            return (data[0] & mask) != 0;
         }
 
         [[nodiscard]] bool isZero() const {
-            for (uint i = 0; i < LENGTH; ++i)
-                if (data[i] != 0)
+            for (uint64_t const i : data)
+                if (i != 0)
                     return false;
             return true;
         }
 
-        std::string toString(void) const {
+        [[nodiscard]] std::string toString() const {
             std::ostringstream ss;
             ss << "[";
             for (uint i = 0; i < LENGTH; ++i) {

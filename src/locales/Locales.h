@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef LOCALES_H_
+#define LOCALES_H_
+
 #include <unordered_map>
 
 #include "../common/types.h"
-
-#ifndef LOCALES_H_
-#define LOCALES_H_
 
 namespace OpenLogReplicator {
     class CharacterSet;

@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
 
         void clear(const Ctx* ctx) {
             for (auto& [typeRowId, data]: mapRowId) {
-                if constexpr (!std::is_same<KeyMap, TabRowIdKeyDefault>::value) {
+                if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                     KeyMap key(data);
                     auto it = mapKey.find(key);
                     if (unlikely(it == mapKey.end()))
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
                         mapKey.erase(it);
                 }
 
-                if constexpr (!std::is_same<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>::value) {
+                if constexpr (!std::is_same_v<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>) {
                     KeyUnorderedMap key(data);
                     auto it = unorderedMapKey.find(key);
                     if (unlikely(it == unorderedMapKey.end()))
@@ -81,13 +81,13 @@ namespace OpenLogReplicator {
             }
             mapRowId.clear();
 
-            if constexpr (!std::is_same<KeyMap, TabRowIdKeyDefault>::value) {
+            if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                 if (!mapKey.empty())
                     ctx->error(50029, "key map " + Data::tableName() + " not empty, left: " + std::to_string(mapKey.size()) + " at exit");
                 mapKey.clear();
             }
 
-            if constexpr (!std::is_same<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>::value) {
+            if constexpr (!std::is_same_v<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>) {
                 if (!unorderedMapKey.empty())
                     ctx->error(50029, "key map2 " + Data::tableName() + " not empty, left: " + std::to_string(unorderedMapKey.size()) + " at exit");
                 unorderedMapKey.clear();
@@ -100,7 +100,8 @@ namespace OpenLogReplicator {
                 if (it == other.mapRowId.end()) {
                     msgs.assign("schema mismatch: " + Data::tableName() + " lost ROWID: " + data->rowId.toString());
                     return false;
-                } else if (*data != *(it->second)) {
+                }
+                if (*data != *(it->second)) {
                     msgs.assign("schema mismatch: " + Data::tableName() + " differs ROWID: " + data->rowId.toString());
                     return false;
                 }
@@ -170,7 +171,7 @@ namespace OpenLogReplicator {
         }
 
         void addKeys(Data* data) {
-            if constexpr (!std::is_same<KeyMap, TabRowIdKeyDefault>::value) {
+            if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                 KeyMap key(data);
                 auto it = mapKey.find(key);
                 if (unlikely(it != mapKey.end()))
@@ -178,7 +179,7 @@ namespace OpenLogReplicator {
                 mapKey.insert_or_assign(key, data);
             }
 
-            if constexpr (!std::is_same<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>::value) {
+            if constexpr (!std::is_same_v<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>) {
                 KeyUnorderedMap key(data);
                 auto it = unorderedMapKey.find(key);
                 if (unlikely(it != unorderedMapKey.end()))
@@ -188,7 +189,7 @@ namespace OpenLogReplicator {
         }
 
         void dropKeys(Data* data) {
-            if constexpr (!std::is_same<KeyMap, TabRowIdKeyDefault>::value) {
+            if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                 KeyMap key(data);
                 auto it = mapKey.find(key);
                 if (unlikely(it == mapKey.end()))
@@ -196,7 +197,7 @@ namespace OpenLogReplicator {
                 mapKey.erase(it);
             }
 
-            if constexpr (!std::is_same<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>::value) {
+            if constexpr (!std::is_same_v<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>) {
                 KeyUnorderedMap key(data);
                 auto it = unorderedMapKey.find(key);
                 if (unlikely(it == unorderedMapKey.end()))

@@ -27,8 +27,8 @@ namespace OpenLogReplicator {
     class SysLobCompPart final {
     public:
         typeRowId rowId;
-        typeObj partObj;
-        typeObj lObj;
+        typeObj partObj{0};
+        typeObj lObj{0};
 
         SysLobCompPart(typeRowId newRowId, typeObj newPartObj, typeObj newLObj) :
                 rowId(newRowId),
@@ -37,40 +37,38 @@ namespace OpenLogReplicator {
         }
 
         explicit SysLobCompPart(typeRowId newRowId) :
-                rowId(newRowId),
-                partObj(0),
-                lObj(0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysLobCompPart& other) const {
             return (other.rowId != rowId) || (other.partObj != partObj) || (other.lObj != lObj);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.LOBCOMPPART$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", PARTOBJ#: " + std::to_string(partObj) + ", LOBJ#: " + std::to_string(lObj);
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return false;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return true;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTableLob() const {
+        [[nodiscard]] typeObj getDependentTableLob() const {
             return lObj;
         }
     };

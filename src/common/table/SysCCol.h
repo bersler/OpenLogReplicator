@@ -28,10 +28,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysCCol final : public TabRowId {
     public:
-        typeCon con;
-        typeCol intCol;
-        typeObj obj;
-        typeIntX spare1;            // NULL
+        typeCon con{0};
+        typeCol intCol{0};
+        typeObj obj{0};
+        typeIntX spare1{0, 0};            // NULL
 
         SysCCol(typeRowId newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
                 TabRowId(newRowId),
@@ -42,43 +42,39 @@ namespace OpenLogReplicator {
         }
 
         explicit SysCCol(typeRowId newRowId) :
-                TabRowId(newRowId),
-                con(0),
-                intCol(0),
-                obj(0),
-                spare1(0, 0) {
+                TabRowId(newRowId) {
         }
 
         bool operator!=(const SysCCol& other) const {
             return (other.rowId != rowId) || (other.con != con) || (other.intCol != intCol) || (other.obj != obj) || (other.spare1 != spare1);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.CCOL$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", CON#: " + std::to_string(con) + ", INTCOL#: " + std::to_string(intCol) + ", OBJ#: " +
                    std::to_string(obj) + ", SPARE1: " + spare1.toString();
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return obj;
         }
     };

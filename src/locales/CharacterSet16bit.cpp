@@ -30,10 +30,8 @@ namespace OpenLogReplicator {
             byte2max(newByte2max) {
     }
 
-    CharacterSet16bit::~CharacterSet16bit() = default;
-
     typeUnicode CharacterSet16bit::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
-        uint64_t byte1 = *str++;
+        const uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)
             return byte1;
@@ -41,7 +39,7 @@ namespace OpenLogReplicator {
         if (length == 0)
             return badChar(ctx, xid, byte1);
 
-        uint64_t byte2 = *str++;
+        const uint64_t byte2 = *str++;
         --length;
 
         if (byte1 < byte1min || byte1 > byte1max || byte2 < byte2min || byte2 > byte2max)
@@ -51,7 +49,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t CharacterSet16bit::readMap(uint64_t byte1, uint64_t byte2) const {
-        return map[(byte1 - byte1min) * (byte2max - byte2min + 1) + (byte2 - byte2min)];
+        return map[((byte1 - byte1min) * (byte2max - byte2min + 1)) + (byte2 - byte2min)];
     }
 
     typeUnicode16 CharacterSet16bit::unicode_map_JA16VMS[(JA16VMS_b1_max - JA16VMS_b1_min + 1) *

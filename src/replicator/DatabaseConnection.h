@@ -33,13 +33,13 @@ namespace OpenLogReplicator {
         std::string password;
         std::string connectString;
         bool sysAsm;
-        bool connected;
+        bool connected{false};
 
         DatabaseEnvironment* env;
-        OCIError* errhp;
-        OCIServer* srvhp;
-        OCISvcCtx* svchp;
-        OCISession* authp;
+        OCIError* errhp{nullptr};
+        OCIServer* srvhp{nullptr};
+        OCISvcCtx* svchp{nullptr};
+        OCISession* authp{nullptr};
 
         DatabaseConnection(DatabaseEnvironment* newEnv, const char* newUser, const char* newPassword, const char* newConnectString, bool newSysAsm);
         ~DatabaseConnection();

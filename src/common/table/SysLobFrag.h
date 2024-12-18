@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
     class SysLobFrag final {
     public:
         typeRowId rowId;
-        typeObj fragObj;
-        typeObj parentObj;
-        typeTs ts;
+        typeObj fragObj{0};
+        typeObj parentObj{0};
+        typeTs ts{0};
 
         SysLobFrag(typeRowId newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
                 rowId(newRowId),
@@ -39,46 +39,43 @@ namespace OpenLogReplicator {
         }
 
         explicit SysLobFrag(typeRowId newRowId) :
-                rowId(newRowId),
-                fragObj(0),
-                parentObj(0),
-                ts(0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysLobFrag& other) const {
             return (other.rowId != rowId) || (other.fragObj != fragObj) || (other.parentObj != parentObj) || (other.ts != ts);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.LOBFRAG$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", FRAGOBJ#: " + std::to_string(fragObj) + ", PARENTOBJ#: " + std::to_string(parentObj) + ", TS#: " +
                    std::to_string(ts);
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return false;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return true;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return true;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTableLob() const {
+        [[nodiscard]] typeObj getDependentTableLob() const {
             return parentObj;
         }
 
-        typeObj getDependentTableLobFrag() const {
+        [[nodiscard]] typeObj getDependentTableLobFrag() const {
             return parentObj;
         }
     };

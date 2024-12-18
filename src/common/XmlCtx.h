@@ -17,8 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef XML_CTX_H_
+#define XML_CTX_H_
+
 #include <map>
 #include <unordered_map>
+
 #include "../common/Ctx.h"
 #include "../common/typeRowId.h"
 #include "../common/types.h"
@@ -26,9 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/table/XdbXNm.h"
 #include "../common/table/XdbXQn.h"
 #include "../common/table/XdbXPt.h"
-
-#ifndef XML_CTX_H_
-#define XML_CTX_H_
 
 namespace OpenLogReplicator {
 
@@ -42,10 +43,10 @@ namespace OpenLogReplicator {
         std::string tokSuf;
         uint64_t flags;
 
-        XmlCtx(Ctx* newCtx, const std::string& newTokSuf, uint64_t newFlags);
+        XmlCtx(Ctx* newCtx, std::string newTokSuf, uint64_t newFlags);
         virtual ~XmlCtx();
 
-        void purgeDicts();
+        void purgeDicts() noexcept;
     };
 }
 #endif

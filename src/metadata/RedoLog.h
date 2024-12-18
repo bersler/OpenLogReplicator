@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef REDO_LOG_H_
+#define REDO_LOG_H_
+
 #include <string>
 
 #include "../common/types.h"
-
-#ifndef REDOLOG_H_
-#define REDOLOG_H_
 
 namespace OpenLogReplicator {
     class RedoLog final {

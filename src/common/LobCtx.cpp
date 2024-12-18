@@ -17,17 +17,16 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cstddef>
+
 #include "LobCtx.h"
 #include "LobData.h"
 #include "RedoLogRecord.h"
 #include "exception/RedoLogException.h"
 
 namespace OpenLogReplicator {
-    LobCtx::~LobCtx() {
-    }
-
     void LobCtx::checkOrphanedLobs(const Ctx* ctx, const typeLobId& lobId, typeXid xid, uint64_t offset) {
-        LobKey lobKey(lobId, 0);
+        const LobKey lobKey(lobId, 0);
         for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
              orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId;) {
 
@@ -50,7 +49,7 @@ namespace OpenLogReplicator {
             lobs.insert_or_assign(lobId, lobData);
         }
 
-        LobDataElement element(page, pageOffset);
+        const LobDataElement element(page, pageOffset);
         auto dataMapIt = lobData->dataMap.find(element);
         if (dataMapIt != lobData->dataMap.end()) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB)))
@@ -60,7 +59,7 @@ namespace OpenLogReplicator {
 
         lobData->dataMap.insert_or_assign(element, data);
 
-        const RedoLogRecord* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(data + sizeof(uint64_t));
+        const auto* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(data + sizeof(uint64_t));
         if (redoLogRecordLob->lobPageSize != 0) {
             if (lobData->pageSize == 0) {
                 lobData->pageSize = redoLogRecordLob->lobPageSize;
@@ -71,7 +70,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        typeDba pageNo = redoLogRecordLob->lobPageNo;
+        const typeDba pageNo = redoLogRecordLob->lobPageNo;
         if (pageNo != RedoLogRecord::INVALID_LOB_PAGE_NO) {
             auto indexMapIt = lobData->indexMap.find(page);
             if (indexMapIt != lobData->indexMap.end()) {
@@ -89,11 +88,11 @@ namespace OpenLogReplicator {
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
             uint8_t* oldData = listMapIt->second;
-            typeDba* dba = reinterpret_cast<typeDba*>(oldData);
+            auto* dba = reinterpret_cast<typeDba*>(oldData);
             *dba = next;
         } else {
-            uint8_t* newData = new uint8_t[8];
-            typeDba* dba = reinterpret_cast<typeDba*>(newData);
+            auto* newData = new uint8_t[8];
+            auto* dba = reinterpret_cast<typeDba*>(newData);
             *(dba++) = next;
             *dba = 0;
 
@@ -106,13 +105,13 @@ namespace OpenLogReplicator {
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
             const uint8_t* oldData = listMapIt->second;
-            const typeDba* oldPage = reinterpret_cast<const typeDba*>(oldData);
+            const auto* oldPage = reinterpret_cast<const typeDba*>(oldData);
             nextPage = *oldPage;
             delete[] oldData;
         }
 
-        uint8_t* newData = new uint8_t[size];
-        typeDba* newPage = reinterpret_cast<typeDba*>(newData);
+        auto* newData = new uint8_t[size];
+        auto* newPage = reinterpret_cast<typeDba*>(newData);
         *newPage = nextPage;
         memcpy(newData + 4, data + 4, size - 4U);
 
@@ -123,7 +122,7 @@ namespace OpenLogReplicator {
         uint32_t aSiz;
         const uint32_t nEnt = ctx->read32(data + 4);
         const uint32_t sIdx = ctx->read32(data + 8);
-        uint8_t* newData = new uint8_t[8 + (sIdx + nEnt) * 8];
+        auto* newData = new uint8_t[8 + ((sIdx + nEnt) * 8)];
 
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
@@ -132,16 +131,16 @@ namespace OpenLogReplicator {
             aSiz = ctx->read32(oldData + 4);
 
             memcpy(newData, oldData, 4);
-            memcpy(newData + 8, oldData + 8, aSiz * 8);
-            memcpy(newData + 8 + sIdx * 8, data + 12, nEnt * 8);
+            memcpy(newData + 8, oldData + 8, static_cast<size_t>(aSiz * 8));
+            memcpy(newData + 8 + static_cast<size_t>(sIdx * 8), data + 12, static_cast<size_t>(nEnt * 8));
 
             aSiz = sIdx + nEnt;
             ctx->write32(newData + 4, aSiz);
             delete[] oldData;
         } else {
             // Not found
-            memset(newData, 0, sIdx * 8 + 8);
-            memcpy(newData + sIdx * 8 + 8, data + 12, nEnt * 8);
+            memset(newData, 0, (sIdx * 8) + 8);
+            memcpy(newData + static_cast<size_t>(sIdx * 8) + 8, data + 12, static_cast<size_t>(nEnt * 8));
 
             aSiz = sIdx + nEnt;
             ctx->write32(newData + 4, aSiz);

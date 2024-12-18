@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
     class SysTabComPart final {
     public:
         typeRowId rowId;
-        typeObj obj;
-        typeDataObj dataObj;        // NULL
-        typeObj bo;
+        typeObj obj{0};
+        typeDataObj dataObj{0};        // NULL
+        typeObj bo{0};
 
         SysTabComPart(typeRowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
                 rowId(newRowId),
@@ -39,41 +39,38 @@ namespace OpenLogReplicator {
         }
 
         explicit SysTabComPart(typeRowId newRowId) :
-                rowId(newRowId),
-                obj(0),
-                dataObj(0),
-                bo(0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysTabComPart& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.bo != bo);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.TABCOMPART$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", DATAOBJ#: " + std::to_string(dataObj) + ", BO#: " + std::to_string(bo);
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return bo;
         }
     };

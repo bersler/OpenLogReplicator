@@ -24,9 +24,6 @@ namespace OpenLogReplicator {
             Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata) {
     }
 
-    WriterDiscard::~WriterDiscard() {
-    }
-
     void WriterDiscard::initialize() {
     }
 

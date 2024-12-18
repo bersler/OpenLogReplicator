@@ -51,41 +51,41 @@ namespace OpenLogReplicator {
         static constexpr uint BAD_CDC_MAX_CNT{20};
 
         std::string database;
-        int fileCopyDes;
-        uint64_t fileSize;
-        typeSeq fileCopySequence;
-        bool hintDisplayed;
+        int fileCopyDes{-1};
+        uint64_t fileSize{0};
+        typeSeq fileCopySequence{0};
+        bool hintDisplayed{false};
         bool configuredBlockSum;
-        bool readBlocks;
-        bool reachedZero;
+        bool readBlocks{false};
+        bool reachedZero{false};
         std::string fileNameWrite;
         int group;
-        typeSeq sequence;
-        typeBlk numBlocksHeader;
-        typeResetlogs resetlogs;
-        typeActivation activation;
-        uint8_t* headerBuffer;
-        uint32_t compatVsn;
-        typeTime firstTimeHeader;
-        typeScn firstScn;
-        typeScn firstScnHeader;
-        typeScn nextScn;
-        typeScn nextScnHeader;
-        typeTime nextTime;
-        uint blockSize;
-        uint64_t sumRead;
-        uint64_t sumTime;
-        uint64_t bufferScan;
-        uint lastRead;
-        time_ut lastReadTime;
-        time_ut readTime;
-        time_ut loopTime;
+        typeSeq sequence{0};
+        typeBlk numBlocksHeader{Ctx::ZERO_BLK};
+        typeResetlogs resetlogs{0};
+        typeActivation activation{0};
+        uint8_t* headerBuffer{nullptr};
+        uint32_t compatVsn{0};
+        typeTime firstTimeHeader{0};
+        typeScn firstScn{Ctx::ZERO_SCN};
+        typeScn firstScnHeader{Ctx::ZERO_SCN};
+        typeScn nextScn{Ctx::ZERO_SCN};
+        typeScn nextScnHeader{Ctx::ZERO_SCN};
+        typeTime nextTime{0};
+        uint blockSize{0};
+        uint64_t sumRead{0};
+        uint64_t sumTime{0};
+        uint64_t bufferScan{0};
+        uint lastRead{0};
+        time_ut lastReadTime{0};
+        time_ut readTime{0};
+        time_ut loopTime{0};
 
         std::mutex mtx;
-        std::atomic<uint64_t> bufferStart;
-        std::atomic<uint64_t> bufferEnd;
-        std::atomic<STATUS> status;
-        std::atomic<REDO_CODE> ret;
+        std::atomic<uint64_t> bufferStart{0};
+        std::atomic<uint64_t> bufferEnd{0};
+        std::atomic<STATUS> status{STATUS::SLEEPING};
+        std::atomic<REDO_CODE> ret{REDO_CODE::OK};
         std::condition_variable condBufferFull;
         std::condition_variable condReaderSleeping;
         std::condition_variable condParserSleeping;
@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
         virtual void redoClose() = 0;
         virtual REDO_CODE redoOpen() = 0;
         virtual int redoRead(uint8_t* buf, uint64_t offset, uint size) = 0;
-        virtual uint readSize(uint lastRead);
+        virtual uint readSize(uint prevRead);
         virtual REDO_CODE reloadHeaderRead();
         REDO_CODE checkBlockHeader(uint8_t* buffer, typeBlk blockNumber, bool showHint);
         REDO_CODE reloadHeader();
@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
 
     public:
         const static char* REDO_MSG[static_cast<uint>(REDO_CODE::CNT)];
-        uint8_t** redoBufferList;
+        uint8_t** redoBufferList{nullptr};
         std::vector<std::string> paths;
         std::string fileName;
 
@@ -143,7 +143,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] bool checkFinished(Thread* t, uint64_t confirmedBufferStart);
 
         const std::string getName() const override {
-            return std::string{"Reader: " + fileName};
+            return {"Reader: " + fileName};
         }
     };
 }

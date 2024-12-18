@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <utility>
+
 #include "../types.h"
 #include "../typeRowId.h"
 
@@ -32,8 +34,8 @@ namespace OpenLogReplicator {
         typeRowId rowId;
         std::string guid;
         std::string tokSuf;
-        uint64_t flags;
-        typeObj obj;
+        uint64_t flags{0};
+        typeObj obj{0};
 
         XdbTtSet(typeRowId newRowId, const char* newGuid, const char* newTokSuf, uint64_t newFlags, typeObj newObj) :
                 rowId(newRowId),
@@ -44,39 +46,35 @@ namespace OpenLogReplicator {
         }
 
         explicit XdbTtSet(typeRowId newRowId) :
-                rowId(newRowId),
-                guid(""),
-                tokSuf(""),
-                flags(0),
-                obj(0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const XdbTtSet& other) const {
             return (other.rowId != rowId) || (other.guid != guid) || (other.tokSuf != tokSuf) || (other.flags != flags) || (other.obj != obj);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "XDB.XDB$TTSET";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", GUID: '" + guid + "', TOKSUF: '" + tokSuf + "', FLAGS: " + std::to_string(flags) + ", OBJ#: " +
                    std::to_string(obj);
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return false;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
     };
@@ -85,8 +83,8 @@ namespace OpenLogReplicator {
     public:
         std::string tokSuf;
 
-        explicit XdbTtSetTokSuf(const std::string& newTokSuf) :
-                tokSuf(newTokSuf) {
+        explicit XdbTtSetTokSuf(std::string newTokSuf) :
+                tokSuf(std::move(newTokSuf)) {
         }
 
         explicit XdbTtSetTokSuf(const XdbTtSet* xdbTtSet) :

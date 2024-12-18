@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SERIALIZER_JSON_H_
+#define SERIALIZER_JSON_H_
+
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 
 #include "Serializer.h"
-
-#ifndef SERIALIZER_JSON_H_
-#define SERIALIZER_JSON_H_
 
 #define SERIALIZER_ENDL     <<'\n'
 
@@ -33,35 +33,35 @@ namespace OpenLogReplicator {
 
     class SerializerJson final : public Serializer {
     protected:
-        void deserializeSysCCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson);
-        void deserializeSysCDef(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson);
-        void deserializeSysCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysColJson);
-        void deserializeSysDeferredStg(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson);
-        void deserializeSysECol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysEColJson);
-        void deserializeSysLob(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobJson);
-        void deserializeSysLobCompPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobCompPartJson);
-        void deserializeSysLobFrag(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobFragJson);
-        void deserializeSysObj(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysObjJson);
-        void deserializeSysTab(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabJson);
-        void deserializeSysTabComPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabComPartJson);
-        void deserializeSysTabPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabPartJson);
-        void deserializeSysTabSubPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabSubPartJson);
-        void deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTsJson);
-        void deserializeSysUser(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson);
-        void deserializeXdbTtSet(Metadata* metadata, const std::string& fileName, const rapidjson::Value& xdbTtSetJson);
-        void deserializeXdbXNm(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXNmJson);
-        void deserializeXdbXPt(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXPtJson);
-        void deserializeXdbXQn(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXQnJson);
+        static void deserializeSysCCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson);
+        static void deserializeSysCDef(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson);
+        static void deserializeSysCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysColJson);
+        static void deserializeSysDeferredStg(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysDeferredStgJson);
+        static void deserializeSysECol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysEColJson);
+        static void deserializeSysLob(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobJson);
+        static void deserializeSysLobCompPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobCompPartJson);
+        static void deserializeSysLobFrag(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobFragJson);
+        static void deserializeSysObj(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysObjJson);
+        static void deserializeSysTab(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabJson);
+        static void deserializeSysTabComPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabComPartJson);
+        static void deserializeSysTabPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabPartJson);
+        static void deserializeSysTabSubPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabSubPartJson);
+        static void deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTsJson);
+        static void deserializeSysUser(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson);
+        static void deserializeXdbTtSet(Metadata* metadata, const std::string& fileName, const rapidjson::Value& xdbTtSetJson);
+        static void deserializeXdbXNm(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXNmJson);
+        static void deserializeXdbXPt(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXPtJson);
+        static void deserializeXdbXQn(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXQnJson);
 
     public:
-        SerializerJson();
-        ~SerializerJson() override;
+        SerializerJson() = default;
+        ~SerializerJson() override = default;
         SerializerJson(const SerializerJson&) = delete;
         SerializerJson& operator=(const SerializerJson&) = delete;
 
         [[nodiscard]] bool deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::vector<std::string>& msgs,
-                                       bool loadMetadata, bool storeSchema) override;
-        virtual void serialize(Metadata* metadata, std::ostringstream& ss, bool noSchema) override;
+                                       bool loadMetadata, bool loadSchema) override;
+        void serialize(Metadata* metadata, std::ostringstream& ss, bool storeSchema) override;
     };
 }
 

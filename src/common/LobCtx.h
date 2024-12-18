@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef LOB_CTX_H_
+#define LOB_CTX_H_
+
 #include <map>
 #include <unordered_map>
 
@@ -25,17 +28,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeLobId.h"
 #include "typeXid.h"
 
-#ifndef LOBCTX_H_
-#define LOBCTX_H_
-
 namespace OpenLogReplicator {
     class Ctx;
     class Schema;
 
     class LobCtx final {
     public:
-        virtual ~LobCtx();
-
         std::unordered_map<typeLobId, LobData*> lobs;
         std::map<LobKey, uint8_t*>* orphanedLobs;
         std::map<typeDba, uint8_t*> listMap;

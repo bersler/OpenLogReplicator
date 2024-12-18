@@ -21,6 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <thread>
+#include <utility>
 #include <unistd.h>
 
 #include "../common/Ctx.h"
@@ -35,17 +36,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, const std::string& newConfigFileName, time_t newConfigFileChange) :
+    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, std::string newConfigFileName, time_t newConfigFileChange) :
             Thread(newCtx, newAlias),
             metadata(newMetadata),
-            configFileBuffer(nullptr),
-            configFileName(newConfigFileName),
+            configFileName(std::move(newConfigFileName)),
             configFileChange(newConfigFileChange) {
     }
 
     Checkpoint::~Checkpoint() {
-        if (configFileBuffer != nullptr)
-            delete[] configFileBuffer;
+        delete[] configFileBuffer;
         configFileBuffer = nullptr;
     }
 
@@ -59,7 +58,7 @@ namespace OpenLogReplicator {
     }
 
     void Checkpoint::trackConfigFile() {
-        struct stat configFileStat;
+        struct stat configFileStat{};
         if (unlikely(stat(configFileName.c_str(), &configFileStat) != 0))
             throw RuntimeException(10003, "file: " + configFileName + " - get metadata returned: " + strerror(errno));
 
@@ -69,7 +68,7 @@ namespace OpenLogReplicator {
         ctx->info(0, "config file changed, reloading");
 
         try {
-            int fid = open(configFileName.c_str(), O_RDONLY);
+            const int fid = open(configFileName.c_str(), O_RDONLY);
             if (unlikely(fid == -1))
                 throw ConfigurationException(10001, "file: " + configFileName + " - open for read returned: " + strerror(errno));
 
@@ -77,11 +76,10 @@ namespace OpenLogReplicator {
                 throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " +
                                                     std::to_string(configFileStat.st_size));
 
-            if (configFileBuffer != nullptr)
-                delete[] configFileBuffer;
+            delete[] configFileBuffer;
 
             configFileBuffer = new char[configFileStat.st_size + 1];
-            uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
+            const uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
             if (unlikely(bytesRead != static_cast<uint64_t>(configFileStat.st_size)))
                 throw ConfigurationException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) +
                                                     " bytes read instead of " + std::to_string(configFileStat.st_size));
@@ -204,11 +202,11 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    for (auto& user: metadata->users)
+                    for (const auto& user: metadata->users)
                         if (unlikely(users.find(user) == users.end()))
                             throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is missing");
 
-                    for (auto& user: users)
+                    for (const auto& user: users)
                         if (unlikely(metadata->users.find(user) == metadata->users.end()))
                             throw ConfigurationException(20007, "file: " + configFileName + " - " + user + " is redundant");
 

@@ -34,23 +34,20 @@ namespace OpenLogReplicator {
             path(newPath) {
     }
 
-    StateDisk::~StateDisk() {
-    }
-
     void StateDisk::list(std::set<std::string>& namesList) const {
         DIR* dir;
         if ((dir = opendir(path.c_str())) == nullptr)
             throw RuntimeException(10012, "directory: " + path + " - can't read");
 
-        struct dirent* ent;
+        const struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                 continue;
 
-            struct stat fileStat;
-            std::string fileName(ent->d_name);
+            struct stat fileStat{};
+            const std::string fileName(ent->d_name);
 
-            std::string fullName(path + "/" + ent->d_name);
+            const std::string fullName(path + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat) != 0) {
                 ctx->warning(10003, "file: " + fileName + " - get metadata returned: " + strerror(errno));
                 continue;
@@ -59,19 +56,19 @@ namespace OpenLogReplicator {
             if (S_ISDIR(fileStat.st_mode))
                 continue;
 
-            std::string suffix(".json");
+            const std::string suffix(".json");
             if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()) != suffix)
                 continue;
 
-            std::string fileBase(fileName.substr(0, fileName.length() - suffix.length()));
+            const std::string fileBase(fileName.substr(0, fileName.length() - suffix.length()));
             namesList.insert(fileBase);
         }
         closedir(dir);
     }
 
     bool StateDisk::read(const std::string& name, uint64_t maxSize, std::string& in) {
-        std::string fileName(path + "/" + name + ".json");
-        struct stat fileStat;
+        const std::string fileName(path + "/" + name + ".json");
+        struct stat fileStat{};
         if (stat(fileName.c_str(), &fileStat) != 0) {
             ctx->warning(10003, "file: " + fileName + " - get metadata returned: " + strerror(errno));
             return false;
@@ -91,7 +88,7 @@ namespace OpenLogReplicator {
     }
 
     void StateDisk::write(const std::string& name, typeScn scn __attribute__((unused)), const std::ostringstream& out) {
-        std::string fileName(path + "/" + name + ".json");
+        const std::string fileName(path + "/" + name + ".json");
         std::ofstream outputStream;
 
         outputStream.open(fileName.c_str(), std::ios::out | std::ios::trunc);
@@ -107,7 +104,7 @@ namespace OpenLogReplicator {
     }
 
     void StateDisk::drop(const std::string& name) {
-        std::string fileName(path + "/" + name + ".json");
+        const std::string fileName(path + "/" + name + ".json");
         if (unlink(fileName.c_str()) != 0)
             throw RuntimeException(10010, "file: " + fileName + " - delete returned: " + strerror(errno));
     }

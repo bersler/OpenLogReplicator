@@ -43,12 +43,12 @@ namespace OpenLogReplicator {
         };
 
         typeRowId rowId;
-        typeObj obj;
-        typeDataObj dataObj;        // NULL
-        typeTs ts;
-        typeCol cluCols;            // NULL
-        typeIntX flags;
-        typeIntX property;
+        typeObj obj{0};
+        typeDataObj dataObj{0};        // NULL
+        typeTs ts{0};
+        typeCol cluCols{0};            // NULL
+        typeIntX flags{0, 0};
+        typeIntX property{0, 0};
 
         SysTab(typeRowId newRowId, typeObj newObj, typeDataObj newDataObj, typeTs newTs, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
                uint64_t newProperty1, uint64_t newProperty2) :
@@ -62,13 +62,7 @@ namespace OpenLogReplicator {
         }
 
         explicit SysTab(typeRowId newRowId) :
-                rowId(newRowId),
-                obj(0),
-                dataObj(0),
-                ts(0),
-                cluCols(0),
-                flags(0, 0),
-                property(0, 0) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysTab& other) const {
@@ -116,32 +110,32 @@ namespace OpenLogReplicator {
             return isFlags(FLAGS::DELAYED_SEGMENT_CREATION);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.TAB$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", DATAOBJ#: " + std::to_string(dataObj) + ", CLUCOLS: " +
                    std::to_string(cluCols) + ", FLAGS: " + flags.toString() + ", PROPERTY: " + property.toString();
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return obj;
         }
     };

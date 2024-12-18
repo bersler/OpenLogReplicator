@@ -200,7 +200,7 @@ namespace OpenLogReplicator {
         uint8_t msgR[Stream::READ_NETWORK_BUFFER];
         std::string msgS;
 
-        uint64_t size = stream->receiveMessageNB(msgR, Stream::READ_NETWORK_BUFFER);
+        const uint64_t size = stream->receiveMessageNB(msgR, Stream::READ_NETWORK_BUFFER);
 
         if (size > 0) {
             request.Clear();
@@ -258,7 +258,7 @@ namespace OpenLogReplicator {
             } else {
                 std::ostringstream ss;
                 ss << "request decoder[" << std::dec << size << "]: ";
-                for (uint64_t i = 0; i < static_cast<uint64_t>(size); ++i)
+                for (uint64_t i = 0; i < size; ++i)
                     ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint>(msgR[i]) << " ";
                 ctx->warning(60033, ss.str());
             }

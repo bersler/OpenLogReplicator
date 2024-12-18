@@ -24,8 +24,6 @@ namespace OpenLogReplicator {
             CharacterSetJA16EUC("JA16EUCTILDE") {
     }
 
-    CharacterSetJA16EUCTILDE::~CharacterSetJA16EUCTILDE() = default;
-
     typeUnicode CharacterSetJA16EUCTILDE::readMap2(uint64_t byte1, uint64_t byte2) const {
         if (byte1 == 0xA1 && byte2 == 0xC1)
             return 0xFF5E;

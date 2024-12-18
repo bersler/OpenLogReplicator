@@ -17,20 +17,20 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Stream.h"
-
 #ifndef STREAM_ZERO_MQ_H_
 #define STREAM_ZERO_MQ_H_
+
+#include "Stream.h"
 
 namespace OpenLogReplicator {
     class StreamZeroMQ final : public Stream {
     protected:
-        void* socket;
-        void* context;
+        void* socket{nullptr};
+        void* context{nullptr};
 
     public:
         StreamZeroMQ(Ctx* newCtx, const char* newUri);
-        virtual ~StreamZeroMQ() override;
+        ~StreamZeroMQ() override;
         StreamZeroMQ(const StreamZeroMQ&) = delete;
         StreamZeroMQ& operator=(const StreamZeroMQ&) = delete;
 

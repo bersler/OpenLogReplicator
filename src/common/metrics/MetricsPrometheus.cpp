@@ -23,68 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     MetricsPrometheus::MetricsPrometheus(TAG_NAMES newTagNames, const char* newBind) :
             Metrics(newTagNames),
-            bind(newBind),
-            exposer(nullptr),
-            bytesConfirmed(nullptr),
-            bytesConfirmedCounter(nullptr),
-            bytesParsed(nullptr),
-            bytesParsedCounter(nullptr),
-            bytesRead(nullptr),
-            bytesReadCounter(nullptr),
-            bytesSent(nullptr),
-            bytesSentCounter(nullptr),
-            checkpoints(nullptr),
-            checkpointsOutCounter(nullptr),
-            checkpointsSkipCounter(nullptr),
-            checkpointLag(nullptr),
-            checkpointLagGauge(nullptr),
-            ddlOps(nullptr),
-            ddlOpsAlterCounter(nullptr),
-            ddlOpsCreateCounter(nullptr),
-            ddlOpsDropCounter(nullptr),
-            ddlOpsOtherCounter(nullptr),
-            ddlOpsPurgeCounter(nullptr),
-            ddlOpsTruncateCounter(nullptr),
-            dmlOps(nullptr),
-            dmlOpsDeleteOutCounter(nullptr),
-            dmlOpsInsertOutCounter(nullptr),
-            dmlOpsUpdateOutCounter(nullptr),
-            dmlOpsDeleteSkipCounter(nullptr),
-            dmlOpsInsertSkipCounter(nullptr),
-            dmlOpsUpdateSkipCounter(nullptr),
-            logSwitches(nullptr),
-            logSwitchesOnlineCounter(nullptr),
-            logSwitchesArchivedCounter(nullptr),
-            logSwitchesLag(nullptr),
-            logSwitchesLagOnlineGauge(nullptr),
-            logSwitchesLagArchivedGauge(nullptr),
-            memoryAllocatedMb(nullptr),
-            memoryAllocatedMbGauge(nullptr),
-            memoryUsedTotalMb(nullptr),
-            memoryUsedTotalMbGauge(nullptr),
-            memoryUsedMb(nullptr),
-            memoryUsedMbBuilderGauge(nullptr),
-            memoryUsedMbMiscGauge(nullptr),
-            memoryUsedMbParserGauge(nullptr),
-            memoryUsedMbReaderGauge(nullptr),
-            memoryUsedMbTransactionsGauge(nullptr),
-            messagesConfirmed(nullptr),
-            messagesConfirmedCounter(nullptr),
-            messagesSent(nullptr),
-            messagesSentCounter(nullptr),
-            swapOperationsMb(nullptr),
-            swapOperationsMbDiscardCounter(nullptr),
-            swapOperationsMbReadCounter(nullptr),
-            swapOperationsMbWriteCounter(nullptr),
-            swapUsageMb(nullptr),
-            swapUsageMbGauge(nullptr),
-            transactions(nullptr),
-            transactionsCommitOutCounter(nullptr),
-            transactionsRollbackOutCounter(nullptr),
-            transactionsCommitPartialCounter(nullptr),
-            transactionsRollbackPartialCounter(nullptr),
-            transactionsCommitSkipCounter(nullptr),
-            transactionsRollbackSkipCounter(nullptr) {
+            bind(newBind) {
     }
 
     MetricsPrometheus::~MetricsPrometheus() {
@@ -303,7 +242,7 @@ namespace OpenLogReplicator {
     }
 
     void MetricsPrometheus::emitDmlOpsDeleteOut(uint64_t counter, const std::string& owner, const std::string& table) {
-        std::string key(owner + "." + table);
+        const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
         auto iter = dmlOpsDeleteOutCounterMap.find(key);
 
@@ -319,7 +258,7 @@ namespace OpenLogReplicator {
     }
 
     void MetricsPrometheus::emitDmlOpsInsertOut(uint64_t counter, const std::string& owner, const std::string& table) {
-        std::string key(owner + "." + table);
+        const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
         auto iter = dmlOpsInsertOutCounterMap.find(key);
 
@@ -335,7 +274,7 @@ namespace OpenLogReplicator {
     }
 
     void MetricsPrometheus::emitDmlOpsUpdateOut(uint64_t counter, const std::string& owner, const std::string& table) {
-        std::string key(owner + "." + table);
+        const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
         auto iter = dmlOpsUpdateOutCounterMap.find(key);
 
@@ -351,7 +290,7 @@ namespace OpenLogReplicator {
     }
 
     void MetricsPrometheus::emitDmlOpsDeleteSkip(uint64_t counter, const std::string& owner, const std::string& table) {
-        std::string key(owner + "." + table);
+        const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
         auto iter = dmlOpsDeleteSkipCounterMap.find(key);
 
@@ -367,7 +306,7 @@ namespace OpenLogReplicator {
     }
 
     void MetricsPrometheus::emitDmlOpsInsertSkip(uint64_t counter, const std::string& owner, const std::string& table) {
-        std::string key(owner + "." + table);
+        const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
         auto iter = dmlOpsInsertSkipCounterMap.find(key);
 
@@ -383,7 +322,7 @@ namespace OpenLogReplicator {
     }
 
     void MetricsPrometheus::emitDmlOpsUpdateSkip(uint64_t counter, const std::string& owner, const std::string& table) {
-        std::string key(owner + "." + table);
+        const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
         auto iter = dmlOpsUpdateSkipCounterMap.find(key);
 

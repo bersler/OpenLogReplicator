@@ -57,13 +57,13 @@ namespace OpenLogReplicator {
         };
 
         typeRowId rowId;
-        typeUser owner;
-        typeObj obj;
-        typeDataObj dataObj;        // NULL
-        OBJTYPE type;
+        typeUser owner{0};
+        typeObj obj{0};
+        typeDataObj dataObj{0};        // NULL
+        OBJTYPE type{OBJTYPE::NEXT_OBJECT};
         std::string name;
-        typeIntX flags;             // NULL
-        bool single;
+        typeIntX flags{0, 0};             // NULL
+        bool single{false};
 
         SysObj(typeRowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, OBJTYPE newType, const char* newName, uint64_t newFlags1,
                uint64_t newFlags2, bool newSingle) :
@@ -78,14 +78,7 @@ namespace OpenLogReplicator {
         }
 
         explicit SysObj(typeRowId newRowId) :
-                rowId(newRowId),
-                owner(0),
-                obj(0),
-                dataObj(0),
-                type(OBJTYPE::NEXT_OBJECT),
-                name(""),
-                flags(0, 0),
-                single(false) {
+                rowId(newRowId) {
         }
 
         bool operator!=(const SysObj& other) const {
@@ -115,32 +108,32 @@ namespace OpenLogReplicator {
             return isFlags(FLAGS::DROPPED);
         }
 
-        static std::string tableName() {
+        [[nodiscard]] static std::string tableName() {
             return "SYS.OBJ$";
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OWNER#: " + std::to_string(owner) + ", OBJ#: " + std::to_string(obj) + ", DATAOBJ#: " +
                    std::to_string(dataObj) + ", TYPE#: " + std::to_string(static_cast<uint>(type)) + ", NAME: '" + name + "', FLAGS: " + flags.toString();
         }
 
-        static constexpr bool dependentTable() {
+        [[nodiscard]] static constexpr bool dependentTable() {
             return true;
         }
 
-        static constexpr bool dependentTableLob() {
+        [[nodiscard]] static constexpr bool dependentTableLob() {
             return false;
         }
 
-        static constexpr bool dependentTableLobFrag() {
+        [[nodiscard]] static constexpr bool dependentTableLobFrag() {
             return false;
         }
 
-        static constexpr bool dependentTablePart() {
+        [[nodiscard]] static constexpr bool dependentTablePart() {
             return false;
         }
 
-        typeObj getDependentTable() const {
+        [[nodiscard]] typeObj getDependentTable() const {
             return obj;
         }
     };
@@ -171,7 +164,7 @@ namespace OpenLogReplicator {
                 return true;
             if (other.owner < owner)
                 return false;
-            int cmp = other.name.compare(name);
+            const int cmp = other.name.compare(name);
             if (0 < cmp)
                 return true;
             if (cmp < 0)

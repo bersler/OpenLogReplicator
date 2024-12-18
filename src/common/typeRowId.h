@@ -17,15 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TYPE_ROWID_H_
+#define TYPE_ROWID_H_
+
 #include <functional>
 #include <cstring>
 
 #include "Ctx.h"
 #include "types.h"
 #include "exception/DataException.h"
-
-#ifndef TYPE_ROWID_H_
-#define TYPE_ROWID_H_
 
 namespace OpenLogReplicator {
     class typeRowId final {
@@ -53,9 +53,9 @@ namespace OpenLogReplicator {
                       (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
                       static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[5])]);
 
-            typeAfn afn = (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[6])]) << 12) |
-                          (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
-                          static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[8])]);
+            const typeAfn afn = (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[6])]) << 12) |
+                                (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
+                                static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[8])]);
 
             dba = (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[9])]) << 30) |
                   (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[10])]) << 24) |
@@ -97,8 +97,8 @@ namespace OpenLogReplicator {
             slot = (static_cast<typeSlot>(data[4]) << 8) |
                    (static_cast<typeSlot>(data[5]));
 
-            typeAfn afn = (static_cast<typeAfn>(data[6]) << 8) |
-                          (static_cast<typeAfn>(data[7]));
+            const typeAfn afn = (static_cast<typeAfn>(data[6]) << 8) |
+                                (static_cast<typeAfn>(data[7]));
 
             dba = (static_cast<typeDataObj>(data[8]) << 24) |
                   (static_cast<typeDataObj>(data[9]) << 16) |
@@ -142,8 +142,8 @@ namespace OpenLogReplicator {
         }
 
         void toString(char* str) const {
-            typeAfn afn = static_cast<typeAfn>(dba >> 22);
-            typeDba bdba = dba & 0x003FFFFF;
+            const auto afn = static_cast<typeAfn>(dba >> 22);
+            const typeDba bdba = dba & 0x003FFFFF;
 
             str[0] = Ctx::map64[(dataObj >> 30) & 0x3F];
             str[1] = Ctx::map64[(dataObj >> 24) & 0x3F];
@@ -166,10 +166,10 @@ namespace OpenLogReplicator {
             str[18] = 0;
         }
 
-        std::string toString() const {
+        [[nodiscard]] std::string toString() const {
             char str[19];
-            typeAfn afn = static_cast<typeAfn>(dba >> 22);
-            typeDba bdba = dba & 0x003FFFFF;
+            auto afn = static_cast<typeAfn>(dba >> 22);
+            const typeDba bdba = dba & 0x003FFFFF;
 
             str[0] = Ctx::map64[(dataObj >> 30) & 0x3F];
             str[1] = Ctx::map64[(dataObj >> 24) & 0x3F];
@@ -190,7 +190,7 @@ namespace OpenLogReplicator {
             str[16] = Ctx::map64[(slot >> 6) & 0x3F];
             str[17] = Ctx::map64[slot & 0x3F];
             str[18] = 0;
-            return std::string(str);
+            return {str};
         }
 
         friend std::ostream& operator<<(std::ostream& os, const typeRowId other) {
@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
     };
 
     class TabRowIdUnorderedKey {
-        bool operator<(const TabRowIdUnorderedKey& other);
+        /*bool operator<(const TabRowIdUnorderedKey& other); */
     };
 
     class TabRowIdKeyDefault final : public TabRowIdUnorderedKey {

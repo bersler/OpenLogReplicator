@@ -27,9 +27,6 @@ namespace OpenLogReplicator {
             tagNames(newTagNames) {
     }
 
-    Metrics::~Metrics() {
-    }
-
     bool Metrics::isTagNamesFilter() {
         return (static_cast<uint>(tagNames) & static_cast<uint>(TAG_NAMES::FILTER)) != 0;
     }

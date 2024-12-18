@@ -17,23 +17,20 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "typeLobId.h"
-
 #ifndef LOB_KEY_H_
 #define LOB_KEY_H_
+
+#include "types.h"
+#include "typeLobId.h"
 
 namespace OpenLogReplicator {
     class LobKey final {
     public:
         LobKey(const typeLobId& newLobId, typeDba newPage);
-        LobKey(const LobKey& other);
-        virtual ~LobKey();
 
         bool operator<(const LobKey& other) const;
         bool operator!=(const LobKey& other) const;
         bool operator==(const LobKey& other) const;
-        LobKey& operator=(const LobKey& other);
 
         typeLobId lobId;
         typeDba page;
