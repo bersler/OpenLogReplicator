@@ -5,6 +5,7 @@
 - fix: minor bug related to swapping
 - enhancement: performance optimizations
 - enhancement: add support for DDL text > 4k
+- fix: sometimes direct IO was not working
 
 1.7.0
 - fix: welcome banner
