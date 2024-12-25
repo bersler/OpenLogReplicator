@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysCDef final {
     public:
-        enum class CDEFTYPE : unsigned short int{
+        enum class CDEFTYPE : unsigned char {
             NONE = 0, TABLE_CHECK = 1, PK = 2, UNIQUE = 3, REFERENTIAL = 4, CHECK = 5, READ_ONLY = 6, CHECK_CONSTR_NOT_NULL = 7, HASH = 8, SCOPED_REF = 9,
             ROWID = 10, REF_NOT_NULL = 11, SUPPLEMENTAL_LOG = 12, SUPPLEMENTAL_LOG_PK = 14, SUPPLEMENTAL_LOG_UNIQUE = 15, SUPPLEMENTAL_LOG_FK = 16,
             SUPPLEMENTAL_LOG_ALL = 17

@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
 
         static constexpr uint NAME_LENGTH = 128;
 
-        enum class OBJTYPE : unsigned short int{
+        enum class OBJTYPE : unsigned char {
             // 11.2
             NEXT_OBJECT = 0, INDEX = 1, TABLE = 2, CLUSTER = 3, VIEW = 4, SYNONYM = 5, SEQUENCE = 6, PROCEDURE = 7, FUNCTION = 8, PACKAGE = 9,
             NON_EXISTENT = 10, PACKAGE_BODY = 11, TRIGGER = 12, TYPE = 13, TYPE_BODY = 14, VARCHAR_STORED_LOB = 21, LIBRARY = 22, JAVA_SOURCE = 28,

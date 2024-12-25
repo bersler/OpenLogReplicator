@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class StringValue : public Expression {
     public:
-        enum class TYPE {
+        enum class TYPE : unsigned char {
             SESSION_ATTRIBUTE, OP, VALUE
         };
 

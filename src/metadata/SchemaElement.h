@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SchemaElement final {
     public:
-        enum class TAG_TYPE {
+        enum class TAG_TYPE : unsigned char {
             NONE, ALL, PK, LIST
         };
 

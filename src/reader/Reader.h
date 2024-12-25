@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Reader : public Thread {
     public:
-        enum class REDO_CODE {
+        enum class REDO_CODE : unsigned char {
             OK, OVERWRITTEN, FINISHED, STOPPED, SHUTDOWN, EMPTY, ERROR_READ, ERROR_WRITE, ERROR_SEQUENCE, ERROR_CRC, ERROR_BLOCK, ERROR_BAD_DATA,
             ERROR, CNT
         };
@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         static constexpr uint64_t FLAGS_CLOSEDTHREAD{0x1000};
         static constexpr uint64_t FLAGS_MAXPERFORMANCE{0x2000};
 
-        enum class STATUS {
+        enum class STATUS : unsigned char {
             SLEEPING, CHECK, UPDATE, READ
         };
 

@@ -63,9 +63,9 @@ namespace OpenLogReplicator {
 
         flags = O_RDONLY;
         fileSize = fileStat.st_size;
-        if ((fileSize & (Ctx::MEMORY_ALIGNMENT - 1)) != 0) {
-            fileSize &= ~(Ctx::MEMORY_ALIGNMENT - 1);
-            ctx->warning(10071, "file: " + fileName + " size is not a multiplication of " + std::to_string(Ctx::MEMORY_ALIGNMENT) + ", reading only " +
+        if ((fileSize & (Ctx::MIN_BLOCK_SIZE - 1)) != 0) {
+            fileSize &= ~(Ctx::MIN_BLOCK_SIZE - 1);
+            ctx->warning(10071, "file: " + fileName + " size is not a multiplication of " + std::to_string(Ctx::MIN_BLOCK_SIZE) + ", reading only " +
                                 std::to_string(fileSize) + " bytes ");
         }
 

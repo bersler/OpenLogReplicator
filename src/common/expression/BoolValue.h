@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class BoolValue : public Expression {
     public:
-        enum class VALUE {
+        enum class VALUE : unsigned char {
             FALSE, TRUE, OPERATOR_AND, OPERATOR_OR, OPERATOR_NOT, OPERATOR_EQUAL, OPERATOR_NOT_EQUAL
         };
 

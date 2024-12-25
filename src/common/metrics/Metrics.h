@@ -27,7 +27,7 @@ namespace OpenLogReplicator {
 
     class Metrics {
     public:
-        enum class TAG_NAMES {
+        enum class TAG_NAMES : unsigned char {
             NONE = 0, FILTER = 1 << 0, SYS = 1 << 2
         };
 

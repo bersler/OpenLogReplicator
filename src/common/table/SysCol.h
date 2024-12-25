@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
             GENERATED_ALWAYS_IDENTITY = 1ULL << 37, GENERATED_BY_DEFAULT_IDENTITY = 1ULL << 38, GUARD = 1ULL << 39
         };
 
-        enum class COLTYPE : unsigned short int{
+        enum class COLTYPE : unsigned char {
             NONE = 0, VARCHAR = 1, NUMBER = 2, LONG = 8, DATE = 12, RAW = 23, LONG_RAW = 24, XMLTYPE = 58, CHAR = 96, FLOAT = 100, DOUBLE = 101, CLOB = 112,
             BLOB = 113, JSON = 119, TIMESTAMP = 180, TIMESTAMP_WITH_TZ = 181, INTERVAL_YEAR_TO_MONTH = 182, INTERVAL_DAY_TO_SECOND = 183, UROWID = 208,
             TIMESTAMP_WITH_LOCAL_TZ = 231, BOOLEAN = 252
@@ -205,6 +205,11 @@ namespace OpenLogReplicator {
         explicit SysColKey(const SysCol* sysCol) :
                 obj(sysCol->obj),
                 intCol(sysCol->intCol) {
+        }
+
+        SysColKey(typeObj newObj, typeCol newIntCol) :
+                obj(newObj),
+                intCol(newIntCol) {
         }
 
         bool operator<(const SysColKey other) const {

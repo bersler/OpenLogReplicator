@@ -509,9 +509,9 @@ namespace OpenLogReplicator {
                     metadata->offset = Ctx::getJsonFieldU64(fileName, document, "offset");
                 }
 
-                if (unlikely((metadata->offset & 511) != 0))
+                if (unlikely((metadata->offset & (Ctx::MIN_BLOCK_SIZE - 1)) != 0))
                     throw DataException(20006, "file: " + fileName + " - invalid offset: " + std::to_string(metadata->offset) +
-                                               " is not a multiplication of 512");
+                                               " is not a multiplication of " + std::to_string(Ctx::MIN_BLOCK_SIZE));
 
                 metadata->minSequence = Ctx::ZERO_SEQ;
                 metadata->minOffset = 0;
