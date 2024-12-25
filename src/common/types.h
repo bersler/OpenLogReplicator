@@ -64,6 +64,7 @@ using typeLwn = uint16_t;
 using typeLwnSize = uint64_t;
 using typeTransactionSize = uint64_t;
 using typeChunkSize = uint32_t;
+using typeTag = uint32_t;
 
 using typeUnicode16 = uint16_t;
 using typeUnicode32 = uint32_t;

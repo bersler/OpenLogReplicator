@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         static constexpr uint64_t CHECKPOINT_SCHEMA_FILE_MAX_SIZE = 2147483648;
 
     public:
-        enum class STATUS {
+        enum class STATUS : unsigned char {
             READY, // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
             START, // Replicator tries to start replication with given parameters.
             REPLICATE // Replication is running. The metadata is initialized, the starting point of replication is defined.

@@ -171,7 +171,7 @@ namespace OpenLogReplicator {
             return REDO_CODE::ERROR;
 
         int actualRead = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2 : PAGE_SIZE_MAX * 2);
-        if (actualRead < 512) {
+        if (actualRead < Ctx::MIN_BLOCK_SIZE) {
             ctx->error(40003, "file: " + fileName + " - " + strerror(errno));
             return REDO_CODE::ERROR_READ;
         }

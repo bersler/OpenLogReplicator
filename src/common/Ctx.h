@@ -51,27 +51,27 @@ namespace OpenLogReplicator {
 
     class Ctx final {
     public:
-        enum class LOCALES {
+        enum class LOCALES : unsigned char {
             TIMESTAMP, MOCK
         };
-        enum class LOG {
+        enum class LOG : unsigned char {
             SILENT, ERROR, WARNING, INFO, DEBUG
         };
-        enum class MEMORY {
+        enum class MEMORY : unsigned char {
             BUILDER, MISC, PARSER, READER, TRANSACTIONS
         };
         static constexpr uint MEMORY_COUNT{5};
-        enum class DISABLE_CHECKS {
+        enum class DISABLE_CHECKS : unsigned char {
             GRANTS = 1 << 0, SUPPLEMENTAL_LOG = 1 << 1, BLOCK_SUM = 1 << 2, JSON_TAGS = 1 << 3
         };
-        enum class REDO_FLAGS {
+        enum class REDO_FLAGS : unsigned int {
             ARCH_ONLY = 1 << 0, SCHEMALESS = 1 << 1, ADAPTIVE_SCHEMA = 1 << 2, DIRECT_DISABLE = 1 << 3, IGNORE_DATA_ERRORS = 1 << 4,
             SHOW_DDL = 1 << 5, SHOW_HIDDEN_COLUMNS = 1 << 6, SHOW_GUARD_COLUMNS = 1 << 7, SHOW_NESTED_COLUMNS = 1 << 8, SHOW_UNUSED_COLUMNS = 1 << 9,
             SHOW_INCOMPLETE_TRANSACTIONS = 1 << 10, SHOW_SYSTEM_TRANSACTIONS = 1 << 11, SHOW_CHECKPOINT = 1 << 12, CHECKPOINT_KEEP = 1 << 13,
             VERIFY_SCHEMA = 1 << 14, RAW_COLUMN_DATA = 1 << 15, EXPERIMENTAL_XMLTYPE = 1 << 16, EXPERIMENTAL_JSON = 1 << 17,
             EXPERIMENTAL_NOT_NULL_MISSING = 1 << 18
         };
-        enum class TRACE {
+        enum class TRACE : unsigned int {
             DML = 1 << 0, DUMP = 1 << 1, LOB = 1 << 2, LWN = 1 << 3, THREADS = 1 << 4, SQL = 1 << 5, FILE = 1 << 6, DISK = 1 << 7, PERFORMANCE = 1 << 8,
             TRANSACTION = 1 << 9, REDO = 1 << 10, ARCHIVE_LIST = 1 << 11, SCHEMA_LIST = 1 << 12, WRITER = 1 << 13, CHECKPOINT = 1 << 14, SYSTEM = 1 << 15,
             LOB_DATA = 1 << 16, SLEEP = 1 << 17, CONDITION = 1 << 18
@@ -91,7 +91,8 @@ namespace OpenLogReplicator {
         static constexpr typeBlk ZERO_BLK{0xFFFFFFFF};
 
         static constexpr uint64_t BAD_TIMEZONE{0x7FFFFFFFFFFFFFFF};
-        static constexpr size_t MEMORY_ALIGNMENT{4096};
+        static constexpr uint MIN_BLOCK_SIZE{512};
+        static constexpr uint MEMORY_ALIGNMENT{4096};
         static constexpr uint MAX_PATH_LENGTH{2048};
 
         static constexpr typeCol COLUMN_LIMIT{1000};
@@ -108,7 +109,7 @@ namespace OpenLogReplicator {
         static constexpr uint JSON_FORMAT_SEPARATOR_LENGTH{128};
         static constexpr uint JSON_TAG_LENGTH{4096};
 
-        static const char map64[65];
+        static const char map64L[65];
         static const char map64R[256];
         static const std::string memoryModules[MEMORY_COUNT];
         static const int64_t cumDays[12];
@@ -266,6 +267,10 @@ namespace OpenLogReplicator {
             if (x < 10)
                 return static_cast<char>('0' + x);
             return static_cast<char>('A' + (x - 10));
+        }
+
+        static char map64(uint x) {
+            return map64L[x];
         }
 
         uint16_t read16(const uint8_t* buf) const {

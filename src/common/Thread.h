@@ -35,11 +35,11 @@ namespace OpenLogReplicator {
         virtual void run() = 0;
 
     public:
-        enum class CONTEXT {
+        enum class CONTEXT : unsigned char {
             NONE, CPU, OS, MUTEX, WAIT, SLEEP, MEM, TRAN, CHKPT,
             NUM
         };
-        enum class REASON {
+        enum class REASON : unsigned char {
             NONE,
             // MUTEX
             BUILDER_RELEASE, BUILDER_ROTATE, BUILDER_COMMIT, CHECKPOINT_RUN, // 1
@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
             // OTHER
             OS, MEM, TRAN, CHKPT, // 67
             // END
-            NUM = 1000
+            NUM = 255
         };
 
         Ctx* ctx;

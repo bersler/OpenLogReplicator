@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
     public:
         static constexpr uint NAME_LENGTH{128};
 
-        enum class SPARE1 {
+        enum class SPARE1 : unsigned char {
             SUPP_LOG_PRIMARY = 1UL << 0, SUPP_LOG_ALL = 1UL << 3
         };
 

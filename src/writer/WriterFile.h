@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class WriterFile final : public Writer {
     protected:
-        enum class MODE {
+        enum class MODE : unsigned char {
             STDOUT, NO_ROTATE, NUM, TIMESTAMP, SEQUENCE
         };
         static constexpr uint BUFFER_SIZE = 1024 * 1024;

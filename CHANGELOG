@@ -1,3 +1,6 @@
+1.8.1
+- fix: archived redo logs are not fully processed
+
 1.8.0
 - code style cleanup
 - changed parameters "scn" and "scn-all" -> "scn-key"

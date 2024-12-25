@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
     };
 
     struct BuilderMsg {
-        enum class OUTPUT_BUFFER : unsigned short int {
+        enum class OUTPUT_BUFFER : unsigned char {
             NONE = 0, ALLOCATED = 1 << 0, CONFIRMED = 1 << 1, CHECKPOINT = 1 << 2
         };
 
@@ -73,13 +73,13 @@ namespace OpenLogReplicator {
         uint64_t id;
         uint64_t queueId;
         std::atomic<uint64_t> size;
-        uint64_t tagSize;
         typeScn scn;
         typeScn lwnScn;
         typeIdx lwnIdx;
         uint8_t* data;
         typeSeq sequence;
         typeObj obj;
+        typeTag tagSize;
         OUTPUT_BUFFER flags;
 
         bool isFlagSet(OUTPUT_BUFFER flag) const {
