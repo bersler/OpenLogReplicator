@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
     void Checkpoint::wakeUp() {
         {
             contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CHECKPOINT_WAKEUP);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             condLoop.notify_all();
         }
         contextSet(Thread::CONTEXT::CPU);
@@ -219,7 +219,7 @@ namespace OpenLogReplicator {
         // Suspend transaction processing for the schema update
         {
             contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
-            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
             metadata->commitElements();
             metadata->schema->purgeMetadata();
 

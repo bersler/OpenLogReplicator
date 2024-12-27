@@ -87,11 +87,11 @@ namespace OpenLogReplicator {
         }
 
         void setFlag(OUTPUT_BUFFER flag) {
-            flags = static_cast<OUTPUT_BUFFER>(static_cast<OUTPUT_BUFFER>(static_cast<uint>(flags) | static_cast<uint>(flag)));
+            flags = static_cast<OUTPUT_BUFFER>(static_cast<uint>(flags) | static_cast<uint>(flag));
         }
 
         void unsetFlag(OUTPUT_BUFFER flag) {
-            flags = static_cast<OUTPUT_BUFFER>(static_cast<OUTPUT_BUFFER>(static_cast<uint>(flags) & ~static_cast<uint>(flag)));
+            flags = static_cast<OUTPUT_BUFFER>(static_cast<uint>(flags) & ~static_cast<uint>(flag));
         }
     };
 
@@ -196,7 +196,7 @@ namespace OpenLogReplicator {
 
             {
                 ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_ROTATE);
-                std::unique_lock<std::mutex> lck(mtx);
+                std::unique_lock<std::mutex> const lck(mtx);
                 lastBuilderQueue->next = nextBuffer;
                 ++buffersAllocated;
                 lastBuilderQueue = nextBuffer;
@@ -1255,7 +1255,7 @@ namespace OpenLogReplicator {
         void flush() {
             {
                 ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_COMMIT);
-                std::unique_lock<std::mutex> lck(mtx);
+                std::unique_lock<std::mutex> const lck(mtx);
                 condNoWriterWork.notify_all();
             }
             ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);

@@ -36,7 +36,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #endif /* LINK_LIBRARY_ZEROMQ */
 
 enum {
-MAX_CLIENT_MESSAGE_SIZE = (2*1024*1024*1024UL - 1)
+MAX_CLIENT_MESSAGE_SIZE = ((2*1024*1024*1024UL) - 1)
 };
 
 static void send(OpenLogReplicator::pb::RedoRequest& request, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx __attribute__((unused))) {

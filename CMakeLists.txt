@@ -18,12 +18,12 @@
 
 cmake_minimum_required(VERSION 3.16)
 project(OpenLogReplicator
-        VERSION 1.8.1
+        VERSION 1.8.2
         DESCRIPTION "OpenLogReplicator, Open Source Oracle database CDC"
         HOMEPAGE_URL "https://github.com/bersler/OpenLogReplicator"
 )
 
-set(SCHEMA_VERSION "1.8.1")
+set(SCHEMA_VERSION "1.8.2")
 string(TIMESTAMP CMAKE_BUILD_TIMESTAMP "%Y-%m-%d %H:%M" UTC)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)
@@ -55,14 +55,14 @@ find_package(Threads REQUIRED)
 
 # RapidJSON
 if (WITH_RAPIDJSON)
-    include_directories(${WITH_RAPIDJSON}/include)
+    include_directories(SYSTEM ${WITH_RAPIDJSON}/include)
 else ()
     message(FATAL_ERROR "plase provide WITH_RAPIDJSON parameter with path to rapidjson library")
 endif ()
 
 # Oracle, only dynamic
 if (WITH_OCI)
-    include_directories(${WITH_OCI}/sdk/include)
+    include_directories(SYSTEM ${WITH_OCI}/sdk/include)
     link_directories(${WITH_OCI})
     add_compile_definitions(LINK_LIBRARY_OCI)
 endif ()
@@ -73,7 +73,7 @@ endif ()
 
 # Protobuf, dynamic or static
 if (WITH_PROTOBUF)
-    include_directories(${WITH_PROTOBUF}/include)
+    include_directories(SYSTEM ${WITH_PROTOBUF}/include)
     add_compile_definitions(LINK_LIBRARY_PROTOBUF)
 
     if (WITH_STATIC)
@@ -85,7 +85,7 @@ if (WITH_PROTOBUF)
 
     # ZeroMQ, just dynamic
     if (WITH_ZEROMQ)
-        include_directories(${WITH_ZEROMQ}/include)
+        include_directories(SYSTEM ${WITH_ZEROMQ}/include)
         add_compile_definitions(LINK_LIBRARY_ZEROMQ)
         if (MACOSX)
             link_directories(${WITH_ZEROMQ}/lib)
@@ -97,7 +97,7 @@ endif ()
 
 # Kafka, dynamic or static
 if (WITH_RDKAFKA)
-    include_directories(${WITH_RDKAFKA}/include)
+    include_directories(SYSTEM ${WITH_RDKAFKA}/include)
     add_compile_definitions(LINK_LIBRARY_RDKAFKA)
 
     if (WITH_STATIC)
@@ -115,7 +115,7 @@ endif ()
 
 # Prometheus, only dynamic
 if (WITH_PROMETHEUS)
-    include_directories(${WITH_PROMETHEUS}/include)
+    include_directories(SYSTEM ${WITH_PROMETHEUS}/include)
     link_directories(${WITH_PROMETHEUS}/lib)
     add_compile_definitions(LINK_LIBRARY_PROMETHEUS)
 endif ()

@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
         std::vector<std::string> paths;
         std::string fileName;
 
-        Reader(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int newGroup, bool newConfiguredBlockSum);
+        Reader(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum);
         ~Reader() override;
 
         void initialize();

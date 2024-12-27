@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         static constexpr typeBlk ZERO_BLK{0xFFFFFFFF};
 
         static constexpr uint64_t BAD_TIMEZONE{0x7FFFFFFFFFFFFFFF};
-        static constexpr uint MIN_BLOCK_SIZE{512};
+        static constexpr int MIN_BLOCK_SIZE{512};
         static constexpr uint MEMORY_ALIGNMENT{4096};
         static constexpr uint MAX_PATH_LENGTH{2048};
 

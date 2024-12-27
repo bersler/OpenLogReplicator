@@ -153,8 +153,8 @@ namespace OpenLogReplicator {
         if (ctx->getSwapMemory(this) == 0)
             return;
 
-        DIR* dir;
-        if ((dir = opendir(swapPath.c_str())) == nullptr) {
+        DIR* dir = opendir(swapPath.c_str());
+        if (dir == nullptr) {
             if (silent)
                 return;
             throw RuntimeException(10012, "directory: " + swapPath + " - can't read");

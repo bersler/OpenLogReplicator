@@ -130,8 +130,8 @@ namespace OpenLogReplicator {
 
         // Search for last used number
         if (mode == MODE::NUM) {
-            DIR* dir;
-            if ((dir = opendir(pathName.c_str())) == nullptr)
+            DIR* dir = opendir(pathName.c_str());
+            if (dir == nullptr)
                 throw RuntimeException(10012, "directory: " + pathName + " - can't read");
 
             struct dirent* ent;
@@ -139,7 +139,7 @@ namespace OpenLogReplicator {
                 if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                     continue;
 
-                struct stat fileStat;
+                struct stat fileStat{};
                 const std::string fileName(ent->d_name);
 
                 const std::string fileNameFull(pathName + "/" + ent->d_name);
@@ -262,7 +262,7 @@ namespace OpenLogReplicator {
 
         // File is closed, open it
         if (outputDes == -1) {
-            struct stat fileStat;
+            struct stat fileStat{};
             contextSet(CONTEXT::OS, REASON::OS);
             const int statRet = stat(fullFileName.c_str(), &fileStat);
             contextSet(CONTEXT::CPU);

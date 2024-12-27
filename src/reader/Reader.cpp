@@ -39,9 +39,9 @@ namespace OpenLogReplicator {
                                    "WRITE ERROR", "SEQUENCE ERROR", "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR",
                                    "OTHER ERROR"};
 
-    Reader::Reader(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, int newGroup, bool newConfiguredBlockSum) :
+    Reader::Reader(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum) :
             Thread(newCtx, newAlias),
-            database(newDatabase),
+            database(std::move(newDatabase)),
             configuredBlockSum(newConfiguredBlockSum),
             group(newGroup) {
     }
@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
         }
 
         if (!ctx->redoCopyPath.empty()) {
-            if ((opendir(ctx->redoCopyPath.c_str())) == nullptr)
+            if (opendir(ctx->redoCopyPath.c_str()) == nullptr)
                 throw RuntimeException(10012, "directory: " + ctx->redoCopyPath + " - can't read");
         }
     }
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
     void Reader::wakeUp() {
         contextSet(CONTEXT::MUTEX, REASON::READER_WAKE_UP);
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
             condParserSleeping.notify_all();
@@ -464,7 +464,7 @@ namespace OpenLogReplicator {
             } else {
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_READ1);
-                    std::unique_lock<std::mutex> lck(mtx);
+                    std::unique_lock<std::mutex> const lck(mtx);
                     bufferEnd += goodBlocks * blockSize;
                     bufferScan = bufferEnd;
                     condParserSleeping.notify_all();
@@ -580,7 +580,7 @@ namespace OpenLogReplicator {
 
             {
                 contextSet(CONTEXT::MUTEX, REASON::READER_READ2);
-                std::unique_lock<std::mutex> lck(mtx);
+                std::unique_lock<std::mutex> const lck(mtx);
                 bufferEnd += actualRead;
                 condParserSleeping.notify_all();
             }
@@ -619,15 +619,16 @@ namespace OpenLogReplicator {
                 const REDO_CODE currentRet = redoOpen();
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_STATUS);
-                    std::unique_lock<std::mutex> lck(mtx);
+                    std::unique_lock<std::mutex> const lck(mtx);
                     ret = currentRet;
                     status = STATUS::SLEEPING;
                     condParserSleeping.notify_all();
                 }
                 contextSet(CONTEXT::CPU);
                 continue;
+            }
 
-            } else if (status == STATUS::UPDATE) {
+            if (status == STATUS::UPDATE) {
                 if (fileCopyDes != -1) {
                     close(fileCopyDes);
                     fileCopyDes = -1;
@@ -646,7 +647,7 @@ namespace OpenLogReplicator {
 
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_SLEEP1);
-                    std::unique_lock<std::mutex> lck(mtx);
+                    std::unique_lock<std::mutex> const lck(mtx);
                     ret = currentRet;
                     status = STATUS::SLEEPING;
                     condParserSleeping.notify_all();
@@ -740,7 +741,7 @@ namespace OpenLogReplicator {
 
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_SLEEP2);
-                    std::unique_lock<std::mutex> lck(mtx);
+                    std::unique_lock<std::mutex> const lck(mtx);
                     status = STATUS::SLEEPING;
                     condParserSleeping.notify_all();
                 }
@@ -795,7 +796,7 @@ namespace OpenLogReplicator {
     void Reader::bufferAllocate(uint num) {
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_ALLOCATE1);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             if (redoBufferList[num] != nullptr) {
                 contextSet(CONTEXT::CPU);
                 return;
@@ -807,7 +808,7 @@ namespace OpenLogReplicator {
 
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_ALLOCATE2);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             redoBufferList[num] = buffer;
             --ctx->bufferSizeFree;
         }
@@ -818,7 +819,7 @@ namespace OpenLogReplicator {
         uint8_t* buffer;
         {
             t->contextSet(CONTEXT::MUTEX, REASON::READER_FREE);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             if (redoBufferList[num] == nullptr) {
                 t->contextSet(CONTEXT::CPU);
                 return;
@@ -836,7 +837,7 @@ namespace OpenLogReplicator {
         bool isFree;
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_FREE);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             isFree = (ctx->bufferSizeFree > 0);
         }
         contextSet(CONTEXT::CPU);
@@ -1135,7 +1136,7 @@ namespace OpenLogReplicator {
     void Reader::setStatusRead() {
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_SET_READ);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             status = STATUS::READ;
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
@@ -1146,7 +1147,7 @@ namespace OpenLogReplicator {
     void Reader::confirmReadData(uint64_t confirmedBufferStart) {
         contextSet(CONTEXT::MUTEX, REASON::READER_CONFIRM);
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             bufferStart = confirmedBufferStart;
             if (status == STATUS::READ) {
                 condBufferFull.notify_all();

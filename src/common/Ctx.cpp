@@ -637,7 +637,7 @@ namespace OpenLogReplicator {
     void Ctx::initialize(uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t memoryReadBufferMaxMb, uint64_t memoryReadBufferMinMb, uint64_t memorySwapMb,
                          uint64_t memoryUnswapBufferMinMb, uint64_t memoryWriteBufferMaxMb, uint64_t memoryWriteBufferMinMb) {
         {
-            std::unique_lock<std::mutex> lck(memoryMtx);
+            std::unique_lock<std::mutex> const lck(memoryMtx);
             memoryChunksMin = memoryMinMb / MEMORY_CHUNK_SIZE_MB;
             memoryChunksMax = memoryMaxMb / MEMORY_CHUNK_SIZE_MB;
             memoryChunksSwap = memorySwapMb / MEMORY_CHUNK_SIZE_MB;
@@ -669,7 +669,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::wakeAllOutOfMemory() {
-        std::unique_lock<std::mutex> lck(memoryMtx);
+        std::unique_lock<std::mutex> const lck(memoryMtx);
         condOutOfMemory.notify_all();
     }
 
@@ -677,7 +677,7 @@ namespace OpenLogReplicator {
         bool ret;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_NOTHING_TO_SWAP);
-            std::unique_lock<std::mutex> lck(memoryMtx);
+            std::unique_lock<std::mutex> const lck(memoryMtx);
             ret = memoryChunksSwap == 0 || (memoryChunksAllocated - memoryChunksFree < memoryChunksSwap);
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -685,7 +685,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t Ctx::getMemoryHWM() const {
-        std::unique_lock<std::mutex> lck(memoryMtx);
+        std::unique_lock<std::mutex> const lck(memoryMtx);
         return memoryChunksHWM * MEMORY_CHUNK_SIZE_MB;
     }
 
@@ -693,7 +693,7 @@ namespace OpenLogReplicator {
         uint64_t ret;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_FREE_MEMORY);
-            std::unique_lock<std::mutex> lck(memoryMtx);
+            std::unique_lock<std::mutex> const lck(memoryMtx);
             ret = memoryChunksFree * MEMORY_CHUNK_SIZE_MB;
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -701,7 +701,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t Ctx::getAllocatedMemory() const {
-        std::unique_lock<std::mutex> lck(memoryMtx);
+        std::unique_lock<std::mutex> const lck(memoryMtx);
         return memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB;
     }
 
@@ -709,7 +709,7 @@ namespace OpenLogReplicator {
         uint64_t ret;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_GET_SWAP);
-            std::unique_lock<std::mutex> lck(memoryMtx);
+            std::unique_lock<std::mutex> const lck(memoryMtx);
             ret = memoryChunksSwap * MEMORY_CHUNK_SIZE_MB;
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -821,7 +821,7 @@ namespace OpenLogReplicator {
         uint64_t allocatedModule = 0, usedTotal = 0, allocatedTotal = 0;
         t->contextSet(Thread::CONTEXT::MEM, Thread::REASON::MEM);
         {
-            std::unique_lock<std::mutex> lck(memoryMtx);
+            std::unique_lock<std::mutex> const lck(memoryMtx);
 
             if (unlikely(memoryChunksFree == memoryChunksAllocated))
                 throw RuntimeException(50001, "trying to free unknown memory block for: " + memoryModules[static_cast<uint>(module)]);
@@ -903,7 +903,7 @@ namespace OpenLogReplicator {
         uint64_t ret;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SIZE);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory size");
@@ -942,7 +942,7 @@ namespace OpenLogReplicator {
         uint8_t* tc;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_RELEASE);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory release");
@@ -959,7 +959,7 @@ namespace OpenLogReplicator {
         SwapChunk* sc;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_GROW1);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory grow");
@@ -972,7 +972,7 @@ namespace OpenLogReplicator {
 
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_GROW2);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             sc->chunks.push_back(tc);
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -984,7 +984,7 @@ namespace OpenLogReplicator {
         uint8_t* tc;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SHRINK1);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory shrink");
@@ -1022,7 +1022,7 @@ namespace OpenLogReplicator {
     void Ctx::swappedMemoryFlush(Thread* t, typeXid xid) {
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_FLUSH1);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             swappedFlushXid = xid;
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -1032,7 +1032,7 @@ namespace OpenLogReplicator {
         SwapChunk* sc;
         {
             t->contextSet(Thread::CONTEXT::CPU);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             auto it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory remove");
@@ -1048,7 +1048,7 @@ namespace OpenLogReplicator {
 
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_FLUSH2);
-            std::unique_lock<std::mutex> lck(swapMtx);
+            std::unique_lock<std::mutex> const lck(swapMtx);
             sc->chunks.clear();
             commitedXids.push_back(xid);
             chunksMemoryManager.notify_all();
@@ -1058,7 +1058,7 @@ namespace OpenLogReplicator {
 
     void Ctx::wontSwap(Thread* t) {
         t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_WONT);
-        std::unique_lock<std::mutex> lck(memoryMtx);
+        std::unique_lock<std::mutex> const lck(memoryMtx);
 
         if (!outOfMemoryParser) {
             t->contextSet(Thread::CONTEXT::CPU);
@@ -1082,7 +1082,7 @@ namespace OpenLogReplicator {
         logTrace(TRACE::THREADS, "stop hard");
 
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
 
             if (hardShutdown)
                 return;
@@ -1092,7 +1092,7 @@ namespace OpenLogReplicator {
             condMainLoop.notify_all();
         }
         {
-            std::unique_lock<std::mutex> lck(memoryMtx);
+            std::unique_lock<std::mutex> const lck(memoryMtx);
             condOutOfMemory.notify_all();
         }
     }
@@ -1100,7 +1100,7 @@ namespace OpenLogReplicator {
     void Ctx::stopSoft() {
         logTrace(TRACE::THREADS, "stop soft");
 
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> const lck(mtx);
         if (softShutdown)
             return;
 
@@ -1119,7 +1119,7 @@ namespace OpenLogReplicator {
         while (!threads.empty()) {
             Thread* thread;
             {
-                std::unique_lock<std::mutex> lck(mtx);
+                std::unique_lock<std::mutex> const lck(mtx);
                 thread = *(threads.cbegin());
             }
             finishThread(thread);
@@ -1149,7 +1149,7 @@ namespace OpenLogReplicator {
         std::stringstream result;
         result << "stacktrace for thread: " + std::to_string(reinterpret_cast<uint64_t>(pthread_self())) + "\n";
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             size = backtrace(array, 128);
         }
         char** ptr = backtrace_symbols(array, size);
@@ -1180,7 +1180,7 @@ namespace OpenLogReplicator {
 
         bool wakingUp = false;
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             for (Thread* thread: threads) {
                 if (!thread->finished) {
                     logTrace(TRACE::THREADS, "waking up thread: " + thread->alias);
@@ -1200,7 +1200,7 @@ namespace OpenLogReplicator {
         if (unlikely(pthread_create(&t->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(t))))
             throw RuntimeException(10013, "spawning thread: " + t->alias);
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             threads.insert(t);
         }
     }
@@ -1208,7 +1208,7 @@ namespace OpenLogReplicator {
     void Ctx::finishThread(Thread* t) {
         logTrace(TRACE::THREADS, "finish: " + t->alias);
 
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> const lck(mtx);
         if (threads.find(t) == threads.end())
             return;
         threads.erase(t);
@@ -1298,7 +1298,7 @@ namespace OpenLogReplicator {
         if (mainThread != pthread_self())
             return;
 
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> const lck(mtx);
         printMemoryUsageCurrent();
         for (Thread* thread: threads) {
             error(10014, "Dump: " + thread->getName() + " " + std::to_string(reinterpret_cast<uint64_t>(thread->pthread)) +

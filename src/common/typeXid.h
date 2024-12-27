@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
             std::string slt_;
             std::string sqn_;
 
-            uint64_t length = strnlen(str, 25);
+            uint64_t const length = strnlen(str, 25);
             // UUUUSSSSQQQQQQQQ
             if (length == 16) {
                 for (uint64_t i = 0; i < 16; ++i)

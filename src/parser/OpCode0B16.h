@@ -1,4 +1,4 @@
-/* Header for OpCode0B16 class
+/* Redo Log OP Code 11.22
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -20,12 +20,27 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OP_CODE_0B_16_H_
 #define OP_CODE_0B_16_H_
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode.h"
 
 namespace OpenLogReplicator {
     class OpCode0B16 final : public OpCode {
     public:
-        static void process0B16(const Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process0B16(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
+            OpCode::process(ctx, redoLogRecord);
+            typePos fieldPos = 0;
+            typeField fieldNum = 0;
+            typeSize fieldSize = 0;
+
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B1601);
+            // Field: 1
+            ktbRedo(ctx, redoLogRecord, fieldPos, fieldSize);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B1602))
+                return;
+            // Field: 2
+            kdoOpCode(ctx, redoLogRecord, fieldPos, fieldSize);
+        }
     };
 }
 
