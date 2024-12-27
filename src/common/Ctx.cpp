@@ -464,17 +464,17 @@ namespace OpenLogReplicator {
             result *= 60;
             result += second;
             return result - UNIX_AD1970_01_01 - tz; // adjust to 1970 epoch, 719,527 days
-        } else {
-            // treat dates BC with the exact rules as AD for leap years
-            result = -yearToDaysBC(-year, month) + cumDays[month % 12] + day;
-            result *= 24;
-            result += hour;
-            result *= 60;
-            result += minute;
-            result *= 60;
-            result += second;
-            return result - UNIX_BC1970_01_01 - tz; // adjust to 1970 epoch, 718,798 days (year 0 does not exist)
         }
+
+        // treat dates BC with the exact rules as AD for leap years
+        result = -yearToDaysBC(-year, month) + cumDays[month % 12] + day;
+        result *= 24;
+        result += hour;
+        result *= 60;
+        result += minute;
+        result *= 60;
+        result += second;
+        return result - UNIX_BC1970_01_01 - tz; // adjust to 1970 epoch, 718,798 days (year 0 does not exist)
     }
 
     uint64_t Ctx::epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ) {
@@ -484,7 +484,7 @@ namespace OpenLogReplicator {
             throw RuntimeException(10069, "invalid timestamp value: " + std::to_string(timestamp));
 
         timestamp += UNIX_AD1970_01_01;
-        if (timestamp >= 365 * 60 * 60 * 24) {
+        if (likely(timestamp >= 365 * 60 * 60 * 24)) {
             // AD
             int64_t second = (timestamp % 60);
             timestamp /= 60;
@@ -552,10 +552,10 @@ namespace OpenLogReplicator {
                 buffer[19] = 'Z';
                 buffer[20] = 0;
                 return 20;
-            } else {
-                buffer[19] = 0;
-                return 19;
             }
+
+            buffer[19] = 0;
+            return 19;
         } else {
             // BC
             timestamp = 365 * 24 * 60 * 60 - timestamp;
@@ -627,10 +627,10 @@ namespace OpenLogReplicator {
                 buffer[20] = 'Z';
                 buffer[21] = 0;
                 return 21;
-            } else {
-                buffer[20] = 0;
-                return 20;
             }
+
+            buffer[20] = 0;
+            return 20;
         };
     }
 

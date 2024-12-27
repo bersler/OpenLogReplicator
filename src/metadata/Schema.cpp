@@ -132,11 +132,11 @@ namespace OpenLogReplicator {
         if (!sysUserPack.compareTo(otherSchema->sysUserPack, msgs)) return false;
         if (!xdbTtSetPack.compareTo(otherSchema->xdbTtSetPack, msgs)) return false;
         for (const auto& schemaXmlMapIter: schemaXmlMap) {
-            XmlCtx* xmlCtx = schemaXmlMapIter.second;
+            const XmlCtx* xmlCtx = schemaXmlMapIter.second;
             auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
             if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
                 return false;
-            XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
+            const XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
             if (!xmlCtx->xdbXNmPack.compareTo(otherXmlCtx->xdbXNmPack, msgs))
                 return false;
             if (!xmlCtx->xdbXPtPack.compareTo(otherXmlCtx->xdbXPtPack, msgs))
@@ -197,7 +197,7 @@ namespace OpenLogReplicator {
         const auto objIt = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
         if (objIt == sysObjPack.unorderedMapKey.end())
             return false;
-        SysObj* sysObj = objIt->second;
+        const SysObj* sysObj = objIt->second;
 
         const auto userIt = sysUserPack.unorderedMapKey.find(SysUserUser(sysObj->owner));
         if (userIt == sysUserPack.unorderedMapKey.end())
@@ -795,7 +795,7 @@ namespace OpenLogReplicator {
                 for (auto sysLobMapKeyIt = sysLobPack.mapKey.upper_bound(sysLobKeyFirst);
                      sysLobMapKeyIt != sysLobPack.mapKey.end() && sysLobMapKeyIt->first.obj == sysObj->obj; ++sysLobMapKeyIt) {
 
-                    SysLob* sysLob = sysLobMapKeyIt->second;
+                    const SysLob* sysLob = sysLobMapKeyIt->second;
 
                     auto sysObjMapObjIt = sysObjPack.unorderedMapKey.find(SysObjObj(sysLob->lObj));
                     if (unlikely(sysObjMapObjIt == sysObjPack.unorderedMapKey.end()))
@@ -844,7 +844,7 @@ namespace OpenLogReplicator {
                              sysLobFragMapKeyIt != sysLobFragPack.mapKey.end() &&
                              sysLobFragMapKeyIt->first.parentObj == sysLob->lObj; ++sysLobFragMapKeyIt) {
 
-                            SysLobFrag* sysLobFrag = sysLobFragMapKeyIt->second;
+                            const SysLobFrag* sysLobFrag = sysLobFragMapKeyIt->second;
                             auto sysObjMapObjIt2 = sysObjPack.unorderedMapKey.find(SysObjObj(sysLobFrag->fragObj));
                             if (unlikely(sysObjMapObjIt2 == sysObjPack.unorderedMapKey.end()))
                                 throw DataException(50028, "table " + std::string(sysUser->name) + "." + sysObj->name +
@@ -868,7 +868,7 @@ namespace OpenLogReplicator {
                                  sysLobFragMapKeyIt != sysLobFragPack.mapKey.end() &&
                                  sysLobFragMapKeyIt->first.parentObj == sysLobCompPart->partObj; ++sysLobFragMapKeyIt) {
 
-                                SysLobFrag* sysLobFrag = sysLobFragMapKeyIt->second;
+                                const SysLobFrag* sysLobFrag = sysLobFragMapKeyIt->second;
                                 auto sysObjMapObjIt2 = sysObjPack.unorderedMapKey.find(SysObjObj(sysLobFrag->fragObj));
                                 if (unlikely(sysObjMapObjIt2 == sysObjPack.unorderedMapKey.end()))
                                     throw DataException(50028, "table " + std::string(sysUser->name) + "." + sysObj->name +

@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
 
     public:
         explicit DatabaseStatement(DatabaseConnection* newConn);
-        virtual ~DatabaseStatement();
+        ~DatabaseStatement();
 
         void createStatement(const char* sql);
         void unbindAll();

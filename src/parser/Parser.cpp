@@ -24,7 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Clock.h"
 #include "../common/DbLob.h"
 #include "../common/DbTable.h"
-#include "../common/LobCtx.h"
 #include "../common/XmlCtx.h"
 #include "../common/exception/RedoLogException.h"
 #include "../common/metrics/Metrics.h"
@@ -559,7 +558,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         {
             ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
-            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -595,7 +594,7 @@ namespace OpenLogReplicator {
         DbLob* lob;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -614,8 +613,9 @@ namespace OpenLogReplicator {
             if (lobIdToXidMapIt == ctx->lobIdToXidMap.end()) {
                 transactionBuffer->addOrphanedLob(redoLogRecord1);
                 return;
-            } else
-                redoLogRecord1->xid = lobIdToXidMapIt->second;
+            }
+
+            redoLogRecord1->xid = lobIdToXidMapIt->second;
         }
 
         // Skip list
@@ -662,7 +662,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -720,7 +720,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -891,7 +891,7 @@ namespace OpenLogReplicator {
                 const DbTable* table;
                 ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
                 {
-                    std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+                    std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
                     table = metadata->schema->checkTableDict(obj);
                 }
                 ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -979,7 +979,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -1059,7 +1059,7 @@ namespace OpenLogReplicator {
         const DbLob* lob;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> lckTransaction(metadata->mtxTransaction);
+            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobIndexDict(dataObj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);

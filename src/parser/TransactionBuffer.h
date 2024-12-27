@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
         std::string dumpPath;
 
         explicit TransactionBuffer(Ctx* newCtx);
-        virtual ~TransactionBuffer();
+        ~TransactionBuffer();
 
         void purge();
         [[nodiscard]] Transaction* findTransaction(XmlCtx* xmlCtx, typeXid xid, typeConId conId, bool old, bool add, bool rollback);

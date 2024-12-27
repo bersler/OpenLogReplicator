@@ -209,7 +209,7 @@ namespace OpenLogReplicator {
         bool replicatorFinished{false};
 
         Ctx();
-        virtual ~Ctx();
+        ~Ctx();
 
     protected:
         static int64_t yearToDays(int64_t year, int64_t month) {

@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         uint64_t flags;
 
         XmlCtx(Ctx* newCtx, std::string newTokSuf, uint64_t newFlags);
-        virtual ~XmlCtx();
+        ~XmlCtx();
 
         void purgeDicts() noexcept;
     };

@@ -69,7 +69,6 @@ namespace OpenLogReplicator {
         static constexpr uint32_t REDO_VERSION_19_0{0x13000000};
         static constexpr uint32_t REDO_VERSION_23_0{0x17000000};
 
-        // hot data
         uint8_t* dataExt;
         uint64_t dataOffset;
         typeXid xid;              // Transaction id
@@ -80,17 +79,13 @@ namespace OpenLogReplicator {
         typeDba dba;
         typeDba bdba;             // Block DBA
         typeObj obj;              // Object ID
-        typeCol col;              // LOB column ID
         typeDataObj dataObj;      // Data object ID
+        uint32_t size;            // Size of the record
 
+        typeCol col;              // LOB column ID
         typeField fieldCnt;
         typePos fieldPos;
         typeField rowData;
-        typeObj recordObj;
-        typeObj recordDataObj;
-        uint32_t size;            // Size of the record
-
-        // cold data
         typePos slotsDelta;
         typePos rowSizesDelta;
         typePos fieldSizesDelta;
@@ -98,11 +93,9 @@ namespace OpenLogReplicator {
         typePos colNumsDelta;
         uint8_t typ;
         uint8_t nRow;
-
         uint16_t flg;             // Flag
         typeOp1 opCode;           // Operation code
         typeOp1 opc;              // Operation code for UNDO
-
         typeSlot slot;
         uint16_t sizeDelt;
         uint8_t op;
@@ -110,18 +103,22 @@ namespace OpenLogReplicator {
         uint8_t cc;
         uint8_t flags;            // Flags like xtype, kdoOpCode
         uint8_t fb;               // Row flags like F,L
-
         // supplemental log data
         uint8_t suppLogFb;
         uint16_t suppLogCC;
         uint16_t suppLogBefore;
         uint16_t suppLogAfter;
-        typeDba suppLogBdba;
         typeSlot suppLogSlot;
+        typeDba suppLogBdba;
         typeField suppLogRowData;
         typePos suppLogNumsDelta;
         typePos suppLogLenDelta;
+        typeUsn usn;
+        typeDba dba0;
+        typeDba dba1;
 
+        typeDba dba2;
+        typeDba dba3;
         // lob data
         typeDba lobPageNo;
         uint32_t lobPageSize;
@@ -136,22 +133,18 @@ namespace OpenLogReplicator {
         typeSize indKeyDataSize;
         uint8_t indKeyDataCode;
         typeLobId lobId;
-
+        bool compressed;
         // other
-        typeUsn usn;
-        typeDba dba0;
-        typeDba dba1;
-        typeDba dba2;
-        typeDba dba3;
-        typeSlt slt;
-
         uint32_t vectorNo;
+        typeSlt slt;
         uint16_t cls;
         uint16_t rbl;
         uint16_t flgRecord;
         typeAfn afn;              // Absolute File Number
         uint8_t seq;
-        bool compressed;
+
+        typeObj recordObj;
+        typeObj recordDataObj;
 
         [[nodiscard]] std::string toString() const {
             std::ostringstream ss;

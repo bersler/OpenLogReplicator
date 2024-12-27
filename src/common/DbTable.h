@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
 
         DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, OPTIONS newOptions, std::string newOwner,
                 std::string newName);
-        virtual ~DbTable();
+        ~DbTable();
 
         void addColumn(DbColumn* column);
         void addLob(DbLob* lob);
