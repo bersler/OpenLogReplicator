@@ -1,5 +1,5 @@
 {
-  "version": "1.8.2",
+  "version": "1.8.3",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "dump-path": "/opt/dump",

@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
     class LobData final {
     public:
         LobData();
-        virtual ~LobData();
+        ~LobData();
 
         std::map<LobDataElement, uint8_t*> dataMap;
         std::map<uint32_t, typeDba> indexMap;

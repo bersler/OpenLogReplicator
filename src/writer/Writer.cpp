@@ -211,7 +211,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::mainLoop() {
-        BuilderMsg* msg;
+        BuilderMsg* msg{nullptr};
         uint64_t newSize = 0;
         currentQueueSize = 0;
 
@@ -258,6 +258,10 @@ namespace OpenLogReplicator {
                 builder->sleepForWriterWork(this, currentQueueSize, ctx->pollIntervalUs);
             }
 
+            __builtin_prefetch(reinterpret_cast<char*>(msg), 0, 0);
+            __builtin_prefetch(reinterpret_cast<char*>(msg) + 64, 0, 0);
+            __builtin_prefetch(reinterpret_cast<char*>(msg) + 128, 0, 0);
+            __builtin_prefetch(reinterpret_cast<char*>(msg) + 192, 0, 0);
             // Send the message
             while (oldSize + sizeof(struct BuilderMsg) < newSize && !ctx->hardShutdown) {
                 msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldSize);

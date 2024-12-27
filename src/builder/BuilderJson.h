@@ -101,6 +101,10 @@ namespace OpenLogReplicator {
         }
 
         void appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
+            __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition], 1, 0);
+            __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 64, 1, 0);
+            __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 128, 1, 0);
+            __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 192, 1, 0);
             if (first || format.isScnTypeAllPayloads()) {
                 if (hasPreviousValue)
                     append(',');
@@ -822,11 +826,11 @@ namespace OpenLogReplicator {
         void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
         void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
         void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
         void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
         void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
         void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
         void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
         void addTagData(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, Format::VALUE_TYPE valueType, uint64_t offset);

@@ -55,7 +55,8 @@ namespace OpenLogReplicator {
 
     public:
         OpenLogReplicator(std::string  newConfigFileName, Ctx* newCtx);
-        virtual ~OpenLogReplicator();
+        ~OpenLogReplicator();
+
         int run();
     };
 }

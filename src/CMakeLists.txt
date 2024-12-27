@@ -19,8 +19,6 @@
 list(APPEND ListCommon
         common/ClockHW.cpp
         common/Ctx.cpp
-        common/DbColumn.cpp
-        common/DbIncarnation.cpp
         common/DbLob.cpp
         common/DbTable.cpp
         common/LobCtx.cpp
@@ -81,10 +79,8 @@ list(APPEND ListReader
 
 list(APPEND ListMetadata
         metadata/Checkpoint.cpp
-        metadata/RedoLog.cpp
         metadata/Metadata.cpp
         metadata/Schema.cpp
-        metadata/SchemaElement.cpp
         metadata/Serializer.cpp
         metadata/SerializerJson.cpp)
 

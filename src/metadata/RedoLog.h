@@ -1,4 +1,4 @@
-/* Header for RedoLog class
+/* Struct to store redo log group and path.
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -30,9 +30,20 @@ namespace OpenLogReplicator {
         int64_t group;
         std::string path;
 
-        RedoLog(int64_t newGroup, const char* newPath);
+        RedoLog(int64_t newGroup, const char* newPath) :
+                group(newGroup),
+                path(newPath) {
+        }
 
-        bool operator<(const RedoLog& other) const;
+        bool operator<(const RedoLog& other) const {
+            if (group < other.group)
+                return true;
+            if (other.group == group) {
+                if (path < other.path)
+                    return true;
+            }
+            return false;
+        }
     };
 }
 

@@ -417,7 +417,7 @@ namespace OpenLogReplicator {
             // XDB.X$NMxxx
             ss << "]," SERIALIZER_ENDL << R"("xdb-xnm)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
-            for (const auto &[key, xdbXNm]: xmlCtx->xdbXNmPack.mapRowId) {
+            for (const auto &[_2, xdbXNm]: xmlCtx->xdbXNmPack.mapRowId) {
                 if (hasPrev)
                     ss << ",";
                 else
@@ -432,7 +432,7 @@ namespace OpenLogReplicator {
             // XDB.X$PTxxx
             ss << "]," SERIALIZER_ENDL << R"("xdb-xpt)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
-            for (const auto &[__, xdbXPt]: xmlCtx->xdbXPtPack.mapRowId) {
+            for (const auto &[_2, xdbXPt]: xmlCtx->xdbXPtPack.mapRowId) {
                 if (hasPrev)
                     ss << ",";
                 else
@@ -447,7 +447,7 @@ namespace OpenLogReplicator {
             // XDB.X$QNxxx
             ss << "]," SERIALIZER_ENDL << R"("xdb-xqn)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
-            for (const auto &[__, xdbXQn]: xmlCtx->xdbXQnPack.mapRowId) {
+            for (const auto &[_2, xdbXQn]: xmlCtx->xdbXQnPack.mapRowId) {
                 if (hasPrev)
                     ss << ",";
                 else
@@ -489,8 +489,8 @@ namespace OpenLogReplicator {
                                                         "sys-tabsubpart", "sys-ts", "xdb-ttset", nullptr};
                 Ctx::checkJsonFields(fileName, document, documentChildNames);
             }
-            std::unique_lock<std::mutex> lckCheckpoint(metadata->mtxCheckpoint);
-            std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema);
+            std::unique_lock<std::mutex> const lckCheckpoint(metadata->mtxCheckpoint);
+            std::unique_lock<std::mutex> const lckSchema(metadata->mtxSchema);
 
             if (loadMetadata) {
                 metadata->checkpointScn = Ctx::getJsonFieldU64(fileName, document, "scn");
@@ -534,7 +534,7 @@ namespace OpenLogReplicator {
                     }
                     metadata->resetlogs = Ctx::getJsonFieldU32(fileName, document, "resetlogs");
                     metadata->activation = Ctx::getJsonFieldU32(fileName, document, "activation");
-                    const int64_t bigEndian = Ctx::getJsonFieldU64(fileName, document, "big-endian");
+                    const int bigEndian = Ctx::getJsonFieldI(fileName, document, "big-endian");
                     if (bigEndian == 1)
                         metadata->ctx->setBigEndian();
                     metadata->context = Ctx::getJsonFieldS(fileName, DbTable::VCONTEXT_LENGTH, document, "context");
@@ -742,7 +742,7 @@ namespace OpenLogReplicator {
             const int scale = Ctx::getJsonFieldI(fileName, sysColJson[i], "scale");
             const uint charsetForm = Ctx::getJsonFieldU(fileName, sysColJson[i], "charset-form");
             const uint charsetId = Ctx::getJsonFieldU(fileName, sysColJson[i], "charset-id");
-            const int null_ = Ctx::getJsonFieldI64(fileName, sysColJson[i], "null");
+            const int null_ = Ctx::getJsonFieldI(fileName, sysColJson[i], "null");
             const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(fileName, sysColJson[i], "property");
             if (unlikely(propertyJson.Size() != 2))
                 throw DataException(20005, "file: " + fileName + " - property should be an array with 2 elements");

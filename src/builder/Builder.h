@@ -1212,11 +1212,11 @@ namespace OpenLogReplicator {
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) = 0;
         virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) = 0;
         virtual void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) = 0;
         virtual void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) = 0;
         virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) = 0;
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) = 0;
         virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) = 0;
         virtual void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
         bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t size, uint64_t offset);

@@ -102,7 +102,7 @@ namespace OpenLogReplicator {
         Reader* reader{nullptr};
 
         Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, std::string newPath);
-        virtual ~Parser();
+        ~Parser();
 
         Reader::REDO_CODE parse();
         [[nodiscard]] std::string toString() const;

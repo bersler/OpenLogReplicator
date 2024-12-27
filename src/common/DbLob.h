@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class DbTable;
 
-    class DbLob {
+    class DbLob final {
     public:
         DbTable* table;
         typeObj obj;
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         std::unordered_map<typeObj, uint16_t> lobPageMap;
 
         DbLob(DbTable* table, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol);
-        virtual ~DbLob();
+        ~DbLob();
 
         void addIndex(typeDataObj newDataObj);
         void addPartition(typeDataObj newDataObj, uint16_t pageSize);

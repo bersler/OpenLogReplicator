@@ -56,13 +56,13 @@ namespace OpenLogReplicator {
         readerDropAll();
 
         while (!archiveRedoQueue.empty()) {
-            Parser* redoTmp = archiveRedoQueue.top();
+            Parser* parser = archiveRedoQueue.top();
             archiveRedoQueue.pop();
-            delete redoTmp;
+            delete parser;
         }
 
-        for (Parser* onlineRedo: onlineRedoSet)
-            delete onlineRedo;
+        for (Parser* parser: onlineRedoSet)
+            delete parser;
         onlineRedoSet.clear();
 
         pathMapping.clear();

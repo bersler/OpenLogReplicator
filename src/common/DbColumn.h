@@ -1,4 +1,4 @@
-/* Header for DbColumn class
+/* Column of a table in the database
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -19,6 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #ifndef DB_COLUMN_H_
 #define DB_COLUMN_H_
+
+#include <utility>
 
 #include "types.h"
 #include "table/SysCol.h"
@@ -49,9 +51,32 @@ namespace OpenLogReplicator {
 
         DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, std::string newName, SysCol::COLTYPE newType, uint newLength,
                  int newPrecision, int newScale, uint64_t newCharsetId, typeCol newNumPk, bool newNullable, bool newHidden,
-                 bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType);
+                 bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType) :
+                col(newCol),
+                guardSeg(newGuardSeg),
+                segCol(newSegCol),
+                name(std::move(newName)),
+                type(newType),
+                length(newLength),
+                precision(newPrecision),
+                scale(newScale),
+                charsetId(newCharsetId),
+                numPk(newNumPk),
+                nullable(newNullable),
+                hidden(newHidden),
+                storedAsLob(newStoredAsLob),
+                systemGenerated(newSystemGenerated),
+                nested(newNested),
+                unused(newUnused),
+                added(newAdded),
+                guard(newGuard),
+                xmlType(newXmlType) {
+        }
 
-        friend std::ostream& operator<<(std::ostream& os, const DbColumn& column);
+        friend std::ostream& operator<<(std::ostream& os, const DbColumn& column) {
+            os << column.segCol << ": (" << column.col << ", '" << column.name << "', " << static_cast<uint>(column.type) << ", " << column.length << ")";
+            return os;
+        }
     };
 }
 

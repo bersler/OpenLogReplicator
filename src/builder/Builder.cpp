@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
             columnRaw(columnName, data, size);
             return;
         }
-        if (table == nullptr) {
+        if (unlikely(table == nullptr)) {
             const std::string columnName("COL_" + std::to_string(col));
             columnRaw(columnName, data, size);
             return;
@@ -735,7 +735,7 @@ namespace OpenLogReplicator {
             }
 
             typeCol maxI;
-            if (table != nullptr)
+            if (likely(table != nullptr))
                 maxI = table->maxSegCol;
             else
                 maxI = jcc;
@@ -769,8 +769,7 @@ namespace OpenLogReplicator {
                 ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS)) {
 
                 processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                              ctx->read16(redoLogRecord2->data(redoLogRecord2->slotsDelta + (r * 2))), redoLogRecord1->xid,
-                              redoLogRecord1->dataOffset);
+                              ctx->read16(redoLogRecord2->data(redoLogRecord2->slotsDelta + (r * 2))), redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
                     if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
                             !DbTable::isSystemTable(table->options) && !DbTable::isDebugTable(table->options))
@@ -829,7 +828,7 @@ namespace OpenLogReplicator {
             }
 
             typeCol maxI;
-            if (table != nullptr)
+            if (likely(table != nullptr))
                 maxI = table->maxSegCol;
             else
                 maxI = jcc;
@@ -863,8 +862,7 @@ namespace OpenLogReplicator {
                 ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS)) {
 
                 processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                              ctx->read16(redoLogRecord1->data(redoLogRecord1->slotsDelta + (r * 2))), redoLogRecord1->xid,
-                              redoLogRecord1->dataOffset);
+                              ctx->read16(redoLogRecord1->data(redoLogRecord1->slotsDelta + (r * 2))), redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
                     if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
                             !DbTable::isSystemTable(table->options) && !DbTable::isDebugTable(table->options))
@@ -1010,7 +1008,7 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (unlikely(fieldNum + 1U > redoLogRecord1p->fieldCnt)) {
-                        if (table != nullptr)
+                        if (likely(table != nullptr))
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Undo): " +
                                                           std::to_string(colNum) + "/" + std::to_string(static_cast<uint>(redoLogRecord1p->cc)) + ", " +
                                                           std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
@@ -1031,7 +1029,7 @@ namespace OpenLogReplicator {
                     if (i == redoLogRecord1p->cc - 1U && (redoLogRecord1p->fb & RedoLogRecord::FB_N) != 0)
                         fb |= RedoLogRecord::FB_N;
 
-                    if (table != nullptr) {
+                    if (likely(table != nullptr)) {
                         if (colNum >= table->maxSegCol) {
                             if (unlikely(!schema))
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
@@ -1080,7 +1078,7 @@ namespace OpenLogReplicator {
                 for (uint16_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
                     colNum = ctx->read16(colNums) - 1;
                     if (unlikely(fieldNum + 1U > redoLogRecord1p->fieldCnt)) {
-                        if (table != nullptr)
+                        if (likely(table != nullptr))
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (supp): " +
                                                           std::to_string(colNum) + "/" + std::to_string(static_cast<uint>(redoLogRecord1p->cc)) + ", " +
                                                           std::to_string(redoLogRecord1p->sizeDelt) + ", " + std::to_string(fieldNum) + "-" +
@@ -1097,7 +1095,7 @@ namespace OpenLogReplicator {
 
                     RedoLogRecord::nextField(ctx, redoLogRecord1p, fieldNum, fieldPos, fieldSize, 0x000006);
 
-                    if (table != nullptr) {
+                    if (likely(table != nullptr)) {
                         if (colNum >= table->maxSegCol) {
                             if (unlikely(!schema))
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
@@ -1188,7 +1186,7 @@ namespace OpenLogReplicator {
 
                 for (typeCC i = 0; i < cc; ++i) {
                     if (unlikely(fieldNum + 1U > redoLogRecord2p->fieldCnt)) {
-                        if (table != nullptr)
+                        if (likely(table != nullptr))
                             throw RedoLogException(50014, "table: " + table->owner + "." + table->name + ": out of columns (Redo): " +
                                                           std::to_string(colNum) + "/" + std::to_string(static_cast<uint>(redoLogRecord2p->cc)) + ", " +
                                                           std::to_string(redoLogRecord2p->sizeDelt) + ", " + std::to_string(fieldNum) + ", " +
@@ -1219,7 +1217,7 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (table != nullptr) {
+                    if (likely(table != nullptr)) {
                         if (unlikely(colNum >= table->maxSegCol)) {
                             if (!schema)
                                 throw RedoLogException(50060, "table: " + table->owner + "." + table->name +
@@ -1260,11 +1258,13 @@ namespace OpenLogReplicator {
         }
 
         typeCol guardPos = -1;
-        if (table != nullptr && table->guardSegNo != -1)
-            guardPos = table->guardSegNo;
+        if (likely(table != nullptr)) {
+            if (table->guardSegNo != -1)
+                guardPos = table->guardSegNo;
 
-        if (table != nullptr && valuesMax >= table->maxSegCol)
-            valuesMax = table->maxSegCol -1;
+            if (valuesMax >= table->maxSegCol)
+                valuesMax = table->maxSegCol - 1;
+        }
 
         typeCol baseMax = valuesMax >> 6;
         for (typeCol base = 0; base <= baseMax; ++base) {
@@ -1378,7 +1378,7 @@ namespace OpenLogReplicator {
         }
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::DML) || dump)) {
-            if (table != nullptr) {
+            if (likely(table != nullptr)) {
                 ctx->logTrace(Ctx::TRACE::DML, "tab: " + table->owner + "." + table->name + " transactionType: " +
                                                std::to_string(static_cast<uint>(transactionType)) + " columns: " +
                                                std::to_string(valuesMax));
@@ -1441,7 +1441,7 @@ namespace OpenLogReplicator {
                         set &= ~mask;
                         const typeCol column = columnBase + pos;
 
-                        if (table != nullptr) {
+                        if (likely(table != nullptr)) {
                             if (!table->columns[column]->nullable &&
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr &&
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
@@ -1550,7 +1550,7 @@ namespace OpenLogReplicator {
                  table->matchesCondition(ctx, 'u', attributes)) || ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_SYSTEM_TRANSACTIONS) ||
                 ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS)) {
 
-                processUpdate(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processUpdate(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
                     if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
                             !DbTable::isSystemTable(table->options) && !DbTable::isDebugTable(table->options))
@@ -1632,7 +1632,7 @@ namespace OpenLogReplicator {
                  table->matchesCondition(ctx, 'i', attributes)) || ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_SYSTEM_TRANSACTIONS) ||
                 ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS)) {
 
-                processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processInsert(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
                     if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
                             !DbTable::isSystemTable(table->options) && !DbTable::isDebugTable(table->options))
@@ -1710,7 +1710,7 @@ namespace OpenLogReplicator {
                  table->matchesCondition(ctx, 'd', attributes)) || ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_SYSTEM_TRANSACTIONS) ||
                 ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS)) {
 
-                processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+                processDelete(scn, sequence, timestamp, lobCtx, xmlCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->dataOffset);
                 if (ctx->metrics != nullptr) {
                     if (ctx->metrics->isTagNamesFilter() && table != nullptr &&
                             !DbTable::isSystemTable(table->options) && !DbTable::isDebugTable(table->options))

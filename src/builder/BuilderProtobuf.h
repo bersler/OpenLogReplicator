@@ -184,7 +184,7 @@ namespace OpenLogReplicator {
         }
 
         void appendSchema(const DbTable* table, typeObj obj) {
-            if (table == nullptr) {
+            if (unlikely(table == nullptr)) {
                 std::string ownerName;
                 std::string tableName;
                 // try to read object name from ongoing uncommitted transaction data
@@ -425,11 +425,11 @@ namespace OpenLogReplicator {
         void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
         void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
         void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
         void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
         void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid, uint64_t offset) override;
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
         void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
         void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
 

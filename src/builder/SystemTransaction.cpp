@@ -42,7 +42,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/table/XdbXQn.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
-#include "../metadata/SchemaElement.h"
 #include "Builder.h"
 #include "SystemTransaction.h"
 

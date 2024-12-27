@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
         std::map<std::string, XmlCtx*> schemaXmlMap;
 
         Schema(Ctx* newCtx, Locales* newLocales);
-        virtual ~Schema();
+        ~Schema();
 
         void purgeMetadata();
         void purgeDicts();

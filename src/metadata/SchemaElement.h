@@ -1,4 +1,4 @@
-/* Header for SchemaElement class
+/* Struct to store schema element information.
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -20,6 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SCHEMA_ELEMENT_H_
 #define SCHEMA_ELEMENT_H_
 
+#include <cctype>
+#include <locale>
 #include <vector>
 
 #include "../common/DbTable.h"
@@ -42,9 +44,42 @@ namespace OpenLogReplicator {
         std::vector<std::string> keyList;
         std::vector<std::string> tagList;
 
-        SchemaElement(const char* newOwner, const char* newTable, DbTable::OPTIONS newOptions);
-        void parseKey(std::string value, const std::string& separator);
-        void parseTag(std::string value, const std::string& separator);
+        SchemaElement(const char* newOwner, const char* newTable, DbTable::OPTIONS newOptions) :
+                owner(newOwner),
+                table(newTable),
+                options(newOptions) {
+        }
+
+        void parseKey(std::string value, const std::string& separator) {
+            size_t pos = 0;
+            while ((pos = value.find(separator)) != std::string::npos) {
+                const std::string val = value.substr(0, pos);
+                keyList.push_back(val);
+                value.erase(0, pos + separator.length());
+            }
+            keyList.push_back(value);
+        }
+
+        void parseTag(std::string value, const std::string& separator) {
+            if (value == "[pk]") {
+                tagType = TAG_TYPE::PK;
+                return;
+            }
+
+            if (value == "[all]") {
+                tagType = TAG_TYPE::ALL;
+                return;
+            }
+
+            tagType = TAG_TYPE::LIST;
+            size_t pos = 0;
+            while ((pos = value.find(separator)) != std::string::npos) {
+                const std::string val = value.substr(0, pos);
+                tagList.push_back(val);
+                value.erase(0, pos + separator.length());
+            }
+            tagList.push_back(value);
+        }
     };
 }
 
