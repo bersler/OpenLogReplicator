@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
             transaction = new Transaction(xid, &orphanedLobs, xmlCtx);
             {
                 ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_FIND);
-                std::unique_lock<std::mutex> lck(mtx);
+                std::unique_lock<std::mutex> const lck(mtx);
                 xidTransactionMap.insert_or_assign(xidMap, transaction);
             }
             ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -88,7 +88,7 @@ namespace OpenLogReplicator {
         const typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(conId) << 32);
         {
             ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_DROP);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             xidTransactionMap.erase(xidMap);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);

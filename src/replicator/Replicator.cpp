@@ -469,8 +469,8 @@ namespace OpenLogReplicator {
         if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
             replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "checking path: " + mappedPath);
 
-        DIR* dir;
-        if ((dir = opendir(mappedPath.c_str())) == nullptr)
+        DIR* dir = opendir(mappedPath.c_str());
+        if (dir == nullptr)
             throw RuntimeException(10012, "directory: " + mappedPath + " - can't read");
 
         std::string newLastCheckedDay;
@@ -497,8 +497,8 @@ namespace OpenLogReplicator {
                 replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "checking path: " + mappedPath + "/" + ent->d_name);
 
             const std::string mappedPathWithFile(mappedPath + "/" + ent->d_name);
-            DIR* dir2;
-            if ((dir2 = opendir(mappedPathWithFile.c_str())) == nullptr) {
+            DIR* dir2 = opendir(mappedPathWithFile.c_str());
+            if (dir2 == nullptr) {
                 closedir(dir);
                 throw RuntimeException(10012, "directory: " + mappedPathWithFile + " - can't read");
             }
@@ -586,8 +586,8 @@ namespace OpenLogReplicator {
 
             } else {
                 // Dir, check all files
-                DIR* dir;
-                if ((dir = opendir(mappedPath.c_str())) == nullptr)
+                DIR* dir = opendir(mappedPath.c_str());
+                if (dir == nullptr)
                     throw RuntimeException(10012, "directory: " + mappedPath + " - can't read");
 
                 const struct dirent* ent;
@@ -629,7 +629,7 @@ namespace OpenLogReplicator {
 
     void Replicator::updateResetlogs() {
         contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_UPDATE);
-        std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
+        std::unique_lock<std::mutex> const lck(metadata->mtxCheckpoint);
 
         for (DbIncarnation* oi: metadata->dbIncarnations) {
             if (oi->resetlogs == metadata->resetlogs) {
@@ -729,7 +729,7 @@ namespace OpenLogReplicator {
                 // When no metadata exists, start processing from the first file
                 if (metadata->sequence == 0) {
                     contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_ARCH);
-                    std::unique_lock<std::mutex> lck(metadata->mtxCheckpoint);
+                    std::unique_lock<std::mutex> const lck(metadata->mtxCheckpoint);
                     metadata->sequence = parser->sequence;
                     contextSet(CONTEXT::CPU);
                 }
@@ -739,7 +739,9 @@ namespace OpenLogReplicator {
                     archiveRedoQueue.pop();
                     delete parser;
                     continue;
-                } else if (parser->sequence > metadata->sequence) {
+                }
+
+                if (parser->sequence > metadata->sequence) {
                     ctx->warning(60027, "couldn't find archive log for seq: " + std::to_string(metadata->sequence) + ", found: " +
                                         std::to_string(parser->sequence) + ", sleeping " + std::to_string(ctx->archReadSleepUs) + " us");
                     contextSet(CONTEXT::SLEEP);
@@ -903,9 +905,8 @@ namespace OpenLogReplicator {
             } else {
                 if (parser->group == 0) {
                     throw RuntimeException(10048, "read archived redo log, code: " + std::to_string(static_cast<uint>(ret)));
-                } else {
-                    throw RuntimeException(10049, "read online redo log, code: " + std::to_string(static_cast<uint>(ret)));
-                }
+                }                     throw RuntimeException(10049, "read online redo log, code: " + std::to_string(static_cast<uint>(ret)));
+
             }
 
             if (ctx->stopLogSwitches > 0) {

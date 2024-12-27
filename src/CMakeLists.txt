@@ -71,31 +71,6 @@ list(APPEND ListBuilder
         builder/SystemTransaction.cpp)
 
 list(APPEND ListParser
-        parser/OpCode.cpp
-        parser/OpCode0501.cpp
-        parser/OpCode0502.cpp
-        parser/OpCode0504.cpp
-        parser/OpCode0506.cpp
-        parser/OpCode050B.cpp
-        parser/OpCode0513.cpp
-        parser/OpCode0514.cpp
-        parser/OpCode0A02.cpp
-        parser/OpCode0A08.cpp
-        parser/OpCode0A12.cpp
-        parser/OpCode0B02.cpp
-        parser/OpCode0B03.cpp
-        parser/OpCode0B04.cpp
-        parser/OpCode0B05.cpp
-        parser/OpCode0B06.cpp
-        parser/OpCode0B08.cpp
-        parser/OpCode0B0B.cpp
-        parser/OpCode0B0C.cpp
-        parser/OpCode0B10.cpp
-        parser/OpCode0B16.cpp
-        parser/OpCode1301.cpp
-        parser/OpCode1801.cpp
-        parser/OpCode1A02.cpp
-        parser/OpCode1A06.cpp
         parser/Parser.cpp
         parser/Transaction.cpp
         parser/TransactionBuffer.cpp)

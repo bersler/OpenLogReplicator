@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
     public:
         enum class PROPERTY : unsigned long long {
             NONE = 0ULL, BINARY = 1ULL << 0, ATD_COLUMNS = 1ULL << 1, NESTED_TABLE_COLUMNS = 1ULL << 2, REF_COLUMNS = 1ULL << 3, ARRAY_COLUMNS = 1ULL << 4,
-            PARTITIONED = 1ULL << 5, INDEX_ONLY = 1ULL << 6, IOT_ROW_OVERFLOW = 1ULL << 7, IOT_ROW_CLUSTERING = 1ULL << 8, IOT_OVERFLOW_SEGMENT = 1ULL << 9,
+            PARTITIONED = 1ULL << 5, IOT_INDEX_ONLY = 1ULL << 6, IOT_ROW_OVERFLOW = 1ULL << 7, IOT_ROW_CLUSTERING = 1ULL << 8, IOT_OVERFLOW_SEGMENT = 1ULL << 9,
             CLUSTERED = 1ULL << 10, INTERNAL_LOB_COLUMNS = 1ULL << 11, PRIMARY_KEY_BASED_OID_COLUMN = 1ULL << 12, NESTED = 1ULL << 13, READ_ONLY = 1ULL << 14,
             FILE_COLUMNS = 1ULL << 15, OID_GENERATED_BY_DEFAULT = 1ULL << 16, USER_DEFINED_LOB_COLUMNS = 1ULL << 18, UNUSED_COLUMNS = 1ULL << 19,
             ON_COMMIT_MATERIALIZED_VIEW = 1ULL << 20, SYSTEM_GENERATED_COLUMN_NAMES = 1ULL << 21, GLOBAL_TEMPORARY_TABLE = 1ULL << 22,
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         };
 
         enum class FLAGS : unsigned long long {
-            ROW_MOVEMENT = 1ULL << 17, DEPENDENCIES = 1ULL << 23, IOT2 = 1ULL << 29, DELAYED_SEGMENT_CREATION = 1ULL << 34
+            ROW_MOVEMENT = 1ULL << 17, DEPENDENCIES = 1ULL << 23, IOT_MAPPING = 1ULL << 29, DELAYED_SEGMENT_CREATION = 1ULL << 34
         };
 
         typeRowId rowId;
@@ -87,7 +87,9 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isIot() const {
-            return isProperty(PROPERTY::IOT_OVERFLOW_SEGMENT) || isFlags(FLAGS::IOT2);
+            return isProperty(PROPERTY::IOT_INDEX_ONLY)
+                    || isProperty(PROPERTY::IOT_ROW_OVERFLOW)
+                    || isFlags(FLAGS::IOT_MAPPING);
         }
 
         [[nodiscard]] bool isPartitioned() const {

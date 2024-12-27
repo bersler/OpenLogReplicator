@@ -1,4 +1,4 @@
-/* Header for OpCode1A02 class
+/* Redo Log OP Code 26.2
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -20,12 +20,35 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OP_CODE_1A_02_H_
 #define OP_CODE_1A_02_H_
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode.h"
 
 namespace OpenLogReplicator {
     class OpCode1A02 final : public OpCode {
     public:
-        static void process1A02(const Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process1A02(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
+            OpCode::process(ctx, redoLogRecord);
+            typePos fieldPos = 0;
+            typeField fieldNum = 0;
+            typeSize fieldSize = 0;
+
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0201);
+            // Field: 1
+            ktbRedo(ctx, redoLogRecord, fieldPos, fieldSize);
+
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0202);
+            // Field: 2
+            kdliCommon(ctx, redoLogRecord, fieldPos, fieldSize);
+
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0203);
+            // Field: 3`
+            kdli(ctx, redoLogRecord, fieldPos, fieldSize);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x1A0204))
+                return;
+            // Field: 4
+            kdli(ctx, redoLogRecord, fieldPos, fieldSize);
+        }
     };
 }
 

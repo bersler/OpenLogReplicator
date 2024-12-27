@@ -1,4 +1,4 @@
-/* Header for OpCode0B0C class
+/* Redo Log OP Code 11.12
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode.h"
 
 #ifndef OP_CODE_0B_0C_H_
@@ -25,7 +26,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class OpCode0B0C final : public OpCode {
     public:
-        static void process0B0C(const Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void process0B0C(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
+            OpCode::process(ctx, redoLogRecord);
+            typePos fieldPos = 0;
+            typeField fieldNum = 0;
+            typeSize fieldSize = 0;
+
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0C01);
+            // Field: 1
+            ktbRedo(ctx, redoLogRecord, fieldPos, fieldSize);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0C02))
+                return;
+            // Field: 2
+            kdoOpCode(ctx, redoLogRecord, fieldPos, fieldSize);
+
+            if (unlikely(ctx->dumpRedoLog >= 1)) {
+                if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMD) {
+                    for (typeCC i = 0; i < redoLogRecord->nRow; ++i)
+                        *ctx->dumpStream << "slot[" << static_cast<uint>(i) << "]: " << std::dec <<
+                                         ctx->read16(redoLogRecord->data(redoLogRecord->slotsDelta + (i * 2))) << '\n';
+                }
+            }
+        }
     };
 }
 

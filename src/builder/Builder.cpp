@@ -2356,7 +2356,7 @@ namespace OpenLogReplicator {
         BuilderQueue* builderQueue;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_RELEASE);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock<std::mutex> const lck(mtx);
             builderQueue = firstBuilderQueue;
             while (firstBuilderQueue->id < maxId) {
                 firstBuilderQueue = firstBuilderQueue->next;
@@ -2440,7 +2440,7 @@ namespace OpenLogReplicator {
     }
 
     void Builder::wakeUp() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> const lck(mtx);
         condNoWriterWork.notify_all();
     }
 }

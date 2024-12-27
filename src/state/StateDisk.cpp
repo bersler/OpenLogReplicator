@@ -35,8 +35,8 @@ namespace OpenLogReplicator {
     }
 
     void StateDisk::list(std::set<std::string>& namesList) const {
-        DIR* dir;
-        if ((dir = opendir(path.c_str())) == nullptr)
+        DIR* dir = opendir(path.c_str());
+        if (dir == nullptr)
             throw RuntimeException(10012, "directory: " + path + " - can't read");
 
         const struct dirent* ent;

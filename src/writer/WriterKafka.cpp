@@ -128,15 +128,15 @@ namespace OpenLogReplicator {
             if (msg->tagSize > 0)
                 err = rd_kafka_producev(rk,
                                         RD_KAFKA_V_TOPIC(topic.c_str()),
-                                        RD_KAFKA_V_KEY(msg->data, msg->tagSize),
-                                        RD_KAFKA_V_VALUE((msg->data + msg->tagSize), (msg->size - msg->tagSize)),
-                                        RD_KAFKA_V_OPAQUE(msg),
+                                        RD_KAFKA_V_KEY(reinterpret_cast<void*>(msg->data), static_cast<size_t>(msg->tagSize)),
+                                        RD_KAFKA_V_VALUE(reinterpret_cast<void*>(msg->data + msg->tagSize), static_cast<size_t>(msg->size - msg->tagSize)),
+                                        RD_KAFKA_V_OPAQUE(reinterpret_cast<void*>(msg)),
                                         RD_KAFKA_V_END);
             else
                 err = rd_kafka_producev(rk,
                                         RD_KAFKA_V_TOPIC(topic.c_str()),
-                                        RD_KAFKA_V_VALUE(msg->data, msg->size),
-                                        RD_KAFKA_V_OPAQUE(msg),
+                                        RD_KAFKA_V_VALUE(reinterpret_cast<void*>(msg->data), static_cast<size_t>(msg->size)),
+                                        RD_KAFKA_V_OPAQUE(reinterpret_cast<void*>(msg)),
                                         RD_KAFKA_V_END);
 
             if (err != 0) {

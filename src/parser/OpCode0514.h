@@ -1,4 +1,4 @@
-/* Header for OpCode0514 class
+/* Redo Log OP Code 5.20
    Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -20,14 +20,64 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OP_CODE_05_14_H_
 #define OP_CODE_05_14_H_
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode0513.h"
+#include "Transaction.h"
 
 namespace OpenLogReplicator {
     class Transaction;
 
     class OpCode0514 final : public OpCode0513 {
     public:
-        static void process0514(const Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction);
+        static void process0514(const Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction) {
+            OpCode::process(ctx, redoLogRecord);
+
+            if (unlikely(transaction == nullptr)) {
+                ctx->logTrace(Ctx::TRACE::TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
+                return;
+            }
+            typePos fieldPos = 0;
+            typeField fieldNum = 0;
+            typeSize fieldSize = 0;
+
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051401);
+            // Field: 1
+            attributeSessionSerial(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051402))
+                return;
+            // Field: 2
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "transaction name = ", "transaction name", transaction);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051403))
+                return;
+            // Field: 3
+            attributeFlags(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051404))
+                return;
+            // Field: 4
+            attributeVersion(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051405))
+                return;
+            // Field: 5
+            attributeAuditSessionId(ctx, redoLogRecord, fieldPos, fieldSize, transaction);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051406))
+                return;
+            // Field: 6
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051407))
+                return;
+            // Field: 7
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "Client Id = ", "client id", transaction);
+
+            if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051408))
+                return;
+            // Field: 8
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "login   username = ", "login username", transaction);
+        }
     };
 }
 

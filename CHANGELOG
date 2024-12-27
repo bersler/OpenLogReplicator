@@ -1,3 +1,6 @@
+1.8.2
+- fix: IOT tables not properly skipped
+
 1.8.1
 - fix: archived redo logs are not fully processed
 

@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
             ctx->logTrace(Ctx::TRACE::THREADS, "main (" + ss.str() + ") start");
         }
 
-        struct stat configFileStat;
+        struct stat configFileStat{};
         fid = open(configFileName.c_str(), O_RDONLY);
         if (fid == -1)
             throw RuntimeException(10001, "file: " + configFileName + " - open for read returned: " + strerror(errno));
