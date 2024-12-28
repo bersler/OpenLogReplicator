@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.2
-:revdate: 2024-12-27
+:revdate: 2024-12-28
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -614,7 +614,7 @@ List of supported column types (with internal database codes):
 - 231 –- timestamp with local time zone;
 - 252 -- boolean.
 
-For every unsupported type `"?"` is used as value.
+Every time a column with unsupported type is processed, `"?"` is used as the value.
 
 === DDL operations
 
