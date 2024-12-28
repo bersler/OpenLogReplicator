@@ -1,5 +1,6 @@
 1.8.3
 - performance improvements
+- minor documentation update
 
 1.8.2
 - fix: IOT tables not properly skipped

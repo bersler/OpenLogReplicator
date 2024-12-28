@@ -18,6 +18,7 @@ This document describes the release notes of OpenLogReplicator.
 
 === Version 1.8.3
 - performance improvements
+- minor documentation update
 
 === Version 1.8.2
 - fix: IOT tables not properly skipped
