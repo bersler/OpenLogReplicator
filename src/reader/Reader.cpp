@@ -1048,7 +1048,7 @@ namespace OpenLogReplicator {
         return numBlocksHeader;
     }
 
-    int64_t Reader::getGroup() const {
+    int Reader::getGroup() const {
         return group;
     }
 

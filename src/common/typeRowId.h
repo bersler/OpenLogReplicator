@@ -42,8 +42,33 @@ namespace OpenLogReplicator {
                 slot(0) {
         }
 
+        explicit typeRowId(std::array<char, SIZE + 1> rowid) {
+            dataObj = (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
+                      (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
+                      static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[5])]);
+
+            const typeAfn afn = (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[6])]) << 12) |
+                                (static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
+                                static_cast<typeAfn>(Ctx::map64R[static_cast<uint8_t>(rowid[8])]);
+
+            dba = (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[9])]) << 30) |
+                  (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[10])]) << 24) |
+                  (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[11])]) << 18) |
+                  (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[12])]) << 12) |
+                  (static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[13])]) << 6) |
+                  static_cast<typeDba>(Ctx::map64R[static_cast<uint8_t>(rowid[14])]) |
+                  (static_cast<typeDba>(afn) << 22);
+
+            slot = (static_cast<typeSlot>(Ctx::map64R[static_cast<uint8_t>(rowid[15])]) << 12) |
+                   (static_cast<typeSlot>(Ctx::map64R[static_cast<uint8_t>(rowid[16])]) << 6) |
+                   static_cast<typeSlot>(Ctx::map64R[static_cast<uint8_t>(rowid[17])]);
+        };
+
         explicit typeRowId(const char* rowid) {
-            if (unlikely(strlen(rowid) != 18))
+            if (unlikely(strlen(rowid) != SIZE))
                 throw DataException(20008, "row ID incorrect size: " + std::string(rowid));
 
             dataObj = (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
@@ -167,7 +192,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] std::string toString() const {
-            char str[19];
+            char str[SIZE + 1];
             auto afn = static_cast<typeAfn>(dba >> 22);
             const typeDba bdba = dba & 0x003FFFFF;
 
@@ -194,7 +219,7 @@ namespace OpenLogReplicator {
         }
 
         friend std::ostream& operator<<(std::ostream& os, const typeRowId other) {
-            char str[19];
+            char str[SIZE + 1];
             other.toString(str);
             os << str;
             return os;

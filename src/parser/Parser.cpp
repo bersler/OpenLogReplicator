@@ -59,7 +59,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Parser::Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup,
+    Parser::Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int newGroup,
                    std::string newPath) :
             ctx(newCtx),
             builder(newBuilder),

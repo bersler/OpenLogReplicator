@@ -27,10 +27,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class RedoLog final {
     public:
-        int64_t group;
+        int group;
         std::string path;
 
-        RedoLog(int64_t newGroup, const char* newPath) :
+        RedoLog(int newGroup, const char* newPath) :
                 group(newGroup),
                 path(newPath) {
         }

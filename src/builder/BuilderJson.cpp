@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":")"));
-        char str[19];
+        char str[typeRowId::SIZE + 1];
         rowId.toHex(str);
         appendArr(str, 18);
         append('"');

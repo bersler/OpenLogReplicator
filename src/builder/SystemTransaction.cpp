@@ -428,7 +428,7 @@ namespace OpenLogReplicator {
 
     void SystemTransaction::processInsert(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         const typeRowId rowId(dataObj, bdba, slot);
-        char str[19];
+        char str[typeRowId::SIZE + 1];
         rowId.toString(str);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
             ctx->logTrace(Ctx::TRACE::SYSTEM, "insert table (name: " + table->owner + "." + table->name + ", ROWID: " + rowId.toString() + ")");
@@ -524,7 +524,7 @@ namespace OpenLogReplicator {
 
     void SystemTransaction::processUpdate(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         const typeRowId rowId(dataObj, bdba, slot);
-        char str[19];
+        char str[typeRowId::SIZE + 1];
         rowId.toString(str);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
             ctx->logTrace(Ctx::TRACE::SYSTEM, "update table (name: " + table->owner + "." + table->name + ", ROWID: " + rowId.toString() + ")");
@@ -639,7 +639,7 @@ namespace OpenLogReplicator {
 
     void SystemTransaction::processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
         const typeRowId rowId(dataObj, bdba, slot);
-        char str[19];
+        char str[typeRowId::SIZE + 1];
         rowId.toString(str);
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
             ctx->logTrace(Ctx::TRACE::SYSTEM, "delete table (name: " + table->owner + "." + table->name + ", ROWID: " + rowId.toString() + ")");

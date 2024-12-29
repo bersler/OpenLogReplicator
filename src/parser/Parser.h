@@ -94,14 +94,14 @@ namespace OpenLogReplicator {
         void dumpRedoVector(const uint8_t* data, typeSize recordSize) const;
 
     public:
-        int64_t group;
+        int group;
         std::string path;
         typeSeq sequence{0};
         typeScn firstScn{Ctx::ZERO_SCN};
         typeScn nextScn{Ctx::ZERO_SCN};
         Reader* reader{nullptr};
 
-        Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, std::string newPath);
+        Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int newGroup, std::string newPath);
         ~Parser();
 
         Reader::REDO_CODE parse();

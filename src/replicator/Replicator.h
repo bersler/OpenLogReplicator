@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
         void cleanArchList();
         void updateOnlineLogs();
         void readerDropAll();
-        static uint64_t getSequenceFromFileName(Replicator* replicator, const std::string& file);
+        static typeSeq getSequenceFromFileName(Replicator* replicator, const std::string& file);
         virtual const char* getModeName() const;
         virtual bool checkConnection();
         virtual bool continueWithOnline();
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
         virtual void positionReader();
         virtual void loadDatabaseMetadata();
         void run() override;
-        virtual Reader* readerCreate(int64_t group);
+        virtual Reader* readerCreate(int group);
         void checkOnlineRedoLogs();
         virtual void goStandby();
         void addPathMapping(const char* source, const char* target);

@@ -101,11 +101,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const char* names[]) {
+    void Ctx::checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const std::vector<std::string>& names) {
         for (auto const& child: value.GetObject()) {
             bool found = false;
-            for (int i = 0; names[i] != nullptr; ++i) {
-                if (strcmp(child.name.GetString(), names[i]) == 0) {
+            for (const auto& name : names) {
+                if (strcmp(child.name.GetString(), name.c_str()) == 0) {
                     found = true;
                     break;
                 }
