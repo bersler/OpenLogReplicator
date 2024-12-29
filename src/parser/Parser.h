@@ -38,10 +38,10 @@ namespace OpenLogReplicator {
 
     struct LwnMember {
         uint64_t offset;
-        uint32_t size;
         typeScn scn;
-        typeSubScn subScn;
+        uint32_t size;
         typeBlk block;
+        typeSubScn subScn;
 
         bool operator<(const LwnMember& other) const {
             if (scn < other.scn)

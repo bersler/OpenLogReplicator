@@ -1366,12 +1366,13 @@ namespace OpenLogReplicator {
 
                             lwnMember = reinterpret_cast<struct LwnMember*>(lwnChunks[lwnAllocated - 1] + *recordSize);
                             *recordSize += (sizeof(struct LwnMember) + recordSize4 + 7) & 0xFFFFFFF8;
+                            lwnMember->offset = blockOffset;
                             lwnMember->scn = ctx->read32(redoBlock + blockOffset + 8) |
                                              (static_cast<uint64_t>(ctx->read16(redoBlock + blockOffset + 6)) << 32);
-                            lwnMember->subScn = ctx->read16(redoBlock + blockOffset + 12);
-                            lwnMember->block = currentBlock;
-                            lwnMember->offset = blockOffset;
                             lwnMember->size = recordSize4;
+                            lwnMember->block = currentBlock;
+                            lwnMember->subScn = ctx->read16(redoBlock + blockOffset + 12);
+
                             if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
                                 ctx->logTrace(Ctx::TRACE::LWN, "size: " + std::to_string(recordSize4) + " scn: " +
                                                                std::to_string(lwnMember->scn) + " subscn: " + std::to_string(lwnMember->subScn));
@@ -1382,7 +1383,7 @@ namespace OpenLogReplicator {
 
                             while (lwnPos > 1 && *lwnMember < *lwnMembers[lwnPos / 2]) {
                                 lwnMembers[lwnPos] = lwnMembers[lwnPos / 2];
-                                lwnPos = lwnPos / 2;
+                                lwnPos /= 2;
                             }
                             lwnMembers[lwnPos] = lwnMember;
                         }
