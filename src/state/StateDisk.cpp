@@ -76,13 +76,17 @@ namespace OpenLogReplicator {
         if (static_cast<uint64_t>(fileStat.st_size) > maxSize || fileStat.st_size == 0)
             throw RuntimeException(10004, "file: " + fileName + " - wrong size: " + std::to_string(fileStat.st_size));
 
+        in.resize(fileStat.st_size);
         std::ifstream inputStream;
         inputStream.open(fileName.c_str(), std::ios::in);
 
         if (!inputStream.is_open())
             throw RuntimeException(10001, "file: " + fileName + " - open for read returned: " + strerror(errno));
 
-        in.assign((std::istreambuf_iterator<char>(inputStream)), std::istreambuf_iterator<char>());
+        inputStream.read(&in[0], fileStat.st_size);
+        if (!inputStream)
+            throw RuntimeException(10001, "file: " + fileName + " - read returned: " + strerror(errno));
+
         inputStream.close();
         return true;
     }

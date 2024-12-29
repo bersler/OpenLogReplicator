@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] typeScn getNextScn() const;
         [[nodiscard]] typeTime getNextTime() const;
         [[nodiscard]] typeBlk getNumBlocks() const;
-        [[nodiscard]] int64_t getGroup() const;
+        [[nodiscard]] int getGroup() const;
         [[nodiscard]] typeSeq getSequence() const;
         [[nodiscard]] typeResetlogs getResetlogs() const;
         [[nodiscard]] typeActivation getActivation() const;

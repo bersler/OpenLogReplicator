@@ -107,9 +107,9 @@ namespace OpenLogReplicator {
         if (err != RD_KAFKA_RESP_ERR__FATAL)
             return;
 
-        char errStrCb[512];
-        const rd_kafka_resp_err_t orig_err = rd_kafka_fatal_error(rkCb, errStrCb, sizeof(errStrCb));
-        writer->ctx->error(10057, "Kafka: fatal error: " + std::string(rd_kafka_err2name(orig_err)) + ", reason: " + errStrCb);
+        std::array<char, 512> errStrCb {};
+        const rd_kafka_resp_err_t orig_err = rd_kafka_fatal_error(rkCb, errStrCb.data(), errStrCb.size());
+        writer->ctx->error(10057, "Kafka: fatal error: " + std::string(rd_kafka_err2name(orig_err)) + ", reason: " + errStrCb.data());
 
         writer->ctx->stopHard();
     }
@@ -127,17 +127,17 @@ namespace OpenLogReplicator {
             rd_kafka_resp_err_t err;
             if (msg->tagSize > 0)
                 err = rd_kafka_producev(rk,
-                                        RD_KAFKA_V_TOPIC(topic.c_str()),
-                                        RD_KAFKA_V_KEY(reinterpret_cast<void*>(msg->data), static_cast<size_t>(msg->tagSize)),
-                                        RD_KAFKA_V_VALUE(reinterpret_cast<void*>(msg->data + msg->tagSize), static_cast<size_t>(msg->size - msg->tagSize)),
-                                        RD_KAFKA_V_OPAQUE(reinterpret_cast<void*>(msg)),
-                                        RD_KAFKA_V_END);
+                                        RD_KAFKA_VTYPE_TOPIC, topic.c_str(),
+                                        RD_KAFKA_VTYPE_KEY, reinterpret_cast<void*>(msg->data), static_cast<size_t>(msg->tagSize),
+                                        RD_KAFKA_VTYPE_VALUE, reinterpret_cast<void*>(msg->data + msg->tagSize), static_cast<size_t>(msg->size - msg->tagSize),
+                                        RD_KAFKA_VTYPE_OPAQUE, reinterpret_cast<void*>(msg),
+                                        RD_KAFKA_VTYPE_END);
             else
                 err = rd_kafka_producev(rk,
-                                        RD_KAFKA_V_TOPIC(topic.c_str()),
-                                        RD_KAFKA_V_VALUE(reinterpret_cast<void*>(msg->data), static_cast<size_t>(msg->size)),
-                                        RD_KAFKA_V_OPAQUE(reinterpret_cast<void*>(msg)),
-                                        RD_KAFKA_V_END);
+                                        RD_KAFKA_VTYPE_TOPIC, topic.c_str(),
+                                        RD_KAFKA_VTYPE_VALUE, reinterpret_cast<void*>(msg->data), static_cast<size_t>(msg->size),
+                                        RD_KAFKA_VTYPE_OPAQUE, reinterpret_cast<void*>(msg),
+                                        RD_KAFKA_VTYPE_END);
 
             if (err != 0) {
                 ctx->warning(60031, "failed to produce to topic " + topic + ", message: " + rd_kafka_err2str(err));

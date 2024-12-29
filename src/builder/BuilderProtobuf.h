@@ -85,7 +85,7 @@ namespace OpenLogReplicator {
                 return;
             if (format.ridFormat == Format::RID_FORMAT::TEXT) {
                 const typeRowId rowId(dataObj, bdba, slot);
-                char str[19];
+                char str[typeRowId::SIZE + 1];
                 rowId.toString(str);
                 payloadPB->set_rid(str, 18);
             }

@@ -36,7 +36,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../metadata/Schema.h"
 #include "../parser/Parser.h"
 #include "../parser/Transaction.h"
-#include "../parser/TransactionBuffer.h"
 #include "../reader/ReaderFilesystem.h"
 #include "Replicator.h"
 
@@ -285,7 +284,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    Reader* Replicator::readerCreate(int64_t group) {
+    Reader* Replicator::readerCreate(int group) {
         for (Reader* reader: readers)
             if (reader->getGroup() == group)
                 return reader;
@@ -345,10 +344,10 @@ namespace OpenLogReplicator {
     // %a - activation id
     // %d - database id
     // %h - some hash
-    uint64_t Replicator::getSequenceFromFileName(Replicator* replicator, const std::string& file) {
-        uint64_t sequence = 0;
-        uint64_t i = 0;
-        uint64_t j = 0;
+    typeSeq Replicator::getSequenceFromFileName(Replicator* replicator, const std::string& file) {
+        typeSeq sequence = 0;
+        size_t i = 0;
+        size_t j = 0;
 
         while (i < replicator->metadata->logArchiveFormat.length() && j < file.length()) {
             if (replicator->metadata->logArchiveFormat[i] == '%') {
@@ -358,13 +357,13 @@ namespace OpenLogReplicator {
                                                     std::to_string(i) + ", found end after %");
                     return 0;
                 }
-                uint64_t digits = 0;
+                uint digits = 0;
                 if (replicator->metadata->logArchiveFormat[i + 1] == 's' || replicator->metadata->logArchiveFormat[i + 1] == 'S' ||
                     replicator->metadata->logArchiveFormat[i + 1] == 't' || replicator->metadata->logArchiveFormat[i + 1] == 'T' ||
                     replicator->metadata->logArchiveFormat[i + 1] == 'r' || replicator->metadata->logArchiveFormat[i + 1] == 'a' ||
                     replicator->metadata->logArchiveFormat[i + 1] == 'd') {
                     // Some [0-9]*
-                    uint64_t number = 0;
+                    typeSeq number = 0;
                     while (j < file.length() && file[j] >= '0' && file[j] <= '9') {
                         number = number * 10 + (file[j] - '0');
                         ++j;
@@ -424,7 +423,7 @@ namespace OpenLogReplicator {
 
     void Replicator::applyMapping(std::string& path) {
         const size_t newPathLength = path.length();
-        char pathBuffer[Ctx::MAX_PATH_LENGTH];
+        std::array<char, Ctx::MAX_PATH_LENGTH> pathBuffer {};
 
         for (size_t i = 0; i < pathMapping.size() / 2; ++i) {
             const uint64_t sourceLength = pathMapping[i * 2].length();
@@ -434,12 +433,12 @@ namespace OpenLogReplicator {
                 newPathLength - sourceLength + targetLength < Ctx::MAX_PATH_LENGTH - 1 &&
                 memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
 
-                memcpy(reinterpret_cast<void*>(pathBuffer),
+                memcpy(reinterpret_cast<void*>(pathBuffer.data()),
                        reinterpret_cast<const void*>(pathMapping[(i * 2) + 1].c_str()), targetLength);
-                memcpy(reinterpret_cast<void*>(pathBuffer + targetLength),
+                memcpy(reinterpret_cast<void*>(pathBuffer.data() + targetLength),
                        reinterpret_cast<const void*>(path.c_str() + sourceLength), newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
-                path.assign(pathBuffer);
+                path.assign(pathBuffer.data());
                 break;
             }
         }
@@ -512,7 +511,7 @@ namespace OpenLogReplicator {
                 if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
                     replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "checking path: " + fileName);
 
-                const uint64_t sequence = getSequenceFromFileName(replicator, ent2->d_name);
+                const typeSeq sequence = getSequenceFromFileName(replicator, ent2->d_name);
 
                 if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
                     replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "found seq: " + std::to_string(sequence));
@@ -543,7 +542,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::archGetLogList(Replicator* replicator) {
-        uint64_t sequenceStart = Ctx::ZERO_SEQ;
+        typeSeq sequenceStart = Ctx::ZERO_SEQ;
         for (const std::string& mappedPath: replicator->redoLogsBatch) {
             if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
                 replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "checking path: " + mappedPath);
@@ -561,13 +560,13 @@ namespace OpenLogReplicator {
 
                 // Getting file name from the path
                 const char* fileName = mappedPath.c_str();
-                uint64_t j = mappedPath.length();
+                size_t j = mappedPath.length();
                 while (j > 0) {
                     if (fileName[j - 1] == '/')
                         break;
                     --j;
                 }
-                const uint64_t sequence = getSequenceFromFileName(replicator, fileName + j);
+                const typeSeq sequence = getSequenceFromFileName(replicator, fileName + j);
 
                 if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
                     replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "found seq: " + std::to_string(sequence));
@@ -599,7 +598,7 @@ namespace OpenLogReplicator {
                     if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
                         replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "checking path: " + fileName);
 
-                    const uint64_t sequence = getSequenceFromFileName(replicator, ent->d_name);
+                    const typeSeq sequence = getSequenceFromFileName(replicator, ent->d_name);
 
                     if (unlikely(replicator->ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
                         replicator->ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "found seq: " + std::to_string(sequence));
@@ -838,8 +837,8 @@ namespace OpenLogReplicator {
                         higher = true;
 
                     if (onlineRedo->reader->getSequence() == metadata->sequence &&
-                        (onlineRedo->reader->getNumBlocks() == Ctx::ZERO_BLK || metadata->offset < static_cast<uint64_t>(onlineRedo->reader->getNumBlocks() *
-                                                                                                   onlineRedo->reader->getBlockSize()))) {
+                            (onlineRedo->reader->getNumBlocks() == Ctx::ZERO_BLK || metadata->offset <
+                            static_cast<uint64_t>(onlineRedo->reader->getNumBlocks() * static_cast<uint64_t>(onlineRedo->reader->getBlockSize())))) {
                         parser = onlineRedo;
                     }
 

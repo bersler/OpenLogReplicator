@@ -1,6 +1,7 @@
 1.8.3
 - performance improvements
 - minor documentation update
+- fix: compiler warnings
 
 1.8.2
 - fix: IOT tables not properly skipped

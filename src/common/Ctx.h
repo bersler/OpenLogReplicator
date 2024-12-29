@@ -568,7 +568,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        static void checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const char* names[]);
+        static void checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const std::vector<std::string>& names);
         [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static int16_t getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field);

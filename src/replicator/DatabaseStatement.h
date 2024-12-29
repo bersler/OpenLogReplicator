@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef DATABASE_STATEMENT_H_
 #define DATABASE_STATEMENT_H_
 
+#include <cstring>
 #include <oci.h>
 #include <vector>
 
@@ -42,25 +43,54 @@ namespace OpenLogReplicator {
 
         void createStatement(const char* sql);
         void unbindAll();
-        int64_t executeQuery();
-        int64_t next();
+        int executeQuery();
+        int next();
 
-        void bindString(uint64_t col, const char* val);
-        void bindString(uint64_t col, std::string& val);
+        void bindString(uint col, const char* val);
+        void bindString(uint col, std::string& val);
+        void bindBinary(uint col, uint8_t* buf, uint64_t size);
+        void defineString(uint col, char* val, uint64_t len);
+        [[nodiscard]] bool isNull(uint col);
 
-        void bindInt32(uint64_t col, int32_t& val);
-        void bindUInt32(uint64_t col, uint32_t& val);
-        void bindInt64(uint64_t col, int64_t& val);
-        void bindUInt64(uint64_t col, uint64_t& val);
-        void bindBinary(uint64_t col, uint8_t* buf, uint64_t size);
-        void defineString(uint64_t col, char* val, uint64_t len);
-        void defineUInt16(uint64_t col, uint16_t& val);
-        void defineInt16(uint64_t col, int16_t& val);
-        void defineUInt32(uint64_t col, uint32_t& val);
-        void defineInt32(uint64_t col, int32_t& val);
-        void defineUInt64(uint64_t col, uint64_t& val);
-        void defineInt64(uint64_t col, int64_t& val);
-        [[nodiscard]] bool isNull(uint64_t col);
+        template<typename T>
+        void bindInt(uint col, T& val) {
+            OCIBind* bindp = nullptr;
+            const sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, reinterpret_cast<void*>(&val), sizeof(val),
+                                           SQLT_INT, nullptr, nullptr, nullptr, 0, nullptr, OCI_DEFAULT);
+            if (bindp != nullptr)
+                binds.push_back(bindp);
+            conn->env->checkErr(conn->errhp, ret);
+        }
+
+        template<typename T>
+        void bindUInt(uint col, T& val) {
+            OCIBind* bindp = nullptr;
+            const sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, reinterpret_cast<void*>(&val), sizeof(val),
+                                           SQLT_UIN, nullptr, nullptr, nullptr, 0, nullptr, OCI_DEFAULT);
+            if (bindp != nullptr)
+                binds.push_back(bindp);
+            conn->env->checkErr(conn->errhp, ret);
+        }
+
+        template<typename T>
+        void defineInt(uint col, T& val) {
+            OCIDefine* defp = nullptr;
+            const sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_INT, nullptr,
+                                             nullptr, nullptr, OCI_DEFAULT);
+            if (defp != nullptr)
+                defines.push_back(defp);
+            conn->env->checkErr(conn->errhp, ret);
+        }
+
+        template<typename T>
+        void defineUInt(uint col, T& val) {
+            OCIDefine* defp = nullptr;
+            const sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_UIN, nullptr,
+                                             nullptr, nullptr, OCI_DEFAULT);
+            if (defp != nullptr)
+                defines.push_back(defp);
+            conn->env->checkErr(conn->errhp, ret);
+        }
     };
 }
 
