@@ -253,14 +253,15 @@ namespace OpenLogReplicator {
         newSchemaElements.clear();
     }
 
-    void Metadata::buildMaps(std::vector<std::string>& msgs) {
+    void Metadata::buildMaps(std::vector<std::string>& msgs, std::unordered_map<typeObj, std::string>& tablesUpdated) {
         for (const SchemaElement* element: schemaElements) {
             if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                 msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
                                std::to_string(static_cast<uint>(element->options)));
 
             schema->buildMaps(element->owner, element->table, element->keyList, element->key, element->tagType, element->tagList, element->tag,
-                              element->condition, element->options, msgs, suppLogDbPrimary, suppLogDbAll, defaultCharacterMapId, defaultCharacterNcharMapId);
+                              element->condition, element->options, tablesUpdated, suppLogDbPrimary, suppLogDbAll, defaultCharacterMapId,
+                              defaultCharacterNcharMapId);
         }
     }
 
@@ -463,6 +464,7 @@ namespace OpenLogReplicator {
 
     void Metadata::readCheckpoint(typeScn scn) {
         std::vector<std::string> msgs;
+        std::unordered_map<typeObj, std::string> tablesUpdated;
         ctx->info(0, "reading metadata for " + database + " for scn: " + std::to_string(scn));
         std::string ss;
 
@@ -474,17 +476,19 @@ namespace OpenLogReplicator {
             sequence = Ctx::ZERO_SEQ;
             return;
         }
-        if (!serializer->deserialize(this, ss, name1, msgs, true, true)) {
-            for (const auto& msg: msgs) {
-                ctx->info(0, msg);
+        if (!serializer->deserialize(this, ss, name1, msgs, tablesUpdated, true, true)) {
+            for (const auto& it: tablesUpdated) {
+                ctx->info(0, it.second);
             }
             return;
         }
 
-        for (const auto& msg: msgs) {
-            ctx->info(0, "- found: " + msg);
+        for (const auto& msg: msgs)
+            ctx->info(0, msg);
+        for (const auto& it: tablesUpdated) {
+            ctx->info(0, "- found: " + it.second);
         }
-        msgs.clear();
+        tablesUpdated.clear();
 
         // Schema missing
         if (schema->scn == Ctx::ZERO_SCN) {
@@ -500,7 +504,7 @@ namespace OpenLogReplicator {
             if (!stateRead(name2, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss))
                 return;
 
-            if (!serializer->deserialize(this, ss, name2, msgs, false, true)) {
+            if (!serializer->deserialize(this, ss, name2, msgs, tablesUpdated, false, true)) {
                 for (const auto& msg: msgs) {
                     ctx->info(0, msg);
                 }
@@ -508,7 +512,10 @@ namespace OpenLogReplicator {
             }
 
             for (const auto& msg: msgs) {
-                ctx->info(0, "- found: " + msg);
+                ctx->info(0, msg);
+            }
+            for (const auto& it: tablesUpdated) {
+                ctx->info(0, "- found: " + it.second);
             }
         }
 
@@ -576,6 +583,7 @@ namespace OpenLogReplicator {
     void Metadata::loadAdaptiveSchema() {
         std::string ss;
         std::vector<std::string> msgs;
+        std::unordered_map<typeObj, std::string> tablesUpdated;
         const std::string name("base-" + ctx->versionStr);
 
         ctx->info(0, "reading adaptive schema from: " + name + ".json");
@@ -588,7 +596,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (!serializer->deserialize(this, ss, name, msgs, false, true)) {
+        if (!serializer->deserialize(this, ss, name, msgs, tablesUpdated, false, true)) {
             for (const auto& msg: msgs) {
                 ctx->info(0, msg);
             }
@@ -597,7 +605,10 @@ namespace OpenLogReplicator {
 
         firstSchemaScn = 0;
         for (const auto& msg: msgs) {
-            ctx->info(0, "- found: " + msg);
+            ctx->info(0, msg);
+        }
+        for (const auto& it: tablesUpdated) {
+            ctx->info(0, "- found: " + it.second);
         }
     }
 

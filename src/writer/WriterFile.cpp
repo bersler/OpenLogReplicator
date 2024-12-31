@@ -194,9 +194,10 @@ namespace OpenLogReplicator {
     }
 
     void WriterFile::checkFile(typeScn scn __attribute__((unused)), typeSeq sequence, uint64_t size) {
-        if (mode == MODE::STDOUT) {
+        if (mode == MODE::STDOUT)
             return;
-        } else if (mode == MODE::NO_ROTATE) {
+
+        if (mode == MODE::NO_ROTATE) {
             fullFileName = pathName + "/" + fileNameMask;
         } else if (mode == MODE::NUM) {
             if (fileSize + size > maxFileSize) {
@@ -308,8 +309,7 @@ namespace OpenLogReplicator {
     std::string WriterFile::getType() const {
         if (outputDes == STDOUT_FILENO)
             return "stdout";
-        else
-            return "file:" + pathName + "/" + fileNameMask;
+                    return "file:" + pathName + "/" + fileNameMask;
     }
 
     void WriterFile::pollQueue() {

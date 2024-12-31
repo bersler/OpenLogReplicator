@@ -467,8 +467,8 @@ namespace OpenLogReplicator {
         ss << "]}";
     }
 
-    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::vector<std::string>& msgs, bool loadMetadata,
-                                     bool loadSchema) {
+    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::vector<std::string>& msgs,
+                                     std::unordered_map<typeObj, std::string>& tablesUpdated, bool loadMetadata, bool loadSchema) {
         try {
             rapidjson::Document document;
             if (unlikely(ss.empty() || document.Parse(ss.c_str()).HasParseError()))
@@ -668,7 +668,7 @@ namespace OpenLogReplicator {
                 }
 
                 // Loading schema from configuration file
-                metadata->buildMaps(msgs);
+                metadata->buildMaps(msgs, tablesUpdated);
                 metadata->schema->resetTouched();
                 metadata->schema->loaded = true;
                 return true;

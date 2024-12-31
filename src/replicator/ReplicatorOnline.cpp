@@ -957,7 +957,7 @@ namespace OpenLogReplicator {
 
         ctx->info(0, "reading dictionaries for scn: " + std::to_string(metadata->firstDataScn));
 
-        std::vector<std::string> msgs;
+        std::unordered_map<typeObj, std::string> tablesUpdated;
         {
             contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_SCHEMA);
             std::unique_lock<std::mutex> const lck(metadata->mtxSchema);
@@ -969,7 +969,7 @@ namespace OpenLogReplicator {
 
             for (const SchemaElement* element: metadata->schemaElements)
                 createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keyList, element->key, element->tagType,
-                                     element->tagList, element->tag, element->condition, element->options, msgs);
+                                     element->tagList, element->tag, element->condition, element->options, tablesUpdated);
             metadata->schema->resetTouched();
 
             if (unlikely(metadata->ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
@@ -978,9 +978,8 @@ namespace OpenLogReplicator {
         }
         contextSet(CONTEXT::CPU);
 
-        for (const auto& msg: msgs) {
-            ctx->info(0, "- found: " + msg);
-        }
+        for (const auto& it: tablesUpdated)
+            ctx->info(0, "- found: " + it.second);
     }
 
     void ReplicatorOnline::readSystemDictionariesMetadata(Schema* schema, typeScn targetScn) {
@@ -1882,14 +1881,14 @@ namespace OpenLogReplicator {
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keyList,
                                                 const std::string& key, SchemaElement::TAG_TYPE tagType, const std::vector<std::string>& tagList, const std::string& tag,
-                                                const std::string& condition, DbTable::OPTIONS options, std::vector<std::string>& msgs) {
+                                                const std::string& condition, DbTable::OPTIONS options, std::unordered_map<typeObj, std::string>& tablesUpdated) {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
             ctx->logTrace(Ctx::TRACE::REDO, "creating table schema for owner: " + owner + " table: " + table + " options: " +
                                             std::to_string(static_cast<uint>(options)));
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);
 
-        metadata->schema->buildMaps(owner, table, keyList, key, tagType, tagList, tag, condition, options, msgs, metadata->suppLogDbPrimary,
+        metadata->schema->buildMaps(owner, table, keyList, key, tagType, tagList, tag, condition, options, tablesUpdated, metadata->suppLogDbPrimary,
                                     metadata->suppLogDbAll, metadata->defaultCharacterMapId,
                                     metadata->defaultCharacterNcharMapId);
     }

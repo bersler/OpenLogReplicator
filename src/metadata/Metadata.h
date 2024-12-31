@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
         SchemaElement* addElement(const char* owner, const char* table, DbTable::OPTIONS options);
         void resetElements();
         void commitElements();
-        void buildMaps(std::vector<std::string>& msgs);
+        void buildMaps(std::vector<std::string>& msgs, std::unordered_map<typeObj, std::string>& tablesUpdated);
 
         void waitForWriter(Thread* t);
         void waitForReplicator(Thread* t);

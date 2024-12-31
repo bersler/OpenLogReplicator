@@ -226,9 +226,12 @@ namespace OpenLogReplicator {
                 metadata->schema->touchTable(it.second->obj);
 
             std::vector<std::string> msgs;
-            metadata->buildMaps(msgs);
+            std::unordered_map<typeObj, std::string> tablesUpdated;
+            metadata->buildMaps(msgs, tablesUpdated);
             for (const auto& msg: msgs)
-                ctx->info(0, "- found: " + msg);
+                ctx->info(0, msg);
+            for (const auto& it: tablesUpdated)
+                ctx->info(0, "- found: " + it.second);
 
             metadata->schema->resetTouched();
         }

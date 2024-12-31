@@ -22,6 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
+#include <unordered_map>
 #include <vector>
 
 #include "../common/types.h"
@@ -35,7 +36,7 @@ namespace OpenLogReplicator {
         virtual ~Serializer() = default;
 
         [[nodiscard]] virtual bool deserialize(Metadata* metadata, const std::string& ss, const std::string& fileName, std::vector<std::string>& msgs,
-                                               bool loadMetadata, bool storeSchema) = 0;
+                                               std::unordered_map<typeObj, std::string>& tablesUpdated, bool loadMetadata, bool storeSchema) = 0;
         virtual void serialize(Metadata* metadata, std::ostringstream& ss, bool noSchema) = 0;
     };
 }

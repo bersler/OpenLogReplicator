@@ -733,19 +733,24 @@ namespace OpenLogReplicator {
         if (!metadata->schema->touched)
             return;
 
-        std::vector<std::string> msgsDropped;
-        std::vector<std::string> msgsUpdated;
+        std::vector<std::string> msgs;
+        std::unordered_map<typeObj, std::string> tablesDropped;
+        std::unordered_map<typeObj, std::string> tablesUpdated;
         metadata->schema->scn = scn;
-        metadata->schema->dropUnusedMetadata(metadata->users, metadata->schemaElements, msgsDropped);
+        metadata->schema->dropUnusedMetadata(metadata->users, metadata->schemaElements, tablesDropped);
 
-        metadata->buildMaps(msgsUpdated);
+        metadata->buildMaps(msgs, tablesUpdated);
         metadata->schema->resetTouched();
 
-        for (const auto& msg: msgsDropped) {
-            ctx->info(0, "dropped metadata: " + msg);
+        for (const auto& msg: msgs)
+            ctx->info(0, msg);
+        for (const auto& it: tablesDropped) {
+            if (tablesUpdated.find(it.first) != tablesUpdated.end())
+                continue;
+            ctx->info(0, "dropped metadata: " + it.second);
         }
-        for (const auto& msg: msgsUpdated) {
-            ctx->info(0, "updated metadata: " + msg);
+        for (const auto& it: tablesUpdated) {
+            ctx->info(0, "updated metadata: " + it.second);
         }
 
         metadata->schema->updateXmlCtx();

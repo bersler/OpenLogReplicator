@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
         if (!inputStream.is_open())
             throw RuntimeException(10001, "file: " + fileName + " - open for read returned: " + strerror(errno));
 
-        inputStream.read(&in[0], fileStat.st_size);
+        inputStream.read(in.data(), fileStat.st_size);
         if (!inputStream)
             throw RuntimeException(10001, "file: " + fileName + " - read returned: " + strerror(errno));
 

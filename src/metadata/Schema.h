@@ -124,11 +124,12 @@ namespace OpenLogReplicator {
         [[nodiscard]] bool checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table) const;
         [[nodiscard]] DbLob* checkLobDict(typeDataObj dataObj) const;
         [[nodiscard]] DbLob* checkLobIndexDict(typeDataObj dataObj) const;
-        void dropUnusedMetadata(const std::set<std::string>& users, const std::vector<SchemaElement*>& schemaElements, std::vector<std::string>& msgs);
+        void dropUnusedMetadata(const std::set<std::string>& users, const std::vector<SchemaElement*>& schemaElements, std::unordered_map<typeObj,
+                                std::string>& tablesDropped);
         void buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keyList, const std::string& key,
                        SchemaElement::TAG_TYPE tagType, const std::vector<std::string>& tagList, const std::string& tag, const std::string& condition,
-                       DbTable::OPTIONS options, std::vector<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
-                       uint64_t defaultCharacterNcharMapId);
+                       DbTable::OPTIONS options, std::unordered_map<typeObj, std::string>& tablesUpdated, bool suppLogDbPrimary, bool suppLogDbAll,
+                       uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId);
         void resetTouched();
         void updateXmlCtx();
     };

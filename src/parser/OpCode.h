@@ -421,6 +421,8 @@ namespace OpenLogReplicator {
                 case KDLI_CODE_IMAPX:
                     kdliImapx(ctx, /* redoLogRecord, fieldPos, */ fieldSize, code);
                     break;
+                default:
+                    ;
             }
         }
 
@@ -484,6 +486,8 @@ namespace OpenLogReplicator {
                     case KDLI_TYPE_AUX:
                         flg0typ = "aux";
                         break;
+                    default:
+                        ;
                 }
                 const char* flg0lock = "n";
                 if ((flg0 & KDLI_TYPE_LOCK) != 0)
@@ -764,6 +768,8 @@ namespace OpenLogReplicator {
                     case KDLI_TYPE_AUX:
                         flg0typ = "aux";
                         break;
+                    default:
+                        ;
                 }
                 const char* flg0lock = "n";
                 if ((flg0 & KDLI_TYPE_LOCK) != 0)
@@ -989,6 +995,8 @@ namespace OpenLogReplicator {
                     case KDLI_TYPE_AUX:
                         flg0typ = "aux";
                         break;
+                    default:
+                        ;
                 }
                 const char* flg0lock = "n";
                 if ((flg0 & KDLI_TYPE_LOCK) != 0)
@@ -1138,6 +1146,8 @@ namespace OpenLogReplicator {
                     case KDLI_OP_SINV:
                         opCode = "SINV";
                         break;
+                    default:
+                        ;
                 }
                 const uint8_t type = *redoLogRecord->data(fieldPos + 1);
                 const char* typeCode = "???";
@@ -1165,6 +1175,8 @@ namespace OpenLogReplicator {
                     case KDLI_TYPE_AUX:
                         typeCode = "aux";
                         break;
+                    default:
+                        ;
                 }
 
                 const uint8_t flg0 = *redoLogRecord->data(fieldPos + 2);
@@ -1317,6 +1329,8 @@ namespace OpenLogReplicator {
                         // Unknown
                         xtype = "CR";
                         break;
+                    default:
+                        ;
                 }
                 redoLogRecord->flags &= 0xFC;
 
@@ -1375,6 +1389,8 @@ namespace OpenLogReplicator {
                             *ctx->dumpStream << "piece relative column number: " << std::dec << static_cast<uint>(rel) << '\n';
                         }
                         break;
+                    default:
+                        ;
                 }
             }
 
@@ -1411,6 +1427,8 @@ namespace OpenLogReplicator {
                 case RedoLogRecord::OP_QMD:
                     kdoOpCodeQM(ctx, redoLogRecord, fieldPos, fieldSize);
                     break;
+                default:
+                    ;
             }
         }
 
