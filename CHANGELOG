@@ -2,6 +2,7 @@
 - performance improvements
 - minor documentation update
 - fix: compiler warnings
+- fix: information about changed schema
 
 1.8.2
 - fix: IOT tables not properly skipped

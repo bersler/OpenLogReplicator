@@ -72,8 +72,8 @@ namespace OpenLogReplicator {
         RedoLogRecord zero;
         Transaction* lastTransaction{nullptr};
 
-        uint8_t* lwnChunks[MAX_LWN_CHUNKS];
-        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN + 1];
+        uint8_t* lwnChunks[MAX_LWN_CHUNKS]{};
+        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN + 1]{};
         uint64_t lwnAllocated{0};
         uint64_t lwnAllocatedMax{0};
         typeTime lwnTimestamp{0};

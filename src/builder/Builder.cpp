@@ -712,7 +712,7 @@ namespace OpenLogReplicator {
         typeField fieldNum = 0;
         typeSize fieldSize = 0;
         typeSize colSize;
-        DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        const DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if (format.isScnTypeCommitValue())
             scn = commitScn;
 
@@ -805,7 +805,7 @@ namespace OpenLogReplicator {
         typeField fieldNum = 0;
         typeSize fieldSize = 0;
         typeSize colSize;
-        DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        const DbTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if (format.isScnTypeCommitValue())
             scn = commitScn;
 

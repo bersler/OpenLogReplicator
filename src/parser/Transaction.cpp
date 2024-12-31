@@ -105,6 +105,8 @@ namespace OpenLogReplicator {
                     if (redoLogRecord1->opCode == 0x0B16)
                         ok = true;
                     break;
+                default:
+                    ;
             }
 
             if (lastRedoLogRecord2->obj != redoLogRecord1->obj)
@@ -152,6 +154,8 @@ namespace OpenLogReplicator {
                 case 0x0514:
                     ok = true;
                     break;
+                default:
+                    ;
             }
 
             if (lastRedoLogRecord1->obj != redoLogRecord1->obj)
@@ -342,6 +346,8 @@ namespace OpenLogReplicator {
                                 lobCtx.addLob(metadata->ctx, redoLogRecord2->lobId, redoLogRecord2->dba, redoLogRecord2->lobOffset,
                                               TransactionBuffer::allocateLob(redoLogRecord2), xid, redoLogRecord2->lobData);
                                 break;
+                            default:
+                                ;
                         }
                         break;
 

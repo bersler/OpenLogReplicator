@@ -538,8 +538,19 @@ namespace OpenLogReplicator {
                         if ((value % 10) != 0)
                             valueBufferAppend(Ctx::map10(value % 10));
                     }
-                } else
-                    throw RedoLogException(50009, "error parsing numeric value at offset: " + std::to_string(offset));
+                } else {
+                    if (digits == 0) {
+                        valueBufferAppend('0');
+                    } else {
+                        if (unlikely(format.unknownFormat == Format::UNKNOWN_FORMAT::DUMP)) {
+                            std::ostringstream ss;
+                            for (uint32_t k = 0; k < size; ++k)
+                                ss << " " << std::hex << std::setfill('0') << std::setw(2) << (static_cast<uint64_t>(data[k]));
+                            ctx->warning(60002, "unknown value: " + std::to_string(size) + " - " + ss.str());
+                        }
+                        throw RedoLogException(50009, "error parsing numeric value at offset: " + std::to_string(offset));
+                    }
+                }
             }
         }
 
@@ -1081,7 +1092,7 @@ namespace OpenLogReplicator {
 
             // Something left to parse from previous run
             if (hasPrev && prevCharsSize > 0) {
-                overlap = std::min(2 * CharacterSet::MAX_CHARACTER_LENGTH - prevCharsSize, size);
+                overlap = std::min((2 * CharacterSet::MAX_CHARACTER_LENGTH) - prevCharsSize, size);
                 memcpy(prevChars + prevCharsSize, data, overlap);
                 parseData = prevChars;
                 parseSize = prevCharsSize + overlap;
