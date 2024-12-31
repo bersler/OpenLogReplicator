@@ -1,5 +1,5 @@
 /* Base class for state in files on disk
-   Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
         outputStream.open(fileName.c_str(), std::ios::out | std::ios::trunc);
         if (!outputStream.is_open())
-            throw RuntimeException(10006, "file: " + fileName + " - open for write returned: " + strerror(errno));
+            throw RuntimeException(10006, "file: " + fileName + " - open for writing returned: " + strerror(errno));
 
         outputStream << out.str();
         if (outputStream.bad() || outputStream.fail())

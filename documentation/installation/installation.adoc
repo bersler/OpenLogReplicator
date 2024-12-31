@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.3
-:revdate: 2024-12-28
+:revdate: 2025-01-01
 :imagesdir: ./images
 :toc: preamble
 
@@ -201,13 +201,13 @@ SELECT SUPPLEMENTAL_LOG_DATA_ALL FROM V$DATABASE;
 
 ==== User requirements
 
-Requirements for ONLINE reader type:
+Requirements for an ONLINE reader type:
 
 * user in the source database granted with rights to read some system tables (the full list below),
 
 * physical access to redo log files (online and archived); when running from remote host access through SSHFS is possible.
 
-Requirements for OFFLINE reader type:
+Requirements for an OFFLINE reader type:
 
 * physical access to read redo log files.
 

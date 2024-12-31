@@ -1,16 +1,16 @@
-1.8.3
+1.8.3 - released on 2025.01.01
 - performance improvements
 - minor documentation update
 - fix: compiler warnings
 - fix: information about changed schema
 
-1.8.2
+1.8.2 - released on 2024.12.27
 - fix: IOT tables not properly skipped
 
-1.8.1
+1.8.1 - released on 2024.12.25
 - fix: archived redo logs are not fully processed
 
-1.8.0
+1.8.0 - released on 2024.12.21
 - code style cleanup
 - changed parameters "scn" and "scn-all" -> "scn-key"
 - enhancement: add key data to messages
@@ -19,20 +19,20 @@
 - enhancement: add support for DDL text > 4k
 - fix: sometimes direct IO was not working
 
-1.7.0
+1.7.0 - released on 2024.09.30
 - fix: welcome banner
 - code style cleanup
 - fix: diagnostic information populated when not enabled
 - enhancement: add dictionary values for TIMEZONE database parameter
 - enhancement: add parameter -r|--root to disable root check on startup
 - fix: in rare cases column value is null instead of actual value
-- fix: when redo log file is truncated, read error might appear
+- fix: when a redo log file is truncated, read error might appear
 - documentation update
 - fix: missing include for some systems
 - enhancement: thread performance information
 - enhancement: swap memory to disk in low memory situations
 
-1.6.0
+1.6.0 - released on 2024.05.31
 - enhancement: add parameter -p
 - enhancement: performance optimizations
 - enhancement: add offset to payload for debugging purposes
@@ -40,7 +40,7 @@
 - enhancement: add JSON validation for invalid tags
 - fix: context field contains invalid value
 - fix: invalid tag in example json config file
-- fix: online redo log are read in rare cases for archived redo log only mode
+- fix: online redo logs are read in rare cases for archived redo log only mode
 - fix: don't write checkpoint file until the first data chunk is processed
 - fix: minor bug related to crash with large number of columns
 - fix: error: "parse error, attribute xid: not expected"
@@ -49,7 +49,7 @@
 - documentation update
 - fix: welcome message
 
-1.5.0
+1.5.0 - released on 2024.01.29
 - code style cleanup
 - enhancement: new writer type: discard
 - minor code optimizations
@@ -65,7 +65,7 @@
 - enhancement: collecting metrics using Prometheus
 - configuration change: moved memory options "memory-max-mb", "memory-min-mb", "read-buffer-max-mb" to "memory" group and renamed to "max-mb", "min-mb"
 
-1.4.0
+1.4.0 - released on 2023.12.23
 - fix: date and timestamp with year before 1900 or after 2262 produce incorrect values
 - enhancement: unify gencfg.sql script for 11g and 12+
 - fix: bad checkpoint file causes startup to fail with no explanation
@@ -80,7 +80,7 @@
 - enhancement: database version 23c: set column limit to 4096
 - clang-tidy code reformatting
 
-1.3.0
+1.3.0 - released on 2023.10.02
 - doc: updated README.md, added reference to a tutorial GitHub project
 - fix: PDB/CDB support
 - fix: unified comment style
@@ -112,7 +112,7 @@ n inconsistency in transaction fix
 - experimental: added partial support for binary XMLType data
 - enhancement: performance optimizations
 
-1.2.0
+1.2.0 - released on 2023.03.31
 - doc: Introduction to OpenLogReplicator
 - fix: minor bug related to sending ddl operations to output
 - fix: minor parameter validation bug
@@ -142,7 +142,7 @@ n inconsistency in transaction fix
 - fix: compilation error when Kafka is disabled
 - fix: checkpoint did not advance when no data was replicated
 
-1.1.0
+1.1.0 - released on 2023.03.19
 - debug: trace formatting changes
 - enhancement: add handling of OP 26.2 for experimental LOB support
 - fix: experimental LOB support

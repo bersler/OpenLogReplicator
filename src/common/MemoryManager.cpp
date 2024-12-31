@@ -1,5 +1,5 @@
 /* Base class for process to swapping memory to disk when low
-   Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -356,7 +356,7 @@ namespace OpenLogReplicator {
         const int mode = S_IWUSR | S_IRUSR;
         const int fileDes = open(fileName.c_str(), flags, mode);
         if (fileDes == -1)
-            throw RuntimeException(50072, "swap file: " + fileName + " - open for write returned: " + strerror(errno));
+            throw RuntimeException(50072, "swap file: " + fileName + " - open for writing returned: " + strerror(errno));
 
 #if __APPLE__
         if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {

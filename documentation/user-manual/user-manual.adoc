@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.8.2
-:revdate: 2024-12-28
+:revnumber: 1.8.3
+:revdate: 2025-01-01
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -96,7 +96,7 @@ The metadata is always kept in memory.
 The read buffers are always kept in memory.
 
 When sapping is used, the first blocks for longest inactive transactions are swapped to disk.
-However, for every open transaction, at least one block (the last one - which is currently used to append new redo log vectors) is kept in memory.
+However, for every open transaction, at least one block (the last one - which is currently used to append new redo log vectors), is kept in memory.
 Thus, when N transactions are open, at least N blocks are kept in memory (plus memory used by other modules).
 
 .Memory swapping

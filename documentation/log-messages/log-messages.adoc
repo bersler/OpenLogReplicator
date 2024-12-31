@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.3
-:revdate: 2024-12-28
+:revdate: 2025-01-01
 :imagesdir: ./images
 :toc: preamble
 
@@ -77,7 +77,7 @@ Check if the file is not corrupted.
 Read operation processed fewer bytes than expected.
 Check if the file system is not corrupted and disk-containing file is available.
 
-==== code 10006: "file: <file name> - open for write returned: <error>"
+==== code 10006: "file: <file name> - open for writing returned: <error>"
 
 The file couldn't be opened for write operation.
 If the file didn't exist, it would be created.

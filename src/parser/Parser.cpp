@@ -1,5 +1,5 @@
 /* Class with main redo log parser
-   Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -1233,7 +1233,7 @@ namespace OpenLogReplicator {
                 const std::string fileName = ctx->dumpPath + "/" + std::to_string(sequence) + ".olr";
                 ctx->dumpStream->open(fileName);
                 if (!ctx->dumpStream->is_open()) {
-                    ctx->error(10006, "file: " + fileName + " - open for write returned: " + strerror(errno));
+                    ctx->error(10006, "file: " + fileName + " - open for writing returned: " + strerror(errno));
                     ctx->warning(60012, "aborting log dump");
                     ctx->dumpRedoLog = 0;
                 }
