@@ -1,5 +1,5 @@
 /* Base class for handling of schema
-   Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 

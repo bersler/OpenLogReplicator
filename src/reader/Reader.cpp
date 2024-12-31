@@ -1,5 +1,5 @@
 /* Base class for process which is reading from redo log files
-   Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -227,7 +227,7 @@ namespace OpenLogReplicator {
                 fileNameWrite = ctx->redoCopyPath + "/" + database + "_" + std::to_string(sequenceHeader) + ".arc";
                 fileCopyDes = open(fileNameWrite.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
                 if (unlikely(fileCopyDes == -1))
-                    throw RuntimeException(10006, "file: " + fileNameWrite + " - open for write returned: " + strerror(errno));
+                    throw RuntimeException(10006, "file: " + fileNameWrite + " - open for writing returned: " + strerror(errno));
                 ctx->info(0, "writing redo log copy to: " + fileNameWrite);
                 fileCopySequence = sequenceHeader;
             }

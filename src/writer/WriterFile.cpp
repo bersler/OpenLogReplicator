@@ -1,5 +1,5 @@
 /* Thread writing to file (or stdout)
-   Copyright (C) 2018-2024 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -282,7 +282,7 @@ namespace OpenLogReplicator {
             contextSet(CONTEXT::CPU);
 
             if (outputDes == -1)
-                throw RuntimeException(10006, "file: " + fullFileName + " - open for write returned: " + strerror(errno));
+                throw RuntimeException(10006, "file: " + fullFileName + " - open for writing returned: " + strerror(errno));
 
             contextSet(CONTEXT::OS, REASON::OS);
             const int lseekRet = lseek(outputDes, 0, SEEK_END);
