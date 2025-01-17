@@ -51,13 +51,13 @@ namespace OpenLogReplicator {
         void updateConfigFile();
 
     public:
-        Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, std::string newConfigFileName, time_t newConfigFileChange);
+        Checkpoint(Ctx* newCtx, Metadata* newMetadata, std::string newAlias, std::string newConfigFileName, time_t newConfigFileChange);
         ~Checkpoint() override;
 
         void wakeUp() override;
         void run() override;
 
-        const std::string getName() const override {
+        std::string getName() const override {
             return {"Checkpoint"};
         }
     };

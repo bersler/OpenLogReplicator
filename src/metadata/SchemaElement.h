@@ -44,9 +44,9 @@ namespace OpenLogReplicator {
         std::vector<std::string> keyList;
         std::vector<std::string> tagList;
 
-        SchemaElement(const char* newOwner, const char* newTable, DbTable::OPTIONS newOptions) :
-                owner(newOwner),
-                table(newTable),
+        SchemaElement(std::string newOwner, std::string newTable, DbTable::OPTIONS newOptions) :
+                owner(std::move(newOwner)),
+                table(std::move(newTable)),
                 options(newOptions) {
         }
 

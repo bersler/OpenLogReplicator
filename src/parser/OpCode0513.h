@@ -29,8 +29,8 @@ namespace OpenLogReplicator {
 
     class OpCode0513 : public OpCode {
     protected:
-        static void attribute(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, const char* header,
-                              const char* name, Transaction* transaction) {
+        static void attribute(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, const std::string& header,
+                              const std::string& name, Transaction* transaction) {
             const std::string value(reinterpret_cast<const char*>(redoLogRecord->data(fieldPos)), fieldSize);
             if (!value.empty())
                 transaction->attributes.insert_or_assign(name, value);

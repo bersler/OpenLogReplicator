@@ -420,7 +420,7 @@ namespace OpenLogReplicator {
     }
 
     XmlCtx* SystemTransaction::findMatchingXmlCtx(const DbTable* table) const {
-        auto it = metadata->schema->schemaXmlMap.find(table->tokSuf);
+        const auto& it = metadata->schema->schemaXmlMap.find(table->tokSuf);
         if (unlikely(it == metadata->schema->schemaXmlMap.end()))
             throw DataException(50068, "missing " + XdbXNm::tableName() + table->tokSuf + " table, find failed");
         return it->second;
@@ -744,13 +744,13 @@ namespace OpenLogReplicator {
 
         for (const auto& msg: msgs)
             ctx->info(0, msg);
-        for (const auto& it: tablesDropped) {
-            if (tablesUpdated.find(it.first) != tablesUpdated.end())
+        for (const auto& [obj, tableName]: tablesDropped) {
+            if (tablesUpdated.find(obj) != tablesUpdated.end())
                 continue;
-            ctx->info(0, "dropped metadata: " + it.second);
+            ctx->info(0, "dropped metadata: " + tableName);
         }
-        for (const auto& it: tablesUpdated) {
-            ctx->info(0, "updated metadata: " + it.second);
+        for (const auto& [_, tableName]: tablesUpdated) {
+            ctx->info(0, "updated metadata: " + tableName);
         }
 
         metadata->schema->updateXmlCtx();

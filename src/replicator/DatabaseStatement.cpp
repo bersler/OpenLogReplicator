@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void DatabaseStatement::createStatement(const char* sql) {
+    void DatabaseStatement::createStatement(const std::string_view& sql) {
         unbindAll();
 
         if (executed) {
@@ -53,8 +53,8 @@ namespace OpenLogReplicator {
             executed = false;
         }
 
-        conn->env->checkErr(conn->errhp, OCIStmtPrepare2(conn->svchp, &stmthp, conn->errhp, reinterpret_cast<const OraText*>(sql),
-                                                         strlen(sql), nullptr, 0, OCI_NTV_SYNTAX, OCI_DEFAULT));
+        conn->env->checkErr(conn->errhp, OCIStmtPrepare2(conn->svchp, &stmthp, conn->errhp, reinterpret_cast<const OraText*>(sql.data()),
+                                                         sql.length(), nullptr, 0, OCI_NTV_SYNTAX, OCI_DEFAULT));
     }
 
     int DatabaseStatement::executeQuery() {
@@ -85,16 +85,6 @@ namespace OpenLogReplicator {
 
         conn->env->checkErr(conn->errhp, status);
         return 1;
-    }
-
-    void DatabaseStatement::bindString(uint col, const char* val) {
-        OCIBind* bindp = nullptr;
-        const sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, const_cast<void*>(reinterpret_cast<const void*>(val)),
-                                       strlen(val) + 1, SQLT_STR, nullptr, nullptr, nullptr, 0, nullptr,
-                                       OCI_DEFAULT);
-        if (bindp != nullptr)
-            binds.push_back(bindp);
-        conn->env->checkErr(conn->errhp, ret);
     }
 
     void DatabaseStatement::bindString(uint col, std::string& val) {

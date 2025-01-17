@@ -121,26 +121,27 @@ namespace OpenLogReplicator {
             if (!regexWorks)
                 throw RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
-            for (int i = 1; i < argc; i++) {
-                if ((strncmp(argv[i], "-v", 2) == 0 || strncmp(argv[i], "--version", 9) == 0)) {
+            for (int i = 1; i < argc; ++i) {
+                std::string arg = argv[i];
+                if (arg == "-v" || arg == "--version") {
                     // Print banner and exit
                     return 0;
                 }
 
-                if ((strncmp(argv[i], "-r", 2) == 0 || strncmp(argv[i], "--root", 6) == 0)) {
+                if (arg == "-r" || arg == "--root") {
                     // Allow bad practice to run as root
                     forceRoot = true;
                     continue;
                 }
 
-                if (i + 1 < argc && (strncmp(argv[i], "-f", 2) == 0 || strncmp(argv[i], "--file", 6) == 0)) {
+                if (i + 1 < argc && (arg == "-f" || arg == "--file")) {
                     // Custom config path
                     fileName = argv[i + 1];
                     ++i;
                     continue;
                 }
 
-                if (i + 1 < argc && (strncmp(argv[i], "-p", 2) == 0 || strncmp(argv[i], "--process", 9) == 0)) {
+                if (i + 1 < argc && (arg == "-p" || arg == "--process")) {
                     // Custom process name
 #if __linux__
                     pthread_setname_np(pthread_self(), argv[i + 1]);
@@ -159,7 +160,7 @@ namespace OpenLogReplicator {
                 }
 
                 throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
-                                                    " [-v|--version] [-f|--file CONFIG] [-p|--process PROCESSNAME]");
+                                                    " [-v|--version] [-f|--file CONFIG] [-p|--process PROCESSNAME] [-r|--root]");
             }
         } catch (ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);

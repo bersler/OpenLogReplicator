@@ -1,3 +1,6 @@
+1.8.4
+- fix: discard writer type
+
 1.8.3 - released on 2025.01.01
 - performance improvements
 - minor documentation update

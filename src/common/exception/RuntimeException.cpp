@@ -28,12 +28,6 @@ namespace OpenLogReplicator {
             msg(std::move(newMsg)) {
     }
 
-    RuntimeException::RuntimeException(int newCode, const char* newMsg, int newSupCode) :
-            code(newCode),
-            supCode(newSupCode),
-            msg(newMsg) {
-    }
-
     std::ostream& operator<<(std::ostream& os, const RuntimeException& exception) {
         os << exception.msg;
         return os;

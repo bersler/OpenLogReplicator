@@ -140,8 +140,8 @@ namespace OpenLogReplicator {
         std::vector<SchemaElement*> schemaElements;
         std::set<std::string> users;
 
-        Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
-                 const char* newStartTime, uint64_t newStartTimeRel);
+        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, typeScn newStartScn,
+                 typeSeq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel);
         ~Metadata();
 
         void setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset);
@@ -155,8 +155,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in) const;
         [[nodiscard]] bool stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out) const;
         [[nodiscard]] bool stateDrop(const std::string& name) const;
-        SchemaElement* addElement(const char* owner, const char* table, DbTable::OPTIONS options1, DbTable::OPTIONS options2);
-        SchemaElement* addElement(const char* owner, const char* table, DbTable::OPTIONS options);
+        SchemaElement* addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options1, DbTable::OPTIONS options2);
+        SchemaElement* addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options);
         void resetElements();
         void commitElements();
         void buildMaps(std::vector<std::string>& msgs, std::unordered_map<typeObj, std::string>& tablesUpdated);

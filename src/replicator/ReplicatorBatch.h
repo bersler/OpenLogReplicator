@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class ReplicatorBatch final : public Replicator {
     protected:
-        const char* getModeName() const override;
+        std::string getModeName() const override;
         bool continueWithOnline() override;
         void positionReader() override;
         void createSchema() override;
@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
 
     public:
         ReplicatorBatch(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                        TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase);
+                        TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase);
         ~ReplicatorBatch() override = default;
     };
 }

@@ -39,16 +39,13 @@ namespace OpenLogReplicator {
         dumpXidList.clear();
         brokenXidMapList.clear();
 
-        for (const auto& orphanedLobsIt: orphanedLobs) {
-            uint8_t* data = orphanedLobsIt.second;
+        for (const auto& [_, data]: orphanedLobs)
             delete[] data;
-        }
         orphanedLobs.clear();
     }
 
     void TransactionBuffer::purge() {
-        for (auto xidTransactionMapIt: xidTransactionMap) {
-            Transaction* transaction = xidTransactionMapIt.second;
+        for (const auto& [_, transaction]: xidTransactionMap) {
             transaction->purge(ctx);
             delete transaction;
         }
@@ -278,8 +275,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid) {
-        for (auto xidTransactionMapIt: xidTransactionMap) {
-            const Transaction* transaction = xidTransactionMapIt.second;
+        for (const auto& [_, transaction] : xidTransactionMap) {
             if (transaction->firstSequence < minSequence) {
                 minSequence = transaction->firstSequence;
                 minOffset = transaction->firstOffset;

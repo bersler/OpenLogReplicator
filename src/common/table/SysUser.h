@@ -39,10 +39,10 @@ namespace OpenLogReplicator {
         typeIntX spare1{0, 0};            // NULL
         bool single{false};
 
-        SysUser(typeRowId newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
+        SysUser(typeRowId newRowId, typeUser newUser, std::string newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),
                 user(newUser),
-                name(newName),
+                name(std::move(newName)),
                 spare1(newSpare11, newSpare12),
                 single(newSingle) {
         }

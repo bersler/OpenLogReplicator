@@ -24,6 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <rapidjson/document.h>
 #include <string>
 
+#include "common/types.h"
+
 namespace OpenLogReplicator {
     class Builder;
     class Ctx;

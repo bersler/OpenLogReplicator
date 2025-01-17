@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types.h"
 
 namespace OpenLogReplicator {
-    CharacterSet::CharacterSet(const char* newName) :
-            name(newName) {
+    CharacterSet::CharacterSet(std::string newName) :
+            name(std::move(newName)) {
     }
 
     uint64_t CharacterSet::badChar(const Ctx* ctx, typeXid xid, uint64_t byte1) const {

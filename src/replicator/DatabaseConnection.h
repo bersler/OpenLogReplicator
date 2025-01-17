@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         OCISvcCtx* svchp{nullptr};
         OCISession* authp{nullptr};
 
-        DatabaseConnection(DatabaseEnvironment* newEnv, const char* newUser, const char* newPassword, const char* newConnectString, bool newSysAsm);
+        DatabaseConnection(DatabaseEnvironment* newEnv, std::string newUser, std::string newPassword, std::string newConnectString, bool newSysAsm);
         ~DatabaseConnection();
 
         void connect();

@@ -39,8 +39,8 @@ namespace OpenLogReplicator {
                                    "WRITE ERROR", "SEQUENCE ERROR", "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR",
                                    "OTHER ERROR"};
 
-    Reader::Reader(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum) :
-            Thread(newCtx, newAlias),
+    Reader::Reader(Ctx* newCtx, std::string newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum) :
+            Thread(newCtx, std::move(newAlias)),
             database(std::move(newDatabase)),
             configuredBlockSum(newConfiguredBlockSum),
             group(newGroup) {

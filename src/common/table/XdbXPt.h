@@ -35,10 +35,10 @@ namespace OpenLogReplicator {
         std::string path;
         std::string id;
 
-        XdbXPt(typeRowId newRowId, const char* newPath, const char* newId) :
+        XdbXPt(typeRowId newRowId, std::string newPath, std::string newId) :
                 rowId(newRowId),
-                path(newPath),
-                id(newId) {
+                path(std::move(newPath)),
+                id(std::move(newId)) {
         }
 
         explicit XdbXPt(typeRowId newRowId) :

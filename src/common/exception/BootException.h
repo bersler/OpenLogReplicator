@@ -34,7 +34,6 @@ namespace OpenLogReplicator {
         std::string msg;
 
         explicit BootException(int newCode, std::string newMsg);
-        explicit BootException(int newCode, const char* newMsg);
         BootException(const BootException&) = delete;
 
         BootException& operator=(const BootException&) = delete;

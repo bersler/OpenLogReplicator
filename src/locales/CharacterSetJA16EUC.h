@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
 
     public:
         CharacterSetJA16EUC();
-        explicit CharacterSetJA16EUC(const char* newName);
+        explicit CharacterSetJA16EUC(std::string newName);
 
         typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
     };

@@ -29,8 +29,8 @@ namespace OpenLogReplicator {
         bool customAscii{false};
 
     public:
-        CharacterSet8bit(const char* newName, const typeUnicode16* newMap);
-        CharacterSet8bit(const char* newName, const typeUnicode16* newMap, bool newCustomAscii);
+        CharacterSet8bit(std::string newName, const typeUnicode16* newMap);
+        CharacterSet8bit(std::string newName, const typeUnicode16* newMap, bool newCustomAscii);
 
         typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
 

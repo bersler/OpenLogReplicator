@@ -30,7 +30,6 @@ namespace OpenLogReplicator {
         std::string msg;
 
         explicit DataException(int newCode, std::string newMsg);
-        explicit DataException(int newCode, const char* newMsg);
         DataException(const DataException&) = delete;
         DataException& operator=(const DataException&) = delete;
 

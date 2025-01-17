@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
         prometheus::Counter* transactionsRollbackSkipCounter{nullptr};
 
     public:
-        MetricsPrometheus(TAG_NAMES newTagNames, const char* newBind);
+        MetricsPrometheus(TAG_NAMES newTagNames, std::string newBind);
         ~MetricsPrometheus() override;
 
         void initialize(const Ctx* ctx) override;

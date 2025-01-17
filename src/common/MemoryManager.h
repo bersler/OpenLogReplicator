@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         std::string swapPath;
 
     public:
-        MemoryManager(Ctx* newCtx, const std::string& newAlias, const char* newSwapPath);
+        MemoryManager(Ctx* newCtx, std::string newAlias, std::string newSwapPath);
         ~MemoryManager() override;
 
         void wakeUp() override;
@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         bool unswap(typeXid xid, int64_t index);
         bool swap(typeXid xid, int64_t index);
 
-        const std::string getName() const override {
+        std::string getName() const override {
             return {"MemoryManager"};
         }
     };

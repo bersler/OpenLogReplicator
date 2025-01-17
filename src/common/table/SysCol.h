@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
         int null_{0};
         typeIntX property{0, 0};
 
-        SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, SysCol::COLTYPE newType,
+        SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, std::string newName, SysCol::COLTYPE newType,
                uint newLength, int newPrecision, int newScale, uint newCharsetForm, uint newCharsetId, int newNull,
                uint64_t newProperty1, uint64_t newProperty2) :
                 rowId(newRowId),
@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
                 col(newCol),
                 segCol(newSegCol),
                 intCol(newIntCol),
-                name(newName),
+                name(std::move(newName)),
                 type(newType),
                 length(newLength),
                 precision(newPrecision),

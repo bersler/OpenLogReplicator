@@ -24,8 +24,8 @@ namespace OpenLogReplicator {
             CharacterSet("JA16EUC") {
     }
 
-    CharacterSetJA16EUC::CharacterSetJA16EUC(const char* newName) :
-            CharacterSet(newName) {
+    CharacterSetJA16EUC::CharacterSetJA16EUC(std::string newName) :
+            CharacterSet(std::move(newName)) {
     }
 
     uint64_t CharacterSetJA16EUC::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {

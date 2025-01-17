@@ -32,8 +32,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 
 namespace OpenLogReplicator {
-    Writer::Writer(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata) :
-            Thread(newCtx, newAlias),
+    Writer::Writer(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata) :
+            Thread(newCtx, std::move(newAlias)),
             database(std::move(newDatabase)),
             builder(newBuilder),
             metadata(newMetadata),
@@ -416,7 +416,7 @@ namespace OpenLogReplicator {
             Ctx::checkJsonFields(name, document, documentNames);
         }
 
-        const char* databaseJson = Ctx::getJsonFieldS(name, Ctx::JSON_PARAMETER_LENGTH, document, "database");
+        const std::string databaseJson = Ctx::getJsonFieldS(name, Ctx::JSON_PARAMETER_LENGTH, document, "database");
         if (unlikely(database != databaseJson))
             throw DataException(20001, "file: " + name + " - invalid database name: " + databaseJson);
 

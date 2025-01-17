@@ -87,18 +87,18 @@ int main(int argc, char** argv) {
     //    replication from. If it is running, it would expect the client to provide c:<scn>,<idx> - position of last confirmed message.
     //    Possible values are:
     //      now - start from NOW
-    //      now:<,seq> - start from NOW but start parsing redo log from sequence <seq>
+    //      now,<seq> - start from NOW but start parsing redo log from sequence <seq>
     //      scn:<scn> - start from given SCN
     //      scn:<scn>,<seq> - start from given SCN but start parsing redo log from sequence <seq>
-    //      tm_rel:<time> - start from given time (relative to current time)
-    //      tm_rel:<time> - start from given time (relative to current time) but start parsing redo log from sequence <seq>
+    //      time_rel:<time> - start from given time (relative to current time)
+    //      time_rel:<time>,<seq> - start from given time (relative to current time) but start parsing redo log from sequence <seq>
     //      time:<time> - start from given time (absolute)
-    //      time:<time> - start from given time (absolute) but start parsing redo log from sequence <seq>
+    //      time:<time>,<seq> - start from given time (absolute) but start parsing redo log from sequence <seq>
     //      c:<scn>,<idx> - continue from given SCN and IDX
-    //      next - continue with next message, from the position
+    //      next - continue with next message, from the last position
     if (argc != 6) {
-        ctx.info(0, "use: ClientNetwork [network|zeromq] <uri> <database> <format> [now{,<seq>}|scn:<scn>{,<seq>}|tm_rel:<time>{,<seq>}|"
-                    "tms:<time>{,<seq>}|c:<scn>,<idx>|next]");
+        ctx.info(0, "use: ClientNetwork [network|zeromq] <uri> <database> <format> [now{,<seq>}|scn:<scn>{,<seq>}|time_rel:<time>{,<seq>}|"
+                    "time:<time>{,<seq>}|c:<scn>,<idx>|next]");
         return 0;
     }
 
@@ -109,9 +109,10 @@ int main(int argc, char** argv) {
     auto* buffer = new uint8_t[MAX_CLIENT_MESSAGE_SIZE];
 
     try {
-        if (strcmp(argv[1], "network") == 0) {
+        std::string arg1 = argv[1];
+        if (arg1 == "network") {
             stream = new OpenLogReplicator::StreamNetwork(&ctx, argv[2]);
-        } else if (strcmp(argv[1], "zeromq") == 0) {
+        } else if (arg1 == "zeromq") {
 #ifdef LINK_LIBRARY_ZEROMQ
             stream = new OpenLogReplicator::StreamZeroMQ(&ctx, argv[2]);
 #else
@@ -123,9 +124,10 @@ int main(int argc, char** argv) {
         stream->initialize();
         stream->initializeClient();
 
-        if (strcmp(argv[4], "protobuf") == 0)
+        std::string arg4 = argv[4];
+        if (arg4 == "protobuf")
             formatProtobuf = true;
-        else if (strcmp(argv[4], "json") == 0)
+        else if (arg4 == "json")
             formatProtobuf = false;
         else
             throw OpenLogReplicator::RuntimeException(1, "incorrect format, expected: [protobuf|json]");
@@ -141,14 +143,15 @@ int main(int argc, char** argv) {
         request.Clear();
         request.set_database_name(argv[3]);
 
+        std::string arg5 = argv[5];
         if (response.code() == OpenLogReplicator::pb::ResponseCode::REPLICATE) {
             request.set_code(OpenLogReplicator::pb::RequestCode::CONTINUE);
-            if (strncmp(argv[5], "next", 4) == 0) {
+            if (arg5 == "next") {
                 request.set_c_scn(OpenLogReplicator::Ctx::ZERO_SCN);
                 request.set_c_idx(0);
             } else {
                 char* idxPtr;
-                if (strncmp(argv[5], "c:", 2) != 0 || strlen(argv[5]) <= 4 || (idxPtr = strchr(argv[5] + 2, ',')) == nullptr)
+                if (arg5.substr(0, 2) != "c:" || strlen(argv[5]) <= 4 || (idxPtr = strchr(argv[5] + 2, ',')) == nullptr)
                     throw OpenLogReplicator::RuntimeException(1, "server already stared, expected: [c:<scn>,<idx>]");
                 *idxPtr = 0;
                 const typeScn confirmedScn = atoi(argv[5] + 2);
@@ -167,22 +170,22 @@ int main(int argc, char** argv) {
                 paramSeq = ", seq: " + std::to_string(request.seq());
             }
 
-            if (strncmp(argv[5], "now", 3) == 0) {
+            if (arg5 == "now") {
                 request.set_scn(OpenLogReplicator::Ctx::ZERO_SCN);
                 ctx.info(0, "START NOW" + paramSeq);
-            } else if (strncmp(argv[5], "scn:", 4) == 0) {
+            } else if (arg5.substr(0, 4) == "scn:") {
                 request.set_scn(atoi(argv[5] + 4));
                 ctx.info(0, "START scn: " + std::to_string(request.scn()) + paramSeq);
-            } else if (strncmp(argv[5], "tms:", 4) == 0) {
-                std::string tms(argv[5] + 4);
+            } else if (arg5.substr(0, 5) == "time:") {
+                std::string tms(argv[5] + 5);
                 request.set_tms(tms);
                 ctx.info(0, "START tms: " + request.tms() + paramSeq);
-            } else if (strncmp(argv[5], "tm_rel:", 7) == 0) {
-                request.set_tm_rel(atoi(argv[5] + 7));
-                ctx.info(0, "START tm_rel: " + std::to_string(request.tm_rel()) + paramSeq);
+            } else if (arg5.substr(0, 9) == "time_rel:") {
+                request.set_tm_rel(atoi(argv[5] + 9));
+                ctx.info(0, "START time_rel: " + std::to_string(request.tm_rel()) + paramSeq);
             } else
                 throw OpenLogReplicator::RuntimeException(1, "server is waiting to define position to start, expected: [now{,<seq>}|"
-                                                             "scn:<scn>{,<seq>}|tm_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
+                                                             "scn:<scn>{,<seq>}|time_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
         } else
             throw OpenLogReplicator::RuntimeException(1, "server returned code: " + std::to_string(response.code()) +
                                                          " for request code: " + std::to_string(request.code()));

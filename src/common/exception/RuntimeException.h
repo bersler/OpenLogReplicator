@@ -35,7 +35,6 @@ namespace OpenLogReplicator {
         std::string msg;
 
         explicit RuntimeException(int newCode, std::string newMsg, int newSupCode = 0);
-        explicit RuntimeException(int newCode, const char* newMsg, int newSupCode = 0);
 
         RuntimeException(const RuntimeException&) = delete;
         RuntimeException& operator=(const RuntimeException&) = delete;

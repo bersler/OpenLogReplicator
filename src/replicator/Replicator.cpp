@@ -41,13 +41,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Replicator::Replicator(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                           TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase) :
-            Thread(newCtx, newAlias),
+                           TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase) :
+            Thread(newCtx, std::move(newAlias)),
             archGetLog(newArchGetLog),
             builder(newBuilder),
             metadata(newMetadata),
             transactionBuffer(newTransactionBuffer),
-            database(newDatabase) {
+            database(std::move(newDatabase)) {
         ctx->parserThread = this;
     }
 
@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
         }
 
         try {
-            metadata->waitForWriter(this);
+            metadata->waitForWriter(ctx->parserThread);
 
             loadDatabaseMetadata();
             metadata->readCheckpoints();
@@ -408,17 +408,15 @@ namespace OpenLogReplicator {
         return 0;
     }
 
-    void Replicator::addPathMapping(const char* source, const char* target) {
+    void Replicator::addPathMapping(std::string source, std::string target) {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::FILE)))
-            ctx->logTrace(Ctx::TRACE::FILE, "added mapping [" + std::string(source) + "] -> [" + target + "]");
-        const std::string sourceMapping(source);
-        const std::string targetMapping(target);
-        pathMapping.push_back(sourceMapping);
-        pathMapping.push_back(targetMapping);
+            ctx->logTrace(Ctx::TRACE::FILE, "added mapping [" + source + "] -> [" + target + "]");
+        pathMapping.push_back(std::move(source));
+        pathMapping.push_back(std::move(target));
     }
 
-    void Replicator::addRedoLogsBatch(const char* path) {
-        redoLogsBatch.emplace_back(path);
+    void Replicator::addRedoLogsBatch(std::string path) {
+        redoLogsBatch.emplace_back(std::move(path));
     }
 
     void Replicator::applyMapping(std::string& path) {
@@ -455,8 +453,8 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    const char* Replicator::getModeName() const {
-        return "offline";
+    std::string Replicator::getModeName() const {
+        return {"offline"};
     }
 
     void Replicator::archGetLogPath(Replicator* replicator) {
@@ -475,7 +473,8 @@ namespace OpenLogReplicator {
         std::string newLastCheckedDay;
         const struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
-            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+            std::string dName(ent->d_name);
+            if (dName == "." || dName == "..")
                 continue;
 
             struct stat fileStat{};
@@ -504,7 +503,8 @@ namespace OpenLogReplicator {
 
             const struct dirent* ent2;
             while ((ent2 = readdir(dir2)) != nullptr) {
-                if (strcmp(ent2->d_name, ".") == 0 || strcmp(ent2->d_name, "..") == 0)
+                std::string dName2(ent->d_name);
+                if (dName2 == "." || dName2 == "..")
                     continue;
 
                 const std::string fileName(mappedPath + "/" + ent->d_name + "/" + ent2->d_name);
@@ -591,7 +591,8 @@ namespace OpenLogReplicator {
 
                 const struct dirent* ent;
                 while ((ent = readdir(dir)) != nullptr) {
-                    if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+                    std::string dName(ent->d_name);
+                    if (dName == "." || dName == "..")
                         continue;
 
                     const std::string fileName(mappedPath + "/" + ent->d_name);

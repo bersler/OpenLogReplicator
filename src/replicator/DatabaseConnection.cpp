@@ -21,11 +21,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseEnvironment.h"
 
 namespace OpenLogReplicator {
-    DatabaseConnection::DatabaseConnection(DatabaseEnvironment* newEnv, const char* newUser, const char* newPassword, const char* newConnectString,
+    DatabaseConnection::DatabaseConnection(DatabaseEnvironment* newEnv, std::string newUser, std::string newPassword, std::string newConnectString,
                                            bool newSysAsm) :
-            user(newUser),
-            password(newPassword),
-            connectString(newConnectString),
+            user(std::move(newUser)),
+            password(std::move(newPassword)),
+            connectString(std::move(newConnectString)),
             sysAsm(newSysAsm),
             env(newEnv) {
     }

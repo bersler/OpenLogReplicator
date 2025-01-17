@@ -102,10 +102,10 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const std::vector<std::string>& names) {
-        for (auto const& child: value.GetObject()) {
+        for (const auto& child: value.GetObject()) {
             bool found = false;
             for (const auto& name : names) {
-                if (strcmp(child.name.GetString(), name.c_str()) == 0) {
+                if (name == child.name.GetString()) {
                     found = true;
                     break;
                 }
@@ -220,7 +220,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const char* Ctx::getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field) {
+    std::string Ctx::getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field) {
         if (unlikely(!value.HasMember(field)))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -229,7 +229,7 @@ namespace OpenLogReplicator {
         if (unlikely(ret.GetStringLength() > maxLength))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too long (" +
                                        std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
-        return ret.GetString();
+        return {ret.GetString()};
     }
 
     const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num) {
@@ -328,7 +328,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const char* Ctx::getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field, uint num) {
+    std::string Ctx::getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field, uint num) {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsString()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
@@ -336,71 +336,69 @@ namespace OpenLogReplicator {
         if (unlikely(ret.GetStringLength() > maxLength))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
                                        "] is too long (" + std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
-        return ret.GetString();
+        return {ret.GetString()};
     }
 
-    bool Ctx::parseTimezone(const char* str, int64_t& out) {
-        if (strcmp(str, "Etc/GMT-14") == 0) str = "-14:00";
-        if (strcmp(str, "Etc/GMT-13") == 0) str = "-13:00";
-        if (strcmp(str, "Etc/GMT-12") == 0) str = "-12:00";
-        if (strcmp(str, "Etc/GMT-11") == 0) str = "-11:00";
-        if (strcmp(str, "HST") == 0) str = "-10:00";
-        if (strcmp(str, "Etc/GMT-10") == 0) str = "-10:00";
-        if (strcmp(str, "Etc/GMT-9") == 0) str = "-09:00";
-        if (strcmp(str, "PST") == 0) str = "-08:00";
-        if (strcmp(str, "PST8PDT") == 0) str = "-08:00";
-        if (strcmp(str, "Etc/GMT-8") == 0) str = "-08:00";
-        if (strcmp(str, "MST") == 0) str = "-07:00";
-        if (strcmp(str, "MST7MDT") == 0) str = "-07:00";
-        if (strcmp(str, "Etc/GMT-7") == 0) str = "-07:00";
-        if (strcmp(str, "CST") == 0) str = "-06:00";
-        if (strcmp(str, "CST6CDT") == 0) str = "-06:00";
-        if (strcmp(str, "Etc/GMT-6") == 0) str = "-06:00";
-        if (strcmp(str, "EST") == 0) str = "-05:00";
-        if (strcmp(str, "EST5EDT") == 0) str = "-05:00";
-        if (strcmp(str, "Etc/GMT-5") == 0) str = "-05:00";
-        if (strcmp(str, "Etc/GMT-4") == 0) str = "-04:00";
-        if (strcmp(str, "Etc/GMT-3") == 0) str = "-03:00";
-        if (strcmp(str, "Etc/GMT-2") == 0) str = "-02:00";
-        if (strcmp(str, "Etc/GMT-1") == 0) str = "-01:00";
-        if (strcmp(str, "GMT") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/GMT") == 0) str = "+00:00";
-        if (strcmp(str, "Greenwich") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/Greenwich") == 0) str = "+00:00";
-        if (strcmp(str, "GMT0") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/GMT0") == 0) str = "+00:00";
-        if (strcmp(str, "GMT+0") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/GMT-0") == 0) str = "+00:00";
-        if (strcmp(str, "GMT+0") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/GMT+0") == 0) str = "+00:00";
-        if (strcmp(str, "UTC") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/UTC") == 0) str = "+00:00";
-        if (strcmp(str, "UCT") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/UCT") == 0) str = "+00:00";
-        if (strcmp(str, "Universal") == 0) str = "+00:00";
-        if (strcmp(str, "Etc/Universal") == 0) str = "+00:00";
-        if (strcmp(str, "WET") == 0) str = "+00:00";
-        if (strcmp(str, "MET") == 0) str = "+01:00";
-        if (strcmp(str, "CET") == 0) str = "+01:00";
-        if (strcmp(str, "Etc/GMT+1") == 0) str = "+01:00";
-        if (strcmp(str, "EET") == 0) str = "+02:00";
-        if (strcmp(str, "Etc/GMT+2") == 0) str = "+02:00";
-        if (strcmp(str, "Etc/GMT+3") == 0) str = "+03:00";
-        if (strcmp(str, "Etc/GMT+4") == 0) str = "+04:00";
-        if (strcmp(str, "Etc/GMT+5") == 0) str = "+05:00";
-        if (strcmp(str, "Etc/GMT+6") == 0) str = "+06:00";
-        if (strcmp(str, "Etc/GMT+7") == 0) str = "+07:00";
-        if (strcmp(str, "PRC") == 0) str = "+08:00";
-        if (strcmp(str, "ROC") == 0) str = "+08:00";
-        if (strcmp(str, "Etc/GMT+8") == 0) str = "+08:00";
-        if (strcmp(str, "Etc/GMT+9") == 0) str = "+09:00";
-        if (strcmp(str, "Etc/GMT+10") == 0) str = "+10:00";
-        if (strcmp(str, "Etc/GMT+11") == 0) str = "+11:00";
-        if (strcmp(str, "Etc/GMT+12") == 0) str = "+12:00";
+    bool Ctx::parseTimezone(std::string str, int64_t& out) {
+        if (str == "Etc/GMT-14") str = "-14:00";
+        if (str == "Etc/GMT-13") str = "-13:00";
+        if (str == "Etc/GMT-12") str = "-12:00";
+        if (str == "Etc/GMT-11") str = "-11:00";
+        if (str == "HST") str = "-10:00";
+        if (str == "Etc/GMT-10") str = "-10:00";
+        if (str == "Etc/GMT-9") str = "-09:00";
+        if (str == "PST") str = "-08:00";
+        if (str == "PST8PDT") str = "-08:00";
+        if (str == "Etc/GMT-8") str = "-08:00";
+        if (str == "MST") str = "-07:00";
+        if (str == "MST7MDT") str = "-07:00";
+        if (str == "Etc/GMT-7") str = "-07:00";
+        if (str == "CST") str = "-06:00";
+        if (str == "CST6CDT") str = "-06:00";
+        if (str == "Etc/GMT-6") str = "-06:00";
+        if (str == "EST") str = "-05:00";
+        if (str == "EST5EDT") str = "-05:00";
+        if (str == "Etc/GMT-5") str = "-05:00";
+        if (str == "Etc/GMT-4") str = "-04:00";
+        if (str == "Etc/GMT-3") str = "-03:00";
+        if (str == "Etc/GMT-2") str = "-02:00";
+        if (str == "Etc/GMT-1") str = "-01:00";
+        if (str == "GMT") str = "+00:00";
+        if (str == "Etc/GMT") str = "+00:00";
+        if (str == "Greenwich") str = "+00:00";
+        if (str == "Etc/Greenwich") str = "+00:00";
+        if (str == "GMT0") str = "+00:00";
+        if (str == "Etc/GMT0") str = "+00:00";
+        if (str == "GMT+0") str = "+00:00";
+        if (str == "Etc/GMT-0") str = "+00:00";
+        if (str == "GMT+0") str = "+00:00";
+        if (str == "Etc/GMT+0") str = "+00:00";
+        if (str == "UTC") str = "+00:00";
+        if (str == "Etc/UTC") str = "+00:00";
+        if (str == "UCT") str = "+00:00";
+        if (str == "Etc/UCT") str = "+00:00";
+        if (str == "Universal") str = "+00:00";
+        if (str == "Etc/Universal") str = "+00:00";
+        if (str == "WET") str = "+00:00";
+        if (str == "MET") str = "+01:00";
+        if (str == "CET") str = "+01:00";
+        if (str == "Etc/GMT+1") str = "+01:00";
+        if (str == "EET") str = "+02:00";
+        if (str == "Etc/GMT+2") str = "+02:00";
+        if (str == "Etc/GMT+3") str = "+03:00";
+        if (str == "Etc/GMT+4") str = "+04:00";
+        if (str == "Etc/GMT+5") str = "+05:00";
+        if (str == "Etc/GMT+6") str = "+06:00";
+        if (str == "Etc/GMT+7") str = "+07:00";
+        if (str == "PRC") str = "+08:00";
+        if (str == "ROC") str = "+08:00";
+        if (str == "Etc/GMT+8") str = "+08:00";
+        if (str == "Etc/GMT+9") str = "+09:00";
+        if (str == "Etc/GMT+10") str = "+10:00";
+        if (str == "Etc/GMT+11") str = "+11:00";
+        if (str == "Etc/GMT+12") str = "+12:00";
 
-        const uint64_t len = strlen(str);
-
-        if (len == 5) {
+        if (str.length() == 5) {
             if (str[1] >= '0' && str[1] <= '9' &&
                 str[2] == ':' &&
                 str[3] >= '0' && str[3] <= '9' &&
@@ -408,7 +406,7 @@ namespace OpenLogReplicator {
                 out = -(str[1] - '0') * 3600 + (str[3] - '0') * 60 + (str[4] - '0');
             } else
                 return false;
-        } else if (len == 6) {
+        } else if (str.length() == 6) {
             if (str[1] >= '0' && str[1] <= '9' &&
                 str[2] >= '0' && str[2] <= '9' &&
                 str[3] == ':' &&
@@ -904,7 +902,7 @@ namespace OpenLogReplicator {
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SIZE);
             std::unique_lock<std::mutex> const lck(swapMtx);
-            auto it = swapChunks.find(xid);
+            const auto& it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory size");
             SwapChunk* sc = it->second;
@@ -918,7 +916,7 @@ namespace OpenLogReplicator {
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_GET);
             std::unique_lock<std::mutex> lck(swapMtx);
-            auto it = swapChunks.find(xid);
+            const auto& it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory get");
             SwapChunk* sc = it->second;
@@ -943,7 +941,7 @@ namespace OpenLogReplicator {
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_RELEASE);
             std::unique_lock<std::mutex> const lck(swapMtx);
-            auto it = swapChunks.find(xid);
+            const auto& it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory release");
             SwapChunk* sc = it->second;
@@ -960,7 +958,7 @@ namespace OpenLogReplicator {
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_GROW1);
             std::unique_lock<std::mutex> const lck(swapMtx);
-            auto it = swapChunks.find(xid);
+            const auto& it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory grow");
             sc = it->second;
@@ -985,7 +983,7 @@ namespace OpenLogReplicator {
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CTX_SWAPPED_SHRINK1);
             std::unique_lock<std::mutex> const lck(swapMtx);
-            auto it = swapChunks.find(xid);
+            const auto& it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory shrink");
             sc = it->second;
@@ -1033,7 +1031,7 @@ namespace OpenLogReplicator {
         {
             t->contextSet(Thread::CONTEXT::CPU);
             std::unique_lock<std::mutex> const lck(swapMtx);
-            auto it = swapChunks.find(xid);
+            const auto& it = swapChunks.find(xid);
             if (unlikely(it == swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during memory remove");
             sc = it->second;
@@ -1280,16 +1278,13 @@ namespace OpenLogReplicator {
         return ss;
     }
 
-    bool Ctx::checkNameCase(const char* name) {
-        uint64_t num = 0;
-        while (*(name + num) != 0) {
-            if (islower(static_cast<unsigned char>(*(name + num))) != 0)
-                return false;
+    bool Ctx::checkNameCase(const std::string& name) {
+        if (unlikely(name.length() >= 1024))
+            throw DataException(20004, "identifier '" + std::string(name) + "' is too long");
 
-            if (unlikely(num == 1024))
-                throw DataException(20004, "identifier '" + std::string(name) + "' is too long");
-            ++num;
-        }
+        for (const char& c : name)
+            if (islower(c) != 0)
+                return false;
 
         return true;
     }

@@ -20,12 +20,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSet8bit.h"
 
 namespace OpenLogReplicator {
-    CharacterSet8bit::CharacterSet8bit(const char* newName, const typeUnicode16* newMap) :
-            CharacterSet7bit(newName, newMap) {
+    CharacterSet8bit::CharacterSet8bit(std::string newName, const typeUnicode16* newMap) :
+            CharacterSet7bit(std::move(newName), newMap) {
     }
 
-    CharacterSet8bit::CharacterSet8bit(const char* newName, const typeUnicode16* newMap, bool newCustomAscii) :
-            CharacterSet7bit(newName, newMap),
+    CharacterSet8bit::CharacterSet8bit(std::string newName, const typeUnicode16* newMap, bool newCustomAscii) :
+            CharacterSet7bit(std::move(newName), newMap),
             customAscii(newCustomAscii) {
     }
 

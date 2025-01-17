@@ -186,16 +186,12 @@ namespace OpenLogReplicator {
     }
 
     void LobCtx::purge() {
-        for (const auto& lobsIt: lobs) {
-            LobData* lobData = lobsIt.second;
+        for (const auto& [_, lobData]: lobs)
             delete lobData;
-        }
         lobs.clear();
 
-        for (auto listMapIt: listMap) {
-            uint8_t* ptr = listMapIt.second;
+        for (const auto& [_, ptr]: listMap)
             delete[] ptr;
-        }
         listMap.clear();
     }
 }

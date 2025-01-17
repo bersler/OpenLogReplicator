@@ -27,11 +27,6 @@ namespace OpenLogReplicator {
             msg(std::move(newMsg)) {
     }
 
-    RedoLogException::RedoLogException(int newCode, const char* newMsg) :
-            code(newCode),
-            msg(newMsg) {
-    }
-
     std::ostream& operator<<(std::ostream& os, const RedoLogException& exception) {
         os << exception.msg;
         return os;

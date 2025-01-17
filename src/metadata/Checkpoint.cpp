@@ -36,8 +36,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias, std::string newConfigFileName, time_t newConfigFileChange) :
-            Thread(newCtx, newAlias),
+    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, std::string newAlias, std::string newConfigFileName, time_t newConfigFileChange) :
+            Thread(newCtx, std::move(newAlias)),
             metadata(newMetadata),
             configFileName(std::move(newConfigFileName)),
             configFileChange(newConfigFileChange) {
@@ -111,10 +111,9 @@ namespace OpenLogReplicator {
             Ctx::checkJsonFields(configFileName, document, documentNames);
         }
 
-        const char* version = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, document, "version");
-        if (unlikely(strcmp(version, OpenLogReplicator_SCHEMA_VERSION) != 0))
-            throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + std::string(version) + ", expected: " +
-                                                OpenLogReplicator_SCHEMA_VERSION);
+        const std::string version = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, document, "version");
+        if (unlikely(version != OpenLogReplicator_SCHEMA_VERSION))
+            throw ConfigurationException(30001, "bad JSON, invalid 'version' value: " + version + ", expected: " + OpenLogReplicator_SCHEMA_VERSION);
 
         // Iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
@@ -135,8 +134,8 @@ namespace OpenLogReplicator {
 
             metadata->resetElements();
 
-            const char* debugOwner = nullptr;
-            const char* debugTable;
+            std::string debugOwner;
+            std::string debugTable;
 
             if (sourceJson.HasMember("debug")) {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
@@ -149,14 +148,14 @@ namespace OpenLogReplicator {
                 if (!ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
                     debugOwner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, debugJson, "owner");
                     debugTable = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, debugJson, "table");
-                    ctx->info(0, "will shutdown after committed DML in " + std::string(debugOwner) + "." + debugTable);
+                    ctx->info(0, "will shutdown after committed DML in " + debugOwner + "." + debugTable);
                 }
             }
 
             std::set<std::string> users;
-            if (debugOwner != nullptr && debugTable != nullptr) {
+            if (!debugOwner.empty() && !debugTable.empty()) {
                 metadata->addElement(debugOwner, debugTable, DbTable::OPTIONS::DEBUG_TABLE);
-                users.insert(std::string(debugOwner));
+                users.insert(debugOwner);
             }
             if (ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA))
                 metadata->addElement(".*", ".*", DbTable::OPTIONS::DEFAULT);
@@ -179,8 +178,8 @@ namespace OpenLogReplicator {
                     for (rapidjson::SizeType k = 0; k < tableArrayJson.Size(); ++k) {
                         const rapidjson::Value& tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
 
-                        const char* owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
-                        const char* table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
+                        const std::string owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
+                        const std::string table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, DbTable::OPTIONS::DEFAULT);
 
                         users.insert(owner);
@@ -222,16 +221,16 @@ namespace OpenLogReplicator {
             metadata->schema->purgeMetadata();
 
             // Mark all tables as touched to force a schema update
-            for (const auto& it: metadata->schema->sysObjPack.mapRowId)
-                metadata->schema->touchTable(it.second->obj);
+            for (const auto& [_, sysObj]: metadata->schema->sysObjPack.mapRowId)
+                metadata->schema->touchTable(sysObj->obj);
 
             std::vector<std::string> msgs;
             std::unordered_map<typeObj, std::string> tablesUpdated;
             metadata->buildMaps(msgs, tablesUpdated);
             for (const auto& msg: msgs)
                 ctx->info(0, msg);
-            for (const auto& it: tablesUpdated)
-                ctx->info(0, "- found: " + it.second);
+            for (const auto& [_, tableName]: tablesUpdated)
+                ctx->info(0, "- found: " + tableName);
 
             metadata->schema->resetTouched();
         }
