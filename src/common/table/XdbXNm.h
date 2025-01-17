@@ -35,10 +35,10 @@ namespace OpenLogReplicator {
         std::string nmSpcUri;
         std::string id;
 
-        XdbXNm(typeRowId newRowId, const char* newNmSpcUri, const char* newId) :
+        XdbXNm(typeRowId newRowId, std::string newNmSpcUri, std::string newId) :
                 rowId(newRowId),
-                nmSpcUri(newNmSpcUri),
-                id(newId) {
+                nmSpcUri(std::move(newNmSpcUri)),
+                id(std::move(newId)) {
         }
 
         explicit XdbXNm(typeRowId newRowId) :

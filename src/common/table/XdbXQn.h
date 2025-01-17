@@ -40,12 +40,12 @@ namespace OpenLogReplicator {
         std::string flags;
         std::string id;
 
-        XdbXQn(typeRowId newRowId, const char* newNmSpcId, const char* newLocalName, const char* newFlags, const char* newId) :
+        XdbXQn(typeRowId newRowId, std::string newNmSpcId, std::string newLocalName, std::string newFlags, std::string newId) :
                 rowId(newRowId),
-                nmSpcId(newNmSpcId),
-                localName(newLocalName),
-                flags(newFlags),
-                id(newId) {
+                nmSpcId(std::move(newNmSpcId)),
+                localName(std::move(newLocalName)),
+                flags(std::move(newFlags)),
+                id(std::move(newId)) {
         }
 
         explicit XdbXQn(typeRowId newRowId) :

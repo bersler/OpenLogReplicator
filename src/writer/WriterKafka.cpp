@@ -24,10 +24,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterKafka.h"
 
 namespace OpenLogReplicator {
-    WriterKafka::WriterKafka(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
-                             const char* newTopic) :
-            Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
-            topic(newTopic) {
+    WriterKafka::WriterKafka(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, std::string newTopic) :
+            Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata),
+            topic(std::move(newTopic)) {
         errStr[0] = 0;
     }
 
@@ -45,10 +44,10 @@ namespace OpenLogReplicator {
         ctx->info(0, "Kafka producer exit code: " + std::to_string(err));
     }
 
-    void WriterKafka::addProperty(const std::string& key, const std::string& value) {
+    void WriterKafka::addProperty(std::string key, std::string value) {
         if (properties.find(key) != properties.end())
             throw ConfigurationException(30009, "Kafka property '" + key + "' is defined multiple times");
-        properties.insert_or_assign(key, value);
+        properties.insert_or_assign(std::move(key), std::move(value));
     }
 
     void WriterKafka::initialize() {
@@ -70,8 +69,8 @@ namespace OpenLogReplicator {
         if (properties.find("group.id") != properties.end())
             properties.insert_or_assign("group.id", "OpenLogReplicator");
 
-        for (auto& property: properties)
-            if (rd_kafka_conf_set(conf, property.first.c_str(), property.second.c_str(), errStr, sizeof(errStr)) != RD_KAFKA_CONF_OK)
+        for (const auto& [name, value]: properties)
+            if (rd_kafka_conf_set(conf, name.c_str(), value.c_str(), errStr, sizeof(errStr)) != RD_KAFKA_CONF_OK)
                 throw RuntimeException(10059, "Kafka message: " + std::string(errStr));
 
         rd_kafka_conf_set_opaque(conf, this);

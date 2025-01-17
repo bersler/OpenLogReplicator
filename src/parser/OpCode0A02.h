@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
                 const uint8_t code = *redoLogRecord->data(fieldPos + 1);
                 const uint16_t sno = ctx->read16(redoLogRecord->data(fieldPos + 2));
                 const uint16_t rowSize = ctx->read16(redoLogRecord->data(fieldPos + 4));
-                const char* codeStr = "";
+                std::string codeStr;
                 if (code == 0) {
                     codeStr = "SINGLE";
                 } else if (code == 0x20) {

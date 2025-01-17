@@ -17,14 +17,17 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../metadata/Metadata.h"
 #include "WriterDiscard.h"
 
 namespace OpenLogReplicator {
-    WriterDiscard::WriterDiscard(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata) :
-            Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata) {
+    WriterDiscard::WriterDiscard(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata) :
+            Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata) {
     }
 
     void WriterDiscard::initialize() {
+        Writer::initialize();
+        streaming = true;
     }
 
     void WriterDiscard::sendMessage(BuilderMsg* msg) {
@@ -36,5 +39,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterDiscard::pollQueue() {
+        if (metadata->status == Metadata::STATUS::READY)
+            metadata->setStatusStart(this);
     }
 }

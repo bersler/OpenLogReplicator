@@ -28,11 +28,6 @@ namespace OpenLogReplicator {
             msg(std::move(newMsg)) {
     }
 
-    DataException::DataException(int newCode, const char* newMsg) :
-            code(newCode),
-            msg(newMsg) {
-    }
-
     std::ostream& operator<<(std::ostream& os, const DataException& exception) {
         os << exception.msg;
         return os;

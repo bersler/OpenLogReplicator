@@ -41,9 +41,9 @@ namespace OpenLogReplicator {
                                        uint64_t byte6) const;
 
     public:
-        const char* name;
+        std::string name;
 
-        explicit CharacterSet(const char* newName);
+        explicit CharacterSet(std::string newName);
         virtual ~CharacterSet() = default;
 
         virtual typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const = 0;

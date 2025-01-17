@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
                                                      (JA16SJIS_b2_max - JA16SJIS_b2_min + 1)];
 
     public:
-        explicit CharacterSetJA16SJIS(const char* newName);
+        explicit CharacterSetJA16SJIS(std::string newName);
         CharacterSetJA16SJIS();
 
         typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;

@@ -27,11 +27,6 @@ namespace OpenLogReplicator {
             msg(std::move(newMsg)) {
     }
 
-    ConfigurationException::ConfigurationException(int newCode, const char* newMsg) :
-            code(newCode),
-            msg(newMsg) {
-    }
-
     std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception) {
         os << exception.msg;
         return os;

@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         void* context{nullptr};
 
     public:
-        StreamZeroMQ(Ctx* newCtx, const char* newUri);
+        StreamZeroMQ(Ctx* newCtx, std::string newUri);
         ~StreamZeroMQ() override;
         StreamZeroMQ(const StreamZeroMQ&) = delete;
         StreamZeroMQ& operator=(const StreamZeroMQ&) = delete;

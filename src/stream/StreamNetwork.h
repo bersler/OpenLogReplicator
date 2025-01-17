@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
         struct addrinfo* res{nullptr};
 
     public:
-        StreamNetwork(Ctx* newCtx, const char* newUri);
+        StreamNetwork(Ctx* newCtx, std::string newUri);
         ~StreamNetwork() override;
 
         void initialize() override;

@@ -21,9 +21,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../Ctx.h"
 
 namespace OpenLogReplicator {
-    MetricsPrometheus::MetricsPrometheus(TAG_NAMES newTagNames, const char* newBind) :
+    MetricsPrometheus::MetricsPrometheus(TAG_NAMES newTagNames, std::string newBind) :
             Metrics(newTagNames),
-            bind(newBind) {
+            bind(std::move(newBind)) {
     }
 
     MetricsPrometheus::~MetricsPrometheus() {
@@ -244,10 +244,10 @@ namespace OpenLogReplicator {
     void MetricsPrometheus::emitDmlOpsDeleteOut(uint64_t counter, const std::string& owner, const std::string& table) {
         const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
-        auto iter = dmlOpsDeleteOutCounterMap.find(key);
+        const auto& it = dmlOpsDeleteOutCounterMap.find(key);
 
-        if (iter != dmlOpsDeleteOutCounterMap.end())
-            cnt = iter->second;
+        if (it != dmlOpsDeleteOutCounterMap.end())
+            cnt = it->second;
         else
             cnt = &dmlOps->Add({{"type",   "delete"},
                                 {"filter", "out"},
@@ -260,10 +260,10 @@ namespace OpenLogReplicator {
     void MetricsPrometheus::emitDmlOpsInsertOut(uint64_t counter, const std::string& owner, const std::string& table) {
         const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
-        auto iter = dmlOpsInsertOutCounterMap.find(key);
+        const auto& it = dmlOpsInsertOutCounterMap.find(key);
 
-        if (iter != dmlOpsInsertOutCounterMap.end())
-            cnt = iter->second;
+        if (it != dmlOpsInsertOutCounterMap.end())
+            cnt = it->second;
         else
             cnt = &dmlOps->Add({{"type",   "insert"},
                                 {"filter", "out"},
@@ -276,10 +276,10 @@ namespace OpenLogReplicator {
     void MetricsPrometheus::emitDmlOpsUpdateOut(uint64_t counter, const std::string& owner, const std::string& table) {
         const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
-        auto iter = dmlOpsUpdateOutCounterMap.find(key);
+        const auto& it = dmlOpsUpdateOutCounterMap.find(key);
 
-        if (iter != dmlOpsUpdateOutCounterMap.end())
-            cnt = iter->second;
+        if (it != dmlOpsUpdateOutCounterMap.end())
+            cnt = it->second;
         else
             cnt = &dmlOps->Add({{"type",   "update"},
                                 {"filter", "out"},
@@ -292,10 +292,10 @@ namespace OpenLogReplicator {
     void MetricsPrometheus::emitDmlOpsDeleteSkip(uint64_t counter, const std::string& owner, const std::string& table) {
         const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
-        auto iter = dmlOpsDeleteSkipCounterMap.find(key);
+        const auto& it = dmlOpsDeleteSkipCounterMap.find(key);
 
-        if (iter != dmlOpsDeleteSkipCounterMap.end())
-            cnt = iter->second;
+        if (it != dmlOpsDeleteSkipCounterMap.end())
+            cnt = it->second;
         else
             cnt = &dmlOps->Add({{"type",   "delete"},
                                 {"filter", "skip"},
@@ -308,10 +308,10 @@ namespace OpenLogReplicator {
     void MetricsPrometheus::emitDmlOpsInsertSkip(uint64_t counter, const std::string& owner, const std::string& table) {
         const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
-        auto iter = dmlOpsInsertSkipCounterMap.find(key);
+        const auto& it = dmlOpsInsertSkipCounterMap.find(key);
 
-        if (iter != dmlOpsInsertSkipCounterMap.end())
-            cnt = iter->second;
+        if (it != dmlOpsInsertSkipCounterMap.end())
+            cnt = it->second;
         else
             cnt = &dmlOps->Add({{"type",   "insert"},
                                 {"filter", "skip"},
@@ -324,10 +324,10 @@ namespace OpenLogReplicator {
     void MetricsPrometheus::emitDmlOpsUpdateSkip(uint64_t counter, const std::string& owner, const std::string& table) {
         const std::string key(owner + "." + table);
         prometheus::Counter* cnt;
-        auto iter = dmlOpsUpdateSkipCounterMap.find(key);
+        const auto& it = dmlOpsUpdateSkipCounterMap.find(key);
 
-        if (iter != dmlOpsUpdateSkipCounterMap.end())
-            cnt = iter->second;
+        if (it != dmlOpsUpdateSkipCounterMap.end())
+            cnt = it->second;
         else
             cnt = &dmlOps->Add({{"type",   "update"},
                                 {"filter", "skip"},

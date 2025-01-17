@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         int redoRead(uint8_t* buf, uint64_t offset, uint size) override;
 
     public:
-        ReaderFilesystem(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum);
+        ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum);
         ~ReaderFilesystem() override;
     };
 }

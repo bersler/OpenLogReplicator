@@ -290,16 +290,16 @@ namespace OpenLogReplicator {
         void appendAttributes() {
             append(std::string_view(R"("attributes":{)"));
             bool hasPreviousAttribute = false;
-            for (const auto& attributeIt: *attributes) {
+            for (const auto& [name, value]: *attributes) {
                 if (hasPreviousAttribute)
                     append(',');
                 else
                     hasPreviousAttribute = true;
 
                 append('"');
-                appendEscape(attributeIt.first);
+                appendEscape(name);
                 append(std::string_view(R"(":")"));
-                appendEscape(attributeIt.second);
+                appendEscape(value);
                 append('"');
             }
             append(std::string_view("},"));

@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         std::string path;
 
     public:
-        explicit StateDisk(Ctx* newCtx, const char* newPath);
+        explicit StateDisk(Ctx* newCtx, std::string newPath);
         StateDisk(const StateDisk&) = delete;
         StateDisk& operator=(const StateDisk&) = delete;
 

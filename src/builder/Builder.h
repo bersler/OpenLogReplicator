@@ -167,7 +167,7 @@ namespace OpenLogReplicator {
         static long double decodeDouble(const uint8_t* data);
 
         template<bool copy>
-        void builderRotate(void) {
+        void builderRotate() {
             if (messageSize > ctx->memoryChunksWriteBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
                 throw RedoLogException(10072, "writer buffer (parameter \"write-buffer-max-mb\" = " +
                                               std::to_string(ctx->memoryChunksWriteBufferMax * Ctx::MEMORY_CHUNK_SIZE_MB) +
@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
         }
 
         template<bool copy>
-        void builderShift(void) {
+        void builderShift() {
             ++messagePosition;
 
             if (unlikely(lastBuilderSize + messagePosition >= OUTPUT_BUFFER_DATA_SIZE))
@@ -603,9 +603,7 @@ namespace OpenLogReplicator {
                 valueBufferCheck(static_cast<uint64_t>((lobData->pageSize) * static_cast<uint64_t>(lobData->sizePages)) + lobData->sizeRest, offset);
 
                 typeDba pageNo = 0;
-                for (auto indexMapIt: lobData->indexMap) {
-                    const typeDba pageNoLob = indexMapIt.first;
-                    const typeDba page = indexMapIt.second;
+                for (const auto& [pageNoLob, page]: lobData->indexMap) {
                     if (unlikely(pageNo != pageNoLob)) {
                         ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, size) + ", location: 2");
                         pageNo = pageNoLob;

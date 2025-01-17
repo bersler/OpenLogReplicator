@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
             for (auto& [typeRowId, data]: mapRowId) {
                 if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                     KeyMap key(data);
-                    auto it = mapKey.find(key);
+                    const auto& it = mapKey.find(key);
                     if (unlikely(it == mapKey.end()))
                         ctx->warning(50030, "missing index for " + Data::tableName() + " (" + data->toString() + ")");
                     else
@@ -70,7 +70,7 @@ namespace OpenLogReplicator {
 
                 if constexpr (!std::is_same_v<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>) {
                     KeyUnorderedMap key(data);
-                    auto it = unorderedMapKey.find(key);
+                    const auto& it = unorderedMapKey.find(key);
                     if (unlikely(it == unorderedMapKey.end()))
                         ctx->warning(50030, "missing index for " + Data::tableName() + " (" + data->toString() + ")u");
                     else
@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
 
         bool compareTo(const TablePack& other, std::string& msgs) const {
             for (const auto& [_, data]: mapRowId) {
-                auto it = other.mapRowId.find(data->rowId);
+                const auto& it = other.mapRowId.find(data->rowId);
                 if (it == other.mapRowId.end()) {
                     msgs.assign("schema mismatch: " + Data::tableName() + " lost ROWID: " + data->rowId.toString());
                     return false;
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                 ctx->logTrace(Ctx::TRACE::SYSTEM, "forInsert " + Data::tableName() + " ('" + rowId.toString() + "')");
 
-            auto it = mapRowId.find(rowId);
+            const auto& it = mapRowId.find(rowId);
             Data* data;
             if (unlikely(it != mapRowId.end())) {
                 // Duplicate
@@ -141,7 +141,7 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                 ctx->logTrace(Ctx::TRACE::SYSTEM, "add: " + Data::tableName() + " (" + data->toString() + ")");
 
-            auto it = mapRowId.find(data->rowId);
+            const auto& it = mapRowId.find(data->rowId);
             if (unlikely(it != mapRowId.end()))
                 throw RuntimeException(50022, "duplicate " + Data::tableName() + " (" + data->toString() + ") for insert");
             mapRowId.insert_or_assign(data->rowId, data);
@@ -154,7 +154,7 @@ namespace OpenLogReplicator {
         }
 
         void drop(const Ctx* ctx, typeRowId rowId, uint64_t offset = 0, bool deleteTouched = false) {
-            auto it = mapRowId.find(rowId);
+            const auto& it = mapRowId.find(rowId);
             if (unlikely(it == mapRowId.end())) {
                 // Missing
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
@@ -173,7 +173,7 @@ namespace OpenLogReplicator {
         void addKeys(Data* data) {
             if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                 KeyMap key(data);
-                auto it = mapKey.find(key);
+                const auto& it = mapKey.find(key);
                 if (unlikely(it != mapKey.end()))
                     throw DataException(50024, "duplicate " + Data::tableName() + " value for unique (" + data->toString() + ")");
                 mapKey.insert_or_assign(key, data);
@@ -181,7 +181,7 @@ namespace OpenLogReplicator {
 
             if constexpr (!std::is_same_v<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>) {
                 KeyUnorderedMap key(data);
-                auto it = unorderedMapKey.find(key);
+                const auto& it = unorderedMapKey.find(key);
                 if (unlikely(it != unorderedMapKey.end()))
                     throw DataException(50024, "duplicate " + Data::tableName() + " value for unique (" + data->toString() + ")2");
                 unorderedMapKey.insert_or_assign(key, data);
@@ -191,7 +191,7 @@ namespace OpenLogReplicator {
         void dropKeys(Data* data) {
             if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                 KeyMap key(data);
-                auto it = mapKey.find(key);
+                const auto& it = mapKey.find(key);
                 if (unlikely(it == mapKey.end()))
                     throw DataException(50030, "missing index for " + Data::tableName() + " value for unique (" + data->toString() + ")");
                 mapKey.erase(it);
@@ -199,7 +199,7 @@ namespace OpenLogReplicator {
 
             if constexpr (!std::is_same_v<KeyUnorderedMap, TabRowIdUnorderedKeyDefault>) {
                 KeyUnorderedMap key(data);
-                auto it = unorderedMapKey.find(key);
+                const auto& it = unorderedMapKey.find(key);
                 if (unlikely(it == unorderedMapKey.end()))
                     throw DataException(50024, "missing index for " + Data::tableName() + " value for unique (" + data->toString() + ")2");
                 unorderedMapKey.erase(it);

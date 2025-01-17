@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
         void resetMessageQueue();
 
     public:
-        Writer(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata);
+        Writer(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata);
         ~Writer() override;
 
         virtual void initialize();
@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
         void wakeUp() override;
         virtual void flush() {};
 
-        const std::string getName() const override {
+        std::string getName() const override {
             return {"Writer: " + getType()};
         }
     };

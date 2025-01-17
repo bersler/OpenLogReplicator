@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] virtual typeUnicode readMap(uint64_t character) const;
 
     public:
-        CharacterSet7bit(const char* newName, const typeUnicode16* newMap);
+        CharacterSet7bit(std::string newName, const typeUnicode16* newMap);
 
         typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;
 

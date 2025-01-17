@@ -41,12 +41,11 @@ namespace OpenLogReplicator {
         explicit DatabaseStatement(DatabaseConnection* newConn);
         ~DatabaseStatement();
 
-        void createStatement(const char* sql);
+        void createStatement(const std::string_view& sql);
         void unbindAll();
         int executeQuery();
         int next();
 
-        void bindString(uint col, const char* val);
         void bindString(uint col, std::string& val);
         void bindBinary(uint col, uint8_t* buf, uint64_t size);
         void defineString(uint col, char* val, uint64_t len);

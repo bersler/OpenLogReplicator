@@ -24,8 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     ReplicatorBatch::ReplicatorBatch(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                                     TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase) :
-            Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, newAlias, newDatabase) {
+                                     TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase) :
+            Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, std::move(newAlias), std::move(newDatabase)) {
     }
 
     void ReplicatorBatch::positionReader() {
@@ -51,8 +51,8 @@ namespace OpenLogReplicator {
         // No need to update online redo log data in batch mode
     }
 
-    const char* ReplicatorBatch::getModeName() const {
-        return "batch";
+    std::string ReplicatorBatch::getModeName() const {
+        return {"batch"};
     }
 
     bool ReplicatorBatch::continueWithOnline() {

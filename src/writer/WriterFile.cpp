@@ -34,11 +34,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterFile.h"
 
 namespace OpenLogReplicator {
-    WriterFile::WriterFile(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
-                           const char* newOutput, const char* newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend) :
-            Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
-            output(newOutput),
-            timestampFormat(newTimestampFormat),
+    WriterFile::WriterFile(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata,
+                           std::string newOutput, std::string newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend) :
+            Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata),
+            output(std::move(newOutput)),
+            timestampFormat(std::move(newTimestampFormat)),
             maxFileSize(newMaxFileSize),
             newLine(newNewLine),
             append(newAppend) {
@@ -136,7 +136,8 @@ namespace OpenLogReplicator {
 
             struct dirent* ent;
             while ((ent = readdir(dir)) != nullptr) {
-                if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+                std::string dName(ent->d_name);
+                if (dName == "." || dName == "..")
                     continue;
 
                 struct stat fileStat{};

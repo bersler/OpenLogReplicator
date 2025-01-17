@@ -181,10 +181,8 @@ namespace OpenLogReplicator {
     }
 
     Locales::~Locales() {
-        for (auto characterMapIt: Locales::characterMap) {
-            CharacterSet* cs = characterMapIt.second;
+        for (const auto& [_, cs]: Locales::characterMap)
             delete cs;
-        }
         timeZoneMap.clear();
         characterMap.clear();
     }

@@ -131,9 +131,8 @@ namespace OpenLogReplicator {
         if (!sysTsPack.compareTo(otherSchema->sysTsPack, msgs)) return false;
         if (!sysUserPack.compareTo(otherSchema->sysUserPack, msgs)) return false;
         if (!xdbTtSetPack.compareTo(otherSchema->xdbTtSetPack, msgs)) return false;
-        for (const auto& schemaXmlMapIter: schemaXmlMap) {
-            const XmlCtx* xmlCtx = schemaXmlMapIter.second;
-            auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(schemaXmlMapIter.first);
+        for (const auto& [tokSuf, xmlCtx]: schemaXmlMap) {
+            auto otherXmlCtxIt = otherSchema->schemaXmlMap.find(tokSuf);
             if (otherXmlCtxIt == otherSchema->schemaXmlMap.end())
                 return false;
             const XmlCtx* otherXmlCtx = otherXmlCtxIt->second;
@@ -153,11 +152,11 @@ namespace OpenLogReplicator {
             return;
 
         identifiersTouched.insert(obj);
-        auto tableMapIt = tableMap.find(obj);
+        const auto& tableMapIt = tableMap.find(obj);
         if (tableMapIt == tableMap.end())
             return;
 
-        auto tablesTouchedIt = tablesTouched.find(tableMapIt->second);
+        const auto& tablesTouchedIt = tablesTouched.find(tableMapIt->second);
         if (tablesTouchedIt != tablesTouched.end())
             return;
 
@@ -165,41 +164,41 @@ namespace OpenLogReplicator {
     }
 
     void Schema::touchTableLob(typeObj lobObj) {
-        auto it = sysLobPack.unorderedMapKey.find(SysLobLObj(lobObj));
+        const auto& it = sysLobPack.unorderedMapKey.find(SysLobLObj(lobObj));
         if (it != sysLobPack.unorderedMapKey.end())
             touchTable(it->second->obj);
     }
 
     void Schema::touchTableLobFrag(typeObj lobFragObj) {
-        auto it = sysLobCompPartPack.unorderedMapKey.find(SysLobCompPartPartObj(lobFragObj));
+        const auto& it = sysLobCompPartPack.unorderedMapKey.find(SysLobCompPartPartObj(lobFragObj));
         if (it != sysLobCompPartPack.unorderedMapKey.end()) {
-            auto it2 = sysLobPack.unorderedMapKey.find(SysLobLObj(it->second->lObj));
+            const auto& it2 = sysLobPack.unorderedMapKey.find(SysLobLObj(it->second->lObj));
             if (it2 != sysLobPack.unorderedMapKey.end())
                 touchTable(it2->second->obj);
         }
     }
 
     void Schema::touchTablePart(typeObj obj) {
-        auto it = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
+        const auto& it = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
         if (it != sysObjPack.unorderedMapKey.end())
             touchTable(it->second->obj);
     }
 
     DbTable* Schema::checkTableDict(typeObj obj) const {
-        const auto tablePartitionMapIt = tablePartitionMap.find(obj);
-        if (tablePartitionMapIt != tablePartitionMap.end())
-            return tablePartitionMapIt->second;
+        const auto& it = tablePartitionMap.find(obj);
+        if (it != tablePartitionMap.end())
+            return it->second;
 
         return nullptr;
     }
 
     bool Schema::checkTableDictUncommitted(typeObj obj, std::string& owner, std::string& table) const {
-        const auto objIt = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
+        const auto& objIt = sysObjPack.unorderedMapKey.find(SysObjObj(obj));
         if (objIt == sysObjPack.unorderedMapKey.end())
             return false;
         const SysObj* sysObj = objIt->second;
 
-        const auto userIt = sysUserPack.unorderedMapKey.find(SysUserUser(sysObj->owner));
+        const auto& userIt = sysUserPack.unorderedMapKey.find(SysUserUser(sysObj->owner));
         if (userIt == sysUserPack.unorderedMapKey.end())
             return false;
         const SysUser* sysUser = userIt->second;
@@ -210,17 +209,17 @@ namespace OpenLogReplicator {
     }
 
     DbLob* Schema::checkLobDict(typeDataObj dataObj) const {
-        const auto lobPartitionMapIt = lobPartitionMap.find(dataObj);
-        if (lobPartitionMapIt != lobPartitionMap.end())
-            return lobPartitionMapIt->second;
+        const auto& it = lobPartitionMap.find(dataObj);
+        if (it != lobPartitionMap.end())
+            return it->second;
 
         return nullptr;
     }
 
     DbLob* Schema::checkLobIndexDict(typeDataObj dataObj) const {
-        const auto lobIndexMapIt = lobIndexMap.find(dataObj);
-        if (lobIndexMapIt != lobIndexMap.end())
-            return lobIndexMapIt->second;
+        const auto& it = lobIndexMap.find(dataObj);
+        if (it != lobIndexMap.end())
+            return it->second;
 
         return nullptr;
     }
@@ -580,7 +579,7 @@ namespace OpenLogReplicator {
             if (sysTab->isPartitioned())
                 compressed = false;
             else if (sysTab->isInitial()) {
-                auto it = sysDeferredStgPack.unorderedMapKey.find(SysDeferredStgObj(sysObj->obj));
+                const auto& it = sysDeferredStgPack.unorderedMapKey.find(SysDeferredStgObj(sysObj->obj));
                 if (it != sysDeferredStgPack.unorderedMapKey.end())
                     compressed = it->second->isCompressed();
             }
@@ -715,7 +714,7 @@ namespace OpenLogReplicator {
                         numSup = 1;
                     numPk = 0;
                     for (const auto& val: keyList) {
-                        if (strcmp(sysCol->name.c_str(), val.c_str()) == 0) {
+                        if (sysCol->name == val) {
                             numPk = 1;
                             ++keysCnt;
                             if (numSup == 0)
@@ -743,7 +742,7 @@ namespace OpenLogReplicator {
 
                     case SchemaElement::TAG_TYPE::LIST: {
                         for (uint x = 0; x < tagList.size(); ++x) {
-                            if (strcmp(sysCol->name.c_str(), tagList[x].c_str()) != 0)
+                            if (sysCol->name !=  tagList[x])
                                 continue;
 
                             //tagCol = x;
@@ -813,7 +812,7 @@ namespace OpenLogReplicator {
                         << std::setfill('0') << sysLob->intCol << "$$";
                     const std::string lobIndexName = str.str();
 
-                    const SysObjNameKey sysObjNameKeyFirst(sysObj->owner, lobIndexName.c_str(), 0, 0);
+                    const SysObjNameKey sysObjNameKeyFirst(sysObj->owner, lobIndexName, 0, 0);
                     for (auto sysObjMapNameIt = sysObjPack.mapKey.upper_bound(sysObjNameKeyFirst);
                          sysObjMapNameIt != sysObjPack.mapKey.end() &&
                          sysObjMapNameIt->first.name == lobIndexName &&
@@ -979,7 +978,7 @@ namespace OpenLogReplicator {
     }
 
     uint16_t Schema::getLobBlockSize(typeTs ts) const {
-        auto it = sysTsPack.unorderedMapKey.find(SysTsTs(ts));
+        const auto& it = sysTsPack.unorderedMapKey.find(SysTsTs(ts));
         if (it != sysTsPack.unorderedMapKey.end()) {
             const typeDba pageSize = it->second->blockSize;
             if (pageSize == 8192)

@@ -34,12 +34,12 @@ namespace OpenLogReplicator {
 
         bool current;
 
-        DbIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus, typeResetlogs newResetlogs,
+        DbIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, std::string newStatus, typeResetlogs newResetlogs,
                       uint32_t newPriorIncarnation) :
                 incarnation(newIncarnation),
                 resetlogsScn(newResetlogsScn),
                 priorResetlogsScn(newPriorResetlogsScn),
-                status(newStatus),
+                status(std::move(newStatus)),
                 resetlogs(newResetlogs),
                 priorIncarnation(newPriorIncarnation) {
 

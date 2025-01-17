@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
         void pollQueue() override;
 
     public:
-        WriterDiscard(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata);
+        WriterDiscard(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata);
         ~WriterDiscard() override = default;
 
         void initialize() override;

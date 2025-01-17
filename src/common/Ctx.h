@@ -579,7 +579,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] static uint getJsonFieldU(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static int getJsonFieldI(const std::string& fileName, const rapidjson::Value& value, const char* field);
         [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static std::string getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field);
 
         [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
         [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
@@ -591,10 +591,10 @@ namespace OpenLogReplicator {
         [[nodiscard]] static uint getJsonFieldU(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
         [[nodiscard]] static int getJsonFieldI(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
         [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint num);
-        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field,
+        [[nodiscard]] static std::string getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field,
                                                        uint num);
 
-        static bool parseTimezone(const char* str, int64_t& out);
+        static bool parseTimezone(std::string str, int64_t& out);
         static std::string timezoneToString(int64_t tz);
         static time_t valuesToEpoch(int year, int month, int day, int hour, int minute, int second, int tz);
         static uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ);
@@ -630,7 +630,7 @@ namespace OpenLogReplicator {
         void spawnThread(Thread* t);
         void finishThread(Thread* t);
         static std::ostringstream& writeEscapeValue(std::ostringstream& ss, const std::string& str);
-        static bool checkNameCase(const char* name);
+        static bool checkNameCase(const std::string& name);
         void signalDump();
 
         void welcome(const std::string& message) const;

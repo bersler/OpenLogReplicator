@@ -65,14 +65,14 @@ namespace OpenLogReplicator {
         typeIntX flags{0, 0};             // NULL
         bool single{false};
 
-        SysObj(typeRowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, OBJTYPE newType, const char* newName, uint64_t newFlags1,
+        SysObj(typeRowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, OBJTYPE newType, std::string newName, uint64_t newFlags1,
                uint64_t newFlags2, bool newSingle) :
                 rowId(newRowId),
                 owner(newOwner),
                 obj(newObj),
                 dataObj(newDataObj),
                 type(newType),
-                name(newName),
+                name(std::move(newName)),
                 flags(newFlags1, newFlags2),
                 single(newSingle) {
         }
@@ -145,9 +145,9 @@ namespace OpenLogReplicator {
         typeObj obj;
         typeDataObj dataObj;
 
-        SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj, typeDataObj newDataObj) :
+        SysObjNameKey(typeUser newOwner, std::string newName, typeObj newObj, typeDataObj newDataObj) :
                 owner(newOwner),
-                name(newName),
+                name(std::move(newName)),
                 obj(newObj),
                 dataObj(newDataObj) {
         }

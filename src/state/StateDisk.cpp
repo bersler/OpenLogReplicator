@@ -29,9 +29,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StateDisk.h"
 
 namespace OpenLogReplicator {
-    StateDisk::StateDisk(Ctx* newCtx, const char* newPath) :
+    StateDisk::StateDisk(Ctx* newCtx, std::string newPath) :
             State(newCtx),
-            path(newPath) {
+            path(std::move(newPath)) {
     }
 
     void StateDisk::list(std::set<std::string>& namesList) const {
@@ -41,7 +41,8 @@ namespace OpenLogReplicator {
 
         const struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
-            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+            std::string dName(ent->d_name);
+            if (dName == "." || dName == "..")
                 continue;
 
             struct stat fileStat{};

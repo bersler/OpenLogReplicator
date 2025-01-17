@@ -237,7 +237,7 @@ namespace OpenLogReplicator {
                         const typeUba itcUba = ctx->read56(redoLogRecord->data(fieldPos + startPos + 12 + 8 + (i * 24)));
                         char flagsStr[5]{"----"};
                         typeScn scnfsc;
-                        const char* scnfscStr = "fsc";
+                        std::string scnfscStr = "fsc";
                         uint16_t lck = ctx->read16(redoLogRecord->data(fieldPos + startPos + 12 + 16 + (i * 24)));
                         if ((lck & 0x1000) != 0)
                             flagsStr[3] = 'T';
@@ -461,7 +461,7 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->dumpRedoLog >= 1)) {
                 const typeScn scn = ctx->readScnR(redoLogRecord->data(fieldPos + 2));
                 const uint8_t flg0 = *redoLogRecord->data(fieldPos + 10);
-                const char* flg0typ = "";
+                std::string flg0typ;
                 switch (flg0 & KDLI_TYPE_MASK) {
                     case KDLI_TYPE_NEW:
                         flg0typ = "new";
@@ -489,29 +489,29 @@ namespace OpenLogReplicator {
                     default:
                         ;
                 }
-                const char* flg0lock = "n";
+                std::string flg0lock {"n"};
                 if ((flg0 & KDLI_TYPE_LOCK) != 0)
                     flg0lock = "y";
-                const char* flg0ver = "0";
+                std::string flg0ver {"0"};
                 if ((flg0 & KDLI_TYPE_VER1) != 0)
                     flg0ver = "1";
                 const uint8_t flg1 = *redoLogRecord->data(fieldPos + 11);
                 const uint16_t rid1 = ctx->read16(redoLogRecord->data(fieldPos + 22));
                 const uint32_t rid2 = ctx->read32(redoLogRecord->data(fieldPos + 24));
                 const uint8_t flg2 = *redoLogRecord->data(fieldPos + 28);
-                const char* flg2pfill = "n";
+                std::string flg2pfill {"n"};
                 if ((flg2 & KDLI_FLG2_121_PFILL) != 0)
                     flg2pfill = "y";
-                const char* flg2cmap = "n";
+                std::string flg2cmap {"n"};
                 if ((flg2 & KDLI_FLG2_121_CMAP) != 0)
                     flg2cmap = "y";
-                const char* flg2hash = "n";
+                std::string flg2hash {"n"};
                 if ((flg2 & KDLI_FLG2_121_HASH) != 0)
                     flg2hash = "y";
-                const char* flg2lid = "short-rowid";
+                std::string flg2lid {"short-rowid"};
                 if ((flg2 & KDLI_FLG2_121_LHB) != 0)
                     flg2lid = "lhb-dba";
-                const char* flg2ver1 = "0";
+                std::string flg2ver1 {"0"};
                 if ((flg2 & KDLI_FLG2_121_VER1) != 0)
                     flg2ver1 = "1";
                 const uint8_t flg3 = *redoLogRecord->data(fieldPos + 29);
@@ -743,7 +743,7 @@ namespace OpenLogReplicator {
                 const uint8_t flg0 = *redoLogRecord->data(fieldPos + 10);
                 const uint8_t flg1 = *redoLogRecord->data(fieldPos + 11);
                 const uint32_t spare = ctx->read32(redoLogRecord->data(fieldPos + 24));
-                const char* flg0typ = "???";
+                std::string flg0typ = "???";
                 switch (flg0 & KDLI_TYPE_MASK) {
                     case KDLI_TYPE_NEW:
                         flg0typ = "new";
@@ -771,10 +771,10 @@ namespace OpenLogReplicator {
                     default:
                         ;
                 }
-                const char* flg0lock = "n";
+                std::string flg0lock {"n"};
                 if ((flg0 & KDLI_TYPE_LOCK) != 0)
                     flg0lock = "y";
-                const char* flg0ver = "0";
+                std::string flg0ver {"0"};
                 if ((flg0 & KDLI_TYPE_VER1) != 0)
                     flg0ver = "1";
 
@@ -817,19 +817,19 @@ namespace OpenLogReplicator {
                     *ctx->dumpStream << "kdlihh  [0xXXXXXXXXXXXX 24]\n";
 
                     if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
-                        const char* flg2pfill = "n";
+                        std::string flg2pfill {"n"};
                         if ((flg2 & KDLI_FLG2_121_PFILL) != 0)
                             flg2pfill = "y";
-                        const char* flg2cmap = "n";
+                        std::string flg2cmap {"n"};
                         if ((flg2 & KDLI_FLG2_121_CMAP) != 0)
                             flg2cmap = "y";
-                        const char* flg2hash = "n";
+                        std::string flg2hash {"n"};
                         if ((flg2 & KDLI_FLG2_121_HASH) != 0)
                             flg2hash = "y";
-                        const char* flg2lid = "short-rowid";
+                        std::string flg2lid {"short-rowid"};
                         if ((flg2 & KDLI_FLG2_121_LHB) != 0)
                             flg2lid = "lhb-dba";
-                        const char* flg2ver1 = "0";
+                        std::string flg2ver1 {"0"};
                         if ((flg2 & KDLI_FLG2_121_VER1) != 0)
                             flg2ver1 = "1";
 
@@ -837,28 +837,28 @@ namespace OpenLogReplicator {
                                          " [ver=" << flg2ver1 << " lid=" << flg2lid << " hash=" << flg2hash << " cmap=" << flg2cmap << " pfill=" <<
                                          flg2pfill << "]\n";
                     } else {
-                        const char* flg2descn = "n";
+                        std::string flg2descn {"n"};
                         if ((flg2 & KDLI_FLG2_122_DESCN) != 0)
                             flg2descn = "y";
-                        const char* flg2ovr = "n";
+                        std::string flg2ovr {"n"};
                         if ((flg2 & KDLI_FLG2_122_OVR) != 0)
                             flg2ovr = "y";
-                        const char* flg2xfm = "n";
+                        std::string flg2xfm {"n"};
                         if ((flg2 & KDLI_FLG2_122_XFM) != 0)
                             flg2xfm = "y";
-                        const char* flg2bt = "n";
+                        std::string flg2bt {"n"};
                         if ((flg2 & KDLI_FLG2_122_BT) != 0)
                             flg2bt = "y";
-                        const char* flg2it = "n";
+                        std::string flg2it {"n"};
                         if ((flg2 & KDLI_FLG2_122_IT) != 0)
                             flg2it = "y";
-                        const char* flg2hash = "n";
+                        std::string flg2hash {"n"};
                         if ((flg2 & KDLI_FLG2_122_HASH) != 0)
                             flg2hash = "y";
-                        const char* flg2lid = "short-rowid";
+                        std::string flg2lid {"short-rowid"};
                         if ((flg2 & KDLI_FLG2_122_LID) != 0)
                             flg2lid = "iot-guess";
-                        const char* flg2ver1 = "0";
+                        std::string flg2ver1 {"0"};
                         if ((flg2 & KDLI_FLG2_121_VER1) != 0)
                             flg2ver1 = "1";
 
@@ -867,7 +867,7 @@ namespace OpenLogReplicator {
                                          flg2bt << " xfm=" << flg2xfm << " ovr=" << flg2ovr << " descn=" << flg2descn << "]\n";
                     }
 
-                    const char* flg3vll = "n";
+                    std::string flg3vll {"n"};
                     if ((flg3 & KDLI_FLG3_VLL) != 0)
                         flg3vll = "y";
                     *ctx->dumpStream << "  flg3  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(flg3) <<
@@ -970,7 +970,7 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->dumpRedoLog >= 1)) {
                 const typeScn scn = ctx->readScnR(redoLogRecord->data(fieldPos + 2));
                 const uint8_t flg0 = *redoLogRecord->data(fieldPos + 10);
-                const char* flg0typ = "";
+                std::string flg0typ;
                 switch (flg0 & KDLI_TYPE_MASK) {
                     case KDLI_TYPE_NEW:
                         flg0typ = "new";
@@ -998,20 +998,20 @@ namespace OpenLogReplicator {
                     default:
                         ;
                 }
-                const char* flg0lock = "n";
+                std::string flg0lock {"n"};
                 if ((flg0 & KDLI_TYPE_LOCK) != 0)
                     flg0lock = "y";
-                const char* flg0ver = "0";
+                std::string flg0ver {"0"};
                 if ((flg0 & KDLI_TYPE_VER1) != 0)
                     flg0ver = "1";
                 const uint8_t flg1 = *redoLogRecord->data(fieldPos + 11);
                 const uint16_t rid1 = ctx->read16(redoLogRecord->data(fieldPos + 22));
                 const uint32_t rid2 = ctx->read32(redoLogRecord->data(fieldPos + 24));
                 const uint8_t flg2 = *redoLogRecord->data(fieldPos + 28);
-                const char* flg2xfm = "n";
+                std::string flg2xfm {"n"};
                 if ((flg2 & KDLI_FLG2_122_XFM) != 0)
                     flg2xfm = "y";
-                const char* flg2ver1 = "0";
+                std::string flg2ver1 {"0"};
                 if ((flg2 & KDLI_FLG2_121_VER1) != 0)
                     flg2ver1 = "1";
                 const uint8_t flg3 = *redoLogRecord->data(fieldPos + 29);
@@ -1113,7 +1113,7 @@ namespace OpenLogReplicator {
             redoLogRecord->dba = ctx->read32(redoLogRecord->data(fieldPos + 8));
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
-                const char* opCode = "????";
+                std::string opCode {"????"};
                 switch (redoLogRecord->opc) {
                     case KDLI_OP_REDO:
                         opCode = "REDO";
@@ -1150,7 +1150,7 @@ namespace OpenLogReplicator {
                         ;
                 }
                 const uint8_t type = *redoLogRecord->data(fieldPos + 1);
-                const char* typeCode = "???";
+                std::string typeCode {"???"};
                 switch (type & KDLI_TYPE_MASK) {
                     case KDLI_TYPE_NEW:
                         typeCode = "new";
@@ -1212,7 +1212,7 @@ namespace OpenLogReplicator {
                 const uint8_t itli = *redoLogRecord->data(fieldPos + 12);
                 const uint8_t ispac = *redoLogRecord->data(fieldPos + 13);
 
-                const char* opCode;
+                std::string opCode;
                 switch (redoLogRecord->op & 0x1F) {
                     case RedoLogRecord::OP_IUR:
                         // Interpret Undo Redo
@@ -1312,8 +1312,8 @@ namespace OpenLogReplicator {
                             *ctx->dumpStream << "DEBUG op: " << std::dec << static_cast<uint>(redoLogRecord->op & 0x1F) << '\n';
                 }
 
-                const char* xtype("0");
-                const char* rtype("");
+                std::string xtype {"0"};
+                std::string rtype;
                 switch (redoLogRecord->flags & 0x03) {
                     case FLAGS_XA:
                         // Redo
@@ -1337,7 +1337,7 @@ namespace OpenLogReplicator {
                 if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0)
                     rtype = "xtype KDO_KDOM2";
 
-                const char* rowDependencies("Disabled");
+                std::string rowDependencies {"Disabled"};
                 if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0)
                     rowDependencies = "Enabled";
 
@@ -1802,9 +1802,9 @@ namespace OpenLogReplicator {
             redoLogRecord->slt = *redoLogRecord->data(fieldPos + 18);
             redoLogRecord->flg = ctx->read16(redoLogRecord->data(fieldPos + 20));
 
-            const char* ktuType("ktubu");
-            const char* prevObj("");
-            const char* postObj("");
+            std::string ktuType {"ktubu"};
+            std::string prevObj;
+            std::string postObj;
             bool ktubl = false;
 
             if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0 && isKtubl) {
@@ -1849,7 +1849,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            const char* lastBufferSplit;
+            std::string lastBufferSplit;
             if ((redoLogRecord->flg & FLG_LASTBUFFERSPLIT) != 0)
                 lastBufferSplit = "Yes";
             else {
@@ -1859,7 +1859,7 @@ namespace OpenLogReplicator {
                     lastBufferSplit = " No";
             }
 
-            const char* userUndoDone;
+            std::string userUndoDone;
             if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
                 userUndoDone = "Yes";
             else {
@@ -1869,7 +1869,7 @@ namespace OpenLogReplicator {
                     userUndoDone = " No";
             }
 
-            const char* undoType;
+            std::string undoType;
             if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
                 if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                     undoType = "Multi-block undo - HEAD";
@@ -1899,7 +1899,7 @@ namespace OpenLogReplicator {
                     undoType = "Regular undo";
             }
 
-            const char* tempObject;
+            std::string tempObject;
             if ((redoLogRecord->flg & FLG_ISTEMPOBJECT) != 0)
                 tempObject = "Yes";
             else {
@@ -1909,7 +1909,7 @@ namespace OpenLogReplicator {
                     tempObject = " No";
             }
 
-            const char* tablespaceUndo;
+            std::string tablespaceUndo;
             if ((redoLogRecord->flg & FLG_TABLESPACEUNDO) != 0)
                 tablespaceUndo = "Yes";
             else {
@@ -1919,7 +1919,7 @@ namespace OpenLogReplicator {
                     tablespaceUndo = " No";
             }
 
-            const char* userOnly;
+            std::string userOnly;
             if ((redoLogRecord->flg & FLG_USERONLY) != 0)
                 userOnly = "Yes";
             else {

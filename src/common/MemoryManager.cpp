@@ -28,9 +28,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "metrics/Metrics.h"
 
 namespace OpenLogReplicator {
-    MemoryManager::MemoryManager(Ctx* newCtx, const std::string& newAlias, const char* newSwapPath) :
-            Thread(newCtx, newAlias),
-            swapPath(newSwapPath) {
+    MemoryManager::MemoryManager(Ctx* newCtx, std::string newAlias, std::string newSwapPath) :
+            Thread(newCtx, std::move(newAlias)),
+            swapPath(std::move(newSwapPath)) {
     }
 
     MemoryManager::~MemoryManager() {
@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
 
                 xid = ctx->commitedXids.back();
                 ctx->commitedXids.pop_back();
-                auto it = ctx->swapChunks.find(xid);
+                const auto& it = ctx->swapChunks.find(xid);
                 if (it == ctx->swapChunks.end())
                     continue;
                 sc = it->second;
@@ -162,7 +162,8 @@ namespace OpenLogReplicator {
 
         struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
-            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+            std::string dName(ent->d_name);
+            if (dName == "." || dName == "..")
                 continue;
 
             struct stat fileStat{};
@@ -196,7 +197,7 @@ namespace OpenLogReplicator {
 
     void MemoryManager::getChunkToUnswap(typeXid& xid, int64_t& index) {
         if (ctx->swappedFlushXid.toUint() != 0) {
-            auto it = ctx->swapChunks.find(ctx->swappedFlushXid);
+            const auto& it = ctx->swapChunks.find(ctx->swappedFlushXid);
             if (unlikely(it == ctx->swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + ctx->swappedFlushXid.toString() + " during unswap");
             const SwapChunk* sc = it->second;
@@ -210,7 +211,7 @@ namespace OpenLogReplicator {
         if (ctx->swappedShrinkXid.toUint() == 0)
             return;
 
-        auto it = ctx->swapChunks.find(ctx->swappedShrinkXid);
+        const auto& it = ctx->swapChunks.find(ctx->swappedShrinkXid);
         if (unlikely(it == ctx->swapChunks.end()))
             throw RuntimeException(50070, "swap chunk not found for xid: " + ctx->swappedShrinkXid.toString() + " during unswap");
         const SwapChunk* sc = it->second;
@@ -225,15 +226,13 @@ namespace OpenLogReplicator {
         if (ctx->nothingToSwap(this))
             return;
 
-        for (const auto& it: ctx->swapChunks) {
-            SwapChunk* sc = it.second;
-
-            if (ctx->swappedFlushXid == it.first || sc->release || sc->chunks.size() <= 1)
+        for (const auto& [swapXid, sc]: ctx->swapChunks) {
+            if (ctx->swappedFlushXid == swapXid || sc->release || sc->chunks.size() <= 1)
                 continue;
 
             if (sc->swappedMax < static_cast<int64_t>(sc->chunks.size() - 2)) {
                 index = sc->swappedMax + 1;
-                xid = it.first;
+                xid = swapXid;
                 return;
             }
         }
@@ -284,7 +283,7 @@ namespace OpenLogReplicator {
         {
             contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_UNSWAP);
             std::unique_lock<std::mutex> const lck(ctx->swapMtx);
-            auto it = ctx->swapChunks.find(xid);
+            const auto& it = ctx->swapChunks.find(xid);
             if (unlikely(it == ctx->swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during unswap read");
             SwapChunk* sc = it->second;
@@ -325,7 +324,7 @@ namespace OpenLogReplicator {
         {
             contextSet(CONTEXT::MUTEX, REASON::MEMORY_SWAP1);
             std::unique_lock<std::mutex> const lck(ctx->swapMtx);
-            auto it = ctx->swapChunks.find(xid);
+            const auto& it = ctx->swapChunks.find(xid);
             if (unlikely(it == ctx->swapChunks.end()))
                 throw RuntimeException(50070, "swap chunk not found for xid: " + xid.toString() + " during swap write");
             sc = it->second;

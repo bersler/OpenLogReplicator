@@ -41,62 +41,61 @@ namespace OpenLogReplicator {
             data = (static_cast<uint64_t>(usn) << 48) | (static_cast<uint64_t>(slt) << 32) | static_cast<uint64_t>(sqn);
         }
 
-        explicit typeXid(const char* str) {
+        explicit typeXid(const std::string& str) {
             std::string usn_;
             std::string slt_;
             std::string sqn_;
 
-            uint64_t const length = strnlen(str, 25);
             // UUUUSSSSQQQQQQQQ
-            if (length == 16) {
+            if (str.length() == 16) {
                 for (uint64_t i = 0; i < 16; ++i)
                     if (unlikely(!isxdigit(str[i])))
-                        throw DataException(20002, "bad XID value: " + std::string(str));
-                usn_.assign(str, 4);
-                slt_.assign(str + 4, 4);
-                sqn_.assign(str + 8, 8);
-            } else if (length == 17) {
+                        throw DataException(20002, "bad XID value: " + str);
+                usn_.assign(str.c_str(), 4);
+                slt_.assign(str.c_str() + 4, 4);
+                sqn_.assign(str.c_str() + 8, 8);
+            } else if (str.length() == 17) {
                 // UUUU.SSS.QQQQQQQQ
                 for (uint i = 0; i < 17; ++i)
                     if (unlikely(!isxdigit(str[i]) && i != 4 && i != 8))
-                        throw DataException(20002, "bad XID value: " + std::string(str));
+                        throw DataException(20002, "bad XID value: " + str);
                 if (unlikely(str[4] != '.' || str[8] != '.'))
-                    throw DataException(20002, "bad XID value: " + std::string(str));
-                usn_.assign(str, 4);
-                slt_.assign(str + 5, 3);
-                sqn_.assign(str + 9, 8);
-            } else if (length == 18) {
+                    throw DataException(20002, "bad XID value: " + str);
+                usn_.assign(str.c_str(), 4);
+                slt_.assign(str.c_str() + 5, 3);
+                sqn_.assign(str.c_str() + 9, 8);
+            } else if (str.length() == 18) {
                 // UUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 0; i < 18; ++i)
                     if (unlikely(!isxdigit(str[i]) && i != 4 && i != 9))
-                        throw DataException(20002, "bad XID value: " + std::string(str));
+                        throw DataException(20002, "bad XID value: " + str);
                 if (unlikely(str[4] != '.' || str[9] != '.'))
-                    throw DataException(20002, "bad XID value: " + std::string(str));
-                usn_.assign(str, 4);
-                slt_.assign(str + 5, 4);
-                sqn_.assign(str + 10, 8);
-            } else if (length == 19) {
+                    throw DataException(20002, "bad XID value: " + str);
+                usn_.assign(str.c_str(), 4);
+                slt_.assign(str.c_str() + 5, 4);
+                sqn_.assign(str.c_str() + 10, 8);
+            } else if (str.length() == 19) {
                 // 0xUUUU.SSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 19; ++i)
                     if (unlikely(!isxdigit(str[i]) && i != 6 && i != 10))
-                        throw DataException(20002, "bad XID value: " + std::string(str));
+                        throw DataException(20002, "bad XID value: " + str);
                 if (unlikely(str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[10] != '.'))
-                    throw DataException(20002, "bad XID value: " + std::string(str));
-                usn_.assign(str + 2, 4);
-                slt_.assign(str + 7, 3);
-                sqn_.assign(str + 11, 8);
-            } else if (length == 20) {
+                    throw DataException(20002, "bad XID value: " + str);
+                usn_.assign(str.c_str() + 2, 4);
+                slt_.assign(str.c_str() + 7, 3);
+                sqn_.assign(str.c_str() + 11, 8);
+            } else if (str.length() == 20) {
                 // 0xUUUU.SSSS.QQQQQQQQ
                 for (uint64_t i = 2; i < 20; ++i)
                     if (unlikely(!isxdigit(str[i]) && i != 6 && i != 11))
-                        throw DataException(20002, "bad XID value: " + std::string(str));
+                        throw DataException(20002, "bad XID value: " + str);
                 if (unlikely(str[0] != '0' || str[1] != 'x' || str[6] != '.' || str[11] != '.'))
-                    throw DataException(20002, "bad XID value: " + std::string(str));
-                usn_.assign(str + 2, 4);
-                slt_.assign(str + 7, 4);
-                sqn_.assign(str + 12, 8);
+                    throw DataException(20002, "bad XID value: " + str);
+                usn_.assign(str.c_str() + 2, 4);
+                slt_.assign(str.c_str() + 7, 4);
+                sqn_.assign(str.c_str() + 12, 8);
             } else
-                throw DataException(20002, "bad XID value: " + std::string(str));
+                throw DataException(20002, "bad XID value: " + str);
 
             data = (static_cast<uint64_t>(stoul(usn_, nullptr, 16)) << 48) |
                    (static_cast<uint64_t>(stoul(slt_, nullptr, 16)) << 32) |

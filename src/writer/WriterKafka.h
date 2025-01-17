@@ -45,11 +45,10 @@ namespace OpenLogReplicator {
     public:
         static constexpr uint64_t MAX_KAFKA_MESSAGE_MB = 953;
 
-        WriterKafka(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
-                    const char* newTopic);
+        WriterKafka(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, std::string newTopic);
         ~WriterKafka() override;
 
-        void addProperty(const std::string& key, const std::string& value);
+        void addProperty(std::string key, std::string value);
         void initialize() override;
     };
 }

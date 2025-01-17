@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         typeSeq lastSequence{Ctx::ZERO_SEQ};
         const uint8_t* newLineMsg{nullptr};
         bool warningDisplayed{false};
-        uint8_t buffer[BUFFER_SIZE];
+        uint8_t buffer[BUFFER_SIZE]{};
         uint bufferFill{0};
 
         void closeFile();
@@ -61,8 +61,8 @@ namespace OpenLogReplicator {
         void bufferedWrite(const uint8_t* data, uint64_t size);
 
     public:
-        WriterFile(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newOutput,
-                   const char* newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend);
+        WriterFile(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, std::string newOutput,
+                   std::string newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend);
         ~WriterFile() override;
 
         void initialize() override;

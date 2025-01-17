@@ -47,15 +47,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Serializer.h"
 
 namespace OpenLogReplicator {
-    Metadata::Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
-                       const char* newStartTime, uint64_t newStartTimeRel) :
+    Metadata::Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, typeScn newStartScn,
+                       typeSeq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel) :
             schema(new Schema(newCtx, newLocales)),
             ctx(newCtx),
             locales(newLocales),
-            database(newDatabase),
+            database(std::move(newDatabase)),
             startScn(newStartScn),
             startSequence(newStartSequence),
-            startTime(newStartTime),
+            startTime(std::move(newStartTime)),
             startTimeRel(newStartTimeRel),
             conId(newConId) {
     }
@@ -109,9 +109,9 @@ namespace OpenLogReplicator {
         if (unlikely(defaultCharacterMapId == 0))
             throw RuntimeException(10042, "unsupported NLS_CHARACTERSET value: " + nlsCharset);
 
-        for (auto characterMapIt: locales->characterMap) {
-            if (strcmp(nlsNcharCharset.c_str(), characterMapIt.second->name) == 0) {
-                defaultCharacterNcharMapId = characterMapIt.first;
+        for (const auto& [characterNcharMapId, characterSet]: locales->characterMap) {
+            if (nlsNcharCharset == characterSet->name) {
+                defaultCharacterNcharMapId = characterNcharMapId;
                 break;
             }
         }
@@ -199,17 +199,15 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SchemaElement* Metadata::addElement(const char* owner, const char* table, DbTable::OPTIONS options1, DbTable::OPTIONS options2) {
+    SchemaElement* Metadata::addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options1, DbTable::OPTIONS options2) {
         return addElement(owner, table, static_cast<DbTable::OPTIONS>(static_cast<uint>(options1) | static_cast<uint>(options2)));
     }
 
-    SchemaElement* Metadata::addElement(const char* owner, const char* table, DbTable::OPTIONS options) {
+    SchemaElement* Metadata::addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options) {
         if (unlikely(!Ctx::checkNameCase(owner)))
-            throw ConfigurationException(30003, "owner '" + std::string(owner) +
-                                                "' contains lower case characters, value must be upper case");
+            throw ConfigurationException(30003, "owner '" + owner + "' contains lower case characters, value must be upper case");
         if (unlikely(!Ctx::checkNameCase(table)))
-            throw ConfigurationException(30004, "table '" + std::string(table) +
-                                                "' contains lower case characters, value must be upper case");
+            throw ConfigurationException(30004, "table '" + table + "' contains lower case characters, value must be upper case");
         auto* element = new SchemaElement(owner, table, options);
         newSchemaElements.push_back(element);
         return element;
@@ -220,25 +218,18 @@ namespace OpenLogReplicator {
             delete element;
         newSchemaElements.clear();
 
-        addElement("SYS", "CCOL\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
-        addElement("SYS", "CDEF\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
-        addElement("SYS", "COL\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
-        addElement("SYS", "DEFERRED_STG\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "ECOL\\$", DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
-        addElement("SYS", "LOB\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "LOBCOMPPART\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "LOBFRAG\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "OBJ\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "TAB\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "TABPART\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "TABCOMPART\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "TABSUBPART\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "TS\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("SYS", "USER\\$", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("XDB", "XDB\\$TTSET", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("XDB", "X\\$NM.*", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("XDB", "X\\$PT.*", DbTable::OPTIONS::SYSTEM_TABLE);
-        addElement("XDB", "X\\$QN.*", DbTable::OPTIONS::SYSTEM_TABLE);
+        static const std::vector<std::string> sysSchemaTables {"CCOL\\$", "CDEF\\$", "COL\\$", "ECOL\\$"};
+        for (const auto& table : sysSchemaTables)
+            addElement("SYS", table, DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
+
+        static const std::vector<std::string> sysTables {"DEFERRED_STG\\$", "LOB\\$", "LOBCOMPPART\\$", "LOBFRAG\\$", "OBJ\\$", "TAB\\$", "TABPART\\$",
+                                                         "TABCOMPART\\$", "TABSUBPART\\$", "TS\\$", "USER\\$"};
+        for (const auto& table : sysTables)
+            addElement("SYS", table, DbTable::OPTIONS::SYSTEM_TABLE);
+
+        static const std::vector<std::string> xdbTables {"XDB\\$TTSET", "X\\$NM.*", "X\\$PT.*", "X\\$QN.*"};
+        for (const auto& table : xdbTables)
+            addElement("XDB", table, DbTable::OPTIONS::SYSTEM_TABLE);
     }
 
     void Metadata::commitElements() {
@@ -477,16 +468,16 @@ namespace OpenLogReplicator {
             return;
         }
         if (!serializer->deserialize(this, ss, name1, msgs, tablesUpdated, true, true)) {
-            for (const auto& it: tablesUpdated) {
-                ctx->info(0, it.second);
+            for (const auto& [_, tableName]: tablesUpdated) {
+                ctx->info(0, tableName);
             }
             return;
         }
 
         for (const auto& msg: msgs)
             ctx->info(0, msg);
-        for (const auto& it: tablesUpdated) {
-            ctx->info(0, "- found: " + it.second);
+        for (const auto& [_, tableName]: tablesUpdated) {
+            ctx->info(0, "- found: " + tableName);
         }
         tablesUpdated.clear();
 
@@ -514,8 +505,8 @@ namespace OpenLogReplicator {
             for (const auto& msg: msgs) {
                 ctx->info(0, msg);
             }
-            for (const auto& it: tablesUpdated) {
-                ctx->info(0, "- found: " + it.second);
+            for (const auto& [_, tableName] : tablesUpdated) {
+                ctx->info(0, "- found: " + tableName);
             }
         }
 
@@ -607,8 +598,8 @@ namespace OpenLogReplicator {
         for (const auto& msg: msgs) {
             ctx->info(0, msg);
         }
-        for (const auto& it: tablesUpdated) {
-            ctx->info(0, "- found: " + it.second);
+        for (const auto& [_, tableName]: tablesUpdated) {
+            ctx->info(0, "- found: " + tableName);
         }
     }
 

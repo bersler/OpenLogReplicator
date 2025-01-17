@@ -37,10 +37,10 @@ namespace OpenLogReplicator {
         uint64_t flags{0};
         typeObj obj{0};
 
-        XdbTtSet(typeRowId newRowId, const char* newGuid, const char* newTokSuf, uint64_t newFlags, typeObj newObj) :
+        XdbTtSet(typeRowId newRowId, std::string newGuid, std::string newTokSuf, uint64_t newFlags, typeObj newObj) :
                 rowId(newRowId),
-                guid(newGuid),
-                tokSuf(newTokSuf),
+                guid(std::move(newGuid)),
+                tokSuf(std::move(newTokSuf)),
                 flags(newFlags),
                 obj(newObj) {
         }

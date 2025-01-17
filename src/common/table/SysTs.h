@@ -33,10 +33,10 @@ namespace OpenLogReplicator {
         std::string name;
         uint32_t blockSize{0};
 
-        SysTs(typeRowId newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
+        SysTs(typeRowId newRowId, typeTs newTs, std::string newName, uint32_t newBlockSize) :
                 rowId(newRowId),
                 ts(newTs),
-                name(newName),
+                name(std::move(newName)),
                 blockSize(newBlockSize) {
         }
 

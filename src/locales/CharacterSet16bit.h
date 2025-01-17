@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] virtual typeUnicode readMap(uint64_t byte1, uint64_t byte2) const;
 
     public:
-        CharacterSet16bit(const char* newName, const typeUnicode16* newMap, uint64_t newByte1min, uint64_t newByte1max, uint64_t newByte2min,
+        CharacterSet16bit(std::string newName, const typeUnicode16* newMap, uint64_t newByte1min, uint64_t newByte1max, uint64_t newByte2min,
                           uint64_t newByte2max);
 
         typeUnicode decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const override;

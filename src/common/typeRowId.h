@@ -67,8 +67,8 @@ namespace OpenLogReplicator {
                    static_cast<typeSlot>(Ctx::map64R[static_cast<uint8_t>(rowid[17])]);
         };
 
-        explicit typeRowId(const char* rowid) {
-            if (unlikely(strlen(rowid) != SIZE))
+        explicit typeRowId(const std::string& rowid) {
+            if (unlikely(rowid.length() != SIZE))
                 throw DataException(20008, "row ID incorrect size: " + std::string(rowid));
 
             dataObj = (static_cast<typeDataObj>(Ctx::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |

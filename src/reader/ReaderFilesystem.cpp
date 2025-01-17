@@ -33,8 +33,8 @@ _FILE_OFFSET_BITS = 64
 #include "ReaderFilesystem.h"
 
 namespace OpenLogReplicator {
-    ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, const std::string& newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum) :
-            Reader(newCtx, newAlias, std::move(newDatabase), newGroup, newConfiguredBlockSum) {
+    ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum) :
+            Reader(newCtx, std::move(newAlias), std::move(newDatabase), newGroup, newConfiguredBlockSum) {
     }
 
     ReaderFilesystem::~ReaderFilesystem() {

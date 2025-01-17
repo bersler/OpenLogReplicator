@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
         void updateOnlineLogs();
         void readerDropAll();
         static typeSeq getSequenceFromFileName(Replicator* replicator, const std::string& file);
-        virtual const char* getModeName() const;
+        virtual std::string getModeName() const;
         virtual bool checkConnection();
         virtual bool continueWithOnline();
         virtual void verifySchema(typeScn currentScn);
@@ -75,18 +75,18 @@ namespace OpenLogReplicator {
 
     public:
         Replicator(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                   TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase);
+                   TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase);
         ~Replicator() override;
 
-        void initialize();
+        virtual void initialize();
         virtual void positionReader();
         virtual void loadDatabaseMetadata();
         void run() override;
         virtual Reader* readerCreate(int group);
         void checkOnlineRedoLogs();
         virtual void goStandby();
-        void addPathMapping(const char* source, const char* target);
-        void addRedoLogsBatch(const char* path);
+        void addPathMapping(std::string source, std::string target);
+        void addRedoLogsBatch(std::string path);
         static void archGetLogPath(Replicator* replicator);
         static void archGetLogList(Replicator* replicator);
         void applyMapping(std::string& path);
@@ -99,7 +99,7 @@ namespace OpenLogReplicator {
         friend class OpenLogReplicator;
         friend class ReplicatorOnline;
 
-        const std::string getName() const override {
+        std::string getName() const override {
             return {"Replicator: " + alias};
         }
     };

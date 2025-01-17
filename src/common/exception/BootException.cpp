@@ -27,11 +27,6 @@ namespace OpenLogReplicator {
             msg(std::move(newMsg)) {
     }
 
-    BootException::BootException(int newCode, const char* newMsg) :
-            code(newCode),
-            msg(newMsg) {
-    }
-
     std::ostream& operator<<(std::ostream& os, const BootException& exception) {
         os << exception.msg;
         return os;

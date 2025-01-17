@@ -31,8 +31,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StreamNetwork.h"
 
 namespace OpenLogReplicator {
-    StreamNetwork::StreamNetwork(Ctx* newCtx, const char* newUri) :
-            Stream(newCtx, newUri) {
+    StreamNetwork::StreamNetwork(Ctx* newCtx, std::string newUri) :
+            Stream(newCtx, std::move(newUri)) {
         readBuffer[0] = 0;
     }
 
