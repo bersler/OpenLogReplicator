@@ -18,9 +18,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../Ctx.h"
-#include "../types.h"
-#include "../typeIntX.h"
-#include "../typeRowId.h"
+#include "../types/IntX.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_CCOL_H_
 #define SYS_CCOL_H_
@@ -31,9 +31,9 @@ namespace OpenLogReplicator {
         typeCon con{0};
         typeCol intCol{0};
         typeObj obj{0};
-        typeIntX spare1{0, 0};            // NULL
+        IntX spare1{0, 0};            // NULL
 
-        SysCCol(typeRowId newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
+        SysCCol(RowId newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
                 TabRowId(newRowId),
                 con(newCon),
                 intCol(newIntCol),
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
                 spare1(newSpare11, newSpare12) {
         }
 
-        explicit SysCCol(typeRowId newRowId) :
+        explicit SysCCol(RowId newRowId) :
                 TabRowId(newRowId) {
         }
 

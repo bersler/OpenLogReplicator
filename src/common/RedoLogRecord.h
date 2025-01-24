@@ -21,10 +21,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_LOG_RECORD_H_
 
 #include "Ctx.h"
-#include "types.h"
-#include "typeLobId.h"
-#include "typeXid.h"
 #include "exception/RedoLogException.h"
+#include "types/LobId.h"
+#include "types/FileOffset.h"
+#include "types/Scn.h"
+#include "types/Xid.h"
+#include "types/Types.h"
 
 namespace OpenLogReplicator {
     class RedoLogRecord final {
@@ -70,10 +72,10 @@ namespace OpenLogReplicator {
         static constexpr uint32_t REDO_VERSION_23_0{0x17000000};
 
         uint8_t* dataExt;
-        uint64_t dataOffset;
-        typeXid xid;              // Transaction id
-        typeScn scnRecord;
-        typeScn scn;
+        FileOffset fileOffset;
+        Xid xid;              // Transaction id
+        Scn scnRecord;
+        Scn scn;
         typeSubScn subScn;
         typeConId conId;
         typeDba dba;
@@ -132,7 +134,7 @@ namespace OpenLogReplicator {
         typeSize indKeySize;
         typeSize indKeyDataSize;
         uint8_t indKeyDataCode;
-        typeLobId lobId;
+        LobId lobId;
         bool compressed;
         // other
         uint32_t vectorNo;
@@ -148,8 +150,8 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             std::ostringstream ss;
-            ss << "O scn: " << PRINTSCN64(scnRecord) <<
-               " scn: " << std::dec << scn <<
+            ss << "O scn: " << scnRecord.to64() <<
+               " scn: " << scn.toString() <<
                " subScn: " << std::dec << subScn <<
                " xid: " << xid.toString() <<
                " op: " << std::setfill('0') << std::setw(4) << std::hex << opCode <<

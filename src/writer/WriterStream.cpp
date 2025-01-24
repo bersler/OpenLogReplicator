@@ -68,10 +68,10 @@ namespace OpenLogReplicator {
             response.set_code(pb::ResponseCode::STARTING);
         }
 
-        ctx->logTrace(Ctx::TRACE::WRITER, "info, first scn: " + std::to_string(metadata->firstDataScn));
+        ctx->logTrace(Ctx::TRACE::WRITER, "info, first scn: " + metadata->firstDataScn.toString());
         response.set_code(pb::ResponseCode::REPLICATE);
-        response.set_scn(metadata->firstDataScn);
-        response.set_c_scn(confirmedScn);
+        response.set_scn(metadata->firstDataScn.getData());
+        response.set_c_scn(confirmedScn.getData());
         response.set_c_idx(confirmedIdx);
     }
 
@@ -86,8 +86,8 @@ namespace OpenLogReplicator {
         if (metadata->status == Metadata::STATUS::REPLICATE) {
             ctx->logTrace(Ctx::TRACE::WRITER, "client requested start when already started");
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
-            response.set_scn(metadata->firstDataScn);
-            response.set_c_scn(confirmedScn);
+            response.set_scn(metadata->firstDataScn.getData());
+            response.set_c_scn(confirmedScn.getData());
             response.set_c_idx(confirmedIdx);
             return;
         }
@@ -103,19 +103,19 @@ namespace OpenLogReplicator {
             metadata->startSequence = request.seq();
             paramSeq = ", seq: " + std::to_string(request.seq());
         } else
-            metadata->startSequence = Ctx::ZERO_SEQ;
+            metadata->startSequence = Seq::none();
 
-        metadata->startScn = Ctx::ZERO_SCN;
+        metadata->startScn = Scn::none();
         metadata->startTime = "";
         metadata->startTimeRel = 0;
 
         switch (request.tm_val_case()) {
             case pb::RedoRequest::TmValCase::kScn:
                 metadata->startScn = request.scn();
-                if (metadata->startScn == Ctx::ZERO_SCN)
+                if (metadata->startScn == Scn::none())
                     ctx->info(0, "client requested to start from NOW" + paramSeq);
                 else
-                    ctx->info(0, "client requested to start from scn: " + std::to_string(metadata->startScn) + paramSeq);
+                    ctx->info(0, "client requested to start from scn: " + metadata->startScn.toString() + paramSeq);
                 break;
 
             case pb::RedoRequest::TmValCase::kTms:
@@ -140,8 +140,8 @@ namespace OpenLogReplicator {
 
         if (metadata->status == Metadata::STATUS::REPLICATE) {
             response.set_code(pb::ResponseCode::REPLICATE);
-            response.set_scn(metadata->firstDataScn);
-            response.set_c_scn(confirmedScn);
+            response.set_scn(metadata->firstDataScn.getData());
+            response.set_c_scn(confirmedScn.getData());
             response.set_c_idx(confirmedIdx);
 
             ctx->info(0, "streaming to client");
@@ -173,7 +173,7 @@ namespace OpenLogReplicator {
                 metadata->clientIdx = request.c_idx();
             paramIdx = ", idx: " + std::to_string(metadata->clientIdx);
         }
-        ctx->info(0, "client requested scn: " + std::to_string(metadata->clientScn) + paramIdx);
+        ctx->info(0, "client requested scn: " + metadata->clientScn.toString() + paramIdx);
 
         resetMessageQueue();
         response.set_code(pb::ResponseCode::REPLICATE);
@@ -187,7 +187,8 @@ namespace OpenLogReplicator {
             return;
         }
 
-        while (currentQueueSize > 0 && (queue[0]->lwnScn < request.c_scn() || (queue[0]->lwnScn == request.c_scn() && queue[0]->lwnIdx <= request.c_idx())))
+        while (currentQueueSize > 0 && (queue[0]->lwnScn < Scn(request.c_scn()) ||
+                (queue[0]->lwnScn == Scn(request.c_scn()) && queue[0]->lwnIdx <= request.c_idx())))
             confirmMessage(queue[0]);
     }
 

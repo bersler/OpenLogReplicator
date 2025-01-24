@@ -32,6 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/exception/ConfigurationException.h"
 #include "common/exception/DataException.h"
 #include "common/exception/RuntimeException.h"
+#include "common/types/Data.h"
 
 #ifdef LINK_LIBRARY_OCI
 #define HAS_OCI " OCI"
@@ -122,7 +123,7 @@ namespace OpenLogReplicator {
                 throw RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
             for (int i = 1; i < argc; ++i) {
-                std::string arg = argv[i];
+                const std::string arg = argv[i];
                 if (arg == "-v" || arg == "--version") {
                     // Print banner and exit
                     return 0;
@@ -201,7 +202,7 @@ int main(int argc, char** argv) {
 
     const char* logTimezone = std::getenv("OLR_LOG_TIMEZONE");
     if (logTimezone != nullptr)
-        if (!OpenLogReplicator::Ctx::parseTimezone(logTimezone, ctx.logTimezone))
+        if (!OpenLogReplicator::Data::parseTimezone(logTimezone, ctx.logTimezone))
             ctx.warning(10070, "invalid environment variable OLR_LOG_TIMEZONE value: " + std::string(logTimezone));
 
     std::string olrLocales;

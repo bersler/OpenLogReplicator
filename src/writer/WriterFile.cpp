@@ -136,7 +136,7 @@ namespace OpenLogReplicator {
 
             struct dirent* ent;
             while ((ent = readdir(dir)) != nullptr) {
-                std::string dName(ent->d_name);
+                const std::string dName(ent->d_name);
                 if (dName == "." || dName == "..")
                     continue;
 
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
                     ctx->logTrace(Ctx::TRACE::WRITER, "found previous output file: " + pathName + "/" + fileName);
                 const std::string fileNameFoundNum(fileName.substr(prefix.length(), fileName.length() - suffix.length() - prefix.length()));
-                typeScn fileNum;
+                uint64_t fileNum;
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
                 } catch (const std::exception& e) {
@@ -194,7 +194,7 @@ namespace OpenLogReplicator {
         outputDes = -1;
     }
 
-    void WriterFile::checkFile(typeScn scn __attribute__((unused)), typeSeq sequence, uint64_t size) {
+    void WriterFile::checkFile(Scn scn __attribute__((unused)), Seq sequence, uint64_t size) {
         if (mode == MODE::STDOUT)
             return;
 
@@ -258,7 +258,7 @@ namespace OpenLogReplicator {
 
             lastSequence = sequence;
             if (outputDes == -1)
-                fullFileName = pathName + "/" + fileNameMask.substr(0, prefixPos) + std::to_string(sequence) +
+                fullFileName = pathName + "/" + fileNameMask.substr(0, prefixPos) + sequence.toString() +
                                fileNameMask.substr(suffixPos);
         }
 

@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.4
-:revdate: 2025-01-17
+:revdate: 2025-01-24
 :imagesdir: ./images
 :toc: preamble
 
@@ -972,7 +972,7 @@ The client requested a database which is not configured in the program.
 
 Data for XMLTYPE column type is not correct.
 
-==== code 60037, "incorrect DDL data, pos: <number>"
+==== code 60037, "incorrect DDL data, offset: <number>"
 
 Data for XMLTYPE column type is not correct.
 

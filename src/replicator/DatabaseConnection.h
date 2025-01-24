@@ -19,7 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <oci.h>
 
-#include "../common/types.h"
+#include "../common/types/Types.h"
 
 #ifndef DATABASE_CONNECTION_H_
 #define DATABASE_CONNECTION_H_

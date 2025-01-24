@@ -25,12 +25,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "exception/RedoLogException.h"
 
 namespace OpenLogReplicator {
-    void LobCtx::checkOrphanedLobs(const Ctx* ctx, const typeLobId& lobId, typeXid xid, uint64_t offset) {
+    void LobCtx::checkOrphanedLobs(const Ctx* ctx, const LobId& lobId, Xid xid, FileOffset fileOffset) {
         const LobKey lobKey(lobId, 0);
         for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
              orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId;) {
 
-            addLob(ctx, lobId, orphanedLobsIt->first.page, 0, orphanedLobsIt->second, xid, offset);
+            addLob(ctx, lobId, orphanedLobsIt->first.page, 0, orphanedLobsIt->second, xid, fileOffset);
 
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB)))
                 ctx->logTrace(Ctx::TRACE::LOB, "id: " + lobId.lower() + " page: " + std::to_string(orphanedLobsIt->first.page));
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void LobCtx::addLob(const Ctx* ctx, const typeLobId& lobId, typeDba page, uint64_t pageOffset, uint8_t* data, typeXid xid, uint64_t offset) {
+    void LobCtx::addLob(const Ctx* ctx, const LobId& lobId, typeDba page, uint16_t pageOffset, uint8_t* data, Xid xid, FileOffset fileOffset) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
             } else if (unlikely(lobData->pageSize != redoLogRecordLob->lobPageSize)) {
                 throw RedoLogException(50003, "inconsistent page size lobid: " + lobId.upper() + ", new: " +
                                               std::to_string(redoLogRecordLob->lobPageSize) + ", already set to: " + std::to_string(lobData->pageSize) +
-                                              ", xid: " + xid.toString() + ", offset: " + std::to_string(offset));
+                                              ", xid: " + xid.toString() + ", offset: " + fileOffset.toString());
             }
         }
 
@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
                 if (unlikely(indexMapIt->second != page))
                     throw RedoLogException(50004, "duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) +
                                                   ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString() + ", offset: " +
-                                                  std::to_string(offset));
+                                                  fileOffset.toString());
             } else {
                 lobData->indexMap.insert_or_assign(pageNo, page);
             }
@@ -149,7 +149,7 @@ namespace OpenLogReplicator {
         listMap.insert_or_assign(page, newData);
     }
 
-    void LobCtx::setSize(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest) {
+    void LobCtx::setSize(const LobId& lobId, uint32_t sizePages, uint16_t sizeRest) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
         lobData->sizeRest = sizeRest;
     }
 
-    void LobCtx::setPage(const typeLobId& lobId, typeDba page, typeDba pageNo, typeXid xid, uint64_t offset) {
+    void LobCtx::setPage(const LobId& lobId, typeDba page, typeDba pageNo, Xid xid, FileOffset fileOffset) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
             if (unlikely(indexMapIt->second != page))
                 throw RedoLogException(50004, "duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) +
                                               ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString() + ", offset: " +
-                                              std::to_string(offset));
+                                              fileOffset.toString());
             return;
         }
 

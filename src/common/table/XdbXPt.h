@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <utility>
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef XDB_XPT_H_
 #define XDB_XPT_H_
@@ -31,17 +31,17 @@ namespace OpenLogReplicator {
         static constexpr uint PATH_LENGTH{2000};
         static constexpr uint ID_LENGTH{16};
 
-        typeRowId rowId;
+        RowId rowId;
         std::string path;
         std::string id;
 
-        XdbXPt(typeRowId newRowId, std::string newPath, std::string newId) :
+        XdbXPt(RowId newRowId, std::string newPath, std::string newId) :
                 rowId(newRowId),
                 path(std::move(newPath)),
                 id(std::move(newId)) {
         }
 
-        explicit XdbXPt(typeRowId newRowId) :
+        explicit XdbXPt(RowId newRowId) :
                 rowId(newRowId) {
         }
 

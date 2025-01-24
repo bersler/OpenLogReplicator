@@ -27,8 +27,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 
 #include "../common/Thread.h"
-#include "../common/types.h"
-#include "../common/typeXid.h"
+#include "../common/types/Types.h"
+#include "../common/types/Xid.h"
 
 namespace OpenLogReplicator {
     class Metadata;

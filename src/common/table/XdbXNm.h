@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <utility>
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef XDB_XNM_H_
 #define XDB_XNM_H_
@@ -31,17 +31,17 @@ namespace OpenLogReplicator {
         static constexpr uint NMSPCURI_LENGTH{2000};
         static constexpr uint ID_LENGTH{16};
 
-        typeRowId rowId;
+        RowId rowId;
         std::string nmSpcUri;
         std::string id;
 
-        XdbXNm(typeRowId newRowId, std::string newNmSpcUri, std::string newId) :
+        XdbXNm(RowId newRowId, std::string newNmSpcUri, std::string newId) :
                 rowId(newRowId),
                 nmSpcUri(std::move(newNmSpcUri)),
                 id(std::move(newId)) {
         }
 
-        explicit XdbXNm(typeRowId newRowId) :
+        explicit XdbXNm(RowId newRowId) :
                 rowId(newRowId) {
         }
 

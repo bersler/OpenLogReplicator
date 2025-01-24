@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_CDEF_H_
 #define SYS_CDEF_H_
@@ -32,19 +32,19 @@ namespace OpenLogReplicator {
             SUPPLEMENTAL_LOG_ALL = 17
         };
 
-        typeRowId rowId;
+        RowId rowId;
         typeCon con{0};
         typeObj obj{0};
         CDEFTYPE type{CDEFTYPE::NONE};
 
-        SysCDef(typeRowId newRowId, typeCon newCon, typeObj newObj, CDEFTYPE newType) :
+        SysCDef(RowId newRowId, typeCon newCon, typeObj newObj, CDEFTYPE newType) :
                 rowId(newRowId),
                 con(newCon),
                 obj(newObj),
                 type(newType) {
         }
 
-        explicit SysCDef(typeRowId newRowId) :
+        explicit SysCDef(RowId newRowId) :
                 rowId(newRowId) {
         }
 

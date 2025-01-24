@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
                 for (typeCC i = 0; i < redoLogRecord->cc; ++i) {
                     if (unlikely(fieldSize > 0 && (*nulls & bits) != 0))
                         throw RedoLogException(50061, "too short field 11.2." + std::to_string(fieldNum) + ": " +
-                                                      std::to_string(fieldSize) + " offset: " + std::to_string(redoLogRecord->dataOffset));
+                                                      std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
                     if (unlikely(ctx->dumpRedoLog >= 1))
                         dumpCols(ctx, redoLogRecord->data(fieldPos), i, fieldSize, (*nulls & bits) != 0);

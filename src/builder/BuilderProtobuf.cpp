@@ -19,9 +19,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/DbColumn.h"
 #include "../common/DbTable.h"
-#include "../common/typeRowId.h"
 #include "../common/exception/RuntimeException.h"
 #include "../common/table/SysCol.h"
+#include "../common/types/RowId.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 #include "BuilderProtobuf.h"
@@ -74,8 +74,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::columnRowId(const std::string& columnName, typeRowId rowId) {
-        char str[typeRowId::SIZE + 1];
+    void BuilderProtobuf::columnRowId(const std::string& columnName, RowId rowId) {
+        char str[RowId::SIZE + 1];
         rowId.toHex(str);
         valuePB->set_name(columnName);
         valuePB->set_value_string(str, 18);
@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
         // TODO: implement
     }
 
-    void BuilderProtobuf::processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) {
+    void BuilderProtobuf::processBeginMessage(Scn scn, Seq sequence, time_t timestamp) {
         newTran = false;
         builderBegin(scn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
         createResponse();
@@ -121,8 +121,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
-                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
+    void BuilderProtobuf::processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -142,7 +142,7 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendAfter(lobCtx, xmlCtx, table, offset);
+        appendAfter(lobCtx, xmlCtx, table, fileOffset);
 
         if (!format.isMessageFormatFull()) {
             std::string output;
@@ -158,8 +158,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
-                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
+    void BuilderProtobuf::processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -179,8 +179,8 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(lobCtx, xmlCtx, table, offset);
-        appendAfter(lobCtx, xmlCtx, table, offset);
+        appendBefore(lobCtx, xmlCtx, table, fileOffset);
+        appendAfter(lobCtx, xmlCtx, table, fileOffset);
 
         if (!format.isMessageFormatFull()) {
             std::string output;
@@ -196,8 +196,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
-                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) {
+    void BuilderProtobuf::processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+                                        typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -217,7 +217,7 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(lobCtx, xmlCtx, table, offset);
+        appendBefore(lobCtx, xmlCtx, table, fileOffset);
 
         if (!format.isMessageFormatFull()) {
             std::string output;
@@ -233,7 +233,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table __attribute__((unused)), typeObj obj) {
+    void BuilderProtobuf::processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table __attribute__((unused)), typeObj obj) {
         if (newTran)
             processBeginMessage(scn, sequence, timestamp);
 
@@ -277,7 +277,7 @@ namespace OpenLogReplicator {
         GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
-    void BuilderProtobuf::processCommit(typeScn scn, typeSeq sequence, time_t timestamp) {
+    void BuilderProtobuf::processCommit(Scn scn, Seq sequence, time_t timestamp) {
         // Skip empty transaction
         if (newTran) {
             newTran = false;
@@ -310,7 +310,7 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderProtobuf::processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp __attribute__((unused)), uint64_t offset, bool redo) {
+    void BuilderProtobuf::processCheckpoint(Scn scn, Seq sequence, time_t timestamp __attribute__((unused)), FileOffset fileOffset, bool redo) {
         if (lwnScn != scn) {
             lwnScn = scn;
             lwnIdx = 0;
@@ -323,8 +323,8 @@ namespace OpenLogReplicator {
         redoResponsePB->add_payload();
         payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
         payloadPB->set_op(pb::CHKPT);
-        payloadPB->set_seq(sequence);
-        payloadPB->set_offset(offset);
+        payloadPB->set_seq(sequence.getData());
+        payloadPB->set_offset(fileOffset.getData());
         payloadPB->set_redo(redo);
 
         std::string output;

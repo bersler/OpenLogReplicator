@@ -30,8 +30,7 @@ namespace OpenLogReplicator {
     protected:
         static void kteop(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
             if (unlikely(fieldSize < 36))
-                throw RedoLogException(50061, "too short field kteop: " + std::to_string(fieldSize) + " offset: " +
-                                              std::to_string(redoLogRecord->dataOffset));
+                throw RedoLogException(50061, "too short field kteop: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
                 const uint32_t highwater = ctx->read32(redoLogRecord->data(fieldPos + 16));
@@ -59,10 +58,9 @@ namespace OpenLogReplicator {
 
         static void ktudh(const Ctx* ctx, RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
             if (unlikely(fieldSize < 32))
-                throw RedoLogException(50061, "too short field ktudh: " + std::to_string(fieldSize) + " offset: " +
-                                              std::to_string(redoLogRecord->dataOffset));
+                throw RedoLogException(50061, "too short field ktudh: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
-            redoLogRecord->xid = typeXid(redoLogRecord->usn,
+            redoLogRecord->xid = Xid(redoLogRecord->usn,
                                          ctx->read16(redoLogRecord->data(fieldPos + 0)),
                                          ctx->read32(redoLogRecord->data(fieldPos + 4)));
             redoLogRecord->flg = ctx->read16(redoLogRecord->data(fieldPos + 16));
@@ -72,7 +70,7 @@ namespace OpenLogReplicator {
                 const uint8_t fbi = *redoLogRecord->data(fieldPos + 20);
                 const uint16_t siz = ctx->read16(redoLogRecord->data(fieldPos + 18));
 
-                const typeXid pXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data(fieldPos + 24))),
+                const Xid pXid = Xid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data(fieldPos + 24))),
                                              ctx->read16(redoLogRecord->data(fieldPos + 26)),
                                              ctx->read32(redoLogRecord->data(fieldPos + 28)));
 
@@ -97,8 +95,7 @@ namespace OpenLogReplicator {
 
         static void pdb(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize) {
             if (unlikely(fieldSize < 4))
-                throw RedoLogException(50061, "too short field pdb: " + std::to_string(fieldSize) + " offset: " +
-                                              std::to_string(redoLogRecord->dataOffset));
+                throw RedoLogException(50061, "too short field pdb: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
                 const uint32_t pdbId = ctx->read32(redoLogRecord->data(fieldPos + 0));

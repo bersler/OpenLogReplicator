@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <utility>
 
-#include "types.h"
 #include "table/SysCol.h"
+#include "types/Types.h"
 
 namespace OpenLogReplicator {
     class DbColumn final {

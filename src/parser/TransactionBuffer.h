@@ -28,8 +28,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Ctx.h"
 #include "../common/LobKey.h"
 #include "../common/RedoLogRecord.h"
-#include "../common/types.h"
-#include "../common/typeXid.h"
+#include "../common/types/FileOffset.h"
+#include "../common/types/Types.h"
+#include "../common/types/Seq.h"
+#include "../common/types/Xid.h"
 
 namespace OpenLogReplicator {
     class Transaction;
@@ -58,26 +60,26 @@ namespace OpenLogReplicator {
         uint8_t buffer[TransactionChunk::DATA_BUFFER_SIZE]{};
 
         std::mutex mtx;
-        std::unordered_map<typeXidMap, Transaction*> xidTransactionMap;
+        std::unordered_map<XidMap, Transaction*> xidTransactionMap;
         std::map<LobKey, uint8_t*> orphanedLobs;
 
     public:
-        std::set<typeXid> skipXidList;
-        std::set<typeXid> dumpXidList;
-        std::set<typeXidMap> brokenXidMapList;
+        std::set<Xid> skipXidList;
+        std::set<Xid> dumpXidList;
+        std::set<XidMap> brokenXidMapList;
         std::string dumpPath;
 
         explicit TransactionBuffer(Ctx* newCtx);
         ~TransactionBuffer();
 
         void purge();
-        [[nodiscard]] Transaction* findTransaction(XmlCtx* xmlCtx, typeXid xid, typeConId conId, bool old, bool add, bool rollback);
-        void dropTransaction(typeXid xid, typeConId conId);
+        [[nodiscard]] Transaction* findTransaction(XmlCtx* xmlCtx, Xid xid, typeConId conId, bool old, bool add, bool rollback);
+        void dropTransaction(Xid xid, typeConId conId);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void rollbackTransactionChunk(Transaction* transaction);
         void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
-        void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
+        void checkpoint(Seq& minSequence, FileOffset& minFileOffset, Xid& minXid);
         void addOrphanedLob(RedoLogRecord* redoLogRecord1);
         static uint8_t* allocateLob(const RedoLogRecord* redoLogRecord1);
     };

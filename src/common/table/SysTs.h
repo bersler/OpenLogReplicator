@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_TS_H_
 #define SYS_TS_H_
@@ -28,19 +28,19 @@ namespace OpenLogReplicator {
     public:
         static constexpr uint NAME_LENGTH{30};
 
-        typeRowId rowId;
+        RowId rowId;
         typeTs ts{0};
         std::string name;
         uint32_t blockSize{0};
 
-        SysTs(typeRowId newRowId, typeTs newTs, std::string newName, uint32_t newBlockSize) :
+        SysTs(RowId newRowId, typeTs newTs, std::string newName, uint32_t newBlockSize) :
                 rowId(newRowId),
                 ts(newTs),
                 name(std::move(newName)),
                 blockSize(newBlockSize) {
         }
 
-        explicit SysTs(typeRowId newRowId) :
+        explicit SysTs(RowId newRowId) :
                 rowId(newRowId) {
         }
 

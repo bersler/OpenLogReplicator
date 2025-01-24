@@ -516,14 +516,14 @@ namespace OpenLogReplicator {
         std::string getParameterValue(std::string parameter) const;
         std::string getPropertyValue(std::string property) const;
         void checkTableForGrants(const std::string& tableName);
-        void checkTableForGrantsFlashback(const std::string& tableName, typeScn scn);
+        void checkTableForGrantsFlashback(const std::string& tableName, Scn scn);
         std::string getModeName() const override;
-        void verifySchema(typeScn currentScn) override;
+        void verifySchema(Scn currentScn) override;
         void createSchema() override;
-        void readSystemDictionariesMetadata(Schema* schema, typeScn targetScn);
-        void readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj);
-        void readSystemDictionaries(Schema* schema, typeScn targetScn, const std::string& owner, const std::string& table, DbTable::OPTIONS options);
-        void createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keyList,
+        void readSystemDictionariesMetadata(Schema* schema, Scn targetScn);
+        void readSystemDictionariesDetails(Schema* schema, Scn targetScn, typeUser user, typeObj obj);
+        void readSystemDictionaries(Schema* schema, Scn targetScn, const std::string& owner, const std::string& table, DbTable::OPTIONS options);
+        void createSchemaForTable(Scn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keyList,
                                   const std::string& key, SchemaElement::TAG_TYPE tagType, const std::vector<std::string>& tagList, const std::string& tag,
                                   const std::string& condition, DbTable::OPTIONS options, std::unordered_map<typeObj, std::string>& tablesUpdated);
         void updateOnlineRedoLogData() override;

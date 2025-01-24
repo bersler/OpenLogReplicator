@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <utility>
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef XDB_TTSET_H_
 #define XDB_TTSET_H_
@@ -31,13 +31,13 @@ namespace OpenLogReplicator {
         static constexpr uint GUID_LENGTH{32};
         static constexpr uint TOKSUF_LENGTH{26};
 
-        typeRowId rowId;
+        RowId rowId;
         std::string guid;
         std::string tokSuf;
         uint64_t flags{0};
         typeObj obj{0};
 
-        XdbTtSet(typeRowId newRowId, std::string newGuid, std::string newTokSuf, uint64_t newFlags, typeObj newObj) :
+        XdbTtSet(RowId newRowId, std::string newGuid, std::string newTokSuf, uint64_t newFlags, typeObj newObj) :
                 rowId(newRowId),
                 guid(std::move(newGuid)),
                 tokSuf(std::move(newTokSuf)),
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
                 obj(newObj) {
         }
 
-        explicit XdbTtSet(typeRowId newRowId) :
+        explicit XdbTtSet(RowId newRowId) :
                 rowId(newRowId) {
         }
 

@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_LOB_COMP_PART_H_
 #define SYS_LOB_COMP_PART_H_
@@ -26,17 +26,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysLobCompPart final {
     public:
-        typeRowId rowId;
+        RowId rowId;
         typeObj partObj{0};
         typeObj lObj{0};
 
-        SysLobCompPart(typeRowId newRowId, typeObj newPartObj, typeObj newLObj) :
+        SysLobCompPart(RowId newRowId, typeObj newPartObj, typeObj newLObj) :
                 rowId(newRowId),
                 partObj(newPartObj),
                 lObj(newLObj) {
         }
 
-        explicit SysLobCompPart(typeRowId newRowId) :
+        explicit SysLobCompPart(RowId newRowId) :
                 rowId(newRowId) {
         }
 

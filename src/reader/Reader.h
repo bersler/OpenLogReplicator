@@ -21,8 +21,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <vector>
 
 #include "../common/Thread.h"
-#include "../common/types.h"
-#include "../common/typeTime.h"
+#include "../common/types/FileOffset.h"
+#include "../common/types/Scn.h"
+#include "../common/types/Seq.h"
+#include "../common/types/Time.h"
+#include "../common/types/Types.h"
 
 #ifndef READER_H_
 #define READER_H_
@@ -53,25 +56,25 @@ namespace OpenLogReplicator {
         std::string database;
         int fileCopyDes{-1};
         uint64_t fileSize{0};
-        typeSeq fileCopySequence{0};
+        Seq fileCopySequence{Seq::zero()};
         bool hintDisplayed{false};
         bool configuredBlockSum;
         bool readBlocks{false};
         bool reachedZero{false};
         std::string fileNameWrite;
         int group;
-        typeSeq sequence{0};
+        Seq sequence{Seq::zero()};
         typeBlk numBlocksHeader{Ctx::ZERO_BLK};
         typeResetlogs resetlogs{0};
         typeActivation activation{0};
         uint8_t* headerBuffer{nullptr};
         uint32_t compatVsn{0};
-        typeTime firstTimeHeader{0};
-        typeScn firstScn{Ctx::ZERO_SCN};
-        typeScn firstScnHeader{Ctx::ZERO_SCN};
-        typeScn nextScn{Ctx::ZERO_SCN};
-        typeScn nextScnHeader{Ctx::ZERO_SCN};
-        typeTime nextTime{0};
+        Time firstTimeHeader{0};
+        Scn firstScn{Scn::none()};
+        Scn firstScnHeader{Scn::none()};
+        Scn nextScn{Scn::none()};
+        Scn nextScnHeader{Scn::none()};
+        Time nextTime{0};
         uint blockSize{0};
         uint64_t sumRead{0};
         uint64_t sumTime{0};
@@ -119,28 +122,28 @@ namespace OpenLogReplicator {
         typeSum calcChSum(uint8_t* buffer, uint size) const;
         void printHeaderInfo(std::ostringstream& ss, const std::string& path) const;
         [[nodiscard]] uint getBlockSize() const;
-        [[nodiscard]] uint64_t getBufferStart() const;
-        [[nodiscard]] uint64_t getBufferEnd() const;
+        [[nodiscard]] FileOffset getBufferStart() const;
+        [[nodiscard]] FileOffset getBufferEnd() const;
         [[nodiscard]] REDO_CODE getRet() const;
-        [[nodiscard]] typeScn getFirstScn() const;
-        [[nodiscard]] typeScn getFirstScnHeader() const;
-        [[nodiscard]] typeScn getNextScn() const;
-        [[nodiscard]] typeTime getNextTime() const;
+        [[nodiscard]] Scn getFirstScn() const;
+        [[nodiscard]] Scn getFirstScnHeader() const;
+        [[nodiscard]] Scn getNextScn() const;
+        [[nodiscard]] Time getNextTime() const;
         [[nodiscard]] typeBlk getNumBlocks() const;
         [[nodiscard]] int getGroup() const;
-        [[nodiscard]] typeSeq getSequence() const;
+        [[nodiscard]] Seq getSequence() const;
         [[nodiscard]] typeResetlogs getResetlogs() const;
         [[nodiscard]] typeActivation getActivation() const;
         [[nodiscard]] uint64_t getSumRead() const;
         [[nodiscard]] uint64_t getSumTime() const;
 
         void setRet(REDO_CODE newRet);
-        void setBufferStartEnd(uint64_t newBufferStart, uint64_t newBufferEnd);
+        void setBufferStartEnd(FileOffset newBufferStart, FileOffset newBufferEnd);
         bool checkRedoLog();
         bool updateRedoLog();
         void setStatusRead();
-        void confirmReadData(uint64_t confirmedBufferStart);
-        [[nodiscard]] bool checkFinished(Thread* t, uint64_t confirmedBufferStart);
+        void confirmReadData(FileOffset confirmedBufferStart);
+        [[nodiscard]] bool checkFinished(Thread* t, FileOffset confirmedBufferStart);
 
         std::string getName() const override {
             return {"Reader: " + fileName};

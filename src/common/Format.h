@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef FORMAT_H_
 #define FORMAT_H_
 
-#include "../common/types.h"
+#include "../common/types/Types.h"
 
 namespace OpenLogReplicator {
 

@@ -46,8 +46,7 @@ namespace OpenLogReplicator {
             // Field: 3
             redoLogRecord->rowSizesDelta = fieldPos;
             if (unlikely(fieldSize < static_cast<typeSize>(redoLogRecord->nRow) * 2))
-                throw RedoLogException(50061, "too short field 11.11.3: " + std::to_string(fieldSize) + " offset: " +
-                                              std::to_string(redoLogRecord->dataOffset));
+                throw RedoLogException(50061, "too short field 11.11.3: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x0B0B04))
                 return;

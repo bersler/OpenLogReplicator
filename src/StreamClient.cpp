@@ -22,11 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/ClockHW.h"
 #include "common/Ctx.h"
 #include "common/OraProtoBuf.pb.h"
-#include "common/types.h"
 #include "common/exception/ConfigurationException.h"
 #include "common/exception/DataException.h"
 #include "common/exception/NetworkException.h"
 #include "common/exception/RuntimeException.h"
+#include "common/types/Data.h"
+#include "common/types/Scn.h"
+#include "common/types/Types.h"
 #include "stream/StreamNetwork.h"
 
 #ifdef LINK_LIBRARY_ZEROMQ
@@ -71,7 +73,7 @@ int main(int argc, char** argv) {
     OpenLogReplicator::Ctx ctx;
     const char* logTimezone = std::getenv("OLR_LOG_TIMEZONE");
     if (logTimezone != nullptr)
-        if (!OpenLogReplicator::Ctx::parseTimezone(logTimezone, ctx.logTimezone))
+        if (!OpenLogReplicator::Data::parseTimezone(logTimezone, ctx.logTimezone))
             ctx.error(10070, "invalid environment variable OLR_LOG_TIMEZONE value: " + std::string(logTimezone));
 
     ctx.welcome("OpenLogReplicator v." + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
@@ -109,7 +111,7 @@ int main(int argc, char** argv) {
     auto* buffer = new uint8_t[MAX_CLIENT_MESSAGE_SIZE];
 
     try {
-        std::string arg1 = argv[1];
+        const std::string arg1 = argv[1];
         if (arg1 == "network") {
             stream = new OpenLogReplicator::StreamNetwork(&ctx, argv[2]);
         } else if (arg1 == "zeromq") {
@@ -124,7 +126,7 @@ int main(int argc, char** argv) {
         stream->initialize();
         stream->initializeClient();
 
-        std::string arg4 = argv[4];
+        const std::string arg4 = argv[4];
         if (arg4 == "protobuf")
             formatProtobuf = true;
         else if (arg4 == "json")
@@ -143,21 +145,21 @@ int main(int argc, char** argv) {
         request.Clear();
         request.set_database_name(argv[3]);
 
-        std::string arg5 = argv[5];
+        const std::string arg5 = argv[5];
         if (response.code() == OpenLogReplicator::pb::ResponseCode::REPLICATE) {
             request.set_code(OpenLogReplicator::pb::RequestCode::CONTINUE);
             if (arg5 == "next") {
-                request.set_c_scn(OpenLogReplicator::Ctx::ZERO_SCN);
+                request.set_c_scn(OpenLogReplicator::Scn::none().getData());
                 request.set_c_idx(0);
             } else {
                 char* idxPtr;
                 if (arg5.substr(0, 2) != "c:" || strlen(argv[5]) <= 4 || (idxPtr = strchr(argv[5] + 2, ',')) == nullptr)
                     throw OpenLogReplicator::RuntimeException(1, "server already stared, expected: [c:<scn>,<idx>]");
                 *idxPtr = 0;
-                const typeScn confirmedScn = atoi(argv[5] + 2);
+                const OpenLogReplicator::Scn confirmedScn(atoi(argv[5] + 2));
                 const typeIdx confirmedIdx = atoi(idxPtr + 1);
 
-                request.set_c_scn(confirmedScn);
+                request.set_c_scn(confirmedScn.getData());
                 request.set_c_idx(confirmedIdx);
             }
         } else if (response.code() == OpenLogReplicator::pb::ResponseCode::READY) {
@@ -171,7 +173,7 @@ int main(int argc, char** argv) {
             }
 
             if (arg5 == "now") {
-                request.set_scn(OpenLogReplicator::Ctx::ZERO_SCN);
+                request.set_scn(OpenLogReplicator::Scn::none().getData());
                 ctx.info(0, "START NOW" + paramSeq);
             } else if (arg5.substr(0, 4) == "scn:") {
                 request.set_scn(atoi(argv[5] + 4));
@@ -206,7 +208,7 @@ int main(int argc, char** argv) {
         for (;;) {
             const uint64_t length = receive(response, stream, &ctx, buffer, formatProtobuf);
 
-            typeScn cScn;
+            OpenLogReplicator::Scn cScn;
             uint64_t cIdx;
             if (formatProtobuf) {
                 if (response.payload_size() == 1) {
@@ -274,7 +276,7 @@ int main(int argc, char** argv) {
             if (num > 1000 || timeDelta > 10) {
                 request.Clear();
                 request.set_code(OpenLogReplicator::pb::RequestCode::CONFIRM);
-                request.set_c_scn(cScn);
+                request.set_c_scn(cScn.getData());
                 request.set_c_idx(cIdx);
                 request.set_database_name(argv[3]);
                 ctx.info(0, "CONFIRM scn: " + std::to_string(request.c_scn()) + ", idx: " + std::to_string(request.c_idx()) +

@@ -61,9 +61,9 @@ namespace OpenLogReplicator {
                     break;
                 }
 
-                typeXid swapXid;
+                Xid swapXid;
                 int64_t swapIndex = -1;
-                typeXid unswapXid;
+                Xid unswapXid;
                 int64_t unswapIndex = -1;
 
                 {
@@ -116,7 +116,7 @@ namespace OpenLogReplicator {
     uint64_t MemoryManager::cleanOldTransactions() {
         uint64_t discard = 0;
         while (true) {
-            typeXid xid;
+            Xid xid;
             SwapChunk* sc;
             {
                 contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::MEMORY_CLEAN);
@@ -162,7 +162,7 @@ namespace OpenLogReplicator {
 
         struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
-            std::string dName(ent->d_name);
+            const std::string dName(ent->d_name);
             if (dName == "." || dName == "..")
                 continue;
 
@@ -195,7 +195,7 @@ namespace OpenLogReplicator {
         closedir(dir);
     }
 
-    void MemoryManager::getChunkToUnswap(typeXid& xid, int64_t& index) {
+    void MemoryManager::getChunkToUnswap(Xid& xid, int64_t& index) {
         if (ctx->swappedFlushXid.toUint() != 0) {
             const auto& it = ctx->swapChunks.find(ctx->swappedFlushXid);
             if (unlikely(it == ctx->swapChunks.end()))
@@ -222,7 +222,7 @@ namespace OpenLogReplicator {
         xid = ctx->swappedShrinkXid;
     }
 
-    void MemoryManager::getChunkToSwap(typeXid& xid, int64_t& index) {
+    void MemoryManager::getChunkToSwap(Xid& xid, int64_t& index) {
         if (ctx->nothingToSwap(this))
             return;
 
@@ -238,7 +238,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool MemoryManager::unswap(typeXid xid, int64_t index) {
+    bool MemoryManager::unswap(Xid xid, int64_t index) {
         uint8_t* tc = ctx->getMemoryChunk(this, Ctx::MEMORY::TRANSACTIONS, true);
         if (tc == nullptr)
             return false;
@@ -318,7 +318,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool MemoryManager::swap(typeXid xid, int64_t index) {
+    bool MemoryManager::swap(Xid xid, int64_t index) {
         uint8_t* tc;
         SwapChunk* sc;
         {

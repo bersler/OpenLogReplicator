@@ -32,6 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RedoLogRecord.h"
 #include "../common/exception/RuntimeException.h"
 #include "../common/metrics/Metrics.h"
+#include "../common/types/Seq.h"
 #include "Reader.h"
 
 namespace OpenLogReplicator {
@@ -107,15 +108,15 @@ namespace OpenLogReplicator {
         }
 
         const typeBlk blockNumberHeader = ctx->read32(buffer + 4);
-        const typeSeq sequenceHeader = ctx->read32(buffer + 8);
+        const Seq sequenceHeader = Seq(ctx->read32(buffer + 8));
 
-        if (sequence == 0 || status == STATUS::UPDATE) {
+        if (sequence == Seq::zero() || status == STATUS::UPDATE) {
             sequence = sequenceHeader;
         } else {
             if (group == 0) {
                 if (sequence != sequenceHeader) {
-                    ctx->warning(60024, "file: " + fileName + " - invalid header sequence, found: " + std::to_string(sequenceHeader) +
-                                        ", expected: " + std::to_string(sequence));
+                    ctx->warning(60024, "file: " + fileName + " - invalid header sequence, found: " + sequenceHeader.toString() +
+                                        ", expected: " + sequence.toString());
                     return REDO_CODE::ERROR_SEQUENCE;
                 }
             } else {
@@ -215,7 +216,7 @@ namespace OpenLogReplicator {
             if (static_cast<uint>(actualRead) > blockSize * 2)
                 actualRead = static_cast<int>(blockSize * 2);
 
-            const typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
+            const Seq sequenceHeader = Seq(ctx->read32(headerBuffer + blockSize + 8));
             if (fileCopySequence != sequenceHeader) {
                 if (fileCopyDes != -1) {
                     close(fileCopyDes);
@@ -224,7 +225,7 @@ namespace OpenLogReplicator {
             }
 
             if (fileCopyDes == -1) {
-                fileNameWrite = ctx->redoCopyPath + "/" + database + "_" + std::to_string(sequenceHeader) + ".arc";
+                fileNameWrite = ctx->redoCopyPath + "/" + database + "_" + sequenceHeader.toString() + ".arc";
                 fileCopyDes = open(fileNameWrite.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
                 if (unlikely(fileCopyDes == -1))
                     throw RuntimeException(10006, "file: " + fileNameWrite + " - open for writing returned: " + strerror(errno));
@@ -287,7 +288,7 @@ namespace OpenLogReplicator {
             ctx->version = version;
             if (compatVsn >= RedoLogRecord::REDO_VERSION_23_0)
                 ctx->columnLimit = Ctx::COLUMN_LIMIT_23_0;
-            const typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
+            const Seq sequenceHeader = Seq(ctx->read32(headerBuffer + blockSize + 8));
 
             if (compatVsn < RedoLogRecord::REDO_VERSION_18_0) {
                 ctx->versionStr = std::to_string(compatVsn >> 24) + "." + std::to_string((compatVsn >> 20) & 0xF) + "." +
@@ -297,7 +298,7 @@ namespace OpenLogReplicator {
                                   std::to_string((compatVsn >> 8) & 0xFF);
             }
             ctx->info(0, "found redo log version: " + ctx->versionStr + ", activation: " + std::to_string(activation) + ", resetlogs: " +
-                         std::to_string(resetlogs) + ", page: " + std::to_string(blockSize) + ", sequence: " + std::to_string(sequenceHeader) +
+                         std::to_string(resetlogs) + ", page: " + std::to_string(blockSize) + ", sequence: " + sequenceHeader.toString() +
                          ", SID: " + SID + ", endian: " + (ctx->isBigEndian() ? "BIG" : "LITTLE"));
         }
 
@@ -328,25 +329,24 @@ namespace OpenLogReplicator {
         if (retReload != REDO_CODE::OK)
             return retReload;
 
-        if (firstScn == Ctx::ZERO_SCN || status == STATUS::UPDATE) {
+        if (firstScn == Scn::none() || status == STATUS::UPDATE) {
             firstScn = firstScnHeader;
             nextScn = nextScnHeader;
         } else {
             if (firstScnHeader != firstScn) {
-                ctx->error(40008, "file: " + fileName + " - invalid first scn value: " + std::to_string(firstScnHeader) + ", expected: " +
-                                  std::to_string(firstScn));
+                ctx->error(40008, "file: " + fileName + " - invalid first scn value: " + firstScnHeader.toString() + ", expected: " + firstScn.toString());
                 return REDO_CODE::ERROR_BAD_DATA;
             }
         }
 
         // Updating nextScn if changed
-        if (nextScn == Ctx::ZERO_SCN && nextScnHeader != Ctx::ZERO_SCN) {
+        if (nextScn == Scn::none() && nextScnHeader != Scn::none()) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
-                ctx->logTrace(Ctx::TRACE::DISK, "updating next scn to: " + std::to_string(nextScnHeader));
+                ctx->logTrace(Ctx::TRACE::DISK, "updating next scn to: " + nextScnHeader.toString());
             nextScn = nextScnHeader;
-        } else if (nextScn != Ctx::ZERO_SCN && nextScnHeader != Ctx::ZERO_SCN && nextScn != nextScnHeader) {
-            ctx->error(40009, "file: " + fileName + " - invalid next scn value: " + std::to_string(nextScnHeader) + ", expected: " +
-                              std::to_string(nextScn));
+        } else if (nextScn != Scn::none() && nextScnHeader != Scn::none() && nextScn != nextScnHeader) {
+            ctx->error(40009, "file: " + fileName + " - invalid next scn value: " + nextScnHeader.toString() + ", expected: " +
+                              nextScn.toString());
             return REDO_CODE::ERROR_BAD_DATA;
         }
 
@@ -419,7 +419,7 @@ namespace OpenLogReplicator {
 
         // Partial online redo log file
         if (goodBlocks == 0 && group == 0) {
-            if (nextScnHeader != Ctx::ZERO_SCN) {
+            if (nextScnHeader != Scn::none()) {
                 ret = REDO_CODE::FINISHED;
                 nextScn = nextScnHeader;
             } else {
@@ -475,7 +475,7 @@ namespace OpenLogReplicator {
 
         // Batch mode with a partial online redo log file
         if (currentRet == REDO_CODE::ERROR_SEQUENCE && group == 0) {
-            if (nextScnHeader != Ctx::ZERO_SCN) {
+            if (nextScnHeader != Scn::none()) {
                 ret = REDO_CODE::FINISHED;
                 nextScn = nextScnHeader;
             } else {
@@ -669,7 +669,7 @@ namespace OpenLogReplicator {
                     readTime = 0;
 
                     if (bufferEnd == fileSize) {
-                        if (nextScnHeader != Ctx::ZERO_SCN) {
+                        if (nextScnHeader != Scn::none()) {
                             ret = REDO_CODE::FINISHED;
                             nextScn = nextScnHeader;
                         } else {
@@ -705,7 +705,7 @@ namespace OpenLogReplicator {
                             break;
 
                     if (numBlocksHeader != Ctx::ZERO_BLK && bufferEnd == static_cast<uint64_t>(numBlocksHeader) * blockSize) {
-                        if (nextScnHeader != Ctx::ZERO_SCN) {
+                        if (nextScnHeader != Scn::none()) {
                             ret = REDO_CODE::FINISHED;
                             nextScn = nextScnHeader;
                         } else {
@@ -876,7 +876,7 @@ namespace OpenLogReplicator {
            std::hex << fileSizeHeader << '\n' <<
            "\tFile Number=" << std::dec << fileNumber << ", Blksiz=" << std::dec << blockSize << ", File Type=2 LOG\n";
 
-        const typeSeq seq = ctx->read32(headerBuffer + blockSize + 8);
+        const Seq seq = Seq(ctx->read32(headerBuffer + blockSize + 8));
         uint8_t descrip[65];
         memcpy(reinterpret_cast<void*>(descrip),
                reinterpret_cast<const void*>(headerBuffer + blockSize + 92), 64);
@@ -889,52 +889,52 @@ namespace OpenLogReplicator {
         ss << R"( descrip:")" << descrip << R"(")" << '\n' <<
            " thread: " << std::dec << thread <<
            " nab: 0x" << std::hex << numBlocksHeader <<
-           " seq: 0x" << std::setfill('0') << std::setw(8) << std::hex << seq <<
+           " seq: " << seq.toStringHex(8) <<
            " hws: 0x" << std::hex << hws <<
            " eot: " << std::dec << static_cast<uint>(eot) <<
            " dis: " << std::dec << static_cast<uint>(dis) << '\n';
 
-        const typeScn resetlogsScn = ctx->readScn(headerBuffer + blockSize + 164);
+        const Scn resetlogsScn = ctx->readScn(headerBuffer + blockSize + 164);
         const typeResetlogs prevResetlogsCnt = ctx->read32(headerBuffer + blockSize + 292);
-        const typeScn prevResetlogsScn = ctx->readScn(headerBuffer + blockSize + 284);
-        const typeScn enabledScn = ctx->readScn(headerBuffer + blockSize + 208);
-        const typeTime enabledTime(ctx->read32(headerBuffer + blockSize + 216));
-        const typeScn threadClosedScn = ctx->readScn(headerBuffer + blockSize + 220);
-        const typeTime threadClosedTime(ctx->read32(headerBuffer + blockSize + 228));
-        const typeScn termialRecScn = ctx->readScn(headerBuffer + blockSize + 240);
-        const typeTime termialRecTime(ctx->read32(headerBuffer + blockSize + 248));
-        const typeScn mostRecentScn = ctx->readScn(headerBuffer + blockSize + 260);
+        const Scn prevResetlogsScn = ctx->readScn(headerBuffer + blockSize + 284);
+        const Scn enabledScn = ctx->readScn(headerBuffer + blockSize + 208);
+        const Time enabledTime(ctx->read32(headerBuffer + blockSize + 216));
+        const Scn threadClosedScn = ctx->readScn(headerBuffer + blockSize + 220);
+        const Time threadClosedTime(ctx->read32(headerBuffer + blockSize + 228));
+        const Scn termialRecScn = ctx->readScn(headerBuffer + blockSize + 240);
+        const Time termialRecTime(ctx->read32(headerBuffer + blockSize + 248));
+        const Scn mostRecentScn = ctx->readScn(headerBuffer + blockSize + 260);
         const typeSum chSum = ctx->read16(headerBuffer + blockSize + 14);
         const typeSum chSum2 = calcChSum(headerBuffer + blockSize, blockSize);
 
         if (ctx->version < RedoLogRecord::REDO_VERSION_12_2) {
-            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN48(resetlogsScn) <<
-               " (" << std::dec << resetlogsScn << ")\n" <<
-               " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) <<
-               " (" << std::dec << prevResetlogsScn << ")\n" <<
-               " Low  scn: " << PRINTSCN48(firstScnHeader) << " (" << std::dec << firstScnHeader << ")" << " " << firstTimeHeader << '\n' <<
-               " Next scn: " << PRINTSCN48(nextScnHeader) << " (" << std::dec << nextScn << ")" << " " << nextTime << '\n' <<
-               " Enabled scn: " << PRINTSCN48(enabledScn) << " (" << std::dec << enabledScn << ")" << " " << enabledTime << '\n' <<
-               " Thread closed scn: " << PRINTSCN48(threadClosedScn) << " (" << std::dec << threadClosedScn << ")" <<
+            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << resetlogsScn.to48() <<
+               " (" << resetlogsScn.toString() << ")\n" <<
+               " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << prevResetlogsScn.to48() <<
+               " (" << prevResetlogsScn.toString() << ")\n" <<
+               " Low  scn: " << firstScnHeader.to48() << " (" << firstScnHeader.toString() << ")" << " " << firstTimeHeader << '\n' <<
+               " Next scn: " << nextScnHeader.to48() << " (" << nextScn.toString() << ")" << " " << nextTime << '\n' <<
+               " Enabled scn: " << enabledScn.to48() << " (" << enabledScn.toString() << ")" << " " << enabledTime << '\n' <<
+               " Thread closed scn: " << threadClosedScn.to48() << " (" << threadClosedScn.toString() << ")" <<
                " " << threadClosedTime << '\n' <<
                " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << '\n' <<
-               " Terminal recovery stop scn: " << PRINTSCN48(termialRecScn) << '\n' <<
+               " Terminal recovery stop scn: " << termialRecScn.to48() << '\n' <<
                " Terminal recovery  " << termialRecTime << '\n' <<
-               " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << '\n';
+               " Most recent redo scn: " << mostRecentScn.to48() << '\n';
         } else {
-            const typeScn realNextScn = ctx->readScn(headerBuffer + blockSize + 272);
+            const Scn realNextScn = ctx->readScn(headerBuffer + blockSize + 272);
 
-            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN64(resetlogsScn) << '\n' <<
-               " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << '\n' <<
-               " Low  scn: " << PRINTSCN64(firstScnHeader) << " " << firstTimeHeader << '\n' <<
-               " Next scn: " << PRINTSCN64(nextScnHeader) << " " << nextTime << '\n' <<
-               " Enabled scn: " << PRINTSCN64(enabledScn) << " " << enabledTime << '\n' <<
-               " Thread closed scn: " << PRINTSCN64(threadClosedScn) << " " << threadClosedTime << '\n' <<
-               " Real next scn: " << PRINTSCN64(realNextScn) << '\n' <<
+            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << resetlogsScn.to64() << '\n' <<
+               " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << prevResetlogsScn.to64() << '\n' <<
+               " Low  scn: " << firstScnHeader.to64() << " " << firstTimeHeader << '\n' <<
+               " Next scn: " << nextScnHeader.to64() << " " << nextTime << '\n' <<
+               " Enabled scn: " << enabledScn.to64() << " " << enabledTime << '\n' <<
+               " Thread closed scn: " << threadClosedScn.to64() << " " << threadClosedTime << '\n' <<
+               " Real next scn: " << realNextScn.to64() << '\n' <<
                " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << '\n' <<
-               " Terminal recovery stop scn: " << PRINTSCN64(termialRecScn) << '\n' <<
+               " Terminal recovery stop scn: " << termialRecScn.to64() << '\n' <<
                " Terminal recovery  " << termialRecTime << '\n' <<
-               " Most recent redo scn: " << PRINTSCN64(mostRecentScn) << '\n';
+               " Most recent redo scn: " << mostRecentScn.to64() << '\n';
         }
 
         const uint32_t largestLwn = ctx->read32(headerBuffer + blockSize + 268);
@@ -977,19 +977,19 @@ namespace OpenLogReplicator {
 
         auto thr = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 432));
         const auto seq2 = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 436));
-        const typeScn scn2 = ctx->readScn(headerBuffer + blockSize + 440);
+        const Scn scn2 = ctx->readScn(headerBuffer + blockSize + 440);
         const uint8_t zeroBlocks = headerBuffer[blockSize + 206];
         const uint8_t formatId = headerBuffer[blockSize + 207];
         if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                " seq: " << std::dec << seq2 <<
-               " scn: " << PRINTSCN48(scn2) << '\n' <<
+               " scn: " << scn2.to48() << '\n' <<
                " Zero blocks: " << std::dec << static_cast<uint>(zeroBlocks) << '\n' <<
                " Format ID is " << std::dec << static_cast<uint>(formatId) << '\n';
         else
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                " seq: " << std::dec << seq2 <<
-               " scn: " << PRINTSCN64(scn2) << '\n' <<
+               " scn: " << scn2.to64() << '\n' <<
                " Zero blocks: " << std::dec << static_cast<uint>(zeroBlocks) << '\n' <<
                " Format ID is " << std::dec << static_cast<uint>(formatId) << '\n';
 
@@ -997,7 +997,7 @@ namespace OpenLogReplicator {
         if (standbyApplyDelay > 0)
             ss << " Standby Apply Delay: " << std::dec << standbyApplyDelay << " minute(s) \n";
 
-        const typeTime standbyLogCloseTime(ctx->read32(headerBuffer + blockSize + 304));
+        const Time standbyLogCloseTime(ctx->read32(headerBuffer + blockSize + 304));
         if (standbyLogCloseTime.getVal() > 0)
             ss << " Standby Log Close Time:  " << standbyLogCloseTime << '\n';
 
@@ -1016,31 +1016,31 @@ namespace OpenLogReplicator {
         return blockSize;
     }
 
-    uint64_t Reader::getBufferStart() const {
-        return bufferStart;
+    FileOffset Reader::getBufferStart() const {
+        return FileOffset(bufferStart);
     }
 
-    uint64_t Reader::getBufferEnd() const {
-        return bufferEnd;
+    FileOffset Reader::getBufferEnd() const {
+        return FileOffset(bufferEnd);
     }
 
     Reader::REDO_CODE Reader::getRet() const {
         return ret;
     }
 
-    typeScn Reader::getFirstScn() const {
+    Scn Reader::getFirstScn() const {
         return firstScn;
     }
 
-    typeScn Reader::getFirstScnHeader() const {
+    Scn Reader::getFirstScnHeader() const {
         return firstScnHeader;
     }
 
-    typeScn Reader::getNextScn() const {
+    Scn Reader::getNextScn() const {
         return nextScn;
     }
 
-    typeTime Reader::getNextTime() const {
+    Time Reader::getNextTime() const {
         return nextTime;
     }
 
@@ -1052,7 +1052,7 @@ namespace OpenLogReplicator {
         return group;
     }
 
-    typeSeq Reader::getSequence() const {
+    Seq Reader::getSequence() const {
         return sequence;
     }
 
@@ -1076,18 +1076,18 @@ namespace OpenLogReplicator {
         ret = newRet;
     }
 
-    void Reader::setBufferStartEnd(uint64_t newBufferStart, uint64_t newBufferEnd) {
-        bufferStart = newBufferStart;
-        bufferEnd = newBufferEnd;
+    void Reader::setBufferStartEnd(FileOffset newBufferStart, FileOffset newBufferEnd) {
+        bufferStart = newBufferStart.getData();
+        bufferEnd = newBufferEnd.getData();
     }
 
     bool Reader::checkRedoLog() {
         contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_REDO);
         std::unique_lock<std::mutex> lck(mtx);
         status = STATUS::CHECK;
-        sequence = 0;
-        firstScn = Ctx::ZERO_SCN;
-        nextScn = Ctx::ZERO_SCN;
+        sequence = Seq::zero();
+        firstScn = Scn::none();
+        nextScn = Scn::none();
         condBufferFull.notify_all();
         condReaderSleeping.notify_all();
 
@@ -1144,11 +1144,11 @@ namespace OpenLogReplicator {
         contextSet(CONTEXT::CPU);
     }
 
-    void Reader::confirmReadData(uint64_t confirmedBufferStart) {
+    void Reader::confirmReadData(FileOffset confirmedBufferStart) {
         contextSet(CONTEXT::MUTEX, REASON::READER_CONFIRM);
         {
             std::unique_lock<std::mutex> const lck(mtx);
-            bufferStart = confirmedBufferStart;
+            bufferStart = confirmedBufferStart.getData();
             if (status == STATUS::READ) {
                 condBufferFull.notify_all();
             }
@@ -1156,15 +1156,15 @@ namespace OpenLogReplicator {
         contextSet(CONTEXT::CPU);
     }
 
-    bool Reader::checkFinished(Thread* t, uint64_t confirmedBufferStart) {
+    bool Reader::checkFinished(Thread* t, FileOffset confirmedBufferStart) {
         t->contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_FINISHED);
         {
             std::unique_lock<std::mutex> lck(mtx);
-            if (bufferStart < confirmedBufferStart)
-                bufferStart = confirmedBufferStart;
+            if (bufferStart < confirmedBufferStart.getData())
+                bufferStart = confirmedBufferStart.getData();
 
             // All work done
-            if (confirmedBufferStart == bufferEnd) {
+            if (confirmedBufferStart.getData() == bufferEnd) {
                 if (ret == REDO_CODE::STOPPED || ret == REDO_CODE::OVERWRITTEN || ret == REDO_CODE::FINISHED || status == STATUS::SLEEPING) {
                     t->contextSet(CONTEXT::CPU);
                     return true;

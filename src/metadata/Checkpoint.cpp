@@ -259,8 +259,8 @@ namespace OpenLogReplicator {
 
                 {
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
-                        ctx->logTrace(Ctx::TRACE::SLEEP, "Checkpoint:run lastCheckpointScn: " + std::to_string(metadata->lastCheckpointScn) +
-                                                         " checkpointScn: " + std::to_string(metadata->checkpointScn));
+                        ctx->logTrace(Ctx::TRACE::SLEEP, "Checkpoint:run lastCheckpointScn: " + metadata->lastCheckpointScn.toString() +
+                                                         " checkpointScn: " + metadata->checkpointScn.toString());
 
                     contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CHECKPOINT_RUN);
                     std::unique_lock<std::mutex> lck(mtx);

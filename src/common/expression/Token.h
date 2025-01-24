@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <vector>
 
 #include "Expression.h"
-#include "../types.h"
+#include "../types/Types.h"
 
 #ifndef TOKEN_H_
 #define TOKEN_H_

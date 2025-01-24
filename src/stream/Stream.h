@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STREAM_H_
 #define STREAM_H_
 
-#include "../common/types.h"
+#include "../common/types/Types.h"
 
 namespace OpenLogReplicator {
     class Ctx;

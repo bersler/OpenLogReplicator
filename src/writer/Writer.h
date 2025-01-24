@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
         Metadata* metadata;
         // Information about local checkpoint
         BuilderQueue* builderQueue{nullptr};
-        typeScn checkpointScn{Ctx::ZERO_SCN};
+        Scn checkpointScn{Scn::none()};
         typeIdx checkpointIdx{0};
         time_t checkpointTime;
         uint64_t sentMessages{0};
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
 
         std::mutex mtx;
         // scn,idx confirmed by client
-        typeScn confirmedScn{Ctx::ZERO_SCN};
+        Scn confirmedScn{Scn::none()};
         typeIdx confirmedIdx{0};
         BuilderMsg** queue{nullptr};
 

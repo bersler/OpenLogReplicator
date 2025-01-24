@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <utility>
 
-#include "../types.h"
-#include "../typeRowId.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef XDB_XQN_H_
 #define XDB_XQN_H_
@@ -34,13 +34,13 @@ namespace OpenLogReplicator {
         static constexpr uint ID_LENGTH{16};
         static constexpr uint64_t FLAG_ISATTRIBUTE{1};
 
-        typeRowId rowId;
+        RowId rowId;
         std::string nmSpcId;
         std::string localName;
         std::string flags;
         std::string id;
 
-        XdbXQn(typeRowId newRowId, std::string newNmSpcId, std::string newLocalName, std::string newFlags, std::string newId) :
+        XdbXQn(RowId newRowId, std::string newNmSpcId, std::string newLocalName, std::string newFlags, std::string newId) :
                 rowId(newRowId),
                 nmSpcId(std::move(newNmSpcId)),
                 localName(std::move(newLocalName)),
@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
                 id(std::move(newId)) {
         }
 
-        explicit XdbXQn(typeRowId newRowId) :
+        explicit XdbXQn(RowId newRowId) :
                 rowId(newRowId) {
         }
 

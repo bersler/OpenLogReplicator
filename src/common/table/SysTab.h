@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeIntX.h"
-#include "../typeRowId.h"
+#include "../types/IntX.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_TAB_H_
 #define SYS_TAB_H_
@@ -42,15 +42,15 @@ namespace OpenLogReplicator {
             ROW_MOVEMENT = 1ULL << 17, DEPENDENCIES = 1ULL << 23, IOT_MAPPING = 1ULL << 29, DELAYED_SEGMENT_CREATION = 1ULL << 34
         };
 
-        typeRowId rowId;
+        RowId rowId;
         typeObj obj{0};
         typeDataObj dataObj{0};        // NULL
         typeTs ts{0};
         typeCol cluCols{0};            // NULL
-        typeIntX flags{0, 0};
-        typeIntX property{0, 0};
+        IntX flags{0, 0};
+        IntX property{0, 0};
 
-        SysTab(typeRowId newRowId, typeObj newObj, typeDataObj newDataObj, typeTs newTs, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
+        SysTab(RowId newRowId, typeObj newObj, typeDataObj newDataObj, typeTs newTs, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
                uint64_t newProperty1, uint64_t newProperty2) :
                 rowId(newRowId),
                 obj(newObj),
@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
                 property(newProperty1, newProperty2) {
         }
 
-        explicit SysTab(typeRowId newRowId) :
+        explicit SysTab(RowId newRowId) :
                 rowId(newRowId) {
         }
 

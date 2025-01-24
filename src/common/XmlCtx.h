@@ -24,12 +24,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 
 #include "../common/Ctx.h"
-#include "../common/typeRowId.h"
-#include "../common/types.h"
 #include "../common/table/TablePack.h"
 #include "../common/table/XdbXNm.h"
 #include "../common/table/XdbXQn.h"
 #include "../common/table/XdbXPt.h"
+#include "../common/types/RowId.h"
+#include "../common/types/Types.h"
 
 namespace OpenLogReplicator {
 
