@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
-#include "types.h"
+#include "types/Types.h"
 
 namespace OpenLogReplicator {
     class DbTable;

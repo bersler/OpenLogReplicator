@@ -65,11 +65,11 @@ namespace OpenLogReplicator {
         void cleanArchList();
         void updateOnlineLogs();
         void readerDropAll();
-        static typeSeq getSequenceFromFileName(Replicator* replicator, const std::string& file);
+        static Seq getSequenceFromFileName(Replicator* replicator, const std::string& file);
         virtual std::string getModeName() const;
         virtual bool checkConnection();
         virtual bool continueWithOnline();
-        virtual void verifySchema(typeScn currentScn);
+        virtual void verifySchema(Scn currentScn);
         virtual void createSchema();
         virtual void updateOnlineRedoLogData();
 

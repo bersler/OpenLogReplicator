@@ -23,9 +23,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <atomic>
 #include <sys/time.h>
 
-#include "types.h"
 #include "Clock.h"
 #include "Ctx.h"
+#include "types/Types.h"
 
 namespace OpenLogReplicator {
     class Ctx;

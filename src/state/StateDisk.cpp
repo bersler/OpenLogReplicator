@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
 
         const struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
-            std::string dName(ent->d_name);
+            const std::string dName(ent->d_name);
             if (dName == "." || dName == "..")
                 continue;
 
@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void StateDisk::write(const std::string& name, typeScn scn __attribute__((unused)), const std::ostringstream& out) {
+    void StateDisk::write(const std::string& name, Scn scn __attribute__((unused)), const std::ostringstream& out) {
         const std::string fileName(path + "/" + name + ".json");
         std::ofstream outputStream;
 

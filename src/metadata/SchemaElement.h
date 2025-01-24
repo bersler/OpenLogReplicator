@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <vector>
 
 #include "../common/DbTable.h"
-#include "../common/types.h"
+#include "../common/types/Types.h"
 
 namespace OpenLogReplicator {
     class SchemaElement final {

@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeIntX.h"
-#include "../typeRowId.h"
+#include "../types/IntX.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_COL_H_
 #define SYS_COL_H_
@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
             TIMESTAMP_WITH_LOCAL_TZ = 231, BOOLEAN = 252
         };
 
-        typeRowId rowId;
+        RowId rowId;
         typeObj obj{0};
         typeCol col{0};
         typeCol segCol{0};
@@ -59,9 +59,9 @@ namespace OpenLogReplicator {
         uint charsetForm{0};       // NULL
         uint charsetId{0};         // NULL
         int null_{0};
-        typeIntX property{0, 0};
+        IntX property{0, 0};
 
-        SysCol(typeRowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, std::string newName, SysCol::COLTYPE newType,
+        SysCol(RowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, std::string newName, SysCol::COLTYPE newType,
                uint newLength, int newPrecision, int newScale, uint newCharsetForm, uint newCharsetId, int newNull,
                uint64_t newProperty1, uint64_t newProperty2) :
                 rowId(newRowId),
@@ -80,7 +80,7 @@ namespace OpenLogReplicator {
                 property(newProperty1, newProperty2) {
         }
 
-        explicit SysCol(typeRowId newRowId) :
+        explicit SysCol(RowId newRowId) :
                 rowId(newRowId) {
         }
 
@@ -166,7 +166,7 @@ namespace OpenLogReplicator {
 
     class SysColSeg final {
     public:
-        SysColSeg(typeObj newObj, typeCol newSegCol, typeRowId newRowId) :
+        SysColSeg(typeObj newObj, typeCol newSegCol, RowId newRowId) :
                 obj(newObj),
                 segCol(newSegCol),
                 rowId(newRowId) {
@@ -194,7 +194,7 @@ namespace OpenLogReplicator {
 
         typeObj obj;
         typeCol segCol;
-        typeRowId rowId;
+        RowId rowId;
     };
 
     class SysColKey final {

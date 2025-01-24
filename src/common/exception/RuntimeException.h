@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sstream>
 #include <string>
 
-#include "../types.h"
+#include "../types/Types.h"
 
 #ifndef RUNTIME_EXCEPTION_H_
 #define RUNTIME_EXCEPTION_H_

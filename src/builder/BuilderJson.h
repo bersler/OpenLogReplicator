@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/DbColumn.h"
 #include "../common/DbTable.h"
 #include "../common/table/SysCol.h"
+#include "../common/types/Data.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
 
@@ -91,8 +92,8 @@ namespace OpenLogReplicator {
                 return;
 
             if (format.ridFormat == Format::RID_FORMAT::TEXT) {
-                const typeRowId rowId(dataObj, bdba, slot);
-                char str[typeRowId::SIZE + 1];
+                const RowId rowId(dataObj, bdba, slot);
+                char str[RowId::SIZE + 1];
                 rowId.toString(str);
                 append(std::string_view(R"(,"rid":")"));
                 appendArr(str, 18);
@@ -100,7 +101,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        void appendHeader(typeScn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
+        void appendHeader(Scn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition], 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 64, 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 128, 1, 0);
@@ -113,11 +114,11 @@ namespace OpenLogReplicator {
 
                 if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
                     append(std::string_view(R"("scns":"0x)"));
-                    appendHex16(scn);
+                    appendHex16(scn.getData());
                     append('"');
                 } else {
                     append(std::string_view(R"("scn":)"));
-                    appendDec(scn);
+                    appendDec(scn.getData());
                 }
             }
 
@@ -187,49 +188,49 @@ namespace OpenLogReplicator {
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_NANO_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, false));
                         append(std::string_view(R"(.000000000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MICRO_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, true));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, true));
                         append(std::string_view(R"(.000000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MILLI_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, false));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, false));
                         append(std::string_view(R"(.000Z")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_TZ:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, true, true));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, true));
                         append('"');
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_NANO:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
                         append(std::string_view(R"(.000000000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MICRO:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
                         append(std::string_view(R"(.000000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601_MILLI:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
                         append(std::string_view(R"(.000")"));
                         break;
 
                     case Format::TIMESTAMP_FORMAT::ISO8601:
                         append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Ctx::epochToIso8601(timestamp, buffer, false, false));
+                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
                         append('"');
                         break;
                 }
@@ -240,7 +241,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
             append(std::string_view(R"("c_scn":)"));
-            appendDec(lwnScn);
+            appendDec(lwnScn.getData());
             append(std::string_view(R"(,"c_idx":)"));
             appendDec(lwnIdx);
 
@@ -478,97 +479,97 @@ namespace OpenLogReplicator {
         template<bool fast = false>
         void appendHex2(uint8_t value) {
             if (likely(fast || lastBuilderSize + messagePosition + 2 < OUTPUT_BUFFER_DATA_SIZE)) {
-                append<true>(Ctx::map16((value >> 4) & 0xF));
-                append<true>(Ctx::map16(value & 0xF));
+                append<true>(Data::map16((value >> 4) & 0xF));
+                append<true>(Data::map16(value & 0xF));
             } else {
-                append(Ctx::map16((value >> 4) & 0xF));
-                append(Ctx::map16(value & 0xF));
+                append(Data::map16((value >> 4) & 0xF));
+                append(Data::map16(value & 0xF));
             }
         }
 
         void appendHex3(uint16_t value) {
             if (likely(lastBuilderSize + messagePosition + 3 < OUTPUT_BUFFER_DATA_SIZE)) {
-                append<true>(Ctx::map16((value >> 8) & 0xF));
-                append<true>(Ctx::map16((value >> 4) & 0xF));
-                append<true>(Ctx::map16(value & 0xF));
+                append<true>(Data::map16((value >> 8) & 0xF));
+                append<true>(Data::map16((value >> 4) & 0xF));
+                append<true>(Data::map16(value & 0xF));
             } else {
-                append(Ctx::map16((value >> 8) & 0xF));
-                append(Ctx::map16((value >> 4) & 0xF));
-                append(Ctx::map16(value & 0xF));
+                append(Data::map16((value >> 8) & 0xF));
+                append(Data::map16((value >> 4) & 0xF));
+                append(Data::map16(value & 0xF));
             }
         }
 
         void appendHex4(uint16_t value) {
             if (likely(lastBuilderSize + messagePosition + 4 < OUTPUT_BUFFER_DATA_SIZE)) {
-                append<true>(Ctx::map16((value >> 12) & 0xF));
-                append<true>(Ctx::map16((value >> 8) & 0xF));
-                append<true>(Ctx::map16((value >> 4) & 0xF));
-                append<true>(Ctx::map16(value & 0xF));
+                append<true>(Data::map16((value >> 12) & 0xF));
+                append<true>(Data::map16((value >> 8) & 0xF));
+                append<true>(Data::map16((value >> 4) & 0xF));
+                append<true>(Data::map16(value & 0xF));
             } else {
-                append(Ctx::map16((value >> 12) & 0xF));
-                append(Ctx::map16((value >> 8) & 0xF));
-                append(Ctx::map16((value >> 4) & 0xF));
-                append(Ctx::map16(value & 0xF));
+                append(Data::map16((value >> 12) & 0xF));
+                append(Data::map16((value >> 8) & 0xF));
+                append(Data::map16((value >> 4) & 0xF));
+                append(Data::map16(value & 0xF));
             };
         }
 
         void appendHex8(uint32_t value) {
             if (likely(lastBuilderSize + messagePosition + 8 < OUTPUT_BUFFER_DATA_SIZE)) {
-                append<true>(Ctx::map16((value >> 28) & 0xF));
-                append<true>(Ctx::map16((value >> 24) & 0xF));
-                append<true>(Ctx::map16((value >> 20) & 0xF));
-                append<true>(Ctx::map16((value >> 16) & 0xF));
-                append<true>(Ctx::map16((value >> 12) & 0xF));
-                append<true>(Ctx::map16((value >> 8) & 0xF));
-                append<true>(Ctx::map16((value >> 4) & 0xF));
-                append<true>(Ctx::map16(value & 0xF));
+                append<true>(Data::map16((value >> 28) & 0xF));
+                append<true>(Data::map16((value >> 24) & 0xF));
+                append<true>(Data::map16((value >> 20) & 0xF));
+                append<true>(Data::map16((value >> 16) & 0xF));
+                append<true>(Data::map16((value >> 12) & 0xF));
+                append<true>(Data::map16((value >> 8) & 0xF));
+                append<true>(Data::map16((value >> 4) & 0xF));
+                append<true>(Data::map16(value & 0xF));
             } else {
-                append(Ctx::map16((value >> 28) & 0xF));
-                append(Ctx::map16((value >> 24) & 0xF));
-                append(Ctx::map16((value >> 20) & 0xF));
-                append(Ctx::map16((value >> 16) & 0xF));
-                append(Ctx::map16((value >> 12) & 0xF));
-                append(Ctx::map16((value >> 8) & 0xF));
-                append(Ctx::map16((value >> 4) & 0xF));
-                append(Ctx::map16(value & 0xF));
+                append(Data::map16((value >> 28) & 0xF));
+                append(Data::map16((value >> 24) & 0xF));
+                append(Data::map16((value >> 20) & 0xF));
+                append(Data::map16((value >> 16) & 0xF));
+                append(Data::map16((value >> 12) & 0xF));
+                append(Data::map16((value >> 8) & 0xF));
+                append(Data::map16((value >> 4) & 0xF));
+                append(Data::map16(value & 0xF));
             }
         }
 
         void appendHex16(uint64_t value) {
             if (likely(lastBuilderSize + messagePosition + 16 < OUTPUT_BUFFER_DATA_SIZE)) {
-                append<true>(Ctx::map16((value >> 60) & 0xF));
-                append<true>(Ctx::map16((value >> 56) & 0xF));
-                append<true>(Ctx::map16((value >> 52) & 0xF));
-                append<true>(Ctx::map16((value >> 48) & 0xF));
-                append<true>(Ctx::map16((value >> 44) & 0xF));
-                append<true>(Ctx::map16((value >> 40) & 0xF));
-                append<true>(Ctx::map16((value >> 36) & 0xF));
-                append<true>(Ctx::map16((value >> 32) & 0xF));
-                append<true>(Ctx::map16((value >> 28) & 0xF));
-                append<true>(Ctx::map16((value >> 24) & 0xF));
-                append<true>(Ctx::map16((value >> 20) & 0xF));
-                append<true>(Ctx::map16((value >> 16) & 0xF));
-                append<true>(Ctx::map16((value >> 12) & 0xF));
-                append<true>(Ctx::map16((value >> 8) & 0xF));
-                append<true>(Ctx::map16((value >> 4) & 0xF));
-                append<true>(Ctx::map16(value & 0xF));
+                append<true>(Data::map16((value >> 60) & 0xF));
+                append<true>(Data::map16((value >> 56) & 0xF));
+                append<true>(Data::map16((value >> 52) & 0xF));
+                append<true>(Data::map16((value >> 48) & 0xF));
+                append<true>(Data::map16((value >> 44) & 0xF));
+                append<true>(Data::map16((value >> 40) & 0xF));
+                append<true>(Data::map16((value >> 36) & 0xF));
+                append<true>(Data::map16((value >> 32) & 0xF));
+                append<true>(Data::map16((value >> 28) & 0xF));
+                append<true>(Data::map16((value >> 24) & 0xF));
+                append<true>(Data::map16((value >> 20) & 0xF));
+                append<true>(Data::map16((value >> 16) & 0xF));
+                append<true>(Data::map16((value >> 12) & 0xF));
+                append<true>(Data::map16((value >> 8) & 0xF));
+                append<true>(Data::map16((value >> 4) & 0xF));
+                append<true>(Data::map16(value & 0xF));
             } else {
-                append(Ctx::map16((value >> 60) & 0xF));
-                append(Ctx::map16((value >> 56) & 0xF));
-                append(Ctx::map16((value >> 52) & 0xF));
-                append(Ctx::map16((value >> 48) & 0xF));
-                append(Ctx::map16((value >> 44) & 0xF));
-                append(Ctx::map16((value >> 40) & 0xF));
-                append(Ctx::map16((value >> 36) & 0xF));
-                append(Ctx::map16((value >> 32) & 0xF));
-                append(Ctx::map16((value >> 28) & 0xF));
-                append(Ctx::map16((value >> 24) & 0xF));
-                append(Ctx::map16((value >> 20) & 0xF));
-                append(Ctx::map16((value >> 16) & 0xF));
-                append(Ctx::map16((value >> 12) & 0xF));
-                append(Ctx::map16((value >> 8) & 0xF));
-                append(Ctx::map16((value >> 4) & 0xF));
-                append(Ctx::map16(value & 0xF));
+                append(Data::map16((value >> 60) & 0xF));
+                append(Data::map16((value >> 56) & 0xF));
+                append(Data::map16((value >> 52) & 0xF));
+                append(Data::map16((value >> 48) & 0xF));
+                append(Data::map16((value >> 44) & 0xF));
+                append(Data::map16((value >> 40) & 0xF));
+                append(Data::map16((value >> 36) & 0xF));
+                append(Data::map16((value >> 32) & 0xF));
+                append(Data::map16((value >> 28) & 0xF));
+                append(Data::map16((value >> 24) & 0xF));
+                append(Data::map16((value >> 20) & 0xF));
+                append(Data::map16((value >> 16) & 0xF));
+                append(Data::map16((value >> 12) & 0xF));
+                append(Data::map16((value >> 8) & 0xF));
+                append(Data::map16((value >> 4) & 0xF));
+                append(Data::map16(value & 0xF));
             }
         }
 
@@ -577,7 +578,7 @@ namespace OpenLogReplicator {
             char buffer[21];
 
             for (uint i = 0; i < size; ++i) {
-                buffer[i] = Ctx::map10(value % 10);
+                buffer[i] = Data::map10(value % 10);
                 value /= 10;
             }
 
@@ -603,7 +604,7 @@ namespace OpenLogReplicator {
                 size = 1;
             } else {
                 while (value > 0) {
-                    buffer[size++] = Ctx::map10(value % 10);
+                    buffer[size++] = Data::map10(value % 10);
                     value /= 10;
                 }
             }
@@ -631,13 +632,13 @@ namespace OpenLogReplicator {
                 if (value < 0) {
                     value = -value;
                     while (value > 0) {
-                        buffer[size++] = Ctx::map10(value % 10);
+                        buffer[size++] = Data::map10(value % 10);
                         value /= 10;
                     }
                     buffer[size++] = '-';
                 } else {
                     while (value > 0) {
-                        buffer[size++] = Ctx::map10(value % 10);
+                        buffer[size++] = Data::map10(value % 10);
                         value /= 10;
                     }
                 }
@@ -736,7 +737,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
+        void appendAfter(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, FileOffset fileOffset) {
             append(std::string_view(R"(,"after":{)"));
 
             hasPreviousColumn = false;
@@ -747,8 +748,7 @@ namespace OpenLogReplicator {
 
                     if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0)
                         processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], offset, true,
-                                     compressedAfter);
+                                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], fileOffset, true, compressedAfter);
                     else
                         columnNull(table, column, true);
                 }
@@ -765,8 +765,7 @@ namespace OpenLogReplicator {
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0)
                                 processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], offset,
-                                             true, compressedAfter);
+                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], fileOffset, true, compressedAfter);
                             else
                                 columnNull(table, column, true);
                         }
@@ -776,7 +775,7 @@ namespace OpenLogReplicator {
             append('}');
         }
 
-        void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, uint64_t offset) {
+        void appendBefore(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, FileOffset fileOffset) {
             append(std::string_view(R"(,"before":{)"));
 
             hasPreviousColumn = false;
@@ -787,8 +786,7 @@ namespace OpenLogReplicator {
 
                     if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0)
                         processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
-                                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], offset,
-                                     false, compressedBefore);
+                                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], fileOffset, false, compressedBefore);
                     else
                         columnNull(table, column, false);
                 }
@@ -805,8 +803,7 @@ namespace OpenLogReplicator {
                         if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
                             if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0)
                                 processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
-                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], offset,
-                                             false, compressedBefore);
+                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], fileOffset, false, compressedBefore);
                             else
                                 columnNull(table, column, false);
                         }
@@ -822,24 +819,24 @@ namespace OpenLogReplicator {
         void columnString(const std::string& columnName) override;
         void columnNumber(const std::string& columnName, int precision, int scale) override;
         void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) override;
-        void columnRowId(const std::string& columnName, typeRowId rowId) override;
+        void columnRowId(const std::string& columnName, RowId rowId) override;
         void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
         void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
-        void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
-        void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
-        void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                           typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) override;
-        void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
-        void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) override;
-        void addTagData(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, Format::VALUE_TYPE valueType, uint64_t offset);
+        void processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) override;
+        void processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) override;
+        void processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                           typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) override;
+        void processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
+        void processBeginMessage(Scn scn, Seq sequence, time_t timestamp) override;
+        void addTagData(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, Format::VALUE_TYPE valueType, FileOffset fileOffset);
 
     public:
         BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
 
-        void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) override;
-        void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) override;
+        void processCommit(Scn scn, Seq sequence, time_t timestamp) override;
+        void processCheckpoint(Scn scn, Seq sequence, time_t timestamp, FileOffset fileOffset, bool redo) override;
     };
 }
 

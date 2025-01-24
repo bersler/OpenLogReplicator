@@ -22,9 +22,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <set>
 #include <unordered_map>
 
-#include "../types.h"
-#include "../typeRowId.h"
 #include "../exception/RuntimeException.h"
+#include "../types/FileOffset.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef TABLE_PACK_H_
 #define TABLE_PACK_H_
@@ -34,12 +35,12 @@ namespace OpenLogReplicator {
     template<class Data, class KeyMap = TabRowIdKeyDefault, class KeyUnorderedMap = TabRowIdUnorderedKeyDefault>
     class TablePack final {
     public:
-        std::map<typeRowId, Data*> mapRowId;
+        std::map<RowId, Data*> mapRowId;
         std::map<KeyMap, Data*> mapKey;
         std::unordered_map<KeyUnorderedMap, Data*> unorderedMapKey;
         std::set<Data*> setTouched;
 
-        [[nodiscard]] Data* forUpdate(const Ctx* ctx, typeRowId rowId, uint64_t offset) {
+        [[nodiscard]] Data* forUpdate(const Ctx* ctx, RowId rowId, FileOffset fileOffset) {
             auto mapRowIdIt = mapRowId.find(rowId);
             if (likely(mapRowIdIt != mapRowId.end())) {
                 dropKeys(mapRowIdIt->second);
@@ -49,7 +50,7 @@ namespace OpenLogReplicator {
             if (likely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA))) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "forUpdate: missing " + Data::tableName() + " (ROWID: " + rowId.toString() + ") for update at offset: " +
-                                                      std::to_string(offset));
+                                                      fileOffset.toString());
                 return nullptr;
             }
             auto data = new Data(rowId);
@@ -58,7 +59,7 @@ namespace OpenLogReplicator {
         }
 
         void clear(const Ctx* ctx) {
-            for (auto& [typeRowId, data]: mapRowId) {
+            for (auto& [RowId, data]: mapRowId) {
                 if constexpr (!std::is_same_v<KeyMap, TabRowIdKeyDefault>) {
                     KeyMap key(data);
                     const auto& it = mapKey.find(key);
@@ -116,7 +117,7 @@ namespace OpenLogReplicator {
             return true;
         }
 
-        Data* forInsert(const Ctx* ctx, typeRowId rowId, uint64_t offset) {
+        Data* forInsert(const Ctx* ctx, RowId rowId, FileOffset fileOffset) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                 ctx->logTrace(Ctx::TRACE::SYSTEM, "forInsert " + Data::tableName() + " ('" + rowId.toString() + "')");
 
@@ -127,7 +128,7 @@ namespace OpenLogReplicator {
                 data = it->second;
                 if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                     throw RuntimeException(50022, "duplicate " + Data::tableName() + " (" + data->toString() + ") for insert at offset: " +
-                                                  std::to_string(offset));
+                                                  fileOffset.toString());
                 dropKeys(data);
             } else {
                 data = new Data(rowId);
@@ -153,13 +154,13 @@ namespace OpenLogReplicator {
             addKeys(data);
         }
 
-        void drop(const Ctx* ctx, typeRowId rowId, uint64_t offset = 0, bool deleteTouched = false) {
+        void drop(const Ctx* ctx, RowId rowId, FileOffset fileOffset = FileOffset::zero(), bool deleteTouched = false) {
             const auto& it = mapRowId.find(rowId);
             if (unlikely(it == mapRowId.end())) {
                 // Missing
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "drop: missing " + Data::tableName() + " (ROWID: " + rowId.toString() + ") for delete at offset: " +
-                                                      std::to_string(offset));
+                                                      fileOffset.toString());
                 return;
             }
 

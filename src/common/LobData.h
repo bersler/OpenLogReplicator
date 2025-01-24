@@ -22,17 +22,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <map>
 
-#include "types.h"
+#include "types/Types.h"
 
 namespace OpenLogReplicator {
     class LobDataElement final {
     public:
-        LobDataElement(typeDba newDba, uint32_t newOffset);
+        LobDataElement(typeDba newDba, uint16_t newPageOffset);
 
         bool operator<(const LobDataElement& other) const;
 
         typeDba dba{0};
-        uint32_t offset{0};
+        uint16_t pageOffset{0};
     };
 
     class LobData final {

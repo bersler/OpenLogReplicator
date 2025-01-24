@@ -97,23 +97,23 @@ namespace OpenLogReplicator {
     void Parser::analyzeLwn(LwnMember* lwnMember) {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
             ctx->logTrace(Ctx::TRACE::LWN, "analyze blk: " + std::to_string(lwnMember->block) + " offset: " +
-                                           std::to_string(lwnMember->offset) + " scn: " + std::to_string(lwnMember->scn) + " subscn: " +
+                                           std::to_string(lwnMember->pageOffset) + " scn: " + lwnMember->scn.toString() + " subscn: " +
                                            std::to_string(lwnMember->subScn));
 
         uint8_t* data = reinterpret_cast<uint8_t*>(lwnMember) + sizeof(struct LwnMember);
         RedoLogRecord redoLogRecord[2];
         int64_t vectorCur = -1;
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
-            ctx->logTrace(Ctx::TRACE::LWN, "analyze size: " + std::to_string(lwnMember->size) + " scn: " + std::to_string(lwnMember->scn) +
+            ctx->logTrace(Ctx::TRACE::LWN, "analyze size: " + std::to_string(lwnMember->size) + " scn: " + lwnMember->scn.toString() +
                                            " subscn: " + std::to_string(lwnMember->subScn));
 
         const uint32_t recordSize = ctx->read32(data);
         const uint8_t vld = data[4];
-        uint32_t headerSize;
+        uint16_t headerSize;
 
         if (unlikely(recordSize != lwnMember->size))
-            throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
-                                          std::to_string(lwnMember->offset) + ": too small log record, buffer size: " + std::to_string(lwnMember->size) +
+            throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->pageOffset) +
+                                          ": too small log record, buffer size: " + std::to_string(lwnMember->size) +
                                           ", field size: " + std::to_string(recordSize));
 
         if ((vld & 0x04) != 0)
@@ -126,21 +126,21 @@ namespace OpenLogReplicator {
             *ctx->dumpStream << " \n";
 
             if (ctx->version < RedoLogRecord::REDO_VERSION_12_1)
-                *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
-                                 std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
-                                 std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordSize << " VLD: 0x" <<
+                *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: " << sequence.toStringHex(6) << "." <<
+                                 std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." <<
+                                 std::hex << lwnMember->pageOffset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordSize << " VLD: 0x" <<
                                  std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(vld) << '\n';
             else {
                 const uint32_t conUid = ctx->read32(data + 16);
-                *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence <<
+                *ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: " << sequence.toStringHex(6) <<
                                  "." << std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
-                                 std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordSize << " VLD: 0x" <<
+                                 std::hex << lwnMember->pageOffset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordSize << " VLD: 0x" <<
                                  std::setfill('0') << std::setw(2) << std::hex << static_cast<uint>(vld) << " CON_UID: " << std::dec << conUid << '\n';
             }
 
             if (ctx->dumpRawData > 0) {
-                const std::string header = "## H: [" + std::to_string((static_cast<uint64_t>(lwnMember->block) * reader->getBlockSize()) + lwnMember->offset) +
-                                           "] " + std::to_string(headerSize);
+                const std::string header = "## H: [" + std::to_string((static_cast<uint64_t>(lwnMember->block) * reader->getBlockSize()) +
+                                           lwnMember->pageOffset) + "] " + std::to_string(headerSize);
                 *ctx->dumpStream << header;
                 if (header.length() < 36)
                     *ctx->dumpStream << std::string(36 - header.length(), ' ');
@@ -152,30 +152,30 @@ namespace OpenLogReplicator {
 
             if (headerSize == 68) {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
-                    *ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << lwnMember->scn.to48() << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                      lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
-                    *ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << lwnMember->scn.to64() << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                      lwnMember->subScn << " " << lwnTimestamp << '\n';
                 const uint16_t lwnNst = ctx->read16(data + 26);
                 const uint32_t lwnLen = ctx->read32(data + 32);
 
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
-                    *ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
+                    *ctx->dumpStream << "(LWN RBA: " << sequence.toStringHex(6) << "." << std::setfill('0') <<
                                      std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) << std::hex <<
-                                     lwnMember->offset << " LEN: " << std::setfill('0') << std::setw(4) << std::dec << lwnLen << " NST: " <<
-                                     std::setfill('0') << std::setw(4) << std::dec << lwnNst << " SCN: " << PRINTSCN48(lwnScn) << ")" << '\n';
+                                     lwnMember->pageOffset << " LEN: " << std::setfill('0') << std::setw(4) << std::dec << lwnLen << " NST: " <<
+                                     std::setfill('0') << std::setw(4) << std::dec << lwnNst << " SCN: " << lwnScn.to48() << ")" << '\n';
                 else
-                    *ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." << std::setfill('0') <<
+                    *ctx->dumpStream << "(LWN RBA: " << sequence.toStringHex(6) << "." << std::setfill('0') <<
                                      std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) << std::hex <<
-                                     lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(8) << std::hex << lwnLen << " NST: 0x" <<
-                                     std::setfill('0') << std::setw(4) << std::hex << lwnNst << " SCN: " << PRINTSCN64(lwnScn) << ")" << '\n';
+                                     lwnMember->pageOffset << " LEN: 0x" << std::setfill('0') << std::setw(8) << std::hex << lwnLen << " NST: 0x" <<
+                                     std::setfill('0') << std::setw(4) << std::hex << lwnNst << " SCN: " << lwnScn.to64() << ")" << '\n';
             } else {
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_2)
-                    *ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << lwnMember->scn.to48() << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                      lwnMember->subScn << " " << lwnTimestamp << '\n';
                 else
-                    *ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
+                    *ctx->dumpStream << "SCN: " << lwnMember->scn.to64() << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec <<
                                      lwnMember->subScn << " " << lwnTimestamp << '\n';
             }
         }
@@ -183,11 +183,11 @@ namespace OpenLogReplicator {
         if (unlikely(headerSize > recordSize)) {
             dumpRedoVector(data, recordSize);
             throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
-                                          std::to_string(lwnMember->offset) + ": too small log record, header size: " + std::to_string(headerSize) +
+                                          std::to_string(lwnMember->pageOffset) + ": too small log record, header size: " + std::to_string(headerSize) +
                                           ", field size: " + std::to_string(recordSize));
         }
 
-        uint64_t offset = headerSize;
+        uint32_t offset = headerSize;
         uint64_t vectors = 0;
 
         while (offset < recordSize) {
@@ -208,7 +208,7 @@ namespace OpenLogReplicator {
             redoLogRecord[vectorCur].typ = data[offset + 21];
             const typeUsn usn = (redoLogRecord[vectorCur].cls >= 15) ? (redoLogRecord[vectorCur].cls - 15) / 2 : -1;
 
-            uint32_t fieldOffset;
+            uint16_t fieldOffset;
             if (ctx->version >= RedoLogRecord::REDO_VERSION_12_1) {
                 fieldOffset = 32;
                 redoLogRecord[vectorCur].flgRecord = ctx->read16(data + offset + 28);
@@ -222,7 +222,7 @@ namespace OpenLogReplicator {
             if (unlikely(offset + fieldOffset + 1U >= recordSize)) {
                 dumpRedoVector(data, recordSize);
                 throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
-                                              std::to_string(lwnMember->offset) + ": position of field list (" + std::to_string(offset + fieldOffset + 1) +
+                                              std::to_string(lwnMember->pageOffset) + ": position of field list (" + std::to_string(offset + fieldOffset + 1) +
                                               ") outside of record, size: " + std::to_string(recordSize));
             }
 
@@ -234,12 +234,12 @@ namespace OpenLogReplicator {
             redoLogRecord[vectorCur].subScn = lwnMember->subScn;
             redoLogRecord[vectorCur].usn = usn;
             redoLogRecord[vectorCur].dataExt = data + offset;
-            redoLogRecord[vectorCur].dataOffset = static_cast<uint64_t>(lwnMember->block) * reader->getBlockSize() + lwnMember->offset + offset;
+            redoLogRecord[vectorCur].fileOffset = FileOffset(lwnMember->block, reader->getBlockSize()) + lwnMember->pageOffset + offset;
             redoLogRecord[vectorCur].fieldSizesDelta = fieldOffset;
             if (unlikely(redoLogRecord[vectorCur].fieldSizesDelta + 1U >= recordSize)) {
                 dumpRedoVector(data, recordSize);
                 throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
-                                              std::to_string(lwnMember->offset) + ": field size list (" +
+                                              std::to_string(lwnMember->pageOffset) + ": field size list (" +
                                               std::to_string(redoLogRecord[vectorCur].fieldSizesDelta) +
                                               ") outside of record, size: " + std::to_string(recordSize));
             }
@@ -249,7 +249,7 @@ namespace OpenLogReplicator {
             if (unlikely(redoLogRecord[vectorCur].fieldPos >= recordSize)) {
                 dumpRedoVector(data, recordSize);
                 throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
-                                              std::to_string(lwnMember->offset) + ": fields (" + std::to_string(redoLogRecord[vectorCur].fieldPos) +
+                                              std::to_string(lwnMember->pageOffset) + ": fields (" + std::to_string(redoLogRecord[vectorCur].fieldPos) +
                                               ") outside of record, size: " + std::to_string(recordSize));
             }
 
@@ -260,7 +260,7 @@ namespace OpenLogReplicator {
                 if (unlikely(offset + redoLogRecord[vectorCur].size > recordSize)) {
                     dumpRedoVector(data, recordSize);
                     throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
-                                                  std::to_string(lwnMember->offset) + ": position of field list outside of record (" + "i: " +
+                                                  std::to_string(lwnMember->pageOffset) + ": position of field list outside of record (" + "i: " +
                                                   std::to_string(i) + " c: " + std::to_string(redoLogRecord[vectorCur].fieldCnt) + " " + " o: " +
                                                   std::to_string(fieldOffset) + " p: " + std::to_string(offset) + " l: " +
                                                   std::to_string(redoLogRecord[vectorCur].size) + " r: " + std::to_string(recordSize) + ")");
@@ -270,7 +270,7 @@ namespace OpenLogReplicator {
             if (unlikely(redoLogRecord[vectorCur].fieldPos > redoLogRecord[vectorCur].size)) {
                 dumpRedoVector(data, recordSize);
                 throw RedoLogException(50046, "block: " + std::to_string(lwnMember->block) + ", offset: " +
-                                              std::to_string(lwnMember->offset) + ": incomplete record, offset: " +
+                                              std::to_string(lwnMember->pageOffset) + ": incomplete record, offset: " +
                                               std::to_string(redoLogRecord[vectorCur].fieldPos) + ", size: " +
                                               std::to_string(redoLogRecord[vectorCur].size));
             }
@@ -640,12 +640,12 @@ namespace OpenLogReplicator {
                                            std::to_string(redoLogRecord1->lobPageSize));
 
         transaction->lobCtx.addLob(ctx, redoLogRecord1->lobId, redoLogRecord1->dba, 0, TransactionBuffer::allocateLob(redoLogRecord1),
-                                   transaction->xid, redoLogRecord1->dataOffset);
+                                   transaction->xid, redoLogRecord1->fileOffset);
     }
 
     void Parser::appendToTransaction(RedoLogRecord* redoLogRecord1) {
         // Skip list
-        if (redoLogRecord1->xid.getData() != 0 && transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
+        if (redoLogRecord1->xid != Xid::zero() && transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
@@ -701,11 +701,11 @@ namespace OpenLogReplicator {
         if ((redoLogRecord1->flg & OpCode::FLG_USERUNDODDONE) == 0)
             return;
 
-        const typeXid xid(redoLogRecord1->usn, redoLogRecord1->slt, 0);
+        const Xid xid(redoLogRecord1->usn, redoLogRecord1->slt, 0);
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, xid, redoLogRecord1->conId, true, false,
                                                                       true);
         if (transaction == nullptr) {
-            const typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
+            const XidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
             if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
                 ctx->warning(60010, "no match found for transaction rollback, skipping, SLT: " +
@@ -744,7 +744,7 @@ namespace OpenLogReplicator {
                                                                       false, true, false);
         transaction->begin = true;
         transaction->firstSequence = sequence;
-        transaction->firstOffset = static_cast<uint64_t>(lwnCheckpointBlock) * reader->getBlockSize();
+        transaction->firstFileOffset = FileOffset(lwnCheckpointBlock, reader->getBlockSize());
         transaction->log(ctx, "B   ", redoLogRecord1);
         lastTransaction = transaction;
     }
@@ -766,7 +766,7 @@ namespace OpenLogReplicator {
         }
 
         // Broken transaction
-        const typeXidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
+        const XidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
         auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
         if (unlikely(brokenXidMapListIt != transactionBuffer->brokenXidMapList.end()))
             transactionBuffer->brokenXidMapList.erase(xidMap);
@@ -806,7 +806,7 @@ namespace OpenLogReplicator {
 
                 if (transaction->shutdown && metadata->isNewData(lwnScn, builder->lwnIdx)) {
                     ctx->info(0, "shutdown started - initiated by debug transaction " + transaction->xid.toString() +
-                                 " at scn " + std::to_string(transaction->commitScn));
+                                 " at scn " + transaction->commitScn.toString());
                     ctx->stopSoft();
                 }
             } else {
@@ -862,7 +862,7 @@ namespace OpenLogReplicator {
         }
         if (unlikely(redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0))
             throw RedoLogException(50045, "bdba does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
-                                          std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
+                                          std::to_string(redoLogRecord2->bdba) + "), offset: " + redoLogRecord1->fileOffset.toString());
 
         switch (redoLogRecord2->opCode) {
             case 0x0513:
@@ -941,11 +941,11 @@ namespace OpenLogReplicator {
         if (metadata->conId > 0 && redoLogRecord1->conId != metadata->conId)
             return;
 
-        const typeXid xid(redoLogRecord2->usn, redoLogRecord2->slt, 0);
+        const Xid xid(redoLogRecord2->usn, redoLogRecord2->slt, 0);
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, xid, redoLogRecord2->conId, true, false,
                                                                       true);
         if (transaction == nullptr) {
-            const typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord2->conId) << 32);
+            const XidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord2->conId) << 32);
             auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
             if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
                 ctx->warning(60010, "no match found for transaction rollback, skipping, SLT: " +
@@ -974,7 +974,7 @@ namespace OpenLogReplicator {
         }
         if (unlikely(redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0))
             throw RedoLogException(50045, "bdba does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
-                                          std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
+                                          std::to_string(redoLogRecord2->bdba) + "), offset: " + redoLogRecord1->fileOffset.toString());
 
         const DbTable* table;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
@@ -1054,7 +1054,7 @@ namespace OpenLogReplicator {
         }
         if (unlikely(redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0))
             throw RedoLogException(50045, "bdba does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
-                                          std::to_string(redoLogRecord2->bdba) + "), offset: " + std::to_string(redoLogRecord1->dataOffset));
+                                          std::to_string(redoLogRecord2->bdba) + "), offset: " + redoLogRecord1->fileOffset.toString());
 
         const DbLob* lob;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
@@ -1104,7 +1104,7 @@ namespace OpenLogReplicator {
 
             auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord2->lobId);
             if (lobIdToXidMapIt != ctx->lobIdToXidMap.end()) {
-                const typeXid parentXid = lobIdToXidMapIt->second;
+                const Xid parentXid = lobIdToXidMapIt->second;
 
                 if (parentXid != redoLogRecord1->xid) {
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB)))
@@ -1177,7 +1177,7 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB)))
                 ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord2->lobId.lower() + " xid: " + redoLogRecord1->xid.toString() + " MAP");
             ctx->lobIdToXidMap.insert_or_assign(redoLogRecord2->lobId, redoLogRecord1->xid);
-            transaction->lobCtx.checkOrphanedLobs(ctx, redoLogRecord2->lobId, redoLogRecord1->xid, redoLogRecord1->dataOffset);
+            transaction->lobCtx.checkOrphanedLobs(ctx, redoLogRecord2->lobId, redoLogRecord1->xid, redoLogRecord1->fileOffset);
         }
 
         if (lob != nullptr) {
@@ -1222,15 +1222,15 @@ namespace OpenLogReplicator {
         typeBlk lwnConfirmedBlock = 2;
         uint64_t lwnRecords = 0;
 
-        if (firstScn == Ctx::ZERO_SCN && nextScn == Ctx::ZERO_SCN && reader->getFirstScn() != 0) {
+        if (firstScn == Scn::none() && nextScn == Scn::none() && reader->getFirstScn() != Scn::zero()) {
             firstScn = reader->getFirstScn();
             nextScn = reader->getNextScn();
         }
         ctx->suppLogSize = 0;
 
-        if (reader->getBufferStart() == reader->getBlockSize() * 2) {
+        if (reader->getBufferStart() == FileOffset(2, reader->getBlockSize())) {
             if (unlikely(ctx->dumpRedoLog >= 1)) {
-                const std::string fileName = ctx->dumpPath + "/" + std::to_string(sequence) + ".olr";
+                const std::string fileName = ctx->dumpPath + "/" + sequence.toString() + ".olr";
                 ctx->dumpStream->open(fileName);
                 if (!ctx->dumpStream->is_open()) {
                     ctx->error(10006, "file: " + fileName + " - open for writing returned: " + strerror(errno));
@@ -1244,21 +1244,21 @@ namespace OpenLogReplicator {
         }
 
         // Continue started offset
-        if (metadata->offset > 0) {
-            if (unlikely((metadata->offset % reader->getBlockSize()) != 0))
-                throw RedoLogException(50047, "incorrect offset start: " + std::to_string(metadata->offset) +
+        if (metadata->fileOffset > FileOffset::zero()) {
+            if (unlikely(!metadata->fileOffset.matchesBlockSize(reader->getBlockSize())))
+                throw RedoLogException(50047, "incorrect offset start: " + metadata->fileOffset.toString() +
                                               " - not a multiplication of block size: " + std::to_string(reader->getBlockSize()));
 
-            lwnConfirmedBlock = metadata->offset / reader->getBlockSize();
+            lwnConfirmedBlock = metadata->fileOffset.getBlock(reader->getBlockSize());
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "setting reader start position to " + std::to_string(metadata->offset) + " (block " +
+                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "setting reader start position to " + metadata->fileOffset.toString() + " (block " +
                                                       std::to_string(lwnConfirmedBlock) + ")");
-            metadata->offset = 0;
+            metadata->fileOffset = FileOffset::zero();
         }
-        reader->setBufferStartEnd(static_cast<uint64_t>(lwnConfirmedBlock) * reader->getBlockSize(),
-                                  static_cast<uint64_t>(lwnConfirmedBlock) * reader->getBlockSize());
+        reader->setBufferStartEnd(FileOffset(lwnConfirmedBlock, reader->getBlockSize()),
+                                  FileOffset(lwnConfirmedBlock, reader->getBlockSize()));
 
-        ctx->info(0, "processing redo log: " + toString() + " offset: " + std::to_string(reader->getBufferStart()));
+        ctx->info(0, "processing redo log: " + toString() + " offset: " + reader->getBufferStart().toString());
         if (ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA) && !metadata->schema->loaded && !ctx->versionStr.empty()) {
             metadata->loadAdaptiveSchema();
             metadata->schema->loaded = true;
@@ -1279,8 +1279,8 @@ namespace OpenLogReplicator {
         const time_ut cStart = ctx->clock->getTimeUt();
         reader->setStatusRead();
         LwnMember* lwnMember;
-        uint64_t blockOffset;
-        uint64_t confirmedBufferStart = reader->getBufferStart();
+        uint16_t blockOffset;
+        FileOffset confirmedBufferStart = reader->getBufferStart();
         uint64_t recordPos = 0;
         uint32_t recordSize4;
         uint32_t recordLeftToCopy = 0;
@@ -1300,17 +1300,17 @@ namespace OpenLogReplicator {
                         ((static_cast<uint64_t>(currentBlock) * reader->getBlockSize()) / Ctx::MEMORY_CHUNK_SIZE) % ctx->memoryChunksReadBufferMax;
                 const uint8_t* redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
 
-                blockOffset = 16;
+                blockOffset = 16U;
                 // New LWN block
                 if (currentBlock == lwnEndBlock) {
-                    const uint8_t vld = redoBlock[blockOffset + 4];
+                    const uint8_t vld = redoBlock[blockOffset + 4U];
 
                     if (likely((vld & 0x04) != 0)) {
-                        const uint16_t lwnNum = ctx->read16(redoBlock + blockOffset + 24);
-                        const uint32_t lwnSize = ctx->read32(redoBlock + blockOffset + 28);
+                        const uint16_t lwnNum = ctx->read16(redoBlock + blockOffset + 24U);
+                        const uint32_t lwnSize = ctx->read32(redoBlock + blockOffset + 28U);
                         lwnEndBlock = currentBlock + lwnSize;
-                        lwnScn = ctx->readScn(redoBlock + blockOffset + 40);
-                        lwnTimestamp = ctx->read32(redoBlock + blockOffset + 64);
+                        lwnScn = ctx->readScn(redoBlock + blockOffset + 40U);
+                        lwnTimestamp = ctx->read32(redoBlock + blockOffset + 64U);
 
                         if (ctx->metrics != nullptr) {
                             const int64_t diff = ctx->clock->getTimeT() - lwnTimestamp.toEpoch(ctx->hostTimezone);
@@ -1319,12 +1319,12 @@ namespace OpenLogReplicator {
 
                         if (lwnNumCnt == 0) {
                             lwnCheckpointBlock = currentBlock;
-                            lwnNumMax = ctx->read16(redoBlock + blockOffset + 26);
+                            lwnNumMax = ctx->read16(redoBlock + blockOffset + 26U);
                             // Verify LWN header start
-                            if (unlikely(lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != Ctx::ZERO_SCN)))
-                                throw RedoLogException(50049, "invalid lwn scn: " + std::to_string(lwnScn));
+                            if (unlikely(lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != Scn::none())))
+                                throw RedoLogException(50049, "invalid lwn scn: " + lwnScn.toString());
                         } else {
-                            const typeLwn lwnNumCur = ctx->read16(redoBlock + blockOffset + 26);
+                            const typeLwn lwnNumCur = ctx->read16(redoBlock + blockOffset + 26U);
                             if (unlikely(lwnNumCur != lwnNumMax))
                                 throw RedoLogException(50050, "invalid lwn max: " + std::to_string(lwnNum) + "/" +
                                                               std::to_string(lwnNumCur) + "/" + std::to_string(lwnNumMax));
@@ -1337,16 +1337,16 @@ namespace OpenLogReplicator {
                                                            " chk: " + std::to_string(lwnNum) + " max: " + std::to_string(lwnNumMax));
                         }
                     } else
-                        throw RedoLogException(50051, "did not find lwn at offset: " + std::to_string(confirmedBufferStart));
+                        throw RedoLogException(50051, "did not find lwn at offset: " + confirmedBufferStart.toString());
                 }
 
                 while (blockOffset < reader->getBlockSize()) {
                     // Next record
                     if (recordLeftToCopy == 0) {
-                        if (blockOffset + 20 >= reader->getBlockSize())
+                        if (blockOffset + 20U >= reader->getBlockSize())
                             break;
 
-                        recordSize4 = (static_cast<uint64_t>(ctx->read32(redoBlock + blockOffset)) + 3) & 0xFFFFFFFC;
+                        recordSize4 = (static_cast<uint64_t>(ctx->read32(redoBlock + blockOffset)) + 3U) & 0xFFFFFFFC;
                         if (recordSize4 > 0) {
                             auto* recordSize = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
 
@@ -1366,16 +1366,16 @@ namespace OpenLogReplicator {
 
                             lwnMember = reinterpret_cast<struct LwnMember*>(lwnChunks[lwnAllocated - 1] + *recordSize);
                             *recordSize += (sizeof(struct LwnMember) + recordSize4 + 7) & 0xFFFFFFF8;
-                            lwnMember->offset = blockOffset;
-                            lwnMember->scn = ctx->read32(redoBlock + blockOffset + 8) |
-                                             (static_cast<uint64_t>(ctx->read16(redoBlock + blockOffset + 6)) << 32);
+                            lwnMember->pageOffset = blockOffset;
+                            lwnMember->scn = ctx->read32(redoBlock + blockOffset + 8U) |
+                                             (static_cast<uint64_t>(ctx->read16(redoBlock + blockOffset + 6U)) << 32);
                             lwnMember->size = recordSize4;
                             lwnMember->block = currentBlock;
-                            lwnMember->subScn = ctx->read16(redoBlock + blockOffset + 12);
+                            lwnMember->subScn = ctx->read16(redoBlock + blockOffset + 12U);
 
                             if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
                                 ctx->logTrace(Ctx::TRACE::LWN, "size: " + std::to_string(recordSize4) + " scn: " +
-                                                               std::to_string(lwnMember->scn) + " subscn: " + std::to_string(lwnMember->subScn));
+                                                               lwnMember->scn.toString() + " subscn: " + std::to_string(lwnMember->subScn));
 
                             uint64_t lwnPos = ++lwnRecords;
                             if (unlikely(lwnPos >= MAX_RECORDS_IN_LWN))
@@ -1421,7 +1421,7 @@ namespace OpenLogReplicator {
                     lastTransaction = nullptr;
 
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
-                        ctx->logTrace(Ctx::TRACE::LWN, "* analyze: " + std::to_string(lwnScn));
+                        ctx->logTrace(Ctx::TRACE::LWN, "* analyze: " + lwnScn.toString());
 
                     while (lwnRecords > 0) {
                         try {
@@ -1470,20 +1470,19 @@ namespace OpenLogReplicator {
 
                     if (lwnScn > metadata->firstDataScn) {
                         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-                            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + std::to_string(lwnScn));
+                            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + lwnScn.toString());
                         builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
-                                                   static_cast<uint64_t>(currentBlock) * reader->getBlockSize(), switchRedo);
+                                                   FileOffset(currentBlock, reader->getBlockSize()), switchRedo);
 
-                        typeSeq minSequence = Ctx::ZERO_SEQ;
-                        uint64_t minOffset = -1;
-                        typeXid minXid;
-                        transactionBuffer->checkpoint(minSequence, minOffset, minXid);
+                        Seq minSequence = Seq::none();
+                        FileOffset minFileOffset(FileOffset::zero());
+                        Xid minXid;
+                        transactionBuffer->checkpoint(minSequence, minFileOffset, minXid);
                         if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
-                            ctx->logTrace(Ctx::TRACE::LWN, "* checkpoint: " + std::to_string(lwnScn));
-                        metadata->checkpoint(ctx->parserThread, lwnScn, lwnTimestamp, sequence,
-                                             static_cast<uint64_t>(currentBlock) * reader->getBlockSize(),
+                            ctx->logTrace(Ctx::TRACE::LWN, "* checkpoint: " + lwnScn.toString());
+                        metadata->checkpoint(ctx->parserThread, lwnScn, lwnTimestamp, sequence, FileOffset(currentBlock, reader->getBlockSize()),
                                              static_cast<uint64_t>(currentBlock - lwnConfirmedBlock) * reader->getBlockSize(), minSequence,
-                                             minOffset, minXid);
+                                             minFileOffset, minXid);
 
                         if (ctx->stopCheckpoints > 0 && metadata->isNewData(lwnScn, builder->lwnIdx)) {
                             --ctx->stopCheckpoints;
@@ -1516,13 +1515,13 @@ namespace OpenLogReplicator {
             }
 
             // Processing finished
-            if (!switchRedo && lwnScn > 0 && confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == Reader::REDO_CODE::FINISHED) {
+            if (!switchRedo && lwnScn > Scn::zero() && confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == Reader::REDO_CODE::FINISHED) {
                 if (lwnScn > metadata->firstDataScn) {
                     switchRedo = true;
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-                        ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + std::to_string(lwnScn) + " with switch");
+                        ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + lwnScn.toString() + " with switch");
                     builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
-                                               static_cast<uint64_t>(currentBlock) * reader->getBlockSize(), switchRedo);
+                                               FileOffset(currentBlock, reader->getBlockSize()), switchRedo);
                     if (ctx->metrics != nullptr)
                         ctx->metrics->emitCheckpointsOut(1);
                 } else {
@@ -1533,25 +1532,25 @@ namespace OpenLogReplicator {
 
             if (ctx->softShutdown) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-                    ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + std::to_string(lwnScn) + " at exit");
+                    ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + lwnScn.toString() + " at exit");
                 builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
-                                           static_cast<uint64_t>(currentBlock) * reader->getBlockSize(), false);
+                                           FileOffset(currentBlock, reader->getBlockSize()), false);
                 if (ctx->metrics != nullptr)
                     ctx->metrics->emitCheckpointsOut(1);
 
                 reader->setRet(Reader::REDO_CODE::SHUTDOWN);
             } else {
                 if (reader->checkFinished(ctx->parserThread, confirmedBufferStart)) {
-                    if (reader->getRet() == Reader::REDO_CODE::FINISHED && nextScn == Ctx::ZERO_SCN && reader->getNextScn() != Ctx::ZERO_SCN)
+                    if (reader->getRet() == Reader::REDO_CODE::FINISHED && nextScn == Scn::none() && reader->getNextScn() != Scn::none())
                         nextScn = reader->getNextScn();
                     if (reader->getRet() == Reader::REDO_CODE::STOPPED || reader->getRet() == Reader::REDO_CODE::OVERWRITTEN)
-                        metadata->offset = static_cast<uint64_t>(lwnConfirmedBlock) * reader->getBlockSize();
+                        metadata->fileOffset = FileOffset(lwnConfirmedBlock, reader->getBlockSize());
                     break;
                 }
             }
         }
 
-        if (ctx->metrics != nullptr && reader->getNextScn() != Ctx::ZERO_SCN) {
+        if (ctx->metrics != nullptr && reader->getNextScn() != Scn::none()) {
             const int64_t diff = ctx->clock->getTimeT() - reader->getNextTime().toEpoch(ctx->hostTimezone);
 
             if (group == 0) {
@@ -1609,7 +1608,7 @@ namespace OpenLogReplicator {
     }
 
     std::string Parser::toString() const {
-        return "group: " + std::to_string(group) + " scn: " + std::to_string(firstScn) + " to " +
-               std::to_string(nextScn != Ctx::ZERO_SCN ? nextScn : 0) + " seq: " + std::to_string(sequence) + " path: " + path;
+        return "group: " + std::to_string(group) + " scn: " + firstScn.toString() + " to " +
+               (nextScn != Scn::none() ? nextScn.toString() : "0") + " seq: " + sequence.toString() + " path: " + path;
     }
 }

@@ -23,6 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RedoLogRecord.h"
 #include "../common/Thread.h"
 #include "../common/exception/RedoLogException.h"
+#include "../common/types/Seq.h"
 #include "OpCode0501.h"
 #include "OpCode050B.h"
 #include "Transaction.h"
@@ -52,8 +53,8 @@ namespace OpenLogReplicator {
         xidTransactionMap.clear();
     }
 
-    Transaction* TransactionBuffer::findTransaction(XmlCtx* xmlCtx, typeXid xid, typeConId conId, bool old, bool add, bool rollback) {
-        const typeXidMap xidMap = (xid.getData() >> 32) | ((static_cast<uint64_t>(conId)) << 32);
+    Transaction* TransactionBuffer::findTransaction(XmlCtx* xmlCtx, Xid xid, typeConId conId, bool old, bool add, bool rollback) {
+        const XidMap xidMap = (xid.getData() >> 32) | ((static_cast<uint64_t>(conId)) << 32);
         Transaction* transaction;
 
         auto xidTransactionMapIt = xidTransactionMap.find(xidMap);
@@ -81,8 +82,8 @@ namespace OpenLogReplicator {
         return transaction;
     }
 
-    void TransactionBuffer::dropTransaction(typeXid xid, typeConId conId) {
-        const typeXidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(conId) << 32);
+    void TransactionBuffer::dropTransaction(Xid xid, typeConId conId) {
+        const XidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(conId) << 32);
         {
             ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_DROP);
             std::unique_lock<std::mutex> const lck(mtx);
@@ -100,8 +101,7 @@ namespace OpenLogReplicator {
 
         if (unlikely(transaction->lastSplit)) {
             if (unlikely((redoLogRecord->flg & OpCode::FLG_MULTIBLOCKUNDOMID) == 0))
-                throw RedoLogException(50041, "bad split offset: " + std::to_string(redoLogRecord->dataOffset) + " xid: " +
-                                              transaction->xid.toString());
+                throw RedoLogException(50041, "bad split offset: " + redoLogRecord->fileOffset.toString() + " xid: " + transaction->xid.toString());
 
             auto* const lastTc = transaction->lastTc;
             auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
@@ -150,11 +150,11 @@ namespace OpenLogReplicator {
 
         if (unlikely(transaction->lastSplit)) {
             if (unlikely((redoLogRecord1->opCode) != 0x0501))
-                throw RedoLogException(50042, "split undo HEAD on 5.1 offset: " + std::to_string(redoLogRecord1->dataOffset));
+                throw RedoLogException(50042, "split undo HEAD on 5.1 offset: " + redoLogRecord1->fileOffset.toString());
 
             if (unlikely((redoLogRecord1->flg & OpCode::FLG_MULTIBLOCKUNDOHEAD) == 0))
-                throw RedoLogException(50043, "bad split offset: " + std::to_string(redoLogRecord1->dataOffset) + " xid: " +
-                                              transaction->xid.toString() + " second position");
+                throw RedoLogException(50043, "bad split offset: " + redoLogRecord1->fileOffset.toString() + " xid: " + transaction->xid.toString() +
+                                              " second position");
 
             auto* const lastTc = transaction->lastTc;
             const auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
@@ -274,14 +274,14 @@ namespace OpenLogReplicator {
             redoLogRecord1->flg &= ~(OpCode::FLG_MULTIBLOCKUNDOHEAD | OpCode::FLG_MULTIBLOCKUNDOMID | OpCode::FLG_MULTIBLOCKUNDOTAIL);
     }
 
-    void TransactionBuffer::checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid) {
+    void TransactionBuffer::checkpoint(Seq& minSequence, FileOffset& minFileOffset, Xid& minXid) {
         for (const auto& [_, transaction] : xidTransactionMap) {
             if (transaction->firstSequence < minSequence) {
                 minSequence = transaction->firstSequence;
-                minOffset = transaction->firstOffset;
+                minFileOffset = transaction->firstFileOffset;
                 minXid = transaction->xid;
-            } else if (transaction->firstSequence == minSequence && transaction->firstOffset < minOffset) {
-                minOffset = transaction->firstOffset;
+            } else if (transaction->firstSequence == minSequence && transaction->firstFileOffset < minFileOffset) {
+                minFileOffset = transaction->firstFileOffset;
                 minXid = transaction->xid;
             }
         }
@@ -290,7 +290,7 @@ namespace OpenLogReplicator {
     void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB)))
             ctx->logTrace(Ctx::TRACE::LOB, "id: " + redoLogRecord1->lobId.upper() + " page: " + std::to_string(redoLogRecord1->dba) +
-                                           " can't match, offset: " + std::to_string(redoLogRecord1->dataOffset));
+                                           " can't match, offset: " + redoLogRecord1->fileOffset.toString());
 
         const LobKey lobKey(redoLogRecord1->lobId, redoLogRecord1->dba);
 

@@ -131,7 +131,7 @@ namespace OpenLogReplicator {
         {
             while (currentQueueSize > 0 && queue[0]->isFlagSet(BuilderMsg::OUTPUT_BUFFER::CONFIRMED)) {
                 maxId = queue[0]->queueId;
-                if (confirmedScn == Ctx::ZERO_SCN || msg->lwnScn > confirmedScn) {
+                if (confirmedScn == Scn::none() || msg->lwnScn > confirmedScn) {
                     confirmedScn = msg->lwnScn;
                     confirmedIdx = msg->lwnIdx;
                 } else if (msg->lwnScn == confirmedScn && msg->lwnIdx > confirmedIdx)
@@ -361,11 +361,11 @@ namespace OpenLogReplicator {
 
     void Writer::writeCheckpoint(bool force) {
         // Nothing changed
-        if ((checkpointScn == confirmedScn && checkpointIdx == confirmedIdx) || confirmedScn == Ctx::ZERO_SCN)
+        if ((checkpointScn == confirmedScn && checkpointIdx == confirmedIdx) || confirmedScn == Scn::none())
             return;
 
         // Force first checkpoint
-        if (checkpointScn == Ctx::ZERO_SCN)
+        if (checkpointScn == Scn::none())
             force = true;
 
         // Not yet
@@ -375,18 +375,18 @@ namespace OpenLogReplicator {
             return;
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT))) {
-            if (checkpointScn == Ctx::ZERO_SCN)
-                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
+            if (checkpointScn == Scn::none())
+                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + confirmedScn.toString() + " idx: " +
                                                       std::to_string(confirmedIdx));
             else
-                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + std::to_string(confirmedScn) + " idx: " +
-                                                      std::to_string(confirmedIdx) + " checkpoint scn: " + std::to_string(checkpointScn) + " idx: " +
+                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + confirmedScn.toString() + " idx: " +
+                                                      std::to_string(confirmedIdx) + " checkpoint scn: " + checkpointScn.toString() + " idx: " +
                                                       std::to_string(checkpointIdx));
         }
         const std::string name(database + "-chkpt");
         std::ostringstream ss;
         ss << R"({"database":")" << database
-           << R"(","scn":)" << std::dec << confirmedScn
+           << R"(","scn":)" << std::dec << confirmedScn.toString()
            << R"(,"idx":)" << std::dec << confirmedIdx
            << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
            << R"(,"activation":)" << std::dec << metadata->activation << "}";
@@ -432,11 +432,11 @@ namespace OpenLogReplicator {
             checkpointIdx = 0;
         metadata->clientIdx = checkpointIdx;
         metadata->startScn = checkpointScn;
-        metadata->startSequence = Ctx::ZERO_SEQ;
+        metadata->startSequence = Seq::none();
         metadata->startTime.clear();
         metadata->startTimeRel = 0;
 
-        ctx->info(0, "checkpoint - all confirmed till scn: " + std::to_string(checkpointScn) + ", idx: " +
+        ctx->info(0, "checkpoint - all confirmed till scn: " + checkpointScn.toString() + ", idx: " +
                      std::to_string(checkpointIdx));
         metadata->setStatusReplicate(this);
     }

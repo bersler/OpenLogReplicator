@@ -30,10 +30,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
-#include "../common/typeTime.h"
-#include "../common/typeXid.h"
 #include "../common/Ctx.h"
 #include "../common/DbTable.h"
+#include "../common/types/FileOffset.h"
+#include "../common/types/Seq.h"
+#include "../common/types/Time.h"
+#include "../common/types/Xid.h"
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -70,8 +72,8 @@ namespace OpenLogReplicator {
 
         // Startup parameters
         std::string database;
-        typeScn startScn;
-        typeSeq startSequence;
+        Scn startScn;
+        Seq startSequence;
         std::string startTime;
         uint64_t startTimeRel;
 
@@ -96,8 +98,8 @@ namespace OpenLogReplicator {
         std::string nlsNcharCharacterSet;
         uint64_t defaultCharacterMapId{0};
         uint64_t defaultCharacterNcharMapId{0};
-        typeScn firstDataScn{Ctx::ZERO_SCN};
-        typeScn firstSchemaScn{Ctx::ZERO_SCN};
+        Scn firstDataScn{Scn::none()};
+        Scn firstSchemaScn{Scn::none()};
         std::set<RedoLog*> redoLogs;
 
         // Transaction schema consistency mutex
@@ -109,29 +111,29 @@ namespace OpenLogReplicator {
         std::set<DbIncarnation*> dbIncarnations;
         DbIncarnation* dbIncarnationCurrent{nullptr};
         typeActivation activation{0};
-        typeSeq sequence{Ctx::ZERO_SEQ};
-        typeSeq lastSequence{Ctx::ZERO_SEQ};
-        uint64_t offset{0};
-        typeScn firstScn{Ctx::ZERO_SCN};
-        typeScn nextScn{Ctx::ZERO_SCN};
-        typeScn clientScn{Ctx::ZERO_SCN};
+        Seq sequence{Seq::none()};
+        Seq lastSequence{Seq::none()};
+        FileOffset fileOffset{FileOffset::zero()};
+        Scn firstScn{Scn::none()};
+        Scn nextScn{Scn::none()};
+        Scn clientScn{Scn::none()};
         typeIdx clientIdx{0};
         uint64_t checkpoints{0};
-        typeScn checkpointScn{Ctx::ZERO_SCN};
-        typeScn lastCheckpointScn{Ctx::ZERO_SCN};
-        typeTime checkpointTime{0};
-        typeTime lastCheckpointTime;
-        typeSeq checkpointSequence{Ctx::ZERO_SEQ};
-        uint64_t checkpointOffset{0};
-        uint64_t lastCheckpointOffset{0};
+        Scn checkpointScn{Scn::none()};
+        Scn lastCheckpointScn{Scn::none()};
+        Time checkpointTime{0};
+        Time lastCheckpointTime;
+        Seq checkpointSequence{Seq::none()};
+        FileOffset checkpointFileOffset{FileOffset::zero()};
+        FileOffset lastCheckpointFileOffset{FileOffset::zero()};
         uint64_t checkpointBytes{0};
         uint64_t lastCheckpointBytes{0};
-        typeSeq minSequence{Ctx::ZERO_SEQ};
-        uint64_t minOffset{0};
-        typeXid minXid;
+        Seq minSequence{Seq::none()};
+        FileOffset minFileOffset{FileOffset::zero()};
+        Xid minXid;
         uint64_t schemaInterval{0};
-        std::set<typeScn> checkpointScnList;
-        std::unordered_map<typeScn, bool> checkpointSchemaMap;
+        std::set<Scn> checkpointScnList;
+        std::unordered_map<Scn, bool> checkpointSchemaMap;
 
         std::vector<SchemaElement*> newSchemaElements;
 
@@ -140,20 +142,20 @@ namespace OpenLogReplicator {
         std::vector<SchemaElement*> schemaElements;
         std::set<std::string> users;
 
-        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, typeScn newStartScn,
-                 typeSeq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel);
+        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, Scn newStartScn,
+                 Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel);
         ~Metadata();
 
         void setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset);
         void purgeRedoLogs();
-        void setSeqOffset(typeSeq newSequence, uint64_t newOffset);
+        void setSeqFileOffset(Seq newSequence, FileOffset newFileOffset);
         void setResetlogs(typeResetlogs newResetlogs);
         void setActivation(typeActivation newActivation);
-        void setFirstNextScn(typeScn newFirstScn, typeScn newNextScn);
+        void setFirstNextScn(Scn newFirstScn, Scn newNextScn);
         void setNextSequence();
         [[nodiscard]] bool stateRead(const std::string& name, uint64_t maxSize, std::string& in) const;
         [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in) const;
-        [[nodiscard]] bool stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out) const;
+        [[nodiscard]] bool stateWrite(const std::string& name, Scn scn, const std::ostringstream& out) const;
         [[nodiscard]] bool stateDrop(const std::string& name) const;
         SchemaElement* addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options1, DbTable::OPTIONS options2);
         SchemaElement* addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options);
@@ -167,15 +169,15 @@ namespace OpenLogReplicator {
         void setStatusStart(Thread* t);
         void setStatusReplicate(Thread* t);
         void wakeUp(Thread* t);
-        void checkpoint(Thread* t, typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
-                        uint64_t newCheckpointBytes, typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid);
+        void checkpoint(Thread* t, Scn newCheckpointScn, Time newCheckpointTime, Seq newCheckpointSequence, FileOffset newCheckpointFileOffset,
+                        uint64_t newCheckpointBytes, Seq newMinSequence, FileOffset newMinFileOffset, Xid newMinXid);
         void writeCheckpoint(Thread* t, bool force);
         void readCheckpoints();
-        void readCheckpoint(typeScn scn);
+        void readCheckpoint(Scn scn);
         void deleteOldCheckpoints(Thread* t);
         void loadAdaptiveSchema();
         void allowCheckpoints();
-        bool isNewData(typeScn scn, typeIdx idx) const;
+        bool isNewData(Scn scn, typeIdx idx) const;
     };
 }
 

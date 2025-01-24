@@ -25,8 +25,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "LobData.h"
 #include "LobKey.h"
-#include "typeLobId.h"
-#include "typeXid.h"
+#include "types/LobId.h"
+#include "types/FileOffset.h"
+#include "types/Xid.h"
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -34,17 +35,17 @@ namespace OpenLogReplicator {
 
     class LobCtx final {
     public:
-        std::unordered_map<typeLobId, LobData*> lobs;
+        std::unordered_map<LobId, LobData*> lobs;
         std::map<LobKey, uint8_t*>* orphanedLobs;
         std::map<typeDba, uint8_t*> listMap;
 
-        void checkOrphanedLobs(const Ctx* ctx, const typeLobId& lobId, typeXid xid, uint64_t offset);
-        void addLob(const Ctx* ctx, const typeLobId& lobId, typeDba page, uint64_t pageOffset, uint8_t* data, typeXid xid, uint64_t offset);
+        void checkOrphanedLobs(const Ctx* ctx, const LobId& lobId, Xid xid, FileOffset fileOffset);
+        void addLob(const Ctx* ctx, const LobId& lobId, typeDba page, uint16_t pageOffset, uint8_t* data, Xid xid, FileOffset fileOffset);
         void orderList(typeDba page, typeDba next);
         void setList(typeDba page, const uint8_t* data, uint16_t size);
         void appendList(const Ctx* ctx, typeDba page, const uint8_t* data);
-        void setSize(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest);
-        void setPage(const typeLobId& lobId, typeDba page, uint32_t pageNo, typeXid xid, uint64_t offset);
+        void setSize(const LobId& lobId, uint32_t sizePages, uint16_t sizeRest);
+        void setPage(const LobId& lobId, typeDba page, uint32_t pageNo, Xid xid, FileOffset fileOffset);
         void purge();
     };
 }

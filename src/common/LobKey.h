@@ -20,19 +20,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef LOB_KEY_H_
 #define LOB_KEY_H_
 
-#include "types.h"
-#include "typeLobId.h"
+#include "types/LobId.h"
+#include "types/Types.h"
 
 namespace OpenLogReplicator {
     class LobKey final {
     public:
-        LobKey(const typeLobId& newLobId, typeDba newPage);
+        LobKey(const LobId& newLobId, typeDba newPage);
 
         bool operator<(const LobKey& other) const;
         bool operator!=(const LobKey& other) const;
         bool operator==(const LobKey& other) const;
 
-        typeLobId lobId;
+        LobId lobId;
         typeDba page;
     };
 }

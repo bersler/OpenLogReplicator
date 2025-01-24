@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeIntX.h"
-#include "../typeRowId.h"
+#include "../types/IntX.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_USER_H_
 #define SYS_USER_H_
@@ -33,13 +33,13 @@ namespace OpenLogReplicator {
             SUPP_LOG_PRIMARY = 1UL << 0, SUPP_LOG_ALL = 1UL << 3
         };
 
-        typeRowId rowId;
+        RowId rowId;
         typeUser user{0};
         std::string name;
-        typeIntX spare1{0, 0};            // NULL
+        IntX spare1{0, 0};            // NULL
         bool single{false};
 
-        SysUser(typeRowId newRowId, typeUser newUser, std::string newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
+        SysUser(RowId newRowId, typeUser newUser, std::string newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
                 rowId(newRowId),
                 user(newUser),
                 name(std::move(newName)),
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
                 single(newSingle) {
         }
 
-        explicit SysUser(typeRowId newRowId) :
+        explicit SysUser(RowId newRowId) :
                 rowId(newRowId) {
         }
 

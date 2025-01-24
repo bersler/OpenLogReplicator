@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
             byte2max(newByte2max) {
     }
 
-    typeUnicode CharacterSet16bit::decode(const Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSet16bit::decode(const Ctx* ctx, Xid xid, const uint8_t*& str, uint64_t& length) const {
         const uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)

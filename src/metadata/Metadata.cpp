@@ -23,7 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/DbIncarnation.h"
 #include "../common/DbTable.h"
 #include "../common/Thread.h"
-#include "../common/typeRowId.h"
 #include "../common/exception/ConfigurationException.h"
 #include "../common/exception/RuntimeException.h"
 #include "../common/table/SysCCol.h"
@@ -47,8 +46,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Serializer.h"
 
 namespace OpenLogReplicator {
-    Metadata::Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, typeScn newStartScn,
-                       typeSeq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel) :
+    Metadata::Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, Scn newStartScn,
+                       Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel) :
             schema(new Schema(newCtx, newLocales)),
             ctx(newCtx),
             locales(newLocales),
@@ -137,7 +136,7 @@ namespace OpenLogReplicator {
         activation = newActivation;
     }
 
-    void Metadata::setFirstNextScn(typeScn newFirstScn, typeScn newNextScn) {
+    void Metadata::setFirstNextScn(Scn newFirstScn, Scn newNextScn) {
         std::unique_lock<std::mutex> const lck(mtxCheckpoint);
 
         firstScn = newFirstScn;
@@ -150,15 +149,14 @@ namespace OpenLogReplicator {
         ++sequence;
     }
 
-    void Metadata::setSeqOffset(typeSeq newSequence, uint64_t newOffset) {
+    void Metadata::setSeqFileOffset(Seq newSequence, FileOffset newFileOffset) {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "setting sequence to: " + std::to_string(newSequence) + ", offset: " +
-                                                  std::to_string(newOffset));
+            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "setting sequence to: " + newSequence.toString() + ", offset: " + newFileOffset.toString());
 
         std::unique_lock<std::mutex> const lck(mtxCheckpoint);
 
         sequence = newSequence;
-        offset = newOffset;
+        fileOffset = newFileOffset;
     }
 
     bool Metadata::stateRead(const std::string& name, uint64_t maxSize, std::string& in) const {
@@ -179,7 +177,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool Metadata::stateWrite(const std::string& name, typeScn scn, const std::ostringstream& out) const {
+    bool Metadata::stateWrite(const std::string& name, Scn scn, const std::ostringstream& out) const {
         try {
             state->write(name, scn, out);
             return true;
@@ -204,9 +202,9 @@ namespace OpenLogReplicator {
     }
 
     SchemaElement* Metadata::addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options) {
-        if (unlikely(!Ctx::checkNameCase(owner)))
+        if (unlikely(!Data::checkNameCase(owner)))
             throw ConfigurationException(30003, "owner '" + owner + "' contains lower case characters, value must be upper case");
-        if (unlikely(!Ctx::checkNameCase(table)))
+        if (unlikely(!Data::checkNameCase(table)))
             throw ConfigurationException(30004, "table '" + table + "' contains lower case characters, value must be upper case");
         auto* element = new SchemaElement(owner, table, options);
         newSchemaElements.push_back(element);
@@ -292,10 +290,10 @@ namespace OpenLogReplicator {
             std::unique_lock<std::mutex> const lck(mtxCheckpoint);
 
             status = STATUS::READY;
-            firstDataScn = Ctx::ZERO_SCN;
-            firstSchemaScn = Ctx::ZERO_SCN;
-            checkpointScn = Ctx::ZERO_SCN;
-            schema->scn = Ctx::ZERO_SCN;
+            firstDataScn = Scn::none();
+            firstSchemaScn = Scn::none();
+            checkpointScn = Scn::none();
+            schema->scn = Scn::none();
             condWriter.notify_all();
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -335,8 +333,8 @@ namespace OpenLogReplicator {
         t->contextSet(Thread::CONTEXT::CPU);
     }
 
-    void Metadata::checkpoint(Thread* t, typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
-                              uint64_t newCheckpointBytes, typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid) {
+    void Metadata::checkpoint(Thread* t, Scn newCheckpointScn, Time newCheckpointTime, Seq newCheckpointSequence, FileOffset newCheckpointFileOffset,
+                              uint64_t newCheckpointBytes, Seq newMinSequence, FileOffset newMinFileOffset, Xid newMinXid) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock<std::mutex> const lck(mtxCheckpoint);
@@ -344,10 +342,10 @@ namespace OpenLogReplicator {
             checkpointScn = newCheckpointScn;
             checkpointTime = newCheckpointTime;
             checkpointSequence = newCheckpointSequence;
-            checkpointOffset = newCheckpointOffset;
+            checkpointFileOffset = newCheckpointFileOffset;
             checkpointBytes += newCheckpointBytes;
             minSequence = newMinSequence;
-            minOffset = newMinOffset;
+            minFileOffset = newMinFileOffset;
             minXid = newMinXid;
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -363,7 +361,7 @@ namespace OpenLogReplicator {
                 return;
 
             // Nothing processed so far
-            if (checkpointScn == Ctx::ZERO_SCN || lastCheckpointScn == checkpointScn || checkpointSequence == Ctx::ZERO_SEQ)
+            if (checkpointScn == Scn::none() || lastCheckpointScn == checkpointScn || checkpointSequence == Seq::none())
                 return;
 
             if (lastSequence == sequence && !force &&
@@ -373,7 +371,7 @@ namespace OpenLogReplicator {
 
             // Schema did not change
             bool storeSchema = true;
-            if (schema->refScn != Ctx::ZERO_SCN && schema->refScn >= schema->scn) {
+            if (schema->refScn != Scn::none() && schema->refScn >= schema->scn) {
                 if (schemaInterval < ctx->schemaForceInterval) {
                     storeSchema = false;
                     ++schemaInterval;
@@ -386,7 +384,7 @@ namespace OpenLogReplicator {
 
             lastCheckpointScn = checkpointScn;
             lastSequence = sequence;
-            lastCheckpointOffset = checkpointOffset;
+            lastCheckpointFileOffset = checkpointFileOffset;
             lastCheckpointTime = checkpointTime;
             lastCheckpointBytes = checkpointBytes;
             ++checkpoints;
@@ -395,12 +393,12 @@ namespace OpenLogReplicator {
         }
         t->contextSet(Thread::CONTEXT::CPU);
 
-        const std::string checkpointName = database + "-chkpt-" + std::to_string(lastCheckpointScn);
+        const std::string checkpointName = database + "-chkpt-" + lastCheckpointScn.toString();
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "write scn: " + std::to_string(lastCheckpointScn) + " time: " +
-                                                  std::to_string(lastCheckpointTime.getVal()) + " seq: " + std::to_string(lastSequence) + " offset: " +
-                                                  std::to_string(lastCheckpointOffset) + " name: " + checkpointName);
+            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "write scn: " + lastCheckpointScn.toString() + " time: " +
+                                                  std::to_string(lastCheckpointTime.getVal()) + " seq: " + lastSequence.toString() + " offset: " +
+                                                  lastCheckpointFileOffset.toString() + " name: " + checkpointName);
 
         if (!stateWrite(checkpointName, lastCheckpointScn, ss))
             ctx->warning(60018, "file: " + checkpointName + " - couldn't write checkpoint");
@@ -419,7 +417,7 @@ namespace OpenLogReplicator {
                 continue;
 
             const std::string scnStr(name.substr(prefix.length(), name.length()));
-            typeScn scn;
+            Scn scn;
             try {
                 scn = strtoull(scnStr.c_str(), nullptr, 10);
             } catch (const std::exception& e) {
@@ -428,43 +426,43 @@ namespace OpenLogReplicator {
             }
 
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "found: " + name + " scn: " + std::to_string(scn));
+                ctx->logTrace(Ctx::TRACE::CHECKPOINT, "found: " + name + " scn: " + scn.toString());
 
             checkpointScnList.insert(scn);
             checkpointSchemaMap.insert_or_assign(scn, true);
         }
 
-        if (startScn != Ctx::ZERO_SCN)
+        if (startScn != Scn::none())
             firstDataScn = startScn;
         else
             firstDataScn = 0;
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
-            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "scn: " + std::to_string(firstDataScn));
+            ctx->logTrace(Ctx::TRACE::CHECKPOINT, "scn: " + firstDataScn.toString());
 
-        if (firstDataScn != Ctx::ZERO_SCN && firstDataScn != 0) {
+        if (firstDataScn != Scn::none() && firstDataScn.getData() != 0) {
             auto it = checkpointScnList.cend();
 
             while (it != checkpointScnList.cbegin()) {
                 --it;
-                if (*it <= firstDataScn && (sequence == Ctx::ZERO_SEQ || sequence == 0))
+                if (*it <= firstDataScn && (sequence == Seq::none() || sequence == Seq::zero()))
                     readCheckpoint(*it);
             }
         }
     }
 
-    void Metadata::readCheckpoint(typeScn scn) {
+    void Metadata::readCheckpoint(Scn scn) {
         std::vector<std::string> msgs;
         std::unordered_map<typeObj, std::string> tablesUpdated;
-        ctx->info(0, "reading metadata for " + database + " for scn: " + std::to_string(scn));
+        ctx->info(0, "reading metadata for " + database + " for scn: " + scn.toString());
         std::string ss;
 
-        const std::string name1(database + "-chkpt-" + std::to_string(scn));
+        const std::string name1(database + "-chkpt-" + scn.toString());
         if (!stateRead(name1, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss)) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
                 ctx->logTrace(Ctx::TRACE::CHECKPOINT, "no checkpoint file found, setting unknown sequence");
 
-            sequence = Ctx::ZERO_SEQ;
+            sequence = Seq::none();
             return;
         }
         if (!serializer->deserialize(this, ss, name1, msgs, tablesUpdated, true, true)) {
@@ -482,15 +480,15 @@ namespace OpenLogReplicator {
         tablesUpdated.clear();
 
         // Schema missing
-        if (schema->scn == Ctx::ZERO_SCN) {
-            if (schema->refScn == Ctx::ZERO_SCN) {
+        if (schema->scn == Scn::none()) {
+            if (schema->refScn == Scn::none()) {
                 ctx->warning(60019, "file: " + name1 + " - load checkpoint failed, reference SCN missing");
                 return;
             }
 
             ss.clear();
-            const std::string name2(database + "-chkpt-" + std::to_string(schema->refScn));
-            ctx->info(0, "reading schema for " + database + " for scn: " + std::to_string(schema->refScn));
+            const std::string name2(database + "-chkpt-" + schema->refScn.toString());
+            ctx->info(0, "reading schema for " + database + " for scn: " + schema->refScn.toString());
 
             if (!stateRead(name2, CHECKPOINT_SCHEMA_FILE_MAX_SIZE, ss))
                 return;
@@ -510,12 +508,12 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (schema->scn != Ctx::ZERO_SCN)
+        if (schema->scn != Scn::none())
             firstSchemaScn = schema->scn;
     }
 
     void Metadata::deleteOldCheckpoints(Thread* t) {
-        std::set<typeScn> scnToDrop;
+        std::set<Scn> scnToDrop;
 
         if (ctx->isFlagSet(Ctx::REDO_FLAGS::CHECKPOINT_KEEP))
             return;
@@ -555,7 +553,7 @@ namespace OpenLogReplicator {
         }
 
         for (auto scn: scnToDrop) {
-            const std::string checkpointName = database + "-chkpt-" + std::to_string(scn);
+            const std::string checkpointName = database + "-chkpt-" + scn.toString();
             if (!stateDrop(checkpointName))
                 break;
         }
@@ -611,8 +609,8 @@ namespace OpenLogReplicator {
         allowedCheckpoints = true;
     }
 
-    bool Metadata::isNewData(typeScn scn, typeIdx idx) const {
-        if (clientScn == Ctx::ZERO_SCN)
+    bool Metadata::isNewData(Scn scn, typeIdx idx) const {
+        if (clientScn == Scn::none())
             return true;
 
         if (clientScn < scn)

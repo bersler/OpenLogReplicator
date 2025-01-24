@@ -22,12 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <set>
 
-#include "../common/types.h"
-#include "../common/typeIntX.h"
-#include "../common/typeRowId.h"
-#include "../common/typeXid.h"
 #include "../common/table/SysCol.h"
 #include "../common/table/TablePack.h"
+#include "../common/types/IntX.h"
+#include "../common/types/FileOffset.h"
+#include "../common/types/RowId.h"
+#include "../common/types/Types.h"
+#include "../common/types/Xid.h"
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -60,21 +61,21 @@ namespace OpenLogReplicator {
         Metadata* metadata;
 
         template<class VALUE, SysCol::COLTYPE COLTYPE>
-        void updateValue(VALUE& val, typeCol column, const DbTable* table, uint64_t offset, int defVal = 0, uint maxLength = 0);
+        void updateValue(VALUE& val, typeCol column, const DbTable* table, FileOffset fileOffset, int defVal = 0, uint maxLength = 0);
         template<class TABLE>
-        void updateValues(const DbTable* table, TABLE* row, typeCol column, uint64_t offset);
+        void updateValues(const DbTable* table, TABLE* row, typeCol column, FileOffset fileOffset);
         template<class TABLE, class TABLEKEY, class TABLEUNORDEREDKEY>
-        void updateAllValues(TablePack<TABLE, TABLEKEY, TABLEUNORDEREDKEY>* pack, const DbTable* table, TABLE* row, uint64_t offset);
+        void updateAllValues(TablePack<TABLE, TABLEKEY, TABLEUNORDEREDKEY>* pack, const DbTable* table, TABLE* row, FileOffset fileOffset);
 
         XmlCtx* findMatchingXmlCtx(const DbTable* table) const;
 
     public:
         SystemTransaction(Builder* newBuilder, Metadata* newMetadata);
 
-        void processInsert(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset);
-        void processUpdate(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset);
-        void processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset);
-        void commit(typeScn scn);
+        void processInsert(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset);
+        void processUpdate(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset);
+        void processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset);
+        void commit(Scn scn);
     };
 }
 

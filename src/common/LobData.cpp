@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "LobData.h"
 
 namespace OpenLogReplicator {
-    LobDataElement::LobDataElement(typeDba newDba, uint32_t newOffset) :
+    LobDataElement::LobDataElement(typeDba newDba, uint16_t newPageOffset) :
             dba(newDba),
-            offset(newOffset) {
+            pageOffset(newPageOffset) {
     }
 
     bool LobDataElement::operator<(const LobDataElement& other) const {
@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         if (dba > other.dba)
             return false;
 
-        if (offset < other.offset)
+        if (pageOffset < other.pageOffset)
             return true;
 
         return false;

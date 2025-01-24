@@ -42,8 +42,7 @@ namespace OpenLogReplicator {
 
         static void attributeSessionSerial(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
             if (unlikely(fieldSize < 4)) {
-                ctx->warning(70001, "too short field session serial: " + std::to_string(fieldSize) + " offset: " +
-                                    std::to_string(redoLogRecord->dataOffset));
+                ctx->warning(70001, "too short field session serial: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
                 return;
             }
 
@@ -53,8 +52,7 @@ namespace OpenLogReplicator {
                 sessionNumber = ctx->read16(redoLogRecord->data(fieldPos + 0));
             else {
                 if (fieldSize < 8) {
-                    ctx->warning(70001, "too short field session number: " + std::to_string(fieldSize) + " offset: " +
-                                        std::to_string(redoLogRecord->dataOffset));
+                    ctx->warning(70001, "too short field session number: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
                     return;
                 }
                 sessionNumber = ctx->read32(redoLogRecord->data(fieldPos + 4));
@@ -77,8 +75,7 @@ namespace OpenLogReplicator {
 
         static void attributeFlags(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
             if (unlikely(fieldSize < 2))
-                throw RedoLogException(50061, "too short field 5.13.11: " + std::to_string(fieldSize) + " offset: " +
-                                              std::to_string(redoLogRecord->dataOffset));
+                throw RedoLogException(50061, "too short field 5.13.11: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             const std::string value("true");
 
@@ -223,8 +220,7 @@ namespace OpenLogReplicator {
 
         static void attributeVersion(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
             if (unlikely(fieldSize < 4))
-                throw RedoLogException(50061, "too short field 5.13.12: " + std::to_string(fieldSize) + " offset: " +
-                                              std::to_string(redoLogRecord->dataOffset));
+                throw RedoLogException(50061, "too short field 5.13.12: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             const uint32_t version = ctx->read32(redoLogRecord->data(fieldPos + 0));
             const std::string value = std::to_string(version);
@@ -238,8 +234,7 @@ namespace OpenLogReplicator {
 
         static void attributeAuditSessionId(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
             if (unlikely(fieldSize < 4))
-                throw RedoLogException(50061, "too short field 5.13.13: " + std::to_string(fieldSize) + " offset: " +
-                                              std::to_string(redoLogRecord->dataOffset));
+                throw RedoLogException(50061, "too short field 5.13.13: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             const uint32_t auditSessionid = ctx->read32(redoLogRecord->data(fieldPos + 0));
             const std::string value = std::to_string(auditSessionid);
@@ -259,7 +254,7 @@ namespace OpenLogReplicator {
             typeSize fieldSize = 0;
 
             if (unlikely(transaction == nullptr)) {
-                ctx->logTrace(Ctx::TRACE::TRANSACTION, "attributes with no transaction, offset: " + std::to_string(redoLogRecord->dataOffset));
+                ctx->logTrace(Ctx::TRACE::TRANSACTION, "attributes with no transaction, offset: " + redoLogRecord->fileOffset.toString());
                 return;
             }
 

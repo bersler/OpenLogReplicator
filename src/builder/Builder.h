@@ -37,12 +37,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/LobKey.h"
 #include "../common/RedoLogRecord.h"
 #include "../common/Thread.h"
-#include "../common/types.h"
-#include "../common/typeLobId.h"
-#include "../common/typeRowId.h"
-#include "../common/typeXid.h"
 #include "../common/exception/RedoLogException.h"
 #include "../common/table/SysUser.h"
+#include "../common/types/Data.h"
+#include "../common/types/FileOffset.h"
+#include "../common/types/LobId.h"
+#include "../common/types/RowId.h"
+#include "../common/types/Scn.h"
+#include "../common/types/Seq.h"
+#include "../common/types/Types.h"
+#include "../common/types/Xid.h"
 #include "../locales/CharacterSet.h"
 #include "../locales/Locales.h"
 
@@ -73,11 +77,11 @@ namespace OpenLogReplicator {
         uint64_t id;
         uint64_t queueId;
         std::atomic<uint64_t> size;
-        typeScn scn;
-        typeScn lwnScn;
+        Scn scn;
+        Scn lwnScn;
         typeIdx lwnIdx;
         uint8_t* data;
-        typeSeq sequence;
+        Seq sequence;
         typeObj obj;
         typeTag tagSize;
         OUTPUT_BUFFER flags;
@@ -134,8 +138,8 @@ namespace OpenLogReplicator {
         uint64_t valueSizeOld{0};
         std::unordered_set<const DbTable*> tables;
         uint64_t lastBuilderSize{0};
-        typeScn commitScn{Ctx::ZERO_SCN};
-        typeXid lastXid;
+        Scn commitScn{Scn::none()};
+        Xid lastXid;
         typeMask valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)]{};
         typeMask valuesMerge[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)]{};
         int64_t sizes[Ctx::COLUMN_LIMIT_23_0][static_cast<uint>(Format::VALUE_TYPE::LENGTH)]{};
@@ -204,7 +208,7 @@ namespace OpenLogReplicator {
             ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
         }
 
-        void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeCol col, const uint8_t* data, uint32_t size, uint64_t offset,
+        void processValue(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeCol col, const uint8_t* data, uint32_t size, FileOffset fileOffset,
                           bool after, bool compressed);
 
         void releaseValues() {
@@ -292,7 +296,7 @@ namespace OpenLogReplicator {
             messagePosition += bytes;
         }
 
-        void builderBegin(typeScn scn, typeSeq sequence, typeObj obj, BuilderMsg::OUTPUT_BUFFER flags) {
+        void builderBegin(Scn scn, Seq sequence, typeObj obj, BuilderMsg::OUTPUT_BUFFER flags) {
             messageSize = 0;
             messagePosition = 0;
             if (format.isScnTypeCommitValue())
@@ -400,15 +404,15 @@ namespace OpenLogReplicator {
             valueBuffer[valueSize++] = static_cast<char>(value);
         }
 
-        void valueBufferAppendHex(uint8_t value, uint64_t offset) {
-            valueBufferCheck(2, offset);
-            valueBuffer[valueSize++] = Ctx::map16((value >> 4) & 0x0F);
-            valueBuffer[valueSize++] = Ctx::map16(value & 0x0F);
+        void valueBufferAppendHex(uint8_t value, FileOffset fileOffset) {
+            valueBufferCheck(2, fileOffset);
+            valueBuffer[valueSize++] = Data::map16((value >> 4) & 0x0F);
+            valueBuffer[valueSize++] = Data::map16(value & 0x0F);
         }
 
-        void parseNumber(const uint8_t* data, uint64_t size, uint64_t offset) {
+        void parseNumber(const uint8_t* data, uint64_t size, FileOffset fileOffset) {
             valueBufferPurge();
-            valueBufferCheck((size * 2) + 2, offset);
+            valueBufferCheck((size * 2) + 2, fileOffset);
 
             uint8_t digits = data[0];
             // Just zero
@@ -431,10 +435,10 @@ namespace OpenLogReplicator {
                         // Part of the total - omitting first zero for a first digit
                         value = data[j] - 1;
                         if (value < 10)
-                            valueBufferAppend(Ctx::map10(value));
+                            valueBufferAppend(Data::map10(value));
                         else {
-                            valueBufferAppend(Ctx::map10(value / 10));
-                            valueBufferAppend(Ctx::map10(value % 10));
+                            valueBufferAppend(Data::map10(value / 10));
+                            valueBufferAppend(Data::map10(value % 10));
                         }
 
                         ++j;
@@ -443,8 +447,8 @@ namespace OpenLogReplicator {
                         while (digits > 0) {
                             value = data[j] - 1;
                             if (j <= jMax) {
-                                valueBufferAppend(Ctx::map10(value / 10));
-                                valueBufferAppend(Ctx::map10(value % 10));
+                                valueBufferAppend(Data::map10(value / 10));
+                                valueBufferAppend(Data::map10(value % 10));
                                 ++j;
                             } else {
                                 valueBufferAppend('0');
@@ -466,16 +470,16 @@ namespace OpenLogReplicator {
 
                         while (j <= jMax - 1U) {
                             value = data[j] - 1;
-                            valueBufferAppend(Ctx::map10(value / 10));
-                            valueBufferAppend(Ctx::map10(value % 10));
+                            valueBufferAppend(Data::map10(value / 10));
+                            valueBufferAppend(Data::map10(value % 10));
                             ++j;
                         }
 
                         // Last digit - omitting 0 at the end
                         value = data[j] - 1;
-                        valueBufferAppend(Ctx::map10(value / 10));
+                        valueBufferAppend(Data::map10(value / 10));
                         if ((value % 10) != 0)
-                            valueBufferAppend(Ctx::map10(value % 10));
+                            valueBufferAppend(Data::map10(value % 10));
                     }
                 } else if (digits < 0x80 && jMax >= 1) {
                     // Negative number
@@ -495,10 +499,10 @@ namespace OpenLogReplicator {
 
                         value = 101 - data[j];
                         if (value < 10)
-                            valueBufferAppend(Ctx::map10(value));
+                            valueBufferAppend(Data::map10(value));
                         else {
-                            valueBufferAppend(Ctx::map10(value / 10));
-                            valueBufferAppend(Ctx::map10(value % 10));
+                            valueBufferAppend(Data::map10(value / 10));
+                            valueBufferAppend(Data::map10(value % 10));
                         }
                         ++j;
                         --digits;
@@ -506,8 +510,8 @@ namespace OpenLogReplicator {
                         while (digits > 0) {
                             if (j <= jMax) {
                                 value = 101 - data[j];
-                                valueBufferAppend(Ctx::map10(value / 10));
-                                valueBufferAppend(Ctx::map10(value % 10));
+                                valueBufferAppend(Data::map10(value / 10));
+                                valueBufferAppend(Data::map10(value % 10));
                                 ++j;
                             } else {
                                 valueBufferAppend('0');
@@ -528,15 +532,15 @@ namespace OpenLogReplicator {
 
                         while (j <= jMax - 1U) {
                             value = 101 - data[j];
-                            valueBufferAppend(Ctx::map10(value / 10));
-                            valueBufferAppend(Ctx::map10(value % 10));
+                            valueBufferAppend(Data::map10(value / 10));
+                            valueBufferAppend(Data::map10(value % 10));
                             ++j;
                         }
 
                         value = 101 - data[j];
-                        valueBufferAppend(Ctx::map10(value / 10));
+                        valueBufferAppend(Data::map10(value / 10));
                         if ((value % 10) != 0)
-                            valueBufferAppend(Ctx::map10(value % 10));
+                            valueBufferAppend(Data::map10(value % 10));
                     }
                 } else {
                     if (digits == 0) {
@@ -548,7 +552,7 @@ namespace OpenLogReplicator {
                                 ss << " " << std::hex << std::setfill('0') << std::setw(2) << (static_cast<uint64_t>(data[k]));
                             ctx->warning(60002, "unknown value: " + std::to_string(size) + " - " + ss.str());
                         }
-                        throw RedoLogException(50009, "error parsing numeric value at offset: " + std::to_string(offset));
+                        throw RedoLogException(50009, "error parsing numeric value at offset: " + fileOffset.toString());
                     }
                 }
             }
@@ -562,10 +566,10 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        void addLobToOutput(const uint8_t* data, uint64_t size, uint64_t charsetId, uint64_t offset, bool appendData, bool isClob, bool hasPrev,
+        void addLobToOutput(const uint8_t* data, uint64_t size, uint64_t charsetId, FileOffset fileOffset, bool appendData, bool isClob, bool hasPrev,
                                    bool hasNext, bool isSystem) {
             if (isClob) {
-                parseString(data, size, charsetId, offset, appendData, hasPrev, hasNext, isSystem);
+                parseString(data, size, charsetId, fileOffset, appendData, hasPrev, hasNext, isSystem);
             } else {
                 memcpy(reinterpret_cast<void*>(valueBuffer + valueSize),
                        reinterpret_cast<const void*>(data), size);
@@ -573,7 +577,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t size, uint64_t charsetId, typeObj obj, uint64_t offset, bool isClob, bool isSystem) {
+        bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t size, uint64_t charsetId, typeObj obj, FileOffset fileOffset, bool isClob, bool isSystem) {
             bool appendData = false;
             bool hasPrev = false;
             bool hasNext = true;
@@ -587,8 +591,8 @@ namespace OpenLogReplicator {
             }
 
             const uint32_t flags = data[5];
-            const typeLobId lobId(data + 10);
-            lobCtx->checkOrphanedLobs(ctx, lobId, lastXid, offset);
+            const LobId lobId(data + 10);
+            lobCtx->checkOrphanedLobs(ctx, lobId, lastXid, fileOffset);
 
             // In-index
             if ((flags & 0x04) == 0) {
@@ -600,7 +604,7 @@ namespace OpenLogReplicator {
                     return true;
                 }
                 LobData* lobData = lobsIt->second;
-                valueBufferCheck(static_cast<uint64_t>((lobData->pageSize) * static_cast<uint64_t>(lobData->sizePages)) + lobData->sizeRest, offset);
+                valueBufferCheck(static_cast<uint64_t>((lobData->pageSize) * static_cast<uint64_t>(lobData->sizePages)) + lobData->sizeRest, fileOffset);
 
                 typeDba pageNo = 0;
                 for (const auto& [pageNoLob, page]: lobData->indexMap) {
@@ -629,8 +633,8 @@ namespace OpenLogReplicator {
 
                     const auto* redoLogRecordLob = reinterpret_cast<const RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
 
-                    valueBufferCheck(chunkSize * 4, offset);
-                    addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset, appendData, isClob,
+                    valueBufferCheck(chunkSize * 4, fileOffset);
+                    addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, fileOffset, appendData, isClob,
                                    hasPrev, hasNext, isSystem);
                     appendData = true;
                     hasPrev = true;
@@ -638,7 +642,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (hasNext)
-                    addLobToOutput(nullptr, 0, charsetId, offset, appendData, isClob, true, false, isSystem);
+                    addLobToOutput(nullptr, 0, charsetId, fileOffset, appendData, isClob, true, false, isSystem);
             } else {
                 // In-row
                 if (unlikely(size < 23)) {
@@ -724,8 +728,8 @@ namespace OpenLogReplicator {
                             if (j == jMax - 1U)
                                 hasNext = false;
 
-                            valueBufferCheck(chunkSize * 4, offset);
-                            addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset, appendData, isClob,
+                            valueBufferCheck(chunkSize * 4, fileOffset);
+                            addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, fileOffset, appendData, isClob,
                                            hasPrev, hasNext, isSystem);
                             appendData = true;
                             hasPrev = true;
@@ -765,8 +769,8 @@ namespace OpenLogReplicator {
                             return false;
                         }
 
-                        valueBufferCheck(chunkSize * 4, offset);
-                        addLobToOutput(data + 36, chunkSize, charsetId, offset, false, isClob, false, false, isSystem);
+                        valueBufferCheck(chunkSize * 4, fileOffset);
+                        addLobToOutput(data + 36, chunkSize, charsetId, fileOffset, false, isClob, false, false, isSystem);
                     }
                 } else {
                     if (unlikely(bodySize < 10)) {
@@ -842,8 +846,8 @@ namespace OpenLogReplicator {
                             return false;
                         }
 
-                        valueBufferCheck(chunkSize * 4, offset);
-                        addLobToOutput(data + dataOffset, chunkSize, charsetId, offset, false, isClob, false, false,
+                        valueBufferCheck(chunkSize * 4, fileOffset);
+                        addLobToOutput(data + dataOffset, chunkSize, charsetId, fileOffset, false, isClob, false, false,
                                        isSystem);
                         totalLobSize -= chunkSize;
 
@@ -901,9 +905,9 @@ namespace OpenLogReplicator {
                                         if (i == lobPages - 1U && j == pageCnt - 1U)
                                             hasNext = false;
 
-                                        valueBufferCheck(chunkSize * 4, offset);
-                                        addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset,
-                                                       appendData, isClob, hasPrev, hasNext, isSystem);
+                                        valueBufferCheck(chunkSize * 4, fileOffset);
+                                        addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, fileOffset, appendData, isClob,
+                                                       hasPrev, hasNext, isSystem);
                                         appendData = true;
                                         hasPrev = true;
                                         totalLobSize -= chunkSize;
@@ -957,8 +961,8 @@ namespace OpenLogReplicator {
                                         if (listPage == 0 && i == aSiz - 1U && j == pageCnt - 1U)
                                             hasNext = false;
 
-                                        valueBufferCheck(chunkSize * 4, offset);
-                                        addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset,
+                                        valueBufferCheck(chunkSize * 4, fileOffset);
+                                        addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, fileOffset,
                                                        appendData, isClob, hasPrev, hasNext, isSystem);
                                         appendData = true;
                                         hasPrev = true;
@@ -1037,8 +1041,8 @@ namespace OpenLogReplicator {
                                 if (i == lobPages - 1U && j == pageCnt - 1U)
                                     hasNext = false;
 
-                                valueBufferCheck(chunkSize * 4, offset);
-                                addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, offset, appendData,
+                                valueBufferCheck(chunkSize * 4, fileOffset);
+                                addLobToOutput(redoLogRecordLob->data(redoLogRecordLob->lobData), chunkSize, charsetId, fileOffset, appendData,
                                                isClob, hasPrev, hasNext, isSystem);
                                 appendData = true;
                                 hasPrev = true;
@@ -1060,25 +1064,24 @@ namespace OpenLogReplicator {
             return true;
         }
 
-        void parseRaw(const uint8_t* data, uint64_t size, uint64_t offset) {
+        void parseRaw(const uint8_t* data, uint64_t size, FileOffset fileOffset) {
             valueBufferPurge();
-            valueBufferCheck(size * 2, offset);
+            valueBufferCheck(size * 2, fileOffset);
 
             if (size == 0)
                 return;
 
             for (uint64_t j = 0; j < size; ++j) {
-                valueBufferAppend(Ctx::map16U(data[j] >> 4));
-                valueBufferAppend(Ctx::map16U(data[j] & 0x0F));
+                valueBufferAppend(Data::map16U(data[j] >> 4));
+                valueBufferAppend(Data::map16U(data[j] & 0x0F));
             }
         }
 
-        void parseString(const uint8_t* data, uint64_t size, uint64_t charsetId, uint64_t offset, bool appendData, bool hasPrev, bool hasNext,
-                                bool isSystem) {
+        void parseString(const uint8_t* data, uint64_t size, uint64_t charsetId, FileOffset fileOffset, bool appendData, bool hasPrev, bool hasNext,
+                         bool isSystem) {
             const CharacterSet* characterSet = locales->characterMap[charsetId];
             if (unlikely(characterSet == nullptr && !format.isCharFormatNoMapping()))
-                throw RedoLogException(50010, "can't find character set map for id = " + std::to_string(charsetId) + " at offset: " +
-                                              std::to_string(offset));
+                throw RedoLogException(50010, "can't find character set map for id = " + std::to_string(charsetId) + " at offset: " + fileOffset.toString());
             if (!appendData)
                 valueBufferPurge();
             if (size == 0 && (!hasPrev || prevCharsSize <= 0))
@@ -1141,34 +1144,32 @@ namespace OpenLogReplicator {
                             valueBufferAppend(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
 
                         } else
-                            throw RedoLogException(50011, "got character code: U+" + std::to_string(unicodeCharacter) + " at offset: " +
-                                                          std::to_string(offset));
+                            throw RedoLogException(50011, "got character code: U+" + std::to_string(unicodeCharacter) + " at offset: " + fileOffset.toString());
                     } else {
                         if (unicodeCharacter <= 0x7F) {
                             // 0xxxxxxx
-                            valueBufferAppendHex(unicodeCharacter, offset);
+                            valueBufferAppendHex(unicodeCharacter, fileOffset);
 
                         } else if (unicodeCharacter <= 0x7FF) {
                             // 110xxxxx 10xxxxxx
-                            valueBufferAppendHex(0xC0 | static_cast<uint8_t>(unicodeCharacter >> 6), offset);
-                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F), offset);
+                            valueBufferAppendHex(0xC0 | static_cast<uint8_t>(unicodeCharacter >> 6), fileOffset);
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F), fileOffset);
 
                         } else if (unicodeCharacter <= 0xFFFF) {
                             // 1110xxxx 10xxxxxx 10xxxxxx
-                            valueBufferAppendHex(0xE0 | static_cast<uint8_t>(unicodeCharacter >> 12), offset);
-                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F), offset);
-                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F), offset);
+                            valueBufferAppendHex(0xE0 | static_cast<uint8_t>(unicodeCharacter >> 12), fileOffset);
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F), fileOffset);
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F), fileOffset);
 
                         } else if (unicodeCharacter <= 0x10FFFF) {
                             // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                            valueBufferAppendHex(0xF0 | static_cast<uint8_t>(unicodeCharacter >> 18), offset);
-                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 12) & 0x3F), offset);
-                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F), offset);
-                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F), offset);
+                            valueBufferAppendHex(0xF0 | static_cast<uint8_t>(unicodeCharacter >> 18), fileOffset);
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 12) & 0x3F), fileOffset);
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F), fileOffset);
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F), fileOffset);
 
                         } else
-                            throw RedoLogException(50011, "got character code: U+" + std::to_string(unicodeCharacter) + " at offset: " +
-                                                          std::to_string(offset));
+                            throw RedoLogException(50011, "got character code: U+" + std::to_string(unicodeCharacter) + " at offset: " + fileOffset.toString());
                     }
                 } else {
                     unicodeCharacter = *parseData++;
@@ -1177,16 +1178,16 @@ namespace OpenLogReplicator {
                     if (!format.isCharFormatHex() || isSystem) {
                         valueBufferAppend(unicodeCharacter);
                     } else {
-                        valueBufferAppendHex(unicodeCharacter, offset);
+                        valueBufferAppendHex(unicodeCharacter, fileOffset);
                     }
                 }
             }
         }
 
-        void valueBufferCheck(uint64_t size, uint64_t offset) {
+        void valueBufferCheck(uint64_t size, FileOffset fileOffset) {
             if (unlikely(valueSize + size > VALUE_BUFFER_MAX))
                 throw RedoLogException(50012, "trying to allocate length for value: " + std::to_string(valueSize + size) +
-                                              " exceeds maximum: " + std::to_string(VALUE_BUFFER_MAX) + " at offset: " + std::to_string(offset));
+                                              " exceeds maximum: " + std::to_string(VALUE_BUFFER_MAX) + " at offset: " + fileOffset.toString());
 
             if (valueSize + size < valueBufferSize)
                 return;
@@ -1217,25 +1218,25 @@ namespace OpenLogReplicator {
         virtual void columnString(const std::string& columnName) = 0;
         virtual void columnNumber(const std::string& columnName, int precision, int scale) = 0;
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t size) = 0;
-        virtual void columnRowId(const std::string& columnName, typeRowId rowId) = 0;
+        virtual void columnRowId(const std::string& columnName, RowId rowId) = 0;
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) = 0;
         virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) = 0;
-        virtual void processInsert(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) = 0;
-        virtual void processUpdate(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) = 0;
-        virtual void processDelete(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
-                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, uint64_t offset) = 0;
-        virtual void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const DbTable* table, typeObj obj) = 0;
-        virtual void processBeginMessage(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
-        bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t size, uint64_t offset);
+        virtual void processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) = 0;
+        virtual void processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) = 0;
+        virtual void processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+                                   typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) = 0;
+        virtual void processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) = 0;
+        virtual void processBeginMessage(Scn scn, Seq sequence, time_t timestamp) = 0;
+        bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t size, FileOffset fileOffset);
 
     public:
         SystemTransaction* systemTransaction{nullptr};
         uint64_t buffersAllocated{0};
         BuilderQueue* firstBuilderQueue{nullptr};
         BuilderQueue* lastBuilderQueue{nullptr};
-        typeScn lwnScn{Ctx::ZERO_SCN};
+        Scn lwnScn{Scn::none()};
         typeIdx lwnIdx{0};
 
         Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
@@ -1244,17 +1245,17 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(typeXid xid, typeScn scn, typeScn newLwnScn, const std::unordered_map<std::string, std::string>* newAttributes);
-        void processInsertMultiple(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
+        void processBegin(Xid xid, Scn scn, Scn newLwnScn, const std::unordered_map<std::string, std::string>* newAttributes);
+        void processInsertMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
-        void processDeleteMultiple(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
+        void processDeleteMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
-        void processDml(typeScn scn, typeSeq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const std::deque<const RedoLogRecord*>& redo1,
+        void processDml(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const std::deque<const RedoLogRecord*>& redo1,
                         const std::deque<const RedoLogRecord*>& redo2, Format::TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump);
-        void processDdl(typeScn scn, typeSeq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1);
+        void processDdl(Scn scn, Seq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1);
         virtual void initialize();
-        virtual void processCommit(typeScn scn, typeSeq sequence, time_t timestamp) = 0;
-        virtual void processCheckpoint(typeScn scn, typeSeq sequence, time_t timestamp, uint64_t offset, bool redo) = 0;
+        virtual void processCommit(Scn scn, Seq sequence, time_t timestamp) = 0;
+        virtual void processCheckpoint(Scn scn, Seq sequence, time_t timestamp, FileOffset fileOffset, bool redo) = 0;
         void releaseBuffers(Thread* t, uint64_t maxId);
         void releaseDdl();
         void appendDdlChunk(const uint8_t* data, typeTransactionSize size);

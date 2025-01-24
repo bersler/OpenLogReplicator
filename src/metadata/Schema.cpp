@@ -646,7 +646,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            const typeRowId rowId;
+            const RowId rowId;
             const SysColSeg sysColSegFirst(sysObj->obj, 0, rowId);
             for (auto sysColMapSegIt = sysColPack.mapKey.upper_bound(sysColSegFirst); sysColMapSegIt != sysColPack.mapKey.end() &&
                                                                                  sysColMapSegIt->first.obj == sysObj->obj; ++sysColMapSegIt) {
@@ -762,7 +762,7 @@ namespace OpenLogReplicator {
                 // For system-generated columns, check column name from base column
                 std::string columnName = sysCol->name;
                 if (sysCol->isSystemGenerated()) {
-                    //typeRowId rid2(0, 0, 0);
+                    //RowId rid2(0, 0, 0);
                     //SysColSeg sysColSegFirst2(sysObj->obj - 1, 0, rid2);
                     for (auto sysColMapSegIt2 = sysColPack.mapKey.upper_bound(sysColSegFirst); sysColMapSegIt2 != sysColPack.mapKey.end() &&
                                                                                           sysColMapSegIt2->first.obj <= sysObj->obj; ++sysColMapSegIt2) {

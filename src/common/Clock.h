@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <stdint.h>
 #include <sys/time.h>
 
-#include "types.h"
+#include "types/Types.h"
 
 #ifndef CLOCK_H_
 #define CLOCK_H_

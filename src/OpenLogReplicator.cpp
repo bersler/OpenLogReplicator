@@ -30,12 +30,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "builder/BuilderJson.h"
 #include "common/Ctx.h"
 #include "common/MemoryManager.h"
-#include "common/types.h"
 #include "common/exception/ConfigurationException.h"
 #include "common/exception/RuntimeException.h"
 #include "common/metrics/Metrics.h"
 #include "common/table/SysObj.h"
 #include "common/table/SysUser.h"
+#include "common/types/Types.h"
 #include "locales/Locales.h"
 #include "metadata/Checkpoint.h"
 #include "metadata/Metadata.h"
@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
     OpenLogReplicator::OpenLogReplicator(std::string  newConfigFileName, Ctx* newCtx) :
             configFileName(std::move(newConfigFileName)),
             ctx(newCtx) {
-        typeIntX::initializeBASE10();
+        IntX::initializeBASE10();
     }
 
     OpenLogReplicator::~OpenLogReplicator() {
@@ -364,28 +364,28 @@ namespace OpenLogReplicator {
                                                         std::to_string(ctx->disableChecks) + ", expected: one of {0 .. 15}");
             }
 
-            typeScn startScn = Ctx::ZERO_SCN;
+            Scn startScn = Scn::none();
             if (readerJson.HasMember("start-scn"))
                 startScn = Ctx::getJsonFieldU64(configFileName, readerJson, "start-scn");
 
-            typeSeq startSequence = Ctx::ZERO_SEQ;
+            Seq startSequence = Seq::none();
             if (readerJson.HasMember("start-seq"))
                 startSequence = Ctx::getJsonFieldU32(configFileName, readerJson, "start-seq");
 
             uint64_t startTimeRel = 0;
             if (readerJson.HasMember("start-time-rel")) {
                 startTimeRel = Ctx::getJsonFieldU64(configFileName, readerJson, "start-time-rel");
-                if (startScn != Ctx::ZERO_SCN)
+                if (startScn != Scn::none())
                     throw ConfigurationException(30001, "bad JSON, invalid \"start-time-rel\" value: " + std::to_string(startTimeRel) +
-                                                        ", expected: unset when \"start-scn\" is set (" + std::to_string(startScn) + ")");
+                                                        ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
             }
 
             std::string startTime;
             if (readerJson.HasMember("start-time")) {
                 startTime = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "start-time");
-                if (startScn != Ctx::ZERO_SCN)
+                if (startScn != Scn::none())
                     throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
-                                                        ", expected: unset when \"start-scn\" is set (" + std::to_string(startScn) + ")");
+                                                        ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
                 if (startTimeRel > 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
                                                         ", expected: unset when \"start-time-rel\" is set (" + std::to_string(startTimeRel) + ")");
@@ -403,7 +403,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (stateJson.HasMember("type")) {
-                    std::string stateTypeStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, stateJson, "type");
+                    const std::string stateTypeStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, stateJson, "type");
                     if (stateTypeStr == "disk") {
                         stateType = State::TYPE_DISK;
                         if (stateJson.HasMember("path"))
@@ -517,11 +517,11 @@ namespace OpenLogReplicator {
                 }
 
                 if (metricsJson.HasMember("type")) {
-                    std::string metricsType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, metricsJson, "type");
+                    const std::string metricsType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, metricsJson, "type");
                     Metrics::TAG_NAMES tagNames = Metrics::TAG_NAMES::NONE;
 
                     if (metricsJson.HasMember("tag-names")) {
-                        std::string tagNamesStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_TOPIC_LENGTH, metricsJson, "tag-names");
+                        const std::string tagNamesStr = Ctx::getJsonFieldS(configFileName, Ctx::JSON_TOPIC_LENGTH, metricsJson, "tag-names");
 
                         if (tagNamesStr == "none")
                             tagNames = Metrics::TAG_NAMES::NONE;
@@ -539,7 +539,7 @@ namespace OpenLogReplicator {
 
                     if (metricsType == "prometheus") {
 #ifdef LINK_LIBRARY_PROMETHEUS
-                        std::string prometheusBind = Ctx::getJsonFieldS(configFileName, Ctx::JSON_TOPIC_LENGTH, metricsJson, "bind");
+                        const std::string prometheusBind = Ctx::getJsonFieldS(configFileName, Ctx::JSON_TOPIC_LENGTH, metricsJson, "bind");
 
                         ctx->metrics = new MetricsPrometheus(tagNames, prometheusBind);
                         ctx->metrics->initialize(ctx);
@@ -716,7 +716,7 @@ namespace OpenLogReplicator {
             if (formatJson.HasMember("flush-buffer"))
                 flushBuffer = Ctx::getJsonFieldU64(configFileName, formatJson, "flush-buffer");
 
-            std::string formatType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, formatJson, "type");
+            const std::string formatType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, formatJson, "type");
 
             Builder* builder;
             Format format(dbFormat, attributesFormat, intervalDtsFormat, intervalYtmFormat, messageFormat, ridFormat, xidFormat, timestampFormat,
@@ -735,7 +735,7 @@ namespace OpenLogReplicator {
             builders.push_back(builder);
 
             // READER
-            std::string readerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "type");
+            const std::string readerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "type");
             void (* archGetLog)(Replicator* replicator) = Replicator::archGetLogPath;
 
             if (sourceJson.HasMember("redo-read-sleep-us"))
@@ -761,20 +761,20 @@ namespace OpenLogReplicator {
                 ctx->redoCopyPath = Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, readerJson, "redo-copy-path");
 
             if (readerJson.HasMember("db-timezone")) {
-                std::string dbTimezone = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "db-timezone");
-                if (!Ctx::parseTimezone(dbTimezone, ctx->dbTimezone))
+                const std::string dbTimezone = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "db-timezone");
+                if (!Data::parseTimezone(dbTimezone, ctx->dbTimezone))
                     throw ConfigurationException(30001, "bad JSON, invalid \"db-timezone\" value: " + dbTimezone + ", expected value: {\"+/-HH:MM\"}");
             }
 
             if (readerJson.HasMember("host-timezone")) {
-                std::string hostTimezone = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "host-timezone");
-                if (!Ctx::parseTimezone(hostTimezone, ctx->hostTimezone))
+                const std::string hostTimezone = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "host-timezone");
+                if (!Data::parseTimezone(hostTimezone, ctx->hostTimezone))
                     throw ConfigurationException(30001, "bad JSON, invalid \"host-timezone\" value: " + hostTimezone + ", expected value: {\"+/-HH:MM\"}");
             }
 
             if (readerJson.HasMember("log-timezone")) {
-                std::string logTimezone = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "log-timezone");
-                if (!Ctx::parseTimezone(logTimezone, ctx->logTimezone))
+                const std::string logTimezone = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "log-timezone");
+                if (!Data::parseTimezone(logTimezone, ctx->logTimezone))
                     throw ConfigurationException(30001, "bad JSON, invalid \"log-timezone\" value: " + logTimezone + ", expected value: {\"+/-HH:MM\"}");
             }
 
@@ -853,8 +853,8 @@ namespace OpenLogReplicator {
                             Ctx::checkJsonFields(configFileName, tableElementJson, tableElementNames);
                         }
 
-                        std::string owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
-                        std::string table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
+                        const std::string owner = Ctx::getJsonFieldS(configFileName, SysUser::NAME_LENGTH, tableElementJson, "owner");
+                        const std::string table = Ctx::getJsonFieldS(configFileName, SysObj::NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, DbTable::OPTIONS::DEFAULT);
 
                         metadata->users.insert(owner);
@@ -877,7 +877,7 @@ namespace OpenLogReplicator {
                 if (filterJson.HasMember("skip-xid")) {
                     const rapidjson::Value& skipXidArrayJson = Ctx::getJsonFieldA(configFileName, filterJson, "skip-xid");
                     for (rapidjson::SizeType k = 0; k < skipXidArrayJson.Size(); ++k) {
-                        const typeXid xid(Ctx::getJsonFieldS(configFileName, Ctx::JSON_XID_LENGTH, skipXidArrayJson, "skip-xid", k));
+                        const Xid xid(Ctx::getJsonFieldS(configFileName, Ctx::JSON_XID_LENGTH, skipXidArrayJson, "skip-xid", k));
                         ctx->info(0, "adding XID to skip list: " + xid.toString());
                         transactionBuffer->skipXidList.insert(xid);
                     }
@@ -886,7 +886,7 @@ namespace OpenLogReplicator {
                 if (filterJson.HasMember("dump-xid")) {
                     const rapidjson::Value& dumpXidArrayJson = Ctx::getJsonFieldA(configFileName, filterJson, "dump-xid");
                     for (rapidjson::SizeType k = 0; k < dumpXidArrayJson.Size(); ++k) {
-                        const typeXid xid(Ctx::getJsonFieldS(configFileName, Ctx::JSON_XID_LENGTH, dumpXidArrayJson, "dump-xid", k));
+                        const Xid xid(Ctx::getJsonFieldS(configFileName, Ctx::JSON_XID_LENGTH, dumpXidArrayJson, "dump-xid", k));
                         ctx->info(0, "adding XID to dump list: " + xid.toString());
                         transactionBuffer->dumpXidList.insert(xid);
                     }
@@ -913,8 +913,8 @@ namespace OpenLogReplicator {
 
         for (rapidjson::SizeType j = 0; j < targetArrayJson.Size(); ++j) {
             const rapidjson::Value& targetJson = targetArrayJson[j];
-            std::string alias = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, targetJson, "alias");
-            std::string source = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, targetJson, "source");
+            const std::string alias = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, targetJson, "alias");
+            const std::string source = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, targetJson, "source");
 
             ctx->info(0, "adding target: " + alias);
             Replicator* replicator2 = nullptr;
@@ -927,7 +927,7 @@ namespace OpenLogReplicator {
             // Writer
             Writer* writer;
             const rapidjson::Value& writerJson = Ctx::getJsonFieldO(configFileName, targetJson, "writer");
-            std::string writerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "type");
+            const std::string writerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "type");
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> writerNames {"type", "poll-interval-us", "queue-size", "max-file-size", "timestamp-format", "output",
@@ -1061,8 +1061,8 @@ namespace OpenLogReplicator {
                                                     std::to_string(pathMappingArrayJson.Size()) + " elements, expected: even number of elements");
 
             for (rapidjson::SizeType k = 0; k < pathMappingArrayJson.Size() / 2; ++k) {
-                std::string sourceMapping = Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, pathMappingArrayJson, "path-mapping", k * 2);
-                std::string targetMapping = Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, pathMappingArrayJson, "path-mapping", (k * 2) + 1);
+                const std::string sourceMapping = Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, pathMappingArrayJson, "path-mapping", k * 2);
+                const std::string targetMapping = Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, pathMappingArrayJson, "path-mapping", (k * 2) + 1);
                 replicator->addPathMapping(sourceMapping, targetMapping);
             }
         }

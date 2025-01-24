@@ -28,9 +28,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
-#include "../common/typeRowId.h"
-#include "../common/typeXid.h"
-#include "../common/types.h"
 #include "../common/table/SysCCol.h"
 #include "../common/table/SysCDef.h"
 #include "../common/table/SysCol.h"
@@ -51,6 +48,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/table/XdbXNm.h"
 #include "../common/table/XdbXPt.h"
 #include "../common/table/XdbXQn.h"
+#include "../common/types/RowId.h"
+#include "../common/types/Types.h"
+#include "../common/types/Xid.h"
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
     protected:
         Ctx* ctx;
         Locales* locales;
-        typeRowId sysUserRowId;
+        RowId sysUserRowId;
         SysUser sysUserAdaptive;
 
         void addTableToDict(DbTable* table);
@@ -73,8 +73,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint16_t getLobBlockSize(typeTs ts) const;
 
     public:
-        typeScn scn{Ctx::ZERO_SCN};
-        typeScn refScn{Ctx::ZERO_SCN};
+        Scn scn{Scn::none()};
+        Scn refScn{Scn::none()};
         bool loaded{false};
 
         std::unordered_map<typeDataObj, DbLob*> lobPartitionMap;

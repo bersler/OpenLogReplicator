@@ -20,21 +20,22 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef DB_INCARNATION_H_
 #define DB_INCARNATION_H_
 
-#include "types.h"
+#include "types/Scn.h"
+#include "types/Types.h"
 
 namespace OpenLogReplicator {
     class DbIncarnation {
     public:
         uint32_t incarnation;
-        typeScn resetlogsScn;
-        typeScn priorResetlogsScn;
+        Scn resetlogsScn;
+        Scn priorResetlogsScn;
         std::string status;
         typeResetlogs resetlogs;
         uint32_t priorIncarnation;
 
         bool current;
 
-        DbIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, std::string newStatus, typeResetlogs newResetlogs,
+        DbIncarnation(uint32_t newIncarnation, Scn newResetlogsScn, Scn newPriorResetlogsScn, std::string newStatus, typeResetlogs newResetlogs,
                       uint32_t newPriorIncarnation) :
                 incarnation(newIncarnation),
                 resetlogsScn(newResetlogsScn),
@@ -47,8 +48,8 @@ namespace OpenLogReplicator {
         }
 
         friend std::ostream& operator<<(std::ostream& os, const DbIncarnation& i) {
-            os << "(" << std::dec << i.incarnation << ", " << i.resetlogsScn << ", " << i.priorResetlogsScn << ", " << i.status << ", " << i.resetlogs << ", " <<
-               i.priorIncarnation << ")";
+            os << "(" << std::dec << i.incarnation << ", " << i.resetlogsScn.toString() << ", " << i.priorResetlogsScn.toString() << ", " << i.status <<
+                ", " << i.resetlogs << ", " << i.priorIncarnation << ")";
             return os;
         }
     };

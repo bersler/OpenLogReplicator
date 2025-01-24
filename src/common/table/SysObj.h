@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeIntX.h"
-#include "../typeRowId.h"
+#include "../types/IntX.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_OBJ_H_
 #define SYS_OBJ_H_
@@ -56,16 +56,16 @@ namespace OpenLogReplicator {
             QUEUE = 24
         };
 
-        typeRowId rowId;
+        RowId rowId;
         typeUser owner{0};
         typeObj obj{0};
         typeDataObj dataObj{0};        // NULL
         OBJTYPE type{OBJTYPE::NEXT_OBJECT};
         std::string name;
-        typeIntX flags{0, 0};             // NULL
+        IntX flags{0, 0};             // NULL
         bool single{false};
 
-        SysObj(typeRowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, OBJTYPE newType, std::string newName, uint64_t newFlags1,
+        SysObj(RowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, OBJTYPE newType, std::string newName, uint64_t newFlags1,
                uint64_t newFlags2, bool newSingle) :
                 rowId(newRowId),
                 owner(newOwner),
@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
                 single(newSingle) {
         }
 
-        explicit SysObj(typeRowId newRowId) :
+        explicit SysObj(RowId newRowId) :
                 rowId(newRowId) {
         }
 

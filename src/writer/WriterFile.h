@@ -46,14 +46,14 @@ namespace OpenLogReplicator {
         int outputDes{-1};
         uint64_t newLine;
         uint64_t append;
-        typeSeq lastSequence{Ctx::ZERO_SEQ};
+        Seq lastSequence{Seq::none()};
         const uint8_t* newLineMsg{nullptr};
         bool warningDisplayed{false};
         uint8_t buffer[BUFFER_SIZE]{};
         uint bufferFill{0};
 
         void closeFile();
-        void checkFile(typeScn scn, typeSeq sequence, uint64_t size);
+        void checkFile(Scn scn, Seq sequence, uint64_t size);
         void sendMessage(BuilderMsg* msg) override;
         std::string getType() const override;
         void pollQueue() override;

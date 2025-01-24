@@ -37,7 +37,8 @@ list(APPEND ListCommon
         common/expression/Expression.cpp
         common/expression/StringValue.cpp
         common/expression/Token.cpp
-        common/metrics/Metrics.cpp)
+        common/metrics/Metrics.cpp
+        common/types/Data.cpp)
 
 list(APPEND ListReplicator
         replicator/Replicator.cpp

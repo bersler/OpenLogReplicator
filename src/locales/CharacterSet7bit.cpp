@@ -25,7 +25,7 @@ namespace OpenLogReplicator {
             map(newMap) {
     }
 
-    typeUnicode CharacterSet7bit::decode(const Ctx* ctx __attribute__((unused)), typeXid xid __attribute__((unused)), const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSet7bit::decode(const Ctx* ctx __attribute__((unused)), Xid xid __attribute__((unused)), const uint8_t*& str, uint64_t& length) const {
         const uint64_t byte1 = *str++;
         --length;
         return readMap(byte1 & 0x7F);

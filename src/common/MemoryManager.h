@@ -39,10 +39,10 @@ namespace OpenLogReplicator {
     private:
         uint64_t cleanOldTransactions();
         void cleanup(bool silent = false);
-        void getChunkToUnswap(typeXid& xid, int64_t& index);
-        void getChunkToSwap(typeXid& xid, int64_t& index);
-        bool unswap(typeXid xid, int64_t index);
-        bool swap(typeXid xid, int64_t index);
+        void getChunkToUnswap(Xid& xid, int64_t& index);
+        void getChunkToSwap(Xid& xid, int64_t& index);
+        bool unswap(Xid xid, int64_t index);
+        bool swap(Xid xid, int64_t index);
 
         std::string getName() const override {
             return {"MemoryManager"};

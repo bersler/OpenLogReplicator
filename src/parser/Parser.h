@@ -24,10 +24,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/Ctx.h"
 #include "../common/RedoLogRecord.h"
-#include "../common/types.h"
-#include "../common/typeTime.h"
-#include "../common/typeXid.h"
 #include "../reader/Reader.h"
+#include "../common/types/Time.h"
+#include "../common/types/Types.h"
+#include "../common/types/Xid.h"
 
 namespace OpenLogReplicator {
     class Builder;
@@ -37,8 +37,8 @@ namespace OpenLogReplicator {
     class XmlCtx;
 
     struct LwnMember {
-        uint64_t offset;
-        typeScn scn;
+        uint16_t pageOffset;
+        Scn scn;
         uint32_t size;
         typeBlk block;
         typeSubScn subScn;
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
                 return true;
             if (block > other.block)
                 return false;
-            return (offset < other.offset);
+            return (pageOffset < other.pageOffset);
         }
     };
 
@@ -76,8 +76,8 @@ namespace OpenLogReplicator {
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN + 1]{};
         uint64_t lwnAllocated{0};
         uint64_t lwnAllocatedMax{0};
-        typeTime lwnTimestamp{0};
-        typeScn lwnScn{0};
+        Time lwnTimestamp{0};
+        Scn lwnScn{};
         typeBlk lwnCheckpointBlock{0};
 
         void freeLwn();
@@ -96,9 +96,9 @@ namespace OpenLogReplicator {
     public:
         int group;
         std::string path;
-        typeSeq sequence{0};
-        typeScn firstScn{Ctx::ZERO_SCN};
-        typeScn nextScn{Ctx::ZERO_SCN};
+        Seq sequence{Seq::zero()};
+        Scn firstScn{Scn::none()};
+        Scn nextScn{Scn::none()};
         Reader* reader{nullptr};
 
         Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int newGroup, std::string newPath);

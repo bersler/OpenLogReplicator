@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types.h"
-#include "../typeIntX.h"
-#include "../typeRowId.h"
+#include "../types/IntX.h"
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 #ifndef SYS_DEFERRED_STG_H_
 #define SYS_DEFERRED_STG_H_
@@ -29,17 +29,17 @@ namespace OpenLogReplicator {
     public:
         static constexpr uint64_t FLAGSSTG_COMPRESSED{4};
 
-        typeRowId rowId;
+        RowId rowId;
         typeObj obj{0};
-        typeIntX flagsStg{0, 0};          // NULL
+        IntX flagsStg{0, 0};          // NULL
 
-        SysDeferredStg(typeRowId newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
+        SysDeferredStg(RowId newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
                 rowId(newRowId),
                 obj(newObj),
                 flagsStg(newFlagsStg1, newFlagsStg2) {
         }
 
-        explicit SysDeferredStg(typeRowId newRowId) :
+        explicit SysDeferredStg(RowId newRowId) :
                 rowId(newRowId) {
         }
 

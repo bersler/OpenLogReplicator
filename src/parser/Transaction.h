@@ -27,9 +27,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/LobKey.h"
 #include "../common/LobCtx.h"
 #include "../common/RedoLogRecord.h"
-#include "../common/types.h"
-#include "../common/typeTime.h"
-#include "../common/typeXid.h"
+#include "../common/types/FileOffset.h"
+#include "../common/types/Time.h"
+#include "../common/types/Types.h"
+#include "../common/types/Xid.h"
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
@@ -48,13 +49,13 @@ namespace OpenLogReplicator {
         uint8_t* mergeBuffer{nullptr};
         LobCtx lobCtx;
         XmlCtx* xmlCtx;
-        typeXid xid;
-        typeSeq firstSequence{0};
-        uint64_t firstOffset{0};
-        typeSeq commitSequence{0};
-        typeScn commitScn{0};
+        Xid xid;
+        Seq firstSequence{Seq::zero()};
+        FileOffset firstFileOffset{FileOffset::zero()};
+        Seq commitSequence{Seq::zero()};
+        Scn commitScn{};
         TransactionChunk* lastTc{nullptr};
-        typeTime commitTimestamp{0};
+        Time commitTimestamp{0};
         bool begin{false};
         bool rollback{false};
         bool system{false};
@@ -67,14 +68,14 @@ namespace OpenLogReplicator {
         // Attributes
         std::unordered_map<std::string, std::string> attributes;
 
-        explicit Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx);
+        explicit Transaction(Xid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx);
 
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1,
                             const RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1);
-        void flush(Metadata* metadata, Builder* builder, typeScn lwnScn);
+        void flush(Metadata* metadata, Builder* builder, Scn lwnScn);
         void purge(Ctx* ctx);
 
         void log(const Ctx* ctx, const char* msg, const RedoLogRecord* redoLogRecord1) const {
@@ -100,7 +101,7 @@ namespace OpenLogReplicator {
                          " seq: " + std::to_string(static_cast<uint>(redoLogRecord1->seq)) +
                          " flg: " + std::to_string(redoLogRecord1->flg) +
                          " split: " + std::to_string(lastSplit ? 1: 0) +
-                         " offset: " + std::to_string(redoLogRecord1->dataOffset));
+                         " offset: " + redoLogRecord1->fileOffset.toString());
         }
 
         [[nodiscard]] std::string toString(const Ctx* ctx) const;

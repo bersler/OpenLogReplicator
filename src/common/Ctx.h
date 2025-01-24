@@ -30,8 +30,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
-#include "typeLobId.h"
-#include "typeXid.h"
+#include "types/LobId.h"
+#include "types/Scn.h"
+#include "types/Xid.h"
 
 #ifndef CTX_H_
 #define CTX_H_
@@ -81,13 +82,6 @@ namespace OpenLogReplicator {
         static constexpr uint64_t MEMORY_CHUNK_SIZE{MEMORY_CHUNK_SIZE_MB * 1024 * 1024};
         static constexpr uint64_t MEMORY_CHUNK_MIN_MB{32};
 
-        static constexpr time_t UNIX_AD1970_01_01{62167132800L};
-        static constexpr time_t UNIX_BC1970_01_01{62167132800L - (static_cast<long>(365 * 24 * 60 * 60))};
-        static constexpr time_t UNIX_BC4712_01_01{-210831897600L};
-        static constexpr time_t UNIX_AD9999_12_31{253402300799L};
-
-        static constexpr typeSeq ZERO_SEQ{0xFFFFFFFF};
-        static constexpr typeScn ZERO_SCN{0xFFFFFFFFFFFFFFFF};
         static constexpr typeBlk ZERO_BLK{0xFFFFFFFF};
 
         static constexpr uint64_t BAD_TIMEZONE{0x7FFFFFFFFFFFFFFF};
@@ -109,11 +103,7 @@ namespace OpenLogReplicator {
         static constexpr uint JSON_FORMAT_SEPARATOR_LENGTH{128};
         static constexpr uint JSON_TAG_LENGTH{4096};
 
-        static const char map64L[65];
-        static const char map64R[256];
         static const std::string memoryModules[MEMORY_COUNT];
-        static const int64_t cumDays[12];
-        static const int64_t cumDaysLeap[12];
 
         uint trace{0};
         uint flags{0};
@@ -190,17 +180,17 @@ namespace OpenLogReplicator {
         uint64_t stopCheckpoints{0};
         uint64_t stopTransactions{0};
         typeTransactionSize transactionSizeMax{0};
-        std::unordered_map<typeLobId, typeXid> lobIdToXidMap;
+        std::unordered_map<LobId, Xid> lobIdToXidMap;
         Thread* parserThread{nullptr};
         Thread* writerThread{nullptr};
 
-        std::unordered_map<typeXid, SwapChunk*> swapChunks;
-        std::vector<typeXid> commitedXids;
+        std::unordered_map<Xid, SwapChunk*> swapChunks;
+        std::vector<Xid> commitedXids;
         std::condition_variable chunksMemoryManager;
         std::condition_variable chunksTransaction;
         uint64_t swappedMB{0};
-        typeXid swappedFlushXid{0, 0, 0};
-        typeXid swappedShrinkXid{0, 0, 0};
+        Xid swappedFlushXid{0, 0, 0};
+        Xid swappedShrinkXid{0, 0, 0};
         mutable std::mutex swapMtx;
         std::condition_variable reusedTransactions;
         bool version12{false};
@@ -211,24 +201,6 @@ namespace OpenLogReplicator {
         Ctx();
         ~Ctx();
 
-    protected:
-        static int64_t yearToDays(int64_t year, int64_t month) {
-            int64_t result = (year * 365) + (year / 4) - (year / 100) + (year / 400);
-            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month < 2)
-                --result;
-
-            return result;
-        }
-
-        static int64_t yearToDaysBC(int64_t year, int64_t month) {
-            int64_t result = (year * 365) + (year / 4) - (year / 100) + (year / 400);
-            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) && month >= 2)
-                --result;
-
-            return result;
-        }
-
-    public:
         bool isTraceSet(TRACE mask) const {
             return (trace & static_cast<uint>(mask)) != 0;
         }
@@ -251,26 +223,6 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] bool isBigEndian() const {
             return bigEndian;
-        }
-
-        static char map10(uint x) {
-            return static_cast<char>('0' + x);
-        }
-
-        static char map16(uint x) {
-            if (x < 10)
-                return static_cast<char>('0' + x);
-            return static_cast<char>('a' + (x - 10));
-        }
-
-        static char map16U(uint x) {
-            if (x < 10)
-                return static_cast<char>('0' + x);
-            return static_cast<char>('A' + (x - 10));
-        }
-
-        static char map64(uint x) {
-            return map64L[x];
         }
 
         uint16_t read16(const uint8_t* buf) const {
@@ -297,13 +249,13 @@ namespace OpenLogReplicator {
             return read64Little(buf);
         }
 
-        typeScn readScn(const uint8_t* buf) const {
+        Scn readScn(const uint8_t* buf) const {
             if (bigEndian)
                 return readScnBig(buf);
             return readScnLittle(buf);
         }
 
-        typeScn readScnR(const uint8_t* buf) const {
+        Scn readScnR(const uint8_t* buf) const {
             if (bigEndian)
                 return readScnRBig(buf);
             return readScnRLittle(buf);
@@ -337,7 +289,7 @@ namespace OpenLogReplicator {
                 write64Little(buf, val);
         }
 
-        void writeScn(uint8_t* buf, typeScn val) const {
+        void writeScn(uint8_t* buf, Scn val) const {
             if (bigEndian)
                 writeScnBig(buf, val);
             else
@@ -395,56 +347,36 @@ namespace OpenLogReplicator {
                    (static_cast<uint64_t>(buf[6]) << 8) | static_cast<uint64_t>(buf[7]);
         }
 
-        static typeScn readScnLittle(const uint8_t* buf) {
+        static Scn readScnLittle(const uint8_t* buf) {
             if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-                return ZERO_SCN;
+                return Scn::none();
             if ((buf[5] & 0x80) == 0x80)
-                return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-                       (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-                       (static_cast<uint64_t>(buf[6]) << 32) | (static_cast<uint64_t>(buf[7]) << 40) |
-                       (static_cast<uint64_t>(buf[4]) << 48) | (static_cast<uint64_t>(buf[5] & 0x7F) << 56);
-            return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-                       (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-                       (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40);
+                return Scn(buf[0], buf[1], buf[2], buf[3], buf[6], buf[7], buf[4], buf[5] & 0x7F);
+            return Scn(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
         }
 
-        static typeScn readScnBig(const uint8_t* buf) {
+        static Scn readScnBig(const uint8_t* buf) {
             if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-                return ZERO_SCN;
+                return Scn::none();
             if ((buf[4] & 0x80) == 0x80)
-                return static_cast<uint64_t>(buf[3]) | (static_cast<uint64_t>(buf[2]) << 8) |
-                       (static_cast<uint64_t>(buf[1]) << 16) | (static_cast<uint64_t>(buf[0]) << 24) |
-                       (static_cast<uint64_t>(buf[7]) << 32) | (static_cast<uint64_t>(buf[6]) << 40) |
-                       (static_cast<uint64_t>(buf[5]) << 48) | (static_cast<uint64_t>(buf[4] & 0x7F) << 56);
-            return static_cast<uint64_t>(buf[3]) | (static_cast<uint64_t>(buf[2]) << 8) |
-                       (static_cast<uint64_t>(buf[1]) << 16) | (static_cast<uint64_t>(buf[0]) << 24) |
-                       (static_cast<uint64_t>(buf[5]) << 32) | (static_cast<uint64_t>(buf[4]) << 40);
+                return Scn(buf[3], buf[2], buf[1], buf[0], buf[7], buf[6], buf[5], buf[4] & 0x7F);
+            return Scn(buf[3], buf[2], buf[1], buf[0], buf[5], buf[4]);
         }
 
-        static typeScn readScnRLittle(const uint8_t* buf) {
+        static Scn readScnRLittle(const uint8_t* buf) {
             if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-                return ZERO_SCN;
+                return Scn::none();
             if ((buf[1] & 0x80) == 0x80)
-                return static_cast<uint64_t>(buf[2]) | (static_cast<uint64_t>(buf[3]) << 8) |
-                       (static_cast<uint64_t>(buf[4]) << 16) | (static_cast<uint64_t>(buf[5]) << 24) |
-                       // (static_cast<uint64_t>(buf[6]) << 32) | (static_cast<uint64_t>(buf[7]) << 40) |
-                       (static_cast<uint64_t>(buf[0]) << 48) | (static_cast<uint64_t>(buf[1] & 0x7F) << 56);
-            return static_cast<uint64_t>(buf[2]) | (static_cast<uint64_t>(buf[3]) << 8) |
-                       (static_cast<uint64_t>(buf[4]) << 16) | (static_cast<uint64_t>(buf[5]) << 24) |
-                       (static_cast<uint64_t>(buf[0]) << 32) | (static_cast<uint64_t>(buf[1]) << 40);
+                return Scn(buf[2], buf[3], buf[4], buf[5], 0, 0, buf[0], buf[1] & 0x7F);
+            return Scn(buf[2], buf[3], buf[4], buf[5], buf[0], buf[1]);
         }
 
-        static typeScn readScnRBig(const uint8_t* buf) {
+        static Scn readScnRBig(const uint8_t* buf) {
             if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
-                return ZERO_SCN;
+                return Scn::none();
             if ((buf[0] & 0x80) == 0x80)
-                return static_cast<uint64_t>(buf[5]) | (static_cast<uint64_t>(buf[4]) << 8) |
-                       (static_cast<uint64_t>(buf[3]) << 16) | (static_cast<uint64_t>(buf[2]) << 24) |
-                       // (static_cast<uint64_t>(buf[7]) << 32) | (static_cast<uint64_t>(buf[6]) << 40) |
-                       (static_cast<uint64_t>(buf[1]) << 48) | (static_cast<uint64_t>(buf[0] & 0x7F) << 56);
-            return static_cast<uint64_t>(buf[5]) | (static_cast<uint64_t>(buf[4]) << 8) |
-                       (static_cast<uint64_t>(buf[3]) << 16) | (static_cast<uint64_t>(buf[2]) << 24) |
-                       (static_cast<uint64_t>(buf[1]) << 32) | (static_cast<uint64_t>(buf[0]) << 40);
+                return Scn(buf[5], buf[4], buf[3], buf[2], 0, 0, buf[1], buf[0] & 0x7F);
+            return Scn(buf[5], buf[4], buf[3], buf[2], buf[1], buf[0]);
         }
 
         static void write16Little(uint8_t* buf, uint16_t val) {
@@ -513,43 +445,43 @@ namespace OpenLogReplicator {
             buf[7] = val & 0xFF;
         }
 
-        static void writeScnLittle(uint8_t* buf, typeScn val) {
-            if (val < 0x800000000000) {
-                buf[0] = val & 0xFF;
-                buf[1] = (val >> 8) & 0xFF;
-                buf[2] = (val >> 16) & 0xFF;
-                buf[3] = (val >> 24) & 0xFF;
-                buf[4] = (val >> 32) & 0xFF;
-                buf[5] = (val >> 40) & 0xFF;
+        static void writeScnLittle(uint8_t* buf, Scn val) {
+            if (val.getData() < 0x800000000000) {
+                buf[0] = val.getData() & 0xFF;
+                buf[1] = (val.getData() >> 8) & 0xFF;
+                buf[2] = (val.getData() >> 16) & 0xFF;
+                buf[3] = (val.getData() >> 24) & 0xFF;
+                buf[4] = (val.getData() >> 32) & 0xFF;
+                buf[5] = (val.getData() >> 40) & 0xFF;
             } else {
-                buf[0] = val & 0xFF;
-                buf[1] = (val >> 8) & 0xFF;
-                buf[2] = (val >> 16) & 0xFF;
-                buf[3] = (val >> 24) & 0xFF;
-                buf[4] = (val >> 48) & 0xFF;
-                buf[5] = ((val >> 56) & 0x7F) | 0x80;
-                buf[6] = (val >> 32) & 0xFF;
-                buf[7] = (val >> 40) & 0xFF;
+                buf[0] = val.getData() & 0xFF;
+                buf[1] = (val.getData() >> 8) & 0xFF;
+                buf[2] = (val.getData() >> 16) & 0xFF;
+                buf[3] = (val.getData() >> 24) & 0xFF;
+                buf[4] = (val.getData() >> 48) & 0xFF;
+                buf[5] = ((val.getData() >> 56) & 0x7F) | 0x80;
+                buf[6] = (val.getData() >> 32) & 0xFF;
+                buf[7] = (val.getData() >> 40) & 0xFF;
             }
         }
 
-        static void writeScnBig(uint8_t* buf, typeScn val) {
-            if (val < 0x800000000000) {
-                buf[0] = (val >> 24) & 0xFF;
-                buf[1] = (val >> 16) & 0xFF;
-                buf[2] = (val >> 8) & 0xFF;
-                buf[3] = val & 0xFF;
-                buf[4] = (val >> 40) & 0xFF;
-                buf[5] = (val >> 32) & 0xFF;
+        static void writeScnBig(uint8_t* buf, Scn val) {
+            if (val.getData() < 0x800000000000) {
+                buf[0] = (val.getData() >> 24) & 0xFF;
+                buf[1] = (val.getData() >> 16) & 0xFF;
+                buf[2] = (val.getData() >> 8) & 0xFF;
+                buf[3] = val.getData() & 0xFF;
+                buf[4] = (val.getData() >> 40) & 0xFF;
+                buf[5] = (val.getData() >> 32) & 0xFF;
             } else {
-                buf[0] = (val >> 24) & 0xFF;
-                buf[1] = (val >> 16) & 0xFF;
-                buf[2] = (val >> 8) & 0xFF;
-                buf[3] = val & 0xFF;
-                buf[4] = ((val >> 56) & 0x7F) | 0x80;
-                buf[5] = (val >> 48) & 0xFF;
-                buf[6] = (val >> 40) & 0xFF;
-                buf[7] = (val >> 32) & 0xFF;
+                buf[0] = (val.getData() >> 24) & 0xFF;
+                buf[1] = (val.getData() >> 16) & 0xFF;
+                buf[2] = (val.getData() >> 8) & 0xFF;
+                buf[3] = val.getData() & 0xFF;
+                buf[4] = ((val.getData() >> 56) & 0x7F) | 0x80;
+                buf[5] = (val.getData() >> 48) & 0xFF;
+                buf[6] = (val.getData() >> 40) & 0xFF;
+                buf[7] = (val.getData() >> 32) & 0xFF;
             }
         }
 
@@ -594,11 +526,6 @@ namespace OpenLogReplicator {
         [[nodiscard]] static std::string getJsonFieldS(const std::string& fileName, uint maxLength, const rapidjson::Value& value, const char* field,
                                                        uint num);
 
-        static bool parseTimezone(std::string str, int64_t& out);
-        static std::string timezoneToString(int64_t tz);
-        static time_t valuesToEpoch(int year, int month, int day, int hour, int minute, int second, int tz);
-        static uint64_t epochToIso8601(time_t timestamp, char* buffer, bool addT, bool addZ);
-
         void initialize(uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t memoryReadBufferMaxMb, uint64_t memoryReadBufferMinMb, uint64_t memorySwapMb,
                         uint64_t memoryUnswapBufferMinMb, uint64_t memoryWriteBufferMaxMb, uint64_t memoryWriteBufferMinMb);
         void wakeAllOutOfMemory();
@@ -609,14 +536,14 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getFreeMemory(Thread* t) const;
         [[nodiscard]] uint8_t* getMemoryChunk(Thread* t, MEMORY module, bool swap = false);
         void freeMemoryChunk(Thread* t, MEMORY module, uint8_t* chunk);
-        void swappedMemoryInit(Thread* t, typeXid xid);
-        [[nodiscard]] uint64_t swappedMemorySize(Thread* t, typeXid xid) const;
-        [[nodiscard]] uint8_t* swappedMemoryGet(Thread* t, typeXid xid, int64_t index);
-        void swappedMemoryRelease(Thread* t, typeXid xid, int64_t index);
-        [[nodiscard]] uint8_t* swappedMemoryGrow(Thread* t, typeXid xid);
-        [[nodiscard]] uint8_t* swappedMemoryShrink(Thread* t, typeXid xid);
-        void swappedMemoryFlush(Thread* t, typeXid xid);
-        void swappedMemoryRemove(Thread* t, typeXid xid);
+        void swappedMemoryInit(Thread* t, Xid xid);
+        [[nodiscard]] uint64_t swappedMemorySize(Thread* t, Xid xid) const;
+        [[nodiscard]] uint8_t* swappedMemoryGet(Thread* t, Xid xid, int64_t index);
+        void swappedMemoryRelease(Thread* t, Xid xid, int64_t index);
+        [[nodiscard]] uint8_t* swappedMemoryGrow(Thread* t, Xid xid);
+        [[nodiscard]] uint8_t* swappedMemoryShrink(Thread* t, Xid xid);
+        void swappedMemoryFlush(Thread* t, Xid xid);
+        void swappedMemoryRemove(Thread* t, Xid xid);
         void wontSwap(Thread* t);
 
         void stopHard();
@@ -629,8 +556,6 @@ namespace OpenLogReplicator {
         bool wakeThreads();
         void spawnThread(Thread* t);
         void finishThread(Thread* t);
-        static std::ostringstream& writeEscapeValue(std::ostringstream& ss, const std::string& str);
-        static bool checkNameCase(const std::string& name);
         void signalDump();
 
         void welcome(const std::string& message) const;

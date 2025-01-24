@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
-#include "../types.h"
+#include "../types/Types.h"
 
 #ifndef EXPRESSION_H_
 #define EXPRESSION_H_
