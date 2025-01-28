@@ -1475,7 +1475,7 @@ namespace OpenLogReplicator {
                                                    FileOffset(currentBlock, reader->getBlockSize()), switchRedo);
 
                         Seq minSequence = Seq::none();
-                        FileOffset minFileOffset(FileOffset::zero());
+                        FileOffset minFileOffset;
                         Xid minXid;
                         transactionBuffer->checkpoint(minSequence, minFileOffset, minXid);
                         if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))

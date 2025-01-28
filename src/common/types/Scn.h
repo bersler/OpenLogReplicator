@@ -25,19 +25,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Scn final {
-        uint64_t data;
+        uint64_t data{0};
         static constexpr uint64_t NONE{0xFFFFFFFFFFFFFFFF};
 
     public:
-        Scn() : data(0) {
-        }
+        Scn() = default;
 
         static Scn none() {
             return Scn(NONE);
         }
 
         static Scn zero() {
-            return Scn(0);
+            return Scn{};
         }
 
         explicit Scn(uint64_t newData) : data(newData) {

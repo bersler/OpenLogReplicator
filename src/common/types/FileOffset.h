@@ -25,14 +25,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class FileOffset final {
-        uint64_t data;
+        uint64_t data{0};
 
     public:
-        FileOffset() : data(0) {
-        }
+        FileOffset() = default;
 
         static FileOffset zero() {
-            return FileOffset(0);
+            return FileOffset{};
         }
 
         explicit FileOffset(uint64_t newData) : data(newData) {

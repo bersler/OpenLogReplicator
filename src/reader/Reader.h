@@ -56,14 +56,14 @@ namespace OpenLogReplicator {
         std::string database;
         int fileCopyDes{-1};
         uint64_t fileSize{0};
-        Seq fileCopySequence{Seq::zero()};
+        Seq fileCopySequence;
         bool hintDisplayed{false};
         bool configuredBlockSum;
         bool readBlocks{false};
         bool reachedZero{false};
         std::string fileNameWrite;
         int group;
-        Seq sequence{Seq::zero()};
+        Seq sequence;
         typeBlk numBlocksHeader{Ctx::ZERO_BLK};
         typeResetlogs resetlogs{0};
         typeActivation activation{0};

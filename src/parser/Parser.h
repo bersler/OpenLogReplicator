@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
         uint64_t lwnAllocated{0};
         uint64_t lwnAllocatedMax{0};
         Time lwnTimestamp{0};
-        Scn lwnScn{};
+        Scn lwnScn;
         typeBlk lwnCheckpointBlock{0};
 
         void freeLwn();
@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
     public:
         int group;
         std::string path;
-        Seq sequence{Seq::zero()};
+        Seq sequence;
         Scn firstScn{Scn::none()};
         Scn nextScn{Scn::none()};
         Reader* reader{nullptr};
