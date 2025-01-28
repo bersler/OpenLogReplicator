@@ -264,82 +264,82 @@ namespace OpenLogReplicator {
 
             buffer[19] = 0;
             return 19;
+        }
+
+        // BC
+        timestamp = 365 * 24 * 60 * 60 - timestamp;
+
+        int64_t second = (timestamp % 60);
+        timestamp /= 60;
+        int64_t minute = (timestamp % 60);
+        timestamp /= 60;
+        int64_t hour = (timestamp % 24);
+        timestamp /= 24;
+
+        int64_t year = (timestamp / 366) - 1;
+        year = std::max<int64_t>(year, 0);
+        int64_t day = yearToDaysBC(year, 0);
+
+        while (day < timestamp) {
+            ++year;
+            day = yearToDaysBC(year, 0);
+        }
+        day -= timestamp;
+
+        int64_t month = day / 27;
+        month = std::min<int64_t>(month, 11);
+
+        if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0)) {
+            // leap year
+            while (cumDaysLeap[month] > day)
+                --month;
+            day -= cumDaysLeap[month];
         } else {
-            // BC
-            timestamp = 365 * 24 * 60 * 60 - timestamp;
+            while (cumDays[month] > day)
+                --month;
+            day -= cumDays[month];
+        }
+        ++month;
+        ++day;
+        buffer[0] = '-';
+        buffer[4] = map10(year % 10);
+        year /= 10;
+        buffer[3] = map10(year % 10);
+        year /= 10;
+        buffer[2] = map10(year % 10);
+        year /= 10;
+        buffer[1] = map10(year);
+        buffer[5] = '-';
+        buffer[7] = map10(month % 10);
+        month /= 10;
+        buffer[6] = map10(month);
+        buffer[8] = '-';
+        buffer[10] = map10(day % 10);
+        day /= 10;
+        buffer[9] = map10(day);
+        if (addT)
+            buffer[11] = 'T';
+        else
+            buffer[11] = ' ';
+        buffer[13] = map10(hour % 10);
+        hour /= 10;
+        buffer[12] = map10(hour);
+        buffer[14] = ':';
+        buffer[16] = map10(minute % 10);
+        minute /= 10;
+        buffer[15] = map10(minute);
+        buffer[17] = ':';
+        buffer[19] = map10(second % 10);
+        second /= 10;
+        buffer[18] = map10(second);
+        if (addZ) {
+            buffer[20] = 'Z';
+            buffer[21] = 0;
+            return 21;
+        }
 
-            int64_t second = (timestamp % 60);
-            timestamp /= 60;
-            int64_t minute = (timestamp % 60);
-            timestamp /= 60;
-            int64_t hour = (timestamp % 24);
-            timestamp /= 24;
-
-            int64_t year = (timestamp / 366) - 1;
-            year = std::max<int64_t>(year, 0);
-            int64_t day = yearToDaysBC(year, 0);
-
-            while (day < timestamp) {
-                ++year;
-                day = yearToDaysBC(year, 0);
-            }
-            day -= timestamp;
-
-            int64_t month = day / 27;
-            month = std::min<int64_t>(month, 11);
-
-            if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0)) {
-                // leap year
-                while (cumDaysLeap[month] > day)
-                    --month;
-                day -= cumDaysLeap[month];
-            } else {
-                while (cumDays[month] > day)
-                    --month;
-                day -= cumDays[month];
-            }
-            ++month;
-            ++day;
-            buffer[0] = '-';
-            buffer[4] = map10(year % 10);
-            year /= 10;
-            buffer[3] = map10(year % 10);
-            year /= 10;
-            buffer[2] = map10(year % 10);
-            year /= 10;
-            buffer[1] = map10(year);
-            buffer[5] = '-';
-            buffer[7] = map10(month % 10);
-            month /= 10;
-            buffer[6] = map10(month);
-            buffer[8] = '-';
-            buffer[10] = map10(day % 10);
-            day /= 10;
-            buffer[9] = map10(day);
-            if (addT)
-                buffer[11] = 'T';
-            else
-                buffer[11] = ' ';
-            buffer[13] = map10(hour % 10);
-            hour /= 10;
-            buffer[12] = map10(hour);
-            buffer[14] = ':';
-            buffer[16] = map10(minute % 10);
-            minute /= 10;
-            buffer[15] = map10(minute);
-            buffer[17] = ':';
-            buffer[19] = map10(second % 10);
-            second /= 10;
-            buffer[18] = map10(second);
-            if (addZ) {
-                buffer[20] = 'Z';
-                buffer[21] = 0;
-                return 21;
-            }
-
-            buffer[20] = 0;
-            return 20;
-        };
+        buffer[20] = 0;
+        return 20;
     }
 
     std::ostringstream& Data::writeEscapeValue(std::ostringstream& ss, const std::string& str) {

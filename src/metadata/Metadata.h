@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
         typeActivation activation{0};
         Seq sequence{Seq::none()};
         Seq lastSequence{Seq::none()};
-        FileOffset fileOffset{FileOffset::zero()};
+        FileOffset fileOffset;
         Scn firstScn{Scn::none()};
         Scn nextScn{Scn::none()};
         Scn clientScn{Scn::none()};
@@ -124,12 +124,12 @@ namespace OpenLogReplicator {
         Time checkpointTime{0};
         Time lastCheckpointTime;
         Seq checkpointSequence{Seq::none()};
-        FileOffset checkpointFileOffset{FileOffset::zero()};
-        FileOffset lastCheckpointFileOffset{FileOffset::zero()};
+        FileOffset checkpointFileOffset;
+        FileOffset lastCheckpointFileOffset;
         uint64_t checkpointBytes{0};
         uint64_t lastCheckpointBytes{0};
         Seq minSequence{Seq::none()};
-        FileOffset minFileOffset{FileOffset::zero()};
+        FileOffset minFileOffset;
         Xid minXid;
         uint64_t schemaInterval{0};
         std::set<Scn> checkpointScnList;

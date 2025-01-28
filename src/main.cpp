@@ -33,6 +33,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/exception/DataException.h"
 #include "common/exception/RuntimeException.h"
 #include "common/types/Data.h"
+#include "metadata/Metadata.h"
 
 #ifdef LINK_LIBRARY_OCI
 #define HAS_OCI " OCI"
@@ -76,23 +77,23 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define HAS_THREAD_INFO ""
 #endif /* THREAD_INFO */
 
-namespace OpenLogReplicator {
-    static Ctx* mainCtx = nullptr;
+namespace {
+    OpenLogReplicator::Ctx* mainCtx = nullptr;
 
-    static void printStacktrace() {
+    void printStacktrace() {
         mainCtx->printStacktrace();
     }
 
-    static void signalHandler(int s) {
+    void signalHandler(int s) {
         mainCtx->signalHandler(s);
     }
 
-    static void signalCrash(int sig __attribute__((unused))) {
+    void signalCrash(int sig __attribute__((unused))) {
         printStacktrace();
         exit(1);
     }
 
-    static void signalDump(int sig __attribute__((unused))) {
+    void signalDump(int sig __attribute__((unused))) {
         printStacktrace();
         mainCtx->signalDump();
     }
@@ -120,7 +121,7 @@ namespace OpenLogReplicator {
             const std::string regexString("check if matches!");
             const bool regexWorks = regex_search(regexString, regexTest);
             if (!regexWorks)
-                throw RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
+                throw OpenLogReplicator::RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
             for (int i = 1; i < argc; ++i) {
                 const std::string arg = argv[i];
@@ -156,31 +157,31 @@ namespace OpenLogReplicator {
 
                 if (getuid() == 0) {
                     if (!forceRoot)
-                        throw RuntimeException(10020, "program is run as root, you should never do that");
+                        throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
                     mainCtx->warning(10020, "program is run as root, you should never do that");
                 }
 
-                throw ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
-                                                    " [-v|--version] [-f|--file CONFIG] [-p|--process PROCESSNAME] [-r|--root]");
+                throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) + " [-v|--version] [-f|--file CONFIG] "
+                                                                       "[-p|--process PROCESSNAME] [-r|--root]");
             }
-        } catch (ConfigurationException& ex) {
+        } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             return 1;
-        } catch (RuntimeException& ex) {
+        } catch (OpenLogReplicator::RuntimeException& ex) {
             mainCtx->error(ex.code, ex.msg);
             return 1;
         }
 
-        OpenLogReplicator openLogReplicator(fileName, mainCtx);
+        OpenLogReplicator::OpenLogReplicator openLogReplicator(fileName, mainCtx);
         try {
             ret = openLogReplicator.run();
-        } catch (ConfigurationException& ex) {
+        } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
-        } catch (DataException& ex) {
+        } catch (OpenLogReplicator::DataException& ex) {
             mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
-        } catch (RuntimeException& ex) {
+        } catch (OpenLogReplicator::RuntimeException& ex) {
             mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
         } catch (std::bad_alloc& ex) {
@@ -194,11 +195,11 @@ namespace OpenLogReplicator {
 
 int main(int argc, char** argv) {
     OpenLogReplicator::Ctx ctx;
-    OpenLogReplicator::mainCtx = &ctx;
-    signal(SIGINT, OpenLogReplicator::signalHandler);
-    signal(SIGPIPE, OpenLogReplicator::signalHandler);
-    signal(SIGSEGV, OpenLogReplicator::signalCrash);
-    signal(SIGUSR1, OpenLogReplicator::signalDump);
+    mainCtx = &ctx;
+    signal(SIGINT, signalHandler);
+    signal(SIGPIPE, signalHandler);
+    signal(SIGSEGV, signalCrash);
+    signal(SIGUSR1, signalDump);
 
     const char* logTimezone = std::getenv("OLR_LOG_TIMEZONE");
     if (logTimezone != nullptr)
@@ -212,13 +213,13 @@ int main(int argc, char** argv) {
     if (olrLocales == "MOCK")
         OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::MOCK;
 
-    const int ret = OpenLogReplicator::mainFunction(argc, argv);
+    const int ret = mainFunction(argc, argv);
 
     signal(SIGINT, nullptr);
     signal(SIGPIPE, nullptr);
     signal(SIGSEGV, nullptr);
     signal(SIGUSR1, nullptr);
-    OpenLogReplicator::mainCtx = nullptr;
+    mainCtx = nullptr;
 
     return ret;
 }

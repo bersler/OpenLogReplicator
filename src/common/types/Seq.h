@@ -25,19 +25,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Seq final {
-        uint32_t data;
+        uint32_t data{0};
         static constexpr uint32_t NONE{0xFFFFFFFF};
 
     public:
-        Seq() : data(0) {
-        }
+        Seq() = default;
 
         static Seq none() {
             return Seq(NONE);
         }
 
         static Seq zero() {
-            return Seq(0);
+            return Seq{};
         }
 
         explicit Seq(uint32_t newData) : data(newData) {
