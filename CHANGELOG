@@ -1,6 +1,7 @@
 1.8.4
 - fix: discard writer type
 - code style cleanup
+- fix: minor bug related to DDL processing
 
 1.8.3 - released on 2025.01.01
 - performance improvements

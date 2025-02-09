@@ -1260,9 +1260,6 @@ namespace OpenLogReplicator {
         if (likely(table != nullptr)) {
             if (table->guardSegNo != -1)
                 guardPos = table->guardSegNo;
-
-            if (valuesMax >= table->maxSegCol)
-                valuesMax = table->maxSegCol - 1;
         }
 
         typeCol baseMax = valuesMax >> 6;
@@ -1319,9 +1316,6 @@ namespace OpenLogReplicator {
                     }
                     valuesMerge[base] &= ~mask;
                 }
-
-                if (table != nullptr && column >= table->maxSegCol)
-                    break;
 
                 if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr) {
                     bool guardPresent = false;
@@ -1441,6 +1435,11 @@ namespace OpenLogReplicator {
                         const typeCol column = columnBase + pos;
 
                         if (likely(table != nullptr)) {
+                            if (unlikely(static_cast<size_t>(column) >= table->columns.size()))
+                                throw RedoLogException(50073, "table: " + table->owner + "." + table->name + ": missmatch in column details: " +
+                                                              std::to_string(table->columns.size()) + " < " + std::to_string(column) + ", xid: " +
+                                                              lastXid.toString() + ", offset: " + redoLogRecord2p->fileOffset.toString());
+
                             if (!table->columns[column]->nullable &&
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr &&
                                 values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
@@ -1579,13 +1578,13 @@ namespace OpenLogReplicator {
                     for (typeCol column = 0; column < maxCol; ++column) {
                         const typeCol base = column >> 6;
                         const typeMask mask = 1ULL << (column & 0x3F);
-                        if ((valuesSet[base] & mask) == 0) {
-                            valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
-                            if (column >= valuesMax)
-                                valuesMax = column + 1;
-                        }
+                        if ((valuesSet[base] & mask) != 0)
+                            continue;
+                        valuesSet[base] |= mask;
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
+                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
+                        if (column >= valuesMax)
+                            valuesMax = column + 1;
                     }
                 } else {
                     // Remove NULL values from insert if not PK
@@ -1613,13 +1612,13 @@ namespace OpenLogReplicator {
                     for (const typeCol column: table->pk) {
                         const typeCol base = column >> 6;
                         const typeMask mask = static_cast<uint64_t>(1) << (column & 0x3F);
-                        if ((valuesSet[base] & mask) == 0) {
-                            valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
-                            if (column >= valuesMax)
-                                valuesMax = column + 1;
-                        }
+                        if ((valuesSet[base] & mask) != 0)
+                            continue;
+                        valuesSet[base] |= mask;
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = reinterpret_cast<const uint8_t*>(1);
+                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = 0;
+                        if (column >= valuesMax)
+                            valuesMax = column + 1;
                     }
                 }
             }
@@ -1661,11 +1660,11 @@ namespace OpenLogReplicator {
                     for (typeCol column = 0; column < maxCol; ++column) {
                         const typeCol base = column >> 6;
                         const typeMask mask = static_cast<uint64_t>(1) << (column & 0x3F);
-                        if ((valuesSet[base] & mask) == 0) {
-                            valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
-                        }
+                        if ((valuesSet[base] & mask) != 0)
+                            continue;
+                        valuesSet[base] |= mask;
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
+                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                     }
                 } else {
                     // Remove NULL values from delete if not PK
@@ -1693,11 +1692,11 @@ namespace OpenLogReplicator {
                     for (const typeCol column: table->pk) {
                         const typeCol base = column >> 6;
                         const typeMask mask = static_cast<uint64_t>(1) << (column & 0x3F);
-                        if ((valuesSet[base] & mask) == 0) {
-                            valuesSet[base] |= mask;
-                            values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
-                            sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
-                        }
+                        if ((valuesSet[base] & mask) != 0)
+                            continue;
+                        valuesSet[base] |= mask;
+                        values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = reinterpret_cast<const uint8_t*>(1);
+                        sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = 0;
                     }
                 }
             }

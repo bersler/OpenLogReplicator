@@ -785,6 +785,11 @@ namespace OpenLogReplicator {
                 tableTmp->addColumn(columnTmp);
                 columnTmp = nullptr;
             }
+            if (unlikely(tableTmp->columns.size() < static_cast<size_t>(tableTmp->maxSegCol))) {
+                ctx->warning(50073, "table " + std::string(sysUser->name) + "." + sysObj->name + " - missmatch in column details: " +
+                                    std::to_string(tableTmp->columns.size()) + " < " + std::to_string(tableTmp->maxSegCol));
+                tableTmp->maxSegCol = tableTmp->columns.size();
+            }
 
             if (!DbTable::isSystemTable(options)) {
                 const SysLobKey sysLobKeyFirst(sysObj->obj, 0);
