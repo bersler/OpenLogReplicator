@@ -27,6 +27,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: print hint about incorrect file permissions
 - bug: file writer data is not flushed until the buffer is full
 - enhancement: new parameters for writer type "file": "write-buffer-flush-size"
+- enhancement: replication startup parameters moved to program arguments
 
 === Version 1.8.3
 - performance improvements

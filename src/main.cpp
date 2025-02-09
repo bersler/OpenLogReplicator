@@ -123,6 +123,12 @@ namespace {
             if (!regexWorks)
                 throw OpenLogReplicator::RuntimeException(10019, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
+            OpenLogReplicator::Start start;
+            OpenLogReplicator::Scn startScn = OpenLogReplicator::Scn::zero();
+            OpenLogReplicator::Seq startSequence = OpenLogReplicator::Seq::zero();
+            uint64_t startTimeRel = 0;
+            std::string startTime;
+
             for (int i = 1; i < argc; ++i) {
                 const std::string arg = argv[i];
                 if (arg == "-v" || arg == "--version") {
@@ -155,14 +161,44 @@ namespace {
                     continue;
                 }
 
-                if (geteuid() == 0) {
-                    if (!forceRoot)
-                        throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
-                    mainCtx->warning(10020, "program is run as root, you should never do that");
+                if (arg == "-n" || arg == "--now") {
+                    startNow = true;
+                    continue;
                 }
 
-                throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) + " [-v|--version] [-f|--file CONFIG] "
-                                                                       "[-p|--process PROCESSNAME] [-r|--root]");
+                if (i + 1 < argc && (arg == "-s" || arg == "--scn")) {
+                    startScn = std::stoull(argv[i + 1]);
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-q", 2) == 0 || strncmp(argv[i], "--sequence", 10) == 0)) {
+                    startSequence = std::stoul(argv[i + 1]);
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-t", 2) == 0 || strncmp(argv[i], "--time", 6) == 0)) {
+                    startTime = argv[i + 1];
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-l", 2) == 0 || strncmp(argv[i], "--time-relative", 15) == 0)) {
+                    startTimeRel = std::stoull(argv[i + 1]);
+                    ++i;
+                    continue;
+                }
+
+                throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
+                                                                       " [-f|--file CONFIG]  [-l|--time-relative TIME] [-n|--now] [-p|--process PROCESSNAME] "
+                                                                       " [-q|--sequence SEQUENCE] [-r|--root] [-s|--scn SCN] [-t|--time TIME] [-v|--version] ");
+            }
+
+            if (geteuid() == 0) {
+                if (!forceRoot)
+                    throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
+                mainCtx->warning(10020, "program is run as root, you should never do that");
             }
         } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
