@@ -5,6 +5,7 @@
 - enhancement: print hint about incorrect file permissions
 - bug: file writer data is not flushed until the buffer is full
 - enhancement: new parameters for writer type "file": "write-buffer-flush-size"
+- enhancement: replication startup parameters moved to program arguments
 
 1.8.3 - released on 2025.01.01
 - performance improvements

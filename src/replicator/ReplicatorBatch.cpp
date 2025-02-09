@@ -29,10 +29,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorBatch::positionReader() {
-        if (metadata->startSequence != Seq::none())
-            metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
-        else
-            metadata->setSeqFileOffset(Seq::zero(), FileOffset::zero());
+        metadata->setSeqOffset(0, 0);
         metadata->sequence = 0;
     }
 
@@ -41,11 +38,11 @@ namespace OpenLogReplicator {
             return;
 
         ctx->hint("if you don't have earlier schema, try with schemaless mode ('flags': 2)");
-        if (metadata->schema->scn != Scn::none())
-            ctx->hint("you can also set start SCN for writer: 'start-scn': " + metadata->schema->scn.toString());
 
         throw RuntimeException(10052, "schema file missing");
     }
+    if (startScn != Ctx::ZERO_SCN || startSequence != Ctx::ZERO_SEQ || !startTime.empty() || startTimeRel > 0)
+    throw ConfigurationException(30011, "Invalid startup parameters: startup parameters are not allowed to be used for batch reader");
 
     void ReplicatorBatch::updateOnlineRedoLogData() {
         // No need to update online redo log data in batch mode
