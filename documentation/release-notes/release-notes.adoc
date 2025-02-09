@@ -21,6 +21,7 @@ This document describes the release notes of OpenLogReplicator.
 - code style cleanup
 - fix: minor bug related to DDL processing
 - enhancement: print hint about incorrect file permissions
+- enhancement: replication startup parameters moved to program arguments
 
 === Version 1.8.3
 - performance improvements

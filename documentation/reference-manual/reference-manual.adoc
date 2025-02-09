@@ -27,6 +27,43 @@ The only parameters accepted are:
 
 * `-v|--version` -- print version and exit.
 
+When starting a new replication session, a startup parameter is required.
+The startup parameters define the point in time when the program starts processing redo log files.
+Startup parameters are required only for `online` reader mode.
+For `batch` reader modes, the program starts processing from the beginning of the provided redo log files.
+For `offline` reader mode, the program starts processing from the last checkpoint file.
+The following startup parameters are available:
+
+* `-t now` -- start replication from the current time.
+
+* `-t now,<SEQ>` -- start replication from the current time but start parsing redo log from sequence <SEQ>.
+
+* `-t scn:<SCN>` -- start replication from the provided SCN number.
+
+* `-t scn:<SCN>,<SEQ>` -- start replication from the provided SCN number but start parsing redo log from sequence <SEQ>.
+
+* `-t seq:<SEQ>` -- start replication from redo log from sequence <SEQ>.
+
+* `-t "time:<TIME>"` -- start replication from the provided absolute time value.
+
+The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function.
+For example, if the value is set to `2025-01-01 00:00:00`, the program will start from the SCN, which was active at the beginning of 2025.
+Use quotion marks ("") when providing this argument.
+
+* `-t "time:<TIME>,<SEQ>`" -- start replication from the provided absolute time value but start parsing redo log from sequence <SEQ>.
+
+* `-t time_rel:<SHIFT>` -- start replication from the provided relative time <SHIFT> value.
+
+The value and is relative to the current time using `TIMESTAMP_TO_SCN` sql function.
+For example, if the value is set to `3600`, the program will start from the SCN, which was active 1 hour ago.
+Provided number in seconds.
+
+* `-t time_rel:<SHIFT>,<SEQ>` -- start replication from the provided relative time <SHIFT> value but start parsing redo log from sequence <SEQ>.
+
+_IMPORTANT:_ There is no default value for the startup parameter.
+The startup parameter is invalid when the program was already started earlier and a checkpoint file exists.
+To force start replication from the beginning, the checkpoint files should be removed.
+
 All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
 The file should be in JSON format.
 For start please check example config files in `scripts` directory.
@@ -577,44 +614,6 @@ Example config file: `OpenLogReplicator.json.example-batch`.
 Format should be in form like: `//<host>:<port>/<service>`.
 
 _NOTE:_ This field is valid only for `online` type.
-
-|`start-scn`
-|_number_, min: 0
-|The first SCN number to be processed.
-If not specified, the program will start from the current SCN.
-
-_CAUTION:_ Setting a very low value of starting SCN might cause problems during program startup if the schema has changed since this SCN and the schema is not available to read using database flashback.
-In such a case, the program will not be able to read the metadata and will stop.
-
-_IMPORTANT:_ Setting this parameter to some value would mean that transactions started before this SCN would not be processed.
-
-|`start-seq`
-|_number_, min: 0
-|First sequence number to be processed.
-
-_IMPORTANT:_ If not specified, the first sequence would be determined by reading SCN boundaries assigned to particular redo log files and matched to starting SCN.
-
-|`start-time-rel`
-|_number_, min: 0
-|Determine starting SCN by relative time.
-The value and is relative to the current time using `TIMESTAMP_TO_SCN` sql function.
-For example, if the value is set to `3600`, the program will start from the SCN, which was active 1 hour ago.
-
-Number in seconds.
-
-_NOTE:_ This field is valid only for `online` type.
-
-_CAUTION:_ It is invalid to use this parameter when `start-scn` is specified.
-
-|`start-time`
-|_string_, max length: 256
-|Determine a starting SCN value by absolute time.
-The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function.
-For example, if the value is set to `2018-01-01 00:00:00`, the program will start from the SCN, which was active at the beginning of 2018.
-
-_NOTE:_ This field is valid only for `online` type.
-
-_CAUTION:_ It is invalid to use this parameter when `start-scn` or `start-time-rel` is specified.
 
 |`state`
 |_element_ of <<state,state>>
