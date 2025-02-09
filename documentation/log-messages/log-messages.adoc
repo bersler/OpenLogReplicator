@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.4
-:revdate: 2025-01-24
+:revdate: 2025-02-09
 :imagesdir: ./images
 :toc: preamble
 
@@ -785,6 +785,8 @@ Please consider recreating schema checkpoint files: stop replication, delete con
 ==== code 50071: "unswap page not swapped for xid: <xid>"
 
 ==== code 50072: "swap file: <file> - <message>"
+
+==== code 50073: "table: <table>: missmatch in column details: <number> < <number>"
 
 == Warnings Messages
 
