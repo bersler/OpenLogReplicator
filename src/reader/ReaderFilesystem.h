@@ -34,6 +34,8 @@ namespace OpenLogReplicator {
     public:
         ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum);
         ~ReaderFilesystem() override;
+
+        void showHint(Thread* t, std::string origPath, std::string mappedPath) const override;
     };
 }
 

@@ -155,7 +155,7 @@ namespace {
                     continue;
                 }
 
-                if (getuid() == 0) {
+                if (geteuid() == 0) {
                     if (!forceRoot)
                         throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
                     mainCtx->warning(10020, "program is run as root, you should never do that");

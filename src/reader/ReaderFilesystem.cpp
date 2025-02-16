@@ -24,6 +24,7 @@ _FILE_OFFSET_BITS = 64
 
 #include <cerrno>
 #include <cstring>
+#include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -144,5 +145,98 @@ namespace OpenLogReplicator {
         }
 
         return bytes;
+    }
+
+    void ReaderFilesystem::showHint(Thread* t, std::string origPath, std::string mappedPath) const {
+        bool first = true;
+        uid_t uid = geteuid();
+        gid_t gid = getegid();
+
+        ctx->hint("check mapping, failed to read: " + origPath + " mapped to: " + mappedPath + " run as uid: " + std::to_string(uid) +
+                  " gid: " + std::to_string(gid));
+
+        while (!mappedPath.empty()) {
+            std::string partialFileName;
+            if (!first) {
+                size_t found = mappedPath.find_last_of("/\\");
+                partialFileName = mappedPath.substr(found + 1);
+                mappedPath.resize(found);
+            }
+            if (mappedPath.empty())
+                break;
+
+            struct stat fileStat{};
+            t->contextSet(CONTEXT::OS, REASON::OS);
+            const int statRet = stat(mappedPath.c_str(), &fileStat);
+            t->contextSet(CONTEXT::CPU);
+
+            // try with stat
+            if (statRet != 0) {
+                ctx->hint("- path: " + mappedPath + " - get metadata returned: " + strerror(errno));
+                first = false;
+                continue;
+            }
+
+            std::string fileType;
+            switch (fileStat.st_mode & S_IFMT) {
+                case S_IFBLK:
+                    fileType = "block device";
+                    break;
+                case S_IFCHR:
+                    fileType = "character device";
+                    break;
+                case S_IFDIR:
+                    fileType = "directory";
+                    break;
+                case S_IFIFO:
+                    fileType = "FIFO/pipe";
+                    break;
+                case S_IFLNK:
+                    fileType = "symlink";
+                    break;
+                case S_IFREG:
+                    fileType = "regular file";
+                    break;
+                case S_IFSOCK:
+                    fileType = "socket";
+                    break;
+                default:
+                    fileType = "unknown?";
+            }
+
+            std::stringstream permissions;
+            permissions << std::oct << fileStat.st_mode;
+
+            ctx->hint("- path: " + mappedPath + " - type: " + fileType + " permissions: " + permissions.str() +
+                      " uid: " + std::to_string(fileStat.st_uid) + " gid: " + std::to_string(fileStat.st_gid));
+
+            DIR* dir = opendir(mappedPath.c_str());
+            if (dir == nullptr) {
+                ctx->hint("- path: " + mappedPath + " - get metadata returned: " + strerror(errno));
+                first = false;
+                continue;
+            }
+
+            bool found = false;
+            const struct dirent* ent;
+            while ((ent = readdir(dir)) != nullptr) {
+                const std::string dName(ent->d_name);
+                if (dName == "." || dName == "..")
+                    continue;
+
+                const std::string localFileName(ent->d_name);
+                if (partialFileName != localFileName)
+                    continue;
+
+                found = true;
+                break;
+            }
+            closedir(dir);
+
+            if (!found)
+                ctx->hint("- path: " + mappedPath + " - can be listed but does not contain: " + partialFileName);
+
+            first = false;
+        }
     }
 }

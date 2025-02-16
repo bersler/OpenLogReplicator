@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.4
-:revdate: 2025-01-17
+:revdate: 2025-02-17
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -29,7 +29,7 @@ The only parameters accepted are:
 
 All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
 The file should be in JSON format.
-For start please check example config files in `scripts` folder.
+For start please check example config files in `scripts` directory.
 Refer to a full parameters list for more details.
 
 All output messages are sent to _stderr_ stream.
@@ -37,7 +37,7 @@ Optionally, JSON output can be sent to _stdout_ stream when test parameter is se
 
 The only language of the documentation and error messages and used in program is English.
 
-== Folder permissions
+== Directory permissions
 
 In some interval, the program writes a checkpoint file which contains information about the last processed transaction (sent to Kafka output).
 
@@ -554,18 +554,18 @@ For example, the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but a file 
 
 |`redo-copy-path`
 |_string_, max length: 2048
-|Debugging parameter which allows copying all contents of processed redo log files to defined folder.
+|Debugging parameter which allows copying all contents of processed redo log files to defined directory.
 
 _TIP:_ This parameter is useful for diagnosing disk-read related problems.
-When consistency errors are detected, the redo log file is copied to the defined folder.
+When consistency errors are detected, the redo log file is copied to the defined directory.
 The file name is in format: `path/<database>_<seq>.arc`.
 Having a copy of read redo log file allows easier post-mortem analysis, since the file contains exactly the same data as those which were processed.
 
 |`redo-log`
 |_list_ of _string_, max length: 2048
 |List of redo logs files which should be processed in batch mode.
-Elements could be files but also folders.
-In the second case, all files in this folder would be processed.
+Elements could be files but also directories.
+In the second case, all files in this directory would be processed.
 
 _NOTE:_ This field is valid only for `batch` type.
 

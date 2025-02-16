@@ -329,7 +329,7 @@ namespace OpenLogReplicator {
                 for (const std::string& path: reader->paths) {
                     std::string pathMapped(path);
                     applyMapping(pathMapped);
-                    ctx->hint("check mapping, failed to read: " + pathMapped);
+                    reader->showHint(this, path, pathMapped);
                 }
                 throw RuntimeException(10027, "can't read any member of group " + std::to_string(badGroup));
             }

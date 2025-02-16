@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.4
-:revdate: 2025-02-09
+:revdate: 2025-02-17
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -20,6 +20,7 @@ This document describes the release notes of OpenLogReplicator.
 - fix: discard writer type
 - code style cleanup
 - fix: minor bug related to DDL processing
+- enhancement: print hint about incorrect file permissions
 
 === Version 1.8.3
 - performance improvements

@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.4
-:revdate: 2025-01-17
+:revdate: 2025-02-17
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -831,7 +831,7 @@ Thus, if they change, the schema file needs to be edited manually (this is a JSO
 
 To start replication with `online` reader, first define the type of the reader as `online`, provide credentials for the database connection and start the program.
 
-Once the program is running, it would create a schema file -- which is visible in the `checkpoint` folder.
+Once the program is running, it would create a schema file -- which is visible in the `checkpoint` directory.
 
 Stop OpenLogReplicator, by simply pressing `Ctrl+C` or killing the process.
 
@@ -840,7 +840,7 @@ Next, edit configuration file and change the type of the reader to `offline`, re
 ==== Manually creating a schema file
 
 To create a schema file manually, the user needs to run the `gencfg.sql` script.
-The script is located in the `scripts` folder of the distribution.
+The script is located in the `scripts` directory of the distribution.
 
 Before running the script, it must be edited and the following parameters need to be provided:
 

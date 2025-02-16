@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.4
-:revdate: 2025-02-09
+:revdate: 2025-02-17
 :imagesdir: ./images
 :toc: preamble
 
@@ -82,7 +82,7 @@ Check if the file system is not corrupted and disk-containing file is available.
 The file couldn't be opened for write operation.
 If the file didn't exist, it would be created.
 Verify if the file exists and has the correct permissions.
-Verify folder write permissions if a file is to be created.
+Verify directory write permissions if a file is to be created.
 
 ==== code 10007: "file: <file name> - <number> bytes written instead of <number>, code returned: <message>"
 
@@ -102,7 +102,7 @@ Check operating system log messages.
 
 The file couldn't be opened after several attempts.
 Verify if the file exists and has the correct permissions.
-Verify folder read permissions if file is to be read.
+Verify directory read permissions if file is to be read.
 
 ==== code 10010: "file: <file name> - delete returned: <error>"
 
@@ -778,7 +778,7 @@ If you encounter any of these errors, please report this issue.
 ==== code 50069: "no active XML context found"
 
 The experimental feature to decode binary xmldata has been turned on, but the metadata contains no XML dictionary data.
-Please consider recreating schema checkpoint files: stop replication, delete content of checkpoint folder, and restart to recreate the schema file.
+Please consider recreating schema checkpoint files: stop replication, delete content of checkpoint directory, and restart to recreate the schema file.
 
 ==== code 50070: "swap chunk not found for xid: <xid> during <operation>"
 
