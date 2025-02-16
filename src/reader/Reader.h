@@ -144,6 +144,7 @@ namespace OpenLogReplicator {
         void setStatusRead();
         void confirmReadData(FileOffset confirmedBufferStart);
         [[nodiscard]] bool checkFinished(Thread* t, FileOffset confirmedBufferStart);
+        virtual void showHint(Thread* t, std::string origPath, std::string mappedPath) const = 0;
 
         std::string getName() const override {
             return {"Reader: " + fileName};
