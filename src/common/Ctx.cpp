@@ -40,7 +40,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 OpenLogReplicator::Ctx::LOCALES OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::TIMESTAMP;
 
 namespace OpenLogReplicator {
-    const std::string Ctx::memoryModules[MEMORY_COUNT]{"builder", "parser", "reader", "transaction"};
+    const std::string Ctx::memoryModules[MEMORY_COUNT]{"builder", "parser", "reader", "transaction", "writer"};
 
     IntX IntX::BASE10[IntX::DIGITS][10];
 
@@ -496,6 +496,10 @@ namespace OpenLogReplicator {
 
                 case MEMORY::TRANSACTIONS:
                     metrics->emitMemoryUsedMbTransactions(allocatedModule * MEMORY_CHUNK_SIZE_MB);
+                    break;
+
+                case MEMORY::WRITER:
+                    metrics->emitMemoryUsedMbWriter(allocatedModule * MEMORY_CHUNK_SIZE_MB);
             }
         }
 
@@ -558,6 +562,10 @@ namespace OpenLogReplicator {
 
                 case MEMORY::TRANSACTIONS:
                     metrics->emitMemoryUsedMbTransactions(allocatedModule * MEMORY_CHUNK_SIZE_MB);
+                    break;
+
+                case MEMORY::WRITER:
+                    metrics->emitMemoryUsedMbWriter(allocatedModule * MEMORY_CHUNK_SIZE_MB);
             }
         }
     }
@@ -1116,7 +1124,9 @@ namespace OpenLogReplicator {
                 std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
                 std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer HWM: " +
                 std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " +
+                std::to_string(swappedMB) + "MB, disk write buffer HWM: " +
+                std::to_string(memoryModulesHWM[static_cast<uint>(Ctx::MEMORY::WRITER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
     }
 
     void Ctx::printMemoryUsageCurrent() const {
@@ -1127,6 +1137,8 @@ namespace OpenLogReplicator {
                 std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
                 std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer: " +
                 std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " + std::to_string(swappedMB) + "MB");
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " +
+                std::to_string(swappedMB) + "MB, disk write buffer: " +
+                std::to_string(memoryModulesAllocated[static_cast<uint>(Ctx::MEMORY::WRITER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
     }
 }

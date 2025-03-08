@@ -108,6 +108,7 @@ namespace OpenLogReplicator {
         prometheus::Gauge* memoryUsedMbParserGauge{nullptr};
         prometheus::Gauge* memoryUsedMbReaderGauge{nullptr};
         prometheus::Gauge* memoryUsedMbTransactionsGauge{nullptr};
+        prometheus::Gauge* memoryUsedMbWriterGauge{nullptr};
 
         // messages_confirmed
         prometheus::Family<prometheus::Counter>* messagesConfirmed{nullptr};
@@ -204,6 +205,7 @@ namespace OpenLogReplicator {
         void emitMemoryUsedMbParser(int64_t gauge) override;
         void emitMemoryUsedMbReader(int64_t gauge) override;
         void emitMemoryUsedMbTransactions(int64_t gauge) override;
+        void emitMemoryUsedMbWriter(int64_t gauge) override;
 
         // messages_confirmed
         void emitMessagesConfirmed(uint64_t counter) override;

@@ -117,6 +117,7 @@ namespace OpenLogReplicator {
         memoryUsedMbParserGauge = &memoryUsedMb->Add({{"type", "parser"}});
         memoryUsedMbReaderGauge = &memoryUsedMb->Add({{"type", "reader"}});
         memoryUsedMbTransactionsGauge = &memoryUsedMb->Add({{"type", "transactions"}});
+        memoryUsedMbWriterGauge = &memoryUsedMb->Add({{"type", "writer"}});
 
         // messages_sent
         messagesSent = &prometheus::BuildCounter().Name("messages_sent").Help("Number of messages sent to output (for example to Kafka or network writer)")
@@ -384,6 +385,10 @@ namespace OpenLogReplicator {
 
     void MetricsPrometheus::emitMemoryUsedMbTransactions(int64_t gauge) {
         memoryUsedMbTransactionsGauge->Set(gauge);
+    }
+
+    void MetricsPrometheus::emitMemoryUsedMbWriter(int64_t gauge) {
+        memoryUsedMbWriterGauge->Set(gauge);
     }
 
     // messages_confirmed

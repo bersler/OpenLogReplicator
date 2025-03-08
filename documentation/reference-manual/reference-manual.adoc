@@ -1422,4 +1422,13 @@ Refer to the documentation of your C library for more information.
 
 _NOTE:_ This field is valid only for `file` type.
 
+|`write-buffer-flush-size`
+|_number_, min: 0, max: 1048576, default: 1048576
+|The number of bytes of the write buffer after witch the buffer is flushed.
+Setting the value to 0 causes the buffer to be flushed immediately after a message is ready for writing.
+Big values can cause a lag in writing the data to the output file but allow to reduce the frequency of writing to flush disk operations.
+If the amount of data in the buffer does not reach this value, it would be flushed anyway not later than 'poll-interval-us' us.
+
+_NOTE:_ This field is valid only for `file` type.
+
 |===

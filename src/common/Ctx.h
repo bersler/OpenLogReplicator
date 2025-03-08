@@ -59,9 +59,9 @@ namespace OpenLogReplicator {
             SILENT, ERROR, WARNING, INFO, DEBUG
         };
         enum class MEMORY : unsigned char {
-            BUILDER, MISC, PARSER, READER, TRANSACTIONS
+            BUILDER, MISC, PARSER, READER, TRANSACTIONS, WRITER
         };
-        static constexpr uint MEMORY_COUNT{5};
+        static constexpr uint MEMORY_COUNT{6};
         enum class DISABLE_CHECKS : unsigned char {
             GRANTS = 1 << 0, SUPPLEMENTAL_LOG = 1 << 1, BLOCK_SUM = 1 << 2, JSON_TAGS = 1 << 3
         };
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
         uint64_t memoryChunksAllocated{0};
         uint64_t memoryChunksFree{0};
         uint64_t memoryChunksHWM{0};
-        uint64_t memoryModulesAllocated[MEMORY_COUNT]{0, 0, 0, 0, 0};
+        uint64_t memoryModulesAllocated[MEMORY_COUNT]{0, 0, 0, 0, 0, 0};
 
         std::mutex mtx;
         std::condition_variable condMainLoop;
@@ -130,7 +130,7 @@ namespace OpenLogReplicator {
         bool bigEndian{false};
 
     public:
-        uint64_t memoryModulesHWM[MEMORY_COUNT]{0, 0, 0, 0, 0};
+        uint64_t memoryModulesHWM[MEMORY_COUNT]{0, 0, 0, 0, 0, 0};
 
         Metrics* metrics{nullptr};
         Clock* clock{nullptr};

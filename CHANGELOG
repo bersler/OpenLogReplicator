@@ -3,6 +3,8 @@
 - code style cleanup
 - fix: minor bug related to DDL processing
 - enhancement: print hint about incorrect file permissions
+- bug: file writer data is not flushed until the buffer is full
+- enhancement: new parameters for writer type "file": "write-buffer-flush-size"
 
 1.8.3 - released on 2025.01.01
 - performance improvements
