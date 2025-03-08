@@ -35,21 +35,28 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     WriterFile::WriterFile(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata,
-                           std::string newOutput, std::string newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend) :
+                           std::string newOutput, std::string newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend,
+                           uint newWriteBufferFlushSize) :
             Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata),
             output(std::move(newOutput)),
             timestampFormat(std::move(newTimestampFormat)),
             maxFileSize(newMaxFileSize),
             newLine(newNewLine),
-            append(newAppend) {
+            append(newAppend),
+            writeBufferFlushSize(newWriteBufferFlushSize) {
     }
 
     WriterFile::~WriterFile() {
         closeFile();
+        if (buffer == nullptr)
+            return;
+        ctx->freeMemoryChunk(this, Ctx::MEMORY::WRITER, buffer);
+        buffer = nullptr;
     }
 
     void WriterFile::initialize() {
         Writer::initialize();
+        buffer = ctx->getMemoryChunk(this, Ctx::MEMORY::WRITER);
 
         if (newLine == 1) {
             newLineMsg = reinterpret_cast<const uint8_t*>("\n");
@@ -310,12 +317,14 @@ namespace OpenLogReplicator {
     std::string WriterFile::getType() const {
         if (outputDes == STDOUT_FILENO)
             return "stdout";
-                    return "file:" + pathName + "/" + fileNameMask;
+        return "file:" + pathName + "/" + fileNameMask;
     }
 
     void WriterFile::pollQueue() {
         if (metadata->status == Metadata::STATUS::READY)
             metadata->setStatusStart(this);
+
+        flush();
     }
 
     void WriterFile::flush() {
@@ -336,10 +345,10 @@ namespace OpenLogReplicator {
     }
 
     void WriterFile::bufferedWrite(const uint8_t* data, uint64_t size) {
-        if (bufferFill + size > BUFFER_FLUSH)
+        if (bufferFill + size > Ctx::MEMORY_CHUNK_SIZE)
             flush();
 
-        if (size > BUFFER_FLUSH) {
+        if (size > Ctx::MEMORY_CHUNK_SIZE) {
             unbufferedWrite(data, size);
             return;
         }
@@ -347,7 +356,7 @@ namespace OpenLogReplicator {
         memcpy(buffer + bufferFill, data, size);
         bufferFill += size;
 
-        if (bufferFill > BUFFER_FLUSH)
+        if (bufferFill > writeBufferFlushSize)
             flush();
     }
 }

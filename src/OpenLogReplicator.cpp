@@ -931,7 +931,8 @@ namespace OpenLogReplicator {
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> writerNames {"type", "poll-interval-us", "queue-size", "max-file-size", "timestamp-format", "output",
-                                                                   "new-line", "append", "max-message-mb", "topic", "properties", "uri"};
+                                                                   "new-line", "append", "max-message-mb", "topic", "properties", "uri",
+                                                                   "write-buffer-flush-size"};
                 Ctx::checkJsonFields(configFileName, writerJson, writerNames);
             }
 
@@ -979,8 +980,16 @@ namespace OpenLogReplicator {
                         throw ConfigurationException(30001, "bad JSON, invalid \"append\" value: " + std::to_string(append) + ", expected: one of {0, 1}");
                 }
 
+                uint writeBufferFlushSize = 1048576;
+                if (writerJson.HasMember("write-buffer-flush-size")) {
+                    writeBufferFlushSize = Ctx::getJsonFieldU(configFileName, writerJson, "write-buffer-flush-size");
+                    if (writeBufferFlushSize > 1048576)
+                        throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-flush-size\" value: " +
+                                                            std::to_string(writeBufferFlushSize) + ", expected: one of {0 .. 1048576}");
+                }
+
                 writer = new WriterFile(ctx, alias + "-writer", replicator2->database, replicator2->builder, replicator2->metadata, output, timestampFormat,
-                                        maxFileSize, newLine, append);
+                                        maxFileSize, newLine, append, writeBufferFlushSize);
             } else if (writerType == "discard") {
                 writer = new WriterDiscard(ctx, alias + "-writer", replicator2->database, replicator2->builder, replicator2->metadata);
             } else if (writerType == "kafka") {
