@@ -316,7 +316,10 @@ namespace OpenLogReplicator {
             lwnIdx = 0;
         }
 
-        builderBegin(scn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::CHECKPOINT);
+        BuilderMsg::OUTPUT_BUFFER flags = BuilderMsg::OUTPUT_BUFFER::CHECKPOINT;
+        if (redo)
+            flags = static_cast<BuilderMsg::OUTPUT_BUFFER>(static_cast<uint>(flags) | static_cast<uint>(BuilderMsg::OUTPUT_BUFFER::REDO));
+        builderBegin(scn, sequence, 0, flags);
         createResponse();
         appendHeader(scn, timestamp, true, false, false);
 

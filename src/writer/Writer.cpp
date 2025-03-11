@@ -237,7 +237,7 @@ namespace OpenLogReplicator {
                 pollQueue();
 
                 // Update checkpoint
-                writeCheckpoint(false);
+                writeCheckpoint(redo);
 
                 // Next buffer
                 if (builderQueue->next != nullptr)
@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
                     pollQueue();
                 }
 
-                writeCheckpoint(false);
+                writeCheckpoint(redo);
                 if (ctx->hardShutdown)
                     break;
 
@@ -290,6 +290,8 @@ namespace OpenLogReplicator {
                 // Message in one part - sent directly from buffer
                 if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
+                    if (msg->isFlagSet(BuilderMsg::OUTPUT_BUFFER::REDO))
+                        redo = true;
                     // Send the message to the client in one part
                     if ((msg->isFlagSet(BuilderMsg::OUTPUT_BUFFER::CHECKPOINT) && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_CHECKPOINT)) ||
                         !metadata->isNewData(msg->lwnScn, msg->lwnIdx))
@@ -360,6 +362,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::writeCheckpoint(bool force) {
+        redo = false;
         // Nothing changed
         if ((checkpointScn == confirmedScn && checkpointIdx == confirmedIdx) || confirmedScn == Scn::none())
             return;
