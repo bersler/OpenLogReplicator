@@ -1,3 +1,6 @@
+current
+- enhancement: the checkpoint file is updated during every redo log switch
+
 1.8.4
 - fix: discard writer type
 - code style cleanup

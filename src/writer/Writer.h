@@ -46,6 +46,7 @@ namespace OpenLogReplicator {
         uint64_t currentQueueSize{0};
         uint64_t hwmQueueSize{0};
         bool streaming{false};
+        bool redo{false};
 
         std::mutex mtx;
         // scn,idx confirmed by client

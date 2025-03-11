@@ -70,7 +70,7 @@ namespace OpenLogReplicator {
 
     struct BuilderMsg {
         enum class OUTPUT_BUFFER : unsigned char {
-            NONE = 0, ALLOCATED = 1 << 0, CONFIRMED = 1 << 1, CHECKPOINT = 1 << 2
+            NONE = 0, ALLOCATED = 1 << 0, CONFIRMED = 1 << 1, CHECKPOINT = 1 << 2, REDO = 1 << 3
         };
 
         void* ptr;
