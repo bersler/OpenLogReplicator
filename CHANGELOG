@@ -1,5 +1,6 @@
 current
 - enhancement: the checkpoint file is updated during every redo log switch
+- fix: reading archived redo log fails when DB_RECOVERY_FILE_DEST is not set
 
 1.8.4
 - fix: discard writer type
