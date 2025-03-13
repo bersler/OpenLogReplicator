@@ -43,10 +43,10 @@ namespace OpenLogReplicator {
                 "   SEQUENCE# >= :i"
                 "   AND RESETLOGS_ID = :j"
                 "   AND NAME IS NOT NULL"
-                "   AND IS_RECOVERY_DEST_FILE = 'YES'"
                 " ORDER BY"
                 "   SEQUENCE#"
-                ",  DEST_ID"};
+                ",  DEST_ID"
+                ",  IS_RECOVERY_DEST_FILE DESC"};
 
         static constexpr std::string_view SQL_GET_DATABASE_INFORMATION
                 {"SELECT"

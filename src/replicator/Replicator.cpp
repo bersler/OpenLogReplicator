@@ -253,8 +253,9 @@ namespace OpenLogReplicator {
                     break;
 
                 if (!logsProcessed) {
+                    ctx->info(0, "no redo logs to process, waiting for new redo logs");
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->redoReadSleepUs);
+                    usleep(ctx->refreshIntervalUs);
                     contextSet(CONTEXT::CPU);
                 }
             }
