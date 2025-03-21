@@ -1,8 +1,8 @@
-current
+1.8.5 - released on 2025.03.21
 - enhancement: the checkpoint file is updated during every redo log switch
 - fix: reading archived redo log fails when DB_RECOVERY_FILE_DEST is not set
 
-1.8.4
+1.8.4 - released on 2025.03.08
 - fix: discard writer type
 - code style cleanup
 - fix: minor bug related to DDL processing

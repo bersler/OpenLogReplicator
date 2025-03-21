@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.8.4
-:revdate: 2025-01-17
+:revnumber: 1.8.5
+:revdate: 2025-03-21
 :imagesdir: ./images
 :toc: preamble
 
