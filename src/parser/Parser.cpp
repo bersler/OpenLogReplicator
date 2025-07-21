@@ -207,6 +207,10 @@ namespace OpenLogReplicator {
             redoLogRecord[vectorCur].seq = data[offset + 20];
             redoLogRecord[vectorCur].typ = data[offset + 21];
             const typeUsn usn = (redoLogRecord[vectorCur].cls >= 15) ? (redoLogRecord[vectorCur].cls - 15) / 2 : -1;
+            if ((redoLogRecord[vectorCur].typ & RedoLogRecord::TYP_ENCRYPTED_TABLESPACE) != 0) {
+                redoLogRecord[vectorCur].typ &= ~RedoLogRecord::TYP_ENCRYPTED_TABLESPACE;
+                redoLogRecord[vectorCur].encryptedTablespace = true;
+            }
 
             uint16_t fieldOffset;
             if (ctx->version >= RedoLogRecord::REDO_VERSION_12_1) {
@@ -279,185 +283,188 @@ namespace OpenLogReplicator {
             redoLogRecord[vectorCur].recordDataObj = 0xFFFFFFFF;
             offset += redoLogRecord[vectorCur].size;
 
-            switch (redoLogRecord[vectorCur].opCode) {
-                case 0x0501:
-                    // Undo
-                    OpCode0501::process0501(ctx, &redoLogRecord[vectorCur]);
-                    break;
+            if (unlikely(redoLogRecord[vectorCur].encryptedTablespace))
+                OpCode::process(ctx, &redoLogRecord[vectorCur]);
+            else
+                switch (redoLogRecord[vectorCur].opCode) {
+                    case 0x0501:
+                        // Undo
+                        OpCode0501::process0501(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0502:
-                    // Begin transaction
-                    OpCode0502::process0502(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0502:
+                        // Begin transaction
+                        OpCode0502::process0502(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0504:
-                    // Commit/rollback transaction
-                    OpCode0504::process0504(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0504:
+                        // Commit/rollback transaction
+                        OpCode0504::process0504(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0506:
-                    // Partial rollback
-                    OpCode0506::process0506(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0506:
+                        // Partial rollback
+                        OpCode0506::process0506(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x050B:
-                    OpCode050B::process050B(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x050B:
+                        OpCode050B::process050B(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0513:
-                    // Session information
-                    OpCode0513::process0513(ctx, &redoLogRecord[vectorCur], lastTransaction);
-                    break;
+                    case 0x0513:
+                        // Session information
+                        OpCode0513::process0513(ctx, &redoLogRecord[vectorCur], lastTransaction);
+                        break;
 
-                    // Session information
-                case 0x0514:
-                    OpCode0514::process0514(ctx, &redoLogRecord[vectorCur], lastTransaction);
-                    break;
+                        // Session information
+                    case 0x0514:
+                        OpCode0514::process0514(ctx, &redoLogRecord[vectorCur], lastTransaction);
+                        break;
 
-                case 0x0A02:
-                    // REDO: Insert leaf row
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0A02::process0A02(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0A02:
+                        // REDO: Insert leaf row
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0A02::process0A02(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0A08:
-                    // REDO: Init header
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0A08::process0A08(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0A08:
+                        // REDO: Init header
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0A08::process0A08(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0A12:
-                    // REDO: Update key data in row
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0A12::process0A12(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0A12:
+                        // REDO: Update key data in row
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0A12::process0A12(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B02:
-                    // REDO: Insert row piece
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B02::process0B02(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B02:
+                        // REDO: Insert row piece
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B02::process0B02(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B03:
-                    // REDO: Delete row piece
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B03::process0B03(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B03:
+                        // REDO: Delete row piece
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B03::process0B03(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B04:
-                    // REDO: Lock row piece
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B04::process0B04(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B04:
+                        // REDO: Lock row piece
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B04::process0B04(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B05:
-                    // REDO: Update row piece
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B05::process0B05(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B05:
+                        // REDO: Update row piece
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B05::process0B05(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B06:
-                    // REDO: Overwrite row piece
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B06::process0B06(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B06:
+                        // REDO: Overwrite row piece
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B06::process0B06(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B08:
-                    // REDO: Change forwarding address
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B08::process0B08(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B08:
+                        // REDO: Change forwarding address
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B08::process0B08(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B0B:
-                    // REDO: Insert multiple rows
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B0B::process0B0B(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B0B:
+                        // REDO: Insert multiple rows
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B0B::process0B0B(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B0C:
-                    // REDO: Delete multiple rows
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B0C::process0B0C(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B0C:
+                        // REDO: Delete multiple rows
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B0C::process0B0C(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B10:
-                    // REDO: Supplemental log for update
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B10::process0B10(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B10:
+                        // REDO: Supplemental log for update
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B10::process0B10(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x0B16:
-                    // REDO: Logminer support - KDOCMP
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode0B16::process0B16(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x0B16:
+                        // REDO: Logminer support - KDOCMP
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode0B16::process0B16(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x1301:
-                    // LOB
-                    OpCode1301::process1301(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x1301:
+                        // LOB
+                        OpCode1301::process1301(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x1A02:
-                    // LOB index 12+ and LOB redo
-                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                    }
-                    OpCode1A02::process1A02(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x1A02:
+                        // LOB index 12+ and LOB redo
+                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                        }
+                        OpCode1A02::process1A02(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x1A06:
-                    OpCode1A06::process1A06(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x1A06:
+                        OpCode1A06::process1A06(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                case 0x1801:
-                    // DDL
-                    OpCode1801::process1801(ctx, &redoLogRecord[vectorCur]);
-                    break;
+                    case 0x1801:
+                        // DDL
+                        OpCode1801::process1801(ctx, &redoLogRecord[vectorCur]);
+                        break;
 
-                default:
-                    OpCode::process(ctx, &redoLogRecord[vectorCur]);
-                    break;
-            }
+                    default:
+                        OpCode::process(ctx, &redoLogRecord[vectorCur]);
+                        break;
+                }
 
             if (vectorPrev != -1) {
                 if (redoLogRecord[vectorPrev].opCode == 0x0501) {

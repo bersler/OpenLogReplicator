@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.8.5
-:revdate: 2025-03-21
+:revnumber: 1.8.6
+:revdate: 2025-07-21
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -15,6 +15,9 @@ a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
 This document describes the release notes of OpenLogReplicator.
 
 == Major Release 1.x
+
+=== Version 1.8.6
+- fix: encrypted tablespace data causes program to stop
 
 === Version 1.8.5
 - enhancement: the checkpoint file is updated during every redo log switch
