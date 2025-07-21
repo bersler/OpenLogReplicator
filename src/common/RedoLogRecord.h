@@ -71,6 +71,8 @@ namespace OpenLogReplicator {
         static constexpr uint32_t REDO_VERSION_19_0{0x13000000};
         static constexpr uint32_t REDO_VERSION_23_0{0x17000000};
 
+        static constexpr uint8_t TYP_ENCRYPTED_TABLESPACE{0x80};
+
         uint8_t* dataExt;
         FileOffset fileOffset;
         Xid xid;              // Transaction id
@@ -136,6 +138,7 @@ namespace OpenLogReplicator {
         uint8_t indKeyDataCode;
         LobId lobId;
         bool compressed;
+        bool encryptedTablespace;
         // other
         uint32_t vectorNo;
         typeSlt slt;
