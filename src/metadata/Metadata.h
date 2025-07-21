@@ -49,6 +49,27 @@ namespace OpenLogReplicator {
     class StateDisk;
     class Thread;
 
+    class Start final {
+    public:
+        enum class FROM : unsigned char {
+            CONTINUE,
+            NOW,
+            NOW_SEQ,
+            SCN,
+            SCN_SEQ,
+            TIME,
+            TIME_SEQ,
+            TIME_REL,
+            TIME_REL_SEQ
+        };
+
+        FROM from {FROM::CONTINUE};
+        Scn scn ;
+        Seq sequence;
+        std::string time;
+        uint64_t timeRel;
+    };
+
     class Metadata final {
     protected:
         std::condition_variable condReplicator;
@@ -72,10 +93,7 @@ namespace OpenLogReplicator {
 
         // Startup parameters
         std::string database;
-        Scn startScn;
-        Seq startSequence;
-        std::string startTime;
-        uint64_t startTimeRel;
+        Start start;
 
         // Database parameters
         bool onlineData{false};
@@ -142,8 +160,7 @@ namespace OpenLogReplicator {
         std::vector<SchemaElement*> schemaElements;
         std::set<std::string> users;
 
-        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, Scn newStartScn,
-                 Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel);
+        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, Start newStart);
         ~Metadata();
 
         void setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset);

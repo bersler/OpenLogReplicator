@@ -19,6 +19,7 @@ This document describes the release notes of OpenLogReplicator.
 === Version 1.8.6
 - fix: encrypted tablespace data causes program to stop
 - fix: in certain cases, the program might try to process data which is not available causing a crash
+- enhancement: replication startup parameters moved to program arguments
 
 === Version 1.8.5
 - enhancement: the checkpoint file is updated during every redo log switch
