@@ -116,6 +116,9 @@ namespace OpenLogReplicator {
                                           ": too small log record, buffer size: " + std::to_string(lwnMember->size) +
                                           ", field size: " + std::to_string(recordSize));
 
+        if (unlikely((vld & 0x01) == 0))
+            return;
+
         if ((vld & 0x04) != 0)
             headerSize = 68;
         else
