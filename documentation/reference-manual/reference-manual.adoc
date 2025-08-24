@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.6
-:revdate: 2025-07-21
+:revdate: 2025-08.24
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -1041,12 +1041,29 @@ Possible values are:
 |_number_, min: 0, max: 1, default: 0
 |Unknown value reporting.
 For unknown values `‘?’` is sent to output.
+This applies to cases, when OpenLogReplicator it not able to decode the value.
 
 Possible values are:
 
 * `0` -- Silently ignore unknown values.
 
 * `1` -- Output to _stderr_ information about decoding mismatch.
+
+The value of this parameter is useful for debugging purposes.
+Warning code `60002` is printed to _stderr_ when an unknown value is detected.
+
+|`unknown-type`
+|_number_, min: 0, max: 1, default: 0
+|Reporting of unknown data types.
+Columns which have unsupported data type are skipped.
+
+Possible values are:
+
+* `0` -- Silently skip values for unsupported column types.
+
+* `1` -- Process values for all columns.
+If the column type is not supported `'?'` value is sent to output.
+In addition, when the `unknown` parameter is set to `1`, information about value in hex format is sent to _stderr_.
 
 |`xid` [[xid]]
 |_number_, min: 0, max: 2, default: 0

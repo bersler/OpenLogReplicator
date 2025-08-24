@@ -1,3 +1,5 @@
+- minor documentation update
+
 1.8.6
 - fix: encrypted tablespace data causes program to stop
 - fix: in certain cases, the program might try to process data which is not available causing a crash
