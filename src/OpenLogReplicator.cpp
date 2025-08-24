@@ -124,7 +124,7 @@ namespace OpenLogReplicator {
         configFileBuffer = nullptr;
     }
 
-    int OpenLogReplicator::run() {
+    int OpenLogReplicator::run(const Start& start) {
         auto* locales = new Locales();
         localess.push_back(locales);
         locales->initialize();
@@ -342,9 +342,9 @@ namespace OpenLogReplicator {
             const rapidjson::Value& readerJson = Ctx::getJsonFieldO(configFileName, sourceJson, "reader");
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> readerNames {"disable-checks", "start-scn", "start-seq", "start-time-rel", "start-time", "con-id", "type",
-                                                                   "redo-copy-path", "db-timezone", "host-timezone", "log-timezone", "user", "password",
-                                                                   "server", "redo-log", "path-mapping", "log-archive-format"};
+                static const std::vector<std::string> readerNames {"disable-checks", "con-id", "type", "redo-copy-path", "db-timezone", "host-timezone",
+                                                                   "log-timezone", "user", "password", "server", "redo-log", "path-mapping",
+                                                                   "log-archive-format"};
                 Ctx::checkJsonFields(configFileName, readerJson, readerNames);
             }
 
@@ -362,33 +362,6 @@ namespace OpenLogReplicator {
                 if (ctx->disableChecks > 15)
                     throw ConfigurationException(30001, "bad JSON, invalid \"disable-checks\" value: " +
                                                         std::to_string(ctx->disableChecks) + ", expected: one of {0 .. 15}");
-            }
-
-            Scn startScn = Scn::none();
-            if (readerJson.HasMember("start-scn"))
-                startScn = Ctx::getJsonFieldU64(configFileName, readerJson, "start-scn");
-
-            Seq startSequence = Seq::none();
-            if (readerJson.HasMember("start-seq"))
-                startSequence = Ctx::getJsonFieldU32(configFileName, readerJson, "start-seq");
-
-            uint64_t startTimeRel = 0;
-            if (readerJson.HasMember("start-time-rel")) {
-                startTimeRel = Ctx::getJsonFieldU64(configFileName, readerJson, "start-time-rel");
-                if (startScn != Scn::none())
-                    throw ConfigurationException(30001, "bad JSON, invalid \"start-time-rel\" value: " + std::to_string(startTimeRel) +
-                                                        ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
-            }
-
-            std::string startTime;
-            if (readerJson.HasMember("start-time")) {
-                startTime = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "start-time");
-                if (startScn != Scn::none())
-                    throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
-                                                        ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
-                if (startTimeRel > 0)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
-                                                        ", expected: unset when \"start-time-rel\" is set (" + std::to_string(startTimeRel) + ")");
             }
 
             uint64_t stateType = State::TYPE_DISK;
@@ -475,7 +448,7 @@ namespace OpenLogReplicator {
                             memoryWriteBufferMaxMb, memoryWriteBufferMinMb);
 
             // METADATA
-            auto* metadata = new Metadata(ctx, locales, name, conId, startScn, startSequence, startTime, startTimeRel);
+            auto* metadata = new Metadata(ctx, locales, name, conId, startNow, startScn, startSequence, startTime, startTimeRel);
             metadatas.push_back(metadata);
             metadata->resetElements();
             if (!debugOwner.empty())
