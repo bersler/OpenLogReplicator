@@ -1,4 +1,5 @@
 - minor documentation update
+- added support for database version 19.27
 
 1.8.6
 - fix: encrypted tablespace data causes program to stop
