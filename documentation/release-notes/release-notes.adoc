@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.6
-:revdate: 2025-08-25
+:revdate: 2025-08-26
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -17,7 +17,7 @@ This document describes the release notes of OpenLogReplicator.
 == Major Release 1.x
 
 - minor documentation update
-- added support for database version 19.27
+- added support for database version 19.28
 
 === Version 1.8.6
 - fix: encrypted tablespace data causes program to stop
