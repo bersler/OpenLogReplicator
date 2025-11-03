@@ -106,7 +106,7 @@
         "max-message-mb": 500,
         "properties": {
           "bootstrap.servers": "localhost:9092",
-          "enable.idempotence": "false",
+          "properties": "enable.idempotence:true",
           "queue.buffering.max.messages": "200000"
         },
         "poll-interval-us": 100000,
