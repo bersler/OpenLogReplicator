@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.6
-:revdate: 2025-07-21
+:revdate: 2025-11-03
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -442,7 +442,7 @@ A message can theoretically contain multiple LOB columns, which would exceed the
 ==== Idempotent producer
 
 OpenLogReplicator can act as an idempotent producer, and this is the default behavior.
-This is default behavior and is controlled by the `enable-idempotence` parameter.
+This is default behavior and is controlled by the `properties` parameter, but can be disabled `("properties": "enable.idempotence:false")`.
 
 CAUTION: OpenLogReplicator does not support the Kafka transactional API.
 
