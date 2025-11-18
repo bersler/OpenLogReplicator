@@ -1,7 +1,7 @@
 = Metrics
 :author: Adam Leszczyński <aleszczynski@bersler.com>
-:revnumber: 1.8.6
-:revdate: 2025-07-21
+:revnumber: 1.8.7
+:revdate: 2025-11-18
 :imagesdir: ./images
 :toc: preamble
 
