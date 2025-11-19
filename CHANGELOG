@@ -1,6 +1,7 @@
 1.8.7
 - minor documentation update
 - added support for database version 19.28
+- added support for database version 23ai, 26ai
 
 1.8.6
 - fix: encrypted tablespace data causes program to stop

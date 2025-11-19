@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.7
-:revdate: 2025-11-18
+:revdate: 2025-11-19
 :imagesdir: ./images
 :toc: preamble
 
@@ -33,9 +33,9 @@ Multiple instances of OpenLogReplicator can replicate from the same source datab
 
 The following limitations apply to the source database:
 
-* Supported versions: 11.2, 12.1, 12.2, 18c, 19c, 21c, 23c.
+* Supported versions: 11.2, 12.1, 12.2, 18c, 19c, 21c, 23c, 23ai, 26ai.
 
-* Supported editions: XE/DE, SE, SE2, PE, EE.
+* Supported editions: XE/FREE/AI, DE, SE, SE2, PE, EE.
 
 * Supported database character set: 138 different, refer to xref:../user-manual/user-manual.adoc#supported-character-sets[user manual] for details.
 

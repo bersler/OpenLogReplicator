@@ -112,7 +112,7 @@ namespace OpenLogReplicator {
             stmt.defineUInt(4, suppLogDbAll);
             uint bigEndian;
             stmt.defineUInt(5, bigEndian);
-            std::array<char, 81> banner {};
+            std::array<char, 130> banner {};
             stmt.defineString(6, banner.data(), banner.size());
             std::array<char, 82> context {};
             stmt.defineString(7, context.data(), context.size());

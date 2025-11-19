@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
                 "     TP.PLATFORM_NAME = D.PLATFORM_NAME"
                 " JOIN"
                 "   SYS.V_$VERSION VER ON"
-                "     VER.BANNER LIKE '%Oracle Database%'"};
+                "     VER.BANNER LIKE '%Oracle%Database%'"};
 
         static constexpr std::string_view SQL_GET_DATABASE_INCARNATION
                 {"SELECT"
