@@ -538,6 +538,7 @@ namespace OpenLogReplicator {
                          std::string newPassword, std::string newConnectString, bool newKeepConnection);
         ~ReplicatorOnline() override;
 
+        void initialize() override;
         void goStandby() override;
 
         static void archGetLogOnline(Replicator* replicator);

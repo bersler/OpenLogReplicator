@@ -115,6 +115,7 @@ namespace {
                          HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC HAS_THREAD_INFO);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
+        OpenLogReplicator::Start start;
         try {
             bool forceRoot = false;
             const std::regex regexTest(".*");
@@ -155,14 +156,67 @@ namespace {
                     continue;
                 }
 
-                if (geteuid() == 0) {
-                    if (!forceRoot)
-                        throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
-                    mainCtx->warning(10020, "program is run as root, you should never do that");
+                if (arg == "-l" || arg == "--time-relative" || arg == "-n" || arg == "--now" || arg == "-s" || arg == "--scn" || arg == "-t" || arg == "--time")
+                    if (start.from != OpenLogReplicator::Start::FROM::CONTINUE)
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                        "Invalid startup parameters: startup parameters defined multiple times");
+
+                if (arg == "-n" || arg == "--now") {
+                    start.from = OpenLogReplicator::Start::FROM::NOW;
+                    continue;
                 }
 
-                throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) + " [-v|--version] [-f|--file CONFIG] "
-                                                                       "[-p|--process PROCESSNAME] [-r|--root]");
+                if (i + 1 < argc && (arg == "-s" || arg == "--scn")) {
+                    start.from = OpenLogReplicator::Start::FROM::SCN;
+                    start.scn = std::stoull(argv[i + 1]);
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-q", 2) == 0 || strncmp(argv[i], "--sequence", 10) == 0)) {
+                    switch (start.from) {
+                        case OpenLogReplicator::Start::FROM::NOW:
+                            start.from = OpenLogReplicator::Start::FROM::NOW_SEQ;
+                            break;
+                        case OpenLogReplicator::Start::FROM::SCN:
+                            start.from = OpenLogReplicator::Start::FROM::SCN_SEQ;
+                            break;
+                        case OpenLogReplicator::Start::FROM::TIME:
+                            start.from = OpenLogReplicator::Start::FROM::TIME_SEQ;
+                            break;
+                        case OpenLogReplicator::Start::FROM::TIME_REL:
+                            start.from = OpenLogReplicator::Start::FROM::TIME_REL_SEQ;
+                            break;
+                    default:
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                        "Invalid startup parameters: startup sequence parameter defined multiple times");
+                    }
+                    start.sequence = std::stoul(argv[i + 1]);
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-t", 2) == 0 || strncmp(argv[i], "--time", 6) == 0)) {
+                    start.time = argv[i + 1];
+                    ++i;
+                    continue;
+                }
+
+                if (i + 1 < argc && (strncmp(argv[i], "-l", 2) == 0 || strncmp(argv[i], "--time-relative", 15) == 0)) {
+                    start.timeRel = std::stoull(argv[i + 1]);
+                    ++i;
+                    continue;
+                }
+
+                throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
+                                                                       " [-f|--file CONFIG]  [-l|--time-relative TIME] [-n|--now] [-p|--process PROCESSNAME] "
+                                                                       " [-q|--sequence SEQUENCE] [-r|--root] [-s|--scn SCN] [-t|--time TIME] [-v|--version] ");
+            }
+
+            if (geteuid() == 0) {
+                if (!forceRoot)
+                    throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
+                mainCtx->warning(10020, "program is run as root, you should never do that");
             }
         } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
@@ -174,7 +228,7 @@ namespace {
 
         OpenLogReplicator::OpenLogReplicator openLogReplicator(fileName, mainCtx);
         try {
-            ret = openLogReplicator.run();
+            ret = openLogReplicator.run(start);
         } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();

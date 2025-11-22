@@ -213,6 +213,11 @@ namespace OpenLogReplicator {
         metadata->onlineData = true;
     }
 
+    void ReplicatorOnline::initialize() {
+        if (metadata->startScn != Ctx::ZERO_SCN || metadata->startSequence != Ctx::ZERO_SEQ || !metadata->startTime.empty() || metadata->startTimeRel > 0)
+            throw RuntimeException(30011, "Invalid startup parameters: startup parameters are not allowed to be used for " + getModeName() + " reader");
+    }
+
     void ReplicatorOnline::positionReader() {
         // Position by time
         if (!metadata->startTime.empty()) {
