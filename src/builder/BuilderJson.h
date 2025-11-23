@@ -510,7 +510,7 @@ namespace OpenLogReplicator {
                 append(Data::map16((value >> 8) & 0xF));
                 append(Data::map16((value >> 4) & 0xF));
                 append(Data::map16(value & 0xF));
-            };
+            }
         }
 
         void appendHex8(uint32_t value) {
@@ -793,7 +793,7 @@ namespace OpenLogReplicator {
             } else {
                 const typeCol baseMax = valuesMax >> 6;
                 for (typeCol base = 0; base <= baseMax; ++base) {
-                    auto columnBase = static_cast<typeCol>(base << 6);
+                    const auto columnBase = static_cast<typeCol>(base << 6);
                     typeMask set = valuesSet[base];
                     while (set != 0) {
                         const typeCol pos = ffsll(set) - 1;

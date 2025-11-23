@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
 
     class Builder {
     public:
-        static constexpr uint64_t OUTPUT_BUFFER_DATA_SIZE = Ctx::MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue);
+        static constexpr uint64_t OUTPUT_BUFFER_DATA_SIZE = Ctx::MEMORY_CHUNK_SIZE - sizeof(BuilderQueue);
 
     protected:
         static constexpr uint64_t BUFFER_START_UNDEFINED{0xFFFFFFFFFFFFFFFF};
@@ -181,15 +181,15 @@ namespace OpenLogReplicator {
             ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
             nextBuffer->next = nullptr;
             nextBuffer->id = lastBuilderQueue->id + 1;
-            nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
+            nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(BuilderQueue);
             nextBuffer->confirmedSize = 0;
             lastBuilderSize = 0;
 
             // Message could potentially fit in one buffer
             if (likely(copy && msg != nullptr && messageSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE)) {
-                memcpy(reinterpret_cast<void*>(nextBuffer->data), msg, messagePosition);
+                memcpy(nextBuffer->data, msg, messagePosition);
                 msg = reinterpret_cast<BuilderMsg*>(nextBuffer->data);
-                msg->data = nextBuffer->data + sizeof(struct BuilderMsg);
+                msg->data = nextBuffer->data + sizeof(BuilderMsg);
                 nextBuffer->start = 0;
             } else {
                 lastBuilderQueue->confirmedSize += messagePosition;
@@ -200,7 +200,7 @@ namespace OpenLogReplicator {
 
             {
                 ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_ROTATE);
-                std::unique_lock<std::mutex> const lck(mtx);
+                std::unique_lock const lck(mtx);
                 lastBuilderQueue->next = nextBuffer;
                 ++buffersAllocated;
                 lastBuilderQueue = nextBuffer;
@@ -302,11 +302,11 @@ namespace OpenLogReplicator {
             if (format.isScnTypeCommitValue())
                 scn = commitScn;
 
-            if (unlikely(lastBuilderSize + messagePosition + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE))
+            if (unlikely(lastBuilderSize + messagePosition + sizeof(BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE))
                 builderRotate<true>();
 
             msg = reinterpret_cast<BuilderMsg*>(lastBuilderQueue->data + lastBuilderSize);
-            builderShiftFast(sizeof(struct BuilderMsg));
+            builderShiftFast(sizeof(BuilderMsg));
             ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
             msg->scn = scn;
             msg->lwnScn = lwnScn;
@@ -317,18 +317,18 @@ namespace OpenLogReplicator {
             msg->id = id++;
             msg->obj = obj;
             msg->flags = flags;
-            msg->data = lastBuilderQueue->data + lastBuilderSize + sizeof(struct BuilderMsg);
+            msg->data = lastBuilderQueue->data + lastBuilderSize + sizeof(BuilderMsg);
         }
 
         void builderCommit() {
             messageSize += messagePosition;
-            if (unlikely(messageSize == sizeof(struct BuilderMsg)))
+            if (unlikely(messageSize == sizeof(BuilderMsg)))
                 throw RedoLogException(50058, "output buffer - commit of empty transaction");
 
             msg->queueId = lastBuilderQueue->id;
             builderShiftFast((8 - (messagePosition & 7)) & 7);
             unconfirmedSize += messageSize;
-            msg->size = messageSize - sizeof(struct BuilderMsg);
+            msg->size = messageSize - sizeof(BuilderMsg);
             msg = nullptr;
             lastBuilderQueue->confirmedSize += messagePosition;
             lastBuilderSize += messagePosition;
@@ -353,8 +353,7 @@ namespace OpenLogReplicator {
         template<bool fast = false>
         void appendArr(const char* str, uint64_t size) {
             if (fast || likely(lastBuilderSize + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
-                memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderSize + messagePosition),
-                       reinterpret_cast<const void*>(str), size);
+                memcpy(lastBuilderQueue->data + lastBuilderSize + messagePosition, str, size);
                 messagePosition += size;
                 ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
             } else {
@@ -372,8 +371,7 @@ namespace OpenLogReplicator {
         void append(const std::string& str) {
             const size_t size = str.length();
             if (unlikely(lastBuilderSize + messagePosition + size < OUTPUT_BUFFER_DATA_SIZE)) {
-                memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderSize + messagePosition),
-                       reinterpret_cast<const void*>(str.c_str()), size);
+                memcpy(lastBuilderQueue->data + lastBuilderSize + messagePosition, str.c_str(), size);
                 messagePosition += size;
                 ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
             } else {
@@ -571,8 +569,7 @@ namespace OpenLogReplicator {
             if (isClob) {
                 parseString(data, size, charsetId, fileOffset, appendData, hasPrev, hasNext, isSystem);
             } else {
-                memcpy(reinterpret_cast<void*>(valueBuffer + valueSize),
-                       reinterpret_cast<const void*>(data), size);
+                memcpy(valueBuffer + valueSize, data, size);
                 valueSize += size;
             }
         }
@@ -604,7 +601,7 @@ namespace OpenLogReplicator {
                     return true;
                 }
                 LobData* lobData = lobsIt->second;
-                valueBufferCheck(static_cast<uint64_t>((lobData->pageSize) * static_cast<uint64_t>(lobData->sizePages)) + lobData->sizeRest, fileOffset);
+                valueBufferCheck(lobData->pageSize * static_cast<uint64_t>(lobData->sizePages) + lobData->sizeRest, fileOffset);
 
                 typeDba pageNo = 0;
                 for (const auto& [pageNoLob, page]: lobData->indexMap) {
@@ -763,7 +760,7 @@ namespace OpenLogReplicator {
                     if (chunkSize == 0) {
                         // Null value
                     } else {
-                        if (unlikely(size < static_cast<uint64_t>(chunkSize) + 36)) {
+                        if (unlikely(size < chunkSize + 36)) {
                             ctx->warning(60003, "incorrect LOB for xid: " + lastXid.toString() + ", data:" + dumpLob(data, size) +
                                                 ", location: 10");
                             return false;
@@ -1196,9 +1193,8 @@ namespace OpenLogReplicator {
                 valueBufferSize <<= 1;
             } while (valueSize + size >= valueBufferSize);
 
-            char* newValueBuffer = new char[valueBufferSize];
-            memcpy(reinterpret_cast<void*>(newValueBuffer),
-                   reinterpret_cast<const void*>(valueBuffer), valueSize);
+            const auto newValueBuffer = new char[valueBufferSize];
+            memcpy(newValueBuffer, valueBuffer, valueSize);
             delete[] valueBuffer;
             valueBuffer = newValueBuffer;
         }
@@ -1239,7 +1235,7 @@ namespace OpenLogReplicator {
         Scn lwnScn{Scn::none()};
         typeIdx lwnIdx{0};
 
-        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
+        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, const Format& newFormat, uint64_t newFlushBuffer);
         virtual ~Builder();
 
         [[nodiscard]] uint64_t builderSize() const;
@@ -1265,7 +1261,7 @@ namespace OpenLogReplicator {
         void flush() {
             {
                 ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_COMMIT);
-                std::unique_lock<std::mutex> const lck(mtx);
+                std::unique_lock const lck(mtx);
                 condNoWriterWork.notify_all();
             }
             ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);

@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
             redoLogRecord->lobPageNo = ctx->read32(redoLogRecord->data(fieldPos + 24));
             redoLogRecord->lobData = fieldPos + 36;
             redoLogRecord->lobDataSize = fieldSize - 36;
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
                 const uint32_t v2 = ctx->read32(redoLogRecord->data(fieldPos + 16));

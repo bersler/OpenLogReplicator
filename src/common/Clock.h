@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef CLOCK_H_
+#define CLOCK_H_
+
 #include <stdint.h>
 #include <sys/time.h>
 
 #include "types/Types.h"
-
-#ifndef CLOCK_H_
-#define CLOCK_H_
 
 namespace OpenLogReplicator {
     class Clock {

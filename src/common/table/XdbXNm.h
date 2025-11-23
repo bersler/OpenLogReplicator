@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef XDB_XNM_H_
+#define XDB_XNM_H_
+
 #include <utility>
 
 #include "../types/RowId.h"
 #include "../types/Types.h"
-
-#ifndef XDB_XNM_H_
-#define XDB_XNM_H_
 
 namespace OpenLogReplicator {
     class XdbXNm final {
@@ -96,13 +96,11 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::XdbXNmKey> {
-        size_t operator()(const OpenLogReplicator::XdbXNmKey& xdbXNmKey) const {
-            return hash<std::string>()(xdbXNmKey.id);
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::XdbXNmKey> {
+    size_t operator()(const OpenLogReplicator::XdbXNmKey& xdbXNmKey) const noexcept {
+        return hash<std::string>()(xdbXNmKey.id);
+    }
+};
 
 #endif

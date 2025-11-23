@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SYS_OBJ_H_
+#define SYS_OBJ_H_
+
 #include "../types/IntX.h"
 #include "../types/RowId.h"
 #include "../types/Types.h"
-
-#ifndef SYS_OBJ_H_
-#define SYS_OBJ_H_
 
 namespace OpenLogReplicator {
     class SysObj final {
@@ -203,13 +203,11 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::SysObjObj> {
-        size_t operator()(const OpenLogReplicator::SysObjObj sysObjObj) const {
-            return hash<typeObj>()(sysObjObj.obj);
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::SysObjObj> {
+    size_t operator()(const OpenLogReplicator::SysObjObj sysObjObj) const noexcept {
+        return hash<typeObj>()(sysObjObj.obj);
+    }
+};
 
 #endif

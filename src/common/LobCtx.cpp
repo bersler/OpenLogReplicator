@@ -127,12 +127,12 @@ namespace OpenLogReplicator {
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
             // Found
-            uint8_t* oldData = listMapIt->second;
+            const uint8_t* oldData = listMapIt->second;
             aSiz = ctx->read32(oldData + 4);
 
             memcpy(newData, oldData, 4);
-            memcpy(newData + 8, oldData + 8, static_cast<size_t>(aSiz * 8));
-            memcpy(newData + 8 + static_cast<size_t>(sIdx * 8), data + 12, static_cast<size_t>(nEnt * 8));
+            memcpy(newData + 8, oldData + 8, aSiz * 8);
+            memcpy(newData + 8 + static_cast<size_t>(sIdx * 8), data + 12, nEnt * 8);
 
             aSiz = sIdx + nEnt;
             ctx->write32(newData + 4, aSiz);
@@ -140,7 +140,7 @@ namespace OpenLogReplicator {
         } else {
             // Not found
             memset(newData, 0, (sIdx * 8) + 8);
-            memcpy(newData + static_cast<size_t>(sIdx * 8) + 8, data + 12, static_cast<size_t>(nEnt * 8));
+            memcpy(newData + static_cast<size_t>(sIdx * 8) + 8, data + 12, nEnt * 8);
 
             aSiz = sIdx + nEnt;
             ctx->write32(newData + 4, aSiz);

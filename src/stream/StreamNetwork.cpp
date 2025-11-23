@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
 
     void StreamNetwork::initialize() {
         // Colon
-        auto uriIt = uri.find(':');
+        const auto uriIt = uri.find(':');
         if (uriIt == std::string::npos)
             throw ConfigurationException(30008, "uri is missing ':' in parameter: " + uri);
 
@@ -68,28 +68,27 @@ namespace OpenLogReplicator {
     }
 
     void StreamNetwork::initializeClient() {
-        struct sockaddr_in addressC{};
-        memset(reinterpret_cast<void*>(&addressC), 0, sizeof(addressC));
+        sockaddr_in addressC{};
+        memset(&addressC, 0, sizeof(addressC));
         addressC.sin_family = AF_INET;
         addressC.sin_port = htons(atoi(port.c_str()));
 
         if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) == 0)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (1)");
 
-        const struct hostent* server = gethostbyname(host.c_str());
+        const hostent* server = gethostbyname(host.c_str());
         if (server == nullptr)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (2)");
 
-        memcpy(reinterpret_cast<void*>(&addressC.sin_addr.s_addr),
-               reinterpret_cast<const void*>(server->h_addr), server->h_length);
-        if (connect(socketFD, reinterpret_cast<struct sockaddr*>(&addressC), sizeof(addressC)) < 0)
+        memcpy(&addressC.sin_addr.s_addr, server->h_addr, server->h_length);
+        if (connect(socketFD, reinterpret_cast<sockaddr*>(&addressC), sizeof(addressC)) < 0)
             throw NetworkException(10062, "connection to " + uri + " failed, errno: " + std::to_string(errno) + ", message: " +
                                           strerror(errno));
     }
 
     void StreamNetwork::initializeServer() {
-        struct addrinfo hints{};
-        memset(reinterpret_cast<void*>(&hints), 0, sizeof hints);
+        addrinfo hints{};
+        memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE;
@@ -107,7 +106,7 @@ namespace OpenLogReplicator {
         if (fcntl(serverFD, F_SETFL, flags | O_NONBLOCK) < 0)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (6)");
 
-        int64_t opt = 1;
+        constexpr int64_t opt = 1;
         if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) != 0)
             throw RuntimeException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (7)");
 
@@ -211,7 +210,7 @@ namespace OpenLogReplicator {
             w = wset;
             // Blocking select
             select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-            ssize_t r = write(socketFD, reinterpret_cast<const char*>(msg) + sent, length - sent);
+            ssize_t r = write(socketFD, static_cast<const char*>(msg) + sent, length - sent);
             if (r <= 0) {
                 if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                     r = 0;
@@ -234,7 +233,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
+            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -249,7 +248,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
+        uint32_t newLength = *static_cast<const uint32_t*>(msg);
         if (newLength < 0xFFFFFFFF) {
             // 32-bit message length
             if (length < newLength)
@@ -265,7 +264,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     return 0;
 
-                const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
+                const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -281,7 +280,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            newLength = *reinterpret_cast<const uint32_t*>(msg);
+            newLength = *static_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");
@@ -293,7 +292,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
+            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -319,7 +318,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
+            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -341,9 +340,9 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (*reinterpret_cast<const uint32_t*>(msg) < 0xFFFFFFFF) {
+        if (*static_cast<const uint32_t*>(msg) < 0xFFFFFFFF) {
             // 32-bit message length
-            const uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
+            const uint32_t newLength = *static_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");
@@ -357,7 +356,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     return 0;
 
-                const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
+                const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -379,7 +378,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            const uint32_t newLength = *reinterpret_cast<const uint32_t*>(msg);
+            const uint32_t newLength = *static_cast<const uint32_t*>(msg);
             if (length < newLength)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                               ", buffer size: " + std::to_string(length) + ")");
@@ -388,7 +387,7 @@ namespace OpenLogReplicator {
         }
 
         while (recvd < length) {
-            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
+            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -415,7 +414,7 @@ namespace OpenLogReplicator {
             return true;
 
         int64_t addrlen = sizeof(address);
-        socketFD = accept(serverFD, reinterpret_cast<struct sockaddr*>(&address), reinterpret_cast<socklen_t*>(&addrlen));
+        socketFD = accept(serverFD, reinterpret_cast<sockaddr*>(&address), reinterpret_cast<socklen_t*>(&addrlen));
         if (socketFD < 0) {
             if (errno == EWOULDBLOCK)
                 return false;

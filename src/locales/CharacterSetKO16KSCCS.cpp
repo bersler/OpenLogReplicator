@@ -25,7 +25,8 @@ namespace OpenLogReplicator {
                               KO16KSCCS_b2_min, KO16KSCCS_b2_max) {
     }
 
-    bool CharacterSetKO16KSCCS::validCode(uint64_t byte1, uint64_t byte2 __attribute__((unused))) const {
+    bool CharacterSetKO16KSCCS::validCode(uint64_t byte1, uint64_t byte2 __attribute__((unused)))
+    {
         return byte1 < 0xD4 || byte1 > 0xD7;
     }
 

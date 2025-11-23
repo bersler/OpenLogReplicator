@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         if (dir == nullptr)
             throw RuntimeException(10012, "directory: " + path + " - can't read");
 
-        const struct dirent* ent;
+        const dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
             const std::string dName(ent->d_name);
             if (dName == "." || dName == "..")

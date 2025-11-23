@@ -90,31 +90,31 @@ namespace OpenLogReplicator {
         }
         writers.clear();
 
-        for (Builder* builder: builders)
+        for (const Builder* builder: builders)
             delete builder;
         builders.clear();
 
-        for (Replicator* replicatorTmp: replicators)
+        for (const Replicator* replicatorTmp: replicators)
             delete replicatorTmp;
         replicators.clear();
 
-        for (Checkpoint* checkpoint: checkpoints)
+        for (const Checkpoint* checkpoint: checkpoints)
             delete checkpoint;
         checkpoints.clear();
 
-        for (TransactionBuffer* transactionBuffer: transactionBuffers)
+        for (const TransactionBuffer* transactionBuffer: transactionBuffers)
             delete transactionBuffer;
         transactionBuffers.clear();
 
-        for (Metadata* metadata: metadatas)
+        for (const Metadata* metadata: metadatas)
             delete metadata;
         metadatas.clear();
 
-        for (Locales* locales: localess)
+        for (const Locales* locales: localess)
             delete locales;
         localess.clear();
 
-        for (MemoryManager* memoryManager: memoryManagers)
+        for (const MemoryManager* memoryManager: memoryManagers)
             delete memoryManager;
         memoryManagers.clear();
 
@@ -862,7 +862,7 @@ namespace OpenLogReplicator {
                         if (tableElementJson.HasMember("key")) {
                             element->key = Ctx::getJsonFieldS(configFileName, Ctx::JSON_KEY_LENGTH, tableElementJson, "key");
                             element->parseKey(element->key, separator);
-                        };
+                        }
 
                         if (tableElementJson.HasMember("condition"))
                             element->condition = Ctx::getJsonFieldS(configFileName, Ctx::JSON_CONDITION_LENGTH, tableElementJson, "condition");
@@ -1061,7 +1061,7 @@ namespace OpenLogReplicator {
         return 0;
     }
 
-    void OpenLogReplicator::mainProcessMapping(const rapidjson::Value& readerJson) {
+    void OpenLogReplicator::mainProcessMapping(const rapidjson::Value& readerJson) const {
         if (readerJson.HasMember("path-mapping")) {
             const rapidjson::Value& pathMappingArrayJson = Ctx::getJsonFieldA(configFileName, readerJson, "path-mapping");
 

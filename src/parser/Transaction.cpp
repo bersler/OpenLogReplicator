@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         log(ctx, "rlb2", redoLogRecord2);
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            auto sizeLast = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
+            const auto sizeLast = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
             const auto* lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast + TransactionBuffer::ROW_HEADER_DATA0);
             const auto* lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
                                                                                     TransactionBuffer::ROW_HEADER_DATA1 + lastRedoLogRecord1->size);
@@ -131,7 +131,7 @@ namespace OpenLogReplicator {
         log(metadata->ctx, "rlb ", redoLogRecord1);
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            auto sizeLast = *reinterpret_cast<const typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
+            const auto sizeLast = *reinterpret_cast<const typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
             const auto* lastRedoLogRecord1 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
                                                                                     TransactionBuffer::ROW_HEADER_DATA0);
             const auto* lastRedoLogRecord2 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - sizeLast +
@@ -181,8 +181,8 @@ namespace OpenLogReplicator {
         bool opFlush;
         const uint64_t maxMessageMb = builder->getMaxMessageMb();
         metadata->ctx->parserThread->contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
-        std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
-        std::unique_lock<std::mutex> lckSchema(metadata->mtxSchema, std::defer_lock);
+        std::unique_lock const lckTransaction(metadata->mtxTransaction);
+        std::unique_lock lckSchema(metadata->mtxSchema, std::defer_lock);
 
         if (opCodes == 0 || rollback) {
             metadata->ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -203,7 +203,7 @@ namespace OpenLogReplicator {
         }
         builder->processBegin(xid, commitScn, lwnScn, &attributes);
 
-        Format::TRANSACTION_TYPE transactionType = Format::TRANSACTION_TYPE::T_NONE;
+        auto transactionType = Format::TRANSACTION_TYPE::T_NONE;
         std::deque<const RedoLogRecord*> redo1;
         std::deque<const RedoLogRecord*> redo2;
 

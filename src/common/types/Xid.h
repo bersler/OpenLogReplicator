@@ -156,12 +156,10 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::Xid> {
-        size_t operator()(const OpenLogReplicator::Xid xid) const {
-            return hash<size_t>()(xid.getData());
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::Xid> {
+    size_t operator()(const OpenLogReplicator::Xid xid) const noexcept {
+        return hash<size_t>()(xid.getData());
+    }
+};
 #endif

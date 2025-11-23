@@ -151,6 +151,17 @@ namespace OpenLogReplicator {
         typeObj recordObj;
         typeObj recordDataObj;
 
+        RedoLogRecord& operator=(const RedoLogRecord& r) {
+            if (this == &r)
+                return *this;
+            memcpy(reinterpret_cast<void*>(this), reinterpret_cast<const void*>(&r), sizeof(RedoLogRecord));
+            return *this;
+        }
+
+        void clear() {
+            memset(reinterpret_cast<void*>(this), 0, sizeof(RedoLogRecord));
+        }
+
         [[nodiscard]] std::string toString() const {
             std::ostringstream ss;
             ss << "O scn: " << scnRecord.to64() <<
@@ -208,7 +219,7 @@ namespace OpenLogReplicator {
                                               std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size) + ", code: " +
                                               std::to_string(code));
             return true;
-        };
+        }
 
         static void nextField(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize, uint32_t code) {
             ++fieldNum;
@@ -231,7 +242,7 @@ namespace OpenLogReplicator {
                                               std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", size: " +
                                               std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size) + ", code: " +
                                               std::to_string(code));
-        };
+        }
 
         static void skipEmptyFields(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize) {
             while (fieldNum + 1U <= redoLogRecord->fieldCnt) {

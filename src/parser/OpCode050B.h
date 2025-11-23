@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
     public:
         static void process050B(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
             init(ctx, redoLogRecord);
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
             typePos fieldPos = 0;
             typeField fieldNum = 0;
             typeSize fieldSize = 0;

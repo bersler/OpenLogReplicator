@@ -44,12 +44,12 @@ namespace OpenLogReplicator {
         void createStatement(const std::string_view& sql);
         void unbindAll();
         int executeQuery();
-        int next();
+        int next() const;
 
-        void bindString(uint col, std::string& val);
+        void bindString(uint col, const std::string& val);
         void bindBinary(uint col, uint8_t* buf, uint64_t size);
         void defineString(uint col, char* val, uint64_t len);
-        [[nodiscard]] bool isNull(uint col);
+        [[nodiscard]] bool isNull(uint col) const;
 
         template<typename T>
         void bindInt(uint col, T& val) {

@@ -81,17 +81,17 @@ namespace OpenLogReplicator {
 
         purgeRedoLogs();
 
-        for (SchemaElement* element: schemaElements)
+        for (const SchemaElement* element: schemaElements)
             delete element;
         schemaElements.clear();
 
-        for (SchemaElement* element: newSchemaElements)
+        for (const SchemaElement* element: newSchemaElements)
             delete element;
         newSchemaElements.clear();
 
         users.clear();
 
-        for (DbIncarnation* oi: dbIncarnations)
+        for (const DbIncarnation* oi: dbIncarnations)
             delete oi;
         dbIncarnations.clear();
         dbIncarnationCurrent = nullptr;
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::purgeRedoLogs() {
-        for (RedoLog* redoLog: redoLogs)
+        for (const RedoLog* redoLog: redoLogs)
             delete redoLog;
         redoLogs.clear();
     }
@@ -131,20 +131,20 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setActivation(typeActivation newActivation) {
-        std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+        std::unique_lock const lck(mtxCheckpoint);
 
         activation = newActivation;
     }
 
     void Metadata::setFirstNextScn(Scn newFirstScn, Scn newNextScn) {
-        std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+        std::unique_lock const lck(mtxCheckpoint);
 
         firstScn = newFirstScn;
         nextScn = newNextScn;
     }
 
     void Metadata::setNextSequence() {
-        std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+        std::unique_lock const lck(mtxCheckpoint);
 
         ++sequence;
     }
@@ -153,7 +153,7 @@ namespace OpenLogReplicator {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "setting sequence to: " + newSequence.toString() + ", offset: " + newFileOffset.toString());
 
-        std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+        std::unique_lock const lck(mtxCheckpoint);
 
         sequence = newSequence;
         fileOffset = newFileOffset;
@@ -212,7 +212,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::resetElements() {
-        for (SchemaElement* element: newSchemaElements)
+        for (const SchemaElement* element: newSchemaElements)
             delete element;
         newSchemaElements.clear();
 
@@ -231,9 +231,9 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::commitElements() {
-        std::unique_lock<std::mutex> const lck(mtxSchema);
+        std::unique_lock const lck(mtxSchema);
 
-        for (SchemaElement* element: schemaElements)
+        for (const SchemaElement* element: schemaElements)
             delete element;
         schemaElements.clear();
 
@@ -242,7 +242,7 @@ namespace OpenLogReplicator {
         newSchemaElements.clear();
     }
 
-    void Metadata::buildMaps(std::vector<std::string>& msgs, std::unordered_map<typeObj, std::string>& tablesUpdated) {
+    void Metadata::buildMaps(std::vector<std::string>& msgs, std::unordered_map<typeObj, std::string>& tablesUpdated) const {
         for (const SchemaElement* element: schemaElements) {
             if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                 msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
@@ -257,7 +257,7 @@ namespace OpenLogReplicator {
     void Metadata::waitForWriter(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> lck(mtxCheckpoint);
+            std::unique_lock lck(mtxCheckpoint);
 
             if (status == STATUS::READY) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
@@ -272,7 +272,7 @@ namespace OpenLogReplicator {
     void Metadata::waitForReplicator(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> lck(mtxCheckpoint);
+            std::unique_lock lck(mtxCheckpoint);
 
             if (status == STATUS::START) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
@@ -287,7 +287,7 @@ namespace OpenLogReplicator {
     void Metadata::setStatusReady(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
 
             status = STATUS::READY;
             firstDataScn = Scn::none();
@@ -302,7 +302,7 @@ namespace OpenLogReplicator {
     void Metadata::setStatusStart(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
 
             status = STATUS::START;
             condReplicator.notify_all();
@@ -313,7 +313,7 @@ namespace OpenLogReplicator {
     void Metadata::setStatusReplicate(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
 
             status = STATUS::REPLICATE;
             condReplicator.notify_all();
@@ -325,7 +325,7 @@ namespace OpenLogReplicator {
     void Metadata::wakeUp(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
 
             condReplicator.notify_all();
             condWriter.notify_all();
@@ -337,7 +337,7 @@ namespace OpenLogReplicator {
                               uint64_t newCheckpointBytes, Seq newMinSequence, FileOffset newMinFileOffset, Xid newMinXid) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
 
             checkpointScn = newCheckpointScn;
             checkpointTime = newCheckpointTime;
@@ -356,7 +356,7 @@ namespace OpenLogReplicator {
 
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
             if (!allowedCheckpoints)
                 return;
 
@@ -420,7 +420,7 @@ namespace OpenLogReplicator {
             Scn scn;
             try {
                 scn = strtoull(scnStr.c_str(), nullptr, 10);
-            } catch (const std::exception& e) {
+            } catch ([[maybe_unused]] const std::exception& e) {
                 // Ignore other files
                 continue;
             }
@@ -520,7 +520,7 @@ namespace OpenLogReplicator {
 
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
 
             if (!allowedCheckpoints) {
                 t->contextSet(Thread::CONTEXT::CPU);
@@ -559,7 +559,7 @@ namespace OpenLogReplicator {
         }
 
         {
-            std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+            std::unique_lock const lck(mtxCheckpoint);
 
             for (auto scn: scnToDrop) {
                 checkpointScnList.erase(scn);
@@ -605,7 +605,7 @@ namespace OpenLogReplicator {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "allowing checkpoints");
 
-        std::unique_lock<std::mutex> const lck(mtxCheckpoint);
+        std::unique_lock const lck(mtxCheckpoint);
         allowedCheckpoints = true;
     }
 

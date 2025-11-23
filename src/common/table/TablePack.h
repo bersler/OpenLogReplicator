@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TABLE_PACK_H_
+#define TABLE_PACK_H_
+
 #include <map>
 #include <memory>
 #include <set>
@@ -26,9 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../types/FileOffset.h"
 #include "../types/RowId.h"
 #include "../types/Types.h"
-
-#ifndef TABLE_PACK_H_
-#define TABLE_PACK_H_
 
 namespace OpenLogReplicator {
 

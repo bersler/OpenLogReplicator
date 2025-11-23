@@ -34,44 +34,40 @@ namespace OpenLogReplicator {
         uint8_t data[LENGTH]{};
 
         LobId() {
-            memset(reinterpret_cast<void*>(data), 0, LENGTH);
+            memset(data, 0, LENGTH);
         }
 
         LobId(const LobId& other) {
-            memcpy(reinterpret_cast<void*>(data),
-                   reinterpret_cast<const void*>(other.data), LENGTH);
+            memcpy(data, other.data, LENGTH);
         }
 
         explicit LobId(const uint8_t* newData) {
-            memcpy(reinterpret_cast<void*>(data),
-                   reinterpret_cast<const void*>(newData), LENGTH);
+            memcpy(data, newData, LENGTH);
         }
 
         bool operator!=(const LobId& other) const {
-            const int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
+            const int ret = memcmp(data, other.data, LENGTH);
             return ret != 0;
         }
 
         bool operator==(const LobId& other) const {
-            const int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
+            const int ret = memcmp(data, other.data, LENGTH);
             return ret == 0;
         }
 
         bool operator<(const LobId& other) const {
-            const int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), LENGTH);
+            const int ret = memcmp(data, other.data, LENGTH);
             return ret < 0;
         }
 
         LobId& operator=(const LobId& other) {
             if (&other != this)
-                memcpy(reinterpret_cast<void*>(data),
-                       reinterpret_cast<const void*>(other.data), LENGTH);
+                memcpy(data, other.data, LENGTH);
             return *this;
         }
 
         void set(const uint8_t* newData) {
-            memcpy(reinterpret_cast<void*>(data),
-                   reinterpret_cast<const void*>(newData), LENGTH);
+            memcpy(data, newData, LENGTH);
         }
 
         [[nodiscard]] std::string lower() const {
@@ -123,22 +119,20 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::LobId> {
-        size_t operator()(const OpenLogReplicator::LobId& lobId) const {
-            return (static_cast<size_t>(lobId.data[9]) << 56) ^
-                   (static_cast<size_t>(lobId.data[8]) << 50) ^
-                   (static_cast<size_t>(lobId.data[7]) << 42) ^
-                   (static_cast<size_t>(lobId.data[6]) << 36) ^
-                   (static_cast<size_t>(lobId.data[5]) << 30) ^
-                   (static_cast<size_t>(lobId.data[4]) << 24) ^
-                   (static_cast<size_t>(lobId.data[3]) << 18) ^
-                   (static_cast<size_t>(lobId.data[2]) << 12) ^
-                   (static_cast<size_t>(lobId.data[1]) << 6) ^
-                   (static_cast<size_t>(lobId.data[0]));
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::LobId> {
+    size_t operator()(const OpenLogReplicator::LobId& lobId) const noexcept {
+        return (static_cast<size_t>(lobId.data[9]) << 56) ^
+            (static_cast<size_t>(lobId.data[8]) << 50) ^
+            (static_cast<size_t>(lobId.data[7]) << 42) ^
+            (static_cast<size_t>(lobId.data[6]) << 36) ^
+            (static_cast<size_t>(lobId.data[5]) << 30) ^
+            (static_cast<size_t>(lobId.data[4]) << 24) ^
+            (static_cast<size_t>(lobId.data[3]) << 18) ^
+            (static_cast<size_t>(lobId.data[2]) << 12) ^
+            (static_cast<size_t>(lobId.data[1]) << 6) ^
+            (static_cast<size_t>(lobId.data[0]));
+    }
+};
 
 #endif

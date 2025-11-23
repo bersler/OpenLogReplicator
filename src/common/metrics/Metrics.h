@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <mutex>
-
 #ifndef METRICS_H_
 #define METRICS_H_
+
+#include <mutex>
 
 namespace OpenLogReplicator {
     class Ctx;

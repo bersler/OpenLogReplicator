@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
                 slot(0) {
         }
 
-        explicit RowId(std::array<char, SIZE + 1> rowid) {
+        explicit RowId(const std::array<char, SIZE + 1>& rowid) {
             dataObj = (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
                       (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
                       (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
             slot = (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[15])]) << 12) |
                    (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[16])]) << 6) |
                    static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[17])]);
-        };
+        }
 
         explicit RowId(const std::string& rowid) {
             if (unlikely(rowid.length() != SIZE))
@@ -193,7 +193,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             char str[SIZE + 1];
-            auto afn = static_cast<typeAfn>(dba >> 22);
+            const auto afn = static_cast<typeAfn>(dba >> 22);
             const typeDba bdba = dba & 0x003FFFFF;
 
             str[0] = Data::map64((dataObj >> 30) & 0x3F);
@@ -232,7 +232,7 @@ namespace OpenLogReplicator {
 
         explicit TabRowId(RowId newRowId) :
             rowId(newRowId) {
-        };
+        }
     };
 
     class TabRowIdKey {
@@ -259,7 +259,7 @@ namespace OpenLogReplicator {
 namespace std {
     template<>
     struct hash<OpenLogReplicator::RowId> {
-        size_t operator()(const OpenLogReplicator::RowId other) const {
+        size_t operator()(const OpenLogReplicator::RowId other) const noexcept {
             return hash<typeDataObj>()(other.dataObj) ^
                    hash<typeDba>()(other.dba) ^
                    hash<typeSlot>()(other.slot);
@@ -268,7 +268,7 @@ namespace std {
 
     template<>
     struct hash<OpenLogReplicator::TabRowIdUnorderedKeyDefault> {
-        size_t operator()(const OpenLogReplicator::TabRowIdUnorderedKeyDefault key) const {
+        size_t operator()(const OpenLogReplicator::TabRowIdUnorderedKeyDefault key) const noexcept {
             return hash<char>()(key.x);
         }
     };

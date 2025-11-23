@@ -17,15 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef METRICS_PROMETHEUS_H_
+#define METRICS_PROMETHEUS_H_
+
 #include <map>
 #include <prometheus/counter.h>
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>
 
 #include "Metrics.h"
-
-#ifndef METRICS_PROMETHEUS_H_
-#define METRICS_PROMETHEUS_H_
 
 namespace OpenLogReplicator {
     class MetricsPrometheus final : public Metrics {

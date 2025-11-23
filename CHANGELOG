@@ -1,3 +1,5 @@
+- code style cleanup
+
 1.8.7
 - minor documentation update
 - added support for database version 19.28

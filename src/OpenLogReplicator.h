@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
         std::string configFileName;
         Ctx* ctx;
 
-        void mainProcessMapping(const rapidjson::Value& readerJson);
+        void mainProcessMapping(const rapidjson::Value& readerJson) const;
 
     public:
         OpenLogReplicator(std::string  newConfigFileName, Ctx* newCtx);

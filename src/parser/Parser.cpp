@@ -68,8 +68,7 @@ namespace OpenLogReplicator {
             group(newGroup),
             path(std::move(newPath)) {
 
-        memset(reinterpret_cast<void*>(&zero), 0, sizeof(RedoLogRecord));
-
+        zero.clear();
         lwnChunks[0] = ctx->getMemoryChunk(ctx->parserThread, Ctx::MEMORY::PARSER);
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
         auto* size = reinterpret_cast<uint64_t*>(lwnChunks[0]);
@@ -100,7 +99,7 @@ namespace OpenLogReplicator {
                                            std::to_string(lwnMember->pageOffset) + " scn: " + lwnMember->scn.toString() + " subscn: " +
                                            std::to_string(lwnMember->subScn));
 
-        uint8_t* data = reinterpret_cast<uint8_t*>(lwnMember) + sizeof(struct LwnMember);
+        uint8_t* data = reinterpret_cast<uint8_t*>(lwnMember) + sizeof(LwnMember);
         RedoLogRecord redoLogRecord[2];
         int64_t vectorCur = -1;
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
@@ -125,7 +124,7 @@ namespace OpenLogReplicator {
             headerSize = 24;
 
         if (unlikely(ctx->dumpRedoLog >= 1)) {
-            const uint16_t thread = 1; // TODO: verify field size/position
+            constexpr uint16_t thread = 1; // TODO: verify field size/position
             *ctx->dumpStream << " \n";
 
             if (ctx->version < RedoLogRecord::REDO_VERSION_12_1)
@@ -200,7 +199,7 @@ namespace OpenLogReplicator {
             else
                 vectorCur = 1 - vectorPrev;
 
-            memset(reinterpret_cast<void*>(&redoLogRecord[vectorCur]), 0, sizeof(RedoLogRecord));
+            redoLogRecord[vectorCur].clear();
             redoLogRecord[vectorCur].vectorNo = (++vectors);
             redoLogRecord[vectorCur].cls = ctx->read16(data + offset + 2);
             redoLogRecord[vectorCur].afn = static_cast<typeAfn>(ctx->read32(data + offset + 4) & 0xFFFF);
@@ -568,7 +567,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         {
             ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
-            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+            std::unique_lock const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -604,7 +603,7 @@ namespace OpenLogReplicator {
         DbLob* lob;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+            std::unique_lock const lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -619,7 +618,7 @@ namespace OpenLogReplicator {
         redoLogRecord1->lobPageSize = lob->checkLobPageSize(redoLogRecord1->dataObj);
 
         if (redoLogRecord1->xid.isEmpty()) {
-            auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
+            const auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
             if (lobIdToXidMapIt == ctx->lobIdToXidMap.end()) {
                 transactionBuffer->addOrphanedLob(redoLogRecord1);
                 return;
@@ -672,7 +671,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+            std::unique_lock const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -730,7 +729,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+            std::unique_lock const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -901,7 +900,7 @@ namespace OpenLogReplicator {
                 const DbTable* table;
                 ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
                 {
-                    std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+                    std::unique_lock const lckTransaction(metadata->mtxTransaction);
                     table = metadata->schema->checkTableDict(obj);
                 }
                 ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -989,7 +988,7 @@ namespace OpenLogReplicator {
         const DbTable* table;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+            std::unique_lock const lckTransaction(metadata->mtxTransaction);
             table = metadata->schema->checkTableDict(obj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -1069,7 +1068,7 @@ namespace OpenLogReplicator {
         const DbLob* lob;
         ctx->parserThread->contextSet(Thread::CONTEXT::TRAN);
         {
-            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+            std::unique_lock const lckTransaction(metadata->mtxTransaction);
             lob = metadata->schema->checkLobIndexDict(dataObj);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -1360,7 +1359,7 @@ namespace OpenLogReplicator {
                         if (recordSize4 > 0) {
                             auto* recordSize = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
 
-                            if (((*recordSize + sizeof(struct LwnMember) + recordSize4 + 7) & 0xFFFFFFF8) > Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
+                            if (((*recordSize + sizeof(LwnMember) + recordSize4 + 7) & 0xFFFFFFF8) > Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
                                 if (unlikely(lwnAllocated == MAX_LWN_CHUNKS))
                                     throw RedoLogException(50052, "all " + std::to_string(MAX_LWN_CHUNKS) + " lwn buffers allocated");
 
@@ -1371,11 +1370,11 @@ namespace OpenLogReplicator {
                                 *recordSize = sizeof(uint64_t);
                             }
 
-                            if (unlikely(((*recordSize + sizeof(struct LwnMember) + recordSize4 + 7) & 0xFFFFFFF8) > Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024))
+                            if (unlikely(((*recordSize + sizeof(LwnMember) + recordSize4 + 7) & 0xFFFFFFF8) > Ctx::MEMORY_CHUNK_SIZE_MB * 1024 * 1024))
                                 throw RedoLogException(50053, "too big redo log record, size: " + std::to_string(recordSize4));
 
-                            lwnMember = reinterpret_cast<struct LwnMember*>(lwnChunks[lwnAllocated - 1] + *recordSize);
-                            *recordSize += (sizeof(struct LwnMember) + recordSize4 + 7) & 0xFFFFFFF8;
+                            lwnMember = reinterpret_cast<LwnMember*>(lwnChunks[lwnAllocated - 1] + *recordSize);
+                            *recordSize += (sizeof(LwnMember) + recordSize4 + 7) & 0xFFFFFFF8;
                             lwnMember->pageOffset = blockOffset;
                             lwnMember->scn = ctx->read32(redoBlock + blockOffset + 8U) |
                                              (static_cast<uint64_t>(ctx->read16(redoBlock + blockOffset + 6U)) << 32);
@@ -1412,8 +1411,7 @@ namespace OpenLogReplicator {
                     else
                         toCopy = recordLeftToCopy;
 
-                    memcpy(reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(lwnMember) + sizeof(struct LwnMember) + recordPos),
-                           reinterpret_cast<const void*>(redoBlock + blockOffset), toCopy);
+                    memcpy(reinterpret_cast<uint8_t*>(lwnMember) + sizeof(LwnMember) + recordPos, redoBlock + blockOffset, toCopy);
                     recordLeftToCopy -= toCopy;
                     blockOffset += toCopy;
                     recordPos += toCopy;

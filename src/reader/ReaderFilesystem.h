@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Reader.h"
-
 #ifndef READER_FILESYSTEM_H_
 #define READER_FILESYSTEM_H_
+
+#include "Reader.h"
 
 namespace OpenLogReplicator {
     class ReaderFilesystem final : public Reader {

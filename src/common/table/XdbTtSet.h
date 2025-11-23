@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef XDB_TTSET_H_
+#define XDB_TTSET_H_
+
 #include <utility>
 
 #include "../types/RowId.h"
 #include "../types/Types.h"
-
-#ifndef XDB_TTSET_H_
-#define XDB_TTSET_H_
 
 namespace OpenLogReplicator {
     class XdbTtSet final {
@@ -101,13 +101,11 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::XdbTtSetTokSuf> {
-        size_t operator()(const OpenLogReplicator::XdbTtSetTokSuf& xdbTtSetTokSuf) const {
-            return hash<std::string>()(xdbTtSetTokSuf.tokSuf);
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::XdbTtSetTokSuf> {
+    size_t operator()(const OpenLogReplicator::XdbTtSetTokSuf& xdbTtSetTokSuf) const noexcept {
+        return hash<std::string>()(xdbTtSetTokSuf.tokSuf);
+    }
+};
 
 #endif

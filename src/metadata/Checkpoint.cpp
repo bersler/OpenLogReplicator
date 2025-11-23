@@ -50,11 +50,11 @@ namespace OpenLogReplicator {
 
     void Checkpoint::wakeUp() {
         {
-            contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CHECKPOINT_WAKEUP);
-            std::unique_lock<std::mutex> const lck(mtx);
+            contextSet(CONTEXT::MUTEX, REASON::CHECKPOINT_WAKEUP);
+            std::unique_lock const lck(mtx);
             condLoop.notify_all();
         }
-        contextSet(Thread::CONTEXT::CPU);
+        contextSet(CONTEXT::CPU);
     }
 
     void Checkpoint::trackConfigFile() {
@@ -187,7 +187,7 @@ namespace OpenLogReplicator {
                         if (tableElementJson.HasMember("key")) {
                             element->key = Ctx::getJsonFieldS(configFileName, Ctx::JSON_KEY_LENGTH, tableElementJson, "key");
                             element->parseKey(element->key, separator);
-                        };
+                        }
 
                         if (tableElementJson.HasMember("condition"))
                             element->condition = Ctx::getJsonFieldS(configFileName, Ctx::JSON_CONDITION_LENGTH, tableElementJson,
@@ -215,8 +215,8 @@ namespace OpenLogReplicator {
         ctx->info(0, "scanning objects which match the configuration file");
         // Suspend transaction processing for the schema update
         {
-            contextSet(Thread::CONTEXT::TRAN, Thread::REASON::TRAN);
-            std::unique_lock<std::mutex> const lckTransaction(metadata->mtxTransaction);
+            contextSet(CONTEXT::TRAN, REASON::TRAN);
+            std::unique_lock const lckTransaction(metadata->mtxTransaction);
             metadata->commitElements();
             metadata->schema->purgeMetadata();
 
@@ -234,7 +234,7 @@ namespace OpenLogReplicator {
 
             metadata->schema->resetTouched();
         }
-        contextSet(Thread::CONTEXT::CPU);
+        contextSet(CONTEXT::CPU);
     }
 
     void Checkpoint::run() {
@@ -262,12 +262,12 @@ namespace OpenLogReplicator {
                         ctx->logTrace(Ctx::TRACE::SLEEP, "Checkpoint:run lastCheckpointScn: " + metadata->lastCheckpointScn.toString() +
                                                          " checkpointScn: " + metadata->checkpointScn.toString());
 
-                    contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::CHECKPOINT_RUN);
-                    std::unique_lock<std::mutex> lck(mtx);
-                    contextSet(Thread::CONTEXT::WAIT, REASON::CHECKPOINT_NO_WORK);
+                    contextSet(CONTEXT::MUTEX, REASON::CHECKPOINT_RUN);
+                    std::unique_lock lck(mtx);
+                    contextSet(CONTEXT::WAIT, REASON::CHECKPOINT_NO_WORK);
                     condLoop.wait_for(lck, std::chrono::milliseconds(100));
                 }
-                contextSet(Thread::CONTEXT::CPU);
+                contextSet(CONTEXT::CPU);
             }
 
             if (ctx->softShutdown)

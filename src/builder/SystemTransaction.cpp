@@ -636,7 +636,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
+    void SystemTransaction::processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) const {
         const RowId rowId(dataObj, bdba, slot);
         char str[RowId::SIZE + 1];
         rowId.toString(str);
@@ -725,7 +725,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::commit(Scn scn) {
+    void SystemTransaction::commit(Scn scn) const {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
             ctx->logTrace(Ctx::TRACE::SYSTEM, "commit");
 

@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     void Expression::buildTokens(const std::string& condition, std::vector<Token*>& tokens) {
-        Token::TYPE expressionType = Token::TYPE::NONE;
+        auto expressionType = Token::TYPE::NONE;
         uint64_t tokenIndex = 0;
 
         uint64_t i = 0;
@@ -35,31 +35,38 @@ namespace OpenLogReplicator {
                     if (condition[i] == ' ' || condition[i] == '\t' || condition[i] == '\n' || condition[i] == '\r') {
                         ++i;
                         continue;
-                    } else if (condition[i] == '(') {
+                    }
+                    if (condition[i] == '(') {
                         expressionType = Token::TYPE::LEFT_PARENTHESIS;
                         tokenIndex = i++;
                         continue;
-                    } else if (condition[i] == ')') {
+                    }
+                    if (condition[i] == ')') {
                         expressionType = Token::TYPE::RIGHT_PARENTHESIS;
                         tokenIndex = i++;
                         continue;
-                    } else if (condition[i] == ',') {
+                    }
+                    if (condition[i] == ',') {
                         expressionType = Token::TYPE::COMMA;
                         tokenIndex = i++;
                         continue;
-                    } else if (condition[i] == '[') {
+                    }
+                    if (condition[i] == '[') {
                         expressionType = Token::TYPE::IDENTIFIER;
                         tokenIndex = ++i;
                         continue;
-                    } else if (condition[i] == '|' || condition[i] == '&' || condition[i] == '!' || condition[i] == '=') {
+                    }
+                    if (condition[i] == '|' || condition[i] == '&' || condition[i] == '!' || condition[i] == '=') {
                         expressionType = Token::TYPE::OPERATOR;
                         tokenIndex = i++;
                         continue;
-                    } else if ((condition[i] >= '0' && condition[i] <= '9') || condition[i] == '.') {
+                    }
+                    if ((condition[i] >= '0' && condition[i] <= '9') || condition[i] == '.') {
                         expressionType = Token::TYPE::NUMBER;
                         tokenIndex = i++;
                         continue;
-                    } else if (condition[i] == '\'') {
+                    }
+                    if (condition[i] == '\'') {
                         expressionType = Token::TYPE::STRING;
                         tokenIndex = ++i;
                         continue;
@@ -116,7 +123,8 @@ namespace OpenLogReplicator {
                     if ((condition[i] >= '0' && condition[i] <= '9') || condition[i] == '.' || condition[i] == 'e' || condition[i] == 'E') {
                         ++i;
                         continue;
-                    } else if ((condition[i] >= 'a' && condition[i] <= 'z') || condition[i] == '_')
+                    }
+                    if ((condition[i] >= 'a' && condition[i] <= 'z') || condition[i] == '_')
                         throw RuntimeException(50067, "invalid condition: " + condition + " number on position: " + std::to_string(i));
 
                     tokens.push_back(new Token(expressionType, condition.substr(tokenIndex, i - tokenIndex)));
@@ -271,7 +279,7 @@ namespace OpenLogReplicator {
         if (root == nullptr || !root->isBool())
             throw RuntimeException(50067, "invalid condition: " + condition + " is not evaluated to bool");
 
-        for (Token* token: tokens)
+        for (const Token* token: tokens)
             delete token;
         tokens.clear();
 

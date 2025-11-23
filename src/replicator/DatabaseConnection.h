@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef DATABASE_CONNECTION_H_
+#define DATABASE_CONNECTION_H_
+
 #include <oci.h>
 
 #include "../common/types/Types.h"
-
-#ifndef DATABASE_CONNECTION_H_
-#define DATABASE_CONNECTION_H_
 
 namespace OpenLogReplicator {
     class DatabaseEnvironment;

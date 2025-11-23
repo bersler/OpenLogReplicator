@@ -120,13 +120,11 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::FileOffset> {
-        size_t operator()(const OpenLogReplicator::FileOffset fileOffset) const {
-            return hash<uint64_t>()(fileOffset.getData());
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::FileOffset> {
+    size_t operator()(const OpenLogReplicator::FileOffset fileOffset) const noexcept {
+        return hash<uint64_t>()(fileOffset.getData());
+    }
+};
 
 #endif

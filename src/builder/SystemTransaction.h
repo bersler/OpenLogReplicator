@@ -74,8 +74,8 @@ namespace OpenLogReplicator {
 
         void processInsert(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset);
         void processUpdate(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset);
-        void processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset);
-        void commit(Scn scn);
+        void processDelete(const DbTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) const;
+        void commit(Scn scn) const;
     };
 }
 

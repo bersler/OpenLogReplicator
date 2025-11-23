@@ -476,7 +476,7 @@ namespace OpenLogReplicator {
                 if (fieldSize >= 16) {
                     const uint32_t len = ctx->read32(redoLogRecord->data(fieldPos + 4));
                     const uint32_t offset = ctx->read32(redoLogRecord->data(fieldPos + 12));
-                    const uint64_t netstate = 0; // Random value observed
+                    constexpr uint64_t netstate = 0; // Random value observed
 
                     *ctx->dumpStream << "Redo for state change\n";
                     *ctx->dumpStream << "Len: " << std::dec << len <<
@@ -489,7 +489,7 @@ namespace OpenLogReplicator {
     public:
         static void process0501(Ctx* ctx, RedoLogRecord* redoLogRecord) {
             init(ctx, redoLogRecord);
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
             typePos fieldPos = 0;
             typeField fieldNum = 0;
             typeSize fieldSize = 0;

@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SYS_COL_H_
+#define SYS_COL_H_
+
 #include "../types/IntX.h"
 #include "../types/RowId.h"
 #include "../types/Types.h"
-
-#ifndef SYS_COL_H_
-#define SYS_COL_H_
 
 namespace OpenLogReplicator {
     class SysCol final {
@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
         typeCol segCol{0};
         typeCol intCol{0};
         std::string name;
-        SysCol::COLTYPE type{COLTYPE::NONE};
+        COLTYPE type{COLTYPE::NONE};
         uint length{0};
         int precision{-1};          // NULL
         int scale{-1};              // NULL
@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
         int null_{0};
         IntX property{0, 0};
 
-        SysCol(RowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, std::string newName, SysCol::COLTYPE newType,
+        SysCol(RowId newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, std::string newName, COLTYPE newType,
                uint newLength, int newPrecision, int newScale, uint newCharsetForm, uint newCharsetId, int newNull,
                uint64_t newProperty1, uint64_t newProperty2) :
                 rowId(newRowId),
@@ -161,7 +161,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] typeObj getDependentTable() const {
             return obj;
-        };
+        }
     };
 
     class SysColSeg final {

@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <exception>
-#include <sstream>
-
 #ifndef DATA_EXCEPTION_H_
 #define DATA_EXCEPTION_H_
+
+#include <exception>
+#include <sstream>
 
 namespace OpenLogReplicator {
     class DataException final : public std::exception {

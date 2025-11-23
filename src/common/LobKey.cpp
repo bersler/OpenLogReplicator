@@ -44,9 +44,7 @@ namespace OpenLogReplicator {
     }
 }
 
-namespace std {
-    size_t std::hash<OpenLogReplicator::LobKey>::operator()(const OpenLogReplicator::LobKey& lobKey) const {
-        return hash<typeDba>()(lobKey.page) ^
-               hash<OpenLogReplicator::LobId>()(lobKey.lobId);
-    }
+size_t std::hash<OpenLogReplicator::LobKey>::operator()(const OpenLogReplicator::LobKey& lobKey) const noexcept {
+    return hash<typeDba>()(lobKey.page) ^
+           hash<OpenLogReplicator::LobId>()(lobKey.lobId);
 }

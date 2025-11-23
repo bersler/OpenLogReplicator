@@ -17,17 +17,17 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/RedoLogRecord.h"
-#include "OpCode.h"
-
 #ifndef OP_CODE_0B_10_H_
 #define OP_CODE_0B_10_H_
+
+#include "../common/RedoLogRecord.h"
+#include "OpCode.h"
 
 namespace OpenLogReplicator {
     class OpCode0B10 final : public OpCode {
     public:
         static void process0B10(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
             typePos fieldPos = 0;
             typeField fieldNum = 0;
             typeSize fieldSize = 0;

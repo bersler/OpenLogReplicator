@@ -98,9 +98,9 @@ namespace {
         mainCtx->signalDump();
     }
 
-    static int mainFunction(int argc, char** argv) {
+    int mainFunction(int argc, char** argv) {
         int ret = 1;
-        struct utsname name{};
+        utsname name{};
         if (uname(&name) != 0) exit(-1);
         std::string buildArch;
         if (strlen(OpenLogReplicator_CMAKE_BUILD_TIMESTAMP) > 0)

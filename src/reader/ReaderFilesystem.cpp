@@ -218,7 +218,7 @@ namespace OpenLogReplicator {
             }
 
             bool found = false;
-            const struct dirent* ent;
+            const dirent* ent;
             while ((ent = readdir(dir)) != nullptr) {
                 const std::string dName(ent->d_name);
                 if (dName == "." || dName == "..")

@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
     protected:
         int socketFD{-1};
         int serverFD{-1};
-        struct sockaddr_storage address{};
+        sockaddr_storage address{};
         std::string host;
         std::string port;
         uint8_t readBuffer[READ_NETWORK_BUFFER]{};

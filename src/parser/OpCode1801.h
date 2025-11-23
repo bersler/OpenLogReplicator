@@ -28,8 +28,7 @@ namespace OpenLogReplicator {
     public:
         static void process1801(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
             bool validDdl = false;
-
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
             typePos fieldPos = 0;
             typeField fieldNum = 0;
             typeSize fieldSize = 0;

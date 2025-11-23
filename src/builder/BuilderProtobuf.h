@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
         void columnNull(const DbTable* table, typeCol col, bool after) {
             if (table != nullptr && format.unknownType == Format::UNKNOWN_TYPE::HIDE) {
-                DbColumn* column = table->columns[col];
+                const DbColumn* column = table->columns[col];
                 if (column->storedAsLob)
                     return;
                 if (column->guard && !ctx->isFlagSet(Ctx::REDO_FLAGS::SHOW_GUARD_COLUMNS))

@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     class OpCode0514 final : public OpCode0513 {
     public:
         static void process0514(const Ctx* ctx, RedoLogRecord* redoLogRecord, Transaction* transaction) {
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
 
             if (unlikely(transaction == nullptr)) {
                 ctx->logTrace(Ctx::TRACE::TRANSACTION, "attributes with no transaction, offset: " + redoLogRecord->fileOffset.toString());

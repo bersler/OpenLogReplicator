@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
         }
 
         static void initializeBASE10() {
-            memset(reinterpret_cast<void*>(BASE10), 0, sizeof(BASE10));
+            memset(BASE10, 0, sizeof(BASE10));
             for (uint digit = 0; digit < 10; ++digit) {
                 BASE10[0][digit] = digit;
 
@@ -118,7 +118,7 @@ namespace OpenLogReplicator {
         }
 
         IntX& setStr(const char* other, uint length, std::string& err) {
-            *this = static_cast<uint64_t>(0);
+            *this = 0;
             if (length > DIGITS) {
                 err = "incorrect conversion of string: " + std::string(other);
                 return *this;

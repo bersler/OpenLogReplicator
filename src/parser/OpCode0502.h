@@ -35,11 +35,11 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->dumpRedoLog >= 1)) {
                 const uint32_t highwater = ctx->read32(redoLogRecord->data(fieldPos + 16));
                 const uint32_t ext = ctx->read32(redoLogRecord->data(fieldPos + 4));
-                const typeBlk blk = 0; // TODO: find field position/size
+                constexpr typeBlk blk = 0; // TODO: find field position/size
                 const uint32_t extSize = ctx->read32(redoLogRecord->data(fieldPos + 12));
-                const uint32_t blocksFreelist = 0; // TODO: find field position/size
-                const uint32_t blocksBelow = 0; // TODO: find field position/size
-                const typeBlk mapblk = 0; // TODO: find field position/size
+                constexpr uint32_t blocksFreelist = 0; // TODO: find field position/size
+                constexpr uint32_t blocksBelow = 0; // TODO: find field position/size
+                constexpr typeBlk mapblk = 0; // TODO: find field position/size
                 const uint32_t offset = ctx->read32(redoLogRecord->data(fieldPos + 24));
 
                 *ctx->dumpStream << "kteop redo - redo operation on extent map\n";
@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
 
     public:
         static void process0502(const Ctx* ctx, RedoLogRecord* redoLogRecord) {
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
             typePos fieldPos = 0;
             typeField fieldNum = 0;
             typeSize fieldSize = 0;

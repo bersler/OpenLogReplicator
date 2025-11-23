@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
             transaction = new Transaction(xid, &orphanedLobs, xmlCtx);
             {
                 ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_FIND);
-                std::unique_lock<std::mutex> const lck(mtx);
+                std::unique_lock const lck(mtx);
                 xidTransactionMap.insert_or_assign(xidMap, transaction);
             }
             ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
         const XidMap xidMap = (xid.getData() >> 32) | (static_cast<uint64_t>(conId) << 32);
         {
             ctx->parserThread->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::TRANSACTION_DROP);
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             xidTransactionMap.erase(xidMap);
         }
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
                 throw RedoLogException(50041, "bad split offset: " + redoLogRecord->fileOffset.toString() + " xid: " + transaction->xid.toString());
 
             auto* const lastTc = transaction->lastTc;
-            auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
+            const auto lastSize = *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size - sizeof(typeChunkSize));
             const auto* const last501 = reinterpret_cast<const RedoLogRecord*>(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_DATA0);
 
             const uint32_t mergeSize = last501->size + redoLogRecord->size;
@@ -122,12 +122,11 @@ namespace OpenLogReplicator {
         auto* lastTc = transaction->lastTc;
         *reinterpret_cast<typeOp2*>(lastTc->buffer + lastTc->size + ROW_HEADER_OP) = redoLogRecord->opCode << 16;
         auto* redoLogRecordTarget1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA0);
-        memcpy(reinterpret_cast<void*>(redoLogRecordTarget1),
-               reinterpret_cast<const void*>(redoLogRecord), sizeof(RedoLogRecord));
+        *redoLogRecordTarget1 = *redoLogRecord;
         redoLogRecordTarget1->dataExt = nullptr;
-        memcpy(reinterpret_cast<void*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA1),
-               reinterpret_cast<const void*>(redoLogRecord->data()), redoLogRecord->size);
-        memset(reinterpret_cast<void*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA1 + redoLogRecord->size), 0, sizeof(RedoLogRecord));
+        memcpy(lastTc->buffer + lastTc->size + ROW_HEADER_DATA1, redoLogRecord->data(), redoLogRecord->size);
+        auto* redoLogRecordTarget2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA1 + redoLogRecord->size);
+        redoLogRecordTarget2->clear();
 
         *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA2 + redoLogRecord->size) = chunkSize;
 
@@ -185,18 +184,14 @@ namespace OpenLogReplicator {
         *reinterpret_cast<typeOp2*>(lastTc->buffer + lastTc->size + ROW_HEADER_OP) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
 
         auto* redoLogRecordTarget1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA0);
-        memcpy(reinterpret_cast<void*>(redoLogRecordTarget1),
-               reinterpret_cast<const void*>(redoLogRecord1), sizeof(RedoLogRecord));
+        *redoLogRecordTarget1 = *redoLogRecord1;
         redoLogRecordTarget1->dataExt = nullptr;
-        memcpy(reinterpret_cast<void*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA1),
-               reinterpret_cast<const void*>(redoLogRecord1->data()), redoLogRecord1->size);
+        memcpy(lastTc->buffer + lastTc->size + ROW_HEADER_DATA1, redoLogRecord1->data(), redoLogRecord1->size);
 
         auto* redoLogRecordTarget2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA1 + redoLogRecord1->size);
-        memcpy(reinterpret_cast<void*>(redoLogRecordTarget2),
-               reinterpret_cast<const void*>(redoLogRecord2), sizeof(RedoLogRecord));
+        *redoLogRecordTarget2 = *redoLogRecord2;
         redoLogRecordTarget2->dataExt = nullptr;
-        memcpy(reinterpret_cast<void*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA2 + redoLogRecord1->size),
-               reinterpret_cast<const void*>(redoLogRecord2->data()), redoLogRecord2->size);
+        memcpy(lastTc->buffer + lastTc->size + ROW_HEADER_DATA2 + redoLogRecord1->size, redoLogRecord2->data(), redoLogRecord2->size);
         *reinterpret_cast<typeChunkSize*>(lastTc->buffer + lastTc->size + ROW_HEADER_DATA2 + redoLogRecord1->size + redoLogRecord2->size) = chunkSize;
 
         lastTc->size += chunkSize;
@@ -229,8 +224,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2) {
-        memcpy(reinterpret_cast<void*>(mergeBuffer),
-               reinterpret_cast<const void*>(redoLogRecord1->data()), redoLogRecord1->fieldSizesDelta);
+        memcpy(mergeBuffer, redoLogRecord1->data(), redoLogRecord1->fieldSizesDelta);
         typePos pos = redoLogRecord1->fieldSizesDelta;
         typeField fieldCnt;
         typePos fieldPos1;
@@ -247,22 +241,19 @@ namespace OpenLogReplicator {
         // Field list
         fieldCnt = redoLogRecord1->fieldCnt + redoLogRecord2->fieldCnt - 2;
         ctx->write16(mergeBuffer + pos, fieldCnt);
-        memcpy(reinterpret_cast<void*>(mergeBuffer + pos + 2),
-               reinterpret_cast<const void*>(redoLogRecord1->data(redoLogRecord1->fieldSizesDelta + 2)), static_cast<size_t>(redoLogRecord1->fieldCnt * 2));
-        memcpy(reinterpret_cast<void*>(mergeBuffer + pos + 2 + static_cast<ptrdiff_t>(redoLogRecord1->fieldCnt * 2)),
-               reinterpret_cast<const void*>(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 6)), (redoLogRecord2->fieldCnt * 2) - 4);
+        memcpy(mergeBuffer + pos + 2, redoLogRecord1->data(redoLogRecord1->fieldSizesDelta + 2), static_cast<size_t>(redoLogRecord1->fieldCnt * 2));
+        memcpy(mergeBuffer + pos + 2 + static_cast<ptrdiff_t>(redoLogRecord1->fieldCnt * 2),
+               redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 6), (redoLogRecord2->fieldCnt * 2) - 4);
         pos += (((fieldCnt + 1) * 2) + 2) & (0xFFFC);
         fieldPos1 = pos;
 
-        memcpy(reinterpret_cast<void*>(mergeBuffer + pos),
-               reinterpret_cast<const void*>(redoLogRecord1->data(redoLogRecord1->fieldPos)), redoLogRecord1->size - redoLogRecord1->fieldPos);
+        memcpy(mergeBuffer + pos, redoLogRecord1->data(redoLogRecord1->fieldPos), redoLogRecord1->size - redoLogRecord1->fieldPos);
         pos += (redoLogRecord1->size - redoLogRecord1->fieldPos + 3) & (0xFFFC);
         fieldPos2 = redoLogRecord2->fieldPos +
                     ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 2)) + 3) & 0xFFFC) +
                     ((ctx->read16(redoLogRecord2->data(redoLogRecord2->fieldSizesDelta + 4)) + 3) & 0xFFFC);
 
-        memcpy(reinterpret_cast<void*>(mergeBuffer + pos),
-               reinterpret_cast<const void*>(redoLogRecord2->data(fieldPos2)), redoLogRecord2->size - fieldPos2);
+        memcpy(mergeBuffer + pos, redoLogRecord2->data(fieldPos2), redoLogRecord2->size - fieldPos2);
         pos += (redoLogRecord2->size - fieldPos2 + 3) & (0xFFFC);
 
         redoLogRecord1->size = pos;
@@ -307,10 +298,9 @@ namespace OpenLogReplicator {
         const typeTransactionSize lobSize = redoLogRecord1->size + sizeof(RedoLogRecord) + sizeof(typeTransactionSize);
         auto* data = new uint8_t[lobSize];
         *reinterpret_cast<typeTransactionSize*>(data) = lobSize;
-        memcpy(reinterpret_cast<void*>(data + sizeof(typeTransactionSize)),
-               reinterpret_cast<const void*>(redoLogRecord1), sizeof(RedoLogRecord));
-        memcpy(reinterpret_cast<void*>(data + sizeof(typeTransactionSize) + sizeof(RedoLogRecord)),
-               reinterpret_cast<const void*>(redoLogRecord1->data()), redoLogRecord1->size);
+        auto* redoLogRecordTarget = reinterpret_cast<RedoLogRecord*>(data + sizeof(typeTransactionSize));
+        *redoLogRecordTarget = *redoLogRecord1;
+        memcpy(data + sizeof(typeTransactionSize) + sizeof(RedoLogRecord), redoLogRecord1->data(), redoLogRecord1->size);
 
         auto* redoLogRecord1new = reinterpret_cast<RedoLogRecord*>(data + sizeof(typeTransactionSize));
         redoLogRecord1new->dataExt = data + sizeof(typeTransactionSize) + sizeof(RedoLogRecord);

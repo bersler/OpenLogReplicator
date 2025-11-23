@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
         }
 
         contextSet(CONTEXT::MUTEX, REASON::WRITER_CONFIRM);
-        std::unique_lock<std::mutex> const lck(mtx);
+        std::unique_lock const lck(mtx);
 
         if (msg == nullptr) {
             if (currentQueueSize == 0) {
@@ -248,7 +248,7 @@ namespace OpenLogReplicator {
 
                 // Found something
                 msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldSize);
-                if (builderQueue->confirmedSize > oldSize + sizeof(struct BuilderMsg) && msg->size > 0) {
+                if (builderQueue->confirmedSize > oldSize + sizeof(BuilderMsg) && msg->size > 0) {
                     newSize = builderQueue->confirmedSize;
                     break;
                 }
@@ -263,7 +263,7 @@ namespace OpenLogReplicator {
             __builtin_prefetch(reinterpret_cast<char*>(msg) + 128, 0, 0);
             __builtin_prefetch(reinterpret_cast<char*>(msg) + 192, 0, 0);
             // Send the message
-            while (oldSize + sizeof(struct BuilderMsg) < newSize && !ctx->hardShutdown) {
+            while (oldSize + sizeof(BuilderMsg) < newSize && !ctx->hardShutdown) {
                 msg = reinterpret_cast<BuilderMsg*>(builderQueue->data + oldSize);
                 if (msg->size == 0)
                     break;
@@ -285,7 +285,7 @@ namespace OpenLogReplicator {
                     break;
 
                 const uint64_t size8 = (msg->size + 7) & 0xFFFFFFFFFFFFFFF8;
-                oldSize += sizeof(struct BuilderMsg);
+                oldSize += sizeof(BuilderMsg);
 
                 // Message in one part - sent directly from buffer
                 if (oldSize + size8 <= Builder::OUTPUT_BUFFER_DATA_SIZE) {
@@ -318,14 +318,12 @@ namespace OpenLogReplicator {
                         uint64_t toCopy = msg->size - copied;
                         if (toCopy > newSize - oldSize) {
                             toCopy = newSize - oldSize;
-                            memcpy(reinterpret_cast<void*>(msg->data + copied),
-                                   reinterpret_cast<const void*>(builderQueue->data + oldSize), toCopy);
+                            memcpy(msg->data + copied, builderQueue->data + oldSize, toCopy);
                             builderQueue = builderQueue->next;
                             newSize = Builder::OUTPUT_BUFFER_DATA_SIZE;
                             oldSize = 0;
                         } else {
-                            memcpy(reinterpret_cast<void*>(msg->data + copied),
-                                   reinterpret_cast<const void*>(builderQueue->data + oldSize), toCopy);
+                            memcpy(msg->data + copied, builderQueue->data + oldSize, toCopy);
                             oldSize += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
                         }
                         copied += toCopy;
