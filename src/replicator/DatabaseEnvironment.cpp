@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
             throw RuntimeException(10050, "can't initialize databadse environment (OCI)");
     }
 
-    void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) {
+    void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) const {
         sb4 errcode1 = 0;
         sb4 errcode2 = 0;
         uint64_t len;

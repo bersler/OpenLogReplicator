@@ -133,13 +133,11 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::Scn> {
-        size_t operator()(const OpenLogReplicator::Scn scn) const {
-            return hash<uint64_t>()(scn.getData());
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::Scn> {
+    size_t operator()(const OpenLogReplicator::Scn scn) const noexcept {
+        return hash<uint64_t>()(scn.getData());
+    }
+};
 
 #endif

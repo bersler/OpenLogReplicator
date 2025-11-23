@@ -56,12 +56,12 @@ namespace OpenLogReplicator {
         readerDropAll();
 
         while (!archiveRedoQueue.empty()) {
-            Parser* parser = archiveRedoQueue.top();
+            const Parser* parser = archiveRedoQueue.top();
             archiveRedoQueue.pop();
             delete parser;
         }
 
-        for (Parser* parser: onlineRedoSet)
+        for (const Parser* parser: onlineRedoSet)
             delete parser;
         onlineRedoSet.clear();
 
@@ -74,13 +74,13 @@ namespace OpenLogReplicator {
 
     void Replicator::cleanArchList() {
         while (!archiveRedoQueue.empty()) {
-            Parser* parser = archiveRedoQueue.top();
+            const Parser* parser = archiveRedoQueue.top();
             archiveRedoQueue.pop();
             delete parser;
         }
     }
 
-    void Replicator::updateOnlineLogs() {
+    void Replicator::updateOnlineLogs() const {
         for (Parser* onlineRedo: onlineRedoSet) {
             if (!onlineRedo->reader->updateRedoLog())
                 throw RuntimeException(10039, "updating of online redo logs failed for " + onlineRedo->path);
@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
         int64_t lastGroup = -1;
         Reader* onlineReader = nullptr;
 
-        for (auto* redoLog: metadata->redoLogs) {
+        for (const auto* redoLog: metadata->redoLogs) {
             if (redoLog->group != lastGroup || onlineReader == nullptr) {
                 onlineReader = readerCreate(redoLog->group);
                 onlineReader->paths.clear();
@@ -301,7 +301,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::checkOnlineRedoLogs() {
-        for (Parser* onlineRedo: onlineRedoSet)
+        for (const Parser* onlineRedo: onlineRedoSet)
             delete onlineRedo;
         onlineRedoSet.clear();
 
@@ -346,7 +346,7 @@ namespace OpenLogReplicator {
     // %a - activation id
     // %d - database id
     // %h - some hash
-    Seq Replicator::getSequenceFromFileName(Replicator* replicator, const std::string& file) {
+    Seq Replicator::getSequenceFromFileName(const Replicator* replicator, const std::string& file) {
         Seq sequence{0};
         size_t i{};
         size_t j{};
@@ -421,7 +421,7 @@ namespace OpenLogReplicator {
         redoLogsBatch.emplace_back(std::move(path));
     }
 
-    void Replicator::applyMapping(std::string& path) {
+    void Replicator::applyMapping(std::string& path) const {
         const size_t newPathLength = path.length();
         std::array<char, Ctx::MAX_PATH_LENGTH> pathBuffer {};
 
@@ -433,10 +433,8 @@ namespace OpenLogReplicator {
                 newPathLength - sourceLength + targetLength < Ctx::MAX_PATH_LENGTH - 1 &&
                 memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
 
-                memcpy(reinterpret_cast<void*>(pathBuffer.data()),
-                       reinterpret_cast<const void*>(pathMapping[(i * 2) + 1].c_str()), targetLength);
-                memcpy(reinterpret_cast<void*>(pathBuffer.data() + targetLength),
-                       reinterpret_cast<const void*>(path.c_str() + sourceLength), newPathLength - sourceLength);
+                memcpy(pathBuffer.data(), pathMapping[i * 2 + 1].c_str(), targetLength);
+                memcpy(pathBuffer.data() + targetLength, path.c_str() + sourceLength, newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
                 path.assign(pathBuffer.data());
                 break;
@@ -473,7 +471,7 @@ namespace OpenLogReplicator {
             throw RuntimeException(10012, "directory: " + mappedPath + " - can't read");
 
         std::string newLastCheckedDay;
-        const struct dirent* ent;
+        const dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
             const std::string dName(ent->d_name);
             if (dName == "." || dName == "..")
@@ -503,7 +501,7 @@ namespace OpenLogReplicator {
                 throw RuntimeException(10012, "directory: " + mappedPathWithFile + " - can't read");
             }
 
-            const struct dirent* ent2;
+            const dirent* ent2;
             while ((ent2 = readdir(dir2)) != nullptr) {
                 const std::string dName2(ent->d_name);
                 if (dName2 == "." || dName2 == "..")
@@ -591,7 +589,7 @@ namespace OpenLogReplicator {
                 if (dir == nullptr)
                     throw RuntimeException(10012, "directory: " + mappedPath + " - can't read");
 
-                const struct dirent* ent;
+                const dirent* ent;
                 while ((ent = readdir(dir)) != nullptr) {
                     const std::string dName(ent->d_name);
                     if (dName == "." || dName == "..")
@@ -625,13 +623,14 @@ namespace OpenLogReplicator {
         replicator->redoLogsBatch.clear();
     }
 
-    bool parserCompare::operator()(const Parser* p1, const Parser* p2) {
+    bool parserCompare::operator()(const Parser* p1, const Parser* p2) const
+    {
         return p1->sequence > p2->sequence;
     }
 
     void Replicator::updateResetlogs() {
         contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_UPDATE);
-        std::unique_lock<std::mutex> const lck(metadata->mtxCheckpoint);
+        std::unique_lock const lck(metadata->mtxCheckpoint);
 
         for (DbIncarnation* oi: metadata->dbIncarnations) {
             if (oi->resetlogs == metadata->resetlogs) {
@@ -730,7 +729,7 @@ namespace OpenLogReplicator {
                 // When no metadata exists, start processing from the first file
                 if (metadata->sequence == Seq::zero()) {
                     contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_ARCH);
-                    std::unique_lock<std::mutex> const lck(metadata->mtxCheckpoint);
+                    std::unique_lock const lck(metadata->mtxCheckpoint);
                     metadata->sequence = parser->sequence;
                     contextSet(CONTEXT::CPU);
                 }

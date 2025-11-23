@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "expression/Token.h"
 
 namespace OpenLogReplicator {
-    DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, DbTable::OPTIONS newOptions, std::string newOwner,
+    DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, OPTIONS newOptions, std::string newOwner,
                      std::string newName) :
             obj(newObj),
             dataObj(newDataObj),
@@ -91,13 +91,13 @@ namespace OpenLogReplicator {
     }
 
     DbTable::~DbTable() {
-        for (DbColumn* column: columns)
+        for (const DbColumn* column: columns)
             delete column;
         pk.clear();
         columns.clear();
         tablePartitions.clear();
 
-        for (DbLob* lob: lobs)
+        for (const DbLob* lob: lobs)
             delete lob;
         lobs.clear();
 
@@ -106,7 +106,7 @@ namespace OpenLogReplicator {
                 delete expression;
         stack.clear();
 
-        for (Token* token: tokens)
+        for (const Token* token: tokens)
             delete token;
         tokens.clear();
 

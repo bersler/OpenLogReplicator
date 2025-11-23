@@ -80,9 +80,9 @@ namespace OpenLogReplicator {
         static constexpr bool contextCompiled = false;
 #endif
         time_ut contextTimeLast{0};
-        time_ut contextTime[static_cast<uint>(CONTEXT::NUM)]{0};
-        time_ut contextCnt[static_cast<uint>(CONTEXT::NUM)]{0};
-        uint64_t reasonCnt[static_cast<uint>(REASON::NUM)]{0};
+        time_ut contextTime[static_cast<uint>(CONTEXT::NUM)]{};
+        time_ut contextCnt[static_cast<uint>(CONTEXT::NUM)]{};
+        uint64_t reasonCnt[static_cast<uint>(REASON::NUM)]{};
         REASON curReason{REASON::NONE};
         CONTEXT curContext{CONTEXT::NONE};
         uint64_t contextSwitches{0};

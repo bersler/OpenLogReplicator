@@ -17,15 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef BOOT_EXCEPTION_H_
+#define BOOT_EXCEPTION_H_
+
 #include <ctime>
 #include <exception>
 #include <sstream>
 #include <string>
 
 #include "../types/Types.h"
-
-#ifndef BOOT_EXCEPTION_H_
-#define BOOT_EXCEPTION_H_
 
 namespace OpenLogReplicator {
     class BootException final : public std::exception {

@@ -141,7 +141,7 @@ namespace OpenLogReplicator {
             if (dir == nullptr)
                 throw RuntimeException(10012, "directory: " + pathName + " - can't read");
 
-            struct dirent* ent;
+            dirent* ent;
             while ((ent = readdir(dir)) != nullptr) {
                 const std::string dName(ent->d_name);
                 if (dName == "." || dName == "..")
@@ -173,7 +173,7 @@ namespace OpenLogReplicator {
                 uint64_t fileNum;
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
-                } catch (const std::exception& e) {
+                } catch ([[maybe_unused]] const std::exception& e) {
                     // Ignore other files
                     continue;
                 }

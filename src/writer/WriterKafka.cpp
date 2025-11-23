@@ -88,8 +88,8 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::dr_msg_cb(rd_kafka_t* rkCb __attribute__((unused)), const rd_kafka_message_t* rkMessage, void* opaque __attribute__((unused))) {
-        auto* msg = reinterpret_cast<BuilderMsg*>(rkMessage->_private);
-        auto* writer = reinterpret_cast<Writer*>(opaque);
+        auto* msg = static_cast<BuilderMsg*>(rkMessage->_private);
+        auto* writer = static_cast<Writer*>(opaque);
         if (rkMessage->err != 0) {
             writer->ctx->warning(70008, "Kafka: " + std::to_string(msg->id) + " delivery failed: " + rd_kafka_err2str(rkMessage->err));
         } else {
@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::error_cb(rd_kafka_t* rkCb, int err, const char* reason, void* opaque) {
-        auto* writer = reinterpret_cast<Writer*>(opaque);
+        const auto* writer = static_cast<Writer*>(opaque);
 
         writer->ctx->warning(70009, "Kafka: " + std::string(rd_kafka_err2name(static_cast<rd_kafka_resp_err_t>(err))) +
                                     ", reason: " + reason);
@@ -114,7 +114,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::logger_cb(const rd_kafka_t* rkCb, int level, const char* fac, const char* buf) {
-        auto* writer = reinterpret_cast<WriterKafka*>(rd_kafka_opaque(rkCb));
+        auto* writer = static_cast<WriterKafka*>(rd_kafka_opaque(rkCb));
         if (unlikely(writer->ctx->isTraceSet(Ctx::TRACE::WRITER)))
             writer->ctx->logTrace(Ctx::TRACE::WRITER, std::to_string(level) + ", rk: " + ((rkCb != nullptr) ? rd_kafka_name(rkCb) : nullptr) +
                                                       ", fac: " + fac + ", err: " + buf);

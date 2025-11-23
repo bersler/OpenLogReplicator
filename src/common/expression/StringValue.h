@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Expression.h"
-
 #ifndef STRING_VALUE_H_
 #define STRING_VALUE_H_
 
+#include "Expression.h"
+
 namespace OpenLogReplicator {
-    class StringValue : public Expression {
+    class StringValue final : public Expression {
     public:
         enum class TYPE : unsigned char {
             SESSION_ATTRIBUTE, OP, VALUE

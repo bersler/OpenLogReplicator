@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../types/RowId.h"
-#include "../types/Types.h"
-
 #ifndef SYS_TAB_PART_H_
 #define SYS_TAB_PART_H_
+
+#include "../types/RowId.h"
+#include "../types/Types.h"
 
 namespace OpenLogReplicator {
     class SysTabPart final {

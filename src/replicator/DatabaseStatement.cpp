@@ -70,15 +70,15 @@ namespace OpenLogReplicator {
 
     void DatabaseStatement::unbindAll() {
         for (OCIBind* bindp: binds)
-            OCIHandleFree(reinterpret_cast<dvoid*>(bindp), OCI_HTYPE_BIND);
+            OCIHandleFree(bindp, OCI_HTYPE_BIND);
         binds.clear();
 
         for (OCIDefine* defp: defines)
-            OCIHandleFree(reinterpret_cast<dvoid*>(defp), OCI_HTYPE_DEFINE);
+            OCIHandleFree(defp, OCI_HTYPE_DEFINE);
         defines.clear();
     }
 
-    int DatabaseStatement::next() {
+    int DatabaseStatement::next() const {
         const sword status = OCIStmtFetch2(stmthp, conn->errhp, 1, OCI_FETCH_NEXT, 0, OCI_DEFAULT);
         if (status == OCI_NO_DATA)
             return 0;
@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
         return 1;
     }
 
-    void DatabaseStatement::bindString(uint col, std::string& val) {
+    void DatabaseStatement::bindString(uint col, const std::string& val) {
         OCIBind* bindp = nullptr;
         const sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col,
                                        const_cast<void*>(reinterpret_cast<const void*>(val.c_str())), val.length() + 1,
@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
 
     void DatabaseStatement::bindBinary(uint col, uint8_t* buf, uint64_t size) {
         OCIBind* bindp = nullptr;
-        const sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, reinterpret_cast<void*>(buf), size, SQLT_BIN,
+        const sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, buf, size, SQLT_BIN,
                                        nullptr, nullptr, nullptr, 0, nullptr, OCI_DEFAULT);
         if (bindp != nullptr)
             binds.push_back(bindp);
@@ -116,12 +116,12 @@ namespace OpenLogReplicator {
         conn->env->checkErr(conn->errhp, ret);
     }
 
-    bool DatabaseStatement::isNull(uint col) {
+    bool DatabaseStatement::isNull(uint col) const {
         OCIParam* paramdp;
         conn->env->checkErr(conn->errhp, OCIParamGet(stmthp, OCI_HTYPE_STMT, conn->errhp,
                                                      reinterpret_cast<void**>(&paramdp), col));
         uint32_t fieldSize = 0;
-        conn->env->checkErr(conn->errhp, OCIAttrGet(paramdp, OCI_DTYPE_PARAM, reinterpret_cast<dvoid*>(&fieldSize), nullptr,
+        conn->env->checkErr(conn->errhp, OCIAttrGet(paramdp, OCI_DTYPE_PARAM, &fieldSize, nullptr,
                                                     OCI_ATTR_DATA_SIZE, conn->errhp));
         return (fieldSize == 0);
     }

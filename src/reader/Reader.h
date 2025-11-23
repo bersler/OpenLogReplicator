@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef READER_H_
+#define READER_H_
+
 #include <atomic>
 #include <vector>
 
@@ -26,9 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types/Seq.h"
 #include "../common/types/Time.h"
 #include "../common/types/Types.h"
-
-#ifndef READER_H_
-#define READER_H_
 
 namespace OpenLogReplicator {
     class Reader : public Thread {

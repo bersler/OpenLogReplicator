@@ -17,17 +17,17 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef TOKEN_H_
+#define TOKEN_H_
+
 #include <unordered_map>
 #include <vector>
 
 #include "Expression.h"
 #include "../types/Types.h"
 
-#ifndef TOKEN_H_
-#define TOKEN_H_
-
 namespace OpenLogReplicator {
-    class Token : public Expression {
+    class Token final : public Expression {
     public:
         enum class TYPE : unsigned char {
             NONE, IDENTIFIER, LEFT_PARENTHESIS, RIGHT_PARENTHESIS, COMMA, OPERATOR, NUMBER, STRING

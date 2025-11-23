@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
 
     class SerializerJson final : public Serializer {
     protected:
-        static void deserializeSysCCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson);
+        static void deserializeSysCCol(const Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson);
         static void deserializeSysCDef(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson);
         static void deserializeSysCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysColJson);
         static void deserializeSysDeferredStg(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysDeferredStgJson);

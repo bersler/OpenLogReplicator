@@ -316,7 +316,7 @@ namespace OpenLogReplicator {
             lwnIdx = 0;
         }
 
-        BuilderMsg::OUTPUT_BUFFER flags = BuilderMsg::OUTPUT_BUFFER::CHECKPOINT;
+        auto flags = BuilderMsg::OUTPUT_BUFFER::CHECKPOINT;
         if (redo)
             flags = static_cast<BuilderMsg::OUTPUT_BUFFER>(static_cast<uint>(flags) | static_cast<uint>(BuilderMsg::OUTPUT_BUFFER::REDO));
         builderBegin(scn, sequence, 0, flags);

@@ -33,23 +33,19 @@ namespace OpenLogReplicator {
     void DatabaseConnection::connect() {
         disconnect();
 
-        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&errhp), OCI_HTYPE_ERROR,
-                       0, nullptr);
-        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&srvhp), OCI_HTYPE_SERVER,
-                       0, nullptr);
-        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&svchp), OCI_HTYPE_SVCCTX,
-                       0, nullptr);
-        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&authp), OCI_HTYPE_SESSION,
-                       0, nullptr);
+        OCIHandleAlloc(env->envhp, reinterpret_cast<dvoid**>(&errhp), OCI_HTYPE_ERROR, 0, nullptr);
+        OCIHandleAlloc(env->envhp, reinterpret_cast<dvoid**>(&srvhp), OCI_HTYPE_SERVER, 0, nullptr);
+        OCIHandleAlloc(env->envhp, reinterpret_cast<dvoid**>(&svchp), OCI_HTYPE_SVCCTX, 0, nullptr);
+        OCIHandleAlloc(env->envhp, reinterpret_cast<dvoid**>(&authp), OCI_HTYPE_SESSION, 0, nullptr);
 
         env->checkErr(errhp, OCIServerAttach(srvhp, errhp, reinterpret_cast<const OraText*>(connectString.c_str()),
                                              connectString.length(), OCI_DEFAULT));
-        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX, srvhp, 0,
+        env->checkErr(errhp, OCIAttrSet(svchp, OCI_HTYPE_SVCCTX, srvhp, 0,
                                         OCI_ATTR_SERVER, errhp));
-        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION,
+        env->checkErr(errhp, OCIAttrSet(authp, OCI_HTYPE_SESSION,
                                         const_cast<dvoid*>(reinterpret_cast<const dvoid*>(user.c_str())), user.length(),
                                         OCI_ATTR_USERNAME, errhp));
-        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION,
+        env->checkErr(errhp, OCIAttrSet(authp, OCI_HTYPE_SESSION,
                                         const_cast<dvoid*>(reinterpret_cast<const dvoid*>(password.c_str())), password.length(),
                                         OCI_ATTR_PASSWORD, errhp));
 
@@ -58,8 +54,8 @@ namespace OpenLogReplicator {
         else
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_DEFAULT));
 
-        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX,
-                                        reinterpret_cast<dvoid*>(authp), 0, OCI_ATTR_SESSION, errhp));
+        env->checkErr(errhp, OCIAttrSet(svchp, OCI_HTYPE_SVCCTX,
+                                        authp, 0, OCI_ATTR_SESSION, errhp));
 
         connected = true;
     }
@@ -72,7 +68,7 @@ namespace OpenLogReplicator {
             OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
 
         if (authp != nullptr) {
-            OCIHandleFree(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION);
+            OCIHandleFree(authp, OCI_HTYPE_SESSION);
             authp = nullptr;
         }
 
@@ -82,17 +78,17 @@ namespace OpenLogReplicator {
         }
 
         if (svchp != nullptr) {
-            OCIHandleFree(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX);
+            OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
             svchp = nullptr;
         }
 
         if (authp != nullptr) {
-            OCIHandleFree(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SERVER);
+            OCIHandleFree(authp, OCI_HTYPE_SERVER);
             authp = nullptr;
         }
 
         if (errhp != nullptr) {
-            OCIHandleFree(reinterpret_cast<dvoid*>(errhp), OCI_HTYPE_ERROR);
+            OCIHandleFree(errhp, OCI_HTYPE_ERROR);
             errhp = nullptr;
         }
 

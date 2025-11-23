@@ -487,8 +487,8 @@ namespace OpenLogReplicator {
                                                                           "sys-tabsubpart", "sys-ts", "xdb-ttset"};
                 Ctx::checkJsonFields(fileName, document, documentChildNames);
             }
-            std::unique_lock<std::mutex> const lckCheckpoint(metadata->mtxCheckpoint);
-            std::unique_lock<std::mutex> const lckSchema(metadata->mtxSchema);
+            std::unique_lock const lckCheckpoint(metadata->mtxCheckpoint);
+            std::unique_lock const lckSchema(metadata->mtxSchema);
 
             if (loadMetadata) {
                 metadata->checkpointScn = Ctx::getJsonFieldU64(fileName, document, "scn");
@@ -587,8 +587,8 @@ namespace OpenLogReplicator {
                         }
 
                         const uint32_t incarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "incarnation");
-                        const Scn resetlogsScn = Scn(Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "resetlogs-scn"));
-                        const Scn priorResetlogsScn = Scn(Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "prior-resetlogs-scn"));
+                        const auto resetlogsScn = Scn(Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "resetlogs-scn"));
+                        const auto priorResetlogsScn = Scn(Ctx::getJsonFieldU64(fileName, incarnationsJson[i], "prior-resetlogs-scn"));
                         const std::string status = Ctx::getJsonFieldS(fileName, 128, incarnationsJson[i], "status");
                         const typeResetlogs resetlogs = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "resetlogs");
                         const uint32_t priorIncarnation = Ctx::getJsonFieldU32(fileName, incarnationsJson[i], "prior-incarnation");
@@ -679,7 +679,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void SerializerJson::deserializeSysCCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson) {
+    void SerializerJson::deserializeSysCCol(const Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson) {
         for (rapidjson::SizeType i = 0; i < sysCColJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysCColChildNames {"row-id", "con", "int-col", "obj", "spare1"};

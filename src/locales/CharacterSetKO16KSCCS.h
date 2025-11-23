@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
     protected:
         static typeUnicode16 unicode_map_KO16KSCCS_2b[(KO16KSCCS_b1_max - KO16KSCCS_b1_min + 1) *
                                                       (KO16KSCCS_b2_max - KO16KSCCS_b2_min + 1)];
-        [[nodiscard]] virtual bool validCode(uint64_t byte1, uint64_t byte2) const;
+        [[nodiscard]] bool validCode(uint64_t byte1, uint64_t byte2);
 
     public:
         CharacterSetKO16KSCCS();

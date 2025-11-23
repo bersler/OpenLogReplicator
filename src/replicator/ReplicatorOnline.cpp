@@ -180,10 +180,9 @@ namespace OpenLogReplicator {
         }
 
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::GRANTS) && !standby) {
-            const std::vector<std::string> tables {SysCCol::tableName(), SysCDef::tableName(), SysCol::tableName(), SysDeferredStg::tableName(),
-                                                   SysECol::tableName(), SysLob::tableName(), SysLobCompPart::tableName(), SysLobFrag::tableName(),
-                                                   SysObj::tableName(), SysTab::tableName(), SysTabComPart::tableName(), SysTabSubPart::tableName(),
-                                                   SysTs::tableName(), SysUser::tableName(), XdbTtSet::tableName()};
+            const std::vector tables {SysCCol::tableName(), SysCDef::tableName(), SysCol::tableName(), SysDeferredStg::tableName(), SysECol::tableName(),
+                    SysLob::tableName(), SysLobCompPart::tableName(), SysLobFrag::tableName(), SysObj::tableName(), SysTab::tableName(),
+                    SysTabComPart::tableName(), SysTabSubPart::tableName(), SysTs::tableName(), SysUser::tableName(), XdbTtSet::tableName()};
             for (const auto& tableName : tables)
                 checkTableForGrantsFlashback(tableName, currentScn);
         }
@@ -485,7 +484,7 @@ namespace OpenLogReplicator {
         std::unordered_map<typeObj, std::string> tablesUpdated;
         {
             contextSet(CONTEXT::MUTEX, REASON::REPLICATOR_SCHEMA);
-            std::unique_lock<std::mutex> const lck(metadata->mtxSchema);
+            std::unique_lock const lck(metadata->mtxSchema);
             metadata->schema->purgeMetadata();
             metadata->schema->purgeDicts();
             metadata->schema->scn = metadata->firstDataScn;
@@ -1423,7 +1422,7 @@ namespace OpenLogReplicator {
             return;
 
         contextSet(CONTEXT::CHKPT, REASON::CHKPT);
-        std::unique_lock<std::mutex> const lck(metadata->mtxCheckpoint);
+        std::unique_lock const lck(metadata->mtxCheckpoint);
 
         // Reload incarnation ctx
         typeResetlogs const oldResetlogs = metadata->resetlogs;
@@ -1559,7 +1558,7 @@ namespace OpenLogReplicator {
             }
 
             stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
-            stmt.bindUInt(1, (reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence);
+            stmt.bindUInt(1, replicator->metadata->sequence);
             stmt.bindUInt(2, replicator->metadata->resetlogs);
 
             std::array<char, 513> path {};
@@ -1581,7 +1580,7 @@ namespace OpenLogReplicator {
                 parser->firstScn = firstScn;
                 parser->nextScn = nextScn;
                 parser->sequence = sequence;
-                (reinterpret_cast<ReplicatorOnline*>(replicator))->archiveRedoQueue.push(parser);
+                replicator->archiveRedoQueue.push(parser);
                 ret = stmt.next();
             }
         }

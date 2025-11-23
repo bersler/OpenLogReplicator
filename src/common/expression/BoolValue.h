@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Expression.h"
-
 #ifndef EXPRESSION_BOOL_H_
 #define EXPRESSION_BOOL_H_
 
+#include "Expression.h"
+
 namespace OpenLogReplicator {
-    class BoolValue : public Expression {
+    class BoolValue final : public Expression {
     public:
         enum class VALUE : unsigned char {
             FALSE, TRUE, OPERATOR_AND, OPERATOR_OR, OPERATOR_NOT, OPERATOR_EQUAL, OPERATOR_NOT_EQUAL

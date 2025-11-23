@@ -37,11 +37,9 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::LobKey> {
-        size_t operator()(const OpenLogReplicator::LobKey& lobKey) const;
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::LobKey> {
+    size_t operator()(const OpenLogReplicator::LobKey& lobKey) const noexcept;
+};
 
 #endif

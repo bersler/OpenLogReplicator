@@ -153,43 +153,43 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] bool isAttributesFormatBegin() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::BEGIN)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isAttributesFormatDml() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::DML)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isAttributesFormatCommit() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::COMMIT)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isCharFormatNoMapping() const {
             return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::NOMAPPING)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isCharFormatHex() const {
             return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::HEX)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isScnTypeAllPayloads() const {
             return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::ALL_PAYLOADS)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isScnTypeCommitValue() const {
             return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::COMMIT_VALUE)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isSchemaFormatFull() const {
             return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::FULL)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isSchemaFormatRepeated() const {
             return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::REPEATED)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isSchemaFormatObj() const {
             return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::OBJ)) != 0;
-        };
+        }
 
         [[nodiscard]] bool isMessageFormatFull() const {
             return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::FULL)) != 0;

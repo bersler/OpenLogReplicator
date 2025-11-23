@@ -33,16 +33,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SystemTransaction.h"
 
 namespace OpenLogReplicator {
-    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer) :
+    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, const Format& newFormat, uint64_t newFlushBuffer) :
             ctx(newCtx),
             locales(newLocales),
             metadata(newMetadata),
             format(newFormat),
             flushBuffer(newFlushBuffer) {
-        memset(reinterpret_cast<void*>(valuesSet), 0, sizeof(valuesSet));
-        memset(reinterpret_cast<void*>(valuesMerge), 0, sizeof(valuesMerge));
-        memset(reinterpret_cast<void*>(values), 0, sizeof(values));
-        memset(reinterpret_cast<void*>(valuesPart), 0, sizeof(valuesPart));
+        memset(valuesSet, 0, sizeof(valuesSet));
+        memset(valuesMerge, 0, sizeof(valuesMerge));
+        memset(values, 0, sizeof(values));
+        memset(valuesPart, 0, sizeof(valuesPart));
     }
 
     Builder::~Builder() {
@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
         ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
         firstBuilderQueue->id = 0;
         firstBuilderQueue->next = nullptr;
-        firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
+        firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(BuilderQueue);
         firstBuilderQueue->confirmedSize = 0;
         firstBuilderQueue->start = 0;
         lastBuilderQueue = firstBuilderQueue;
@@ -654,7 +654,7 @@ namespace OpenLogReplicator {
         if (sign != 0) {
             if (significand == 0) {
                 if (exponent == 0)
-                    return static_cast<long double>(0.0);
+                    return 0.0L;
                 if (exponent == 0x7FF)
                     return std::numeric_limits<long double>::infinity();
             } else if (significand == 0x8000000000000 && exponent == 0x7FF)
@@ -1247,8 +1247,8 @@ namespace OpenLogReplicator {
                 }
             }
 
-            it1++;
-            it2++;
+            ++it1;
+            ++it2;
             if (it1 == redo1.cend() || it2 == redo2.cend())
                 break;
 
@@ -1299,17 +1299,17 @@ namespace OpenLogReplicator {
                         sizes[column][j] = mergeSize;
 
                         if (valuesPart[0][column][j] != nullptr) {
-                            memcpy(reinterpret_cast<void*>(buffer), valuesPart[0][column][j], sizesPart[0][column][j]);
+                            memcpy(buffer, valuesPart[0][column][j], sizesPart[0][column][j]);
                             buffer += sizesPart[0][column][j];
                             valuesPart[0][column][j] = nullptr;
                         }
                         if (valuesPart[1][column][j] != nullptr) {
-                            memcpy(reinterpret_cast<void*>(buffer), valuesPart[1][column][j], sizesPart[1][column][j]);
+                            memcpy(buffer, valuesPart[1][column][j], sizesPart[1][column][j]);
                             buffer += sizesPart[1][column][j];
                             valuesPart[1][column][j] = nullptr;
                         }
                         if (valuesPart[2][column][j] != nullptr) {
-                            memcpy(reinterpret_cast<void*>(buffer), valuesPart[2][column][j], sizesPart[2][column][j]);
+                            memcpy(buffer, valuesPart[2][column][j], sizesPart[2][column][j]);
                             buffer += sizesPart[2][column][j];
                             valuesPart[2][column][j] = nullptr;
                         }
@@ -1759,7 +1759,7 @@ namespace OpenLogReplicator {
                     releaseDdl();
                 }
 
-                memcpy(reinterpret_cast<void*>(ddlSchemaName), reinterpret_cast<const void*>(redoLogRecord1->data(fieldPos)), fieldSize);
+                memcpy(ddlSchemaName, redoLogRecord1->data(fieldPos), fieldSize);
                 ddlSchemaSize = fieldSize;
             } else {
                 appendDdlChunk(redoLogRecord1->data(fieldPos), fieldSize);
@@ -1926,7 +1926,7 @@ namespace OpenLogReplicator {
                 const uint8_t binaryXmlVersion = data[pos++];
                 if (binaryXmlVersion != 1) {
                     ctx->warning(60036, "incorrect XML data: prolog contains incorrect version, expected: 1, found: " +
-                                        std::to_string(static_cast<int>(data[pos + 1])));
+                                        std::to_string(data[pos + 1]));
                     return false;
                 }
                 const uint8_t flags0 = data[pos++];
@@ -2354,7 +2354,7 @@ namespace OpenLogReplicator {
         BuilderQueue* builderQueue;
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::BUILDER_RELEASE);
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             builderQueue = firstBuilderQueue;
             while (firstBuilderQueue->id < maxId) {
                 firstBuilderQueue = firstBuilderQueue->next;
@@ -2413,7 +2413,7 @@ namespace OpenLogReplicator {
 
             const typeTransactionSize move = std::min(size, left);
             uint8_t* chunkData = ddlLast + sizeof(uint8_t*) + sizeof(uint64_t) + *chunkSize;
-            memcpy(reinterpret_cast<void*>(chunkData), reinterpret_cast<const void*>(data), move);
+            memcpy(chunkData, data, move);
             *chunkSize += move;
             ddlSize += move;
             size -= move;
@@ -2427,7 +2427,7 @@ namespace OpenLogReplicator {
 
         {
             t->contextSet(Thread::CONTEXT::MUTEX, Thread::REASON::WRITER_DONE);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock lck(mtx);
             t->contextSet(Thread::CONTEXT::WAIT, Thread::REASON::WRITER_NO_WORK);
             if (queueSize > 0)
                 condNoWriterWork.wait_for(lck, std::chrono::nanoseconds(nanoseconds));
@@ -2438,7 +2438,7 @@ namespace OpenLogReplicator {
     }
 
     void Builder::wakeUp() {
-        std::unique_lock<std::mutex> const lck(mtx);
+        std::unique_lock const lck(mtx);
         condNoWriterWork.notify_all();
     }
 }

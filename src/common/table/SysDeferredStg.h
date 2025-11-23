@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef SYS_DEFERRED_STG_H_
+#define SYS_DEFERRED_STG_H_
+
 #include "../types/IntX.h"
 #include "../types/RowId.h"
 #include "../types/Types.h"
-
-#ifndef SYS_DEFERRED_STG_H_
-#define SYS_DEFERRED_STG_H_
 
 namespace OpenLogReplicator {
     class SysDeferredStg final {
@@ -102,13 +102,11 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::SysDeferredStgObj> {
-        size_t operator()(const OpenLogReplicator::SysDeferredStgObj sysDeferredStgObj) const {
-            return hash<typeObj>()(sysDeferredStgObj.obj);
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::SysDeferredStgObj> {
+    size_t operator()(const OpenLogReplicator::SysDeferredStgObj sysDeferredStgObj) const noexcept {
+        return hash<typeObj>()(sysDeferredStgObj.obj);
+    }
+};
 
 #endif

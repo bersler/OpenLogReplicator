@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
 
             redoLogRecord->recordDataObj = ctx->read32(redoLogRecord->data(fieldPos + 24));
 
-            OpCode::process(ctx, redoLogRecord);
+            process(ctx, redoLogRecord);
             fieldPos = 0;
             fieldNum = 0;
             fieldSize = 0;

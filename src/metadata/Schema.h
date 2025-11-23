@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
         SysUser sysUserAdaptive;
 
         void addTableToDict(DbTable* table);
-        void removeTableFromDict(DbTable* table);
+        void removeTableFromDict(const DbTable* table);
         [[nodiscard]] uint16_t getLobBlockSize(typeTs ts) const;
 
     public:
@@ -89,19 +89,19 @@ namespace OpenLogReplicator {
         std::set<typeObj> identifiersTouched;
         bool touched{false};
 
-        TablePack<SysCCol, SysCColKey, TabRowIdUnorderedKeyDefault> sysCColPack;
+        TablePack<SysCCol, SysCColKey> sysCColPack;
         TablePack<SysCDef, SysCDefKey, SysCDefCon> sysCDefPack;
-        TablePack<SysCol, SysColSeg, TabRowIdUnorderedKeyDefault> sysColPack;
+        TablePack<SysCol, SysColSeg> sysColPack;
         TablePack<SysDeferredStg, TabRowIdKeyDefault, SysDeferredStgObj> sysDeferredStgPack;
         TablePack<SysECol, TabRowIdKeyDefault, SysEColKey> sysEColPack;
         TablePack<SysLob, SysLobKey, SysLobLObj> sysLobPack;
         TablePack<SysLobCompPart, SysLobCompPartKey, SysLobCompPartPartObj> sysLobCompPartPack;
-        TablePack<SysLobFrag, SysLobFragKey, TabRowIdUnorderedKeyDefault> sysLobFragPack;
+        TablePack<SysLobFrag, SysLobFragKey> sysLobFragPack;
         TablePack<SysObj, SysObjNameKey, SysObjObj> sysObjPack;
         TablePack<SysTab, TabRowIdKeyDefault, SysTabObj> sysTabPack;
         TablePack<SysTabComPart, SysTabComPartKey, SysTabComPartObj> sysTabComPartPack;
-        TablePack<SysTabPart, SysTabPartKey, TabRowIdUnorderedKeyDefault> sysTabPartPack;
-        TablePack<SysTabSubPart, SysTabSubPartKey, TabRowIdUnorderedKeyDefault> sysTabSubPartPack;
+        TablePack<SysTabPart, SysTabPartKey> sysTabPartPack;
+        TablePack<SysTabSubPart, SysTabSubPartKey> sysTabSubPartPack;
         TablePack<SysTs, TabRowIdKeyDefault, SysTsTs> sysTsPack;
         TablePack<SysUser, TabRowIdKeyDefault, SysUserUser> sysUserPack;
         TablePack<XdbTtSet, TabRowIdKeyDefault, XdbTtSetTokSuf> xdbTtSetPack;

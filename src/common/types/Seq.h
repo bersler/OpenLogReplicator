@@ -94,13 +94,11 @@ namespace OpenLogReplicator {
     };
 }
 
-namespace std {
-    template<>
-    struct hash<OpenLogReplicator::Seq> {
-        size_t operator()(const OpenLogReplicator::Seq seq) const {
-            return hash<uint32_t>()(seq.getData());
-        }
-    };
-}
+template<>
+struct std::hash<OpenLogReplicator::Seq> {
+    size_t operator()(const OpenLogReplicator::Seq seq) const noexcept {
+        return hash<uint32_t>()(seq.getData());
+    }
+};
 
 #endif

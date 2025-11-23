@@ -50,11 +50,11 @@ namespace OpenLogReplicator {
     void Reader::initialize() {
         if (redoBufferList == nullptr) {
             redoBufferList = new uint8_t* [ctx->memoryChunksReadBufferMax];
-            memset(reinterpret_cast<void*>(redoBufferList), 0, ctx->memoryChunksReadBufferMax * sizeof(uint8_t*));
+            memset(redoBufferList, 0, ctx->memoryChunksReadBufferMax * sizeof(uint8_t*));
         }
 
         if (headerBuffer == nullptr) {
-            headerBuffer = reinterpret_cast<uint8_t*>(aligned_alloc(Ctx::MEMORY_ALIGNMENT, PAGE_SIZE_MAX * 2));
+            headerBuffer = static_cast<uint8_t*>(aligned_alloc(Ctx::MEMORY_ALIGNMENT, PAGE_SIZE_MAX * 2));
             if (unlikely(headerBuffer == nullptr))
                 throw RuntimeException(10016, "couldn't allocate " + std::to_string(PAGE_SIZE_MAX * 2) +
                                               " bytes memory for: read header");
@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
     void Reader::wakeUp() {
         contextSet(CONTEXT::MUTEX, REASON::READER_WAKE_UP);
         {
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
             condParserSleeping.notify_all();
@@ -108,7 +108,7 @@ namespace OpenLogReplicator {
         }
 
         const typeBlk blockNumberHeader = ctx->read32(buffer + 4);
-        const Seq sequenceHeader = Seq(ctx->read32(buffer + 8));
+        const auto sequenceHeader = Seq(ctx->read32(buffer + 8));
 
         if (sequence == Seq::zero() || status == STATUS::UPDATE) {
             sequence = sequenceHeader;
@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
             if (static_cast<uint>(actualRead) > blockSize * 2)
                 actualRead = static_cast<int>(blockSize * 2);
 
-            const Seq sequenceHeader = Seq(ctx->read32(headerBuffer + blockSize + 8));
+            const auto sequenceHeader = Seq(ctx->read32(headerBuffer + blockSize + 8));
             if (fileCopySequence != sequenceHeader) {
                 if (fileCopyDes != -1) {
                     close(fileCopyDes);
@@ -282,13 +282,12 @@ namespace OpenLogReplicator {
 
         if (ctx->version == 0) {
             char SID[9];
-            memcpy(reinterpret_cast<void*>(SID),
-                   reinterpret_cast<const void*>(headerBuffer + blockSize + 28), 8);
+            memcpy(SID, headerBuffer + blockSize + 28, 8);
             SID[8] = 0;
             ctx->version = version;
             if (compatVsn >= RedoLogRecord::REDO_VERSION_23_0)
                 ctx->columnLimit = Ctx::COLUMN_LIMIT_23_0;
-            const Seq sequenceHeader = Seq(ctx->read32(headerBuffer + blockSize + 8));
+            const auto sequenceHeader = Seq(ctx->read32(headerBuffer + blockSize + 8));
 
             if (compatVsn < RedoLogRecord::REDO_VERSION_18_0) {
                 ctx->versionStr = std::to_string(compatVsn >> 24) + "." + std::to_string((compatVsn >> 20) & 0xF) + "." +
@@ -389,8 +388,7 @@ namespace OpenLogReplicator {
             ctx->metrics->emitBytesRead(actualRead);
 
         if (actualRead > 0 && fileCopyDes != -1 && (ctx->redoVerifyDelayUs == 0 || group == 0)) {
-            const int bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
-                                            static_cast<int64_t>(bufferEnd));
+            const int bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
             if (bytesWritten != actualRead) {
                 ctx->error(10007, "file: " + fileNameWrite + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
                                   std::to_string(actualRead) + ", code returned: " + strerror(errno));
@@ -402,7 +400,7 @@ namespace OpenLogReplicator {
         const typeBlk maxNumBlock = actualRead / blockSize;
         const typeBlk bufferScanBlock = bufferScan / blockSize;
         uint goodBlocks = 0;
-        REDO_CODE currentRet = REDO_CODE::OK;
+        auto currentRet = REDO_CODE::OK;
 
         // Check which blocks are good
         for (typeBlk numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
@@ -464,7 +462,7 @@ namespace OpenLogReplicator {
             } else {
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_READ1);
-                    std::unique_lock<std::mutex> const lck(mtx);
+                    std::unique_lock const lck(mtx);
                     bufferEnd += goodBlocks * blockSize;
                     bufferScan = bufferEnd;
                     condParserSleeping.notify_all();
@@ -541,8 +539,7 @@ namespace OpenLogReplicator {
                 ctx->metrics->emitBytesRead(actualRead);
 
             if (actualRead > 0 && fileCopyDes != -1) {
-                const int bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
-                                                static_cast<int64_t>(bufferEnd));
+                const int bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,bufferEnd);
                 if (bytesWritten != actualRead) {
                     ctx->error(10007, "file: " + fileNameWrite + " - " + std::to_string(bytesWritten) +
                                       " bytes written instead of " + std::to_string(actualRead) + ", code returned: " + strerror(errno));
@@ -552,7 +549,7 @@ namespace OpenLogReplicator {
             }
 
             readBlocks = true;
-            REDO_CODE currentRet = REDO_CODE::OK;
+            auto currentRet = REDO_CODE::OK;
             maxNumBlock = actualRead / blockSize;
             const typeBlk bufferEndBlock = bufferEnd / blockSize;
 
@@ -580,7 +577,7 @@ namespace OpenLogReplicator {
 
             {
                 contextSet(CONTEXT::MUTEX, REASON::READER_READ2);
-                std::unique_lock<std::mutex> const lck(mtx);
+                std::unique_lock const lck(mtx);
                 bufferEnd += actualRead;
                 condParserSleeping.notify_all();
             }
@@ -594,7 +591,7 @@ namespace OpenLogReplicator {
         while (!ctx->softShutdown) {
             {
                 contextSet(CONTEXT::MUTEX, REASON::READER_MAIN1);
-                std::unique_lock<std::mutex> lck(mtx);
+                std::unique_lock lck(mtx);
                 condParserSleeping.notify_all();
 
                 if (status == STATUS::SLEEPING && !ctx->softShutdown) {
@@ -619,7 +616,7 @@ namespace OpenLogReplicator {
                 const REDO_CODE currentRet = redoOpen();
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_STATUS);
-                    std::unique_lock<std::mutex> const lck(mtx);
+                    std::unique_lock const lck(mtx);
                     ret = currentRet;
                     status = STATUS::SLEEPING;
                     condParserSleeping.notify_all();
@@ -647,7 +644,7 @@ namespace OpenLogReplicator {
 
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_SLEEP1);
-                    std::unique_lock<std::mutex> const lck(mtx);
+                    std::unique_lock const lck(mtx);
                     ret = currentRet;
                     status = STATUS::SLEEPING;
                     condParserSleeping.notify_all();
@@ -683,7 +680,7 @@ namespace OpenLogReplicator {
                     // Buffer full?
                     if (bufferStart + ctx->bufferSizeMax == bufferEnd) {
                         contextSet(CONTEXT::MUTEX, REASON::READER_FULL);
-                        std::unique_lock<std::mutex> lck(mtx);
+                        std::unique_lock lck(mtx);
                         if (!ctx->softShutdown && bufferStart + ctx->bufferSizeMax == bufferEnd) {
                             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
                                 ctx->logTrace(Ctx::TRACE::SLEEP, "Reader:mainLoop:bufferFull");
@@ -741,7 +738,7 @@ namespace OpenLogReplicator {
 
                 {
                     contextSet(CONTEXT::MUTEX, REASON::READER_SLEEP2);
-                    std::unique_lock<std::mutex> const lck(mtx);
+                    std::unique_lock const lck(mtx);
                     status = STATUS::SLEEPING;
                     condParserSleeping.notify_all();
                 }
@@ -796,7 +793,7 @@ namespace OpenLogReplicator {
     void Reader::bufferAllocate(uint num) {
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_ALLOCATE1);
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             if (redoBufferList[num] != nullptr) {
                 contextSet(CONTEXT::CPU);
                 return;
@@ -808,7 +805,7 @@ namespace OpenLogReplicator {
 
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_ALLOCATE2);
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             redoBufferList[num] = buffer;
             --ctx->bufferSizeFree;
         }
@@ -819,7 +816,7 @@ namespace OpenLogReplicator {
         uint8_t* buffer;
         {
             t->contextSet(CONTEXT::MUTEX, REASON::READER_FREE);
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             if (redoBufferList[num] == nullptr) {
                 t->contextSet(CONTEXT::CPU);
                 return;
@@ -837,7 +834,7 @@ namespace OpenLogReplicator {
         bool isFree;
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_FREE);
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             isFree = (ctx->bufferSizeFree > 0);
         }
         contextSet(CONTEXT::CPU);
@@ -846,8 +843,7 @@ namespace OpenLogReplicator {
 
     void Reader::printHeaderInfo(std::ostringstream& ss, const std::string& path) const {
         char SID[9];
-        memcpy(reinterpret_cast<void*>(SID),
-               reinterpret_cast<const void*>(headerBuffer + blockSize + 28), 8);
+        memcpy(SID, headerBuffer + blockSize + 28, 8);
         SID[8] = 0;
 
         ss << "DUMP OF REDO FROM FILE '" << path << "'\n";
@@ -876,10 +872,9 @@ namespace OpenLogReplicator {
            std::hex << fileSizeHeader << '\n' <<
            "\tFile Number=" << std::dec << fileNumber << ", Blksiz=" << std::dec << blockSize << ", File Type=2 LOG\n";
 
-        const Seq seq = Seq(ctx->read32(headerBuffer + blockSize + 8));
+        const auto seq = Seq(ctx->read32(headerBuffer + blockSize + 8));
         uint8_t descrip[65];
-        memcpy(reinterpret_cast<void*>(descrip),
-               reinterpret_cast<const void*>(headerBuffer + blockSize + 92), 64);
+        memcpy(descrip, headerBuffer + blockSize + 92, 64);
         descrip[64] = 0;
         const uint16_t thread = ctx->read16(headerBuffer + blockSize + 176);
         const uint32_t hws = ctx->read32(headerBuffer + blockSize + 172);
@@ -975,7 +970,7 @@ namespace OpenLogReplicator {
             ss << " Miscellaneous second flags: 0x" << std::hex << miscFlags2 << '\n';
         }
 
-        auto thr = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 432));
+        const auto thr = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 432));
         const auto seq2 = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 436));
         const Scn scn2 = ctx->readScn(headerBuffer + blockSize + 440);
         const uint8_t zeroBlocks = headerBuffer[blockSize + 206];
@@ -1008,7 +1003,7 @@ namespace OpenLogReplicator {
 
         const uint16_t redoKeyFlag = ctx->read16(headerBuffer + blockSize + 480);
         ss << " redo log key flag is " << std::dec << redoKeyFlag << '\n';
-        const uint16_t enabledRedoThreads = 1; // TODO: find field position/size
+        constexpr uint16_t enabledRedoThreads = 1; // TODO: find field position/size
         ss << " Enabled redo threads: " << std::dec << enabledRedoThreads << " \n";
     }
 
@@ -1083,7 +1078,7 @@ namespace OpenLogReplicator {
 
     bool Reader::checkRedoLog() {
         contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_REDO);
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock lck(mtx);
         status = STATUS::CHECK;
         sequence = Seq::zero();
         firstScn = Scn::none();
@@ -1106,7 +1101,7 @@ namespace OpenLogReplicator {
     bool Reader::updateRedoLog() {
         for (;;) {
             contextSet(CONTEXT::MUTEX, REASON::READER_UPDATE_REDO1);
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock lck(mtx);
             status = STATUS::UPDATE;
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
@@ -1136,7 +1131,7 @@ namespace OpenLogReplicator {
     void Reader::setStatusRead() {
         {
             contextSet(CONTEXT::MUTEX, REASON::READER_SET_READ);
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             status = STATUS::READ;
             condBufferFull.notify_all();
             condReaderSleeping.notify_all();
@@ -1147,7 +1142,7 @@ namespace OpenLogReplicator {
     void Reader::confirmReadData(FileOffset confirmedBufferStart) {
         contextSet(CONTEXT::MUTEX, REASON::READER_CONFIRM);
         {
-            std::unique_lock<std::mutex> const lck(mtx);
+            std::unique_lock const lck(mtx);
             bufferStart = confirmedBufferStart.getData();
             if (status == STATUS::READ) {
                 condBufferFull.notify_all();
@@ -1159,7 +1154,7 @@ namespace OpenLogReplicator {
     bool Reader::checkFinished(Thread* t, FileOffset confirmedBufferStart) {
         t->contextSet(CONTEXT::MUTEX, REASON::READER_CHECK_FINISHED);
         {
-            std::unique_lock<std::mutex> lck(mtx);
+            std::unique_lock lck(mtx);
             if (bufferStart < confirmedBufferStart.getData())
                 bufferStart = confirmedBufferStart.getData();
 

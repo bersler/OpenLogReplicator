@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifndef CTX_H_
+#define CTX_H_
+
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
@@ -33,9 +36,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types/LobId.h"
 #include "types/Scn.h"
 #include "types/Xid.h"
-
-#ifndef CTX_H_
-#define CTX_H_
 
 namespace OpenLogReplicator {
     class Clock;
@@ -544,7 +544,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint8_t* swappedMemoryShrink(Thread* t, Xid xid);
         void swappedMemoryFlush(Thread* t, Xid xid);
         void swappedMemoryRemove(Thread* t, Xid xid);
-        void wontSwap(Thread* t);
+        void wontSwap(Thread* t) const;
 
         void stopHard();
         void stopSoft();

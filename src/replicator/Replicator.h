@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
     class TransactionBuffer;
 
     struct parserCompare {
-        bool operator()(const Parser* p1, const Parser* p2);
+        bool operator()(const Parser* p1, const Parser* p2) const;
     };
 
     class Replicator : public Thread {
@@ -63,9 +63,9 @@ namespace OpenLogReplicator {
         std::vector<std::string> redoLogsBatch;
 
         void cleanArchList();
-        void updateOnlineLogs();
+        void updateOnlineLogs() const;
         void readerDropAll();
-        static Seq getSequenceFromFileName(Replicator* replicator, const std::string& file);
+        static Seq getSequenceFromFileName(const Replicator* replicator, const std::string& file);
         virtual std::string getModeName() const;
         virtual bool checkConnection();
         virtual bool continueWithOnline();
@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
         void addRedoLogsBatch(std::string path);
         static void archGetLogPath(Replicator* replicator);
         static void archGetLogList(Replicator* replicator);
-        void applyMapping(std::string& path);
+        void applyMapping(std::string& path) const;
         void updateResetlogs();
         void wakeUp() override;
         void printStartMsg() const;
