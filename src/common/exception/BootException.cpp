@@ -22,10 +22,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "BootException.h"
 
 namespace OpenLogReplicator {
-    BootException::BootException(int newCode, std::string newMsg) :
+    BootException::BootException(int newCode, std::string newMsg):
             code(newCode),
-            msg(std::move(newMsg)) {
-    }
+            msg(std::move(newMsg)) {}
 
     std::ostream& operator<<(std::ostream& os, const BootException& exception) {
         os << exception.msg;

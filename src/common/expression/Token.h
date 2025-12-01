@@ -30,7 +30,14 @@ namespace OpenLogReplicator {
     class Token final : public Expression {
     public:
         enum class TYPE : unsigned char {
-            NONE, IDENTIFIER, LEFT_PARENTHESIS, RIGHT_PARENTHESIS, COMMA, OPERATOR, NUMBER, STRING
+            NONE,
+            IDENTIFIER,
+            LEFT_PARENTHESIS,
+            RIGHT_PARENTHESIS,
+            COMMA,
+            OPERATOR,
+            NUMBER,
+            STRING
         };
 
         TYPE tokenType;

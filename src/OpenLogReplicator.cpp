@@ -71,7 +71,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #endif /* LINK_LIBRARY_PROMETHEUS */
 
 namespace OpenLogReplicator {
-    OpenLogReplicator::OpenLogReplicator(std::string  newConfigFileName, Ctx* newCtx) :
+    OpenLogReplicator::OpenLogReplicator(std::string newConfigFileName, Ctx* newCtx):
             configFileName(std::move(newConfigFileName)),
             ctx(newCtx) {
         IntX::initializeBASE10();
@@ -153,30 +153,38 @@ namespace OpenLogReplicator {
         const uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
         if (bytesRead != static_cast<uint64_t>(configFileStat.st_size))
             throw RuntimeException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) + " bytes read instead of " +
-                                          std::to_string(configFileStat.st_size));
+                                   std::to_string(configFileStat.st_size));
         configFileBuffer[configFileStat.st_size] = 0;
 
         rapidjson::Document document;
         if (document.Parse(configFileBuffer).HasParseError())
             throw DataException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                       " - parse error: " + GetParseError_En(document.GetParseError()));
+                                " - parse error: " + GetParseError_En(document.GetParseError()));
 
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-            static const std::vector<std::string> documentNames {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace", "source",
-                                                                 "target"};
+            static const std::vector<std::string> documentNames{
+                "version",
+                "dump-path",
+                "dump-raw-data",
+                "dump-redo-log",
+                "log-level",
+                "trace",
+                "source",
+                "target"
+            };
             Ctx::checkJsonFields(configFileName, document, documentNames);
         }
 
         const std::string version = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, document, "version");
         if (version != OpenLogReplicator_SCHEMA_VERSION)
             throw ConfigurationException(30001, "bad JSON, invalid \"version\" value: " + version + ", expected: " +
-                                                OpenLogReplicator_SCHEMA_VERSION);
+                                         OpenLogReplicator_SCHEMA_VERSION);
 
         if (document.HasMember("dump-redo-log")) {
             ctx->dumpRedoLog = Ctx::getJsonFieldU(configFileName, document, "dump-redo-log");
             if (ctx->dumpRedoLog > 2)
                 throw ConfigurationException(30001, "bad JSON, invalid \"dump-redo-log\" value: " + std::to_string(ctx->dumpRedoLog) +
-                                                    ", expected: one of {0 .. 2}");
+                                             ", expected: one of {0 .. 2}");
 
             if (ctx->dumpRedoLog > 0) {
                 if (document.HasMember("dump-path"))
@@ -186,7 +194,7 @@ namespace OpenLogReplicator {
                     ctx->dumpRawData = Ctx::getJsonFieldU(configFileName, document, "dump-raw-data");
                     if (ctx->dumpRawData > 1)
                         throw ConfigurationException(30001, "bad JSON, invalid \"dump-raw-data\" value: " +
-                                                            std::to_string(ctx->dumpRawData) + ", expected: one of {0, 1}");
+                                                     std::to_string(ctx->dumpRawData) + ", expected: one of {0, 1}");
                 }
             }
         }
@@ -195,30 +203,32 @@ namespace OpenLogReplicator {
             ctx->logLevel = static_cast<Ctx::LOG>(Ctx::getJsonFieldU(configFileName, document, "log-level"));
             if (ctx->logLevel > Ctx::LOG::DEBUG)
                 throw ConfigurationException(30001, "bad JSON, invalid \"log-level\" value: " + std::to_string(static_cast<uint>(ctx->logLevel)) +
-                                                    ", expected: one of {0 .. 4}");
+                                             ", expected: one of {0 .. 4}");
         }
 
         if (document.HasMember("trace")) {
             ctx->trace = Ctx::getJsonFieldU64(configFileName, document, "trace");
             if (ctx->trace > 524287)
                 throw ConfigurationException(30001, "bad JSON, invalid \"trace\" value: " + std::to_string(ctx->trace) +
-                                                    ", expected: one of {0 .. 524287}");
+                                             ", expected: one of {0 .. 524287}");
         }
 
         // Iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
         if (sourceArrayJson.Size() != 1) {
             throw ConfigurationException(30001, "bad JSON, invalid \"source\" value: " + std::to_string(sourceArrayJson.Size()) +
-                                                " elements, expected: 1 element");
+                                         " elements, expected: 1 element");
         }
 
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sourceNames {"alias", "memory", "name", "reader", "flags", "state", "debug", "transaction-max-mb",
-                                                                   "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us", "arch-read-tries",
-                                                                   "redo-verify-delay-us", "refresh-interval-us", "arch", "filter"};
+                static const std::vector<std::string> sourceNames{
+                    "alias", "memory", "name", "reader", "flags", "state", "debug", "transaction-max-mb",
+                    "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us", "arch-read-tries",
+                    "redo-verify-delay-us", "refresh-interval-us", "arch", "filter"
+                };
                 Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
             }
 
@@ -240,8 +250,10 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& memoryJson = Ctx::getJsonFieldO(configFileName, sourceJson, "memory");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> memoryNames {"min-mb", "max-mb", "read-buffer-max-mb", "read-buffer-min-mb", "swap-mb", "swap-path",
-                                                                       "unswap-buffer-min-mb", "write-buffer-max-mb", "write-buffer-min-mb"};
+                    static const std::vector<std::string> memoryNames{
+                        "min-mb", "max-mb", "read-buffer-max-mb", "read-buffer-min-mb", "swap-mb", "swap-path",
+                        "unswap-buffer-min-mb", "write-buffer-max-mb", "write-buffer-min-mb"
+                    };
                     Ctx::checkJsonFields(configFileName, memoryJson, memoryNames);
                 }
 
@@ -250,7 +262,7 @@ namespace OpenLogReplicator {
                     memoryMinMb = (memoryMinMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
                     if (memoryMinMb < Ctx::MEMORY_CHUNK_MIN_MB)
                         throw ConfigurationException(30001, "bad JSON, invalid \"min-mb\" value: " + std::to_string(memoryMinMb) +
-                                                            ", expected: at least " + std::to_string(Ctx::MEMORY_CHUNK_MIN_MB));
+                                                     ", expected: at least " + std::to_string(Ctx::MEMORY_CHUNK_MIN_MB));
                 }
 
                 if (memoryJson.HasMember("max-mb")) {
@@ -258,7 +270,7 @@ namespace OpenLogReplicator {
                     memoryMaxMb = (memoryMaxMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
                     if (memoryMaxMb < memoryMinMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"max-mb\" value: " + std::to_string(memoryMaxMb) +
-                                                            ", expected: at least like \"min-mb\" value (" + std::to_string(memoryMinMb) + ")");
+                                                     ", expected: at least like \"min-mb\" value (" + std::to_string(memoryMinMb) + ")");
 
                     memoryReadBufferMaxMb = std::min<uint64_t>(memoryMaxMb / 8, 128);
                     memoryWriteBufferMaxMb = std::min<uint64_t>(memoryMaxMb, 2048);
@@ -275,7 +287,7 @@ namespace OpenLogReplicator {
                     memorySwapMb = (memorySwapMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
                     if (memorySwapMb > memoryMaxMb - 4)
                         throw ConfigurationException(30001, "bad JSON, invalid \"swap-mb\" value: " + std::to_string(memorySwapMb) +
-                                                            ", expected maximum \"max-mb\"-1 value (" + std::to_string(memoryMaxMb - 4) + ")");
+                                                     ", expected maximum \"max-mb\"-1 value (" + std::to_string(memoryMaxMb - 4) + ")");
                 }
 
                 if (memoryJson.HasMember("read-buffer-min-mb")) {
@@ -283,11 +295,11 @@ namespace OpenLogReplicator {
                     memoryReadBufferMinMb = (memoryReadBufferMinMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
                     if (memoryReadBufferMinMb > memoryMaxMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-min-mb\" value: " +
-                                                            std::to_string(memoryReadBufferMaxMb) +
-                                                            ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
+                                                     std::to_string(memoryReadBufferMaxMb) +
+                                                     ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
                     if (memoryReadBufferMinMb < 4)
                         throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-min-mb\" value: " +
-                                                            std::to_string(memoryReadBufferMaxMb) + ", expected: at least: 4");
+                                                     std::to_string(memoryReadBufferMaxMb) + ", expected: at least: 4");
                 }
 
                 if (memoryJson.HasMember("read-buffer-max-mb")) {
@@ -295,12 +307,12 @@ namespace OpenLogReplicator {
                     memoryReadBufferMaxMb = (memoryReadBufferMaxMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
                     if (memoryReadBufferMaxMb > memoryMaxMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-max-mb\" value: " +
-                                                            std::to_string(memoryReadBufferMaxMb) +
-                                                            ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
+                                                     std::to_string(memoryReadBufferMaxMb) +
+                                                     ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
                     if (memoryReadBufferMaxMb < memoryReadBufferMinMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"read-buffer-max-mb\" value: " +
-                                                            std::to_string(memoryReadBufferMaxMb) + ", expected: at least: \"read-buffer-min-mb\" value (" +
-                                                            std::to_string(memoryReadBufferMinMb) + ")");
+                                                     std::to_string(memoryReadBufferMaxMb) + ", expected: at least: \"read-buffer-min-mb\" value (" +
+                                                     std::to_string(memoryReadBufferMinMb) + ")");
                 }
 
                 if (memoryJson.HasMember("write-buffer-min-mb")) {
@@ -308,11 +320,11 @@ namespace OpenLogReplicator {
                     memoryWriteBufferMinMb = (memoryWriteBufferMinMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
                     if (memoryWriteBufferMinMb > memoryMaxMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-min-mb\" value: " +
-                                                            std::to_string(memoryWriteBufferMinMb) +
-                                                            ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
+                                                     std::to_string(memoryWriteBufferMinMb) +
+                                                     ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
                     if (memoryWriteBufferMinMb < 4)
                         throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-min-mb\" value: " +
-                                                            std::to_string(memoryWriteBufferMinMb) + ", expected: at least: 4");
+                                                     std::to_string(memoryWriteBufferMinMb) + ", expected: at least: 4");
                 }
 
                 if (memoryJson.HasMember("write-buffer-max-mb")) {
@@ -320,12 +332,12 @@ namespace OpenLogReplicator {
                     memoryWriteBufferMaxMb = (memoryWriteBufferMaxMb / Ctx::MEMORY_CHUNK_SIZE_MB) * Ctx::MEMORY_CHUNK_SIZE_MB;
                     if (memoryWriteBufferMaxMb > memoryMaxMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-max-mb\" value: " +
-                                                            std::to_string(memoryWriteBufferMaxMb) +
-                                                            ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
+                                                     std::to_string(memoryWriteBufferMaxMb) +
+                                                     ", expected: not greater than \"max-mb\" value (" + std::to_string(memoryMaxMb) + ")");
                     if (memoryWriteBufferMaxMb < memoryWriteBufferMinMb)
                         throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-max-mb\" value: " +
-                                                            std::to_string(memoryWriteBufferMaxMb) + ", expected: at least: \"write-buffer-min-mb\" value (" +
-                                                            std::to_string(memoryWriteBufferMinMb) + ")");
+                                                     std::to_string(memoryWriteBufferMaxMb) + ", expected: at least: \"write-buffer-min-mb\" value (" +
+                                                     std::to_string(memoryWriteBufferMinMb) + ")");
                 }
 
                 if (memoryJson.HasMember("swap-path") && memorySwapMb > 0)
@@ -333,18 +345,20 @@ namespace OpenLogReplicator {
 
                 if (memoryUnswapBufferMinMb + memoryReadBufferMinMb + memoryWriteBufferMinMb + 4 > memoryMaxMb)
                     throw ConfigurationException(30001, R"(bad JSON, invalid "unswap-buffer-min-mb" + "read-buffer-min-mb" + "write-buffer-min-mb" + 4 ()" +
-                                                        std::to_string(memoryUnswapBufferMinMb) + " + " + std::to_string(memoryReadBufferMinMb) +
-                                                        " + " + std::to_string(memoryWriteBufferMinMb) + " + 4) is greater than \"max-mb\" value (" +
-                                                        std::to_string(memoryMaxMb) + ")");
+                                                 std::to_string(memoryUnswapBufferMinMb) + " + " + std::to_string(memoryReadBufferMinMb) +
+                                                 " + " + std::to_string(memoryWriteBufferMinMb) + " + 4) is greater than \"max-mb\" value (" +
+                                                 std::to_string(memoryMaxMb) + ")");
             }
 
             const std::string name = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, sourceJson, "name");
             const rapidjson::Value& readerJson = Ctx::getJsonFieldO(configFileName, sourceJson, "reader");
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> readerNames {"disable-checks", "start-scn", "start-seq", "start-time-rel", "start-time", "con-id", "type",
-                                                                   "redo-copy-path", "db-timezone", "host-timezone", "log-timezone", "user", "password",
-                                                                   "server", "redo-log", "path-mapping", "log-archive-format"};
+                static const std::vector<std::string> readerNames{
+                    "disable-checks", "start-scn", "start-seq", "start-time-rel", "start-time", "con-id", "type",
+                    "redo-copy-path", "db-timezone", "host-timezone", "log-timezone", "user", "password",
+                    "server", "redo-log", "path-mapping", "log-archive-format"
+                };
                 Ctx::checkJsonFields(configFileName, readerJson, readerNames);
             }
 
@@ -352,7 +366,7 @@ namespace OpenLogReplicator {
                 ctx->flags = Ctx::getJsonFieldU64(configFileName, sourceJson, "flags");
                 if (ctx->flags > 524287)
                     throw ConfigurationException(30001, "bad JSON, invalid \"flags\" value: " + std::to_string(ctx->flags) +
-                                                        ", expected: one of {0 .. 524287}");
+                                                 ", expected: one of {0 .. 524287}");
                 if (ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE))
                     ctx->redoVerifyDelayUs = 500000;
             }
@@ -361,7 +375,7 @@ namespace OpenLogReplicator {
                 ctx->disableChecks = Ctx::getJsonFieldU64(configFileName, readerJson, "disable-checks");
                 if (ctx->disableChecks > 15)
                     throw ConfigurationException(30001, "bad JSON, invalid \"disable-checks\" value: " +
-                                                        std::to_string(ctx->disableChecks) + ", expected: one of {0 .. 15}");
+                                                 std::to_string(ctx->disableChecks) + ", expected: one of {0 .. 15}");
             }
 
             Scn startScn = Scn::none();
@@ -377,7 +391,7 @@ namespace OpenLogReplicator {
                 startTimeRel = Ctx::getJsonFieldU64(configFileName, readerJson, "start-time-rel");
                 if (startScn != Scn::none())
                     throw ConfigurationException(30001, "bad JSON, invalid \"start-time-rel\" value: " + std::to_string(startTimeRel) +
-                                                        ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
+                                                 ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
             }
 
             std::string startTime;
@@ -385,10 +399,10 @@ namespace OpenLogReplicator {
                 startTime = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "start-time");
                 if (startScn != Scn::none())
                     throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
-                                                        ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
+                                                 ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
                 if (startTimeRel > 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
-                                                        ", expected: unset when \"start-time-rel\" is set (" + std::to_string(startTimeRel) + ")");
+                                                 ", expected: unset when \"start-time-rel\" is set (" + std::to_string(startTimeRel) + ")");
             }
 
             uint64_t stateType = State::TYPE_DISK;
@@ -398,7 +412,7 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& stateJson = Ctx::getJsonFieldO(configFileName, sourceJson, "state");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> stateNames {"type", "path", "interval-s", "interval-mb", "keep-checkpoints", "schema-force-interval"};
+                    static const std::vector<std::string> stateNames{"type", "path", "interval-s", "interval-mb", "keep-checkpoints", "schema-force-interval"};
                     Ctx::checkJsonFields(configFileName, stateJson, stateNames);
                 }
 
@@ -432,7 +446,7 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> debugNames {"stop-log-switches", "stop-checkpoints", "stop-transactions", "owner", "table"};
+                    static const std::vector<std::string> debugNames{"stop-log-switches", "stop-checkpoints", "stop-transactions", "owner", "table"};
                     Ctx::checkJsonFields(configFileName, debugJson, debugNames);
                 }
 
@@ -466,7 +480,7 @@ namespace OpenLogReplicator {
                 const uint64_t transactionMaxMb = Ctx::getJsonFieldU64(configFileName, sourceJson, "transaction-max-mb");
                 if (transactionMaxMb > memoryMaxMb)
                     throw ConfigurationException(30001, "bad JSON, invalid \"transaction-max-mb\" value: " + std::to_string(transactionMaxMb) +
-                                                        ", expected: smaller than \"max-mb\" (" + std::to_string(memoryMaxMb) + ")");
+                                                 ", expected: smaller than \"max-mb\" (" + std::to_string(memoryMaxMb) + ")");
                 ctx->transactionSizeMax = transactionMaxMb * 1024 * 1024;
             }
 
@@ -512,7 +526,7 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& metricsJson = Ctx::getJsonFieldO(configFileName, sourceJson, "metrics");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> metricsNames {"type", "bind", "tag-names"};
+                    static const std::vector<std::string> metricsNames{"type", "bind", "tag-names"};
                     Ctx::checkJsonFields(configFileName, metricsJson, metricsNames);
                 }
 
@@ -527,14 +541,14 @@ namespace OpenLogReplicator {
                             tagNames = Metrics::TAG_NAMES::NONE;
                         else if (tagNamesStr == "filter")
                             tagNames = Metrics::TAG_NAMES::FILTER;
-                        else if (tagNamesStr ==  "sys")
+                        else if (tagNamesStr == "sys")
                             tagNames = Metrics::TAG_NAMES::SYS;
                         else if (tagNamesStr == "all")
                             tagNames = static_cast<Metrics::TAG_NAMES>(static_cast<uint>(Metrics::TAG_NAMES::FILTER) |
-                                    static_cast<uint>(Metrics::TAG_NAMES::SYS));
+                                static_cast<uint>(Metrics::TAG_NAMES::SYS));
                         else
                             throw ConfigurationException(30001, "bad JSON, invalid \"tag-names\" value: " + tagNamesStr +
-                                                                R"(, expected: one of {"all", "filter", "none", "sys"})");
+                                                         R"(, expected: one of {"all", "filter", "none", "sys"})");
                     }
 
                     if (metricsType == "prometheus") {
@@ -545,7 +559,7 @@ namespace OpenLogReplicator {
                         ctx->metrics->initialize(ctx);
 #else
                         throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: \"" + metricsType +
-                                                    "\", expected: not \"prometheus\" since the code is not compiled");
+                                                     "\", expected: not \"prometheus\" since the code is not compiled");
 #endif /*LINK_LIBRARY_PROMETHEUS*/
                     } else {
                         throw ConfigurationException(30001, R"(bad JSON, invalid "type" value: ")" + metricsType + R"(", expected: one of {"prometheus"})");
@@ -557,9 +571,11 @@ namespace OpenLogReplicator {
             const rapidjson::Value& formatJson = Ctx::getJsonFieldO(configFileName, sourceJson, "format");
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> formatNames {"db", "attributes", "interval-dts", "interval-ytm", "message", "rid", "xid", "timestamp",
-                                                                   "timestamp-tz", "timestamp-all", "char", "scn", "scn-type", "unknown", "schema", "column",
-                                                                   "unknown-type", "flush-buffer", "type"};
+                static const std::vector<std::string> formatNames{
+                    "db", "attributes", "interval-dts", "interval-ytm", "message", "rid", "xid", "timestamp",
+                    "timestamp-tz", "timestamp-all", "char", "scn", "scn-type", "unknown", "schema", "column",
+                    "unknown-type", "flush-buffer", "type"
+                };
                 Ctx::checkJsonFields(configFileName, formatJson, formatNames);
             }
 
@@ -602,13 +618,13 @@ namespace OpenLogReplicator {
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(val) + ", expected: one of {0 .. 31}");
                 if ((val & static_cast<uint>(Format::MESSAGE_FORMAT::FULL)) != 0 &&
                     (val & (static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_BEGIN) |
-                            static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_COMMIT))) != 0)
+                        static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_COMMIT))) != 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(val) +
-                                                        ", expected: BEGIN/COMMIT flag is unset (" +
-                                                        std::to_string(static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_BEGIN)) +
-                                                        "/" + std::to_string(static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_COMMIT)) +
-                                                        ") together with FULL mode (" +
-                                                        std::to_string(static_cast<uint>(Format::MESSAGE_FORMAT::FULL)) + ")");
+                                                 ", expected: BEGIN/COMMIT flag is unset (" +
+                                                 std::to_string(static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_BEGIN)) +
+                                                 "/" + std::to_string(static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_COMMIT)) +
+                                                 ") together with FULL mode (" +
+                                                 std::to_string(static_cast<uint>(Format::MESSAGE_FORMAT::FULL)) + ")");
                 messageFormat = static_cast<Format::MESSAGE_FORMAT>(val);
             }
 
@@ -630,7 +646,7 @@ namespace OpenLogReplicator {
 
             Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
             if (formatJson.HasMember("timestamp")) {
-                const uint val  = Ctx::getJsonFieldU(configFileName, formatJson, "timestamp");
+                const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "timestamp");
                 if (val > 15)
                     throw ConfigurationException(30001, "bad JSON, invalid \"timestamp\" value: " + std::to_string(val) + ", expected: one of {0 .. 15}");
                 timestampFormat = static_cast<Format::TIMESTAMP_FORMAT>(val);
@@ -700,7 +716,7 @@ namespace OpenLogReplicator {
 
                 if (ctx->isFlagSet(Ctx::REDO_FLAGS::SCHEMALESS) && val != 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"column\" value: " + std::to_string(val) +
-                                                        ", expected: not used when flags has set schemaless mode (flags: " + std::to_string(ctx->flags) + ")");
+                                                 ", expected: not used when flags has set schemaless mode (flags: " + std::to_string(ctx->flags) + ")");
                 columnFormat = static_cast<Format::COLUMN_FORMAT>(val);
             }
 
@@ -736,7 +752,7 @@ namespace OpenLogReplicator {
 
             // READER
             const std::string readerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "type");
-            void (* archGetLog)(Replicator* replicator) = Replicator::archGetLogPath;
+            void(*archGetLog)(Replicator * replicator) = Replicator::archGetLogPath;
 
             if (sourceJson.HasMember("redo-read-sleep-us"))
                 ctx->redoReadSleepUs = Ctx::getJsonFieldU64(configFileName, sourceJson, "redo-read-sleep-us");
@@ -748,7 +764,7 @@ namespace OpenLogReplicator {
                 ctx->archReadTries = Ctx::getJsonFieldU(configFileName, sourceJson, "arch-read-tries");
                 if (ctx->archReadTries < 1 || ctx->archReadTries > 1000000000)
                     throw ConfigurationException(30001, "bad JSON, invalid \"arch-read-tries\" value: " +
-                                                        std::to_string(ctx->archReadTries) + ", expected: one of: {1 .. 1000000000}");
+                                                 std::to_string(ctx->archReadTries) + ", expected: one of: {1 .. 1000000000}");
             }
 
             if (sourceJson.HasMember("redo-verify-delay-us"))
@@ -807,15 +823,13 @@ namespace OpenLogReplicator {
                 mainProcessMapping(readerJson);
 #else
                 throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: " + readerType +
-                                                    ", expected: not \"online\" since the code is not compiled");
+                                             ", expected: not \"online\" since the code is not compiled");
 #endif /*LINK_LIBRARY_OCI*/
-
             } else if (readerType == "offline") {
                 replicator = new Replicator(ctx, archGetLog, builder, metadata, transactionBuffer, alias, name);
                 builder->initialize();
                 replicator->initialize();
                 mainProcessMapping(readerJson);
-
             } else if (readerType == "batch") {
                 archGetLog = Replicator::archGetLogList;
                 replicator = new ReplicatorBatch(ctx, archGetLog, builder, metadata, transactionBuffer, alias, name);
@@ -826,7 +840,6 @@ namespace OpenLogReplicator {
 
                 for (rapidjson::SizeType k = 0; k < redoLogBatchArrayJson.Size(); ++k)
                     replicator->addRedoLogsBatch(Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, redoLogBatchArrayJson, "redo-log", k));
-
             } else
                 throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: " + readerType + R"(, expected: one of {"online", "offline", "batch"})");
 
@@ -834,7 +847,7 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> filterNames {"table", "skip-xid", "separator", "dump-xid"};
+                    static const std::vector<std::string> filterNames{"table", "skip-xid", "separator", "dump-xid"};
                     Ctx::checkJsonFields(configFileName, filterJson, filterNames);
                 }
 
@@ -849,7 +862,7 @@ namespace OpenLogReplicator {
                         const rapidjson::Value& tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
 
                         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                            static const std::vector<std::string> tableElementNames {"owner", "table", "key", "condition", "tag"};
+                            static const std::vector<std::string> tableElementNames{"owner", "table", "key", "condition", "tag"};
                             Ctx::checkJsonFields(configFileName, tableElementJson, tableElementNames);
                         }
 
@@ -908,7 +921,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& targetArrayJson = Ctx::getJsonFieldA(configFileName, document, "target");
         if (targetArrayJson.Size() != 1) {
             throw ConfigurationException(30001, "bad JSON, invalid \"target\" value: " + std::to_string(targetArrayJson.Size()) +
-                                                " elements, expected: 1 element");
+                                         " elements, expected: 1 element");
         }
 
         for (rapidjson::SizeType j = 0; j < targetArrayJson.Size(); ++j) {
@@ -930,9 +943,11 @@ namespace OpenLogReplicator {
             const std::string writerType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "type");
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> writerNames {"type", "poll-interval-us", "queue-size", "max-file-size", "timestamp-format", "output",
-                                                                   "new-line", "append", "max-message-mb", "topic", "properties", "uri",
-                                                                   "write-buffer-flush-size"};
+                static const std::vector<std::string> writerNames{
+                    "type", "poll-interval-us", "queue-size", "max-file-size", "timestamp-format", "output",
+                    "new-line", "append", "max-message-mb", "topic", "properties", "uri",
+                    "write-buffer-flush-size"
+                };
                 Ctx::checkJsonFields(configFileName, writerJson, writerNames);
             }
 
@@ -940,14 +955,14 @@ namespace OpenLogReplicator {
                 ctx->pollIntervalUs = Ctx::getJsonFieldU64(configFileName, writerJson, "poll-interval-us");
                 if (ctx->pollIntervalUs < 100 || ctx->pollIntervalUs > 3600000000)
                     throw ConfigurationException(30001, "bad JSON, invalid \"poll-interval-us\" value: " +
-                                                        std::to_string(ctx->pollIntervalUs) + ", expected: one of {100 .. 3600000000}");
+                                                 std::to_string(ctx->pollIntervalUs) + ", expected: one of {100 .. 3600000000}");
             }
 
             if (writerJson.HasMember("queue-size")) {
                 ctx->queueSize = Ctx::getJsonFieldU64(configFileName, writerJson, "queue-size");
                 if (ctx->queueSize < 1 || ctx->queueSize > 1000000)
                     throw ConfigurationException(30001, "bad JSON, invalid \"queue-size\" value: " + std::to_string(ctx->queueSize) +
-                                                        ", expected: one of {1 .. 1000000}");
+                                                 ", expected: one of {1 .. 1000000}");
             }
 
             if (writerType == "file") {
@@ -964,7 +979,7 @@ namespace OpenLogReplicator {
                     output = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "output");
                 else if (maxFileSize > 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"output\" value: " + output +
-                                                        ", expected: to be set when \"max-file-size\" is set (" + std::to_string(maxFileSize) + ")");
+                                                 ", expected: to be set when \"max-file-size\" is set (" + std::to_string(maxFileSize) + ")");
 
                 uint64_t newLine = 1;
                 if (writerJson.HasMember("new-line")) {
@@ -985,7 +1000,7 @@ namespace OpenLogReplicator {
                     writeBufferFlushSize = Ctx::getJsonFieldU(configFileName, writerJson, "write-buffer-flush-size");
                     if (writeBufferFlushSize > 1048576)
                         throw ConfigurationException(30001, "bad JSON, invalid \"write-buffer-flush-size\" value: " +
-                                                            std::to_string(writeBufferFlushSize) + ", expected: one of {0 .. 1048576}");
+                                                     std::to_string(writeBufferFlushSize) + ", expected: one of {0 .. 1048576}");
                 }
 
                 writer = new WriterFile(ctx, alias + "-writer", replicator2->database, replicator2->builder, replicator2->metadata, output, timestampFormat,
@@ -999,7 +1014,7 @@ namespace OpenLogReplicator {
                     maxMessageMb = Ctx::getJsonFieldU64(configFileName, writerJson, "max-message-mb");
                     if (maxMessageMb < 1 || maxMessageMb > WriterKafka::MAX_KAFKA_MESSAGE_MB)
                         throw ConfigurationException(30001, "bad JSON, invalid \"max-message-mb\" value: " + std::to_string(maxMessageMb) +
-                                                            ", expected: one of {1 .. " + std::to_string(WriterKafka::MAX_KAFKA_MESSAGE_MB) + "}");
+                                                     ", expected: one of {1 .. " + std::to_string(WriterKafka::MAX_KAFKA_MESSAGE_MB) + "}");
                 }
                 replicator2->builder->setMaxMessageMb(maxMessageMb);
 
@@ -1043,7 +1058,7 @@ namespace OpenLogReplicator {
 #endif /* LINK_LIBRARY_PROTOBUF */
             } else
                 throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: " + writerType +
-                                                    R"(, expected: one of {"file", "kafka", "zeromq", "network", "discard"})");
+                                             R"(, expected: one of {"file", "kafka", "zeromq", "network", "discard"})");
 
             writers.push_back(writer);
             writer->initialize();
@@ -1067,7 +1082,7 @@ namespace OpenLogReplicator {
 
             if ((pathMappingArrayJson.Size() % 2) != 0)
                 throw ConfigurationException(30001, "bad JSON, invalid \"path-mapping\" value: " +
-                                                    std::to_string(pathMappingArrayJson.Size()) + " elements, expected: even number of elements");
+                                             std::to_string(pathMappingArrayJson.Size()) + " elements, expected: even number of elements");
 
             for (rapidjson::SizeType k = 0; k < pathMappingArrayJson.Size() / 2; ++k) {
                 const std::string sourceMapping = Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, pathMappingArrayJson, "path-mapping", k * 2);

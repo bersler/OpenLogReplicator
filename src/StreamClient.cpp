@@ -38,10 +38,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #endif /* LINK_LIBRARY_ZEROMQ */
 
 enum {
-MAX_CLIENT_MESSAGE_SIZE = ((2*1024*1024*1024UL) - 1)
+    MAX_CLIENT_MESSAGE_SIZE = ((2 * 1024 * 1024 * 1024UL) - 1)
 };
 
-static void send(OpenLogReplicator::pb::RedoRequest& request, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx __attribute__((unused))) {
+static void send(OpenLogReplicator::pb::RedoRequest & request, OpenLogReplicator::Stream * stream, OpenLogReplicator::Ctx * ctx __attribute__((unused))) {
     std::string buffer;
     const bool ret = request.SerializeToString(&buffer);
     if (!ret)
@@ -50,7 +50,8 @@ static void send(OpenLogReplicator::pb::RedoRequest& request, OpenLogReplicator:
     stream->sendMessage(buffer.c_str(), buffer.length());
 }
 
-static uint64_t receive(OpenLogReplicator::pb::RedoResponse& response, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx, uint8_t* buffer, bool decode) {
+static uint64_t receive(OpenLogReplicator::pb::RedoResponse& response, OpenLogReplicator::Stream* stream, OpenLogReplicator::Ctx* ctx, uint8_t* buffer,
+                        bool decode) {
     const uint64_t length = stream->receiveMessage(buffer, MAX_CLIENT_MESSAGE_SIZE);
 
     response.Clear();
@@ -77,8 +78,8 @@ int main(int argc, char** argv) {
             ctx.error(10070, "invalid environment variable OLR_LOG_TIMEZONE value: " + std::string(logTimezone));
 
     ctx.welcome("OpenLogReplicator v." + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
-                std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
-                " StreamClient (C) 2018-2025 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
+            std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
+            " StreamClient (C) 2018-2025 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
 
     // Run arguments:
     // 1. network|zeromq - type of communication protocol
@@ -100,7 +101,7 @@ int main(int argc, char** argv) {
     //      next - continue with next message, from the last position
     if (argc != 6) {
         ctx.info(0, "use: ClientNetwork [network|zeromq] <uri> <database> <format> [now{,<seq>}|scn:<scn>{,<seq>}|time_rel:<time>{,<seq>}|"
-                    "time:<time>{,<seq>}|c:<scn>,<idx>|next]");
+                 "time:<time>{,<seq>}|c:<scn>,<idx>|next]");
         return 0;
     }
 
@@ -140,7 +141,7 @@ int main(int argc, char** argv) {
         send(request, stream, &ctx);
         receive(response, stream, &ctx, buffer, true);
         ctx.info(0, "- code: " + std::to_string(static_cast<uint>(response.code())) + ", scn: " + std::to_string(response.scn()) +
-                    ", confirmed: " + std::to_string(response.c_scn()) + "," + std::to_string(response.c_idx()));
+                 ", confirmed: " + std::to_string(response.c_scn()) + "," + std::to_string(response.c_idx()));
 
         request.Clear();
         request.set_database_name(argv[3]);
@@ -187,10 +188,10 @@ int main(int argc, char** argv) {
                 ctx.info(0, "START time_rel: " + std::to_string(request.tm_rel()) + paramSeq);
             } else
                 throw OpenLogReplicator::RuntimeException(1, "server is waiting to define position to start, expected: [now{,<seq>}|"
-                                                             "scn:<scn>{,<seq>}|time_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
+                                                          "scn:<scn>{,<seq>}|time_rel:<time>{,<seq>}|tms:<time>{,<seq>}");
         } else
             throw OpenLogReplicator::RuntimeException(1, "server returned code: " + std::to_string(response.code()) +
-                                                         " for request code: " + std::to_string(request.code()));
+                                                      " for request code: " + std::to_string(request.code()));
 
         // Index to count messages, to confirm after 1000th
         uint64_t num = 0;
@@ -203,7 +204,7 @@ int main(int argc, char** argv) {
         // Either after start or after continue, the server is expected to start streaming
         if (response.code() != OpenLogReplicator::pb::ResponseCode::REPLICATE)
             throw OpenLogReplicator::RuntimeException(1, "server returned code: " + std::to_string(response.code()) +
-                                                         " for request code: " + std::to_string(request.code()));
+                                                      " for request code: " + std::to_string(request.code()));
 
         for (;;) {
             const uint64_t length = receive(response, stream, &ctx, buffer, formatProtobuf);
@@ -246,11 +247,11 @@ int main(int argc, char** argv) {
                             msg = "??? UNKNOWN ???";
                     }
                     ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", idx: " + std::to_string(response.scn()) + ", code: " +
-                                std::to_string(static_cast<uint>(response.code())) + ", length: " + std::to_string(length) + ", op: " + msg);
+                             std::to_string(static_cast<uint>(response.code())) + ", length: " + std::to_string(length) + ", op: " + msg);
                 } else {
                     ctx.info(0, "- scn: " + std::to_string(response.scn()) + ", code: " +
-                                std::to_string(static_cast<uint>(response.code())) + ", length: " + std::to_string(length) +
-                                ", payload size: " + std::to_string(response.payload_size()));
+                             std::to_string(static_cast<uint>(response.code())) + ", length: " + std::to_string(length) +
+                             ", payload size: " + std::to_string(response.payload_size()));
                 }
 
                 cScn = response.c_scn();
@@ -262,7 +263,7 @@ int main(int argc, char** argv) {
                 rapidjson::Document document;
                 if (document.Parse(reinterpret_cast<const char*>(buffer)).HasParseError())
                     throw OpenLogReplicator::RuntimeException(20001, "offset: " + std::to_string(document.GetErrorOffset()) +
-                                                                     " - parse error: " + GetParseError_En(document.GetParseError()));
+                                                              " - parse error: " + GetParseError_En(document.GetParseError()));
 
                 cScn = OpenLogReplicator::Ctx::getJsonFieldU64("network", document, "c_scn");
                 cIdx = OpenLogReplicator::Ctx::getJsonFieldU64("network", document, "c_idx");
@@ -280,13 +281,12 @@ int main(int argc, char** argv) {
                 request.set_c_idx(cIdx);
                 request.set_database_name(argv[3]);
                 ctx.info(0, "CONFIRM scn: " + std::to_string(request.c_scn()) + ", idx: " + std::to_string(request.c_idx()) +
-                            ", database: " + request.database_name());
+                         ", database: " + request.database_name());
                 send(request, stream, &ctx);
                 num = 0;
                 last = now;
             }
         }
-
     } catch (OpenLogReplicator::DataException& ex) {
         ctx.error(ex.code, "error: " + ex.msg);
     } catch (OpenLogReplicator::RuntimeException& ex) {

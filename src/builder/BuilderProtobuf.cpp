@@ -27,9 +27,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
-    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer) {
-    }
+    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer):
+            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer) {}
 
     BuilderProtobuf::~BuilderProtobuf() {
         if (redoResponsePB != nullptr) {
@@ -93,7 +92,8 @@ namespace OpenLogReplicator {
     }
 
     void BuilderProtobuf::columnTimestampTz(const std::string& columnName, time_t timestamp __attribute__((unused)),
-                                            uint64_t fraction __attribute__((unused)), const std::string_view& tz __attribute__((unused))) {
+                                            uint64_t fraction __attribute__((unused)),
+                                            const std::string_view& tz __attribute__((unused))) {
         valuePB->set_name(columnName);
         // TODO: implement
     }
@@ -310,7 +310,8 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderProtobuf::processCheckpoint(Scn scn, Seq sequence, time_t timestamp __attribute__((unused)), FileOffset fileOffset, bool redo) {
+    void BuilderProtobuf::processCheckpoint(Scn scn, Seq sequence, time_t timestamp __attribute__((unused)), FileOffset fileOffset,
+            bool redo) {
         if (lwnScn != scn) {
             lwnScn = scn;
             lwnIdx = 0;

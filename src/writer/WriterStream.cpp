@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterStream.h"
 
 namespace OpenLogReplicator {
-    WriterStream::WriterStream(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, Stream* newStream) :
+    WriterStream::WriterStream(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, Stream* newStream):
             Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata),
             stream(newStream) {
         metadata->bootFailsafe = true;

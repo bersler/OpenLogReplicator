@@ -33,16 +33,14 @@ namespace OpenLogReplicator {
         std::string name;
         uint32_t blockSize{0};
 
-        SysTs(RowId newRowId, typeTs newTs, std::string newName, uint32_t newBlockSize) :
+        SysTs(RowId newRowId, typeTs newTs, std::string newName, uint32_t newBlockSize):
                 rowId(newRowId),
                 ts(newTs),
                 name(std::move(newName)),
-                blockSize(newBlockSize) {
-        }
+                blockSize(newBlockSize) {}
 
-        explicit SysTs(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysTs(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysTs& other) const {
             return (other.rowId != rowId) || (other.ts != ts) || (other.name != name) || (other.blockSize != blockSize);
@@ -77,13 +75,11 @@ namespace OpenLogReplicator {
     public:
         typeTs ts;
 
-        explicit SysTsTs(typeTs newTs) :
-                ts(newTs) {
-        }
+        explicit SysTsTs(typeTs newTs):
+                ts(newTs) {}
 
-        explicit SysTsTs(const SysTs* sysTs) :
-                ts(sysTs->ts) {
-        }
+        explicit SysTsTs(const SysTs* sysTs):
+                ts(sysTs->ts) {}
 
         bool operator!=(const SysTsTs other) const {
             return (other.ts != ts);

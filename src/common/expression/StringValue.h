@@ -26,7 +26,9 @@ namespace OpenLogReplicator {
     class StringValue final : public Expression {
     public:
         enum class TYPE : unsigned char {
-            SESSION_ATTRIBUTE, OP, VALUE
+            SESSION_ATTRIBUTE,
+            OP,
+            VALUE
         };
 
         TYPE stringType;

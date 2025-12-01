@@ -24,9 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "BuilderJson.h"
 
 namespace OpenLogReplicator {
-    BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer) {
-    }
+    BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer):
+            Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer) {}
 
     void BuilderJson::columnFloat(const std::string& columnName, double value) {
         if (hasPreviousColumn)
@@ -71,7 +70,8 @@ namespace OpenLogReplicator {
         append('"');
     }
 
-    void BuilderJson::columnNumber(const std::string& columnName, int precision __attribute__((unused)), int scale __attribute__((unused))) {
+    void BuilderJson::columnNumber(const std::string& columnName, int precision __attribute__((unused)),
+            int scale __attribute__((unused))) {
         if (hasPreviousColumn)
             append(',');
         else

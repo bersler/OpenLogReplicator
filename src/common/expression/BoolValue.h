@@ -26,7 +26,13 @@ namespace OpenLogReplicator {
     class BoolValue final : public Expression {
     public:
         enum class VALUE : unsigned char {
-            FALSE, TRUE, OPERATOR_AND, OPERATOR_OR, OPERATOR_NOT, OPERATOR_EQUAL, OPERATOR_NOT_EQUAL
+            FALSE,
+            TRUE,
+            OPERATOR_AND,
+            OPERATOR_OR,
+            OPERATOR_NOT,
+            OPERATOR_EQUAL,
+            OPERATOR_NOT_EQUAL
         };
 
     protected:

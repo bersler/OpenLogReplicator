@@ -33,18 +33,16 @@ namespace OpenLogReplicator {
         typeObj lObj{0};
         typeTs ts{0};
 
-        SysLob(RowId newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs) :
+        SysLob(RowId newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs):
                 rowId(newRowId),
                 obj(newObj),
                 col(newCol),
                 intCol(newIntCol),
                 lObj(newLObj),
-                ts(newTs) {
-        }
+                ts(newTs) {}
 
-        explicit SysLob(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysLob(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysLob& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.col != col) || (other.intCol != intCol) || (other.lObj != lObj) || (other.ts != ts);
@@ -56,7 +54,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", COL#: " + std::to_string(col) + ", INTCOL#: " + std::to_string(intCol) +
-                   ", LOBJ#: " + std::to_string(lObj) + ", TS#: " + std::to_string(ts);
+                    ", LOBJ#: " + std::to_string(lObj) + ", TS#: " + std::to_string(ts);
         }
 
         [[nodiscard]] static constexpr bool dependentTable() {
@@ -85,15 +83,13 @@ namespace OpenLogReplicator {
         typeObj obj;
         typeCol intCol;
 
-        SysLobKey(typeObj newObj, typeCol newIntCol) :
+        SysLobKey(typeObj newObj, typeCol newIntCol):
                 obj(newObj),
-                intCol(newIntCol) {
-        }
+                intCol(newIntCol) {}
 
-        explicit SysLobKey(const SysLob* sysLob) :
+        explicit SysLobKey(const SysLob* sysLob):
                 obj(sysLob->obj),
-                intCol(sysLob->intCol) {
-        }
+                intCol(sysLob->intCol) {}
 
         bool operator<(const SysLobKey other) const {
             if (obj < other.obj)
@@ -110,13 +106,11 @@ namespace OpenLogReplicator {
     public:
         typeObj lObj;
 
-        explicit SysLobLObj(typeObj newLObj) :
-                lObj(newLObj) {
-        }
+        explicit SysLobLObj(typeObj newLObj):
+                lObj(newLObj) {}
 
-        explicit SysLobLObj(const SysLob* sysLob) :
-                lObj(sysLob->lObj) {
-        }
+        explicit SysLobLObj(const SysLob* sysLob):
+                lObj(sysLob->lObj) {}
 
         bool operator!=(const SysLobLObj other) const {
             return (other.lObj != lObj);

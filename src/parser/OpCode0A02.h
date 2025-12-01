@@ -65,8 +65,8 @@ namespace OpenLogReplicator {
                     *ctx->dumpStream << "0x" << std::hex << static_cast<uint>(code) << " ";
                 *ctx->dumpStream << codeStr << " / -- / -- " << '\n';
                 *ctx->dumpStream << "itl: " << std::dec << static_cast<uint>(itl) <<
-                                 ", sno: " << std::dec << sno <<
-                                 ", row size " << std::dec << rowSize << '\n';
+                        ", sno: " << std::dec << sno <<
+                        ", row size " << std::dec << rowSize << '\n';
 
                 if (code == 0x20) {
                     if (fieldSize < 10)
@@ -132,7 +132,7 @@ namespace OpenLogReplicator {
 
                 for (typeSize j = 0; j < redoLogRecord->indKeyDataSize; ++j) {
                     *ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex <<
-                                     static_cast<uint>(*redoLogRecord->data(redoLogRecord->indKeyData + j));
+                            static_cast<uint>(*redoLogRecord->data(redoLogRecord->indKeyData + j));
                     if ((j % 25) == 24 && j != redoLogRecord->indKeyDataSize - 1U)
                         *ctx->dumpStream << '\n';
                 }

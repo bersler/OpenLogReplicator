@@ -42,7 +42,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Replicator::Replicator(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                           TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase) :
+                           TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase):
             Thread(newCtx, std::move(newAlias)),
             archGetLog(newArchGetLog),
             builder(newBuilder),
@@ -69,8 +69,7 @@ namespace OpenLogReplicator {
         redoLogsBatch.clear();
     }
 
-    void Replicator::initialize() {
-    }
+    void Replicator::initialize() {}
 
     void Replicator::cleanArchList() {
         while (!archiveRedoQueue.empty()) {
@@ -172,7 +171,7 @@ namespace OpenLogReplicator {
             if (!ctx->isFlagSet(Ctx::REDO_FLAGS::ARCH_ONLY))
                 updateOnlineRedoLogData();
             ctx->info(0, "timezone: " + Data::timezoneToString(-timezone) + ", db-timezone: " + Data::timezoneToString(metadata->dbTimezone) +
-                         ", log-timezone: " + Data::timezoneToString(ctx->logTimezone) + ", host-timezone: " + Data::timezoneToString(ctx->hostTimezone));
+                      ", log-timezone: " + Data::timezoneToString(ctx->logTimezone) + ", host-timezone: " + Data::timezoneToString(ctx->hostTimezone));
 
             do {
                 if (ctx->softShutdown)
@@ -208,18 +207,17 @@ namespace OpenLogReplicator {
 
                     if (metadata->firstDataScn == Scn::none())
                         ctx->info(0, "last confirmed scn: <none>, starting sequence: " + metadata->sequence.toString() + ", offset: " +
-                                     metadata->fileOffset.toString());
+                                  metadata->fileOffset.toString());
                     else
                         ctx->info(0, "last confirmed scn: " + metadata->firstDataScn.toString() + ", starting sequence: " +
-                                     metadata->sequence.toString() + ", offset: " + metadata->fileOffset.toString());
+                                  metadata->sequence.toString() + ", offset: " + metadata->fileOffset.toString());
 
                     if ((metadata->dbBlockChecksum == "OFF" || metadata->dbBlockChecksum == "FALSE") &&
                             !ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::BLOCK_SUM)) {
                         ctx->hint("set DB_BLOCK_CHECKSUM = TYPICAL on the database or turn off consistency checking in OpenLogReplicator "
-                                  "setting parameter disable-checks: " + std::to_string(static_cast<uint>(Ctx::DISABLE_CHECKS::BLOCK_SUM)) +
-                                  " for the reader");
+                                "setting parameter disable-checks: " + std::to_string(static_cast<uint>(Ctx::DISABLE_CHECKS::BLOCK_SUM)) +
+                                " for the reader");
                     }
-
                 } catch (BootException& ex) {
                     if (!metadata->bootFailsafe)
                         throw RuntimeException(ex.code, ex.msg);
@@ -316,7 +314,7 @@ namespace OpenLogReplicator {
                 if (reader->checkRedoLog()) {
                     foundPath = true;
                     auto* parser = new Parser(ctx, builder, metadata, transactionBuffer,
-                                             reader->getGroup(), reader->fileName);
+                                              reader->getGroup(), reader->fileName);
 
                     parser->reader = reader;
                     ctx->info(0, "online redo log: " + reader->fileName);
@@ -355,8 +353,8 @@ namespace OpenLogReplicator {
             if (replicator->metadata->logArchiveFormat[i] == '%') {
                 if (i + 1 >= replicator->metadata->logArchiveFormat.length()) {
                     replicator->ctx->warning(60028, "can't get sequence from file: " + file + " log_archive_format: " +
-                                                    replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
-                                                    std::to_string(i) + ", found end after %");
+                                             replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
+                                             std::to_string(i) + ", found end after %");
                     return Seq::zero();
                 }
                 uint digits = 0;
@@ -386,8 +384,8 @@ namespace OpenLogReplicator {
 
                 if (digits == 0) {
                     replicator->ctx->warning(60028, "can't get sequence from file: " + file + " log_archive_format: " +
-                                                    replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
-                                                    std::to_string(i) + ", found no number/hash");
+                                             replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
+                                             std::to_string(i) + ", found no number/hash");
                     return Seq::zero();
                 }
             } else if (file[j] == replicator->metadata->logArchiveFormat[i]) {
@@ -395,8 +393,8 @@ namespace OpenLogReplicator {
                 ++j;
             } else {
                 replicator->ctx->warning(60028, "can't get sequence from file: " + file + " log_archive_format: " +
-                                                replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
-                                                std::to_string(i) + ", found different values");
+                                         replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
+                                         std::to_string(i) + ", found different values");
                 return Seq::zero();
             }
         }
@@ -405,8 +403,8 @@ namespace OpenLogReplicator {
             return sequence;
 
         replicator->ctx->warning(60028, "error getting sequence from file: " + file + " log_archive_format: " +
-                                        replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
-                                        std::to_string(i) + ", found no sequence");
+                                 replicator->metadata->logArchiveFormat + " at position " + std::to_string(j) + " format position " +
+                                 std::to_string(i) + ", found no sequence");
         return Seq::zero();
     }
 
@@ -423,16 +421,15 @@ namespace OpenLogReplicator {
 
     void Replicator::applyMapping(std::string& path) const {
         const size_t newPathLength = path.length();
-        std::array<char, Ctx::MAX_PATH_LENGTH> pathBuffer {};
+        std::array<char, Ctx::MAX_PATH_LENGTH> pathBuffer{};
 
         for (size_t i = 0; i < pathMapping.size() / 2; ++i) {
             const uint64_t sourceLength = pathMapping[i * 2].length();
             const uint64_t targetLength = pathMapping[(i * 2) + 1].length();
 
             if (sourceLength <= newPathLength &&
-                newPathLength - sourceLength + targetLength < Ctx::MAX_PATH_LENGTH - 1 &&
-                memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
-
+                    newPathLength - sourceLength + targetLength < Ctx::MAX_PATH_LENGTH - 1 &&
+                    memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
                 memcpy(pathBuffer.data(), pathMapping[i * 2 + 1].c_str(), targetLength);
                 memcpy(pathBuffer.data() + targetLength, path.c_str() + sourceLength, newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
@@ -446,8 +443,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void Replicator::goStandby() {
-    }
+    void Replicator::goStandby() {}
 
     bool Replicator::continueWithOnline() {
         return true;
@@ -608,7 +604,7 @@ namespace OpenLogReplicator {
                         continue;
 
                     auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
-                                             replicator->transactionBuffer, 0, fileName);
+                                              replicator->transactionBuffer, 0, fileName);
                     parser->firstScn = Scn::none();
                     parser->nextScn = Scn::none();
                     parser->sequence = sequence;
@@ -623,8 +619,7 @@ namespace OpenLogReplicator {
         replicator->redoLogsBatch.clear();
     }
 
-    bool parserCompare::operator()(const Parser* p1, const Parser* p2) const
-    {
+    bool parserCompare::operator()(const Parser* p1, const Parser* p2) const {
         return p1->sequence > p2->sequence;
     }
 
@@ -689,7 +684,7 @@ namespace OpenLogReplicator {
             startingSeq = ", seq: " + metadata->startSequence.toString();
 
         ctx->info(0, "Replicator for " + database + " in " + getModeName() + " mode is starting" + flagsStr + " from " + starting +
-                     startingSeq);
+                  startingSeq);
     }
 
     bool Replicator::processArchivedRedoLogs() {
@@ -707,7 +702,7 @@ namespace OpenLogReplicator {
                 if (ctx->isFlagSet(Ctx::REDO_FLAGS::ARCH_ONLY)) {
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::ARCHIVE_LIST)))
                         ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "archived redo log missing for seq: " + metadata->sequence.toString() +
-                                                                ", sleeping");
+                                      ", sleeping");
                     contextSet(CONTEXT::SLEEP);
                     usleep(ctx->archReadSleepUs);
                     contextSet(CONTEXT::CPU);
@@ -743,7 +738,7 @@ namespace OpenLogReplicator {
 
                 if (parser->sequence > metadata->sequence) {
                     ctx->warning(60027, "couldn't find archive log for seq: " + metadata->sequence.toString() + ", found: " +
-                                        parser->sequence.toString() + ", sleeping " + std::to_string(ctx->archReadSleepUs) + " us");
+                                 parser->sequence.toString() + ", sleeping " + std::to_string(ctx->archReadSleepUs) + " us");
                     contextSet(CONTEXT::SLEEP);
                     usleep(ctx->archReadSleepUs);
                     contextSet(CONTEXT::CPU);
@@ -765,10 +760,10 @@ namespace OpenLogReplicator {
 
                     if (retry == 0)
                         throw RuntimeException(10009, "file: " + parser->path + " - failed to open after " +
-                                                      std::to_string(ctx->archReadTries) + " tries");
+                                               std::to_string(ctx->archReadTries) + " tries");
 
                     ctx->info(0, "archived redo log " + parser->path + " is not ready for read, sleeping " +
-                                 std::to_string(ctx->archReadSleepUs) + " us");
+                              std::to_string(ctx->archReadSleepUs) + " us");
                     contextSet(CONTEXT::SLEEP);
                     usleep(ctx->archReadSleepUs);
                     contextSet(CONTEXT::CPU);
@@ -789,7 +784,7 @@ namespace OpenLogReplicator {
                         break;
                     }
                     throw RuntimeException(10047, "archive log processing returned: " + std::string(Reader::REDO_MSG[static_cast<uint>(ret)]) + ", code: " +
-                                                  std::to_string(static_cast<uint>(ret)));
+                                           std::to_string(static_cast<uint>(ret)));
                 }
 
                 // verifySchema(metadata->nextScn);
@@ -845,8 +840,8 @@ namespace OpenLogReplicator {
 
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO) && ctx->logLevel >= Ctx::LOG::DEBUG))
                         ctx->logTrace(Ctx::TRACE::REDO, onlineRedo->path + " is seq: " + onlineRedo->sequence.toString() +
-                                                        ", scn: " + onlineRedo->firstScn.toString() + ", blocks: " +
-                                                        std::to_string(onlineRedo->reader->getNumBlocks()));
+                                      ", scn: " + onlineRedo->firstScn.toString() + ", blocks: " +
+                                      std::to_string(onlineRedo->reader->getNumBlocks()));
                 }
 
                 // All so far read, waiting for switch
@@ -894,8 +889,8 @@ namespace OpenLogReplicator {
             } else if (ret == Reader::REDO_CODE::STOPPED || ret == Reader::REDO_CODE::OK) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
                     ctx->logTrace(Ctx::TRACE::REDO, "updating redo log files, return code: " + std::to_string(static_cast<uint>(ret)) + ", sequence: " +
-                                                    metadata->sequence.toString() + ", first scn: " + metadata->firstScn.toString() + ", next scn: " +
-                                                    metadata->nextScn.toString());
+                                  metadata->sequence.toString() + ", first scn: " + metadata->firstScn.toString() + ", next scn: " +
+                                  metadata->nextScn.toString());
 
                 updateOnlineRedoLogData();
                 updateOnlineLogs();
@@ -905,8 +900,8 @@ namespace OpenLogReplicator {
             } else {
                 if (parser->group == 0) {
                     throw RuntimeException(10048, "read archived redo log, code: " + std::to_string(static_cast<uint>(ret)));
-                }                     throw RuntimeException(10049, "read online redo log, code: " + std::to_string(static_cast<uint>(ret)));
-
+                }
+                throw RuntimeException(10049, "read online redo log, code: " + std::to_string(static_cast<uint>(ret)));
             }
 
             if (ctx->stopLogSwitches > 0) {

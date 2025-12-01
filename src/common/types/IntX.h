@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         }
 
         IntX() {
-            for (uint64_t& i : data)
+            for (uint64_t& i: data)
                 i = 0;
         }
 
@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isZero() const {
-            for (uint64_t const i : data)
+            for (uint64_t const i: data)
                 if (i != 0)
                     return false;
             return true;

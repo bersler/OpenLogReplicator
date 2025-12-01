@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
 
     IntX IntX::BASE10[DIGITS][10];
 
-    Ctx::Ctx() :
+    Ctx::Ctx():
             mainThread(pthread_self()),
             dumpStream(std::make_unique<std::ofstream>()) {
         clock = new ClockHW();
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
     void Ctx::checkJsonFields(const std::string& fileName, const rapidjson::Value& value, const std::vector<std::string>& names) {
         for (const auto& child: value.GetObject()) {
             bool found = false;
-            for (const auto& name : names) {
+            for (const auto& name: names) {
                 if (name == child.name.GetString()) {
                     found = true;
                     break;
@@ -90,8 +90,8 @@ namespace OpenLogReplicator {
             }
 
             if (unlikely(!found && memcmp(child.name.GetString(), "xdb-xnm", 7) != 0 &&
-                         memcmp(child.name.GetString(), "xdb-xpt", 7) != 0 &&
-                         memcmp(child.name.GetString(), "xdb-xqn", 7) != 0))
+                    memcmp(child.name.GetString(), "xdb-xpt", 7) != 0 &&
+                    memcmp(child.name.GetString(), "xdb-xqn", 7) != 0))
                 throw DataException(20003, "file: " + fileName + " - parse error, attribute " + child.name.GetString() + " not expected");
         }
     }
@@ -206,7 +206,7 @@ namespace OpenLogReplicator {
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is not a string");
         if (unlikely(ret.GetStringLength() > maxLength))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + " is too long (" +
-                                       std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
+                                std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return {ret.GetString()};
     }
 
@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsArray()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not an array");
+                                "] is not an array");
         return ret;
     }
 
@@ -222,11 +222,11 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not an unsigned 64-bit number");
+                                "] is not an unsigned 64-bit number");
         const uint64_t val = ret.GetUint64();
         if (unlikely(val > 0xFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is too big (" + std::to_string(val) + ")");
+                                "] is too big (" + std::to_string(val) + ")");
         return val;
     }
 
@@ -234,11 +234,11 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not a signed 64-bit number");
+                                "] is not a signed 64-bit number");
         const int64_t val = ret.GetInt64();
         if (unlikely((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is too big (" + std::to_string(val) + ")");
+                                "] is too big (" + std::to_string(val) + ")");
         return static_cast<int16_t>(val);
     }
 
@@ -246,11 +246,11 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not an unsigned 64-bit number");
+                                "] is not an unsigned 64-bit number");
         const uint64_t val = ret.GetUint64();
         if (unlikely(val > 0xFFFFFFFF))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is too big (" + std::to_string(val) + ")");
+                                "] is too big (" + std::to_string(val) + ")");
         return static_cast<uint32_t>(val);
     }
 
@@ -258,11 +258,11 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not a signed 64-bit number");
+                                "] is not a signed 64-bit number");
         const int64_t val = ret.GetInt64();
         if (unlikely((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000))))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is too big (" + std::to_string(val) + ")");
+                                "] is too big (" + std::to_string(val) + ")");
         return static_cast<int32_t>(val);
     }
 
@@ -270,7 +270,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsUint64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not an unsigned 64-bit number");
+                                "] is not an unsigned 64-bit number");
         return ret.GetUint64();
     }
 
@@ -278,7 +278,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsInt64()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not a signed 64-bit number");
+                                "] is not a signed 64-bit number");
         return ret.GetInt64();
     }
 
@@ -286,7 +286,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsUint()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not an unsigned number");
+                                "] is not an unsigned number");
         return ret.GetUint();
     }
 
@@ -294,7 +294,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsInt()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not a signed number");
+                                "] is not a signed number");
         return ret.GetInt();
     }
 
@@ -302,7 +302,7 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsObject()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not an object");
+                                "] is not an object");
         return ret;
     }
 
@@ -310,10 +310,10 @@ namespace OpenLogReplicator {
         const rapidjson::Value& ret = value[num];
         if (unlikely(!ret.IsString()))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is not a string");
+                                "] is not a string");
         if (unlikely(ret.GetStringLength() > maxLength))
             throw DataException(20003, "file: " + fileName + " - parse error, field " + field + "[" + std::to_string(num) +
-                                       "] is too long (" + std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
+                                "] is too long (" + std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return {ret.GetString()};
     }
 
@@ -333,12 +333,12 @@ namespace OpenLogReplicator {
             bufferSizeMax = memoryReadBufferMaxMb * 1024 * 1024;
             bufferSizeFree = memoryReadBufferMaxMb / MEMORY_CHUNK_SIZE_MB;
 
-            memoryChunks = new uint8_t* [memoryChunksMax];
+            memoryChunks = new uint8_t*[memoryChunksMax];
             for (uint64_t i = 0; i < memoryChunksMin; ++i) {
                 memoryChunks[i] = static_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
                 if (unlikely(memoryChunks[i] == nullptr))
                     throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                                  " bytes memory for: memory chunks#2");
+                                           " bytes memory for: memory chunks#2");
                 ++memoryChunksAllocated;
                 ++memoryChunksFree;
             }
@@ -435,7 +435,7 @@ namespace OpenLogReplicator {
                         t->contextSet(Thread::CONTEXT::MEM, Thread::REASON::MEM);
                         if (unlikely(memoryChunks[memoryChunksFree] == nullptr))
                             throw RuntimeException(10016, "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) +
-                                                          " bytes memory for: " + memoryModules[static_cast<uint>(module)]);
+                                                   " bytes memory for: " + memoryModules[static_cast<uint>(module)]);
                         ++memoryChunksFree;
                         allocatedTotal = ++memoryChunksAllocated;
 
@@ -463,7 +463,8 @@ namespace OpenLogReplicator {
             --memoryChunksFree;
             usedTotal = memoryChunksAllocated - memoryChunksFree;
             allocatedModule = ++memoryModulesAllocated[static_cast<uint>(module)];
-            memoryModulesHWM[static_cast<uint>(module)] = std::max(memoryModulesAllocated[static_cast<uint>(module)], memoryModulesHWM[static_cast<uint>(module)]);
+            memoryModulesHWM[static_cast<uint>(module)] = std::max(memoryModulesAllocated[static_cast<uint>(module)],
+                                                                   memoryModulesHWM[static_cast<uint>(module)]);
             chunk = memoryChunks[memoryChunksFree];
         }
         t->contextSet(Thread::CONTEXT::CPU);
@@ -766,10 +767,10 @@ namespace OpenLogReplicator {
         }
 
         hint("try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; "
-             "transaction would be skipped");
+                "transaction would be skipped");
         if (memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] > 5)
             hint("amount of disk buffer is too high, try to decrease 'memory-read-buffer-max-mb' parameter, current utilization: " +
-                 std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
+                    std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
         throw RuntimeException(10017, "out of memory");
     }
 
@@ -918,9 +919,9 @@ namespace OpenLogReplicator {
         printMemoryUsageCurrent();
         for (Thread* thread: threads) {
             error(10014, "Dump: " + thread->getName() + " " + std::to_string(reinterpret_cast<uint64_t>(thread->pthread)) +
-                         " context: " + std::to_string(static_cast<uint>(thread->curContext)) +
-                         " reason: " + std::to_string(static_cast<uint>(thread->curReason)) +
-                         " switches: " + std::to_string(thread->contextSwitches));
+                  " context: " + std::to_string(static_cast<uint>(thread->curContext)) +
+                  " reason: " + std::to_string(static_cast<uint>(thread->curReason)) +
+                  " switches: " + std::to_string(thread->contextSwitches));
             pthread_kill(thread->pthread, SIGUSR1);
         }
     }
@@ -1120,25 +1121,25 @@ namespace OpenLogReplicator {
 
     void Ctx::printMemoryUsageHWM() const {
         info(0, "Memory HWM: " + std::to_string(getMemoryHWM()) + "MB, builder HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, misc HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " +
-                std::to_string(swappedMB) + "MB, disk write buffer HWM: " +
-                std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::WRITER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
+             std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, misc HWM: " +
+             std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser HWM: " +
+             std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer HWM: " +
+             std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction HWM: " +
+             std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " +
+             std::to_string(swappedMB) + "MB, disk write buffer HWM: " +
+             std::to_string(memoryModulesHWM[static_cast<uint>(MEMORY::WRITER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
     }
 
     void Ctx::printMemoryUsageCurrent() const {
         info(0, "Memory current swap: " + std::to_string(memoryChunksSwap * MEMORY_CHUNK_SIZE_MB) + "MB, allocated: " +
-                std::to_string(memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB) + "MB, free: " +
-                std::to_string(memoryChunksFree * MEMORY_CHUNK_SIZE_MB) + "MB, memory builder: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, misc: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " +
-                std::to_string(swappedMB) + "MB, disk write buffer: " +
-                std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::WRITER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
+             std::to_string(memoryChunksAllocated * MEMORY_CHUNK_SIZE_MB) + "MB, free: " +
+             std::to_string(memoryChunksFree * MEMORY_CHUNK_SIZE_MB) + "MB, memory builder: " +
+             std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::BUILDER)] * MEMORY_CHUNK_SIZE_MB) + "MB, misc: " +
+             std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::MISC)] * MEMORY_CHUNK_SIZE_MB) + "MB, parser: " +
+             std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::PARSER)] * MEMORY_CHUNK_SIZE_MB) + "MB, disk read buffer: " +
+             std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::READER)] * MEMORY_CHUNK_SIZE_MB) + "MB, transaction: " +
+             std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::TRANSACTIONS)] * MEMORY_CHUNK_SIZE_MB) + "MB, swapped: " +
+             std::to_string(swappedMB) + "MB, disk write buffer: " +
+             std::to_string(memoryModulesAllocated[static_cast<uint>(MEMORY::WRITER)] * MEMORY_CHUNK_SIZE_MB) + "MB");
     }
 }

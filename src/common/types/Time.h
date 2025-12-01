@@ -26,12 +26,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Time final {
         uint32_t data;
-    public:
-        Time() : data(0) {
-        }
 
-        explicit Time(uint32_t newData) : data(newData) {
-        }
+    public:
+        Time(): data(0) {}
+
+        explicit Time(uint32_t newData): data(newData) {}
 
         [[nodiscard]] uint32_t getVal() const {
             return this->data;
@@ -67,7 +66,7 @@ namespace OpenLogReplicator {
                 mon -= 2;
 
             return (((((static_cast<time_t>((year / 4) - (year / 100) + (year / 400) + (367 * mon / 12) + day) + (year * 365) - 719499) * 24
-                     + hour) * 60) + min) * 60) + sec - hostTimezone;
+                    + hour) * 60) + min) * 60) + sec - hostTimezone;
         }
 
         friend std::ostream& operator<<(std::ostream& os, const Time other) {
@@ -84,10 +83,10 @@ namespace OpenLogReplicator {
             rest /= 12;
             const uint64_t yy = rest + 1988;
             os << std::setfill('0') << std::setw(2) << std::dec << mm << "/" <<
-               std::setfill('0') << std::setw(2) << std::dec << dd << "/" <<
-               yy << " " << std::setfill('0') << std::setw(2) << std::dec << hh << ":" <<
-               std::setfill('0') << std::setw(2) << std::dec << mi << ":" <<
-               std::setfill('0') << std::setw(2) << std::dec << ss;
+                    std::setfill('0') << std::setw(2) << std::dec << dd << "/" <<
+                    yy << " " << std::setfill('0') << std::setw(2) << std::dec << hh << ":" <<
+                    std::setfill('0') << std::setw(2) << std::dec << mi << ":" <<
+                    std::setfill('0') << std::setw(2) << std::dec << ss;
             return os;
             // 0123456789012345678
             // DDDDDDDDDD HHHHHHHH

@@ -31,19 +31,17 @@ namespace OpenLogReplicator {
         typeCon con{0};
         typeCol intCol{0};
         typeObj obj{0};
-        IntX spare1{0, 0};            // NULL
+        IntX spare1{0, 0}; // NULL
 
-        SysCCol(RowId newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
+        SysCCol(RowId newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12):
                 TabRowId(newRowId),
                 con(newCon),
                 intCol(newIntCol),
                 obj(newObj),
-                spare1(newSpare11, newSpare12) {
-        }
+                spare1(newSpare11, newSpare12) {}
 
-        explicit SysCCol(RowId newRowId) :
-                TabRowId(newRowId) {
-        }
+        explicit SysCCol(RowId newRowId):
+                TabRowId(newRowId) {}
 
         bool operator!=(const SysCCol& other) const {
             return (other.rowId != rowId) || (other.con != con) || (other.intCol != intCol) || (other.obj != obj) || (other.spare1 != spare1);
@@ -55,7 +53,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", CON#: " + std::to_string(con) + ", INTCOL#: " + std::to_string(intCol) + ", OBJ#: " +
-                   std::to_string(obj) + ", SPARE1: " + spare1.toString();
+                    std::to_string(obj) + ", SPARE1: " + spare1.toString();
         }
 
         [[nodiscard]] static constexpr bool dependentTable() {
@@ -85,17 +83,15 @@ namespace OpenLogReplicator {
         typeCon con;
         typeCol intCol;
 
-        SysCColKey(typeObj newObj, typeCon newCon, typeCol newIntCol) :
+        SysCColKey(typeObj newObj, typeCon newCon, typeCol newIntCol):
                 obj(newObj),
                 con(newCon),
-                intCol(newIntCol) {
-        }
+                intCol(newIntCol) {}
 
-        explicit SysCColKey(const SysCCol *sysCCol) :
+        explicit SysCColKey(const SysCCol* sysCCol):
                 obj(sysCCol->obj),
                 con(sysCCol->con),
-                intCol(sysCCol->intCol) {
-        }
+                intCol(sysCCol->intCol) {}
 
         bool operator<(const SysCColKey other) const {
             if (obj < other.obj)

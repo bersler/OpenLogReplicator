@@ -20,9 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSetAL32UTF8.h"
 
 namespace OpenLogReplicator {
-    CharacterSetAL32UTF8::CharacterSetAL32UTF8() :
-            CharacterSet("AL32UTF8") {
-    }
+    CharacterSetAL32UTF8::CharacterSetAL32UTF8():
+            CharacterSet("AL32UTF8") {}
 
     typeUnicode CharacterSetAL32UTF8::decode(const Ctx* ctx, Xid xid, const uint8_t*& str, uint64_t& length) const {
         const uint64_t byte1 = *str++;

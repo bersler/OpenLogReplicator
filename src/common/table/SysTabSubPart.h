@@ -28,19 +28,17 @@ namespace OpenLogReplicator {
     public:
         RowId rowId;
         typeObj obj{0};
-        typeDataObj dataObj{0};        // NULL
+        typeDataObj dataObj{0}; // NULL
         typeObj pObj{0};
 
-        SysTabSubPart(RowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newPObj) :
+        SysTabSubPart(RowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newPObj):
                 rowId(newRowId),
                 obj(newObj),
                 dataObj(newDataObj),
-                pObj(newPObj) {
-        }
+                pObj(newPObj) {}
 
-        explicit SysTabSubPart(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysTabSubPart(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysTabSubPart& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.pObj != pObj);
@@ -52,7 +50,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OBJ#: " + std::to_string(obj) + ", DATAOBJ#: " + std::to_string(dataObj) + ", POBJ#: " +
-                   std::to_string(pObj);
+                    std::to_string(pObj);
         }
 
         [[nodiscard]] static constexpr bool dependentTable() {
@@ -81,15 +79,13 @@ namespace OpenLogReplicator {
         typeObj pObj;
         typeObj obj;
 
-        SysTabSubPartKey(typeObj newPObj, typeObj newObj) :
+        SysTabSubPartKey(typeObj newPObj, typeObj newObj):
                 pObj(newPObj),
-                obj(newObj) {
-        }
+                obj(newObj) {}
 
-        explicit SysTabSubPartKey(const SysTabSubPart* sysTabSubPart) :
+        explicit SysTabSubPartKey(const SysTabSubPart* sysTabSubPart):
                 pObj(sysTabSubPart->pObj),
-                obj(sysTabSubPart->obj) {
-        }
+                obj(sysTabSubPart->obj) {}
 
         bool operator<(const SysTabSubPartKey other) const {
             if (pObj < other.pObj)

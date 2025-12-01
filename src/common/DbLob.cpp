@@ -21,14 +21,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DbTable.h"
 
 namespace OpenLogReplicator {
-    DbLob::DbLob(DbTable* newTable, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol) :
+    DbLob::DbLob(DbTable* newTable, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol):
             table(newTable),
             obj(newObj),
             dataObj(newDataObj),
             lObj(newLObj),
             col(newCol),
-            intCol(newIntCol) {
-    }
+            intCol(newIntCol) {}
 
     DbLob::~DbLob() {
         lobIndexes.clear();

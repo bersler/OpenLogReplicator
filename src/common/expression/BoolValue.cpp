@@ -23,11 +23,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StringValue.h"
 
 namespace OpenLogReplicator {
-    BoolValue::BoolValue(VALUE newBoolType, Expression* newLeft, Expression* newRight) :
+    BoolValue::BoolValue(VALUE newBoolType, Expression* newLeft, Expression* newRight):
             boolType(newBoolType),
             left(newLeft),
-            right(newRight) {
-    }
+            right(newRight) {}
 
     BoolValue::~BoolValue() {
         if (left != nullptr) {

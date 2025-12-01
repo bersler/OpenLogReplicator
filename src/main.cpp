@@ -107,12 +107,12 @@ namespace {
             buildArch = ", build-arch: " OpenLogReplicator_CPU_ARCH;
 
         mainCtx->welcome("OpenLogReplicator v" + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
-                         std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
-                         " (C) 2018-2025 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
+                std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
+                " (C) 2018-2025 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
         mainCtx->welcome("arch: " + std::string(name.machine) + buildArch + ", system: " + name.sysname +
-                         ", release: " + name.release + ", build: " +
-                         OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"
-                         HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC HAS_THREAD_INFO);
+                ", release: " + name.release + ", build: " +
+                OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"
+                HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC HAS_THREAD_INFO);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {
@@ -162,7 +162,7 @@ namespace {
                 }
 
                 throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) + " [-v|--version] [-f|--file CONFIG] "
-                                                                       "[-p|--process PROCESSNAME] [-r|--root]");
+                                                                "[-p|--process PROCESSNAME] [-r|--root]");
             }
         } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);

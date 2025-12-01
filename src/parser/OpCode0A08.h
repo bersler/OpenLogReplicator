@@ -36,7 +36,8 @@ namespace OpenLogReplicator {
             // Field: 1
             if (fieldSize > 0) {
                 if (unlikely(ctx->dumpRedoLog >= 1)) {
-                    *ctx->dumpStream << "index redo (kdxlne): (count=" << std::dec << redoLogRecord->fieldCnt << ") init header of newly allocated leaf block\n";
+                    *ctx->dumpStream << "index redo (kdxlne): (count=" << std::dec << redoLogRecord->fieldCnt <<
+                            ") init header of newly allocated leaf block\n";
                 }
 
                 ktbRedo(ctx, redoLogRecord, fieldPos, fieldSize);

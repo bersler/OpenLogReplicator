@@ -32,7 +32,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types/Types.h"
 
 namespace OpenLogReplicator {
-
     class XmlCtx final {
     public:
         TablePack<XdbXNm, TabRowIdKeyDefault, XdbXNmKey> xdbXNmPack;

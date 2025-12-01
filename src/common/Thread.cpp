@@ -24,10 +24,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "exception/RuntimeException.h"
 
 namespace OpenLogReplicator {
-    Thread::Thread(Ctx* newCtx, std::string newAlias) :
+    Thread::Thread(Ctx* newCtx, std::string newAlias):
             ctx(newCtx),
-            alias(std::move(newAlias)) {
-    }
+            alias(std::move(newAlias)) {}
 
     void Thread::wakeUp() {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::THREADS))) {

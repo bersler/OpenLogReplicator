@@ -47,7 +47,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Metadata::Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, Scn newStartScn,
-                       Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel) :
+                       Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel):
             schema(new Schema(newCtx, newLocales)),
             ctx(newCtx),
             locales(newLocales),
@@ -56,8 +56,7 @@ namespace OpenLogReplicator {
             startSequence(newStartSequence),
             startTime(std::move(newStartTime)),
             startTimeRel(newStartTimeRel),
-            conId(newConId) {
-    }
+            conId(newConId) {}
 
     Metadata::~Metadata() {
         if (schema != nullptr) {
@@ -216,17 +215,38 @@ namespace OpenLogReplicator {
             delete element;
         newSchemaElements.clear();
 
-        static const std::vector<std::string> sysSchemaTables {"CCOL\\$", "CDEF\\$", "COL\\$", "ECOL\\$"};
-        for (const auto& table : sysSchemaTables)
+        static const std::vector<std::string> sysSchemaTables{
+            "CCOL\\$",
+            "CDEF\\$",
+            "COL\\$",
+            "ECOL\\$"
+        };
+        for (const auto& table: sysSchemaTables)
             addElement("SYS", table, DbTable::OPTIONS::SYSTEM_TABLE, DbTable::OPTIONS::SCHEMA_TABLE);
 
-        static const std::vector<std::string> sysTables {"DEFERRED_STG\\$", "LOB\\$", "LOBCOMPPART\\$", "LOBFRAG\\$", "OBJ\\$", "TAB\\$", "TABPART\\$",
-                                                         "TABCOMPART\\$", "TABSUBPART\\$", "TS\\$", "USER\\$"};
-        for (const auto& table : sysTables)
+        static const std::vector<std::string> sysTables{
+            "DEFERRED_STG\\$",
+            "LOB\\$",
+            "LOBCOMPPART\\$",
+            "LOBFRAG\\$",
+            "OBJ\\$",
+            "TAB\\$",
+            "TABPART\\$",
+            "TABCOMPART\\$",
+            "TABSUBPART\\$",
+            "TS\\$",
+            "USER\\$"
+        };
+        for (const auto& table: sysTables)
             addElement("SYS", table, DbTable::OPTIONS::SYSTEM_TABLE);
 
-        static const std::vector<std::string> xdbTables {"XDB\\$TTSET", "X\\$NM.*", "X\\$PT.*", "X\\$QN.*"};
-        for (const auto& table : xdbTables)
+        static const std::vector<std::string> xdbTables{
+            "XDB\\$TTSET",
+            "X\\$NM.*",
+            "X\\$PT.*",
+            "X\\$QN.*"
+        };
+        for (const auto& table: xdbTables)
             addElement("XDB", table, DbTable::OPTIONS::SYSTEM_TABLE);
     }
 
@@ -246,7 +266,7 @@ namespace OpenLogReplicator {
         for (const SchemaElement* element: schemaElements) {
             if (ctx->isLogLevelAt(Ctx::LOG::DEBUG))
                 msgs.push_back("- creating table schema for owner: " + element->owner + " table: " + element->table + " options: " +
-                               std::to_string(static_cast<uint>(element->options)));
+                        std::to_string(static_cast<uint>(element->options)));
 
             schema->buildMaps(element->owner, element->table, element->keyList, element->key, element->tagType, element->tagList, element->tag,
                               element->condition, element->options, tablesUpdated, suppLogDbPrimary, suppLogDbAll, defaultCharacterMapId,
@@ -397,8 +417,8 @@ namespace OpenLogReplicator {
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "write scn: " + lastCheckpointScn.toString() + " time: " +
-                                                  std::to_string(lastCheckpointTime.getVal()) + " seq: " + lastSequence.toString() + " offset: " +
-                                                  lastCheckpointFileOffset.toString() + " name: " + checkpointName);
+                          std::to_string(lastCheckpointTime.getVal()) + " seq: " + lastSequence.toString() + " offset: " +
+                          lastCheckpointFileOffset.toString() + " name: " + checkpointName);
 
         if (!stateWrite(checkpointName, lastCheckpointScn, ss))
             ctx->warning(60018, "file: " + checkpointName + " - couldn't write checkpoint");
@@ -503,7 +523,7 @@ namespace OpenLogReplicator {
             for (const auto& msg: msgs) {
                 ctx->info(0, msg);
             }
-            for (const auto& [_, tableName] : tablesUpdated) {
+            for (const auto& [_, tableName]: tablesUpdated) {
                 ctx->info(0, "- found: " + tableName);
             }
         }

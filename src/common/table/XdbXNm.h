@@ -35,15 +35,13 @@ namespace OpenLogReplicator {
         std::string nmSpcUri;
         std::string id;
 
-        XdbXNm(RowId newRowId, std::string newNmSpcUri, std::string newId) :
+        XdbXNm(RowId newRowId, std::string newNmSpcUri, std::string newId):
                 rowId(newRowId),
                 nmSpcUri(std::move(newNmSpcUri)),
-                id(std::move(newId)) {
-        }
+                id(std::move(newId)) {}
 
-        explicit XdbXNm(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit XdbXNm(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const XdbXNm& other) const {
             return (other.rowId != rowId) || (other.nmSpcUri != nmSpcUri) || (other.id != id);
@@ -78,13 +76,11 @@ namespace OpenLogReplicator {
     public:
         std::string id;
 
-        explicit XdbXNmKey(std::string newId) :
-                id(std::move(newId)) {
-        }
+        explicit XdbXNmKey(std::string newId):
+                id(std::move(newId)) {}
 
-        explicit XdbXNmKey(const XdbXNm* xdbXNm) :
-                id(xdbXNm->id) {
-        }
+        explicit XdbXNmKey(const XdbXNm* xdbXNm):
+                id(xdbXNm->id) {}
 
         bool operator!=(const XdbXNmKey& other) const {
             return (other.id != id);

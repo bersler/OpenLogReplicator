@@ -21,7 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "State.h"
 
 namespace OpenLogReplicator {
-    State::State(Ctx* newCtx) :
-            ctx(newCtx) {
-    }
+    State::State(Ctx* newCtx):
+            ctx(newCtx) {}
 }

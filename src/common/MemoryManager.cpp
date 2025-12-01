@@ -28,10 +28,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "metrics/Metrics.h"
 
 namespace OpenLogReplicator {
-    MemoryManager::MemoryManager(Ctx* newCtx, std::string newAlias, std::string newSwapPath) :
+    MemoryManager::MemoryManager(Ctx* newCtx, std::string newAlias, std::string newSwapPath):
             Thread(newCtx, std::move(newAlias)),
-            swapPath(std::move(newSwapPath)) {
-    }
+            swapPath(std::move(newSwapPath)) {}
 
     MemoryManager::~MemoryManager() {
         cleanup(true);
@@ -256,7 +255,7 @@ namespace OpenLogReplicator {
 
         if (fileSize < (index + 1) * Ctx::MEMORY_CHUNK_SIZE)
             throw RuntimeException(50072, "swap file: " + fileName + " - too small file size: " + std::to_string(fileSize) + " to read chunk: " +
-                                          std::to_string(index));
+                                   std::to_string(index));
 
 #if __linux__
         if (!ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE))
@@ -314,7 +313,7 @@ namespace OpenLogReplicator {
             }
 
             throw RuntimeException(50072, "swap file: " + fileName + " - unswapping: " + std::to_string(index) + " not in range " +
-                                          std::to_string(sc->swappedMin) + "-" + std::to_string(sc->swappedMax));
+                                   std::to_string(sc->swappedMin) + "-" + std::to_string(sc->swappedMax));
         }
     }
 

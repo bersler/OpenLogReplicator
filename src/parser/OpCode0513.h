@@ -68,8 +68,8 @@ namespace OpenLogReplicator {
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
                 *ctx->dumpStream <<
-                                 "session number   = " << std::dec << sessionNumber << '\n' <<
-                                 "serial  number   = " << std::dec << serialNumber << '\n';
+                        "session number   = " << std::dec << sessionNumber << '\n' <<
+                        "serial  number   = " << std::dec << serialNumber << '\n';
             }
         }
 
@@ -232,7 +232,8 @@ namespace OpenLogReplicator {
             }
         }
 
-        static void attributeAuditSessionId(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize, Transaction* transaction) {
+        static void attributeAuditSessionId(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typePos fieldPos, typeSize fieldSize,
+                                            Transaction* transaction) {
             if (unlikely(fieldSize < 4))
                 throw RedoLogException(50061, "too short field 5.13.13: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 

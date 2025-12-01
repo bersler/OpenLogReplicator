@@ -40,17 +40,15 @@ namespace OpenLogReplicator {
         std::string flags;
         std::string id;
 
-        XdbXQn(RowId newRowId, std::string newNmSpcId, std::string newLocalName, std::string newFlags, std::string newId) :
+        XdbXQn(RowId newRowId, std::string newNmSpcId, std::string newLocalName, std::string newFlags, std::string newId):
                 rowId(newRowId),
                 nmSpcId(std::move(newNmSpcId)),
                 localName(std::move(newLocalName)),
                 flags(std::move(newFlags)),
-                id(std::move(newId)) {
-        }
+                id(std::move(newId)) {}
 
-        explicit XdbXQn(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit XdbXQn(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const XdbXQn& other) const {
             return (other.rowId != rowId) || (other.nmSpcId != nmSpcId) || (other.localName != localName) || (other.flags != flags) || (other.id != id);
@@ -85,13 +83,11 @@ namespace OpenLogReplicator {
     public:
         std::string id;
 
-        explicit XdbXQnKey(std::string newId) :
-                id(std::move(newId)) {
-        }
+        explicit XdbXQnKey(std::string newId):
+                id(std::move(newId)) {}
 
-        explicit XdbXQnKey(const XdbXQn* xdbXQn) :
-                id(xdbXQn->id) {
-        }
+        explicit XdbXQnKey(const XdbXQn* xdbXQn):
+                id(xdbXQn->id) {}
 
         bool operator!=(const XdbXQnKey& other) const {
             return (other.id != id);

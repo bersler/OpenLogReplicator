@@ -22,11 +22,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <utility>
 
 namespace OpenLogReplicator {
-    XmlCtx::XmlCtx(Ctx* newCtx, std::string newTokSuf, uint64_t newFlags) :
+    XmlCtx::XmlCtx(Ctx* newCtx, std::string newTokSuf, uint64_t newFlags):
             ctx(newCtx),
             tokSuf(std::move(newTokSuf)),
-            flags(newFlags) {
-    }
+            flags(newFlags) {}
 
     XmlCtx::~XmlCtx() {
         purgeDicts();

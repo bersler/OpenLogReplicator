@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     DbTable::DbTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, OPTIONS newOptions, std::string newOwner,
-                     std::string newName) :
+                     std::string newName):
             obj(newObj),
             dataObj(newDataObj),
             user(newUser),
@@ -38,7 +38,6 @@ namespace OpenLogReplicator {
             options(newOptions),
             owner(std::move(newOwner)),
             name(std::move(newName)) {
-
         systemTable = TABLE::NONE;
         if (this->owner == "SYS") {
             sys = true;
@@ -117,8 +116,8 @@ namespace OpenLogReplicator {
     void DbTable::addColumn(DbColumn* column) {
         if (unlikely(column->segCol != static_cast<typeCol>(columns.size() + 1)))
             throw RuntimeException(50002, "trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) +
-                                          ", dataobj: " + std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) +
-                                          ", segcol#: " + std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
+                                   ", dataobj: " + std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) +
+                                   ", segcol#: " + std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
 
         if (column->guard)
             guardSegNo = column->segCol - static_cast<typeCol>(1);
@@ -149,7 +148,7 @@ namespace OpenLogReplicator {
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CONDITION)))
             ctx->logTrace(Ctx::TRACE::CONDITION, "matchesCondition: table: " + owner + "." + name + ", condition: " + condition + ", result: " +
-                                                 std::to_string(result ? 1 : 0));
+                          std::to_string(result ? 1 : 0));
         return result;
     }
 
@@ -164,7 +163,7 @@ namespace OpenLogReplicator {
 
     std::ostream& operator<<(std::ostream& os, const DbTable& table) {
         os << "('" << table.owner << "'.'" << table.name << "', " << std::dec << table.obj << ", " << table.dataObj << ", " << table.cluCols << ", " <<
-           table.maxSegCol << ")\n";
+                table.maxSegCol << ")\n";
         for (const DbColumn* column: table.columns)
             os << "     - " << *column << '\n';
         return os;

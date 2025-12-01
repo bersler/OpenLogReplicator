@@ -37,9 +37,9 @@ namespace OpenLogReplicator {
         [[nodiscard]] virtual typeUnicode readMap2(uint64_t byte1, uint64_t byte2) const;
         [[nodiscard]] virtual typeUnicode readMap3(uint64_t byte2, uint64_t byte3) const;
         static typeUnicode16 unicode_map_JA16EUC_2b[(JA16EUC_b1_max - JA16EUC_b1_min + 1) *
-                                                    (JA16EUC_b2_max - JA16EUC_b2_min + 1)];
+                (JA16EUC_b2_max - JA16EUC_b2_min + 1)];
         static typeUnicode16 unicode_map_JA16EUC_3b[(JA16EUC_b2_max - JA16EUC_b2_min + 1) *
-                                                    (JA16EUC_b3_max - JA16EUC_b3_min + 1)];
+                (JA16EUC_b3_max - JA16EUC_b3_min + 1)];
 
     public:
         CharacterSetJA16EUC();

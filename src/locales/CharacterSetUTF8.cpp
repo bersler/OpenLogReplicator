@@ -20,9 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSetUTF8.h"
 
 namespace OpenLogReplicator {
-    CharacterSetUTF8::CharacterSetUTF8() :
-            CharacterSet("UTF8") {
-    }
+    CharacterSetUTF8::CharacterSetUTF8():
+            CharacterSet("UTF8") {}
 
     typeUnicode CharacterSetUTF8::decode(const Ctx* ctx, Xid xid, const uint8_t*& str, uint64_t& length) const {
         const uint64_t byte1 = *str++;

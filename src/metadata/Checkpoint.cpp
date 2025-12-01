@@ -36,12 +36,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, std::string newAlias, std::string newConfigFileName, time_t newConfigFileChange) :
+    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, std::string newAlias, std::string newConfigFileName, time_t newConfigFileChange):
             Thread(newCtx, std::move(newAlias)),
             metadata(newMetadata),
             configFileName(std::move(newConfigFileName)),
-            configFileChange(newConfigFileChange) {
-    }
+            configFileChange(newConfigFileChange) {}
 
     Checkpoint::~Checkpoint() {
         delete[] configFileBuffer;
@@ -74,7 +73,7 @@ namespace OpenLogReplicator {
 
             if (unlikely(configFileStat.st_size > CONFIG_FILE_MAX_SIZE || configFileStat.st_size == 0))
                 throw ConfigurationException(10004, "file: " + configFileName + " - wrong size: " +
-                                                    std::to_string(configFileStat.st_size));
+                                             std::to_string(configFileStat.st_size));
 
             delete[] configFileBuffer;
 
@@ -82,14 +81,13 @@ namespace OpenLogReplicator {
             const uint64_t bytesRead = read(fid, configFileBuffer, configFileStat.st_size);
             if (unlikely(bytesRead != static_cast<uint64_t>(configFileStat.st_size)))
                 throw ConfigurationException(10005, "file: " + configFileName + " - " + std::to_string(bytesRead) +
-                                                    " bytes read instead of " + std::to_string(configFileStat.st_size));
+                                             " bytes read instead of " + std::to_string(configFileStat.st_size));
             configFileBuffer[configFileStat.st_size] = 0;
 
             updateConfigFile();
 
             delete[] configFileBuffer;
             configFileBuffer = nullptr;
-
         } catch (ConfigurationException& ex) {
             ctx->error(ex.code, ex.msg);
         } catch (DataException& ex) {
@@ -103,11 +101,19 @@ namespace OpenLogReplicator {
         rapidjson::Document document;
         if (unlikely(document.Parse(configFileBuffer).HasParseError()))
             throw ConfigurationException(20001, "file: " + configFileName + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                                " - parse error: " + GetParseError_En(document.GetParseError()));
+                                         " - parse error: " + GetParseError_En(document.GetParseError()));
 
         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-            static const std::vector<std::string> documentNames {"version", "dump-path", "dump-raw-data", "dump-redo-log", "log-level", "trace", "source",
-                                                                 "target"};
+            static const std::vector<std::string> documentNames{
+                "version",
+                "dump-path",
+                "dump-raw-data",
+                "dump-redo-log",
+                "log-level",
+                "trace",
+                "source",
+                "target"
+            };
             Ctx::checkJsonFields(configFileName, document, documentNames);
         }
 
@@ -119,16 +125,32 @@ namespace OpenLogReplicator {
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(configFileName, document, "source");
         if (unlikely(sourceArrayJson.Size() != 1)) {
             throw ConfigurationException(30001, "bad JSON, invalid 'source' value: " + std::to_string(sourceArrayJson.Size()) +
-                                                " elements, expected: 1 element");
+                                         " elements, expected: 1 element");
         }
 
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(configFileName, sourceArrayJson, "source", j);
 
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sourceNames {"alias", "memory", "name", "reader", "flags", "state", "debug", "transaction-max-mb",
-                                                                   "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us", "arch-read-tries",
-                                                                   "redo-verify-delay-us", "refresh-interval-us", "arch", "filter"};
+                static const std::vector<std::string> sourceNames{
+                    "alias",
+                    "memory",
+                    "name",
+                    "reader",
+                    "flags",
+                    "state",
+                    "debug",
+                    "transaction-max-mb",
+                    "metrics",
+                    "format",
+                    "redo-read-sleep-us",
+                    "arch-read-sleep-us",
+                    "arch-read-tries",
+                    "redo-verify-delay-us",
+                    "refresh-interval-us",
+                    "arch",
+                    "filter"
+                };
                 Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
             }
 
@@ -141,7 +163,13 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> debugNames {"stop-log-switches", "stop-checkpoints", "stop-transactions", "owner", "table"};
+                    static const std::vector<std::string> debugNames{
+                        "stop-log-switches",
+                        "stop-checkpoints",
+                        "stop-transactions",
+                        "owner",
+                        "table"
+                    };
                     Ctx::checkJsonFields(configFileName, debugJson, debugNames);
                 }
 
@@ -164,7 +192,12 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> filterNames {"table", "skip-xid", "separator", "dump-xid"};
+                    static const std::vector<std::string> filterNames{
+                        "table",
+                        "skip-xid",
+                        "separator",
+                        "dump-xid"
+                    };
                     Ctx::checkJsonFields(configFileName, filterJson, filterNames);
                 }
 
@@ -260,7 +293,7 @@ namespace OpenLogReplicator {
                 {
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
                         ctx->logTrace(Ctx::TRACE::SLEEP, "Checkpoint:run lastCheckpointScn: " + metadata->lastCheckpointScn.toString() +
-                                                         " checkpointScn: " + metadata->checkpointScn.toString());
+                                      " checkpointScn: " + metadata->checkpointScn.toString());
 
                     contextSet(CONTEXT::MUTEX, REASON::CHECKPOINT_RUN);
                     std::unique_lock lck(mtx);
@@ -272,7 +305,6 @@ namespace OpenLogReplicator {
 
             if (ctx->softShutdown)
                 metadata->writeCheckpoint(this, true);
-
         } catch (RuntimeException& ex) {
             ctx->error(ex.code, ex.msg);
             ctx->stopHard();

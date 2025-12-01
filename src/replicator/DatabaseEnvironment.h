@@ -29,6 +29,7 @@ namespace OpenLogReplicator {
 
     class DatabaseEnvironment final {
         Ctx* ctx;
+
     public:
         OCIEnv* envhp{nullptr};
 

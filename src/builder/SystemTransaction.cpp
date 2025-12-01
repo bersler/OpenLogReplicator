@@ -46,22 +46,22 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SystemTransaction.h"
 
 namespace OpenLogReplicator {
-    SystemTransaction::SystemTransaction(Builder* newBuilder, Metadata* newMetadata) :
+    SystemTransaction::SystemTransaction(Builder* newBuilder, Metadata* newMetadata):
             ctx(newMetadata->ctx),
             builder(newBuilder),
             metadata(newMetadata) {
         ctx->logTrace(Ctx::TRACE::SYSTEM, "begin");
     }
 
-    template<class VALUE, SysCol::COLTYPE COLTYPE> void SystemTransaction::updateValue(VALUE& val, typeCol column, const DbTable* table, FileOffset fileOffset,
-            int defVal, uint maxLength) {
+    template<class VALUE, SysCol::COLTYPE COLTYPE>
+    void SystemTransaction::updateValue(VALUE& val, typeCol column, const DbTable* table, FileOffset fileOffset, int defVal, uint maxLength) {
         if (builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
             builder->sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0) {
             char* retPtr;
             if (unlikely(table->columns[column]->type != COLTYPE))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                              table->columns[column]->name + " type found " + std::to_string(static_cast<uint>(table->columns[column]->type)) +
-                                              " offset: " + fileOffset.toString());
+                                       table->columns[column]->name + " type found " + std::to_string(static_cast<uint>(table->columns[column]->type)) +
+                                       " offset: " + fileOffset.toString());
 
             if constexpr (COLTYPE == SysCol::COLTYPE::NUMBER) {
                 builder->parseNumber(builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
@@ -69,25 +69,25 @@ namespace OpenLogReplicator {
                 builder->valueBuffer[builder->valueSize] = 0;
                 if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                     throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                                  table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
+                                           table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
 
                 VALUE newVal;
                 if constexpr (std::is_same_v<VALUE, int> || std::is_same_v<VALUE, int16_t> || std::is_same_v<VALUE, int32_t> ||
-                              std::is_same_v<VALUE, int64_t>) {
+                        std::is_same_v<VALUE, int64_t>) {
                     if (unlikely(builder->valueSize == 0))
                         throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                                      table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
+                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
                     newVal = static_cast<VALUE>(strtol(builder->valueBuffer, &retPtr, 10));
                 } else if constexpr (std::is_same_v<VALUE, uint> || std::is_same_v<VALUE, uint16_t> || std::is_same_v<VALUE, uint32_t> ||
-                                     std::is_same_v<VALUE, uint64_t>) {
+                        std::is_same_v<VALUE, uint64_t>) {
                     if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                         throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                                      table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
+                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
                     newVal = strtoul(builder->valueBuffer, &retPtr, 10);
                 } else if constexpr (std::is_same_v<VALUE, IntX>) {
                     if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                         throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                                                      table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
+                                               table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
 
                     std::string err;
                     newVal.setStr(builder->valueBuffer, builder->valueSize, err);
@@ -98,10 +98,10 @@ namespace OpenLogReplicator {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM))) {
                     if constexpr (std::is_same_v<VALUE, IntX>)
                         ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> " +
-                                                          newVal.toString() + ")");
+                                      newVal.toString() + ")");
                     else
                         ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> " +
-                                                          std::to_string(newVal) + ")");
+                                      std::to_string(newVal) + ")");
                 }
                 val = newVal;
             } else if constexpr (COLTYPE == SysCol::COLTYPE::RAW) {
@@ -110,8 +110,8 @@ namespace OpenLogReplicator {
                 VALUE newVal(builder->valueBuffer, builder->valueSize);
                 if (unlikely(builder->valueSize > maxLength))
                     throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
-                                                  table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
-                                                  fileOffset.toString());
+                                           table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
+                                           fileOffset.toString());
 
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
@@ -123,28 +123,28 @@ namespace OpenLogReplicator {
                 VALUE newVal(builder->valueBuffer, builder->valueSize);
                 if (unlikely(builder->valueSize > maxLength))
                     throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
-                                                  table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
-                                                  fileOffset.toString());
+                                           table->columns[column]->name + ", length " + std::to_string(builder->valueSize) + " offset: " +
+                                           fileOffset.toString());
 
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
                 val = newVal;
             }
         } else if (builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr ||
-                   builder->values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
+                builder->values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM))) {
                 if constexpr (std::is_same_v<VALUE, IntX>)
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL) defVal: " +
-                                                      std::to_string(defVal));
+                                  std::to_string(defVal));
                 else if constexpr (std::is_same_v<VALUE, std::string>)
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> NULL) defVal: " + std::to_string(defVal));
                 else
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + std::to_string(val) + " -> NULL) defVal: " +
-                                                      std::to_string(defVal));
+                                  std::to_string(defVal));
             }
             if constexpr (std::is_same_v<VALUE, int> || std::is_same_v<VALUE, int16_t> || std::is_same_v<VALUE, int32_t> || std::is_same_v<VALUE, int64_t> ||
-                          std::is_same_v<VALUE, uint> || std::is_same_v<VALUE, uint16_t> || std::is_same_v<VALUE, uint32_t> ||
-                                  std::is_same_v<VALUE, uint64_t> || std::is_same_v<VALUE, IntX>) {
+                    std::is_same_v<VALUE, uint> || std::is_same_v<VALUE, uint16_t> || std::is_same_v<VALUE, uint32_t> ||
+                    std::is_same_v<VALUE, uint64_t> || std::is_same_v<VALUE, IntX>) {
                 val = defVal;
             } else if constexpr (std::is_same_v<VALUE, std::string>) {
                 val.assign("");
@@ -152,7 +152,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    template<class TABLE> void SystemTransaction::updateValues(const DbTable* table, TABLE* row, typeCol column, FileOffset fileOffset) {
+    template<class TABLE>
+    void SystemTransaction::updateValues(const DbTable* table, TABLE* row, typeCol column, FileOffset fileOffset) {
         if constexpr (std::is_same_v<TABLE, SysCCol>) {
             if (table->columns[column]->name == "CON#") {
                 updateValue<typeCon, SysCol::COLTYPE::NUMBER>(row->con, column, table, fileOffset);
@@ -285,7 +286,7 @@ namespace OpenLogReplicator {
             } else if (table->columns[column]->name == "TS#") {
                 updateValue<typeTs, SysCol::COLTYPE::NUMBER>(row->ts, column, table, fileOffset);
             } else if (table->columns[column]->name == "CLUCOLS") {
-                updateValue<typeCol, SysCol::COLTYPE::NUMBER> (row->cluCols, column, table, fileOffset);
+                updateValue<typeCol, SysCol::COLTYPE::NUMBER>(row->cluCols, column, table, fileOffset);
             } else if (table->columns[column]->name == "FLAGS") {
                 updateValue<IntX, SysCol::COLTYPE::NUMBER>(row->flags, column, table, fileOffset);
             } else if (table->columns[column]->name == "PROPERTY") {

@@ -31,7 +31,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../types/Types.h"
 
 namespace OpenLogReplicator {
-
     template<class Data, class KeyMap = TabRowIdKeyDefault, class KeyUnorderedMap = TabRowIdUnorderedKeyDefault>
     class TablePack final {
     public:
@@ -50,7 +49,7 @@ namespace OpenLogReplicator {
             if (likely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA))) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "forUpdate: missing " + Data::tableName() + " (ROWID: " + rowId.toString() + ") for update at offset: " +
-                                                      fileOffset.toString());
+                                  fileOffset.toString());
                 return nullptr;
             }
             auto data = new Data(rowId);
@@ -128,7 +127,7 @@ namespace OpenLogReplicator {
                 data = it->second;
                 if (unlikely(!ctx->isFlagSet(Ctx::REDO_FLAGS::ADAPTIVE_SCHEMA)))
                     throw RuntimeException(50022, "duplicate " + Data::tableName() + " (" + data->toString() + ") for insert at offset: " +
-                                                  fileOffset.toString());
+                                           fileOffset.toString());
                 dropKeys(data);
             } else {
                 data = new Data(rowId);
@@ -160,7 +159,7 @@ namespace OpenLogReplicator {
                 // Missing
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM)))
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "drop: missing " + Data::tableName() + " (ROWID: " + rowId.toString() + ") for delete at offset: " +
-                                                      fileOffset.toString());
+                                  fileOffset.toString());
                 return;
             }
 

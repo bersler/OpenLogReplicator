@@ -28,19 +28,17 @@ namespace OpenLogReplicator {
     public:
         RowId rowId;
         typeObj obj{0};
-        typeDataObj dataObj{0};        // NULL
+        typeDataObj dataObj{0}; // NULL
         typeObj bo{0};
 
-        SysTabPart(RowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
+        SysTabPart(RowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo):
                 rowId(newRowId),
                 obj(newObj),
                 dataObj(newDataObj),
-                bo(newBo) {
-        }
+                bo(newBo) {}
 
-        explicit SysTabPart(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysTabPart(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysTabPart& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.bo != bo);
@@ -80,15 +78,13 @@ namespace OpenLogReplicator {
         typeObj bo;
         typeObj obj;
 
-        SysTabPartKey(typeObj newBo, typeObj newObj) :
+        SysTabPartKey(typeObj newBo, typeObj newObj):
                 bo(newBo),
-                obj(newObj) {
-        }
+                obj(newObj) {}
 
-        explicit SysTabPartKey(const SysTabPart* sysTabPart) :
+        explicit SysTabPartKey(const SysTabPart* sysTabPart):
                 bo(sysTabPart->bo),
-                obj(sysTabPart->obj) {
-        }
+                obj(sysTabPart->obj) {}
 
         bool operator<(const SysTabPartKey other) const {
             if (bo < other.bo)

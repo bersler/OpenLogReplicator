@@ -31,20 +31,20 @@ namespace OpenLogReplicator {
                 throw RedoLogException(50061, "too short field ktucm: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             redoLogRecord->xid = Xid(redoLogRecord->usn,
-                                         ctx->read16(redoLogRecord->data(fieldPos + 0)),
-                                         ctx->read32(redoLogRecord->data(fieldPos + 4)));
+                                     ctx->read16(redoLogRecord->data(fieldPos + 0)),
+                                     ctx->read32(redoLogRecord->data(fieldPos + 4)));
             redoLogRecord->flg = *redoLogRecord->data(fieldPos + 16);
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
-                const uint16_t srt = ctx->read16(redoLogRecord->data(fieldPos + 8));  // TODO: find field position/size
+                const uint16_t srt = ctx->read16(redoLogRecord->data(fieldPos + 8)); // TODO: find field position/size
                 const uint32_t sta = ctx->read32(redoLogRecord->data(fieldPos + 12));
 
                 *ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex <<
-                                 static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
-                                 " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
-                                 " srt: " << std::dec << srt <<
-                                 " sta: " << std::dec << sta <<
-                                 " flg: 0x" << std::hex << redoLogRecord->flg << " ";
+                        static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
+                        " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
+                        " srt: " << std::dec << srt <<
+                        " sta: " << std::dec << sta <<
+                        " flg: 0x" << std::hex << redoLogRecord->flg << " ";
             }
         }
 
@@ -59,11 +59,11 @@ namespace OpenLogReplicator {
                 const uint8_t fbi = *redoLogRecord->data(fieldPos + 12);
 
                 *ctx->dumpStream << "ktucf redo:" <<
-                                 " uba: " << PRINTUBA(uba) <<
-                                 " ext: " << std::dec << ext <<
-                                 " spc: " << std::dec << spc <<
-                                 " fbi: " << std::dec << static_cast<uint>(fbi) <<
-                                 " ";
+                        " uba: " << PRINTUBA(uba) <<
+                        " ext: " << std::dec << ext <<
+                        " spc: " << std::dec << spc <<
+                        " fbi: " << std::dec << static_cast<uint>(fbi) <<
+                        " ";
             }
         }
 

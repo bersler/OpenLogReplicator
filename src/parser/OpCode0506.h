@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
                 const uint16_t flg = ctx->read16(redoLogRecord->data(fieldPos + 4));
 
                 *ctx->dumpStream << "ktuxvoff: 0x" << std::setfill('0') << std::setw(4) << std::hex << off << " " <<
-                                 " ktuxvflg: 0x" << std::setfill('0') << std::setw(4) << std::hex << flg << '\n';
+                        " ktuxvflg: 0x" << std::setfill('0') << std::setw(4) << std::hex << flg << '\n';
             }
         }
 

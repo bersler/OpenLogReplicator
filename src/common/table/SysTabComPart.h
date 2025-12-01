@@ -28,19 +28,17 @@ namespace OpenLogReplicator {
     public:
         RowId rowId;
         typeObj obj{0};
-        typeDataObj dataObj{0};        // NULL
+        typeDataObj dataObj{0}; // NULL
         typeObj bo{0};
 
-        SysTabComPart(RowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
+        SysTabComPart(RowId newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo):
                 rowId(newRowId),
                 obj(newObj),
                 dataObj(newDataObj),
-                bo(newBo) {
-        }
+                bo(newBo) {}
 
-        explicit SysTabComPart(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysTabComPart(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysTabComPart& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.bo != bo);
@@ -80,15 +78,13 @@ namespace OpenLogReplicator {
         typeObj bo;
         typeObj obj;
 
-        SysTabComPartKey(typeObj newBo, typeObj newObj) :
+        SysTabComPartKey(typeObj newBo, typeObj newObj):
                 bo(newBo),
-                obj(newObj) {
-        }
+                obj(newObj) {}
 
-        explicit SysTabComPartKey(SysTabComPart* sysTabComPart) :
+        explicit SysTabComPartKey(SysTabComPart* sysTabComPart):
                 bo(sysTabComPart->bo),
-                obj(sysTabComPart->obj) {
-        }
+                obj(sysTabComPart->obj) {}
 
         bool operator<(SysTabComPartKey other) const {
             if (bo < other.bo)
@@ -105,13 +101,11 @@ namespace OpenLogReplicator {
     public:
         typeObj obj;
 
-        explicit SysTabComPartObj(typeObj newObj) :
-                obj(newObj) {
-        }
+        explicit SysTabComPartObj(typeObj newObj):
+                obj(newObj) {}
 
-        explicit SysTabComPartObj(const SysTabComPart* sysTabComPart) :
-                obj(sysTabComPart->obj) {
-        }
+        explicit SysTabComPartObj(const SysTabComPart* sysTabComPart):
+                obj(sysTabComPart->obj) {}
 
         bool operator!=(const SysTabComPartObj other) const {
             return (other.obj != obj);

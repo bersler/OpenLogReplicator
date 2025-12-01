@@ -18,8 +18,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #define _LARGEFILE_SOURCE
+
 enum {
-_FILE_OFFSET_BITS = 64
+    _FILE_OFFSET_BITS = 64
 };
 
 #include <cerrno>
@@ -34,9 +35,8 @@ _FILE_OFFSET_BITS = 64
 #include "ReaderFilesystem.h"
 
 namespace OpenLogReplicator {
-    ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum) :
-            Reader(newCtx, std::move(newAlias), std::move(newDatabase), newGroup, newConfiguredBlockSum) {
-    }
+    ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string newDatabase, int newGroup, bool newConfiguredBlockSum):
+        Reader(newCtx, std::move(newAlias), std::move(newDatabase), newGroup, newConfiguredBlockSum) {}
 
     ReaderFilesystem::~ReaderFilesystem() {
         ReaderFilesystem::redoClose();
@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
         if ((fileSize & (Ctx::MIN_BLOCK_SIZE - 1)) != 0) {
             fileSize &= ~(Ctx::MIN_BLOCK_SIZE - 1);
             ctx->warning(10071, "file: " + fileName + " size is not a multiplication of " + std::to_string(Ctx::MIN_BLOCK_SIZE) + ", reading only " +
-                                std::to_string(fileSize) + " bytes ");
+                         std::to_string(fileSize) + " bytes ");
         }
 
 #if __linux__
@@ -111,7 +111,7 @@ namespace OpenLogReplicator {
             contextSet(CONTEXT::CPU);
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::FILE)))
                 ctx->logTrace(Ctx::TRACE::FILE, "read " + fileName + ", " + std::to_string(offset) + ", " + std::to_string(size) +
-                                                " returns " + std::to_string(bytes));
+                              " returns " + std::to_string(bytes));
 
             if (bytes > 0)
                 break;
@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
         // Maybe direct IO does not work
         if (bytes < 0 && !ctx->isFlagSet(Ctx::REDO_FLAGS::DIRECT_DISABLE)) {
             ctx->hint("if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " +
-                      std::to_string(static_cast<uint>(Ctx::REDO_FLAGS::DIRECT_DISABLE)));
+                    std::to_string(static_cast<uint>(Ctx::REDO_FLAGS::DIRECT_DISABLE)));
         }
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::PERFORMANCE))) {
@@ -153,7 +153,7 @@ namespace OpenLogReplicator {
         gid_t gid = getegid();
 
         ctx->hint("check mapping, failed to read: " + origPath + " mapped to: " + mappedPath + " run as uid: " + std::to_string(uid) +
-                  " gid: " + std::to_string(gid));
+                " gid: " + std::to_string(gid));
 
         while (!mappedPath.empty()) {
             std::string partialFileName;
@@ -208,7 +208,7 @@ namespace OpenLogReplicator {
             permissions << std::oct << fileStat.st_mode;
 
             ctx->hint("- path: " + mappedPath + " - type: " + fileType + " permissions: " + permissions.str() +
-                      " uid: " + std::to_string(fileStat.st_uid) + " gid: " + std::to_string(fileStat.st_gid));
+                    " uid: " + std::to_string(fileStat.st_uid) + " gid: " + std::to_string(fileStat.st_gid));
 
             DIR* dir = opendir(mappedPath.c_str());
             if (dir == nullptr) {

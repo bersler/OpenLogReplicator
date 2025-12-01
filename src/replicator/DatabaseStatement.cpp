@@ -24,9 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseStatement.h"
 
 namespace OpenLogReplicator {
-    DatabaseStatement::DatabaseStatement(DatabaseConnection* newConn) :
+    DatabaseStatement::DatabaseStatement(DatabaseConnection* newConn):
             conn(newConn) {
-
         conn->env->checkErr(conn->errhp, OCIHandleAlloc(conn->env->envhp, reinterpret_cast<dvoid**>(&stmthp), OCI_HTYPE_STMT,
                                                         0, nullptr));
     }
@@ -59,7 +58,7 @@ namespace OpenLogReplicator {
 
     int DatabaseStatement::executeQuery() {
         const sword status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, 1, 0, nullptr, nullptr,
-                                      OCI_DEFAULT); // COMMIT_ON_SUCCESS
+                                            OCI_DEFAULT); // COMMIT_ON_SUCCESS
         executed = true;
         if (status == OCI_NO_DATA)
             return 0;

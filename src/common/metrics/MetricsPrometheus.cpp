@@ -21,10 +21,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../Ctx.h"
 
 namespace OpenLogReplicator {
-    MetricsPrometheus::MetricsPrometheus(TAG_NAMES newTagNames, std::string newBind) :
+    MetricsPrometheus::MetricsPrometheus(TAG_NAMES newTagNames, std::string newBind):
             Metrics(newTagNames),
-            bind(std::move(newBind)) {
-    }
+            bind(std::move(newBind)) {}
 
     MetricsPrometheus::~MetricsPrometheus() {
         if (exposer != nullptr) {
@@ -39,33 +38,46 @@ namespace OpenLogReplicator {
         registry = std::make_shared<prometheus::Registry>();
 
         // bytes_confirmed
-        bytesConfirmed = &prometheus::BuildCounter().Name("bytes_confirmed").Help("Number of bytes confirmed by output").Register(*registry);
+        bytesConfirmed = &prometheus::BuildCounter().Name("bytes_confirmed")
+                                                    .Help("Number of bytes confirmed by output")
+                                                    .Register(*registry);
         bytesConfirmedCounter = &bytesConfirmed->Add({});
 
         // bytes_parsed
-        bytesParsed = &prometheus::BuildCounter().Name("bytes_parsed").Help("Number of bytes parsed containing redo log data").Register(*registry);
+        bytesParsed = &prometheus::BuildCounter().Name("bytes_parsed")
+                                                 .Help("Number of bytes parsed containing redo log data")
+                                                 .Register(*registry);
         bytesParsedCounter = &bytesParsed->Add({});
 
         // bytes_read
-        bytesRead = &prometheus::BuildCounter().Name("bytes_read").Help("Number of bytes read from redo log files").Register(*registry);
+        bytesRead = &prometheus::BuildCounter().Name("bytes_read")
+                                               .Help("Number of bytes read from redo log files")
+                                               .Register(*registry);
         bytesReadCounter = &bytesRead->Add({});
 
         // bytes_sent
-        bytesSent = &prometheus::BuildCounter().Name("bytes_sent").Help("Number of bytes sent to output (for example to Kafka or network writer)")
-                .Register(*registry);
+        bytesSent = &prometheus::BuildCounter().Name("bytes_sent")
+                                               .Help("Number of bytes sent to output (for example to Kafka or network writer)")
+                                               .Register(*registry);
         bytesSentCounter = &bytesSent->Add({});
 
         // checkpoints
-        checkpoints = &prometheus::BuildCounter().Name("checkpoints").Help("Number of checkpoint records").Register(*registry);
+        checkpoints = &prometheus::BuildCounter().Name("checkpoints")
+                                                 .Help("Number of checkpoint records")
+                                                 .Register(*registry);
         checkpointsOutCounter = &checkpoints->Add({{"filter", "out"}});
         checkpointsSkipCounter = &checkpoints->Add({{"filter", "skip"}});
 
         // checkpoint_lag
-        checkpointLag = &prometheus::BuildGauge().Name("checkpoint_lag").Help("Checkpoint processing lag in seconds").Register(*registry);
+        checkpointLag = &prometheus::BuildGauge().Name("checkpoint_lag")
+                                                 .Help("Checkpoint processing lag in seconds")
+                                                 .Register(*registry);
         checkpointLagGauge = &checkpointLag->Add({});
 
         // ddl_ops
-        ddlOps = &prometheus::BuildCounter().Name("ddl_ops").Help("Number of DDL operations").Register(*registry);
+        ddlOps = &prometheus::BuildCounter().Name("ddl_ops")
+                                            .Help("Number of DDL operations")
+                                            .Register(*registry);
         ddlOpsAlterCounter = &ddlOps->Add({{"type", "alter"}});
         ddlOpsCreateCounter = &ddlOps->Add({{"type", "create"}});
         ddlOpsDropCounter = &ddlOps->Add({{"type", "drop"}});
@@ -74,44 +86,70 @@ namespace OpenLogReplicator {
         ddlOpsTruncateCounter = &ddlOps->Add({{"type", "truncate"}});
 
         // dml_ops
-        dmlOps = &prometheus::BuildCounter().Name("dml_ops").Help("Number of DML operations").Register(*registry);
-        dmlOpsDeleteOutCounter = &dmlOps->Add({{"type",   "delete"},
-                                               {"filter", "out"}});
-        dmlOpsInsertOutCounter = &dmlOps->Add({{"type",   "insert"},
-                                               {"filter", "out"}});
-        dmlOpsUpdateOutCounter = &dmlOps->Add({{"type",   "update"},
-                                               {"filter", "out"}});
-        dmlOpsDeleteSkipCounter = &dmlOps->Add({{"type",   "delete"},
-                                                {"filter", "skip"}});
-        dmlOpsInsertSkipCounter = &dmlOps->Add({{"type",   "insert"},
-                                                {"filter", "skip"}});
-        dmlOpsUpdateSkipCounter = &dmlOps->Add({{"type",   "update"},
-                                                {"filter", "skip"}});
+        dmlOps = &prometheus::BuildCounter().Name("dml_ops")
+                                            .Help("Number of DML operations")
+                                            .Register(*registry);
+        dmlOpsDeleteOutCounter = &dmlOps->Add({
+            {"type", "delete"},
+            {"filter", "out"}
+        });
+        dmlOpsInsertOutCounter = &dmlOps->Add({
+            {"type", "insert"},
+            {"filter", "out"}
+        });
+        dmlOpsUpdateOutCounter = &dmlOps->Add({
+            {"type", "update"},
+            {"filter", "out"}
+        });
+        dmlOpsDeleteSkipCounter = &dmlOps->Add({
+            {"type", "delete"},
+            {"filter", "skip"}
+        });
+        dmlOpsInsertSkipCounter = &dmlOps->Add({
+            {"type", "insert"},
+            {"filter", "skip"}
+        });
+        dmlOpsUpdateSkipCounter = &dmlOps->Add({
+            {"type", "update"},
+            {"filter", "skip"}
+        });
 
         // log_switches
-        logSwitches = &prometheus::BuildCounter().Name("log_switches").Help("Number of redo log switches").Register(*registry);
+        logSwitches = &prometheus::BuildCounter().Name("log_switches")
+                                                 .Help("Number of redo log switches")
+                                                 .Register(*registry);
         logSwitchesOnlineCounter = &logSwitches->Add({{"type", "online"}});
         logSwitchesArchivedCounter = &logSwitches->Add({{"type", "archived"}});
 
         // log_switches_lag
-        logSwitchesLag = &prometheus::BuildGauge().Name("log_switches_lag").Help("Redo log file processing lag in seconds").Register(*registry);
+        logSwitchesLag = &prometheus::BuildGauge().Name("log_switches_lag")
+                                                  .Help("Redo log file processing lag in seconds")
+                                                  .Register(*registry);
         logSwitchesLagOnlineGauge = &logSwitchesLag->Add({{"type", "online"}});
         logSwitchesLagArchivedGauge = &logSwitchesLag->Add({{"type", "archived"}});
 
         // messages_confirmed
-        messagesConfirmed = &prometheus::BuildCounter().Name("messages_confirmed").Help("Number of messages confirmed by output").Register(*registry);
+        messagesConfirmed = &prometheus::BuildCounter().Name("messages_confirmed")
+                                                       .Help("Number of messages confirmed by output")
+                                                       .Register(*registry);
         messagesConfirmedCounter = &messagesConfirmed->Add({});
 
         // memory_allocated_mb
-        memoryAllocatedMb = &prometheus::BuildGauge().Name("memory_allocated_mb").Help("Amount of allocated memory in MB").Register(*registry);
+        memoryAllocatedMb = &prometheus::BuildGauge().Name("memory_allocated_mb")
+                                                     .Help("Amount of allocated memory in MB")
+                                                     .Register(*registry);
         memoryAllocatedMbGauge = &memoryAllocatedMb->Add({});
 
         // memory_used_total_mb
-        memoryUsedTotalMb = &prometheus::BuildGauge().Name("memory_used_total_mb").Help("Total used memory").Register(*registry);
+        memoryUsedTotalMb = &prometheus::BuildGauge().Name("memory_used_total_mb")
+                                                     .Help("Total used memory")
+                                                     .Register(*registry);
         memoryUsedTotalMbGauge = &memoryUsedTotalMb->Add({});
 
         // memory_used_mb
-        memoryUsedMb = &prometheus::BuildGauge().Name("memory_used_mb").Help("Memory used by module: builder").Register(*registry);
+        memoryUsedMb = &prometheus::BuildGauge().Name("memory_used_mb")
+                                                 .Help("Memory used by module: builder")
+                                                 .Register(*registry);
         memoryUsedMbBuilderGauge = &memoryUsedMb->Add({{"type", "builder"}});
         memoryUsedMbMiscGauge = &memoryUsedMb->Add({{"type", "misc"}});
         memoryUsedMbParserGauge = &memoryUsedMb->Add({{"type", "parser"}});
@@ -120,43 +158,63 @@ namespace OpenLogReplicator {
         memoryUsedMbWriterGauge = &memoryUsedMb->Add({{"type", "writer"}});
 
         // messages_sent
-        messagesSent = &prometheus::BuildCounter().Name("messages_sent").Help("Number of messages sent to output (for example to Kafka or network writer)")
-                .Register(*registry);
+        messagesSent = &prometheus::BuildCounter().Name("messages_sent")
+                                                  .Help("Number of messages sent to output (for example to Kafka or network writer)")
+                                                  .Register(*registry);
         messagesSentCounter = &messagesSent->Add({});
 
         // swap_operations_mb
-        swapOperationsMb = &prometheus::BuildCounter().Name("swap_operations_mb").Help("Operations on swap space in MB").Register(*registry);
+        swapOperationsMb = &prometheus::BuildCounter().Name("swap_operations_mb")
+                                                      .Help("Operations on swap space in MB")
+                                                      .Register(*registry);
         swapOperationsMbDiscardCounter = &swapOperationsMb->Add({{"type", "discard"}});
         swapOperationsMbReadCounter = &swapOperationsMb->Add({{"type", "read"}});
         swapOperationsMbWriteCounter = &swapOperationsMb->Add({{"type", "write"}});
 
         // swap_usage_mb
-        swapUsageMb = &prometheus::BuildGauge().Name("swap_usage_mb").Help("Swap usage in MB").Register(*registry);
+        swapUsageMb = &prometheus::BuildGauge().Name("swap_usage_mb")
+                                               .Help("Swap usage in MB")
+                                               .Register(*registry);
         swapUsageMbGauge = &swapUsageMb->Add({});
 
-        memoryUsedTotalMb = &prometheus::BuildGauge().Name("memory_used_total_mb").Help("Total used memory").Register(*registry);
+        memoryUsedTotalMb = &prometheus::BuildGauge().Name("memory_used_total_mb")
+                                                     .Help("Total used memory")
+                                                     .Register(*registry);
         memoryUsedTotalMbGauge = &memoryUsedTotalMb->Add({});
 
         // transactions
-        transactions = &prometheus::BuildCounter().Name("dml_ops").Help("Number of transactions").Register(*registry);
-        transactionsCommitOutCounter = &transactions->Add({{"type",   "commit"},
-                                                           {"filter", "out"}});
-        transactionsRollbackOutCounter = &transactions->Add({{"type",   "rollback"},
-                                                             {"filter", "out"}});
-        transactionsCommitPartialCounter = &transactions->Add({{"type",   "commit"},
-                                                               {"filter", "partial"}});
-        transactionsRollbackPartialCounter = &transactions->Add({{"type",   "rollback"},
-                                                                 {"filter", "partial"}});
-        transactionsCommitSkipCounter = &transactions->Add({{"type",   "commit"},
-                                                            {"filter", "skip"}});
-        transactionsRollbackSkipCounter = &transactions->Add({{"type",   "rollback"},
-                                                              {"filter", "skip"}});
+        transactions = &prometheus::BuildCounter().Name("dml_ops")
+                                                  .Help("Number of transactions")
+                                                  .Register(*registry);
+        transactionsCommitOutCounter = &transactions->Add({
+            {"type", "commit"},
+            {"filter", "out"}
+        });
+        transactionsRollbackOutCounter = &transactions->Add({
+            {"type", "rollback"},
+            {"filter", "out"}
+        });
+        transactionsCommitPartialCounter = &transactions->Add({
+            {"type", "commit"},
+            {"filter", "partial"}
+        });
+        transactionsRollbackPartialCounter = &transactions->Add({
+            {"type", "rollback"},
+            {"filter", "partial"}
+        });
+        transactionsCommitSkipCounter = &transactions->Add({
+            {"type", "commit"},
+            {"filter", "skip"}
+        });
+        transactionsRollbackSkipCounter = &transactions->Add({
+            {"type", "rollback"},
+            {"filter", "skip"}
+        });
 
         exposer->RegisterCollectable(registry);
     }
 
-    void MetricsPrometheus::shutdown() {
-    }
+    void MetricsPrometheus::shutdown() {}
 
     // bytes_confirmed
     void MetricsPrometheus::emitBytesConfirmed(uint64_t counter) {
@@ -250,10 +308,12 @@ namespace OpenLogReplicator {
         if (it != dmlOpsDeleteOutCounterMap.end())
             cnt = it->second;
         else
-            cnt = &dmlOps->Add({{"type",   "delete"},
-                                {"filter", "out"},
-                                {"owner",  owner},
-                                {"table",  table}});
+            cnt = &dmlOps->Add({
+                {"type", "delete"},
+                {"filter", "out"},
+                {"owner", owner},
+                {"table", table}
+            });
 
         cnt->Increment(counter);
     }
@@ -266,10 +326,12 @@ namespace OpenLogReplicator {
         if (it != dmlOpsInsertOutCounterMap.end())
             cnt = it->second;
         else
-            cnt = &dmlOps->Add({{"type",   "insert"},
-                                {"filter", "out"},
-                                {"owner",  owner},
-                                {"table",  table}});
+            cnt = &dmlOps->Add({
+                {"type", "insert"},
+                {"filter", "out"},
+                {"owner", owner},
+                {"table", table}
+            });
 
         cnt->Increment(counter);
     }
@@ -282,10 +344,12 @@ namespace OpenLogReplicator {
         if (it != dmlOpsUpdateOutCounterMap.end())
             cnt = it->second;
         else
-            cnt = &dmlOps->Add({{"type",   "update"},
-                                {"filter", "out"},
-                                {"owner",  owner},
-                                {"table",  table}});
+            cnt = &dmlOps->Add({
+                {"type", "update"},
+                {"filter", "out"},
+                {"owner", owner},
+                {"table", table}
+            });
 
         cnt->Increment(counter);
     }
@@ -298,10 +362,12 @@ namespace OpenLogReplicator {
         if (it != dmlOpsDeleteSkipCounterMap.end())
             cnt = it->second;
         else
-            cnt = &dmlOps->Add({{"type",   "delete"},
-                                {"filter", "skip"},
-                                {"owner",  owner},
-                                {"table",  table}});
+            cnt = &dmlOps->Add({
+                {"type", "delete"},
+                {"filter", "skip"},
+                {"owner", owner},
+                {"table", table}
+            });
 
         cnt->Increment(counter);
     }
@@ -314,10 +380,12 @@ namespace OpenLogReplicator {
         if (it != dmlOpsInsertSkipCounterMap.end())
             cnt = it->second;
         else
-            cnt = &dmlOps->Add({{"type",   "insert"},
-                                {"filter", "skip"},
-                                {"owner",  owner},
-                                {"table",  table}});
+            cnt = &dmlOps->Add({
+                {"type", "insert"},
+                {"filter", "skip"},
+                {"owner", owner},
+                {"table", table}
+            });
 
         cnt->Increment(counter);
     }
@@ -330,10 +398,12 @@ namespace OpenLogReplicator {
         if (it != dmlOpsUpdateSkipCounterMap.end())
             cnt = it->second;
         else
-            cnt = &dmlOps->Add({{"type",   "update"},
-                                {"filter", "skip"},
-                                {"owner",  owner},
-                                {"table",  table}});
+            cnt = &dmlOps->Add({
+                {"type", "update"},
+                {"filter", "skip"},
+                {"owner", owner},
+                {"table", table}
+            });
 
         cnt->Increment(counter);
     }

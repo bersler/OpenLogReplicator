@@ -30,10 +30,9 @@ namespace OpenLogReplicator {
         int group;
         std::string path;
 
-        RedoLog(int newGroup, std::string newPath) :
-                group(newGroup),
-                path(std::move(newPath)) {
-        }
+        RedoLog(int newGroup, std::string newPath):
+            group(newGroup),
+            path(std::move(newPath)) {}
 
         bool operator<(const RedoLog& other) const {
             if (group < other.group)
