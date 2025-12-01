@@ -29,84 +29,86 @@ namespace OpenLogReplicator {
     const char Data::map64L[65]{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
 
     const char Data::map64R[256]{
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0, 63,
-            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, 0, 0, 0,
-            0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0,
-            0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-            41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0, 63,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0,
+        0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
 
     const int64_t Data::cumDays[12]{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
     const int64_t Data::cumDaysLeap[12]{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
 
     bool Data::parseTimezone(std::string str, int64_t& out) {
-        if (str == "Etc/GMT-14") str = "-14:00"; else
-        if (str == "Etc/GMT-13") str = "-13:00"; else
-        if (str == "Etc/GMT-12") str = "-12:00"; else
-        if (str == "Etc/GMT-11") str = "-11:00"; else
-        if (str == "HST") str = "-10:00"; else
-        if (str == "Etc/GMT-10") str = "-10:00"; else
-        if (str == "Etc/GMT-9") str = "-09:00"; else
-        if (str == "PST") str = "-08:00"; else
-        if (str == "PST8PDT") str = "-08:00"; else
-        if (str == "Etc/GMT-8") str = "-08:00"; else
-        if (str == "MST") str = "-07:00"; else
-        if (str == "MST7MDT") str = "-07:00"; else
-        if (str == "Etc/GMT-7") str = "-07:00"; else
-        if (str == "CST") str = "-06:00"; else
-        if (str == "CST6CDT") str = "-06:00"; else
-        if (str == "Etc/GMT-6") str = "-06:00"; else
-        if (str == "EST") str = "-05:00"; else
-        if (str == "EST5EDT") str = "-05:00"; else
-        if (str == "Etc/GMT-5") str = "-05:00"; else
-        if (str == "Etc/GMT-4") str = "-04:00"; else
-        if (str == "Etc/GMT-3") str = "-03:00"; else
-        if (str == "Etc/GMT-2") str = "-02:00"; else
-        if (str == "Etc/GMT-1") str = "-01:00"; else
-        if (str == "GMT") str = "+00:00"; else
-        if (str == "Etc/GMT") str = "+00:00"; else
-        if (str == "Greenwich") str = "+00:00"; else
-        if (str == "Etc/Greenwich") str = "+00:00"; else
-        if (str == "GMT0") str = "+00:00"; else
-        if (str == "Etc/GMT0") str = "+00:00"; else
-        if (str == "GMT+0") str = "+00:00"; else
-        if (str == "Etc/GMT-0") str = "+00:00"; else
-        if (str == "GMT+0") str = "+00:00"; else
-        if (str == "Etc/GMT+0") str = "+00:00"; else
-        if (str == "UTC") str = "+00:00"; else
-        if (str == "Etc/UTC") str = "+00:00"; else
-        if (str == "UCT") str = "+00:00"; else
-        if (str == "Etc/UCT") str = "+00:00"; else
-        if (str == "Universal") str = "+00:00"; else
-        if (str == "Etc/Universal") str = "+00:00"; else
-        if (str == "WET") str = "+00:00"; else
-        if (str == "MET") str = "+01:00"; else
-        if (str == "CET") str = "+01:00"; else
-        if (str == "Etc/GMT+1") str = "+01:00"; else
-        if (str == "EET") str = "+02:00"; else
-        if (str == "Etc/GMT+2") str = "+02:00"; else
-        if (str == "Etc/GMT+3") str = "+03:00"; else
-        if (str == "Etc/GMT+4") str = "+04:00"; else
-        if (str == "Etc/GMT+5") str = "+05:00"; else
-        if (str == "Etc/GMT+6") str = "+06:00"; else
-        if (str == "Etc/GMT+7") str = "+07:00"; else
-        if (str == "PRC") str = "+08:00"; else
-        if (str == "ROC") str = "+08:00"; else
-        if (str == "Etc/GMT+8") str = "+08:00"; else
-        if (str == "Etc/GMT+9") str = "+09:00"; else
-        if (str == "Etc/GMT+10") str = "+10:00"; else
-        if (str == "Etc/GMT+11") str = "+11:00"; else
-        if (str == "Etc/GMT+12") str = "+12:00";
+        if (str == "Etc/GMT-14") str = "-14:00";
+        else if (str == "Etc/GMT-13") str = "-13:00";
+        else if (str == "Etc/GMT-12") str = "-12:00";
+        else if (str == "Etc/GMT-11") str = "-11:00";
+        else if (str == "HST") str = "-10:00";
+        else if (str == "Etc/GMT-10") str = "-10:00";
+        else if (str == "Etc/GMT-9") str = "-09:00";
+        else if (str == "PST") str = "-08:00";
+        else if (str == "PST8PDT") str = "-08:00";
+        else if (str == "Etc/GMT-8") str = "-08:00";
+        else if (str == "MST") str = "-07:00";
+        else if (str == "MST7MDT") str = "-07:00";
+        else if (str == "Etc/GMT-7") str = "-07:00";
+        else if (str == "CST") str = "-06:00";
+        else if (str == "CST6CDT") str = "-06:00";
+        else if (str == "Etc/GMT-6") str = "-06:00";
+        else if (str == "EST") str = "-05:00";
+        else if (str == "EST5EDT") str = "-05:00";
+        else if (str == "Etc/GMT-5") str = "-05:00";
+        else if (str == "Etc/GMT-4") str = "-04:00";
+        else if (str == "Etc/GMT-3") str = "-03:00";
+        else if (str == "Etc/GMT-2") str = "-02:00";
+        else if (str == "Etc/GMT-1") str = "-01:00";
+        else if (str == "GMT") str = "+00:00";
+        else if (str == "Etc/GMT") str = "+00:00";
+        else if (str == "Greenwich") str = "+00:00";
+        else if (str == "Etc/Greenwich") str = "+00:00";
+        else if (str == "GMT0") str = "+00:00";
+        else if (str == "Etc/GMT0") str = "+00:00";
+        else if (str == "GMT+0") str = "+00:00";
+        else if (str == "Etc/GMT-0") str = "+00:00";
+        else if (str == "GMT+0") str = "+00:00";
+        else if (str == "Etc/GMT+0") str = "+00:00";
+        else if (str == "UTC") str = "+00:00";
+        else if (str == "Etc/UTC") str = "+00:00";
+        else if (str == "UCT") str = "+00:00";
+        else if (str == "Etc/UCT") str = "+00:00";
+        else if (str == "Universal") str = "+00:00";
+        else if (str == "Etc/Universal") str = "+00:00";
+        else if (str == "WET") str = "+00:00";
+        else if (str == "MET") str = "+01:00";
+        else if (str == "CET") str = "+01:00";
+        else if (str == "Etc/GMT+1") str = "+01:00";
+        else if (str == "EET") str = "+02:00";
+        else if (str == "Etc/GMT+2") str = "+02:00";
+        else if (str == "Etc/GMT+3") str = "+03:00";
+        else if (str == "Etc/GMT+4") str = "+04:00";
+        else if (str == "Etc/GMT+5") str = "+05:00";
+        else if (str == "Etc/GMT+6") str = "+06:00";
+        else if (str == "Etc/GMT+7") str = "+07:00";
+        else if (str == "PRC") str = "+08:00";
+        else if (str == "ROC") str = "+08:00";
+        else if (str == "Etc/GMT+8") str = "+08:00";
+        else if (str == "Etc/GMT+9") str = "+09:00";
+        else if (str == "Etc/GMT+10") str = "+10:00";
+        else if (str == "Etc/GMT+11") str = "+11:00";
+        else
+            if (str == "Etc/GMT+12") str = "+12:00";
 
         if (str.length() == 5) {
             if (str[1] >= '0' && str[1] <= '9' &&
@@ -373,12 +375,12 @@ namespace OpenLogReplicator {
                 case 5:
                 case 6:
                 case 7:
-                    //case 8: // \b
-                    //case 9: // \t
-                    //case 10: // \n
+                //case 8: // \b
+                //case 9: // \t
+                //case 10: // \n
                 case 11:
-                    //case 12: // \f
-                    //case 13: // \r
+                //case 12: // \f
+                //case 13: // \r
                 case 14:
                 case 15:
                 case 16:
@@ -411,7 +413,7 @@ namespace OpenLogReplicator {
         if (unlikely(name.length() >= 1024))
             throw DataException(20004, "identifier '" + std::string(name) + "' is too long");
 
-        for (const char& c : name)
+        for (const char& c: name)
             if (islower(c) != 0)
                 return false;
 

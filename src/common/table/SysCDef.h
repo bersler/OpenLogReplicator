@@ -27,9 +27,23 @@ namespace OpenLogReplicator {
     class SysCDef final {
     public:
         enum class CDEFTYPE : unsigned char {
-            NONE = 0, TABLE_CHECK = 1, PK = 2, UNIQUE = 3, REFERENTIAL = 4, CHECK = 5, READ_ONLY = 6, CHECK_CONSTR_NOT_NULL = 7, HASH = 8, SCOPED_REF = 9,
-            ROWID = 10, REF_NOT_NULL = 11, SUPPLEMENTAL_LOG = 12, SUPPLEMENTAL_LOG_PK = 14, SUPPLEMENTAL_LOG_UNIQUE = 15, SUPPLEMENTAL_LOG_FK = 16,
-            SUPPLEMENTAL_LOG_ALL = 17
+            NONE                    = 0,
+            TABLE_CHECK             = 1,
+            PK                      = 2,
+            UNIQUE                  = 3,
+            REFERENTIAL             = 4,
+            CHECK                   = 5,
+            READ_ONLY               = 6,
+            CHECK_CONSTR_NOT_NULL   = 7,
+            HASH                    = 8,
+            SCOPED_REF              = 9,
+            ROWID                   = 10,
+            REF_NOT_NULL            = 11,
+            SUPPLEMENTAL_LOG        = 12,
+            SUPPLEMENTAL_LOG_PK     = 14,
+            SUPPLEMENTAL_LOG_UNIQUE = 15,
+            SUPPLEMENTAL_LOG_FK     = 16,
+            SUPPLEMENTAL_LOG_ALL    = 17
         };
 
         RowId rowId;
@@ -37,16 +51,14 @@ namespace OpenLogReplicator {
         typeObj obj{0};
         CDEFTYPE type{CDEFTYPE::NONE};
 
-        SysCDef(RowId newRowId, typeCon newCon, typeObj newObj, CDEFTYPE newType) :
+        SysCDef(RowId newRowId, typeCon newCon, typeObj newObj, CDEFTYPE newType):
                 rowId(newRowId),
                 con(newCon),
                 obj(newObj),
-                type(newType) {
-        }
+                type(newType) {}
 
-        explicit SysCDef(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysCDef(RowId newRowId):
+                rowId(newRowId) {}
 
         [[nodiscard]] bool operator!=(const SysCDef& other) const {
             return (other.rowId != rowId) || (other.con != con) || (other.obj != obj) || (other.type != type);
@@ -103,15 +115,13 @@ namespace OpenLogReplicator {
         typeObj obj;
         typeCon con;
 
-        SysCDefKey(typeObj newObj, typeCon newCon) :
+        SysCDefKey(typeObj newObj, typeCon newCon):
                 obj(newObj),
-                con(newCon) {
-        }
+                con(newCon) {}
 
-        explicit SysCDefKey(const SysCDef* sysCDef) :
+        explicit SysCDefKey(const SysCDef* sysCDef):
                 obj(sysCDef->obj),
-                con(sysCDef->con) {
-        }
+                con(sysCDef->con) {}
 
         bool operator<(const SysCDefKey other) const {
             if (obj < other.obj)
@@ -128,13 +138,11 @@ namespace OpenLogReplicator {
     public:
         typeCon con;
 
-        explicit SysCDefCon(typeCon newCon) :
-                con(newCon) {
-        }
+        explicit SysCDefCon(typeCon newCon):
+                con(newCon) {}
 
-        explicit SysCDefCon(const SysCDef* sysCDef) :
-                con(sysCDef->con) {
-        }
+        explicit SysCDefCon(const SysCDef* sysCDef):
+                con(sysCDef->con) {}
 
         bool operator!=(const SysCDefCon other) const {
             return (other.con != con);

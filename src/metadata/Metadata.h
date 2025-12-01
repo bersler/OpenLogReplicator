@@ -57,8 +57,8 @@ namespace OpenLogReplicator {
 
     public:
         enum class STATUS : unsigned char {
-            READY, // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
-            START, // Replicator tries to start replication with given parameters.
+            READY,    // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
+            START,    // Replicator tries to start replication with given parameters.
             REPLICATE // Replication is running. The metadata is initialized, the starting point of replication is defined.
         };
 

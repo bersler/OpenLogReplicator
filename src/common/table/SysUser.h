@@ -30,26 +30,25 @@ namespace OpenLogReplicator {
         static constexpr uint NAME_LENGTH{128};
 
         enum class SPARE1 : unsigned char {
-            SUPP_LOG_PRIMARY = 1UL << 0, SUPP_LOG_ALL = 1UL << 3
+            SUPP_LOG_PRIMARY = 1UL << 0,
+            SUPP_LOG_ALL     = 1UL << 3
         };
 
         RowId rowId;
         typeUser user{0};
         std::string name;
-        IntX spare1{0, 0};            // NULL
+        IntX spare1{0, 0}; // NULL
         bool single{false};
 
-        SysUser(RowId newRowId, typeUser newUser, std::string newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
+        SysUser(RowId newRowId, typeUser newUser, std::string newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle):
                 rowId(newRowId),
                 user(newUser),
                 name(std::move(newName)),
                 spare1(newSpare11, newSpare12),
-                single(newSingle) {
-        }
+                single(newSingle) {}
 
-        explicit SysUser(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysUser(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysUser& other) const {
             return (other.rowId != rowId) || (other.user != user) || (other.name != name) || (other.spare1 != spare1);
@@ -96,13 +95,11 @@ namespace OpenLogReplicator {
     public:
         typeUser user;
 
-        explicit SysUserUser(typeUser newUser) :
-                user(newUser) {
-        }
+        explicit SysUserUser(typeUser newUser):
+                user(newUser) {}
 
-        explicit SysUserUser(const SysUser* sysUser) :
-                user(sysUser->user) {
-        }
+        explicit SysUserUser(const SysUser* sysUser):
+                user(sysUser->user) {}
 
         bool operator!=(const SysUserUser other) const {
             return (other.user != user);

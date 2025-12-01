@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         void updateOnlineRedoLogData() override;
 
     public:
-        ReplicatorBatch(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+        ReplicatorBatch(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
                         TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase);
         ~ReplicatorBatch() override = default;
     };

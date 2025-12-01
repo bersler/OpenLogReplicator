@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
                 if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_QMD) {
                     for (typeCC i = 0; i < redoLogRecord->nRow; ++i)
                         *ctx->dumpStream << "slot[" << static_cast<uint>(i) << "]: " << std::dec <<
-                                         ctx->read16(redoLogRecord->data(redoLogRecord->slotsDelta + (i * 2))) << '\n';
+                                ctx->read16(redoLogRecord->data(redoLogRecord->slotsDelta + (i * 2))) << '\n';
                 }
             }
         }

@@ -20,9 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSetAL16UTF16.h"
 
 namespace OpenLogReplicator {
-    CharacterSetAL16UTF16::CharacterSetAL16UTF16() :
-            CharacterSet("AL16UTF16") {
-    }
+    CharacterSetAL16UTF16::CharacterSetAL16UTF16():
+            CharacterSet("AL16UTF16") {}
 
     typeUnicode CharacterSetAL16UTF16::decode(const Ctx* ctx, Xid xid, const uint8_t*& str, uint64_t& length) const {
         const uint64_t byte1 = *str++;

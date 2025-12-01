@@ -53,29 +53,78 @@ namespace OpenLogReplicator {
     class Ctx final {
     public:
         enum class LOCALES : unsigned char {
-            TIMESTAMP, MOCK
+            TIMESTAMP,
+            MOCK
         };
+
         enum class LOG : unsigned char {
-            SILENT, ERROR, WARNING, INFO, DEBUG
+            SILENT,
+            ERROR,
+            WARNING,
+            INFO,
+            DEBUG
         };
+
         enum class MEMORY : unsigned char {
-            BUILDER, MISC, PARSER, READER, TRANSACTIONS, WRITER
+            BUILDER,
+            MISC,
+            PARSER,
+            READER,
+            TRANSACTIONS,
+            WRITER
         };
+
         static constexpr uint MEMORY_COUNT{6};
+
         enum class DISABLE_CHECKS : unsigned char {
-            GRANTS = 1 << 0, SUPPLEMENTAL_LOG = 1 << 1, BLOCK_SUM = 1 << 2, JSON_TAGS = 1 << 3
+            GRANTS           = 1 << 0,
+            SUPPLEMENTAL_LOG = 1 << 1,
+            BLOCK_SUM        = 1 << 2,
+            JSON_TAGS        = 1 << 3
         };
+
         enum class REDO_FLAGS : unsigned int {
-            ARCH_ONLY = 1 << 0, SCHEMALESS = 1 << 1, ADAPTIVE_SCHEMA = 1 << 2, DIRECT_DISABLE = 1 << 3, IGNORE_DATA_ERRORS = 1 << 4,
-            SHOW_DDL = 1 << 5, SHOW_HIDDEN_COLUMNS = 1 << 6, SHOW_GUARD_COLUMNS = 1 << 7, SHOW_NESTED_COLUMNS = 1 << 8, SHOW_UNUSED_COLUMNS = 1 << 9,
-            SHOW_INCOMPLETE_TRANSACTIONS = 1 << 10, SHOW_SYSTEM_TRANSACTIONS = 1 << 11, SHOW_CHECKPOINT = 1 << 12, CHECKPOINT_KEEP = 1 << 13,
-            VERIFY_SCHEMA = 1 << 14, RAW_COLUMN_DATA = 1 << 15, EXPERIMENTAL_XMLTYPE = 1 << 16, EXPERIMENTAL_JSON = 1 << 17,
+            ARCH_ONLY                     = 1 << 0,
+            SCHEMALESS                    = 1 << 1,
+            ADAPTIVE_SCHEMA               = 1 << 2,
+            DIRECT_DISABLE                = 1 << 3,
+            IGNORE_DATA_ERRORS            = 1 << 4,
+            SHOW_DDL                      = 1 << 5,
+            SHOW_HIDDEN_COLUMNS           = 1 << 6,
+            SHOW_GUARD_COLUMNS            = 1 << 7,
+            SHOW_NESTED_COLUMNS           = 1 << 8,
+            SHOW_UNUSED_COLUMNS           = 1 << 9,
+            SHOW_INCOMPLETE_TRANSACTIONS  = 1 << 10,
+            SHOW_SYSTEM_TRANSACTIONS      = 1 << 11,
+            SHOW_CHECKPOINT               = 1 << 12,
+            CHECKPOINT_KEEP               = 1 << 13,
+            VERIFY_SCHEMA                 = 1 << 14,
+            RAW_COLUMN_DATA               = 1 << 15,
+            EXPERIMENTAL_XMLTYPE          = 1 << 16,
+            EXPERIMENTAL_JSON             = 1 << 17,
             EXPERIMENTAL_NOT_NULL_MISSING = 1 << 18
         };
+
         enum class TRACE : unsigned int {
-            DML = 1 << 0, DUMP = 1 << 1, LOB = 1 << 2, LWN = 1 << 3, THREADS = 1 << 4, SQL = 1 << 5, FILE = 1 << 6, DISK = 1 << 7, PERFORMANCE = 1 << 8,
-            TRANSACTION = 1 << 9, REDO = 1 << 10, ARCHIVE_LIST = 1 << 11, SCHEMA_LIST = 1 << 12, WRITER = 1 << 13, CHECKPOINT = 1 << 14, SYSTEM = 1 << 15,
-            LOB_DATA = 1 << 16, SLEEP = 1 << 17, CONDITION = 1 << 18
+            DML          = 1 << 0,
+            DUMP         = 1 << 1,
+            LOB          = 1 << 2,
+            LWN          = 1 << 3,
+            THREADS      = 1 << 4,
+            SQL          = 1 << 5,
+            FILE         = 1 << 6,
+            DISK         = 1 << 7,
+            PERFORMANCE  = 1 << 8,
+            TRANSACTION  = 1 << 9,
+            REDO         = 1 << 10,
+            ARCHIVE_LIST = 1 << 11,
+            SCHEMA_LIST  = 1 << 12,
+            WRITER       = 1 << 13,
+            CHECKPOINT   = 1 << 14,
+            SYSTEM       = 1 << 15,
+            LOB_DATA     = 1 << 16,
+            SLEEP        = 1 << 17,
+            CONDITION    = 1 << 18
         };
 
         static constexpr uint64_t MEMORY_CHUNK_SIZE_MB{1};
@@ -166,7 +215,7 @@ namespace OpenLogReplicator {
         uint64_t pollIntervalUs{100000};
         uint64_t queueSize{65536};
 
-        std::atomic<uint32_t> version{0};                   // Compatibility level of redo logs
+        std::atomic<uint32_t> version{0}; // Compatibility level of redo logs
         std::atomic<uint> dumpRedoLog{0};
         std::atomic<uint> dumpRawData{0};
         uint archReadTries{10};
@@ -297,54 +346,75 @@ namespace OpenLogReplicator {
         }
 
         static uint16_t read16Little(const uint8_t* buf) {
-            return static_cast<uint16_t>(buf[0]) | (static_cast<uint16_t>(buf[1]) << 8);
+            return static_cast<uint16_t>(buf[0]) |
+                    (static_cast<uint16_t>(buf[1]) << 8);
         }
 
         static uint16_t read16Big(const uint8_t* buf) {
-            return (static_cast<uint16_t>(buf[0]) << 8) | static_cast<uint16_t>(buf[1]);
+            return (static_cast<uint16_t>(buf[0]) << 8) |
+                    static_cast<uint16_t>(buf[1]);
         }
 
         static uint32_t read24Big(const uint8_t* buf) {
             return (static_cast<uint32_t>(buf[0]) << 16) |
-                   (static_cast<uint32_t>(buf[1]) << 8) | static_cast<uint32_t>(buf[2]);
+                    (static_cast<uint32_t>(buf[1]) << 8) |
+                    static_cast<uint32_t>(buf[2]);
         }
 
         static uint32_t read32Little(const uint8_t* buf) {
-            return static_cast<uint32_t>(buf[0]) | (static_cast<uint32_t>(buf[1]) << 8) |
-                   (static_cast<uint32_t>(buf[2]) << 16) | (static_cast<uint32_t>(buf[3]) << 24);
+            return static_cast<uint32_t>(buf[0]) |
+                    (static_cast<uint32_t>(buf[1]) << 8) |
+                    (static_cast<uint32_t>(buf[2]) << 16) |
+                    (static_cast<uint32_t>(buf[3]) << 24);
         }
 
         static uint32_t read32Big(const uint8_t* buf) {
-            return (static_cast<uint32_t>(buf[0]) << 24) | (static_cast<uint32_t>(buf[1]) << 16) |
-                   (static_cast<uint32_t>(buf[2]) << 8) | static_cast<uint32_t>(buf[3]);
+            return (static_cast<uint32_t>(buf[0]) << 24) |
+                    (static_cast<uint32_t>(buf[1]) << 16) |
+                    (static_cast<uint32_t>(buf[2]) << 8) |
+                    static_cast<uint32_t>(buf[3]);
         }
 
         static uint64_t read56Little(const uint8_t* buf) {
-            return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-                   (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-                   (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40) |
-                   (static_cast<uint64_t>(buf[6]) << 48);
+            return static_cast<uint64_t>(buf[0]) |
+                    (static_cast<uint64_t>(buf[1]) << 8) |
+                    (static_cast<uint64_t>(buf[2]) << 16) |
+                    (static_cast<uint64_t>(buf[3]) << 24) |
+                    (static_cast<uint64_t>(buf[4]) << 32) |
+                    (static_cast<uint64_t>(buf[5]) << 40) |
+                    (static_cast<uint64_t>(buf[6]) << 48);
         }
 
         static uint64_t read56Big(const uint8_t* buf) {
-            return (static_cast<uint64_t>(buf[0]) << 24) | (static_cast<uint64_t>(buf[1]) << 16) |
-                   (static_cast<uint64_t>(buf[2]) << 8) | (static_cast<uint64_t>(buf[3])) |
-                   (static_cast<uint64_t>(buf[4]) << 40) | (static_cast<uint64_t>(buf[5]) << 32) |
-                   (static_cast<uint64_t>(buf[6]) << 48);
+            return (static_cast<uint64_t>(buf[0]) << 24) |
+                    (static_cast<uint64_t>(buf[1]) << 16) |
+                    (static_cast<uint64_t>(buf[2]) << 8) |
+                    (static_cast<uint64_t>(buf[3])) |
+                    (static_cast<uint64_t>(buf[4]) << 40) |
+                    (static_cast<uint64_t>(buf[5]) << 32) |
+                    (static_cast<uint64_t>(buf[6]) << 48);
         }
 
         static uint64_t read64Little(const uint8_t* buf) {
-            return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
-                   (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
-                   (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40) |
-                   (static_cast<uint64_t>(buf[6]) << 48) | (static_cast<uint64_t>(buf[7]) << 56);
+            return static_cast<uint64_t>(buf[0]) |
+                    (static_cast<uint64_t>(buf[1]) << 8) |
+                    (static_cast<uint64_t>(buf[2]) << 16) |
+                    (static_cast<uint64_t>(buf[3]) << 24) |
+                    (static_cast<uint64_t>(buf[4]) << 32) |
+                    (static_cast<uint64_t>(buf[5]) << 40) |
+                    (static_cast<uint64_t>(buf[6]) << 48) |
+                    (static_cast<uint64_t>(buf[7]) << 56);
         }
 
         static uint64_t read64Big(const uint8_t* buf) {
-            return (static_cast<uint64_t>(buf[0]) << 56) | (static_cast<uint64_t>(buf[1]) << 48) |
-                   (static_cast<uint64_t>(buf[2]) << 40) | (static_cast<uint64_t>(buf[3]) << 32) |
-                   (static_cast<uint64_t>(buf[4]) << 24) | (static_cast<uint64_t>(buf[5]) << 16) |
-                   (static_cast<uint64_t>(buf[6]) << 8) | static_cast<uint64_t>(buf[7]);
+            return (static_cast<uint64_t>(buf[0]) << 56) |
+                    (static_cast<uint64_t>(buf[1]) << 48) |
+                    (static_cast<uint64_t>(buf[2]) << 40) |
+                    (static_cast<uint64_t>(buf[3]) << 32) |
+                    (static_cast<uint64_t>(buf[4]) << 24) |
+                    (static_cast<uint64_t>(buf[5]) << 16) |
+                    (static_cast<uint64_t>(buf[6]) << 8) |
+                    static_cast<uint64_t>(buf[7]);
         }
 
         static Scn readScnLittle(const uint8_t* buf) {

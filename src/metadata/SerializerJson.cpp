@@ -54,22 +54,22 @@ namespace OpenLogReplicator {
         ss << R"({"database":")";
         Data::writeEscapeValue(ss, metadata->database);
         ss << R"(","scn":)" << metadata->checkpointScn.toString() <<
-           R"(,"resetlogs":)" << std::dec << metadata->resetlogs <<
-           R"(,"activation":)" << std::dec << metadata->activation <<
-           R"(,"time":)" << std::dec << metadata->checkpointTime.getVal() << // not read
-           R"(,"seq":)" << metadata->checkpointSequence.toString() <<
-           R"(,"offset":)" << metadata->checkpointFileOffset.toString();
+                R"(,"resetlogs":)" << std::dec << metadata->resetlogs <<
+                R"(,"activation":)" << std::dec << metadata->activation <<
+                R"(,"time":)" << std::dec << metadata->checkpointTime.getVal() << // not read
+                R"(,"seq":)" << metadata->checkpointSequence.toString() <<
+                R"(,"offset":)" << metadata->checkpointFileOffset.toString();
         if (metadata->minSequence != Seq::none()) {
             ss << R"(,"min-tran":{)" <<
-               R"("seq":)" << metadata->minSequence.toString() <<
-               R"(,"offset":)" << metadata->minFileOffset.toString() <<
-               R"(,"xid":")" << metadata->minXid.toString() << R"("})";
+                    R"("seq":)" << metadata->minSequence.toString() <<
+                    R"(,"offset":)" << metadata->minFileOffset.toString() <<
+                    R"(,"xid":")" << metadata->minXid.toString() << R"("})";
         }
         ss << R"(,"big-endian":)" << std::dec << (metadata->ctx->isBigEndian() ? 1 : 0) <<
-           R"(,"context":")";
+                R"(,"context":")";
         Data::writeEscapeValue(ss, metadata->context);
         ss << R"(","con-id":)" << std::dec << metadata->conId <<
-           R"(,"con-name":")";
+                R"(,"con-name":")";
         Data::writeEscapeValue(ss, metadata->conName);
         ss << R"(","db-timezone":")";
         Data::writeEscapeValue(ss, metadata->dbTimezoneStr);
@@ -87,8 +87,9 @@ namespace OpenLogReplicator {
         Data::writeEscapeValue(ss, metadata->nlsNcharCharacterSet);
 
         ss << R"(","supp-log-db-primary":)" << (metadata->suppLogDbPrimary ? 1 : 0) <<
-           R"(,"supp-log-db-all":)" << (metadata->suppLogDbAll ? 1 : 0) <<
-           R"(,)" SERIALIZER_ENDL << R"("online-redo":[)";
+                R"(,"supp-log-db-all":)" << (metadata->suppLogDbAll ? 1 : 0) <<
+                R"(,)"
+        SERIALIZER_ENDL << R"("online-redo":[)";
 
         int64_t prevGroup = -2;
         for (const RedoLog* redoLog: metadata->redoLogs) {
@@ -96,11 +97,15 @@ namespace OpenLogReplicator {
                 continue;
 
             if (prevGroup == -2)
-                ss SERIALIZER_ENDL << R"({"group":)" << redoLog->group << R"(,"path":[)";
-            else if (prevGroup != redoLog->group)
-                ss << "]}," SERIALIZER_ENDL << R"({"group":)" << redoLog->group << R"(,"path":[)";
+                ss SERIALIZER_ENDL
+            <<
+            R"({"group":)" << redoLog->group << R"(,"path":[)";
             else
-                ss << ",";
+            if (prevGroup != redoLog->group)
+                ss << "]},"
+            SERIALIZER_ENDL << R"({"group":)" << redoLog->group << R"(,"path":[)";
+            else
+            ss << ",";
 
             ss << R"(")";
             Data::writeEscapeValue(ss, redoLog->path);
@@ -111,33 +116,40 @@ namespace OpenLogReplicator {
         if (prevGroup > 0)
             ss << "]}";
 
-        ss << "]," SERIALIZER_ENDL << R"("incarnations":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("incarnations":[)";
         bool hasPrev = false;
         for (const DbIncarnation* oi: metadata->dbIncarnations) {
             if (hasPrev)
                 ss << ",";
             else
                 hasPrev = true;
-            ss SERIALIZER_ENDL << R"({"incarnation":)" << oi->incarnation <<
-                               R"(,"resetlogs-scn":)" << oi->resetlogsScn.toString() <<
-                               R"(,"prior-resetlogs-scn":)" << oi->priorResetlogsScn.toString() <<
-                               R"(,"status":")";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"incarnation":)" << oi->incarnation <<
+                    R"(,"resetlogs-scn":)" << oi->resetlogsScn.toString() <<
+                    R"(,"prior-resetlogs-scn":)" << oi->priorResetlogsScn.toString() <<
+                    R"(,"status":")";
             Data::writeEscapeValue(ss, oi->status);
             ss << R"(","resetlogs":)" << oi->resetlogs <<
-               R"(,"prior-incarnation":)" << oi->priorIncarnation << "}";
+                    R"(,"prior-incarnation":)" << oi->priorIncarnation << "}";
         }
 
-        ss << "]," SERIALIZER_ENDL << R"("users":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("users":[)";
         hasPrev = false;
         for (const std::string& user: metadata->users) {
             if (hasPrev)
                 ss << ",";
             else
                 hasPrev = true;
-            ss SERIALIZER_ENDL << R"(")" << user << R"(")";
+            ss SERIALIZER_ENDL
+            <<
+            R"(")" << user << R"(")";
         }
 
-        ss << "]," SERIALIZER_ENDL;
+        ss << "],"
+        SERIALIZER_ENDL;
 
         // The schema has not changed since the last checkpoint file
         if (!storeSchema) {
@@ -146,7 +158,8 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->refScn = metadata->checkpointScn;
-        ss << R"("schema-scn":)" << metadata->schema->scn.toString() << "," SERIALIZER_ENDL;
+        ss << R"("schema-scn":)" << metadata->schema->scn.toString() << ","
+        SERIALIZER_ENDL;
 
         // SYS.CCOL$
         ss << R"("sys-ccol":[)";
@@ -157,15 +170,18 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysCCol->rowId <<
-                               R"(","con":)" << std::dec << sysCCol->con <<
-                               R"(,"int-col":)" << std::dec << sysCCol->intCol <<
-                               R"(,"obj":)" << std::dec << sysCCol->obj <<
-                               R"(,"spare1":)" << std::dec << sysCCol->spare1.toString() << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysCCol->rowId <<
+                    R"(","con":)" << std::dec << sysCCol->con <<
+                    R"(,"int-col":)" << std::dec << sysCCol->intCol <<
+                    R"(,"obj":)" << std::dec << sysCCol->obj <<
+                    R"(,"spare1":)" << std::dec << sysCCol->spare1.toString() << "}";
         }
 
         // SYS.CDEF$
-        ss << "]," SERIALIZER_ENDL << R"("sys-cdef":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-cdef":[)";
         hasPrev = false;
         for (const auto& [_, sysCDef]: metadata->schema->sysCDefPack.mapRowId) {
             if (hasPrev)
@@ -173,14 +189,17 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysCDef->rowId <<
-                               R"(","con":)" << std::dec << sysCDef->con <<
-                               R"(,"obj":)" << std::dec << sysCDef->obj <<
-                               R"(,"type":)" << std::dec << static_cast<uint>(sysCDef->type) << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysCDef->rowId <<
+                    R"(","con":)" << std::dec << sysCDef->con <<
+                    R"(,"obj":)" << std::dec << sysCDef->obj <<
+                    R"(,"type":)" << std::dec << static_cast<uint>(sysCDef->type) << "}";
         }
 
         // SYS.COL$
-        ss << "]," SERIALIZER_ENDL << R"("sys-col":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-col":[)";
         hasPrev = false;
         for (const auto& [_, sysCol]: metadata->schema->sysColPack.mapRowId) {
             if (hasPrev)
@@ -188,25 +207,28 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysCol->rowId <<
-                               R"(","obj":)" << std::dec << sysCol->obj <<
-                               R"(,"col":)" << std::dec << sysCol->col <<
-                               R"(,"seg-col":)" << std::dec << sysCol->segCol <<
-                               R"(,"int-col":)" << std::dec << sysCol->intCol <<
-                               R"(,"name":")";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysCol->rowId <<
+                    R"(","obj":)" << std::dec << sysCol->obj <<
+                    R"(,"col":)" << std::dec << sysCol->col <<
+                    R"(,"seg-col":)" << std::dec << sysCol->segCol <<
+                    R"(,"int-col":)" << std::dec << sysCol->intCol <<
+                    R"(,"name":")";
             Data::writeEscapeValue(ss, sysCol->name);
             ss << R"(","type":)" << std::dec << static_cast<uint>(sysCol->type) <<
-               R"(,"length":)" << std::dec << sysCol->length <<
-               R"(,"precision":)" << std::dec << sysCol->precision <<
-               R"(,"scale":)" << std::dec << sysCol->scale <<
-               R"(,"charset-form":)" << std::dec << sysCol->charsetForm <<
-               R"(,"charset-id":)" << std::dec << sysCol->charsetId <<
-               R"(,"null":)" << std::dec << sysCol->null_ <<
-               R"(,"property":)" << sysCol->property.toString() << "}";
+                    R"(,"length":)" << std::dec << sysCol->length <<
+                    R"(,"precision":)" << std::dec << sysCol->precision <<
+                    R"(,"scale":)" << std::dec << sysCol->scale <<
+                    R"(,"charset-form":)" << std::dec << sysCol->charsetForm <<
+                    R"(,"charset-id":)" << std::dec << sysCol->charsetId <<
+                    R"(,"null":)" << std::dec << sysCol->null_ <<
+                    R"(,"property":)" << sysCol->property.toString() << "}";
         }
 
         // SYS.DEFERRED_STG$
-        ss << "]," SERIALIZER_ENDL << R"("sys-deferredstg":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-deferredstg":[)";
         hasPrev = false;
         for (const auto& [_, sysDeferredStg]: metadata->schema->sysDeferredStgPack.mapRowId) {
             if (hasPrev)
@@ -214,13 +236,16 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysDeferredStg->rowId <<
-                               R"(","obj":)" << std::dec << sysDeferredStg->obj <<
-                               R"(,"flags-stg":)" << std::dec << sysDeferredStg->flagsStg.toString() << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysDeferredStg->rowId <<
+                    R"(","obj":)" << std::dec << sysDeferredStg->obj <<
+                    R"(,"flags-stg":)" << std::dec << sysDeferredStg->flagsStg.toString() << "}";
         }
 
         // SYS.ECOL$
-        ss << "]," SERIALIZER_ENDL << R"("sys-ecol":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-ecol":[)";
         hasPrev = false;
         for (const auto& [_, sysECol]: metadata->schema->sysEColPack.mapRowId) {
             if (hasPrev)
@@ -228,14 +253,17 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysECol->rowId <<
-                               R"(","tab-obj":)" << std::dec << sysECol->tabObj <<
-                               R"(,"col-num":)" << std::dec << sysECol->colNum <<
-                               R"(,"guard-id":)" << std::dec << sysECol->guardId << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysECol->rowId <<
+                    R"(","tab-obj":)" << std::dec << sysECol->tabObj <<
+                    R"(,"col-num":)" << std::dec << sysECol->colNum <<
+                    R"(,"guard-id":)" << std::dec << sysECol->guardId << "}";
         }
 
         // SYS.LOB$
-        ss << "]," SERIALIZER_ENDL << R"("sys-lob":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-lob":[)";
         hasPrev = false;
         for (const auto& [_, sysLob]: metadata->schema->sysLobPack.mapRowId) {
             if (hasPrev)
@@ -243,16 +271,19 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysLob->rowId <<
-                               R"(","obj":)" << std::dec << sysLob->obj <<
-                               R"(,"col":)" << std::dec << sysLob->col <<
-                               R"(,"int-col":)" << std::dec << sysLob->intCol <<
-                               R"(,"l-obj":)" << std::dec << sysLob->lObj <<
-                               R"(,"ts":)" << std::dec << sysLob->ts << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysLob->rowId <<
+                    R"(","obj":)" << std::dec << sysLob->obj <<
+                    R"(,"col":)" << std::dec << sysLob->col <<
+                    R"(,"int-col":)" << std::dec << sysLob->intCol <<
+                    R"(,"l-obj":)" << std::dec << sysLob->lObj <<
+                    R"(,"ts":)" << std::dec << sysLob->ts << "}";
         }
 
         // SYS.LOBCOMPPART$
-        ss << "]," SERIALIZER_ENDL << R"("sys-lob-comp-part":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-lob-comp-part":[)";
         hasPrev = false;
         for (const auto& [_, sysLobCompPart]: metadata->schema->sysLobCompPartPack.mapRowId) {
             if (hasPrev)
@@ -260,13 +291,16 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysLobCompPart->rowId <<
-                               R"(","part-obj":)" << std::dec << sysLobCompPart->partObj <<
-                               R"(,"l-obj":)" << std::dec << sysLobCompPart->lObj << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysLobCompPart->rowId <<
+                    R"(","part-obj":)" << std::dec << sysLobCompPart->partObj <<
+                    R"(,"l-obj":)" << std::dec << sysLobCompPart->lObj << "}";
         }
 
         // SYS.LOBFRAG$
-        ss << "]," SERIALIZER_ENDL << R"("sys-lob-frag":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-lob-frag":[)";
         hasPrev = false;
         for (const auto& [_, sysLobFrag]: metadata->schema->sysLobFragPack.mapRowId) {
             if (hasPrev)
@@ -274,14 +308,17 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysLobFrag->rowId <<
-                               R"(","frag-obj":)" << std::dec << sysLobFrag->fragObj <<
-                               R"(,"parent-obj":)" << std::dec << sysLobFrag->parentObj <<
-                               R"(,"ts":)" << std::dec << sysLobFrag->ts << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysLobFrag->rowId <<
+                    R"(","frag-obj":)" << std::dec << sysLobFrag->fragObj <<
+                    R"(,"parent-obj":)" << std::dec << sysLobFrag->parentObj <<
+                    R"(,"ts":)" << std::dec << sysLobFrag->ts << "}";
         }
 
         // SYS.OBJ$
-        ss << "]," SERIALIZER_ENDL << R"("sys-obj":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-obj":[)";
         hasPrev = false;
         for (const auto& [_, sysObj]: metadata->schema->sysObjPack.mapRowId) {
             if (hasPrev)
@@ -289,19 +326,22 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysObj->rowId <<
-                               R"(","owner":)" << std::dec << sysObj->owner <<
-                               R"(,"obj":)" << std::dec << sysObj->obj <<
-                               R"(,"data-obj":)" << std::dec << sysObj->dataObj <<
-                               R"(,"name":")";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysObj->rowId <<
+                    R"(","owner":)" << std::dec << sysObj->owner <<
+                    R"(,"obj":)" << std::dec << sysObj->obj <<
+                    R"(,"data-obj":)" << std::dec << sysObj->dataObj <<
+                    R"(,"name":")";
             Data::writeEscapeValue(ss, sysObj->name);
             ss << R"(","type":)" << std::dec << static_cast<uint>(sysObj->type) <<
-               R"(,"flags":)" << std::dec << sysObj->flags.toString() <<
-               R"(,"single":)" << std::dec << static_cast<uint>(sysObj->single) << "}";
+                    R"(,"flags":)" << std::dec << sysObj->flags.toString() <<
+                    R"(,"single":)" << std::dec << static_cast<uint>(sysObj->single) << "}";
         }
 
         // SYS.TAB$
-        ss << "]," SERIALIZER_ENDL << R"("sys-tab":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-tab":[)";
         hasPrev = false;
         for (const auto& [_, sysTab]: metadata->schema->sysTabPack.mapRowId) {
             if (hasPrev)
@@ -309,17 +349,20 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysTab->rowId <<
-                               R"(","obj":)" << std::dec << sysTab->obj <<
-                               R"(,"data-obj":)" << std::dec << sysTab->dataObj <<
-                               R"(,"ts":)" << std::dec << sysTab->ts <<
-                               R"(,"clu-cols":)" << std::dec << sysTab->cluCols <<
-                               R"(,"flags":)" << std::dec << sysTab->flags.toString() <<
-                               R"(,"property":)" << std::dec << sysTab->property.toString() << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysTab->rowId <<
+                    R"(","obj":)" << std::dec << sysTab->obj <<
+                    R"(,"data-obj":)" << std::dec << sysTab->dataObj <<
+                    R"(,"ts":)" << std::dec << sysTab->ts <<
+                    R"(,"clu-cols":)" << std::dec << sysTab->cluCols <<
+                    R"(,"flags":)" << std::dec << sysTab->flags.toString() <<
+                    R"(,"property":)" << std::dec << sysTab->property.toString() << "}";
         }
 
         // SYS.TABCOMPART$
-        ss << "]," SERIALIZER_ENDL << R"("sys-tabcompart":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-tabcompart":[)";
         hasPrev = false;
         for (const auto& [_, sysTabComPart]: metadata->schema->sysTabComPartPack.mapRowId) {
             if (hasPrev)
@@ -327,14 +370,17 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysTabComPart->rowId <<
-                               R"(","obj":)" << std::dec << sysTabComPart->obj <<
-                               R"(,"data-obj":)" << std::dec << sysTabComPart->dataObj <<
-                               R"(,"bo":)" << std::dec << sysTabComPart->bo << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysTabComPart->rowId <<
+                    R"(","obj":)" << std::dec << sysTabComPart->obj <<
+                    R"(,"data-obj":)" << std::dec << sysTabComPart->dataObj <<
+                    R"(,"bo":)" << std::dec << sysTabComPart->bo << "}";
         }
 
         // SYS.TABPART$
-        ss << "]," SERIALIZER_ENDL << R"("sys-tabpart":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-tabpart":[)";
         hasPrev = false;
         for (const auto& [_, sysTabPart]: metadata->schema->sysTabPartPack.mapRowId) {
             if (hasPrev)
@@ -342,14 +388,17 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysTabPart->rowId <<
-                               R"(","obj":)" << std::dec << sysTabPart->obj <<
-                               R"(,"data-obj":)" << std::dec << sysTabPart->dataObj <<
-                               R"(,"bo":)" << std::dec << sysTabPart->bo << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysTabPart->rowId <<
+                    R"(","obj":)" << std::dec << sysTabPart->obj <<
+                    R"(,"data-obj":)" << std::dec << sysTabPart->dataObj <<
+                    R"(,"bo":)" << std::dec << sysTabPart->bo << "}";
         }
 
         // SYS.TABSUBPART$
-        ss << "]," SERIALIZER_ENDL << R"("sys-tabsubpart":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-tabsubpart":[)";
         hasPrev = false;
         for (const auto& [_, sysTabSubPart]: metadata->schema->sysTabSubPartPack.mapRowId) {
             if (hasPrev)
@@ -357,14 +406,17 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysTabSubPart->rowId <<
-                               R"(","obj":)" << std::dec << sysTabSubPart->obj <<
-                               R"(,"data-obj":)" << std::dec << sysTabSubPart->dataObj <<
-                               R"(,"p-obj":)" << std::dec << sysTabSubPart->pObj << "}";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysTabSubPart->rowId <<
+                    R"(","obj":)" << std::dec << sysTabSubPart->obj <<
+                    R"(,"data-obj":)" << std::dec << sysTabSubPart->dataObj <<
+                    R"(,"p-obj":)" << std::dec << sysTabSubPart->pObj << "}";
         }
 
         // SYS.TS$
-        ss << "]," SERIALIZER_ENDL << R"("sys-ts":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-ts":[)";
         hasPrev = false;
         for (const auto& [_, sysTs]: metadata->schema->sysTsPack.mapRowId) {
             if (hasPrev)
@@ -372,15 +424,18 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysTs->rowId <<
-                               R"(","ts":)" << std::dec << sysTs->ts <<
-                               R"(,"name":")";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysTs->rowId <<
+                    R"(","ts":)" << std::dec << sysTs->ts <<
+                    R"(,"name":")";
             Data::writeEscapeValue(ss, sysTs->name);
             ss << R"(","block-size":)" << std::dec << sysTs->blockSize << "}";
         }
 
         // SYS.USER$
-        ss << "]," SERIALIZER_ENDL << R"("sys-user":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("sys-user":[)";
         hasPrev = false;
         for (const auto& [_, sysUser]: metadata->schema->sysUserPack.mapRowId) {
             if (hasPrev)
@@ -388,16 +443,19 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << sysUser->rowId <<
-                               R"(","user":)" << std::dec << sysUser->user <<
-                               R"(,"name":")";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << sysUser->rowId <<
+                    R"(","user":)" << std::dec << sysUser->user <<
+                    R"(,"name":")";
             Data::writeEscapeValue(ss, sysUser->name);
             ss << R"(","spare1":)" << std::dec << sysUser->spare1.toString() <<
-               R"(,"single":)" << std::dec << static_cast<uint>(sysUser->single) << "}";
+                    R"(,"single":)" << std::dec << static_cast<uint>(sysUser->single) << "}";
         }
 
         // XDB.XDB$TTSET
-        ss << "]," SERIALIZER_ENDL << R"("xdb-ttset":[)";
+        ss << "],"
+        SERIALIZER_ENDL << R"("xdb-ttset":[)";
         hasPrev = false;
         for (const auto& [_, xdbTtSet]: metadata->schema->xdbTtSetPack.mapRowId) {
             if (hasPrev)
@@ -405,17 +463,20 @@ namespace OpenLogReplicator {
             else
                 hasPrev = true;
 
-            ss SERIALIZER_ENDL << R"({"row-id":")" << xdbTtSet->rowId <<
-                               R"(","guid":")" << std::dec << xdbTtSet->guid <<
-                               R"(","toksuf":")";
+            ss SERIALIZER_ENDL
+            <<
+            R"({"row-id":")" << xdbTtSet->rowId <<
+                    R"(","guid":")" << std::dec << xdbTtSet->guid <<
+                    R"(","toksuf":")";
             Data::writeEscapeValue(ss, xdbTtSet->tokSuf);
             ss << R"(","flags":)" << std::dec << xdbTtSet->flags <<
-               R"(,"obj":)" << std::dec << xdbTtSet->obj << "}";
+                    R"(,"obj":)" << std::dec << xdbTtSet->obj << "}";
         }
 
         for (const auto& [_, xmlCtx]: metadata->schema->schemaXmlMap) {
             // XDB.X$NMxxx
-            ss << "]," SERIALIZER_ENDL << R"("xdb-xnm)" << xmlCtx->tokSuf << R"(":[)";
+            ss << "],"
+            SERIALIZER_ENDL << R"("xdb-xnm)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
             for (const auto& [_2, xdbXNm]: xmlCtx->xdbXNmPack.mapRowId) {
                 if (hasPrev)
@@ -423,14 +484,17 @@ namespace OpenLogReplicator {
                 else
                     hasPrev = true;
 
-                ss SERIALIZER_ENDL << R"({"row-id":")" << xdbXNm->rowId <<
-                                   R"(","nmspcuri":")";
+                ss SERIALIZER_ENDL
+                <<
+                R"({"row-id":")" << xdbXNm->rowId <<
+                        R"(","nmspcuri":")";
                 Data::writeEscapeValue(ss, xdbXNm->nmSpcUri);
                 ss << R"(","id":")" << xdbXNm->id << R"("})";
             }
 
             // XDB.X$PTxxx
-            ss << "]," SERIALIZER_ENDL << R"("xdb-xpt)" << xmlCtx->tokSuf << R"(":[)";
+            ss << "],"
+            SERIALIZER_ENDL << R"("xdb-xpt)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
             for (const auto& [_2, xdbXPt]: xmlCtx->xdbXPtPack.mapRowId) {
                 if (hasPrev)
@@ -438,14 +502,17 @@ namespace OpenLogReplicator {
                 else
                     hasPrev = true;
 
-                ss SERIALIZER_ENDL << R"({"row-id":")" << xdbXPt->rowId <<
-                                   R"(","path":")";
+                ss SERIALIZER_ENDL
+                <<
+                R"({"row-id":")" << xdbXPt->rowId <<
+                        R"(","path":")";
                 Data::writeEscapeValue(ss, xdbXPt->path);
                 ss << R"(","id":")" << xdbXPt->id << R"("})";
             }
 
             // XDB.X$QNxxx
-            ss << "]," SERIALIZER_ENDL << R"("xdb-xqn)" << xmlCtx->tokSuf << R"(":[)";
+            ss << "],"
+            SERIALIZER_ENDL << R"("xdb-xqn)" << xmlCtx->tokSuf << R"(":[)";
             hasPrev = false;
             for (const auto& [_2, xdbXQn]: xmlCtx->xdbXQnPack.mapRowId) {
                 if (hasPrev)
@@ -453,8 +520,10 @@ namespace OpenLogReplicator {
                 else
                     hasPrev = true;
 
-                ss SERIALIZER_ENDL << R"({"row-id":")" << xdbXQn->rowId <<
-                                   R"(","nmspcid":")";
+                ss SERIALIZER_ENDL
+                <<
+                R"({"row-id":")" << xdbXQn->rowId <<
+                        R"(","nmspcid":")";
                 Data::writeEscapeValue(ss, xdbXQn->nmSpcId);
                 ss << R"(","localname":")";
                 Data::writeEscapeValue(ss, xdbXQn->localName);
@@ -473,18 +542,54 @@ namespace OpenLogReplicator {
             rapidjson::Document document;
             if (unlikely(ss.empty() || document.Parse(ss.c_str()).HasParseError()))
                 throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                           " - parse error: " + GetParseError_En(document.GetParseError()));
+                                    " - parse error: " + GetParseError_En(document.GetParseError()));
 
 
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> documentChildNames {"scn", "min-tran", "seq", "offset", "database", "resetlogs", "activation", "time",
-                                                                          "big-endian", "context", "con-id", "con-name", "db-timezone", "db-recovery-file-dest",
-                                                                          "db-block-checksum", "log-archive-format", "log-archive-dest", "nls-character-set",
-                                                                          "nls-nchar-character-set", "supp-log-db-primary", "supp-log-db-all", "online-redo",
-                                                                          "incarnations", "users", "schema-ref-scn", "schema-scn", "sys-user", "sys-obj",
-                                                                          "sys-col", "sys-ccol", "sys-cdef", "sys-deferredstg", "sys-ecol", "sys-lob",
-                                                                          "sys-lob-comp-part", "sys-lob-frag", "sys-tab", "sys-tabpart", "sys-tabcompart",
-                                                                          "sys-tabsubpart", "sys-ts", "xdb-ttset"};
+                static const std::vector<std::string> documentChildNames{
+                    "scn",
+                    "min-tran",
+                    "seq",
+                    "offset",
+                    "database",
+                    "resetlogs",
+                    "activation",
+                    "time",
+                    "big-endian",
+                    "context",
+                    "con-id",
+                    "con-name",
+                    "db-timezone",
+                    "db-recovery-file-dest",
+                    "db-block-checksum",
+                    "log-archive-format",
+                    "log-archive-dest",
+                    "nls-character-set",
+                    "nls-nchar-character-set",
+                    "supp-log-db-primary",
+                    "supp-log-db-all",
+                    "online-redo",
+                    "incarnations",
+                    "users",
+                    "schema-ref-scn",
+                    "schema-scn",
+                    "sys-user",
+                    "sys-obj",
+                    "sys-col",
+                    "sys-ccol",
+                    "sys-cdef",
+                    "sys-deferredstg",
+                    "sys-ecol",
+                    "sys-lob",
+                    "sys-lob-comp-part",
+                    "sys-lob-frag",
+                    "sys-tab",
+                    "sys-tabpart",
+                    "sys-tabcompart",
+                    "sys-tabsubpart",
+                    "sys-ts",
+                    "xdb-ttset"
+                };
                 Ctx::checkJsonFields(fileName, document, documentChildNames);
             }
             std::unique_lock const lckCheckpoint(metadata->mtxCheckpoint);
@@ -496,7 +601,11 @@ namespace OpenLogReplicator {
                 if (document.HasMember("min-tran")) {
                     const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(fileName, document, "min-tran");
                     if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                        static const std::vector<std::string> minTranJsonChildNames {"seq", "offset", "xid"};
+                        static const std::vector<std::string> minTranJsonChildNames{
+                            "seq",
+                            "offset",
+                            "xid"
+                        };
                         Ctx::checkJsonFields(fileName, minTranJson, minTranJsonChildNames);
                     }
 
@@ -509,7 +618,7 @@ namespace OpenLogReplicator {
 
                 if (unlikely(!metadata->fileOffset.matchesBlockSize(Ctx::MIN_BLOCK_SIZE)))
                     throw DataException(20006, "file: " + fileName + " - invalid offset: " + metadata->fileOffset.toString() +
-                                               " is not a multiplication of " + std::to_string(Ctx::MIN_BLOCK_SIZE));
+                                        " is not a multiplication of " + std::to_string(Ctx::MIN_BLOCK_SIZE));
 
                 metadata->minSequence = Seq::none();
                 metadata->minFileOffset = FileOffset::zero();
@@ -527,8 +636,8 @@ namespace OpenLogReplicator {
                         metadata->database = newDatabase;
                     } else if (metadata->database != newDatabase) {
                         throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                                   " - parse error of field \"database\", invalid value: " + newDatabase + ", expected value: " +
-                                                   metadata->database);
+                                            " - parse error of field \"database\", invalid value: " + newDatabase + ", expected value: " +
+                                            metadata->database);
                     }
                     metadata->resetlogs = Ctx::getJsonFieldU32(fileName, document, "resetlogs");
                     metadata->activation = Ctx::getJsonFieldU32(fileName, document, "activation");
@@ -547,7 +656,7 @@ namespace OpenLogReplicator {
                     } else {
                         if (unlikely(!Data::parseTimezone(metadata->dbTimezoneStr, metadata->dbTimezone)))
                             throw DataException(20001, "file: " + fileName + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                                       " - parse error of field \"db-timezone\", invalid value: " + metadata->dbTimezoneStr);
+                                                " - parse error of field \"db-timezone\", invalid value: " + metadata->dbTimezoneStr);
                     }
                     metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(fileName, DbTable::VPARAMETER_LENGTH, document, "db-recovery-file-dest");
                     metadata->dbBlockChecksum = Ctx::getJsonFieldS(fileName, DbTable::VPARAMETER_LENGTH, document, "db-block-checksum");
@@ -564,7 +673,10 @@ namespace OpenLogReplicator {
                     const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(fileName, document, "online-redo");
                     for (rapidjson::SizeType i = 0; i < onlineRedoJson.Size(); ++i) {
                         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                            static const std::vector<std::string>onlineRedoChildNames {"group", "path"};
+                            static const std::vector<std::string> onlineRedoChildNames{
+                                "group",
+                                "path"
+                            };
                             Ctx::checkJsonFields(fileName, onlineRedoJson[i], onlineRedoChildNames);
                         }
 
@@ -581,8 +693,14 @@ namespace OpenLogReplicator {
                     const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(fileName, document, "incarnations");
                     for (rapidjson::SizeType i = 0; i < incarnationsJson.Size(); ++i) {
                         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                            static const std::vector<std::string> incarnationsChildNames {"incarnation", "resetlogs-scn", "prior-resetlogs-scn", "status",
-                                                                                          "resetlogs", "prior-incarnation"};
+                            static const std::vector<std::string> incarnationsChildNames{
+                                "incarnation",
+                                "resetlogs-scn",
+                                "prior-resetlogs-scn",
+                                "status",
+                                "resetlogs",
+                                "prior-incarnation"
+                            };
                             Ctx::checkJsonFields(fileName, incarnationsJson[i], incarnationsChildNames);
                         }
 
@@ -628,7 +746,6 @@ namespace OpenLogReplicator {
                 if (document.HasMember("schema-ref-scn")) {
                     metadata->schema->scn = Scn::none();
                     metadata->schema->refScn = Ctx::getJsonFieldU64(fileName, document, "schema-ref-scn");
-
                 } else {
                     metadata->schema->scn = Ctx::getJsonFieldU64(fileName, document, "schema-scn");
                     metadata->schema->refScn = Scn::none();
@@ -682,7 +799,13 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysCCol(const Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCColJson) {
         for (rapidjson::SizeType i = 0; i < sysCColJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysCColChildNames {"row-id", "con", "int-col", "obj", "spare1"};
+                static const std::vector<std::string> sysCColChildNames{
+                    "row-id",
+                    "con",
+                    "int-col",
+                    "obj",
+                    "spare1"
+                };
                 Ctx::checkJsonFields(fileName, sysCColJson[i], sysCColChildNames);
             }
 
@@ -704,7 +827,12 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysCDef(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysCDefJson) {
         for (rapidjson::SizeType i = 0; i < sysCDefJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysCDefChildNames {"row-id", "con", "obj", "type"};
+                static const std::vector<std::string> sysCDefChildNames{
+                    "row-id",
+                    "con",
+                    "obj",
+                    "type"
+                };
                 Ctx::checkJsonFields(fileName, sysCDefJson[i], sysCDefChildNames);
             }
 
@@ -721,8 +849,22 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysCol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysColJson) {
         for (rapidjson::SizeType i = 0; i < sysColJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysColChildNames {"row-id", "obj", "col", "seg-col", "int-col", "name", "type", "length", "precision",
-                                                                        "scale", "charset-form", "charset-id", "null", "property"};
+                static const std::vector<std::string> sysColChildNames{
+                    "row-id",
+                    "obj",
+                    "col",
+                    "seg-col",
+                    "int-col",
+                    "name",
+                    "type",
+                    "length",
+                    "precision",
+                    "scale",
+                    "charset-form",
+                    "charset-id",
+                    "null",
+                    "property"
+                };
                 Ctx::checkJsonFields(fileName, sysColJson[i], sysColChildNames);
             }
 
@@ -754,7 +896,11 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysDeferredStg(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysDeferredStgJson) {
         for (rapidjson::SizeType i = 0; i < sysDeferredStgJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysDeferredStgChildNames {"row-id", "obj", "flags-stg"};
+                static const std::vector<std::string> sysDeferredStgChildNames{
+                    "row-id",
+                    "obj",
+                    "flags-stg"
+                };
                 Ctx::checkJsonFields(fileName, sysDeferredStgJson[i], sysDeferredStgChildNames);
             }
 
@@ -775,7 +921,12 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysECol(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysEColJson) {
         for (rapidjson::SizeType i = 0; i < sysEColJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysEColChildNames {"row-id", "tab-obj", "col-num", "guard-id"};
+                static const std::vector<std::string> sysEColChildNames{
+                    "row-id",
+                    "tab-obj",
+                    "col-num",
+                    "guard-id"
+                };
                 Ctx::checkJsonFields(fileName, sysEColJson[i], sysEColChildNames);
             }
 
@@ -792,7 +943,14 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysLob(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobJson) {
         for (rapidjson::SizeType i = 0; i < sysLobJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysLobChildNames {"row-id", "obj", "col", "int-col", "l-obj", "ts"};
+                static const std::vector<std::string> sysLobChildNames{
+                    "row-id",
+                    "obj",
+                    "col",
+                    "int-col",
+                    "l-obj",
+                    "ts"
+                };
                 Ctx::checkJsonFields(fileName, sysLobJson[i], sysLobChildNames);
             }
 
@@ -811,7 +969,11 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysLobCompPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobCompPartJson) {
         for (rapidjson::SizeType i = 0; i < sysLobCompPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysLobCompPartChildNames {"row-id", "part-obj", "l-obj"};
+                static const std::vector<std::string> sysLobCompPartChildNames{
+                    "row-id",
+                    "part-obj",
+                    "l-obj"
+                };
                 Ctx::checkJsonFields(fileName, sysLobCompPartJson[i], sysLobCompPartChildNames);
             }
 
@@ -827,7 +989,12 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysLobFrag(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysLobFragJson) {
         for (rapidjson::SizeType i = 0; i < sysLobFragJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysLobFragChildNames {"row-id", "frag-obj", "parent-obj", "ts"};
+                static const std::vector<std::string> sysLobFragChildNames{
+                    "row-id",
+                    "frag-obj",
+                    "parent-obj",
+                    "ts"
+                };
                 Ctx::checkJsonFields(fileName, sysLobFragJson[i], sysLobFragChildNames);
             }
 
@@ -845,7 +1012,16 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysObj(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysObjJson) {
         for (rapidjson::SizeType i = 0; i < sysObjJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysObjChildNames {"row-id", "owner", "obj", "data-obj", "type", "name", "flags", "single"};
+                static const std::vector<std::string> sysObjChildNames{
+                    "row-id",
+                    "owner",
+                    "obj",
+                    "data-obj",
+                    "type",
+                    "name",
+                    "flags",
+                    "single"
+                };
                 Ctx::checkJsonFields(fileName, sysObjJson[i], sysObjChildNames);
             }
 
@@ -872,7 +1048,15 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysTab(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabJson) {
         for (rapidjson::SizeType i = 0; i < sysTabJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysTabChildNames {"row-id", "obj", "data-obj", "ts", "clu-cols", "flags", "property"};
+                static const std::vector<std::string> sysTabChildNames{
+                    "row-id",
+                    "obj",
+                    "data-obj",
+                    "ts",
+                    "clu-cols",
+                    "flags",
+                    "property"
+                };
                 Ctx::checkJsonFields(fileName, sysTabJson[i], sysTabChildNames);
             }
 
@@ -906,7 +1090,12 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysTabComPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabComPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabComPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysTabComPartChildNames {"row-id", "obj", "data-obj", "bo"};
+                static const std::vector<std::string> sysTabComPartChildNames{
+                    "row-id",
+                    "obj",
+                    "data-obj",
+                    "bo"
+                };
                 Ctx::checkJsonFields(fileName, sysTabComPartJson[i], sysTabComPartChildNames);
             }
 
@@ -923,7 +1112,12 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysTabPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysTabPartChildNames {"row-id", "obj", "data-obj", "bo"};
+                static const std::vector<std::string> sysTabPartChildNames{
+                    "row-id",
+                    "obj",
+                    "data-obj",
+                    "bo"
+                };
                 Ctx::checkJsonFields(fileName, sysTabPartJson[i], sysTabPartChildNames);
             }
 
@@ -940,7 +1134,12 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysTabSubPart(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTabSubPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabSubPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysTabSubPartChildNames {"row-id", "obj", "data-obj", "p-obj"};
+                static const std::vector<std::string> sysTabSubPartChildNames{
+                    "row-id",
+                    "obj",
+                    "data-obj",
+                    "p-obj"
+                };
                 Ctx::checkJsonFields(fileName, sysTabSubPartJson[i], sysTabSubPartChildNames);
             }
 
@@ -957,7 +1156,12 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysTs(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysTsJson) {
         for (rapidjson::SizeType i = 0; i < sysTsJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysTsChildNames {"row-id", "ts", "name", "block-size"};
+                static const std::vector<std::string> sysTsChildNames{
+                    "row-id",
+                    "ts",
+                    "name",
+                    "block-size"
+                };
                 Ctx::checkJsonFields(fileName, sysTsJson[i], sysTsChildNames);
             }
 
@@ -973,7 +1177,13 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeSysUser(Metadata* metadata, const std::string& fileName, const rapidjson::Value& sysUserJson) {
         for (rapidjson::SizeType i = 0; i < sysUserJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> sysUserChildNames {"row-id", "user", "name", "spare1", "single"};
+                static const std::vector<std::string> sysUserChildNames{
+                    "row-id",
+                    "user",
+                    "name",
+                    "spare1",
+                    "single"
+                };
                 Ctx::checkJsonFields(fileName, sysUserJson[i], sysUserChildNames);
             }
 
@@ -995,7 +1205,13 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeXdbTtSet(Metadata* metadata, const std::string& fileName, const rapidjson::Value& xdbTtSetJson) {
         for (rapidjson::SizeType i = 0; i < xdbTtSetJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> xdbTtSetChildNames {"row-id", "guid", "toksuf", "flags", "obj"};
+                static const std::vector<std::string> xdbTtSetChildNames{
+                    "row-id",
+                    "guid",
+                    "toksuf",
+                    "flags",
+                    "obj"
+                };
                 Ctx::checkJsonFields(fileName, xdbTtSetJson[i], xdbTtSetChildNames);
             }
 
@@ -1012,7 +1228,11 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeXdbXNm(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXNmJson) {
         for (rapidjson::SizeType i = 0; i < xdbXNmJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> xdbXNmChildNames {"row-id", "nmspcuri", "id"};
+                static const std::vector<std::string> xdbXNmChildNames{
+                    "row-id",
+                    "nmspcuri",
+                    "id"
+                };
                 Ctx::checkJsonFields(fileName, xdbXNmJson[i], xdbXNmChildNames);
             }
 
@@ -1027,7 +1247,11 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeXdbXPt(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXPtJson) {
         for (rapidjson::SizeType i = 0; i < xdbXPtJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> xdbXPtChildNames {"row-id", "path", "id"};
+                static const std::vector<std::string> xdbXPtChildNames{
+                    "row-id",
+                    "path",
+                    "id"
+                };
                 Ctx::checkJsonFields(fileName, xdbXPtJson[i], xdbXPtChildNames);
             }
 
@@ -1042,7 +1266,13 @@ namespace OpenLogReplicator {
     void SerializerJson::deserializeXdbXQn(Metadata* metadata, XmlCtx* xmlCtx, const std::string& fileName, const rapidjson::Value& xdbXQnJson) {
         for (rapidjson::SizeType i = 0; i < xdbXQnJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> xdbXQnChildNames {"row-id", "nmspcid", "localname", "flags", "id"};
+                static const std::vector<std::string> xdbXQnChildNames{
+                    "row-id",
+                    "nmspcid",
+                    "localname",
+                    "flags",
+                    "id"
+                };
                 Ctx::checkJsonFields(fileName, xdbXQnJson[i], xdbXQnChildNames);
             }
 

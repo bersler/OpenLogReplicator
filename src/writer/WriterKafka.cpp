@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterKafka.h"
 
 namespace OpenLogReplicator {
-    WriterKafka::WriterKafka(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, std::string newTopic) :
+    WriterKafka::WriterKafka(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, std::string newTopic):
             Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata),
             topic(std::move(newTopic)) {
         errStr[0] = 0;
@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
         streaming = true;
     }
 
-    void WriterKafka::dr_msg_cb(rd_kafka_t* rkCb __attribute__((unused)), const rd_kafka_message_t* rkMessage, void* opaque __attribute__((unused))) {
+    void WriterKafka::dr_msg_cb(rd_kafka_t * rkCb __attribute__((unused)), const rd_kafka_message_t * rkMessage, void*opaque __attribute__((unused))) {
         auto* msg = static_cast<BuilderMsg*>(rkMessage->_private);
         auto* writer = static_cast<Writer*>(opaque);
         if (rkMessage->err != 0) {
@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
         const auto* writer = static_cast<Writer*>(opaque);
 
         writer->ctx->warning(70009, "Kafka: " + std::string(rd_kafka_err2name(static_cast<rd_kafka_resp_err_t>(err))) +
-                                    ", reason: " + reason);
+                             ", reason: " + reason);
 
         if (err != RD_KAFKA_RESP_ERR__FATAL)
             return;
@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
         auto* writer = static_cast<WriterKafka*>(rd_kafka_opaque(rkCb));
         if (unlikely(writer->ctx->isTraceSet(Ctx::TRACE::WRITER)))
             writer->ctx->logTrace(Ctx::TRACE::WRITER, std::to_string(level) + ", rk: " + ((rkCb != nullptr) ? rd_kafka_name(rkCb) : nullptr) +
-                                                      ", fac: " + fac + ", err: " + buf);
+                                  ", fac: " + fac + ", err: " + buf);
     }
 
     void WriterKafka::sendMessage(BuilderMsg* msg) {

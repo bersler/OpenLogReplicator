@@ -75,7 +75,7 @@ namespace OpenLogReplicator {
 
         uint8_t* dataExt;
         FileOffset fileOffset;
-        Xid xid;              // Transaction id
+        Xid xid;                  // Transaction id
         Scn scnRecord;
         Scn scn;
         typeSubScn subScn;
@@ -165,34 +165,34 @@ namespace OpenLogReplicator {
         [[nodiscard]] std::string toString() const {
             std::ostringstream ss;
             ss << "O scn: " << scnRecord.to64() <<
-               " scn: " << scn.toString() <<
-               " subScn: " << std::dec << subScn <<
-               " xid: " << xid.toString() <<
-               " op: " << std::setfill('0') << std::setw(4) << std::hex << opCode <<
-               " cls: " << std::dec << cls <<
-               " rbl: " << std::dec << rbl <<
-               " seq: " << std::dec << static_cast<uint>(seq) <<
-               " typ: " << std::dec << static_cast<uint>(typ) <<
-               " conId: " << std::dec << conId <<
-               " flgRecord: " << std::dec << flgRecord <<
-               " robj: " << std::dec << recordObj <<
-               " rdataObj: " << std::dec << recordDataObj <<
-               " nrow: " << std::dec << static_cast<uint>(nRow) <<
-               " afn: " << std::dec << afn <<
-               " size: " << std::dec << size <<
-               " dba: 0x" << std::hex << dba <<
-               " bdba: 0x" << std::hex << bdba <<
-               " obj: " << std::dec << obj <<
-               " dataobj: " << std::dec << dataObj <<
-               " usn: " << std::dec << usn <<
-               " slt: " << std::dec << static_cast<uint>(slt) <<
-               " flg: " << std::dec << static_cast<uint>(flg) <<
-               " opc: 0x" << std::hex << opc <<
-               " op: " << std::dec << static_cast<uint>(op) <<
-               " cc: " << std::dec << static_cast<uint>(cc) <<
-               " slot: " << std::dec << slot <<
-               " flags: 0x" << std::hex << static_cast<uint>(flags) <<
-               " fb: 0x" << std::hex << static_cast<uint>(fb);
+                    " scn: " << scn.toString() <<
+                    " subScn: " << std::dec << subScn <<
+                    " xid: " << xid.toString() <<
+                    " op: " << std::setfill('0') << std::setw(4) << std::hex << opCode <<
+                    " cls: " << std::dec << cls <<
+                    " rbl: " << std::dec << rbl <<
+                    " seq: " << std::dec << static_cast<uint>(seq) <<
+                    " typ: " << std::dec << static_cast<uint>(typ) <<
+                    " conId: " << std::dec << conId <<
+                    " flgRecord: " << std::dec << flgRecord <<
+                    " robj: " << std::dec << recordObj <<
+                    " rdataObj: " << std::dec << recordDataObj <<
+                    " nrow: " << std::dec << static_cast<uint>(nRow) <<
+                    " afn: " << std::dec << afn <<
+                    " size: " << std::dec << size <<
+                    " dba: 0x" << std::hex << dba <<
+                    " bdba: 0x" << std::hex << bdba <<
+                    " obj: " << std::dec << obj <<
+                    " dataobj: " << std::dec << dataObj <<
+                    " usn: " << std::dec << usn <<
+                    " slt: " << std::dec << static_cast<uint>(slt) <<
+                    " flg: " << std::dec << static_cast<uint>(flg) <<
+                    " opc: 0x" << std::hex << opc <<
+                    " op: " << std::dec << static_cast<uint>(op) <<
+                    " cc: " << std::dec << static_cast<uint>(cc) <<
+                    " slot: " << std::dec << slot <<
+                    " flags: 0x" << std::hex << static_cast<uint>(flags) <<
+                    " fb: 0x" << std::hex << static_cast<uint>(fb);
             return ss.str();
         }
 
@@ -202,7 +202,8 @@ namespace OpenLogReplicator {
             return reinterpret_cast<const uint8_t*>(this) + sizeof(RedoLogRecord) + shift;
         }
 
-        static bool nextFieldOpt(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize, uint32_t code) {
+        static bool nextFieldOpt(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize,
+                                 uint32_t code) {
             if (fieldNum >= redoLogRecord->fieldCnt)
                 return false;
             ++fieldNum;
@@ -215,9 +216,9 @@ namespace OpenLogReplicator {
 
             if (unlikely(fieldPos + fieldSize > redoLogRecord->size))
                 throw RedoLogException(50005, "field size out of vector, field: " + std::to_string(fieldNum) + "/" +
-                                              std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", size: " +
-                                              std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size) + ", code: " +
-                                              std::to_string(code));
+                                       std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", size: " +
+                                       std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size) + ", code: " +
+                                       std::to_string(code));
             return true;
         }
 
@@ -225,11 +226,11 @@ namespace OpenLogReplicator {
             ++fieldNum;
             if (unlikely(fieldNum > redoLogRecord->fieldCnt))
                 throw RedoLogException(50006, "field missing in vector, field: " + std::to_string(fieldNum) + "/" +
-                                              std::to_string(redoLogRecord->fieldCnt) + ", ctx: " + std::to_string(redoLogRecord->rowData) + ", obj: " +
-                                              std::to_string(redoLogRecord->obj) + ", dataobj: " + std::to_string(redoLogRecord->dataObj) + ", op: " +
-                                              std::to_string(redoLogRecord->opCode) + ", cc: " + std::to_string(static_cast<uint>(redoLogRecord->cc)) +
-                                              ", suppCC: " + std::to_string(redoLogRecord->suppLogCC) + ", fieldSize: " + std::to_string(fieldSize) +
-                                              ", code: " + std::to_string(code));
+                                       std::to_string(redoLogRecord->fieldCnt) + ", ctx: " + std::to_string(redoLogRecord->rowData) + ", obj: " +
+                                       std::to_string(redoLogRecord->obj) + ", dataobj: " + std::to_string(redoLogRecord->dataObj) + ", op: " +
+                                       std::to_string(redoLogRecord->opCode) + ", cc: " + std::to_string(static_cast<uint>(redoLogRecord->cc)) +
+                                       ", suppCC: " + std::to_string(redoLogRecord->suppLogCC) + ", fieldSize: " + std::to_string(fieldSize) +
+                                       ", code: " + std::to_string(code));
 
             if (fieldNum == 1)
                 fieldPos = redoLogRecord->fieldPos;
@@ -239,9 +240,9 @@ namespace OpenLogReplicator {
 
             if (unlikely(fieldPos + fieldSize > redoLogRecord->size))
                 throw RedoLogException(50007, "field size out of vector, field: " + std::to_string(fieldNum) + "/" +
-                                              std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", size: " +
-                                              std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size) + ", code: " +
-                                              std::to_string(code));
+                                       std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", size: " +
+                                       std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size) + ", code: " +
+                                       std::to_string(code));
         }
 
         static void skipEmptyFields(const Ctx* ctx, const RedoLogRecord* redoLogRecord, typeField& fieldNum, typePos& fieldPos, typeSize& fieldSize) {
@@ -259,8 +260,8 @@ namespace OpenLogReplicator {
 
                 if (unlikely(fieldPos + fieldSize > redoLogRecord->size))
                     throw RedoLogException(50008, "field size out of vector: field: " + std::to_string(fieldNum) + "/" +
-                                                  std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", size: " +
-                                                  std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size));
+                                           std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", size: " +
+                                           std::to_string(fieldSize) + ", max: " + std::to_string(redoLogRecord->size));
             }
         }
     };

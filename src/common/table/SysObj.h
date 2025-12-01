@@ -28,45 +28,100 @@ namespace OpenLogReplicator {
     class SysObj final {
     public:
         enum class FLAGS : unsigned long long {
-            NONE = 0,
-            FDOM = 1ULL << 0, TEMPORARY = 1ULL << 1, SYSTEM_GENERATED = 1ULL << 2, UNBOUND = 1ULL << 3, SECONDARY = 1ULL << 4, IN_MEMORY_TEMP = 1ULL << 5,
-            PERMANENTLY_KEPT_JAVA_CLASS = 1ULL << 6, DROPPED = 1ULL << 7, SYNONYM_HAS_VPD_POLICIES = 1ULL << 8, SYNONYM_HAS_VPD_GROUPS = 1ULL << 9,
-            SYNONYM_HAS_VPD_CONTEXT = 1ULL << 10, CURSOR_DURATION = 1ULL << 11, DEPENDENCY_TYPE_EVOLVED = 1ULL << 12, DISABLE_FAST_VALIDATION = 1ULL << 13,
-            NESTED_TABLE_PARTITION = 1ULL << 14, OBJERROR_ROW = 1ULL << 15, METADATA_LINK = 1ULL << 16, OBJECT_LINK = 1ULL << 17, LONG_IDENTIFIER = 1ULL << 18,
-            ALLOW_FAST_ALTER_TABLE_UPGRADE = 1ULL << 19, NOT_EDITIONABLE = 1ULL << 20, SPECIAL_INVOKER_RIGHTS = 1ULL << 21, DATABASE_SUPPLIED_OBJECT = 1ULL << 22,
-            NO_FINE_GRAINED_DEP = 1ULL << 23, COMMON_OBJECT_MISMATCH = 1ULL << 24, LOCAL_MCODE = 1ULL << 25, LOCAL_DIANA = 1ULL << 26,
-            FEDERATION_OBJECT = 1ULL << 27, DEFAULT_COLLATION = 1ULL << 28, ON_ALL_SHARDS = 1ULL << 29, SHARDED = 1ULL << 30, REFERENCE = 1ULL << 31,
-            EXTENDED_DATA_LINK = 1ULL << 32, BINARY_COLLATION = 1ULL << 32, DISABLE_LOG_REPLICATION = 1ULL << 34
+            NONE                           = 0,
+            FDOM                           = 1ULL << 0,
+            TEMPORARY                      = 1ULL << 1,
+            SYSTEM_GENERATED               = 1ULL << 2,
+            UNBOUND                        = 1ULL << 3,
+            SECONDARY                      = 1ULL << 4,
+            IN_MEMORY_TEMP                 = 1ULL << 5,
+            PERMANENTLY_KEPT_JAVA_CLASS    = 1ULL << 6,
+            DROPPED                        = 1ULL << 7,
+            SYNONYM_HAS_VPD_POLICIES       = 1ULL << 8,
+            SYNONYM_HAS_VPD_GROUPS         = 1ULL << 9,
+            SYNONYM_HAS_VPD_CONTEXT        = 1ULL << 10,
+            CURSOR_DURATION                = 1ULL << 11,
+            DEPENDENCY_TYPE_EVOLVED        = 1ULL << 12,
+            DISABLE_FAST_VALIDATION        = 1ULL << 13,
+            NESTED_TABLE_PARTITION         = 1ULL << 14,
+            OBJERROR_ROW                   = 1ULL << 15,
+            METADATA_LINK                  = 1ULL << 16,
+            OBJECT_LINK                    = 1ULL << 17,
+            LONG_IDENTIFIER                = 1ULL << 18,
+            ALLOW_FAST_ALTER_TABLE_UPGRADE = 1ULL << 19,
+            NOT_EDITIONABLE                = 1ULL << 20,
+            SPECIAL_INVOKER_RIGHTS         = 1ULL << 21,
+            DATABASE_SUPPLIED_OBJECT       = 1ULL << 22,
+            NO_FINE_GRAINED_DEP            = 1ULL << 23,
+            COMMON_OBJECT_MISMATCH         = 1ULL << 24,
+            LOCAL_MCODE                    = 1ULL << 25,
+            LOCAL_DIANA                    = 1ULL << 26,
+            FEDERATION_OBJECT              = 1ULL << 27,
+            DEFAULT_COLLATION              = 1ULL << 28,
+            ON_ALL_SHARDS                  = 1ULL << 29,
+            SHARDED                        = 1ULL << 30,
+            REFERENCE                      = 1ULL << 31,
+            EXTENDED_DATA_LINK             = 1ULL << 32,
+            BINARY_COLLATION               = 1ULL << 32,
+            DISABLE_LOG_REPLICATION        = 1ULL << 34
         };
 
         static constexpr uint NAME_LENGTH = 128;
 
         enum class OBJTYPE : unsigned char {
-            // 11.2
-            NEXT_OBJECT = 0, INDEX = 1, TABLE = 2, CLUSTER = 3, VIEW = 4, SYNONYM = 5, SEQUENCE = 6, PROCEDURE = 7, FUNCTION = 8, PACKAGE = 9,
-            NON_EXISTENT = 10, PACKAGE_BODY = 11, TRIGGER = 12, TYPE = 13, TYPE_BODY = 14, VARCHAR_STORED_LOB = 21, LIBRARY = 22, JAVA_SOURCE = 28,
-            JAVA_CLASS = 29, INDEXTYPE = 32, OPERATOR = 33, LOB = 40, MATERIALIZED_VIEW = 42, DIMENSION = 43, RULE_SET = 46, XML_SCHEMA = 55,
-            JAVA_DATA = 56, RULE = 59, EVALUATION_CONTEXT = 62, ASSEMBLY = 87, CREDENTIAL = 90, CUBE_DIMENSION = 92, CUBE = 93, MEASURE_FOLDER = 94,
-            CUBE_BUILD_PROCESS = 95,
-            // 12.1
-            DIRECTORY = 23,
-            // 12.2
-            HIERARCHY = 150, ATTRIBUTE_DIMENSION = 151, ANALYTIC_VIEW = 152,
-            // 19.0
-            QUEUE = 24
+            NEXT_OBJECT         = 0,  // 11.2
+            INDEX               = 1,
+            TABLE               = 2,
+            CLUSTER             = 3,
+            VIEW                = 4,
+            SYNONYM             = 5,
+            SEQUENCE            = 6,
+            PROCEDURE           = 7,
+            FUNCTION            = 8,
+            PACKAGE             = 9,
+            NON_EXISTENT        = 10,
+            PACKAGE_BODY        = 11,
+            TRIGGER             = 12,
+            TYPE                = 13,
+            TYPE_BODY           = 14,
+            VARCHAR_STORED_LOB  = 21,
+            LIBRARY             = 22,
+            JAVA_SOURCE         = 28,
+            JAVA_CLASS          = 29,
+            INDEXTYPE           = 32,
+            OPERATOR            = 33,
+            LOB                 = 40,
+            MATERIALIZED_VIEW   = 42,
+            DIMENSION           = 43,
+            RULE_SET            = 46,
+            XML_SCHEMA          = 55,
+            JAVA_DATA           = 56,
+            RULE                = 59,
+            EVALUATION_CONTEXT  = 62,
+            ASSEMBLY            = 87,
+            CREDENTIAL          = 90,
+            CUBE_DIMENSION      = 92,
+            CUBE                = 93,
+            MEASURE_FOLDER      = 94,
+            CUBE_BUILD_PROCESS  = 95,
+            DIRECTORY           = 23,  // 12.1
+            HIERARCHY           = 150, // 12.2
+            ATTRIBUTE_DIMENSION = 151,
+            ANALYTIC_VIEW       = 152,
+            QUEUE               = 24   // 19.0
         };
 
         RowId rowId;
         typeUser owner{0};
         typeObj obj{0};
-        typeDataObj dataObj{0};        // NULL
+        typeDataObj dataObj{0}; // NULL
         OBJTYPE type{OBJTYPE::NEXT_OBJECT};
         std::string name;
-        IntX flags{0, 0};             // NULL
+        IntX flags{0, 0}; // NULL
         bool single{false};
 
         SysObj(RowId newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, OBJTYPE newType, std::string newName, uint64_t newFlags1,
-               uint64_t newFlags2, bool newSingle) :
+                uint64_t newFlags2, bool newSingle):
                 rowId(newRowId),
                 owner(newOwner),
                 obj(newObj),
@@ -74,16 +129,14 @@ namespace OpenLogReplicator {
                 type(newType),
                 name(std::move(newName)),
                 flags(newFlags1, newFlags2),
-                single(newSingle) {
-        }
+                single(newSingle) {}
 
-        explicit SysObj(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysObj(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysObj& other) const {
             return (other.rowId != rowId) || (other.owner != owner) || (other.obj != obj) || (other.dataObj != dataObj) || (other.type != type) ||
-                   (other.name != name) || (other.flags != flags);
+                    (other.name != name) || (other.flags != flags);
         }
 
         [[nodiscard]] bool isLob() const {
@@ -94,14 +147,14 @@ namespace OpenLogReplicator {
             return (type == OBJTYPE::TABLE);
         }
 
-        [[nodiscard]] bool isFlags(FLAGS val) const{
+        [[nodiscard]] bool isFlags(FLAGS val) const {
             return flags.isSet64(static_cast<uint64_t>(val));
         }
 
         [[nodiscard]] bool isTemporary() const {
             return isFlags(FLAGS::TEMPORARY) ||
-                   isFlags(FLAGS::SECONDARY) ||
-                   isFlags(FLAGS::IN_MEMORY_TEMP);
+                    isFlags(FLAGS::SECONDARY) ||
+                    isFlags(FLAGS::IN_MEMORY_TEMP);
         }
 
         [[nodiscard]] bool isDropped() const {
@@ -114,7 +167,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", OWNER#: " + std::to_string(owner) + ", OBJ#: " + std::to_string(obj) + ", DATAOBJ#: " +
-                   std::to_string(dataObj) + ", TYPE#: " + std::to_string(static_cast<uint>(type)) + ", NAME: '" + name + "', FLAGS: " + flags.toString();
+                    std::to_string(dataObj) + ", TYPE#: " + std::to_string(static_cast<uint>(type)) + ", NAME: '" + name + "', FLAGS: " + flags.toString();
         }
 
         [[nodiscard]] static constexpr bool dependentTable() {
@@ -145,19 +198,17 @@ namespace OpenLogReplicator {
         typeObj obj;
         typeDataObj dataObj;
 
-        SysObjNameKey(typeUser newOwner, std::string newName, typeObj newObj, typeDataObj newDataObj) :
+        SysObjNameKey(typeUser newOwner, std::string newName, typeObj newObj, typeDataObj newDataObj):
                 owner(newOwner),
                 name(std::move(newName)),
                 obj(newObj),
-                dataObj(newDataObj) {
-        }
+                dataObj(newDataObj) {}
 
-        explicit SysObjNameKey(const SysObj* sysObj) :
+        explicit SysObjNameKey(const SysObj* sysObj):
                 owner(sysObj->owner),
                 name(sysObj->name),
                 obj(sysObj->obj),
-                dataObj(sysObj->dataObj) {
-        }
+                dataObj(sysObj->dataObj) {}
 
         bool operator<(const SysObjNameKey& other) const {
             if (owner < other.owner)
@@ -185,13 +236,11 @@ namespace OpenLogReplicator {
     public:
         typeObj obj;
 
-        explicit SysObjObj(typeObj newObj) :
-                obj(newObj) {
-        }
+        explicit SysObjObj(typeObj newObj):
+                obj(newObj) {}
 
-        explicit SysObjObj(const SysObj* sysObj) :
-                obj(sysObj->obj) {
-        }
+        explicit SysObjObj(const SysObj* sysObj):
+                obj(sysObj->obj) {}
 
         bool operator!=(const SysObjObj other) const {
             return (other.obj != obj);

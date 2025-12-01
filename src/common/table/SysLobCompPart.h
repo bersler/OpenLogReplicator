@@ -30,15 +30,13 @@ namespace OpenLogReplicator {
         typeObj partObj{0};
         typeObj lObj{0};
 
-        SysLobCompPart(RowId newRowId, typeObj newPartObj, typeObj newLObj) :
+        SysLobCompPart(RowId newRowId, typeObj newPartObj, typeObj newLObj):
                 rowId(newRowId),
                 partObj(newPartObj),
-                lObj(newLObj) {
-        }
+                lObj(newLObj) {}
 
-        explicit SysLobCompPart(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysLobCompPart(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysLobCompPart& other) const {
             return (other.rowId != rowId) || (other.partObj != partObj) || (other.lObj != lObj);
@@ -78,15 +76,13 @@ namespace OpenLogReplicator {
         typeObj lObj;
         typeObj partObj;
 
-        SysLobCompPartKey(typeObj newLObj, typeObj newPartObj) :
+        SysLobCompPartKey(typeObj newLObj, typeObj newPartObj):
                 lObj(newLObj),
-                partObj(newPartObj) {
-        }
+                partObj(newPartObj) {}
 
-        explicit SysLobCompPartKey(const SysLobCompPart* sysLobCompPart) :
+        explicit SysLobCompPartKey(const SysLobCompPart* sysLobCompPart):
                 lObj(sysLobCompPart->lObj),
-                partObj(sysLobCompPart->partObj) {
-        }
+                partObj(sysLobCompPart->partObj) {}
 
         bool operator<(SysLobCompPartKey other) const {
             if (lObj < other.lObj)
@@ -103,13 +99,11 @@ namespace OpenLogReplicator {
     public:
         typeObj partObj;
 
-        explicit SysLobCompPartPartObj(typeObj newPartObj) :
-                partObj(newPartObj) {
-        }
+        explicit SysLobCompPartPartObj(typeObj newPartObj):
+                partObj(newPartObj) {}
 
-        explicit SysLobCompPartPartObj(const SysLobCompPart* sysLobCompPart) :
-                partObj(sysLobCompPart->partObj) {
-        }
+        explicit SysLobCompPartPartObj(const SysLobCompPart* sysLobCompPart):
+                partObj(sysLobCompPart->partObj) {}
 
         bool operator!=(const SysLobCompPartPartObj other) const {
             return (other.partObj != partObj);

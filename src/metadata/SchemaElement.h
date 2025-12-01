@@ -31,7 +31,10 @@ namespace OpenLogReplicator {
     class SchemaElement final {
     public:
         enum class TAG_TYPE : unsigned char {
-            NONE, ALL, PK, LIST
+            NONE,
+            ALL,
+            PK,
+            LIST
         };
 
         std::string condition;
@@ -44,11 +47,10 @@ namespace OpenLogReplicator {
         std::vector<std::string> keyList;
         std::vector<std::string> tagList;
 
-        SchemaElement(std::string newOwner, std::string newTable, DbTable::OPTIONS newOptions) :
-                owner(std::move(newOwner)),
-                table(std::move(newTable)),
-                options(newOptions) {
-        }
+        SchemaElement(std::string newOwner, std::string newTable, DbTable::OPTIONS newOptions):
+            owner(std::move(newOwner)),
+            table(std::move(newTable)),
+            options(newOptions) {}
 
         void parseKey(std::string value, const std::string& separator) {
             size_t pos = 0;

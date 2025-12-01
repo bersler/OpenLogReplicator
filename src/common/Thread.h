@@ -36,29 +36,108 @@ namespace OpenLogReplicator {
 
     public:
         enum class CONTEXT : unsigned char {
-            NONE, CPU, OS, MUTEX, WAIT, SLEEP, MEM, TRAN, CHKPT,
+            NONE,
+            CPU,
+            OS,
+            MUTEX,
+            WAIT,
+            SLEEP,
+            MEM,
+            TRAN,
+            CHKPT,
             NUM
         };
+
         enum class REASON : unsigned char {
             NONE,
             // MUTEX
-            BUILDER_RELEASE, BUILDER_ROTATE, BUILDER_COMMIT, CHECKPOINT_RUN, // 1
-            CHECKPOINT_WAKEUP, CTX_NOTHING_TO_SWAP, CTX_FREE_MEMORY, CTX_GET_SWAP, CTX_GET_USED, // 5
-            CTX_MEMORY_INIT, CTX_SWAPPED_FLUSH1, CTX_SWAPPED_FLUSH2, CTX_SWAPPED_GET, CTX_SWAPPED_GROW1, // 10
-            CTX_SWAPPED_GROW2, CTX_SWAPPED_RELEASE, CTX_SWAPPED_SIZE, CTX_SWAPPED_SHRINK1, CTX_SWAPPED_SHRINK2, // 15
-            CTX_SWAPPED_WONT, MEMORY_CLEAN, MEMORY_RUN1, MEMORY_RUN2, MEMORY_SWAP1, // 20
-            MEMORY_SWAP2, MEMORY_UNSWAP, READER_ALLOCATE1, READER_ALLOCATE2, READER_CHECK_FINISHED, // 25
-            READER_CHECK_STATUS, READER_CONFIRM, READER_CHECK_FREE, READER_CHECK_REDO, READER_FREE, // 30
-            READER_FULL, READER_MAIN1, READER_MAIN2, READER_READ1, READER_READ2, // 35
-            READER_SET_READ, READER_SLEEP1, READER_SLEEP2, READER_UPDATE_REDO1, READER_UPDATE_REDO2, // 40
-            READER_UPDATE_REDO3, READER_WAKE_UP, REPLICATOR_ARCH, REPLICATOR_SCHEMA, REPLICATOR_UPDATE, // 45
-            TRANSACTION_DROP, TRANSACTION_FIND, TRANSACTION_SYSTEM, WRITER_CONFIRM, WRITER_DONE, // 50
+            BUILDER_RELEASE,
+            BUILDER_ROTATE,
+            BUILDER_COMMIT,
+            CHECKPOINT_RUN,
+            // 1
+            CHECKPOINT_WAKEUP,
+            CTX_NOTHING_TO_SWAP,
+            CTX_FREE_MEMORY,
+            CTX_GET_SWAP,
+            CTX_GET_USED,
+            // 5
+            CTX_MEMORY_INIT,
+            CTX_SWAPPED_FLUSH1,
+            CTX_SWAPPED_FLUSH2,
+            CTX_SWAPPED_GET,
+            CTX_SWAPPED_GROW1,
+            // 10
+            CTX_SWAPPED_GROW2,
+            CTX_SWAPPED_RELEASE,
+            CTX_SWAPPED_SIZE,
+            CTX_SWAPPED_SHRINK1,
+            CTX_SWAPPED_SHRINK2,
+            // 15
+            CTX_SWAPPED_WONT,
+            MEMORY_CLEAN,
+            MEMORY_RUN1,
+            MEMORY_RUN2,
+            MEMORY_SWAP1,
+            // 20
+            MEMORY_SWAP2,
+            MEMORY_UNSWAP,
+            READER_ALLOCATE1,
+            READER_ALLOCATE2,
+            READER_CHECK_FINISHED,
+            // 25
+            READER_CHECK_STATUS,
+            READER_CONFIRM,
+            READER_CHECK_FREE,
+            READER_CHECK_REDO,
+            READER_FREE,
+            // 30
+            READER_FULL,
+            READER_MAIN1,
+            READER_MAIN2,
+            READER_READ1,
+            READER_READ2,
+            // 35
+            READER_SET_READ,
+            READER_SLEEP1,
+            READER_SLEEP2,
+            READER_UPDATE_REDO1,
+            READER_UPDATE_REDO2,
+            // 40
+            READER_UPDATE_REDO3,
+            READER_WAKE_UP,
+            REPLICATOR_ARCH,
+            REPLICATOR_SCHEMA,
+            REPLICATOR_UPDATE,
+            // 45
+            TRANSACTION_DROP,
+            TRANSACTION_FIND,
+            TRANSACTION_SYSTEM,
+            WRITER_CONFIRM,
+            WRITER_DONE,
+            // 50
             // SLEEP
-            CHECKPOINT_NO_WORK, MEMORY_EXHAUSTED, METADATA_WAIT_WRITER, METADATA_WAIT_FOR_REPLICATOR, READER_CHECK, // 55
-            READER_EMPTY, READER_BUFFER_FULL, READER_FINISHED, READER_NO_WORK, MEMORY_NO_WORK, // 60
-            WRITER_NO_WORK, MEMORY_BLOCKED, // 65
+            CHECKPOINT_NO_WORK,
+            MEMORY_EXHAUSTED,
+            METADATA_WAIT_WRITER,
+            METADATA_WAIT_FOR_REPLICATOR,
+            READER_CHECK,
+            // 55
+            READER_EMPTY,
+            READER_BUFFER_FULL,
+            READER_FINISHED,
+            READER_NO_WORK,
+            MEMORY_NO_WORK,
+            // 60
+            WRITER_NO_WORK,
+            MEMORY_BLOCKED,
+            // 65
             // OTHER
-            OS, MEM, TRAN, CHKPT, // 67
+            OS,
+            MEM,
+            TRAN,
+            CHKPT,
+            // 67
             // END
             NUM = 255
         };
@@ -96,7 +175,7 @@ namespace OpenLogReplicator {
         }
 
         void contextStart() {
-            if constexpr  (contextCompiled) {
+            if constexpr (contextCompiled) {
                 contextTimeLast = ctx->clock->getTimeUt();
             }
         }

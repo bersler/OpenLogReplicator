@@ -29,7 +29,6 @@ namespace OpenLogReplicator {
         const LobKey lobKey(lobId, 0);
         for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
              orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId;) {
-
             addLob(ctx, lobId, orphanedLobsIt->first.page, 0, orphanedLobsIt->second, xid, fileOffset);
 
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::LOB)))
@@ -65,8 +64,8 @@ namespace OpenLogReplicator {
                 lobData->pageSize = redoLogRecordLob->lobPageSize;
             } else if (unlikely(lobData->pageSize != redoLogRecordLob->lobPageSize)) {
                 throw RedoLogException(50003, "inconsistent page size lobid: " + lobId.upper() + ", new: " +
-                                              std::to_string(redoLogRecordLob->lobPageSize) + ", already set to: " + std::to_string(lobData->pageSize) +
-                                              ", xid: " + xid.toString() + ", offset: " + fileOffset.toString());
+                                       std::to_string(redoLogRecordLob->lobPageSize) + ", already set to: " + std::to_string(lobData->pageSize) +
+                                       ", xid: " + xid.toString() + ", offset: " + fileOffset.toString());
             }
         }
 
@@ -76,8 +75,8 @@ namespace OpenLogReplicator {
             if (indexMapIt != lobData->indexMap.end()) {
                 if (unlikely(indexMapIt->second != page))
                     throw RedoLogException(50004, "duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) +
-                                                  ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString() + ", offset: " +
-                                                  fileOffset.toString());
+                                           ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString() + ", offset: " +
+                                           fileOffset.toString());
             } else {
                 lobData->indexMap.insert_or_assign(pageNo, page);
             }
@@ -177,8 +176,8 @@ namespace OpenLogReplicator {
         if (indexMapIt != lobData->indexMap.end()) {
             if (unlikely(indexMapIt->second != page))
                 throw RedoLogException(50004, "duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) +
-                                              ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString() + ", offset: " +
-                                              fileOffset.toString());
+                                       ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString() + ", offset: " +
+                                       fileOffset.toString());
             return;
         }
 

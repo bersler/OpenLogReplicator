@@ -36,35 +36,34 @@ namespace OpenLogReplicator {
         typeDba dba;
         typeSlot slot;
 
-        RowId() :
+        RowId():
                 dataObj(0),
                 dba(0),
-                slot(0) {
-        }
+                slot(0) {}
 
         explicit RowId(const std::array<char, SIZE + 1>& rowid) {
             dataObj = (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
-                      static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[5])]);
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
+                    static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[5])]);
 
             const typeAfn afn = (static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[6])]) << 12) |
-                                (static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
-                                static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[8])]);
+                    (static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
+                    static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[8])]);
 
             dba = (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[9])]) << 30) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[10])]) << 24) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[11])]) << 18) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[12])]) << 12) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[13])]) << 6) |
-                  static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[14])]) |
-                  (static_cast<typeDba>(afn) << 22);
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[10])]) << 24) |
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[11])]) << 18) |
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[12])]) << 12) |
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[13])]) << 6) |
+                    static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[14])]) |
+                    (static_cast<typeDba>(afn) << 22);
 
             slot = (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[15])]) << 12) |
-                   (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[16])]) << 6) |
-                   static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[17])]);
+                    (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[16])]) << 6) |
+                    static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[17])]);
         }
 
         explicit RowId(const std::string& rowid) {
@@ -72,34 +71,33 @@ namespace OpenLogReplicator {
                 throw DataException(20008, "row ID incorrect size: " + std::string(rowid));
 
             dataObj = (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
-                      (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
-                      static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[5])]);
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
+                    (static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
+                    static_cast<typeDataObj>(Data::map64R[static_cast<uint8_t>(rowid[5])]);
 
             const typeAfn afn = (static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[6])]) << 12) |
-                                (static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
-                                static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[8])]);
+                    (static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
+                    static_cast<typeAfn>(Data::map64R[static_cast<uint8_t>(rowid[8])]);
 
             dba = (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[9])]) << 30) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[10])]) << 24) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[11])]) << 18) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[12])]) << 12) |
-                  (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[13])]) << 6) |
-                  static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[14])]) |
-                  (static_cast<typeDba>(afn) << 22);
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[10])]) << 24) |
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[11])]) << 18) |
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[12])]) << 12) |
+                    (static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[13])]) << 6) |
+                    static_cast<typeDba>(Data::map64R[static_cast<uint8_t>(rowid[14])]) |
+                    (static_cast<typeDba>(afn) << 22);
 
             slot = (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[15])]) << 12) |
-                   (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[16])]) << 6) |
-                   static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[17])]);
+                    (static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[16])]) << 6) |
+                    static_cast<typeSlot>(Data::map64R[static_cast<uint8_t>(rowid[17])]);
         }
 
-        RowId(typeDataObj newDataObj, typeDba newDba, typeSlot newSlot) :
+        RowId(typeDataObj newDataObj, typeDba newDba, typeSlot newSlot):
                 dataObj(newDataObj),
                 dba(newDba),
-                slot(newSlot) {
-        }
+                slot(newSlot) {}
 
         bool operator<(const RowId other) const {
             if (dataObj < other.dataObj)
@@ -115,33 +113,33 @@ namespace OpenLogReplicator {
 
         void decodeFromHex(const uint8_t* data) {
             dataObj = (static_cast<typeDataObj>(data[0]) << 24) |
-                      (static_cast<typeDataObj>(data[1]) << 16) |
-                      (static_cast<typeDataObj>(data[2]) << 8) |
-                      (static_cast<typeDataObj>(data[3]));
+                    (static_cast<typeDataObj>(data[1]) << 16) |
+                    (static_cast<typeDataObj>(data[2]) << 8) |
+                    (static_cast<typeDataObj>(data[3]));
 
             slot = (static_cast<typeSlot>(data[4]) << 8) |
-                   (static_cast<typeSlot>(data[5]));
+                    (static_cast<typeSlot>(data[5]));
 
             const typeAfn afn = (static_cast<typeAfn>(data[6]) << 8) |
-                                (static_cast<typeAfn>(data[7]));
+                    (static_cast<typeAfn>(data[7]));
 
             dba = (static_cast<typeDataObj>(data[8]) << 24) |
-                  (static_cast<typeDataObj>(data[9]) << 16) |
-                  (static_cast<typeDataObj>(data[10]) << 8) |
-                  (static_cast<typeDataObj>(data[11])) |
-                  (static_cast<typeDba>(afn) << 22);
+                    (static_cast<typeDataObj>(data[9]) << 16) |
+                    (static_cast<typeDataObj>(data[10]) << 8) |
+                    (static_cast<typeDataObj>(data[11])) |
+                    (static_cast<typeDba>(afn) << 22);
         }
 
         bool operator!=(const RowId other) const {
             return (other.dataObj != dataObj) ||
-                   (other.dba != dba) ||
-                   (other.slot != slot);
+                    (other.dba != dba) ||
+                    (other.slot != slot);
         }
 
         bool operator==(const RowId other) const {
             return (other.dataObj == dataObj) &&
-                   (other.dba == dba) &&
-                   (other.slot == slot);
+                    (other.dba == dba) &&
+                    (other.slot == slot);
         }
 
         void toHex(char* str) const {
@@ -230,13 +228,11 @@ namespace OpenLogReplicator {
     public:
         RowId rowId;
 
-        explicit TabRowId(RowId newRowId) :
-            rowId(newRowId) {
-        }
+        explicit TabRowId(RowId newRowId):
+            rowId(newRowId) {}
     };
 
-    class TabRowIdKey {
-    };
+    class TabRowIdKey {};
 
     class TabRowIdUnorderedKey {
         /*bool operator<(const TabRowIdUnorderedKey& other); */
@@ -245,6 +241,7 @@ namespace OpenLogReplicator {
     class TabRowIdKeyDefault final : public TabRowIdUnorderedKey {
     public:
         char x;
+
         bool operator<(const TabRowIdKeyDefault other) const {
             return x < other.x;
         }
@@ -261,8 +258,8 @@ namespace std {
     struct hash<OpenLogReplicator::RowId> {
         size_t operator()(const OpenLogReplicator::RowId other) const noexcept {
             return hash<typeDataObj>()(other.dataObj) ^
-                   hash<typeDba>()(other.dba) ^
-                   hash<typeSlot>()(other.slot);
+                    hash<typeDba>()(other.dba) ^
+                    hash<typeSlot>()(other.slot);
         }
     };
 

@@ -39,26 +39,29 @@ namespace OpenLogReplicator {
             return Scn{};
         }
 
-        explicit Scn(uint64_t newData) : data(newData) {
-        }
+        explicit Scn(uint64_t newData): data(newData) {}
 
         explicit Scn(uint8_t newByte0, uint8_t newByte1, uint8_t newByte2, uint8_t newByte3, uint8_t newByte4, uint8_t newByte5, uint8_t newByte6,
-                     uint8_t newByte7) :
-                data(static_cast<uint64_t>(newByte0) | (static_cast<uint64_t>(newByte1) << 8) |
-                        (static_cast<uint64_t>(newByte2) << 16) | (static_cast<uint64_t>(newByte3) << 24) |
-                        (static_cast<uint64_t>(newByte4) << 32) | (static_cast<uint64_t>(newByte5) << 40) |
-                        (static_cast<uint64_t>(newByte6) << 48) | (static_cast<uint64_t>(newByte7) << 56)) {
-        }
+                     uint8_t newByte7):
+                data(static_cast<uint64_t>(newByte0) |
+                        (static_cast<uint64_t>(newByte1) << 8) |
+                        (static_cast<uint64_t>(newByte2) << 16) |
+                        (static_cast<uint64_t>(newByte3) << 24) |
+                        (static_cast<uint64_t>(newByte4) << 32) |
+                        (static_cast<uint64_t>(newByte5) << 40) |
+                        (static_cast<uint64_t>(newByte6) << 48) |
+                        (static_cast<uint64_t>(newByte7) << 56)) {}
 
-        explicit Scn(uint8_t newByte0, uint8_t newByte1, uint8_t newByte2, uint8_t newByte3, uint8_t newByte4, uint8_t newByte5) :
-                data(static_cast<uint64_t>(newByte0) | (static_cast<uint64_t>(newByte1) << 8) |
-                        (static_cast<uint64_t>(newByte2) << 16) | (static_cast<uint64_t>(newByte3) << 24) |
-                        (static_cast<uint64_t>(newByte4) << 32) | (static_cast<uint64_t>(newByte5) << 40)) {
-        }
+        explicit Scn(uint8_t newByte0, uint8_t newByte1, uint8_t newByte2, uint8_t newByte3, uint8_t newByte4, uint8_t newByte5):
+                data(static_cast<uint64_t>(newByte0) |
+                        (static_cast<uint64_t>(newByte1) << 8) |
+                        (static_cast<uint64_t>(newByte2) << 16) |
+                        (static_cast<uint64_t>(newByte3) << 24) |
+                        (static_cast<uint64_t>(newByte4) << 32) |
+                        (static_cast<uint64_t>(newByte5) << 40)) {}
 
-        explicit Scn(uint32_t newData0, uint32_t newData1) :
-                data((static_cast<uint64_t>(newData0) << 32) | newData1) {
-        }
+        explicit Scn(uint32_t newData0, uint32_t newData1):
+                data((static_cast<uint64_t>(newData0) << 32) | newData1) {}
 
         ~Scn() = default;
 

@@ -38,20 +38,20 @@ namespace OpenLogReplicator {
                 constexpr typeBlk blk = 0; // TODO: find field position/size
                 const uint32_t extSize = ctx->read32(redoLogRecord->data(fieldPos + 12));
                 constexpr uint32_t blocksFreelist = 0; // TODO: find field position/size
-                constexpr uint32_t blocksBelow = 0; // TODO: find field position/size
-                constexpr typeBlk mapblk = 0; // TODO: find field position/size
+                constexpr uint32_t blocksBelow = 0;    // TODO: find field position/size
+                constexpr typeBlk mapblk = 0;          // TODO: find field position/size
                 const uint32_t offset = ctx->read32(redoLogRecord->data(fieldPos + 24));
 
                 *ctx->dumpStream << "kteop redo - redo operation on extent map\n";
                 *ctx->dumpStream << "   SETHWM:      " <<
-                                 " Highwater::  0x" << std::setfill('0') << std::setw(8) << std::hex << highwater << " " <<
-                                 " ext#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << ext <<
-                                 " blk#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blk <<
-                                 " ext size: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << extSize << '\n';
+                        " Highwater::  0x" << std::setfill('0') << std::setw(8) << std::hex << highwater << " " <<
+                        " ext#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << ext <<
+                        " blk#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blk <<
+                        " ext size: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << extSize << '\n';
                 *ctx->dumpStream << "  #blocks in seg. hdr's freelists: " << std::dec << blocksFreelist << "     \n";
                 *ctx->dumpStream << "  #blocks below: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blocksBelow << '\n';
                 *ctx->dumpStream << "  mapblk  0x" << std::setfill('0') << std::setw(8) << std::hex << mapblk << " " <<
-                                 " offset: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << offset << '\n';
+                        " offset: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << offset << '\n';
                 *ctx->dumpStream << std::right;
             }
         }
@@ -61,8 +61,8 @@ namespace OpenLogReplicator {
                 throw RedoLogException(50061, "too short field ktudh: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
             redoLogRecord->xid = Xid(redoLogRecord->usn,
-                                         ctx->read16(redoLogRecord->data(fieldPos + 0)),
-                                         ctx->read32(redoLogRecord->data(fieldPos + 4)));
+                                     ctx->read16(redoLogRecord->data(fieldPos + 0)),
+                                     ctx->read32(redoLogRecord->data(fieldPos + 4)));
             redoLogRecord->flg = ctx->read16(redoLogRecord->data(fieldPos + 16));
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
@@ -71,23 +71,23 @@ namespace OpenLogReplicator {
                 const uint16_t siz = ctx->read16(redoLogRecord->data(fieldPos + 18));
 
                 const Xid pXid = Xid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data(fieldPos + 24))),
-                                             ctx->read16(redoLogRecord->data(fieldPos + 26)),
-                                             ctx->read32(redoLogRecord->data(fieldPos + 28)));
+                                     ctx->read16(redoLogRecord->data(fieldPos + 26)),
+                                     ctx->read32(redoLogRecord->data(fieldPos + 28)));
 
                 *ctx->dumpStream << "ktudh redo:" <<
-                                 " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint>(redoLogRecord->xid.slt()) <<
-                                 " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
-                                 " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
-                                 " siz: " << std::dec << siz <<
-                                 " fbi: " << std::dec << static_cast<uint>(fbi) << '\n';
+                        " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint>(redoLogRecord->xid.slt()) <<
+                        " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
+                        " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
+                        " siz: " << std::dec << siz <<
+                        " fbi: " << std::dec << static_cast<uint>(fbi) << '\n';
                 /*if (ctx->version < RedoLogRecord::REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                     *ctx->dumpStream << "           " <<
                             " uba: " << PRINTUBA(uba) << "   " <<
                             " pxid:  " << pXid;
                 else*/
                 *ctx->dumpStream << "           " <<
-                                 " uba: " << PRINTUBA(uba) << "   " <<
-                                 " pxid:  " << pXid.toString();
+                        " uba: " << PRINTUBA(uba) << "   " <<
+                        " pxid:  " << pXid.toString();
                 if (ctx->version < RedoLogRecord::REDO_VERSION_12_1) // || redoLogRecord->conId == 0)
                     *ctx->dumpStream << '\n';
             }
@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
                 const uint32_t pdbId = ctx->read32(redoLogRecord->data(fieldPos + 0));
 
                 *ctx->dumpStream << "       " <<
-                                 " pdbid:" << std::dec << pdbId;
+                        " pdbid:" << std::dec << pdbId;
             }
         }
 

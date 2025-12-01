@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
 
         DbColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, std::string newName, SysCol::COLTYPE newType, uint newLength,
                  int newPrecision, int newScale, uint64_t newCharsetId, typeCol newNumPk, bool newNullable, bool newHidden,
-                 bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType) :
+                 bool newStoredAsLob, bool newSystemGenerated, bool newNested, bool newUnused, bool newAdded, bool newGuard, bool newXmlType):
                 col(newCol),
                 guardSeg(newGuardSeg),
                 segCol(newSegCol),
@@ -70,8 +70,7 @@ namespace OpenLogReplicator {
                 unused(newUnused),
                 added(newAdded),
                 guard(newGuard),
-                xmlType(newXmlType) {
-        }
+                xmlType(newXmlType) {}
 
         friend std::ostream& operator<<(std::ostream& os, const DbColumn& column) {
             os << column.segCol << ": (" << column.col << ", '" << column.name << "', " << static_cast<uint>(column.type) << ", " << column.length << ")";

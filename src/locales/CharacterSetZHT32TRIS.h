@@ -35,8 +35,8 @@ namespace OpenLogReplicator {
 
     protected:
         static typeUnicode16 unicode_map_ZHT32TRIS_4b[(ZHT32TRIS_b2_max - ZHT32TRIS_b2_min + 1) *
-                                                      (ZHT32TRIS_b3_max - ZHT32TRIS_b3_min + 1) *
-                                                      (ZHT32TRIS_b4_max - ZHT32TRIS_b4_min + 1)];
+                (ZHT32TRIS_b3_max - ZHT32TRIS_b3_min + 1) *
+                (ZHT32TRIS_b4_max - ZHT32TRIS_b4_min + 1)];
 
     public:
         CharacterSetZHT32TRIS();

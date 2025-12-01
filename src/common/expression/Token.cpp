@@ -23,13 +23,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Token.h"
 
 namespace OpenLogReplicator {
-    Token::Token(TYPE newTokenType, std::string newStringValue) :
+    Token::Token(TYPE newTokenType, std::string newStringValue):
             tokenType(newTokenType),
-            stringValue(std::move(newStringValue)) {
-    }
+            stringValue(std::move(newStringValue)) {}
 
-    bool Token::evaluateToBool(char op __attribute__((unused)), const std::unordered_map<std::string,
-            std::string>* attributes __attribute__((unused))) {
+    bool Token::evaluateToBool(char op __attribute__((unused)), const std::unordered_map<std::string, std::string>* attributes __attribute__((unused))) {
         throw RuntimeException(50066, "invalid expression evaluation: token to bool");
     }
 

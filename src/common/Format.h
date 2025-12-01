@@ -23,90 +23,156 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types/Types.h"
 
 namespace OpenLogReplicator {
-
     class Format final {
     public:
         enum class ATTRIBUTES_FORMAT : unsigned char {
-            DEFAULT = 0, BEGIN = 1UL << 0, DML = 1UL << 1, COMMIT = 1UL << 2
+            DEFAULT = 0,
+            BEGIN   = 1UL << 0,
+            DML     = 1UL << 1,
+            COMMIT  = 1UL << 2
         };
 
         enum class DB_FORMAT : unsigned char {
-            DEFAULT = 0, ADD_DML = 1, ADD_DDL = 2
+            DEFAULT = 0,
+            ADD_DML = 1,
+            ADD_DDL = 2
         };
 
         enum class CHAR_FORMAT : unsigned char {
-            UTF8 = 0, NOMAPPING = 1, HEX = 2
+            UTF8      = 0,
+            NOMAPPING = 1,
+            HEX       = 2
         };
 
         enum class COLUMN_FORMAT : unsigned char {
-            CHANGED = 0,        // Default, only changed columns for update, or PK
-            FULL_INS_DEC = 1,   // Show full nulls from insert and delete
-            FULL_UPD = 2        // Show all from redo;
+            CHANGED      = 0, // Default, only changed columns for update, or PK
+            FULL_INS_DEC = 1, // Show full nulls from insert and delete
+            FULL_UPD     = 2  // Show all from redo;
         };
 
         enum class INTERVAL_DTS_FORMAT : unsigned char {
-            UNIX_NANO, UNIX_MICRO, UNIX_MILLI, UNIX, UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_SPACE, ISO8601_COMMA,
+            UNIX_NANO,
+            UNIX_MICRO,
+            UNIX_MILLI,
+            UNIX,
+            UNIX_NANO_STRING,
+            UNIX_MICRO_STRING,
+            UNIX_MILLI_STRING,
+            UNIX_STRING,
+            ISO8601_SPACE,
+            ISO8601_COMMA,
             ISO8601_DASH
         };
 
         enum class INTERVAL_YTM_FORMAT : unsigned char {
-            MONTHS, MONTHS_STRING, STRING_YM_SPACE, STRING_YM_COMMA, STRING_YM_DASH
+            MONTHS,
+            MONTHS_STRING,
+            STRING_YM_SPACE,
+            STRING_YM_COMMA,
+            STRING_YM_DASH
         };
 
         enum class MESSAGE_FORMAT : unsigned char {
-            DEFAULT = 0, FULL = 1 << 0, ADD_SEQUENCES = 1 << 1,
+            DEFAULT       = 0,
+            FULL          = 1 << 0,
+            ADD_SEQUENCES = 1 << 1,
             // JSON only:
-            SKIP_BEGIN = 1 << 2, SKIP_COMMIT = 1 << 3, ADD_OFFSET = 1 << 4
+            SKIP_BEGIN  = 1 << 2,
+            SKIP_COMMIT = 1 << 3,
+            ADD_OFFSET  = 1 << 4
         };
 
         enum class RID_FORMAT : unsigned char {
-            SKIP, TEXT
+            SKIP,
+            TEXT
         };
 
         enum class SCN_FORMAT : unsigned char {
-            NUMERIC, TEXT_HEX
+            NUMERIC,
+            TEXT_HEX
         };
 
         enum class SCN_TYPE : unsigned char {
-            NONE = 0, ALL_PAYLOADS = 1 << 0, COMMIT_VALUE = 1 << 1
+            NONE         = 0,
+            ALL_PAYLOADS = 1 << 0,
+            COMMIT_VALUE = 1 << 1
         };
 
         enum class SCHEMA_FORMAT : unsigned char {
-            DEFAULT = 0, FULL = 1 << 0, REPEATED = 1 << 1, OBJ = 1 << 2
+            DEFAULT  = 0,
+            FULL     = 1 << 0,
+            REPEATED = 1 << 1,
+            OBJ      = 1 << 2
         };
 
         enum class TIMESTAMP_ALL : unsigned char {
-            JUST_BEGIN, ALL_PAYLOADS
+            JUST_BEGIN,
+            ALL_PAYLOADS
         };
 
         enum class TIMESTAMP_FORMAT : unsigned char {
-            UNIX_NANO, UNIX_MICRO, UNIX_MILLI, UNIX, UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_NANO_TZ, ISO8601_MICRO_TZ,
-            ISO8601_MILLI_TZ, ISO8601_TZ, ISO8601_NANO, ISO8601_MICRO, ISO8601_MILLI, ISO8601
+            UNIX_NANO,
+            UNIX_MICRO,
+            UNIX_MILLI,
+            UNIX,
+            UNIX_NANO_STRING,
+            UNIX_MICRO_STRING,
+            UNIX_MILLI_STRING,
+            UNIX_STRING,
+            ISO8601_NANO_TZ,
+            ISO8601_MICRO_TZ,
+            ISO8601_MILLI_TZ,
+            ISO8601_TZ,
+            ISO8601_NANO,
+            ISO8601_MICRO,
+            ISO8601_MILLI,
+            ISO8601
         };
 
         enum class TIMESTAMP_TZ_FORMAT : unsigned char {
-            UNIX_NANO_STRING, UNIX_MICRO_STRING, UNIX_MILLI_STRING, UNIX_STRING, ISO8601_NANO_TZ, ISO8601_MICRO_TZ, ISO8601_MILLI_TZ, ISO8601_TZ, ISO8601_NANO,
-            ISO8601_MICRO, ISO8601_MILLI, ISO8601
+            UNIX_NANO_STRING,
+            UNIX_MICRO_STRING,
+            UNIX_MILLI_STRING,
+            UNIX_STRING,
+            ISO8601_NANO_TZ,
+            ISO8601_MICRO_TZ,
+            ISO8601_MILLI_TZ,
+            ISO8601_TZ,
+            ISO8601_NANO,
+            ISO8601_MICRO,
+            ISO8601_MILLI,
+            ISO8601
         };
 
         enum class TRANSACTION_TYPE : unsigned char {
-            T_NONE, INSERT, DELETE, UPDATE
+            T_NONE,
+            INSERT,
+            DELETE,
+            UPDATE
         };
 
         enum class UNKNOWN_FORMAT : unsigned char {
-            QUESTION_MARK, DUMP
+            QUESTION_MARK,
+            DUMP
         };
 
         enum class UNKNOWN_TYPE : unsigned char {
-            HIDE, SHOW
+            HIDE,
+            SHOW
         };
 
         enum class VALUE_TYPE : unsigned char {
-            BEFORE, AFTER, BEFORE_SUPP, AFTER_SUPP, LENGTH
+            BEFORE,
+            AFTER,
+            BEFORE_SUPP,
+            AFTER_SUPP,
+            LENGTH
         };
 
         enum class XID_FORMAT : unsigned char {
-            TEXT_HEX, TEXT_DEC, NUMERIC
+            TEXT_HEX,
+            TEXT_DEC,
+            NUMERIC
         };
 
         DB_FORMAT dbFormat;
@@ -131,7 +197,7 @@ namespace OpenLogReplicator {
                INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat, XID_FORMAT newXidFormat,
                TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat,
                SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat,
-               UNKNOWN_TYPE newUnknownType) :
+               UNKNOWN_TYPE newUnknownType):
                 dbFormat(newDbFormat),
                 attributesFormat(newAttributesFormat),
                 intervalDtsFormat(newIntervalDtsFormat),
@@ -148,8 +214,7 @@ namespace OpenLogReplicator {
                 unknownFormat(newUnknownFormat),
                 schemaFormat(newSchemaFormat),
                 columnFormat(newColumnFormat),
-                unknownType(newUnknownType) {
-        }
+                unknownType(newUnknownType) {}
 
         [[nodiscard]] bool isAttributesFormatBegin() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::BEGIN)) != 0;

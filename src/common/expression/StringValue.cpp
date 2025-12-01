@@ -23,10 +23,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StringValue.h"
 
 namespace OpenLogReplicator {
-    StringValue::StringValue(TYPE newStringType, std::string newStringValue) :
+    StringValue::StringValue(TYPE newStringType, std::string newStringValue):
             stringType(newStringType),
-            stringValue(std::move(newStringValue)) {
-    }
+            stringValue(std::move(newStringValue)) {}
 
     bool StringValue::evaluateToBool(char op __attribute__((unused)), const std::unordered_map<std::string, std::string>* attributes __attribute__((unused))) {
         throw RuntimeException(50066, "invalid expression evaluation: string to bool");

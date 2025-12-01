@@ -35,15 +35,13 @@ namespace OpenLogReplicator {
         std::string path;
         std::string id;
 
-        XdbXPt(RowId newRowId, std::string newPath, std::string newId) :
+        XdbXPt(RowId newRowId, std::string newPath, std::string newId):
                 rowId(newRowId),
                 path(std::move(newPath)),
-                id(std::move(newId)) {
-        }
+                id(std::move(newId)) {}
 
-        explicit XdbXPt(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit XdbXPt(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const XdbXPt& other) const {
             return (other.rowId != rowId) || (other.path != path) || (other.id != id);
@@ -78,13 +76,11 @@ namespace OpenLogReplicator {
     public:
         std::string id;
 
-        explicit XdbXPtKey(std::string newId) :
-                id(std::move(newId)) {
-        }
+        explicit XdbXPtKey(std::string newId):
+                id(std::move(newId)) {}
 
-        explicit XdbXPtKey(const XdbXPt* xdbXPt) :
-                id(xdbXPt->id) {
-        }
+        explicit XdbXPtKey(const XdbXPt* xdbXPt):
+                id(xdbXPt->id) {}
 
         bool operator!=(const XdbXPtKey& other) const {
             return (other.id != id);

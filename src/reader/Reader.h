@@ -34,8 +34,20 @@ namespace OpenLogReplicator {
     class Reader : public Thread {
     public:
         enum class REDO_CODE : unsigned char {
-            OK, OVERWRITTEN, FINISHED, STOPPED, SHUTDOWN, EMPTY, ERROR_READ, ERROR_WRITE, ERROR_SEQUENCE, ERROR_CRC, ERROR_BLOCK, ERROR_BAD_DATA,
-            ERROR, CNT
+            OK,
+            OVERWRITTEN,
+            FINISHED,
+            STOPPED,
+            SHUTDOWN,
+            EMPTY,
+            ERROR_READ,
+            ERROR_WRITE,
+            ERROR_SEQUENCE,
+            ERROR_CRC,
+            ERROR_BLOCK,
+            ERROR_BAD_DATA,
+            ERROR,
+            CNT
         };
 
     protected:
@@ -47,7 +59,10 @@ namespace OpenLogReplicator {
         static constexpr uint64_t FLAGS_MAXPERFORMANCE{0x2000};
 
         enum class STATUS : unsigned char {
-            SLEEPING, CHECK, UPDATE, READ
+            SLEEPING,
+            CHECK,
+            UPDATE,
+            READ
         };
 
         static constexpr uint PAGE_SIZE_MAX{4096};

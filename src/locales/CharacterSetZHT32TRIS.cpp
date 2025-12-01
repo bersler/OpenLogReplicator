@@ -20,9 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSetZHT32TRIS.h"
 
 namespace OpenLogReplicator {
-    CharacterSetZHT32TRIS::CharacterSetZHT32TRIS() :
-            CharacterSet("ZHT32TRIS") {
-    }
+    CharacterSetZHT32TRIS::CharacterSetZHT32TRIS():
+            CharacterSet("ZHT32TRIS") {}
 
     typeUnicode CharacterSetZHT32TRIS::decode(const Ctx* ctx, Xid xid, const uint8_t*& str, uint64_t& length) const {
         const uint64_t byte1 = *str++;

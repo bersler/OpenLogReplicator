@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
     protected:
         [[nodiscard]] virtual bool validCode(uint64_t byte1, uint64_t byte2) const;
         static typeUnicode16 unicode_map_JA16SJIS_2b[(JA16SJIS_b1_max - JA16SJIS_b1_min + 1) *
-                                                     (JA16SJIS_b2_max - JA16SJIS_b2_min + 1)];
+                (JA16SJIS_b2_max - JA16SJIS_b2_min + 1)];
 
     public:
         explicit CharacterSetJA16SJIS(std::string newName);

@@ -21,9 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterDiscard.h"
 
 namespace OpenLogReplicator {
-    WriterDiscard::WriterDiscard(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata) :
-            Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata) {
-    }
+    WriterDiscard::WriterDiscard(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata):
+            Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata) {}
 
     void WriterDiscard::initialize() {
         Writer::initialize();

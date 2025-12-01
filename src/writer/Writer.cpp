@@ -32,7 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 
 namespace OpenLogReplicator {
-    Writer::Writer(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata) :
+    Writer::Writer(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata):
             Thread(newCtx, std::move(newAlias)),
             database(std::move(newDatabase)),
             builder(newBuilder),
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
     void Writer::initialize() {
         if (queue != nullptr)
             return;
-        queue = new BuilderMsg* [ctx->queueSize];
+        queue = new BuilderMsg*[ctx->queueSize];
     }
 
     void Writer::createMessage(BuilderMsg* msg) {
@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
             return;
 
         BuilderMsg** oldQueue = queue;
-        queue = new BuilderMsg* [ctx->queueSize];
+        queue = new BuilderMsg*[ctx->queueSize];
         uint64_t oldQueueSize = currentQueueSize;
 
         for (uint64_t newId = 0; newId < currentQueueSize; ++newId) {
@@ -273,7 +273,7 @@ namespace OpenLogReplicator {
                 while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
                         ctx->logTrace(Ctx::TRACE::WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
-                                                          " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
+                                      " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     contextSet(CONTEXT::SLEEP);
                     usleep(ctx->pollIntervalUs);
                     contextSet(CONTEXT::CPU);
@@ -310,7 +310,7 @@ namespace OpenLogReplicator {
                     msg->data = new uint8_t[msg->size];
                     if (unlikely(msg->data == nullptr))
                         throw RuntimeException(10016, "couldn't allocate " + std::to_string(msg->size) +
-                                                      " bytes memory for: temporary buffer for JSON message");
+                                               " bytes memory for: temporary buffer for JSON message");
                     msg->setFlag(BuilderMsg::OUTPUT_BUFFER::ALLOCATED);
 
                     uint64_t copied = 0;
@@ -378,19 +378,18 @@ namespace OpenLogReplicator {
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT))) {
             if (checkpointScn == Scn::none())
                 ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + confirmedScn.toString() + " idx: " +
-                                                      std::to_string(confirmedIdx));
+                              std::to_string(confirmedIdx));
             else
                 ctx->logTrace(Ctx::TRACE::CHECKPOINT, "writer confirmed scn: " + confirmedScn.toString() + " idx: " +
-                                                      std::to_string(confirmedIdx) + " checkpoint scn: " + checkpointScn.toString() + " idx: " +
-                                                      std::to_string(checkpointIdx));
+                              std::to_string(confirmedIdx) + " checkpoint scn: " + checkpointScn.toString() + " idx: " + std::to_string(checkpointIdx));
         }
         const std::string name(database + "-chkpt");
         std::ostringstream ss;
         ss << R"({"database":")" << database
-           << R"(","scn":)" << std::dec << confirmedScn.toString()
-           << R"(,"idx":)" << std::dec << confirmedIdx
-           << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
-           << R"(,"activation":)" << std::dec << metadata->activation << "}";
+                << R"(","scn":)" << std::dec << confirmedScn.toString()
+                << R"(,"idx":)" << std::dec << confirmedIdx
+                << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
+                << R"(,"activation":)" << std::dec << metadata->activation << "}";
 
         if (metadata->stateWrite(name, confirmedScn, ss)) {
             checkpointScn = confirmedScn;
@@ -410,10 +409,10 @@ namespace OpenLogReplicator {
 
         if (unlikely(checkpoint.empty() || document.Parse(checkpoint.c_str()).HasParseError()))
             throw DataException(20001, "file: " + name + " offset: " + std::to_string(document.GetErrorOffset()) +
-                                       " - parse error: " + GetParseError_En(document.GetParseError()));
+                                " - parse error: " + GetParseError_En(document.GetParseError()));
 
         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-            static const std::vector<std::string> documentNames {"database", "resetlogs", "activation", "scn", "idx"};
+            static const std::vector<std::string> documentNames{"database", "resetlogs", "activation", "scn", "idx"};
             Ctx::checkJsonFields(name, document, documentNames);
         }
 
@@ -438,7 +437,7 @@ namespace OpenLogReplicator {
         metadata->startTimeRel = 0;
 
         ctx->info(0, "checkpoint - all confirmed till scn: " + checkpointScn.toString() + ", idx: " +
-                     std::to_string(checkpointIdx));
+                  std::to_string(checkpointIdx));
         metadata->setStatusReplicate(this);
     }
 

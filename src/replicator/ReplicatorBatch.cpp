@@ -23,10 +23,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ReplicatorBatch.h"
 
 namespace OpenLogReplicator {
-    ReplicatorBatch::ReplicatorBatch(Ctx* newCtx, void (* newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                                     TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase) :
-            Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, std::move(newAlias), std::move(newDatabase)) {
-    }
+    ReplicatorBatch::ReplicatorBatch(Ctx * newCtx, void(*newArchGetLog)(Replicator * replicator), Builder * newBuilder, Metadata * newMetadata,
+                                     TransactionBuffer * newTransactionBuffer, std::string newAlias, std::string newDatabase):
+        Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, std::move(newAlias), std::move(newDatabase)) {}
 
     void ReplicatorBatch::positionReader() {
         if (metadata->startSequence != Seq::none())

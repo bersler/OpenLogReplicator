@@ -50,15 +50,15 @@ namespace OpenLogReplicator {
 
     protected:
         static typeUnicode16 unicode_map_ZHS32GB18030_2b[(ZHS32GB18030_2_b1_max - ZHS32GB18030_2_b1_min + 1) *
-                                                         (ZHS32GB18030_2_b2_max - ZHS32GB18030_2_b2_min + 1)];
+                (ZHS32GB18030_2_b2_max - ZHS32GB18030_2_b2_min + 1)];
         static typeUnicode16 unicode_map_ZHS32GB18030_4b1[(ZHS32GB18030_41_b1_max - ZHS32GB18030_41_b1_min + 1) *
-                                                          (ZHS32GB18030_41_b2_max - ZHS32GB18030_41_b2_min + 1) *
-                                                          (ZHS32GB18030_41_b3_max - ZHS32GB18030_41_b3_min + 1) *
-                                                          (ZHS32GB18030_41_b4_max - ZHS32GB18030_41_b4_min + 1)];
+                (ZHS32GB18030_41_b2_max - ZHS32GB18030_41_b2_min + 1) *
+                (ZHS32GB18030_41_b3_max - ZHS32GB18030_41_b3_min + 1) *
+                (ZHS32GB18030_41_b4_max - ZHS32GB18030_41_b4_min + 1)];
         static typeUnicode32 unicode_map_ZHS32GB18030_4b2[(ZHS32GB18030_42_b1_max - ZHS32GB18030_42_b1_min + 1) *
-                                                          (ZHS32GB18030_42_b2_max - ZHS32GB18030_42_b2_min + 1) *
-                                                          (ZHS32GB18030_42_b3_max - ZHS32GB18030_42_b3_min + 1) *
-                                                          (ZHS32GB18030_42_b4_max - ZHS32GB18030_42_b4_min + 1)];
+                (ZHS32GB18030_42_b2_max - ZHS32GB18030_42_b2_min + 1) *
+                (ZHS32GB18030_42_b3_max - ZHS32GB18030_42_b3_min + 1) *
+                (ZHS32GB18030_42_b4_max - ZHS32GB18030_42_b4_min + 1)];
 
     public:
         CharacterSetZHS32GB18030();

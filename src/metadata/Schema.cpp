@@ -32,11 +32,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-    Schema::Schema(Ctx* newCtx, Locales* newLocales) :
+    Schema::Schema(Ctx* newCtx, Locales* newLocales):
             ctx(newCtx),
             locales(newLocales),
-            sysUserAdaptive(sysUserRowId, 0, "", 0, 0, false) {
-    }
+            sysUserAdaptive(sysUserRowId, 0, "", 0, 0, false) {}
 
     // FIXME: throws exception
     Schema::~Schema() {
@@ -248,7 +247,7 @@ namespace OpenLogReplicator {
             tablePartitionMap.insert_or_assign(table->obj, table);
         else
             throw DataException(50033, "can't add partition (obj: " + std::to_string(table->obj) + ", dataobj: " +
-                                       std::to_string(table->dataObj) + ")");
+                                std::to_string(table->dataObj) + ")");
 
         for (const typeObj2 objx: table->tablePartitions) {
             const typeObj obj = objx >> 32;
@@ -258,7 +257,7 @@ namespace OpenLogReplicator {
                 tablePartitionMap.insert_or_assign(obj, table);
             else
                 throw DataException(50034, "can't add partition element (obj: " + std::to_string(obj) + ", dataobj: " +
-                                           std::to_string(dataObj) + ")");
+                                    std::to_string(dataObj) + ")");
         }
     }
 
@@ -268,7 +267,7 @@ namespace OpenLogReplicator {
             tablePartitionMap.erase(tablePartitionMapIt);
         else
             throw DataException(50035, "can't remove partition (obj: " + std::to_string(table->obj) + ", dataobj: " +
-                                       std::to_string(table->dataObj) + ")");
+                                std::to_string(table->dataObj) + ")");
 
         for (const typeObj2 objx: table->tablePartitions) {
             const typeObj obj = objx >> 32;
@@ -279,7 +278,7 @@ namespace OpenLogReplicator {
                 tablePartitionMap.erase(tablePartitionMapIt);
             else
                 throw DataException(50036, "can't remove table partition element (obj: " + std::to_string(obj) + ", dataobj: " +
-                                           std::to_string(dataObj) + ")");
+                                    std::to_string(dataObj) + ")");
         }
 
         for (const auto* const lob: table->lobs) {
@@ -303,7 +302,7 @@ namespace OpenLogReplicator {
             tableMap.erase(tableMapIt);
         else
             throw DataException(50038, "can't remove table (obj: " + std::to_string(table->obj) + ", dataobj: " +
-                                       std::to_string(table->dataObj) + ")");
+                                std::to_string(table->dataObj) + ")");
     }
 
     void Schema::dropUnusedMetadata(const std::set<std::string>& users, const std::vector<SchemaElement*>& schemaElements, std::unordered_map<typeObj,
@@ -502,8 +501,8 @@ namespace OpenLogReplicator {
 
     void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keyList, const std::string& key,
                            SchemaElement::TAG_TYPE tagType, const std::vector<std::string>& tagList, const std::string& tag __attribute__((unused)),
-                           const std::string& condition, DbTable::OPTIONS options, std::unordered_map<typeObj, std::string>& tablesUpdated, bool suppLogDbPrimary,
-                           bool suppLogDbAll, uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
+                           const std::string& condition, DbTable::OPTIONS options, std::unordered_map<typeObj, std::string>& tablesUpdated,
+                           bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
         const std::regex regexOwner(owner);
         const std::regex regexTable(table);
         char sysLobConstraintName[26]{"SYS_LOB0000000000C00000$$"};

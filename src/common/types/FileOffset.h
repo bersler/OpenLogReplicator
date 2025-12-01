@@ -34,11 +34,9 @@ namespace OpenLogReplicator {
             return FileOffset{};
         }
 
-        explicit FileOffset(uint64_t newData) : data(newData) {
-        }
+        explicit FileOffset(uint64_t newData): data(newData) {}
 
-        explicit FileOffset(uint32_t block, uint blockSize) : data(static_cast<uint64_t>(block) * blockSize) {
-        }
+        explicit FileOffset(uint32_t block, uint blockSize): data(static_cast<uint64_t>(block) * blockSize) {}
 
         ~FileOffset() = default;
 

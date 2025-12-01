@@ -30,12 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class Xid final {
         uint64_t data;
-    public:
-        Xid() : data(0) {
-        }
 
-        explicit Xid(uint64_t newData) : data(newData) {
-        }
+    public:
+        Xid(): data(0) {}
+
+        explicit Xid(uint64_t newData): data(newData) {}
 
         Xid(typeUsn usn, typeSlt slt, typeSqn sqn) {
             data = (static_cast<uint64_t>(usn) << 48) | (static_cast<uint64_t>(slt) << 32) | static_cast<uint64_t>(sqn);
@@ -98,8 +97,8 @@ namespace OpenLogReplicator {
                 throw DataException(20002, "bad XID value: " + str);
 
             data = (static_cast<uint64_t>(stoul(usn_, nullptr, 16)) << 48) |
-                   (static_cast<uint64_t>(stoul(slt_, nullptr, 16)) << 32) |
-                   static_cast<uint64_t>(stoul(sqn_, nullptr, 16));
+                    (static_cast<uint64_t>(stoul(slt_, nullptr, 16)) << 32) |
+                    static_cast<uint64_t>(stoul(sqn_, nullptr, 16));
         }
 
         static Xid zero() {
@@ -150,7 +149,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] std::string toString() const {
             std::ostringstream ss;
             ss << "0x" << std::setfill('0') << std::setw(4) << std::hex << (data >> 48) << "." << std::setw(3) <<
-               ((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);
+                    ((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);
             return ss.str();
         }
     };

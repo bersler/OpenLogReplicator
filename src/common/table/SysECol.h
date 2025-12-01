@@ -28,19 +28,17 @@ namespace OpenLogReplicator {
     public:
         RowId rowId;
         typeObj tabObj{0};
-        typeCol colNum{0};            // NULL
-        typeCol guardId{-1};           // NULL
+        typeCol colNum{0};   // NULL
+        typeCol guardId{-1}; // NULL
 
-        SysECol(RowId newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId) :
+        SysECol(RowId newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId):
                 rowId(newRowId),
                 tabObj(newTabObj),
                 colNum(newColNum),
-                guardId(newGuardId) {
-        }
+                guardId(newGuardId) {}
 
-        explicit SysECol(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysECol(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysECol& other) const {
             return (other.rowId != rowId) || (other.tabObj != tabObj) || (other.colNum != colNum) || (other.guardId != guardId);
@@ -52,7 +50,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", TABOBJ#: " + std::to_string(tabObj) + ", COLNUM: " + std::to_string(colNum) + ", GUARD_ID: " +
-                   std::to_string(guardId);
+                    std::to_string(guardId);
         }
 
         [[nodiscard]] static constexpr bool dependentTable() {
@@ -81,15 +79,13 @@ namespace OpenLogReplicator {
         typeObj tabObj;
         typeCol colNum;
 
-        SysEColKey(typeObj newTabObj, typeCol newColNum) :
+        SysEColKey(typeObj newTabObj, typeCol newColNum):
                 tabObj(newTabObj),
-                colNum(newColNum) {
-        }
+                colNum(newColNum) {}
 
-        explicit SysEColKey(const SysECol* sysECol) :
+        explicit SysEColKey(const SysECol* sysECol):
                 tabObj(sysECol->tabObj),
-                colNum(sysECol->colNum) {
-        }
+                colNum(sysECol->colNum) {}
 
         bool operator!=(const SysEColKey other) const {
             return (other.tabObj != tabObj) || (other.colNum != colNum);

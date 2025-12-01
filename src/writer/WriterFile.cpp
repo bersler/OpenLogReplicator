@@ -36,15 +36,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     WriterFile::WriterFile(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata,
                            std::string newOutput, std::string newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend,
-                           uint newWriteBufferFlushSize) :
+                           uint newWriteBufferFlushSize):
             Writer(newCtx, std::move(newAlias), std::move(newDatabase), newBuilder, newMetadata),
             output(std::move(newOutput)),
             timestampFormat(std::move(newTimestampFormat)),
             maxFileSize(newMaxFileSize),
             newLine(newNewLine),
             append(newAppend),
-            writeBufferFlushSize(newWriteBufferFlushSize) {
-    }
+            writeBufferFlushSize(newWriteBufferFlushSize) {}
 
     WriterFile::~WriterFile() {
         closeFile();
@@ -133,7 +132,7 @@ namespace OpenLogReplicator {
 
         if ((mode == MODE::TIMESTAMP || mode == MODE::NUM) && maxFileSize == 0)
             throw ConfigurationException(30007, "output file is with no max file size: " + this->output +
-                                                " - 'max-file-size' must be defined for output with rotation");
+                                         " - 'max-file-size' must be defined for output with rotation");
 
         // Search for last used number
         if (mode == MODE::NUM) {
@@ -341,7 +340,7 @@ namespace OpenLogReplicator {
         contextSet(CONTEXT::CPU);
         if (bytesWritten <= 0 || static_cast<uint64_t>(bytesWritten) != size)
             throw RuntimeException(10007, "file: " + fullFileName + " - " + std::to_string(bytesWritten) + " bytes written instead of " +
-                                          std::to_string(size) + ", code returned: " + strerror(errno));
+                                   std::to_string(size) + ", code returned: " + strerror(errno));
     }
 
     void WriterFile::bufferedWrite(const uint8_t* data, uint64_t size) {

@@ -39,8 +39,7 @@ namespace OpenLogReplicator {
             return Seq{};
         }
 
-        explicit Seq(uint32_t newData) : data(newData) {
-        }
+        explicit Seq(uint32_t newData): data(newData) {}
 
         ~Seq() = default;
 

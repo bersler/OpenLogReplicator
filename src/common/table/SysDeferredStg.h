@@ -31,17 +31,15 @@ namespace OpenLogReplicator {
 
         RowId rowId;
         typeObj obj{0};
-        IntX flagsStg{0, 0};          // NULL
+        IntX flagsStg{0, 0}; // NULL
 
-        SysDeferredStg(RowId newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2) :
+        SysDeferredStg(RowId newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2):
                 rowId(newRowId),
                 obj(newObj),
-                flagsStg(newFlagsStg1, newFlagsStg2) {
-        }
+                flagsStg(newFlagsStg1, newFlagsStg2) {}
 
-        explicit SysDeferredStg(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysDeferredStg(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysDeferredStg& other) const {
             return (other.rowId != rowId) || (other.obj != obj) || (other.flagsStg != flagsStg);
@@ -84,13 +82,11 @@ namespace OpenLogReplicator {
     public:
         typeObj obj;
 
-        explicit SysDeferredStgObj(typeObj newObj) :
-                obj(newObj) {
-        }
+        explicit SysDeferredStgObj(typeObj newObj):
+                obj(newObj) {}
 
-        explicit SysDeferredStgObj(const SysDeferredStg* sysDeferredStg) :
-                obj(sysDeferredStg->obj) {
-        }
+        explicit SysDeferredStgObj(const SysDeferredStg* sysDeferredStg):
+                obj(sysDeferredStg->obj) {}
 
         bool operator!=(const SysDeferredStgObj other) const {
             return (other.obj != obj);

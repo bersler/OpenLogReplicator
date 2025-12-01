@@ -36,20 +36,19 @@ namespace OpenLogReplicator {
         bool current;
 
         DbIncarnation(uint32_t newIncarnation, Scn newResetlogsScn, Scn newPriorResetlogsScn, std::string newStatus, typeResetlogs newResetlogs,
-                      uint32_t newPriorIncarnation) :
+                      uint32_t newPriorIncarnation):
                 incarnation(newIncarnation),
                 resetlogsScn(newResetlogsScn),
                 priorResetlogsScn(newPriorResetlogsScn),
                 status(std::move(newStatus)),
                 resetlogs(newResetlogs),
                 priorIncarnation(newPriorIncarnation) {
-
             current = this->status == "CURRENT";
         }
 
         friend std::ostream& operator<<(std::ostream& os, const DbIncarnation& i) {
             os << "(" << std::dec << i.incarnation << ", " << i.resetlogsScn.toString() << ", " << i.priorResetlogsScn.toString() << ", " << i.status <<
-                ", " << i.resetlogs << ", " << i.priorIncarnation << ")";
+                    ", " << i.resetlogs << ", " << i.priorIncarnation << ")";
             return os;
         }
     };

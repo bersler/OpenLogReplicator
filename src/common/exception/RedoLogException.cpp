@@ -22,10 +22,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogException.h"
 
 namespace OpenLogReplicator {
-    RedoLogException::RedoLogException(int newCode, std::string newMsg) :
+    RedoLogException::RedoLogException(int newCode, std::string newMsg):
             code(newCode),
-            msg(std::move(newMsg)) {
-    }
+            msg(std::move(newMsg)) {}
 
     std::ostream& operator<<(std::ostream& os, const RedoLogException& exception) {
         os << exception.msg;

@@ -22,13 +22,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     DatabaseConnection::DatabaseConnection(DatabaseEnvironment* newEnv, std::string newUser, std::string newPassword, std::string newConnectString,
-                                           bool newSysAsm) :
+                                           bool newSysAsm):
             user(std::move(newUser)),
             password(std::move(newPassword)),
             connectString(std::move(newConnectString)),
             sysAsm(newSysAsm),
-            env(newEnv) {
-    }
+            env(newEnv) {}
 
     void DatabaseConnection::connect() {
         disconnect();

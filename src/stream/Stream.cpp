@@ -21,8 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Stream.h"
 
 namespace OpenLogReplicator {
-    Stream::Stream(Ctx* newCtx, std::string newUri) :
+    Stream::Stream(Ctx* newCtx, std::string newUri):
             ctx(newCtx),
-            uri(std::move(newUri)) {
-    }
+            uri(std::move(newUri)) {}
 }

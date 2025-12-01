@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
 
     protected:
         static typeUnicode16 unicode_map_ZHS16GBK_2b[(ZHS16GBK_b1_max - ZHS16GBK_b1_min + 1) *
-                                                     (ZHS16GBK_b2_max - ZHS16GBK_b2_min + 1)];
+                (ZHS16GBK_b2_max - ZHS16GBK_b2_min + 1)];
 
     public:
         CharacterSetZHS16GBK();

@@ -26,7 +26,11 @@ namespace OpenLogReplicator {
     class WriterFile final : public Writer {
     protected:
         enum class MODE : unsigned char {
-            STDOUT, NO_ROTATE, NUM, TIMESTAMP, SEQUENCE
+            STDOUT,
+            NO_ROTATE,
+            NUM,
+            TIMESTAMP,
+            SEQUENCE
         };
 
         size_t prefixPos{0};
@@ -47,7 +51,7 @@ namespace OpenLogReplicator {
         Seq lastSequence{Seq::none()};
         const uint8_t* newLineMsg{nullptr};
         bool warningDisplayed{false};
-        uint8_t *buffer{nullptr};
+        uint8_t* buffer{nullptr};
         uint bufferFill{0};
         uint writeBufferFlushSize;
 

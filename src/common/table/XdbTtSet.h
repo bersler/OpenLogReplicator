@@ -37,17 +37,15 @@ namespace OpenLogReplicator {
         uint64_t flags{0};
         typeObj obj{0};
 
-        XdbTtSet(RowId newRowId, std::string newGuid, std::string newTokSuf, uint64_t newFlags, typeObj newObj) :
+        XdbTtSet(RowId newRowId, std::string newGuid, std::string newTokSuf, uint64_t newFlags, typeObj newObj):
                 rowId(newRowId),
                 guid(std::move(newGuid)),
                 tokSuf(std::move(newTokSuf)),
                 flags(newFlags),
-                obj(newObj) {
-        }
+                obj(newObj) {}
 
-        explicit XdbTtSet(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit XdbTtSet(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const XdbTtSet& other) const {
             return (other.rowId != rowId) || (other.guid != guid) || (other.tokSuf != tokSuf) || (other.flags != flags) || (other.obj != obj);
@@ -59,7 +57,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", GUID: '" + guid + "', TOKSUF: '" + tokSuf + "', FLAGS: " + std::to_string(flags) + ", OBJ#: " +
-                   std::to_string(obj);
+                    std::to_string(obj);
         }
 
         [[nodiscard]] static constexpr bool dependentTable() {
@@ -83,13 +81,11 @@ namespace OpenLogReplicator {
     public:
         std::string tokSuf;
 
-        explicit XdbTtSetTokSuf(std::string newTokSuf) :
-                tokSuf(std::move(newTokSuf)) {
-        }
+        explicit XdbTtSetTokSuf(std::string newTokSuf):
+                tokSuf(std::move(newTokSuf)) {}
 
-        explicit XdbTtSetTokSuf(const XdbTtSet* xdbTtSet) :
-                tokSuf(xdbTtSet->tokSuf) {
-        }
+        explicit XdbTtSetTokSuf(const XdbTtSet* xdbTtSet):
+                tokSuf(xdbTtSet->tokSuf) {}
 
         bool operator!=(const XdbTtSetTokSuf& other) const {
             return (other.tokSuf != tokSuf);

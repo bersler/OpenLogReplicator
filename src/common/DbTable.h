@@ -37,11 +37,33 @@ namespace OpenLogReplicator {
     class DbTable final {
     public:
         enum class OPTIONS : unsigned char {
-            DEFAULT = 0, DEBUG_TABLE = 1 << 0, SYSTEM_TABLE = 1 << 1, SCHEMA_TABLE = 1 << 2
+            DEFAULT      = 0,
+            DEBUG_TABLE  = 1 << 0,
+            SYSTEM_TABLE = 1 << 1,
+            SCHEMA_TABLE = 1 << 2
         };
+
         enum class TABLE : unsigned char {
-            NONE, SYS_CCOL, SYS_CDEF, SYS_COL, SYS_DEFERRED_STG, SYS_ECOL, SYS_LOB, SYS_LOB_COMP_PART, SYS_LOB_FRAG, SYS_OBJ, SYS_TAB, SYS_TABPART,
-            SYS_TABCOMPART, SYS_TABSUBPART, SYS_TS, SYS_USER, XDB_TTSET, XDB_XNM, XDB_XPT, XDB_XQN
+            NONE,
+            SYS_CCOL,
+            SYS_CDEF,
+            SYS_COL,
+            SYS_DEFERRED_STG,
+            SYS_ECOL,
+            SYS_LOB,
+            SYS_LOB_COMP_PART,
+            SYS_LOB_FRAG,
+            SYS_OBJ,
+            SYS_TAB,
+            SYS_TABPART,
+            SYS_TABCOMPART,
+            SYS_TABSUBPART,
+            SYS_TS,
+            SYS_USER,
+            XDB_TTSET,
+            XDB_XNM,
+            XDB_XPT,
+            XDB_XQN
         };
 
         static constexpr uint VCONTEXT_LENGTH{30};

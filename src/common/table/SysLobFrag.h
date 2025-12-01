@@ -31,16 +31,14 @@ namespace OpenLogReplicator {
         typeObj parentObj{0};
         typeTs ts{0};
 
-        SysLobFrag(RowId newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
+        SysLobFrag(RowId newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs):
                 rowId(newRowId),
                 fragObj(newFragObj),
                 parentObj(newParentObj),
-                ts(newTs) {
-        }
+                ts(newTs) {}
 
-        explicit SysLobFrag(RowId newRowId) :
-                rowId(newRowId) {
-        }
+        explicit SysLobFrag(RowId newRowId):
+                rowId(newRowId) {}
 
         bool operator!=(const SysLobFrag& other) const {
             return (other.rowId != rowId) || (other.fragObj != fragObj) || (other.parentObj != parentObj) || (other.ts != ts);
@@ -52,7 +50,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] std::string toString() const {
             return "ROWID: " + rowId.toString() + ", FRAGOBJ#: " + std::to_string(fragObj) + ", PARENTOBJ#: " + std::to_string(parentObj) + ", TS#: " +
-                   std::to_string(ts);
+                    std::to_string(ts);
         }
 
         [[nodiscard]] static constexpr bool dependentTable() {
@@ -85,15 +83,13 @@ namespace OpenLogReplicator {
         typeObj parentObj;
         typeObj fragObj;
 
-        SysLobFragKey(typeObj newParentObj, typeObj newFragObj) :
+        SysLobFragKey(typeObj newParentObj, typeObj newFragObj):
                 parentObj(newParentObj),
-                fragObj(newFragObj) {
-        }
+                fragObj(newFragObj) {}
 
-        explicit SysLobFragKey(const SysLobFrag* sysLobFrag) :
+        explicit SysLobFragKey(const SysLobFrag* sysLobFrag):
                 parentObj(sysLobFrag->parentObj),
-                fragObj(sysLobFrag->fragObj) {
-        }
+                fragObj(sysLobFrag->fragObj) {}
 
         bool operator<(const SysLobFragKey other) const {
             if (parentObj < other.parentObj)

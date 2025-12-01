@@ -20,9 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSetJA16SJISTILDE.h"
 
 namespace OpenLogReplicator {
-    CharacterSetJA16SJISTILDE::CharacterSetJA16SJISTILDE() :
-            CharacterSetJA16SJIS("JA16SJISTILDE") {
-    }
+    CharacterSetJA16SJISTILDE::CharacterSetJA16SJISTILDE():
+            CharacterSetJA16SJIS("JA16SJISTILDE") {}
 
     typeUnicode CharacterSetJA16SJISTILDE::readMap(uint64_t byte1, uint64_t byte2) const {
         if (byte1 == 0x81 && byte2 == 0x60)
