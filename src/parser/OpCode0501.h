@@ -432,6 +432,11 @@ namespace OpenLogReplicator {
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LMN) {
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LKR) {
+                if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
+                    RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x050110);
+                    rowDeps(ctx, redoLogRecord, fieldPos, fieldSize);
+                }
+
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_CFA) {
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
