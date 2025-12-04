@@ -40,7 +40,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 auto OLR_LOCALES = OpenLogReplicator::Ctx::LOCALES::TIMESTAMP;
 
 namespace OpenLogReplicator {
-    const std::string Ctx::memoryModules[MEMORY_COUNT]{"builder", "parser", "reader", "transaction", "writer"};
+    const std::string Ctx::memoryModules[MEMORY_COUNT] {
+        "builder",
+        "parser",
+        "reader",
+        "transaction",
+        "writer"
+    };
 
     IntX IntX::BASE10[DIGITS][10];
 

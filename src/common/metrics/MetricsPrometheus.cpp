@@ -65,8 +65,12 @@ namespace OpenLogReplicator {
         checkpoints = &prometheus::BuildCounter().Name("checkpoints")
                                                  .Help("Number of checkpoint records")
                                                  .Register(*registry);
-        checkpointsOutCounter = &checkpoints->Add({{"filter", "out"}});
-        checkpointsSkipCounter = &checkpoints->Add({{"filter", "skip"}});
+        checkpointsOutCounter = &checkpoints->Add({
+            {"filter", "out"}
+        });
+        checkpointsSkipCounter = &checkpoints->Add({
+            {"filter", "skip"}
+        });
 
         // checkpoint_lag
         checkpointLag = &prometheus::BuildGauge().Name("checkpoint_lag")
@@ -78,12 +82,24 @@ namespace OpenLogReplicator {
         ddlOps = &prometheus::BuildCounter().Name("ddl_ops")
                                             .Help("Number of DDL operations")
                                             .Register(*registry);
-        ddlOpsAlterCounter = &ddlOps->Add({{"type", "alter"}});
-        ddlOpsCreateCounter = &ddlOps->Add({{"type", "create"}});
-        ddlOpsDropCounter = &ddlOps->Add({{"type", "drop"}});
-        ddlOpsOtherCounter = &ddlOps->Add({{"type", "other"}});
-        ddlOpsPurgeCounter = &ddlOps->Add({{"type", "purge"}});
-        ddlOpsTruncateCounter = &ddlOps->Add({{"type", "truncate"}});
+        ddlOpsAlterCounter = &ddlOps->Add({
+            {"type", "alter"}
+        });
+        ddlOpsCreateCounter = &ddlOps->Add({
+            {"type", "create"}
+        });
+        ddlOpsDropCounter = &ddlOps->Add({
+            {"type", "drop"}
+        });
+        ddlOpsOtherCounter = &ddlOps->Add({
+            {"type", "other"}
+        });
+        ddlOpsPurgeCounter = &ddlOps->Add({
+            {"type", "purge"}
+        });
+        ddlOpsTruncateCounter = &ddlOps->Add({
+            {"type", "truncate"}
+        });
 
         // dml_ops
         dmlOps = &prometheus::BuildCounter().Name("dml_ops")
@@ -118,15 +134,23 @@ namespace OpenLogReplicator {
         logSwitches = &prometheus::BuildCounter().Name("log_switches")
                                                  .Help("Number of redo log switches")
                                                  .Register(*registry);
-        logSwitchesOnlineCounter = &logSwitches->Add({{"type", "online"}});
-        logSwitchesArchivedCounter = &logSwitches->Add({{"type", "archived"}});
+        logSwitchesOnlineCounter = &logSwitches->Add({
+            {"type", "online"}
+        });
+        logSwitchesArchivedCounter = &logSwitches->Add({
+            {"type", "archived"}
+        });
 
         // log_switches_lag
         logSwitchesLag = &prometheus::BuildGauge().Name("log_switches_lag")
                                                   .Help("Redo log file processing lag in seconds")
                                                   .Register(*registry);
-        logSwitchesLagOnlineGauge = &logSwitchesLag->Add({{"type", "online"}});
-        logSwitchesLagArchivedGauge = &logSwitchesLag->Add({{"type", "archived"}});
+        logSwitchesLagOnlineGauge = &logSwitchesLag->Add({
+            {"type", "online"}
+        });
+        logSwitchesLagArchivedGauge = &logSwitchesLag->Add({
+            {"type", "archived"}
+        });
 
         // messages_confirmed
         messagesConfirmed = &prometheus::BuildCounter().Name("messages_confirmed")
@@ -150,12 +174,24 @@ namespace OpenLogReplicator {
         memoryUsedMb = &prometheus::BuildGauge().Name("memory_used_mb")
                                                  .Help("Memory used by module: builder")
                                                  .Register(*registry);
-        memoryUsedMbBuilderGauge = &memoryUsedMb->Add({{"type", "builder"}});
-        memoryUsedMbMiscGauge = &memoryUsedMb->Add({{"type", "misc"}});
-        memoryUsedMbParserGauge = &memoryUsedMb->Add({{"type", "parser"}});
-        memoryUsedMbReaderGauge = &memoryUsedMb->Add({{"type", "reader"}});
-        memoryUsedMbTransactionsGauge = &memoryUsedMb->Add({{"type", "transactions"}});
-        memoryUsedMbWriterGauge = &memoryUsedMb->Add({{"type", "writer"}});
+        memoryUsedMbBuilderGauge = &memoryUsedMb->Add({
+            {"type", "builder"}
+        });
+        memoryUsedMbMiscGauge = &memoryUsedMb->Add({
+            {"type", "misc"}
+        });
+        memoryUsedMbParserGauge = &memoryUsedMb->Add({
+            {"type", "parser"}
+        });
+        memoryUsedMbReaderGauge = &memoryUsedMb->Add({
+            {"type", "reader"}
+        });
+        memoryUsedMbTransactionsGauge = &memoryUsedMb->Add({
+            {"type", "transactions"}
+        });
+        memoryUsedMbWriterGauge = &memoryUsedMb->Add({
+            {"type", "writer"}
+        });
 
         // messages_sent
         messagesSent = &prometheus::BuildCounter().Name("messages_sent")
@@ -167,9 +203,15 @@ namespace OpenLogReplicator {
         swapOperationsMb = &prometheus::BuildCounter().Name("swap_operations_mb")
                                                       .Help("Operations on swap space in MB")
                                                       .Register(*registry);
-        swapOperationsMbDiscardCounter = &swapOperationsMb->Add({{"type", "discard"}});
-        swapOperationsMbReadCounter = &swapOperationsMb->Add({{"type", "read"}});
-        swapOperationsMbWriteCounter = &swapOperationsMb->Add({{"type", "write"}});
+        swapOperationsMbDiscardCounter = &swapOperationsMb->Add({
+            {"type", "discard"}
+        });
+        swapOperationsMbReadCounter = &swapOperationsMb->Add({
+            {"type", "read"}
+        });
+        swapOperationsMbWriteCounter = &swapOperationsMb->Add({
+            {"type", "write"}
+        });
 
         // swap_usage_mb
         swapUsageMb = &prometheus::BuildGauge().Name("swap_usage_mb")

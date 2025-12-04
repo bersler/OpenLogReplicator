@@ -69,7 +69,36 @@ namespace OpenLogReplicator {
         redoLogsBatch.clear();
     }
 
-    void Replicator::initialize() {}
+    void Replicator::initialize() {
+        switch (metadata->start.from) {
+            case Start::FROM::CONTINUE:
+                //allowed
+                break;
+            case Start::FROM::TIME:
+                //allowed
+                break;
+            case Start::FROM::TIME_REL:
+                //allowed
+                break;
+            case Start::FROM::NOW:
+                //allowed
+                break;
+            case Start::FROM::SCN:
+                //allowed
+                break;
+        }
+
+        if (metadata->startNow || metadata->startScn != Ctx::ZERO_SCN || metadata->startSequence != Ctx::ZERO_SEQ || !metadata->startTime.empty() ||
+                metadata->startTimeRel > 0)
+            throw RuntimeException(30011, "Invalid startup parameters: startup parameters are not allowed to be used for " + getModeName() + " reader");
+    }
+
+    void Replicator::positionReader() {
+        if (metadata->start.sequence != Seq::none())
+            metadata->setSeqFileOffset(metadata->start.sequence, FileOffset::zero());
+        else
+            metadata->setSeqFileOffset(Seq(Seq::zero()), FileOffset::zero());
+    }
 
     void Replicator::cleanArchList() {
         while (!archiveRedoQueue.empty()) {
@@ -118,13 +147,6 @@ namespace OpenLogReplicator {
 
     void Replicator::loadDatabaseMetadata() {
         archReader = readerCreate(0);
-    }
-
-    void Replicator::positionReader() {
-        if (metadata->startSequence != Seq::none())
-            metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
-        else
-            metadata->setSeqFileOffset(Seq(Seq::zero()), FileOffset::zero());
     }
 
     void Replicator::verifySchema(Scn currentScn __attribute__((unused))) {

@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.7
-:revdate: 2025-11-18
+:revdate: 2025-12-05
 :imagesdir: ./images
 :toc: preamble
 
@@ -568,6 +568,11 @@ One of the parameters for Kafka writer is defined twice.
 
 This property defines the size of maximum message size.
 This parameter is already defined by parameter "max-message-mb" and should not be defined explicitly using Kafka connection parameter.
+
+==== code 30011: "Invalid startup parameters: <message>"
+
+Startup parameters are not valid for chosen mode of operation.
+Verify if the parameters are correct.
 
 === Redo log errors (4xxxx)
 

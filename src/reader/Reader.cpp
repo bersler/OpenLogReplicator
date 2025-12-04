@@ -37,8 +37,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     const char* Reader::REDO_MSG[]{
-        "OK", "OVERWRITTEN", "FINISHED", "STOPPED", "SHUTDOWN", "EMPTY", "READ ERROR",
-        "WRITE ERROR", "SEQUENCE ERROR", "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR",
+        "OK",
+        "OVERWRITTEN",
+        "FINISHED",
+        "STOPPED",
+        "SHUTDOWN",
+        "EMPTY",
+        "READ ERROR",
+        "WRITE ERROR",
+        "SEQUENCE ERROR",
+        "CRC ERROR",
+        "BLOCK ERROR",
+        "BAD DATA ERROR",
         "OTHER ERROR"
     };
 

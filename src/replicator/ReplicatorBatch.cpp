@@ -27,12 +27,32 @@ namespace OpenLogReplicator {
                                      TransactionBuffer * newTransactionBuffer, std::string newAlias, std::string newDatabase):
         Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, std::move(newAlias), std::move(newDatabase)) {}
 
+    void ReplicatorBatch::initialize() {
+        switch (metadata->start.from) {
+            case Start::FROM::CONTINUE:
+                //allowed
+                break;
+            case Start::FROM::TIME:
+                //allowed
+                break;
+            case Start::FROM::TIME_REL:
+                //allowed
+                break;
+            case Start::FROM::NOW:
+                //allowed
+                break;
+            case Start::FROM::SCN:
+                //allowed
+                break;
+        }
+    }
+
     void ReplicatorBatch::positionReader() {
-        if (metadata->startSequence != Seq::none())
-            metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
+        if (metadata->start.sequence != Seq::none())
+            metadata->setSeqFileOffset(metadata->start.sequence, FileOffset::zero());
         else
             metadata->setSeqFileOffset(Seq::zero(), FileOffset::zero());
-        metadata->sequence = 0;
+        metadata->sequence = Seq::zero();
     }
 
     void ReplicatorBatch::createSchema() {
@@ -40,8 +60,6 @@ namespace OpenLogReplicator {
             return;
 
         ctx->hint("if you don't have earlier schema, try with schemaless mode ('flags': 2)");
-        if (metadata->schema->scn != Scn::none())
-            ctx->hint("you can also set start SCN for writer: 'start-scn': " + metadata->schema->scn.toString());
 
         throw RuntimeException(10052, "schema file missing");
     }
