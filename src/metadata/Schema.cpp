@@ -456,7 +456,7 @@ namespace OpenLogReplicator {
 
         // SYS.TABSUBPART$
         for (auto* sysTabSubPart: sysTabSubPartPack.setTouched) {
-            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysTabSubPart->obj)) != sysObjPack.unorderedMapKey.end())
+            if (sysObjPack.unorderedMapKey.find(SysObjObj(sysTabSubPart->pObj)) != sysObjPack.unorderedMapKey.end())
                 continue;
             sysTabSubPartPack.drop(ctx, sysTabSubPart->rowId);
             touched = true;

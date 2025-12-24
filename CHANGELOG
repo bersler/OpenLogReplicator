@@ -1,3 +1,5 @@
+- fix: data in subpartition might not be replicated in certain conditions
+
 1.8.5 - released on 2025.03.21
 - enhancement: the checkpoint file is updated during every redo log switch
 - fix: reading archived redo log fails when DB_RECOVERY_FILE_DEST is not set
