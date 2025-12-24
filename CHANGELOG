@@ -1,5 +1,6 @@
 - code style cleanup
 - fixed some logdump output
+- fix: data in subpartition might not be replicated in certain conditions
 
 1.8.7
 - minor documentation update
