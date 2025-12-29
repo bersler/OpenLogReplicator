@@ -455,7 +455,7 @@ namespace OpenLogReplicator {
         if (startScn != Scn::none())
             firstDataScn = startScn;
         else
-            firstDataScn = 0;
+            firstDataScn = Scn::zero();
 
         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "scn: " + firstDataScn.toString());
@@ -612,7 +612,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        firstSchemaScn = 0;
+        firstSchemaScn = Scn::zero();
         for (const auto& msg: msgs) {
             ctx->info(0, msg);
         }

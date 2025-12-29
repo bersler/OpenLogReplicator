@@ -69,46 +69,60 @@ namespace OpenLogReplicator {
         static constexpr uint NAME_LENGTH = 128;
 
         enum class OBJTYPE : unsigned char {
-            NEXT_OBJECT         = 0,  // 11.2
-            INDEX               = 1,
-            TABLE               = 2,
-            CLUSTER             = 3,
-            VIEW                = 4,
-            SYNONYM             = 5,
-            SEQUENCE            = 6,
-            PROCEDURE           = 7,
-            FUNCTION            = 8,
-            PACKAGE             = 9,
-            NON_EXISTENT        = 10,
-            PACKAGE_BODY        = 11,
-            TRIGGER             = 12,
-            TYPE                = 13,
-            TYPE_BODY           = 14,
-            VARCHAR_STORED_LOB  = 21,
-            LIBRARY             = 22,
-            JAVA_SOURCE         = 28,
-            JAVA_CLASS          = 29,
-            INDEXTYPE           = 32,
-            OPERATOR            = 33,
-            LOB                 = 40,
-            MATERIALIZED_VIEW   = 42,
-            DIMENSION           = 43,
-            RULE_SET            = 46,
-            XML_SCHEMA          = 55,
-            JAVA_DATA           = 56,
-            RULE                = 59,
-            EVALUATION_CONTEXT  = 62,
-            ASSEMBLY            = 87,
-            CREDENTIAL          = 90,
-            CUBE_DIMENSION      = 92,
-            CUBE                = 93,
-            MEASURE_FOLDER      = 94,
-            CUBE_BUILD_PROCESS  = 95,
-            DIRECTORY           = 23,  // 12.1
-            HIERARCHY           = 150, // 12.2
-            ATTRIBUTE_DIMENSION = 151,
-            ANALYTIC_VIEW       = 152,
-            QUEUE               = 24   // 19.0
+            NEXT_OBJECT           = 0,
+            INDEX                 = 1,
+            TABLE                 = 2,
+            CLUSTER               = 3,
+            VIEW                  = 4,
+            SYNONYM               = 5,
+            SEQUENCE              = 6,
+            PROCEDURE             = 7,
+            FUNCTION              = 8,
+            PACKAGE               = 9,
+            NON_EXISTENT          = 10,
+            PACKAGE_BODY          = 11,
+            TRIGGER               = 12,
+            TYPE                  = 13,
+            TYPE_BODY             = 14,
+            TABLE_PARTITION       = 19,
+            INDEX_PARTITION       = 20,
+            LOB                   = 21,
+            LIBRARY               = 22,
+            DIRECTORY             = 23,  // 12.1
+            QUEUE                 = 24,  // 19.0
+            JAVA_SOURCE           = 28,
+            JAVA_CLASS            = 29,
+            JAVA_RESOURCE         = 30,
+            INDEXTYPE             = 32,
+            OPERATOR              = 33,
+            TABLE_SUBPARTITION    = 34,
+            INDEX_SUBPARTITION    = 35,
+            LOB_PARTITION         = 40,
+            LOB_SUBPARTITION      = 41,
+            MATERIALIZED_VIEW     = 42,
+            DIMENSION             = 43,
+            RULE_SET              = 46,
+            XML_SCHEMA            = 55,
+            JAVA_DATA             = 56,
+            EDITION               = 57,
+            XML_SCHEMA_SUBSIDIARY = 58,
+            RULE                  = 59,
+            EVALUATION_CONTEXT    = 62,
+            JOB                   = 66,
+            PROGRAM               = 67,
+            ASSEMBLY              = 87,
+            CREDENTIAL            = 90,
+            UNIFIED_AUDIT_POLICY  = 92, // 12.1
+            CUBE                  = 93,
+            MEASURE_FOLDER        = 94,
+            CUBE_BUILD_PROCESS    = 95,
+            SQL_MACRO             = 107, // 19.0
+            ANALYTIC_VIEW         = 116, // 12.2
+            NAMED_COLLECTION      = 122, // 12.2
+            SQL_DOMAIN            = 150, // 23.0
+            JSON_SCHEMA           = 151, // 23.0
+            PROPERTY_GRAPH        = 152, // 23.0
+            GRAPH_TABLE           = 153  // 23.0
         };
 
         RowId rowId;
@@ -140,7 +154,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isLob() const {
-            return (type == OBJTYPE::LOB || type == OBJTYPE::VARCHAR_STORED_LOB);
+            return (type == OBJTYPE::LOB_SUBPARTITION || type == OBJTYPE::LOB_PARTITION || type == OBJTYPE::LOB);
         }
 
         [[nodiscard]] bool isTable() const {
