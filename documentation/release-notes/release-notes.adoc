@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.8.7
-:revdate: 2025-12-28
+:revdate: 2025-12-29
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -19,6 +19,7 @@ This document describes the release notes of OpenLogReplicator.
 - code style cleanup
 - fixed some logdump output
 - fix: data in subpartition might not be replicated in certain conditions
+- minor LOB processing fixes
 
 === Version 1.8.7
 - minor documentation update

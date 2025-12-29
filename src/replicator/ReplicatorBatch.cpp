@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
             metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
         else
             metadata->setSeqFileOffset(Seq::zero(), FileOffset::zero());
-        metadata->sequence = 0;
+        metadata->sequence = Seq::zero();
     }
 
     void ReplicatorBatch::createSchema() {

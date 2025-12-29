@@ -88,8 +88,14 @@ namespace OpenLogReplicator {
         Scn currentScn;
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::GRANTS)) {
             const std::vector<std::string> tables{
-                "SYS.V_$ARCHIVED_LOG", "SYS.V_$DATABASE", "SYS.V_$DATABASE_INCARNATION", "SYS.V_$LOG", "SYS.V_$LOGFILE",
-                "SYS.V_$PARAMETER", "SYS.V_$STANDBY_LOG", "SYS.V_$TRANSPORTABLE_PLATFORM"
+                "SYS.V_$ARCHIVED_LOG",
+                "SYS.V_$DATABASE",
+                "SYS.V_$DATABASE_INCARNATION",
+                "SYS.V_$LOG",
+                "SYS.V_$LOGFILE",
+                "SYS.V_$PARAMETER",
+                "SYS.V_$STANDBY_LOG",
+                "SYS.V_$TRANSPORTABLE_PLATFORM"
             };
             for (const auto& tableName: tables)
                 checkTableForGrants(tableName);
@@ -181,9 +187,21 @@ namespace OpenLogReplicator {
 
         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::GRANTS) && !standby) {
             const std::vector tables{
-                SysCCol::tableName(), SysCDef::tableName(), SysCol::tableName(), SysDeferredStg::tableName(), SysECol::tableName(),
-                SysLob::tableName(), SysLobCompPart::tableName(), SysLobFrag::tableName(), SysObj::tableName(), SysTab::tableName(),
-                SysTabComPart::tableName(), SysTabSubPart::tableName(), SysTs::tableName(), SysUser::tableName(), XdbTtSet::tableName()
+                SysCCol::tableName(),
+                SysCDef::tableName(),
+                SysCol::tableName(),
+                SysDeferredStg::tableName(),
+                SysECol::tableName(),
+                SysLob::tableName(),
+                SysLobCompPart::tableName(),
+                SysLobFrag::tableName(),
+                SysObj::tableName(),
+                SysTab::tableName(),
+                SysTabComPart::tableName(),
+                SysTabSubPart::tableName(),
+                SysTs::tableName(),
+                SysUser::tableName(),
+                XdbTtSet::tableName()
             };
             for (const auto& tableName: tables)
                 checkTableForGrantsFlashback(tableName, currentScn);
@@ -269,7 +287,7 @@ namespace OpenLogReplicator {
         if (metadata->startSequence != Seq::none()) {
             metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
             if (metadata->firstDataScn == Scn::none())
-                metadata->firstDataScn = 0;
+                metadata->firstDataScn = Scn::zero();
         } else {
             DatabaseStatement stmt(conn);
             if (standby) {

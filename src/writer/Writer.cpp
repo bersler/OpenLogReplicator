@@ -412,7 +412,13 @@ namespace OpenLogReplicator {
                                 " - parse error: " + GetParseError_En(document.GetParseError()));
 
         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-            static const std::vector<std::string> documentNames{"database", "resetlogs", "activation", "scn", "idx"};
+            static const std::vector<std::string> documentNames{
+                "database",
+                "resetlogs",
+                "activation",
+                "scn",
+                "idx"
+            };
             Ctx::checkJsonFields(name, document, documentNames);
         }
 

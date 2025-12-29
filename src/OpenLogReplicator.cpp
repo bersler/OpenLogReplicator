@@ -225,9 +225,23 @@ namespace OpenLogReplicator {
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sourceNames{
-                    "alias", "memory", "name", "reader", "flags", "state", "debug", "transaction-max-mb",
-                    "metrics", "format", "redo-read-sleep-us", "arch-read-sleep-us", "arch-read-tries",
-                    "redo-verify-delay-us", "refresh-interval-us", "arch", "filter"
+                    "alias",
+                    "memory",
+                    "name",
+                    "reader",
+                    "flags",
+                    "state",
+                    "debug",
+                    "transaction-max-mb",
+                    "metrics",
+                    "format",
+                    "redo-read-sleep-us",
+                    "arch-read-sleep-us",
+                    "arch-read-tries",
+                    "redo-verify-delay-us",
+                    "refresh-interval-us",
+                    "arch",
+                    "filter"
                 };
                 Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
             }
@@ -251,8 +265,15 @@ namespace OpenLogReplicator {
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                     static const std::vector<std::string> memoryNames{
-                        "min-mb", "max-mb", "read-buffer-max-mb", "read-buffer-min-mb", "swap-mb", "swap-path",
-                        "unswap-buffer-min-mb", "write-buffer-max-mb", "write-buffer-min-mb"
+                        "min-mb",
+                        "max-mb",
+                        "read-buffer-max-mb",
+                        "read-buffer-min-mb",
+                        "swap-mb",
+                        "swap-path",
+                        "unswap-buffer-min-mb",
+                        "write-buffer-max-mb",
+                        "write-buffer-min-mb"
                     };
                     Ctx::checkJsonFields(configFileName, memoryJson, memoryNames);
                 }
@@ -354,10 +375,24 @@ namespace OpenLogReplicator {
             const rapidjson::Value& readerJson = Ctx::getJsonFieldO(configFileName, sourceJson, "reader");
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                static const std::vector<std::string> readerNames{
-                    "disable-checks", "start-scn", "start-seq", "start-time-rel", "start-time", "con-id", "type",
-                    "redo-copy-path", "db-timezone", "host-timezone", "log-timezone", "user", "password",
-                    "server", "redo-log", "path-mapping", "log-archive-format"
+                static const std::vector<std::string> readerNames {
+                    "disable-checks",
+                    "start-scn",
+                    "start-seq",
+                    "start-time-rel",
+                    "start-time",
+                    "con-id",
+                    "type",
+                    "redo-copy-path",
+                    "db-timezone",
+                    "host-timezone",
+                    "log-timezone",
+                    "user",
+                    "password",
+                    "server",
+                    "redo-log",
+                    "path-mapping",
+                    "log-archive-format"
                 };
                 Ctx::checkJsonFields(configFileName, readerJson, readerNames);
             }
@@ -412,7 +447,14 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& stateJson = Ctx::getJsonFieldO(configFileName, sourceJson, "state");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> stateNames{"type", "path", "interval-s", "interval-mb", "keep-checkpoints", "schema-force-interval"};
+                    static const std::vector<std::string> stateNames{
+                        "type",
+                        "path",
+                        "interval-s",
+                        "interval-mb",
+                        "keep-checkpoints",
+                        "schema-force-interval"
+                    };
                     Ctx::checkJsonFields(configFileName, stateJson, stateNames);
                 }
 
@@ -446,7 +488,13 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(configFileName, sourceJson, "debug");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> debugNames{"stop-log-switches", "stop-checkpoints", "stop-transactions", "owner", "table"};
+                    static const std::vector<std::string> debugNames{
+                        "stop-log-switches",
+                        "stop-checkpoints",
+                        "stop-transactions",
+                        "owner",
+                        "table"
+                    };
                     Ctx::checkJsonFields(configFileName, debugJson, debugNames);
                 }
 
@@ -526,7 +574,11 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& metricsJson = Ctx::getJsonFieldO(configFileName, sourceJson, "metrics");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> metricsNames{"type", "bind", "tag-names"};
+                    static const std::vector<std::string> metricsNames{
+                        "type",
+                        "bind",
+                        "tag-names"
+                    };
                     Ctx::checkJsonFields(configFileName, metricsJson, metricsNames);
                 }
 
@@ -572,9 +624,25 @@ namespace OpenLogReplicator {
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> formatNames{
-                    "db", "attributes", "interval-dts", "interval-ytm", "message", "rid", "xid", "timestamp",
-                    "timestamp-tz", "timestamp-all", "char", "scn", "scn-type", "unknown", "schema", "column",
-                    "unknown-type", "flush-buffer", "type"
+                    "db",
+                    "attributes",
+                    "interval-dts",
+                    "interval-ytm",
+                    "message",
+                    "rid",
+                    "xid",
+                    "timestamp",
+                    "timestamp-tz",
+                    "timestamp-all",
+                    "char",
+                    "scn",
+                    "scn-type",
+                    "unknown",
+                    "schema",
+                    "column",
+                    "unknown-type",
+                    "flush-buffer",
+                    "type"
                 };
                 Ctx::checkJsonFields(configFileName, formatJson, formatNames);
             }
@@ -617,7 +685,7 @@ namespace OpenLogReplicator {
                 if (val > 31)
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(val) + ", expected: one of {0 .. 31}");
                 if ((val & static_cast<uint>(Format::MESSAGE_FORMAT::FULL)) != 0 &&
-                    (val & (static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_BEGIN) |
+                        (val & (static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_BEGIN) |
                         static_cast<uint>(Format::MESSAGE_FORMAT::SKIP_COMMIT))) != 0)
                     throw ConfigurationException(30001, "bad JSON, invalid \"message\" value: " + std::to_string(val) +
                                                  ", expected: BEGIN/COMMIT flag is unset (" +
@@ -847,7 +915,12 @@ namespace OpenLogReplicator {
                 const rapidjson::Value& filterJson = Ctx::getJsonFieldO(configFileName, sourceJson, "filter");
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                    static const std::vector<std::string> filterNames{"table", "skip-xid", "separator", "dump-xid"};
+                    static const std::vector<std::string> filterNames{
+                        "table",
+                        "skip-xid",
+                        "separator",
+                        "dump-xid"
+                    };
                     Ctx::checkJsonFields(configFileName, filterJson, filterNames);
                 }
 
@@ -862,7 +935,13 @@ namespace OpenLogReplicator {
                         const rapidjson::Value& tableElementJson = Ctx::getJsonFieldO(configFileName, tableArrayJson, "table", k);
 
                         if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
-                            static const std::vector<std::string> tableElementNames{"owner", "table", "key", "condition", "tag"};
+                            static const std::vector<std::string> tableElementNames{
+                                "owner",
+                                "table",
+                                "key",
+                                "condition",
+                                "tag"
+                            };
                             Ctx::checkJsonFields(configFileName, tableElementJson, tableElementNames);
                         }
 
@@ -944,8 +1023,18 @@ namespace OpenLogReplicator {
 
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> writerNames{
-                    "type", "poll-interval-us", "queue-size", "max-file-size", "timestamp-format", "output",
-                    "new-line", "append", "max-message-mb", "topic", "properties", "uri",
+                    "type",
+                    "poll-interval-us",
+                    "queue-size",
+                    "max-file-size",
+                    "timestamp-format",
+                    "output",
+                    "new-line",
+                    "append",
+                    "max-message-mb",
+                     "topic",
+                     "properties",
+                     "uri",
                     "write-buffer-flush-size"
                 };
                 Ctx::checkJsonFields(configFileName, writerJson, writerNames);
