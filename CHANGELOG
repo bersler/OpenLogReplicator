@@ -1,3 +1,4 @@
+1.8.5.1
 - fix: data in subpartition might not be replicated in certain conditions
 
 1.8.5 - released on 2025.03.21
