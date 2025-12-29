@@ -559,7 +559,7 @@ namespace OpenLogReplicator {
             " FROM"
             "   SYS.TABSUBPART$ AS OF SCN :j TSP"
             " WHERE"
-            "   TSP.OBJ# = :k"
+            "   TSP.POBJ# = :k"
         };
 
         static constexpr std::string_view SQL_GET_SYS_TS
