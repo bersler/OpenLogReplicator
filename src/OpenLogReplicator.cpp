@@ -381,7 +381,6 @@ namespace OpenLogReplicator {
                     "start-seq",
                     "start-time-rel",
                     "start-time",
-                    "con-id",
                     "type",
                     "redo-copy-path",
                     "db-timezone",
@@ -520,10 +519,6 @@ namespace OpenLogReplicator {
                 }
             }
 
-            typeConId conId = -1;
-            if (readerJson.HasMember("con-id"))
-                conId = Ctx::getJsonFieldI16(configFileName, readerJson, "con-id");
-
             if (sourceJson.HasMember("transaction-max-mb")) {
                 const uint64_t transactionMaxMb = Ctx::getJsonFieldU64(configFileName, sourceJson, "transaction-max-mb");
                 if (transactionMaxMb > memoryMaxMb)
@@ -537,7 +532,7 @@ namespace OpenLogReplicator {
                             memoryWriteBufferMaxMb, memoryWriteBufferMinMb);
 
             // METADATA
-            auto* metadata = new Metadata(ctx, locales, name, conId, startScn, startSequence, startTime, startTimeRel);
+            auto* metadata = new Metadata(ctx, locales, name, startScn, startSequence, startTime, startTimeRel);
             metadatas.push_back(metadata);
             metadata->resetElements();
             if (!debugOwner.empty())

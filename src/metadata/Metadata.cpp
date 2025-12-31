@@ -46,7 +46,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Serializer.h"
 
 namespace OpenLogReplicator {
-    Metadata::Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, Scn newStartScn,
+    Metadata::Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, Scn newStartScn,
                        Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel):
             schema(new Schema(newCtx, newLocales)),
             ctx(newCtx),
@@ -55,8 +55,7 @@ namespace OpenLogReplicator {
             startScn(newStartScn),
             startSequence(newStartSequence),
             startTime(std::move(newStartTime)),
-            startTimeRel(newStartTimeRel),
-            conId(newConId) {}
+            startTimeRel(newStartTimeRel) {}
 
     Metadata::~Metadata() {
         if (schema != nullptr) {
