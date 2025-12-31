@@ -85,7 +85,7 @@ namespace OpenLogReplicator {
         bool allowedCheckpoints{false};
         // The writer is controlling the boot parameters. If the data is not available on startup, don't fail immediately.
         bool bootFailsafe{false};
-        typeConId conId;
+        typeConId conId{0};
         std::string conName;
         std::string context;
         std::string dbTimezoneStr;
@@ -142,7 +142,7 @@ namespace OpenLogReplicator {
         std::vector<SchemaElement*> schemaElements;
         std::set<std::string> users;
 
-        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, typeConId newConId, Scn newStartScn,
+        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, Scn newStartScn,
                  Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel);
         ~Metadata();
 
