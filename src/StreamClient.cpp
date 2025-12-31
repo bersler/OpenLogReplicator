@@ -1,5 +1,5 @@
 /* Test client for Zero MQ
-   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2026 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
 
     ctx.welcome("OpenLogReplicator v." + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
             std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
-            " StreamClient (C) 2018-2025 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
+            " StreamClient (C) 2018-2026 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
 
     // Run arguments:
     // 1. network|zeromq - type of communication protocol

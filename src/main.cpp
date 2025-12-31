@@ -1,5 +1,5 @@
 /* Main program
-   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2026 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -108,7 +108,7 @@ namespace {
 
         mainCtx->welcome("OpenLogReplicator v" + std::to_string(OpenLogReplicator_VERSION_MAJOR) + "." +
                 std::to_string(OpenLogReplicator_VERSION_MINOR) + "." + std::to_string(OpenLogReplicator_VERSION_PATCH) +
-                " (C) 2018-2025 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
+                " (C) 2018-2026 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
         mainCtx->welcome("arch: " + std::string(name.machine) + buildArch + ", system: " + name.sysname +
                 ", release: " + name.release + ", build: " +
                 OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"

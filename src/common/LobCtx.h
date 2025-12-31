@@ -1,5 +1,5 @@
 /* Header for LOB context
-   Copyright (C) 2018-2025 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2026 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
