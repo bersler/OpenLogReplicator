@@ -3,6 +3,7 @@
 - fix: data in subpartition might not be replicated in certain conditions
 - minor LOB processing fixes
 - enhancement: removed unused con-id parameter
+- updated default OCI library version to 23
 
 1.8.7
 - minor documentation update

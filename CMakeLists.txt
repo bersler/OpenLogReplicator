@@ -134,7 +134,7 @@ endif ()
 target_link_libraries(OpenLogReplicator Threads::Threads)
 
 if (WITH_OCI)
-    target_link_libraries(OpenLogReplicator clntshcore nnz19 clntsh)
+    target_link_libraries(OpenLogReplicator clntshcore nnz clntsh)
 endif ()
 
 if (WITH_RDKAFKA)
