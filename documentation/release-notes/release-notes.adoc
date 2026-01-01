@@ -19,6 +19,8 @@ This document describes the release notes of OpenLogReplicator.
 - fix: empty command line argument prints help message
 When empty argument is used as command line argument then help message is printed; it should be ignored. Example: ./OpenLogReplicator ""
 
+- fix: multitenant db: transaction shared among PDBs causes replication to freeze
+
 === Version 1.9.0
 - code style cleanup
 - fixed some logdump output
