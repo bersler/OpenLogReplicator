@@ -1,3 +1,4 @@
+1.9.0
 - code style cleanup
 - fixed some logdump output
 - fix: data in subpartition might not be replicated in certain conditions
