@@ -48,14 +48,12 @@ Use the following table to find out which version of OpenLogReplicator is compat
 |   2.x    |        1.3.0        |          1.9.0          |
 |   3.x    |        1.3.0        |          1.9.0          |
 
-## Supporting the Author
+## Support OpenLogReplicator
 
-If you feel that I should receive some feedback from the world to continue with my hard work - feel free to make a **donation** to me.
-
-Remember, it will never be required to pay money to use, study, distribute or develop OpenLogReplicator. Donations, however, help the process of development to dedicate time and resources to make the project grow faster and further.
+If you feel that I should receive some feedback from the world to continue with my hard work - feel free to make a **donation** or become a **sponsor**.
 
 I am very grateful for any amount you donate.
 
-<a href="https://liberapay.com/bersler/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
-
-<a href="https://www.buymeacoffee.com/bersler" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 160px !important;" ></a>
+[![Sponsor via GitHub](https://img.shields.io/badge/Sponsor-GitHub-brightgreen)](https://github.com/sponsors/bersler)
+[![Librepay](https://img.shields.io/badge/Donate-Librepay-orange)](https://liberapay.com/bersler)
+[![Buy Me a Coffee](https://img.shields.io/badge/Donate-Coffee-yellow)](https://www.buymeacoffee.com/bersler)
