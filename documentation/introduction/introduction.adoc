@@ -23,7 +23,7 @@ OpenLogReplicator captures those changes from the database redo logs and publish
 
 == Change data capture
 
-Change Data Capture \(CDC\) is the process of detecting and recording data changes so they can be propagated to other systems.
+Change Data Capture (CDC) is the process of detecting and recording data changes so they can be propagated to other systems.
 CDC enables use cases such as replication, caching updates, audit trails, and feeding event-driven architectures without modifying application logic or requiring bulk extracts.
 
 == CDC elements
