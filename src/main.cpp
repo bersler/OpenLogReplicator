@@ -125,6 +125,10 @@ namespace {
 
             for (int i = 1; i < argc; ++i) {
                 const std::string arg = argv[i];
+
+                if (arg == "")
+                    continue;
+
                 if (arg == "-v" || arg == "--version") {
                     // Print banner and exit
                     return 0;
