@@ -1,0 +1,172 @@
+= OpenLogReplicator.json - reader element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This section documents the `reader` element of the OpenLogReplicator JSON configuration.
+It explains available reader types, each parameter's constraints, defaults and operational notes.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+== Reader parameters
+
+[[reader]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Reader element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`type`
+|_string_, max length: 256
+|Reader mode.
+Supported values:
+
+* `online` — Primary mode.
+Reads online and archived redo logs and connects to the database for metadata.
+Will attempt reconnects if the DB connection is lost.
+* `offline` — Uses metadata from an existing checkpoint; no DB connection required.
+* `batch` — Processes an explicit list of redo log files and then exits.
+
+_IMPORTANT:_ `batch` is intended for testing and troubleshooting.
+Checkpoint files created by `batch` may not contain a complete schema suitable for `online` or `offline` runs.
+
+|`db-timezone`
+|_string_, format: `+HH:MM` or `-HH:MM`, default: database DBTIMEZONE
+|Timezone used as the base for TIMESTAMP WITH LOCAL TIMEZONE values.
+
+|`disable-checks`
+|_integer_, min: 0, max: 15, default: 0
+|Bitmask to disable selected startup/runtime checks:
+
+* `0x0001` — Skip grant checks on system tables during startup.
+* `0x0002` — Skip supplemental logging checks for listed tables.
+* `0x0004` — Disable CRC checks for read blocks.
+* `0x0008` — Skip validation of JSON checkpoint, schema and configuration field names.
+
+_NOTE:_ Disabling checks can improve performance but increases risk.
+Use with caution and prefer enabling checks in production.
+
+|`host-timezone`
+|_string_, format: `+HH:MM` or `-HH:MM`, default: host timezone
+|Timezone of the host running OpenLogReplicator.
+Adjust if the database host uses a different timezone.
+
+|`log-archive-format`
+|_string_, max length: 4000
+|Format pattern for archived redo log filenames used to extract sequence numbers.
+When Flash Recovery Area (FRA) is enabled, filenames typically follow `o1_mf_%t_%s_%h_.arc`.
+If unset, default is read from the database `log_archive_format` parameter.
+
+|`log-timezone`
+|_string_, format: `+HH:MM` or `-HH:MM`, default: host timezone
+|Timezone used when printing log timestamps.
+Can also be set via the environment variable `OLR_LOG_TIMEZONE`.
+
+|`password`
+|_string_, max length: 128
+|Database password for `online` mode.
+
+_CAUTION:_ Stored in plaintext in the configuration file.
+
+|`path-mapping`
+|_list_ of _string_ pairs, max length: 2048
+|Pairs of path prefixes `[before1, after1, before2, after2, …]`.
+If a redo log path starts with `beforeX` it is replaced with `afterX`.
+
+_TIP:_ Useful when OpenLogReplicator runs on a different host or mountpoint than the database server.
+
+|`redo-copy-path`
+|_string_, max length: 2048
+|Directory where processed redo log files are copied for debugging when consistency errors occur.
+
+_TIP:_ Copies use the name `path/<database>_<seq>.arc` to aid post-mortem analysis.
+
+|`redo-log`
+|_list_ of _string_, max length: 2048
+|List of redo log files or directories to process in `batch` mode.
+Directories are expanded to all files within.
+
+_NOTE:_ Only valid for `batch` type.
+
+|`server` [[server]]
+|_string_, max length: 4096
+|Database connect string in the form `//<host>:<port>/<service>`.
+
+_NOTE:_ Required for `online` readers.
+
+|`start-scn`
+|_integer_, min: 0
+|Start processing from this SCN.
+If omitted, processing begins at the current SCN.
+
+_CAUTION:_ Very old SCNs may fail if required schema information is not available.
+
+|`start-seq`
+|_integer_, min: 0
+|Start processing from this log sequence number.
+If omitted, sequence is inferred from SCN boundaries.
+
+|`start-time-rel`
+|_integer_, min: 0
+|Start relative to the current time (seconds).
+Converted to an SCN via `TIMESTAMP_TO_SCN`.
+
+_NOTE:_ Only valid for `online` type and mutually exclusive with `start-scn`.
+
+|`start-time`
+|_string_, format: `YYYY-MM-DD HH24:MI:SS`
+|Start from the SCN corresponding to this absolute timestamp (converted using `TIMESTAMP_TO_SCN`).
+
+_NOTE:_ Only valid for `online` type and mutually exclusive with `start-scn` and `start-time-rel`.
+
+|`state`
+|_element_ — see xref:state.adoc#state[state]
+|Checkpointing configuration.
+
+|`user`
+|_string_, max length: 128
+|Database username for `online` mode.
+
+_NOTE:_ Valid only for `online` type.
+
+|`transaction-max-mb`
+|_integer_, min: 0, default: 0
+|Maximum transaction size in megabytes.
+Transactions larger than this are split.
+
+_CAUTION:_ Intended for debugging only.
+Splitting assumes the transaction is committed; partial or rolled-back operations may be emitted when splitting.
+
+|===
+
+.Example `reader` configuration (JSON)
+[source,json]
+----
+{
+  "reader": {
+    "type": "online",
+    "server": "//dbhost:1521/ORCL",
+    "user": "olr",
+    "password": "secret",
+    "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
+    "format": { "type": "json" },
+    "state": { "type": "disk", "path": "checkpoint" }
+  }
+}
+----
+
+[NOTE]
+====
+- Validate `server`, `user`, `format` and `state` entries before deployment.
+- Use timezone parameters to ensure correct timestamp handling across hosts and databases.
+- Prefer enabling checks in production and use `disable-checks` only when diagnosing performance issues.
+- Test `batch` mode outputs carefully before relying on produced checkpoints for other modes.
+====

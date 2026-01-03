@@ -1,0 +1,117 @@
+= OpenLogReplicator.json - state element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This document describes the `state` configuration block used by OpenLogReplicator.
+It covers checkpointing behavior, storage options, recommended defaults and operational notes.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+== Summary
+
+The `state` element controls how and where checkpoint files are created and retained.
+Checkpoints capture progress (redo-log SCN/timestamp) and an optional schema snapshot to allow safe restart and recovery.
+
+== Quick reference
+
+- Default storage: `disk`
+- Typical defaults: `interval-mb`: 500, `interval-s`: 600, `keep-checkpoints`: 100, `schema-force-interval`: 20
+- Checkpoints are created when either the processed redo-log bytes exceed `interval-mb` or the redo-log timestamp span exceeds `interval-s`.
+
+[[state]]
+[width="100%",cols="a,a,50%a",options="header"]
+.State element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`interval-mb`
+|_integer_, min: 0, default: 500
+|Size threshold (megabytes) of processed redo-log data that triggers a checkpoint.
+Set to `0` to disable size-based triggering.
+
+|`interval-s`
+|_integer_, min: 0, default: 600
+|Time threshold (seconds) measured against redo-log timestamps that triggers a checkpoint.
+
+_IMPORTANT:_ This measures the span of redo-log timestamps processed (SCN/timestamp), not wall-clock time.
+Set to `0` to disable time-based triggering.
+
+|`keep-checkpoints`
+|_integer_, min: 0, default: 100
+|Maximum number of checkpoint files to retain. Older files are removed when safe.
+_Set to `0` to disable automatic deletion._
+
+_CAUTION:_ Temporary retention may exceed this value by up to `schema-force-interval` because of inter-file schema references.
+
+|`path`
+|_string_, max length: 2048, default: `checkpoint`
+|Filesystem path for checkpoint files.
+Must be writable by the process owner.
+
+_NOTE:_ Applies only when `type` is `disk`.
+Use absolute paths for multi-process setups.
+
+|`schema-force-interval`
+|_integer_, min: 0, default: 20
+|Controls inclusion of a full schema snapshot inside checkpoint files.
+A value `N` means that at most `N` consecutive checkpoint files may omit the full schema if unchanged.
+_Set to `0` to always embed the full schema._
+
+|`type`
+|_string_, allowed: `disk`, default: `disk`
+|Checkpoint storage type.
+Currently only `disk` is supported.
+
+|===
+
+== Example configuration
+
+[source,json]
+----
+{
+  "state": {
+    "type": "disk",
+    "path": "checkpoint",
+    "interval-mb": 500,
+    "interval-s": 600,
+    "keep-checkpoints": 100,
+    "schema-force-interval": 20
+  }
+}
+----
+
+== Operational guidance
+
+- Ensure the `path` has sufficient free space and the correct ownership/permissions.
+- Tune `interval-mb` and `interval-s` to balance checkpoint frequency (faster recoverability) against I/O and storage overhead.
+- Larger `keep-checkpoints` improves ability to resume from older positions but consumes more storage.
+- `schema-force-interval` balances checkpoint size vs. reliance on older checkpoints for schema data.
+
+== Validation and upgrades
+
+- On startup, validate existing checkpoint files in `path` before using them for recovery.
+
+[NOTE]
+====
+When both `interval-mb` and `interval-s` are non-zero, the replicator will create a checkpoint when either condition is met (logical OR).
+If both are zero, automatic checkpointing is effectively disabled; rely on manual or external checkpoint creation.
+====
+
+[CAUTION]
+====
+Ensure any automated cleanup or backup job excludes in-flight or recently-written checkpoint files to avoid corruption.
+====
+
+== Troubleshooting
+
+- If checkpoints are not created: verify write permissions on `path`, check process logs and confirm triggers (`interval-mb` / `interval-s`) are reached.
+- If too many checkpoint files accumulate: confirm background cleanup is running and adjust `keep-checkpoints` / `schema-force-interval`.

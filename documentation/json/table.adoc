@@ -1,0 +1,134 @@
+= OpenLogReplicator.json - table element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This section describes the `table` element used in the OpenLogReplicator JSON configuration.
+It documents the available fields, their constraints, semantics and examples for common usages.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+[[table]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Table element (see xref:filter.adoc#filter[filter])
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`owner`
+|_string_, max length: 128, mandatory
+|Regular expression used to match the schema/owner name.
+Matching is case-sensitive.
+Use standard POSIX-style or ECMAScript-compatible regex supported by the runtime.
+
+|`table`
+|_string_, max length: 128, mandatory
+|Regular expression used to match table names.
+Matching is case-sensitive.
+Combine `owner` and `table` patterns to identify the target tables.
+
+|`key` [[key]]
+|_string_, max length: 4096
+|Comma-separated list of column names to treat as the primary key for this table (no spaces between names).
+Column names are case-sensitive.
+
+_TIP:_ If the source table already has a primary key, omit this field.
+Use this field to define a surrogate key when the table has no native PK.
+
+|`condition`
+|_string_, max length: 16384
+|Boolean expression evaluated for each row; if the expression yields true, the row passes the filter.
+The expression language is C-like and evaluated left-to-right with standard operator precedence and parentheses to control evaluation.
+
+Supported operators and tokens:
+
+* Logical: `\|\|` (OR), `&&` (AND), `!` (NOT)
+* Comparison: `==`, `!=`
+* Grouping: `(`, `)`
+
+Available attribute tokens are derived from transaction metadata and column names.
+Common tokens:
+
+* `[op]` — operation type: `c` (insert), `u` (update), `d` (delete), `ddl` (DDL)
+* `[login username]`, `[current username]`
+* `[client id]`, `[client info]`
+* `[machine name]`, `[transaction name]`, `[version]`
+* `[audit sessionid]`, `[session number]`, `[serial number]`
+* `[OS process name]`, `[OS process id]`, `[OS terminal]`
+
+Example:
+[source,json]
+----
+"condition": "([op] != 'd') \|\| ([login username] != 'USER1')"
+----
+
+_NOTE:_ Expressions must reference tokens using the bracketed names shown above.
+Strings in comparisons must be quoted.
+
+|`tag` [[tag]]
+|_string_, max length: 4096, mandatory
+|Defines one or more values to add as a tag to the output message.
+Provide a comma-separated list of columns (no spaces), or use one of the special values:
+
+* `[pk]` — use primary key columns
+* `[all]` — include all columns
+
+Example usage:
+* `"tag": "[all]"`
+* `"tag": "id,name,email"`
+* `"tag": "[pk]"`
+
+|===
+
+[CAUTION]
+====
+Upon startup OLR reads all metadata information for all schemas.
+Once started, changing `owner` or `table` patterns will not trigger reloading of metadata for newly matched tables.
+OLR will stop with an error if it encounters that checkpointed tables do not match the current filter configuration.
+====
+
+[NOTE]
+====
+Column names are case-sensitive.
+====
+
+.Examples
+[source,json]
+----
+{
+  "table": [
+    {
+      "owner": "user1",
+      "table": "x_.*",
+      "tag": "[all]"
+    },
+    {
+      "owner": "user1",
+      "table": "y_.*",
+      "key": "A,B,C",
+      "tag": "A,B,C"
+    },
+    {
+      "owner": "user1",
+      "table": "z_.*",
+      "key": "[pk]",
+      "tag": "[pk]",
+      "condition": "([op] != 'd') && ([login username] != 'SYSTEM')"
+    }
+  ]
+}
+----
+
+[NOTE]
+====
+* Validate `owner`, `table` patterns and any referenced column names before deploying the configuration.
+* Use `key` only when you need to override or provide a surrogate primary key.
+* Keep `condition` expressions simple and test them with representative data to ensure expected filtering behavior.
+====

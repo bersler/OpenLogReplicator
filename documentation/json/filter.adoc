@@ -1,0 +1,77 @@
+= OpenLogReplicator.json - filter element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This section documents the `filter` element of the OpenLogReplicator JSON configuration.
+It explains how to select which tables and transactions are tracked, how keys and tags are formed, and useful debugging options.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+[[filter]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Filter element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`table`
+|_list_ of xref:./table.adoc#table[table] elements
+|List of table selection rules (regular expressions or simple patterns) that determine which tables are tracked and emitted to targets.
+A table matching any rule is tracked; rules may overlap.
+Each entry may include optional fields such as `key`, `tag`, `filter-mode` and `schema-only`.
+
+_NOTE:_ Rules apply to the fully qualified table name (usually `owner.table`).
+Use `.` or `.*` style wildcards according to your pattern syntax.
+
+|`separator` [[separator]]
+|_string_, max length: 128, default: `","`
+|Delimiter used to join multi-column key values when `key` fields are specified (see xref:./format.adoc#key[key] and xref:./format.adoc#tag[tag]).
+_IMPORTANT:_ Choose a separator that cannot appear in key column values or ensure keys are escaped by the consumer.
+Avoid a single common character (e.g., `,`) when key columns may contain that character.
+
+|`skip-xid`
+|_list_ of _string_ elements, max length: 32
+|Transaction IDs to skip entirely (not emitted).
+Acceptable XID forms include: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, and `0xUUUU.SSS.QQQQQQQQ`.
+
+_TIP:_ Use `skip-xid` for known maintenance transactions that should not be delivered to consumers.
+
+|`dump-xid`
+|_list_ of _string_ elements, max length: 32
+|Debugging list: when an XID matches, internal diagnostics for that transaction are written to _stderr_ (useful for tracing processing of specific transactions).
+_Same format_ as `skip-xid`.
+
+|===
+
+.Example `filter` configuration (JSON)
+[source,json]
+----
+{
+  "filter": {
+    "table": [
+      { "owner": "HR", "schema": "EMPLOYEES" },
+      { "owner": "ORDERS", "schema": "%", "key": "ORDER_ID", "tag": "orders" },
+      { "owner": "SYS", "schema": "%" }
+    ],
+    "separator": "|",
+    "skip-xid": ["0x0002.012.00004162"],
+    "dump-xid": []
+  }
+}
+----
+
+[NOTE]
+====
+- Use `separator` to concatenate multi-column keys when a `key` is provided.
+Prefer rare character sequences (for example `|#|`) to avoid splitting ambiguity.
+- Ensure any `key` or `tag` formatting rules match the expectations of downstream consumers; consider explicit escaping if consumers cannot handle separators inside key values.
+- Changing `filter` rules for an existing deployment can require resetting checkpoints or reloading schema; test changes in a staging environment before applying to production.
+====

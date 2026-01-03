@@ -1,0 +1,115 @@
+= OpenLogReplicator.json format
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This section describes the JSON configuration file used by OpenLogReplicator.
+The configuration is a single JSON object that contains top-level elements such as `source`, `target` and global options.
+Files matching the documented schema ensure predictable behaviour across upgrades.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+.JSON config file main elements
+image:json-config-file.png[JSON config file main elements,,,]
+
+The configuration file must contain a single JSON object with the parameters documented below.
+Use the `version` field to verify compatibility when upgrading the application.
+
+[width="100%",cols="a,a,50%a",options="header"]
+.Global parameters
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`source`
+|_list_ of xref:source.adoc#source[source] elements, mandatory
+|One or more source entries describing where redo logs come from.
+Typical deployments use a single `source` element.
+
+|`target`
+|_list_ of xref:target.adoc#target[target] elements, mandatory
+|One or more target entries describing sinks / outputs.
+Typical deployments use a single `target` element.
+
+|`version`
+|_string_, max length: 256, mandatory
+|Exact configuration schema version.
+Current required value: `"1.9.0"`.
+
+_TIP:_ Use the `version` field as a guard during upgrades.
+Consult the release notes for schema changes before reusing an old configuration file.
+
+|`dump-path`
+|_string_, max length: 256, default: `.`
+|Directory where `logdump`-style files are written when `dump-redo-log` is enabled.
+
+_NOTE:_ Path may be relative to the process working directory.
+Ensure the process user can write to this location.
+
+|`dump-raw-data`
+|_integer_, min: 0, max: 1, default: 0
+|When enabled, prints a HEX dump of vector data in `DUMP-<nnn>.trace` for deeper analysis.
+
+* `0` — disabled (default).
+* `1` — include full hex dump per vector.
+
+_NOTE:_ Only applicable when `dump-redo-log` is non-zero.
+
+|`dump-redo-log`
+|_integer_, min: 0, max: 2, default: 0
+|Create human-readable dumps of processed redo logs.
+
+* `0` — no dump (default).
+* `1` — produce per-file ` <database>-<nnn>.logdump` similar to `logdump`.
+* `2` — extended dump with additional internal details (e.g., supplemental log groups).
+
+_CAUTION:_ Dumps are intended for debugging and may not exactly match the external `logdump` utility output.
+
+|`log-level`
+|_integer_, min: 0, max: 4, default: 2
+|Verbosity of messages written to `stderr`.
+
+* `0` — Silent
+* `1` — Error
+* `2` — Warning (default)
+* `3` — Info
+* `4` — Debug
+
+|`trace`
+|_integer_, min: 0, max: 524287, default: 0
+|Bitmask selecting detailed trace output.
+See source code for available trace flags.
+
+_CAUTION:_ Trace codes and bit assignments may change between releases.
+
+|===
+
+.Example minimal configuration (JSON)
+[source,json]
+----
+{
+  "version": "1.9.0",
+  "source": [
+    { "alias": "db_primary", "name": "primary_db", "format": { "type": "json" }, "reader": { "type": "online" } }
+  ],
+  "target": [
+    { "type": "stdout", "name": "console" }
+  ]
+}
+----
+
+[NOTE]
+====
+- Validate `version` before starting; mismatched versions indicate incompatible configuration semantics.
+- Ensure directories referenced by `dump-path` and other file-related parameters are writable by the process user.
+- Use conservative `log-level` and `trace` settings in production.
+Enable higher verbosity only when diagnosing specific issues.
+- When modifying the configuration for an existing deployment (especially `source`/`target` names or `format`), create fresh checkpoints when necessary to avoid restart or recovery issues.
+====

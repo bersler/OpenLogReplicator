@@ -1,0 +1,154 @@
+= OpenLogReplicator.json - source element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This section documents the `source` element of the OpenLogReplicator JSON configuration.
+It explains each available field, constraints, defaults and operational notes.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+[[source]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Source element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`alias`
+|_string_, max length: 256, mandatory, unique
+|Logical identifier for this source.
+Referenced by `target` elements and recorded in checkpoint files.
+
+_TIP:_ Use short, descriptive names.
+
+|`format`
+|_element_ — see xref:format.adoc#format[format], mandatory
+|Configuration of the output message format and serialization options.
+
+|`name`
+|_string_, max length: 256, mandatory
+|Human-readable name used to identify the database connection in logs and checkpoints.
+
+_WARNING:_ Do not change this value while using existing checkpoint files; mismatches will prevent proper restart.
+
+|`reader`
+|_element_ — see xref:reader.adoc#reader[reader], mandatory
+|Configuration for reading redo logs (online, offline, batch, etc.).
+
+|`arch`
+|_string_, allowed: `online`, `online-keep`, `path`, `list`, default: `online`
+|Method used to obtain archived redo log file lists.
+
+* `online` — read archive list from the database (connection opened as needed).
+* `online-keep` — keep the database connection open.
+* `path` — read archive filenames from a filesystem path.
+* `list` — use a user-provided file list (commonly used with `batch` reader).
+
+_NOTE:_ Only valid for readers that support archived redo logs.
+
+|`arch-read-sleep-us`
+|_integer_, min: 0, default: 10000000
+|Microseconds to sleep between attempts to read archived redo log lists.
+
+|`arch-read-tries`
+|_integer_, min: 0, max: 1000000000, default: 10
+|Number of retries before failing to obtain an archived redo log list.
+
+|`debug`
+|_element_ — see xref:debug.adoc#debug[debug]
+|Group of debugging options.
+
+|`filter`
+|_element_ — see xref:filter.adoc#filter[filter]
+|Filter rules that determine which users, schemas and tables are processed.
+
+_CAUTION:_ Filters apply only to data rows, not to DDL.
+On first run the schema is loaded only for tables selected by the filter; changing the filter later may require resetting checkpoints and reloading schema.
+
+|`metrics`
+|_element_ — see xref:metrics.adoc#metrics[metrics]
+|Options to collect and export application metrics.
+
+|`flags`
+|_integer_, min: 0, max: 524287, default: 0
+|Bitmask of runtime options.
+Common flags:
+
+* `0x0001` — Read-only archived logs (do not read online redo).
+_CAUTION:_ May delay replication until log switches occur.
+* `0x0002` — Schemaless mode (operate without schema).
+* `0x0004` — Adaptive schema (valid with schemaless).
+* `0x0008` — Disable O_DIRECT (do not use direct IO).
+_TIP:_ Disabling direct IO reduces guarantees; use only when necessary.
+* `0x0010` — Ignore recoverable errors and continue (not recommended).
+* `0x0020` — Include DDL text in output.
+* `0x0040` — Show invisible (hidden) columns.
+* `0x0080` — Show guard columns.
+* `0x0100` — Show nested columns.
+* `0x0200` — Show unused columns.
+* `0x0400` — Include incomplete transactions in output.
+* `0x0800` — Include system transactions.
+* `0x1000` — Include checkpoint records in output.
+* `0x2000` — Do not delete old checkpoint files.
+* `0x8000` — Emit column data as raw (hex).
+* `0x10000` — Decode binary XMLType (experimental).
+* `0x20000` — Emit JSON values in binary format (experimental).
+* `0x40000` — Support UPDATEs for NOT NULL columns with occasional NULLs (experimental).
+
+_NOTE:_ Refer to the xref:../user-manual/user-manual.adoc[User Manual] for details on schemaless and adaptive schema modes.
+
+|`memory`
+|_element_ — see xref:memory.adoc#memory[memory]
+|Memory and buffer configuration.
+
+|`redo-read-sleep-us`
+|_integer_, min: 0, default: 50000
+|Microseconds to sleep when the online redo log is exhausted and the process waits for new transactions.
+
+_TIP:_ Default 50,000 μs (50 ms) provides a good latency/CPU trade-off.
+Lower values reduce latency at the cost of higher CPU usage.
+
+|`redo-verify-delay-us`
+|_integer_, min: 0, default: 0
+|When non-zero, read online redo log data again after this delay (μs) to verify consistency.
+
+_IMPORTANT:_ This double-read is a workaround for filesystems that may present stale caches.
+Prefer direct IO instead of relying on double reads.
+
+|`refresh-interval-us`
+|_integer_, min: 0, default: 10000000
+|Microseconds between attempts to refresh the list of redo log groups while reading online redo logs.
+
+|===
+
+.Example `source` configuration (JSON)
+[source,json]
+----
+{
+  "source": {
+    "alias": "db_primary",
+    "name": "primary_db",
+    "format": { "type": "json" },
+    "reader": { "type": "online" },
+    "arch": "online",
+    "redo-read-sleep-us": 50000,
+    "flags": 0,
+    "metrics": {}
+  }
+}
+----
+
+[NOTE]
+====
+- Validate `alias`, `name` and referenced sub-elements before deployment.
+- Tune `redo-read-sleep-us` and `refresh-interval-us` for desired latency versus CPU usage.
+- Changing `format`, `name` or `alias` while reusing existing checkpoint files can prevent restart; prefer creating fresh checkpoints after configuration changes.
+====

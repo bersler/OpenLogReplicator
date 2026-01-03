@@ -1,0 +1,76 @@
+= OpenLogReplicator.json - debug element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This section describes the `debug` element in the OpenLogReplicator JSON configuration.
+All parameters are intended for troubleshooting and testing; use caution when enabling in production.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+[[debug]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Debug element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`stop-log-switches`
+|_integer_, min: 0, default: 0
+|Stop the process after the specified number of log switches.
+Use `0` to disable.
+
+|`stop-checkpoints`
+|_integer_, min: 0, default: 0
+|Stop the process after the specified number of LWN checkpoints.
+Use `0` to disable.
+
+|`stop-transactions`
+|_integer_, min: 0, default: 0
+|Stop the process after the specified number of processed transactions.
+Use `0` to disable.
+
+|`owner`
+|_string_, max length: 128, optional
+|Owner/schema name used when constructing the internal debug table identifier.
+
+|`table`
+|_string_, max length: 128, optional
+|Table name used for debug-triggering.
+When set, any DML affecting this fully-qualified table may cause the process to stop immediately (commit not required).
+
+|===
+
+[CAUTION]
+====
+These parameters can cause abrupt process termination.
+Use only in controlled test environments or when collecting targeted diagnostics.
+====
+
+.Example `debug` configuration (JSON)
+[source,json]
+----
+{
+  "debug": {
+    "stop-log-switches": 0,
+    "stop-checkpoints": 0,
+    "stop-transactions": 0,
+    "owner": "TEST_SCHEMA",
+    "table": "DEBUG_TABLE"
+  }
+}
+----
+
+[NOTE]
+====
+- Prefer running with a debugger or test harness when using `stop-*` options so you can capture state at termination.
+- Avoid enabling debug stop options in production; unexpected stops can cause data delivery gaps.
+- Use `owner` and `table` only for isolated functional tests that validate replication-side behavior on specific objects.
+====

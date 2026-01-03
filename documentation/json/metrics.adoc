@@ -1,0 +1,74 @@
+= OpenLogReplicator.json - metrics element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-03
+:imagesdir: ./images
+:icons: font
+
+This section describes the `metrics` element in the OpenLogReplicator JSON configuration.
+It documents available fields, constraints, semantics and operational notes for the supported metrics backends.
+
+[frame="none",grid="none"]
+|====
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+[[metrics]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Metrics element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`type`
+|_string_, max length: 128, mandatory
+|Name of the metrics backend module.
+Currently the only supported value is `prometheus`.
+
+_NOTE:_ Unknown `type` values are rejected at startup.
+
+|`bind`
+|_string_, max length: 128, mandatory for `prometheus`
+|Network address the metrics server binds to, in the form `<host>:<port>`.
+Prometheus scrapes metrics by connecting to this address.
+
+_Example:_ `"bind": "127.0.0.1:8080"`
+
+_CAUTION:_ Bind address must be reachable by Prometheus and writable by the process user.
+
+|`tag-names`
+|_string_, max length: 128, optional, default: `none`
+|Controls which additional label tags are attached to `dml_op` and related metrics.
+
+Allowed values:
+
+* `none` — (default) do not attach `schema` / `table` labels.
+* `filter` — attach `schema` and `table` labels only for tables matched by the configured `filter` rules.
+* `sys` — attach `schema` and `table` labels only for system tables required by OLR.
+* `all` — attach `schema` and `table` labels for all emitted metrics (equivalent to `filter` + `sys`).
+
+_TIP:_ Use `filter` to limit cardinality of label values and avoid high-cardinality metrics which can harm Prometheus performance.
+
+|===
+
+.Example `metrics` configuration (JSON)
+[source,json]
+----
+{
+  "metrics": {
+    "type": "prometheus",
+    "bind": "127.0.0.1:8080",
+    "tag-names": "filter"
+  }
+}
+----
+
+[NOTE]
+====
+* Validate `bind` and firewall rules before enabling Prometheus scraping.
+* Prefer `filter` or `sys` over `all` in production to limit label cardinality.
+* When exposing metrics on public interfaces, secure access via firewall or a reverse proxy to avoid information disclosure.
+* Restart the process after changing metrics configuration to ensure the bind address and module are re-initialized.
+====
