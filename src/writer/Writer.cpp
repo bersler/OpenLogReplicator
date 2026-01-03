@@ -437,10 +437,9 @@ namespace OpenLogReplicator {
         else
             checkpointIdx = 0;
         metadata->clientIdx = checkpointIdx;
-        metadata->startScn = checkpointScn;
-        metadata->startSequence = Seq::none();
-        metadata->startTime.clear();
-        metadata->startTimeRel = 0;
+        metadata->start.from = Start::FROM::SCN;
+        metadata->start.scn = checkpointScn;
+        metadata->start.sequence = Seq::none();
 
         ctx->info(0, "checkpoint - all confirmed till scn: " + checkpointScn.toString() + ", idx: " +
                   std::to_string(checkpointIdx));

@@ -594,7 +594,6 @@ namespace OpenLogReplicator {
 
         bool standby{false};
 
-        void positionReader() override;
         void loadDatabaseMetadata() override;
         bool checkConnection() override;
         std::string getParameterValue(std::string parameter) const;
@@ -622,6 +621,8 @@ namespace OpenLogReplicator {
                          std::string newPassword, std::string newConnectString, bool newKeepConnection);
         ~ReplicatorOnline() override;
 
+        void initialize() override;
+        void positionReader() override;
         void goStandby() override;
 
         static void archGetLogOnline(Replicator* replicator);
