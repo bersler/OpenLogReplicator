@@ -1,3 +1,5 @@
+- fix: empty command line argument prints help message
+
 1.9.0
 - code style cleanup
 - fixed some logdump output
