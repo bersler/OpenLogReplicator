@@ -20,6 +20,8 @@ This document describes the release notes of OpenLogReplicator.
 When empty argument is used as command line argument then help message is printed; it should be ignored. Example: ./OpenLogReplicator ""
 - documentation refresh
 
+- enhancement: replication startup parameters moved to program arguments
+
 === Version 1.9.0
 - code style cleanup
 - fixed some logdump output

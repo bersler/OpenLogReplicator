@@ -1,5 +1,6 @@
 - fix: empty command line argument prints help message
 - documentation refresh
+- enhancement: replication startup parameters moved to program arguments
 
 1.9.0
 - code style cleanup
