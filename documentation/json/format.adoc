@@ -1,0 +1,357 @@
+= OpenLogReplicator.json - format element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-06
+:imagesdir: ./images
+:icons: font
+
+[frame="none",grid="none"]
+|====
+|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This section documents the `format` element of the OpenLogReplicator JSON configuration.
+It describes available options, constraints, defaults and operational notes that affect how transactions and columns are serialized.
+
+[[format]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Format element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`type`
+|_string_, max length: 256, required
+|Possible values are:
+
+* `json` -- Transactions in JSON OpenLogReplicator format.
+
+* `protobuf` -- Transactions in Protocol Buffer format.
+
+Refer to details in xref:../user-manual/user-manual.adoc#output-format[output format] chapter for details.
+
+_CAUTION:_ Protocol buffer support is in experimental state.
+It is not fully tested and might not work properly.
+Don't use it for production without testing.
+
+|`attributes` [[attributes]]
+|_number_, min: 0, max: 7, default: 0
+|Transaction attributes location.
+
+Field value is a sum of:
+
+* `0` -- add attributes to the begin message of the transaction.
+
+* `1` -- add attributes to every DML message of the transaction.
+
+* `2` -- add attributes to the commit message of the transaction.
+
+|`char` [[char]]
+|_number_, min: 0, max: 3, default: 0
+|Format for _(n)char_, _(n)varchar(2)_ and _clob_ column types.
+
+By default, the value is written in Unicode format, using UTF-8 to code characters.
+
+Field value is a sum of:
+
+* `0x0001` -- No character set transformation is applied, the characters are copied from source "as is".
+
+* `0x0002` -- Instead of characters, the output is in HEX format (using hex format -- for example, `"column":"4b4c204d"`).
+
+|`column` [[column]]
+|_numeric_, min: 0, max: 2, default: 0
+|Column duplicate specification.
+
+* `0` -- Default behavior, INSERT and DELETE contain only non-null values.
+UPDATE contains only changed columns or those which are member of the primary key.
+
+_TIP:_ This is the format that takes less space.
+There is an assumption that if the column doesn't appear in the INSERT of DELETE statement, it means that the value is NULL.
+
+_CAUTION:_ For LOB columns the before value is not available in the REDO stream.
+Therefore, the column is not included in the output.
+Only after value is included.
+
+* `1` -- INSERT and DELETE contain all values.
+UPDATE contains only changed columns or those which are member of a primary key.
+
+* `2` -- JSON output would contain all columns that appear in REDO stream, including those which didn't change.
+
+_CAUTION:_ It is technically not possible to differentiate if the column was actually mentioned by UPDATE DML command or not.
+`UPDATE X SET A = A` might have the same redo log vector as `UPDATE X SET A = A, B = B` -- in some cases (especially for tables with large schema).
+The receiver of the output stream shouldn't make any assumption that the user included a column in the UPDATE operation if it appeared in the output stream and has the same _before_ and _after_ image.
+
+|`db` [[db]]
+|_number_, min: 0, max: 3, default: 0
+|Present database name in payload.
+
+Value is a sum of:
+
+* `0x0000` -- Database name is not present.
+
+* `0x0001` -– Database name is present in `db` field in every DML message.
+
+* `0x0002` -– Database name is present in `db` field in every DDL message.
+
+|`flush-buffer`
+|_numeric_, min: 0, default: 1048576
+|Number of bytes after which the output buffer is flushed.
+
+When set to `0` then the buffer is flushed immediately as a new message arrives.
+
+|`interval-dts` [[interval-dts]]
+|_number_, min: 0, max: 10, default: 0
+|INTERVAL DAY TO SECONDS field format.
+
+Possible values are:
+
+* `0` -- Value in nanoseconds -- `"val": 123456000000000`.
+
+* `1` -- Value in microseconds (possible data precision loss) -- `"val": 123456000000`.
+
+* `2` -- Value in milliseconds (possible data precision loss) -- `"val": 123456000`.
+
+* `3` -- Value in seconds (possible data precision loss) -- `"val": 123456`.
+
+* `4` -- Value in nanoseconds stored as a string -- `"val": "123456000000000"`.
+
+* `5` -- Value in microseconds stored as a string (possible data precision loss) -- `"val": "123456000000"`.
+
+* `6` -- Value in milliseconds stored as a string (possible data precision loss) -- `"val": "123456000"`.
+
+* `7` -- Value in seconds stored as a string (possible data precision loss) -- `"val": "123456"`.
+
+* `8` -- Value stored in part of _ISO-8601_ format stored as a string -- `"val": "01 06:00:00.123456789"`.
+
+* `9` -- Value stored in part of _ISO-8601_ format stored as a string using `","` as a separator between the number of days and time -- `"val": "01,06:00:00.123456789"`.
+
+* `10` -- Value stored in part of _ISO-8601_ format stored as a string using `"-"` as a separator between the number of days and time -- `"val": "01-06:00:00.123456789"`.
+
+|`interval-ytm` [[interval-ytm]]
+|_number_, min: 0, max: 4, default: 0
+|INTERVAL YEAR TO MONTH field format.
+
+Possible values are:
+* `0` -- Value in months -- `"val": 20` (1 year, 8 months).
+
+* `1` -- Value in months as a string -- `"val": "20"`.
+
+* `2` -- Value in string format, number of years and months separated by `" "` -- `"val": "1 8"`.
+
+* `3` -- Value in string format, number of years and months separated by `","` -- `"val": "1,8"`.
+
+* `4` -- Value in string format, number of years and months separated by `"-"` -- `"val": "1-8"`.
+
+|`message` [[message]]
+|_number_, min: 0, max: 30, default: 0
+|Message format specification.
+
+Value is a sum of:
+
+* `0x0001` -– One message for the whole transaction.
+
+_TIP:_ By default, the transaction is split to many messages: begin, DML, DML, ..., commit.
+Using this flag would cause to combine all messages into one.
+For performance reasons, this is not recommended when using Kafka when transactions could be in hundreds of megabytes in size.
+
+* `0x0002` -– Add `num` field to every message.
+The field would contain a sequence number of the message in the transaction.
+
+For JSON only target, the following additional flags are available:
+
+* `0x0004` -- Skip begin message (when using flag `0x0001`).
+
+* `0x0008` -- Skip commit message (when using flag `0x0001`).
+
+* `0x0010` -- Add information about data offset (for debugging purposes).
+
+|`rid` [[rid]]
+|_number_, min: 0, max: 1, default: 0
+|Add `rid` field for every row in output with the Row ID.
+
+Possible values are:
+
+* `0` -- Don't add `rid` field (default).
+
+* `1` -- Add `rid` field for every row in output with the Row ID.
+
+|`schema`
+|_number_, min: 0, max: 7, default: 0
+|Schema format sent to output.
+
+By default, the schema is not sent to output.
+
+Example output:
+`{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2","obj":0},"after":{"A":100,"B":999,"C":10.22,"D":"xx2","E":"yyy","F":1564662896000}}]}`
+
+The field is a sum of values:
+
+* `0x0001` -- Print full schema (including column descriptions), but just with the first message for every table.
+
+_TIP:_ This optimization is based on the fact that it is meaningless to attach the same schema definition every time if it didn't change.
+It is assumed that the client would cache the schema and would not request it again.
+If the schema changes, the first message where new schema is used would contain the full schema.
+
+Example output:
+`{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2","columns":[{"name":"A","type":"number","precision":-1,"scale":0,"nullable":1},{"name":"B","type":"number","precision":10,"scale":0,"nullable":1},{"name":"C","type":"number","precision":10,"scale":2,"nullable":1},{"name":"D","type":"char","length":10,"nullable":1},{"name":"E","type":"varchar2","length":10,"nullable":1},{"name":"F","type":"timestamp","length":11,"nullable":1},{"name":"G","type":"date","nullable":1}]},"after":{"A":100,"B":999,"C":10.22,"D":"xx2       ","E":"yyy","F":1564662896000}}]}`
+`{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2","after":{"A":100,"B":999,"C":10.22,"D":"xx3       ","E":"yyy","F":1564662896000}}]}`
+
+* `0x0002` -- Add full schema definition (including column descriptions) to every message.
+
+_TIP:_ Remember to use flag `0x0001` together with flag `0x0002`.
+The flag `0x0002` alone has no effect.
+
+* `0x0004` -- Add _objn_ field to schema description which contains database object ID.
+
+Example output:
+`{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2"},"after":{"A":100,"B":999,"C":10.22,"D":"xx2       ","E":"yyy","F":1564662896000}}]}`
+
+|`scn` [[scn]]
+|_number_, min: 0, max: 1, default: 0
+|SCN field format.
+
+Possible values are:
+
+* `0` -- SCN is stored as a decimal number in `scn` field.
+
+* `1` -– SCN values are stored in a text format in hexadecimal format (in _"C"_ format – like `0xFF`) in `scns` field.
+
+|`scn-type` [[scn-type]]
+|_number_, min: 0, max: 3, default: 0
+|Include `scn` field in every payload.
+
+By default, every DML operation contains `scn` field with SCN value which is derived from the redo vector which contains DML data.
+
+Value is a sum of:
+
+* `0x0001` -- Put `scn` field in every message.
+The default is to put `scn` field only in the first message.
+
+* `0x0002` -- SCN values for all DML operations are copied from commit SCN record.
+
+|`timestamp` [[timestamp]]
+|_number_, min: 0, max: 15, default: 0
+|Format of timestamp values.
+
+In the following description, the following timestamp is used as an example: `"2022-05-01 06:00:00.123456789"`.
+Possible values are:
+
+* `0` -- Unix with nanoseconds -- `"tm": 1651384800123456789`.
+
+* `1` -- Unix with precision to the microsecond (possible data precision loss) -- `"tm": 1651384800123457`.
+
+* `2` -- Unix with precision to the millisecond  (possible data precision loss) -- `"tm": 1651384800123`.
+
+* `3` -- Unix with precision to the second  (possible data precision loss) -- `"tm": 1651384800`.
+
+* `4` -- Unix with nanosecond precision stored as a string -- `"tms": "1651384800123456789"`.
+
+* `5` -- Unix with microsecond precision stored as a string (possible data precision loss) -- `"tms": "1651384800123457"`.
+
+* `6` -- Unix with millisecond precision stored as a string (possible data precision loss) -- `"tms": "1651384800123"`.
+
+* `7` -- Unix with second precision stored as a string (possible data precision loss) -- `"tms": "1651384800"`.
+
+* `8` -- _ISO-8601_ format stored with nanosecond precision -- `"tms": "2022-05-01T06:00:00.123456789Z"`.
+
+* `9` -- _ISO-8601_ format stored with microsecond precision as a string -- `"tms": "2022-05-01T06:00:00.123456Z"`.
+
+* `10` -- _ISO-8601_ format stored with millisecond precision as a string -- `"tms": "2022-05-01T06:00:00.123Z"`.
+
+* `11` -- _ISO-8601_ format stored second precision as a string -- `"tms": "2022-05-01T06:00:00Z"`.
+
+* `12` -- _ISO-8601_ format stored with nanosecond precision as a string without "TZ" -- `"tms": "2022-05-01 06:00:00.123456789"`.
+
+* `13` -- _ISO-8601_ format stored with microsecond precision as a string  without "TZ" -- `"tms": "2022-05-01 06:00:00.123456"`.
+
+* `14` -- _ISO-8601_ format stored with millisecond precision as a string without "TZ" -- `"tms": "2022-05-01 06:00:00.123"`.
+
+* `15` -- _ISO-8601_ format stored second precision as a string without "TZ" -- `"tms": "2022-05-01 06:00:00"`.
+
+_NOTE:_ This format is also used for type `timestamp with local time zone` since this type internally does not contain time zone data.
+
+|`timestamp-tz` [[timestamp-tz]]
+|_number_, min: 0, max: 11, default: 0
+|Format of timestamp with time zone values.
+
+In the following description, the following timestamp with time zone is used as an example: `"2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+
+Possible values are:
+
+* `0` -- Unix with nanoseconds stored as a string with time zone after comma sign -- `"tms": "1651384800123456789,Europe/Warsaw"`.
+
+* `1` -- Unix with microsecond precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800123457,Europe/Warsaw"`.
+
+* `2` -- Unix with millisecond precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800123,Europe/Warsaw"`.
+
+* `3` -- Unix with second precision stored as a string with time zone after comma sign (possible data precision loss) -- `"tms": "1651384800,Europe/Warsaw"`.
+
+* `4` -- _ISO-8601_ format stored with nanosecond precision with time zone after space sign -- `"tms": "2022-05-01T06:00:00.123456789Z Europe/Warsaw"`.
+
+* `5` -- _ISO-8601_ format stored with microsecond precision as a string with time zone after space sign-- `"tms": "2022-05-01T06:00:00.123456Z Europe/Warsaw"`.
+
+* `6` -- _ISO-8601_ format stored with millisecond precision as a string with time zone after space sign-- `"tms": "2022-05-01T06:00:00.123Z Europe/Warsaw"`.
+
+* `7` -- _ISO-8601_ format stored second precision as a string with time zone after space sign -- `"tms": "2022-05-01T06:00:00Z Europe/Warsaw"`.
+
+* `8` -- _ISO-8601_ format stored with nanosecond precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+
+* `9` -- _ISO-8601_ format stored with microsecond precision as a string  without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123456 Europe/Warsaw"`.
+
+* `10` -- _ISO-8601_ format stored with millisecond precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00.123 Europe/Warsaw"`.
+
+* `11` -- _ISO-8601_ format stored second precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
+
+|`timestamp-all` [[timestamp-all]]
+|_number_, min: 0, max: 1, default: 0
+|Include `timestamp` field in every payload.
+
+Possible values are:
+
+* `0` -- Put `timestamp` field only in the first message.
+
+* `1` -- Put `timestamp` field in every message.
+
+|`unknown`
+|_number_, min: 0, max: 1, default: 0
+|Unknown value reporting.
+For unknown values `‘?’` is sent to output.
+This applies to cases, when OpenLogReplicator it not able to decode the value.
+
+Possible values are:
+
+* `0` -- Silently ignore unknown values.
+
+* `1` -- Output to _stderr_ information about decoding mismatch.
+
+The value of this parameter is useful for debugging purposes.
+Warning code `60002` is printed to _stderr_ when an unknown value is detected.
+
+|`unknown-type`
+|_number_, min: 0, max: 1, default: 0
+|Reporting of unknown data types.
+Columns which have unsupported data type are skipped.
+
+Possible values are:
+
+* `0` -- Silently skip values for unsupported column types.
+
+* `1` -- Process values for all columns.
+If the column type is not supported `'?'` value is sent to output.
+In addition, when the `unknown` parameter is set to `1`, information about value in hex format is sent to _stderr_.
+
+|`xid` [[xid]]
+|_number_, min: 0, max: 2, default: 0
+|Format of the Transaction ID (XID).
+
+Possible values are:
+
+* `0` -- classic hex format (like: `"xid":"0x0002.012.00004162"`).
+
+* `1` -- decimal format (like: `"xid":"2.18.16738"`).
+
+* `2` -- a single 64-bit number format (like: `"xidn":563027262849378`).
+
+|===

@@ -1,13 +1,13 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-01
+:revdate: 2026-01-06
 :imagesdir: ./images
 :toc: preamble
 
 [frame="none",grid="none"]
 |====
-a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document describes messages of OpenLogReplicator which are written to the log.
@@ -33,11 +33,17 @@ Messages can be suppressed by setting the `trace` parameter to `3`.
 Messages are controlled by the `trace` parameter.
 Parameter `log-level` is not relevant for tracing.
 
-IMPORTANT: By default, all error, warning and info messages are printed -- `trace` parameter is set to value `3`.
+[IMPORTANT]
+====
+By default, all error, warning and info messages are printed -- `trace` parameter is set to value `3`.
+====
 
-TIP: The documentation doesn't discuss _Trace_ messages in detail.
+[TIP]
+====
+The documentation doesn't discuss _Trace_ messages in detail.
 Those messages aren't intended to be used by users.
 Format can change without notice.
+====
 
 == Error Messages
 
@@ -58,8 +64,11 @@ Verify filesystem integrity and operating system log messages.
 Attempt to create an exclusive lock on the file has failed.
 Check if another process is running (perhaps another instance of OpenLogReplicator).
 
-TIP: You can list file handles using operating system `lsof` command.
+[TIP]
+====
+You can list file handles using operating system `lsof` command.
 Refer to operating system documentation about locking files.
+====
 
 ==== code 10003: "file: <file name> - get metadata returned: <message>"
 
@@ -127,14 +136,20 @@ Verify operating system log messages and filesystem integrity.
 
 Thread creation failed.
 
-TIP: Verify if there is a limit set in the OS related to the number of threads.
+[TIP]
+====
+Verify if there is a limit set in the OS related to the number of threads.
+====
 
 ==== code 10014: "stacktrace for thread: <thread id>"
 
 Stacktrace for thread is printed.
 This message is printed when the program is terminated by a signal.
 
-TIP: Stacktrace can be forced by sending SIGUSR1 signal to the program.
+[TIP]
+====
+Stacktrace can be forced by sending SIGUSR1 signal to the program.
+====
 
 ==== code 10015: "caught signal: <signal name>"
 
@@ -150,7 +165,10 @@ Verify if the provided `min-mb` and `max-mb` parameters are correct and match am
 Configured amount of memory doesn't allow processing provided stream of redo log files.
 Refer to suggestions for details about reducing xref:../user-manual/user-manual.adoc#memory-allocation[memory allocation].
 
-TIP: Increase `max-mb` parameter to allow more memory to be used.
+[TIP]
+====
+Increase `max-mb` parameter to allow more memory to be used.
+====
 
 ==== code 10018: "memory allocation failed: <message>"
 
@@ -158,9 +176,12 @@ Memory allocation from heap failed.
 Verify if the host contains enough memory to run the program.
 If the problem persists, please report this issue.
 
-IMPORTANT: Some memory structures are allocated adhoc and not from the pool defined with `min-mb` and `max-mb` parameters.
+[IMPORTANT]
+====
+Some memory structures are allocated adhoc and not from the pool defined with `min-mb` and `max-mb` parameters.
 For example for storing schema (copy of content of database `SYS.*` tables).
 This message is printed when such allocation fails.
+====
 
 ==== code 10019: "binaries are build with no regex implementation, check if you have gcc version >= 4.9"
 
@@ -256,7 +277,10 @@ Verify if the property exists and has the correct value.
 Verify if the database user has grants to read the provided table.
 Refer to database documentation for more information.
 
-TIP: Verify if the grant script was executed successfully.
+[TIP]
+====
+Verify if the grant script was executed successfully.
+====
 
 ==== code 10035: "can't read <information> from flashback, provide a valid starting SCN value"
 
@@ -265,12 +289,21 @@ To achieve full consistency, all database queries use flashback to read the cont
 The flashback query failed.
 Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-availability[is available].
 
-TIP: Run initial replication of replication during a less active period
+[TIP]
+====
+Run initial replication of replication during a less active period
+====
 
-TIP: Run initial replication on a copy of the database which is not modified
+[TIP]
+====
+Run initial replication on a copy of the database which is not modified
+====
 
-TIP: Provide starting SCN number less away in time.
+[TIP]
+====
+Provide starting SCN number less away in time.
 The SCN number must be within the retention period of the database.
+====
 
 ==== code 10036: "failed to find standby redo log files"
 
@@ -353,9 +386,12 @@ Verify if the database xref:../troubleshooting/troubleshooting.adoc#database-ava
 
 Schema is missing for batch mode.
 
-TIP: If you don't have an earlier schema but wish to continue having no information about column names and types, try with schemaless mode (`'flags': 2`).
+[TIP]
+====
+If you don't have an earlier schema but wish to continue having no information about column names and types, try with schemaless mode (`'flags': 2`).
 Refer to the documentation for more information about
 xref:../user-manual/user-manual.adoc#schemaless-mode[schemaless mode].
+====
 
 ==== code 10053: "network receive error"
 
@@ -475,7 +511,7 @@ If it is not possible to fix the checkpoint file, remove it and start replicatio
 Transaction ID (XID) number is in incorrect format provided in the configuration file.
 This value has a wrong format and can't be parsed.
 Check if the file is not corrupted.
-Refer to the documentation for more information about xref:../reference-manual/reference-manual.adoc#skip-xid[XID format].
+Refer to the documentation for more information about xref:../json/filter.adoc#skip-xid[XID format].
 
 ==== code 20003: "file: <file name> - parse error, field <field> <message>"
 
@@ -964,7 +1000,7 @@ By default, OpenLogReplicator would just print the informational message (but ju
 
 It is also possible to treat the AFTER image as the correct value and copy it to the BEFORE image of the column value.
 This feature is experimental.
-To achieve this behavior, the xref:../reference-manual/reference-manual.adoc#flags[flags] parameter should be set appropriately.
+To achieve this behavior, the xref:../json/source.adoc#flags[flags] parameter should be set appropriately.
 
 ==== code 60035, "unknown database requested, got: <name>, expected: <name>"
 

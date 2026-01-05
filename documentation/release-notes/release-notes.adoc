@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-03
+:revdate: 2026-01-06
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -9,7 +9,7 @@
 
 [frame="none",grid="none"]
 |====
-a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document describes the release notes of OpenLogReplicator.

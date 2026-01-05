@@ -1,0 +1,106 @@
+= OpenLogReplicator.json format
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-06
+:imagesdir: ./images
+:icons: font
+
+[frame="none",grid="none"]
+|====
+|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This section describes the JSON configuration file used by OpenLogReplicator.
+The configuration is a single JSON object that contains top-level elements such as `source`, `target` and global options.
+Files matching the documented schema ensure predictable behavior across upgrades.
+
+.JSON config file main elements
+image:json-config-file.png[JSON config file main elements,,,]
+
+The file is in JSON format.
+The file should contain a single object with the following parameters:
+
+[width="100%",cols="a,a,50%a",options="header"]
+.Global parameters
+|===
+
+|Parameter
+|Specification
+|Notes
+
+|`source`
+|_list_ of xref:./source.adoc#source[source] elements, mandatory
+|The list should contain just one source element.
+
+|`target`
+|_list_ of xref:./target.adoc#target[target] elements, mandatory
+|The list should contain just one target element.
+
+|`version`
+|_string_, max length: 256, mandatory
+|The value must be equal to `"1.1.0"`.
+
+_TIP_: This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade.
+During upgrade, always check the documentation for parameter changes and verify that the JSON configuration file is correct.
+
+|`dump-path`
+|_string_, max length: 256, default: `"."`
+|The location where the `logdump` files are created.
+The path can be relative to the current directory.
+
+_NOTE_: This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
+
+|`dump-raw-data`
+|_number_, min: 0, max: 1, default: 0
+|Print hex dump of vector data for all dumped OP codes.
+
+Possible values are:
+
+* `0` -– No hex dump is added to `DUMP-<nnn>.trace` file.
+
+* `1` -– Before logdump information for every vector, the full vector is dumped in HEX format – useful for analysis of the content.
+
+_NOTE:_ This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
+
+|`dump-redo-log`
+|_number_, min: 0, max: 2, default: 0
+|Create output similar to `logdump` command which can be compared as string to verify if certain parameters have been correctly decoded.
+
+Possible values are:
+
+* `0` -- No `logdump file is created.
+
+* `1` -- For every processed redo log file, a file `<database>-<nnn>.logdump` is created (`<database>` -– database name, `<nnn>` -- redo log sequence).
+
+* `2` -- like `1` but additional information is printed which is not originally printed in `logdump` output -- for example details about supplemental log groups.
+
+_CAUTION:_ The result doesn't have to fully match the results of `logdump`.There can be some inconsistency.
+Not all redo OP codes are parsed and analyzed, and there is no guarantee that the results should be exactly the same.
+
+|`log-level`
+|_number_, min: 0, max: 4, default: 2
+|Messages verbose level.
+
+All messages are sent to _stderr_ output stream.
+
+Possible values are:
+
+* `0` -- _Silent_ -- don't print anything.
+
+* `1` -- _Error_ -- print only error messages.
+
+* `2` -- _Warning_ -- print error and warning messages (default setting).
+
+* `3` -- _Info_ -- print error, warning and info messages.
+
+* `4` -- _Debug_ -- print all messages.
+
+|`trace`
+|_number_, min: 0, max: 524287, default: 0
+|Print debug information.
+
+The value is a sum of various trace parameters, please refer to source code for details.
+
+_CAUTION:_ The codes can change without prior notice.
+
+|===
