@@ -22,12 +22,13 @@ Refer to [OpenLogReplicator tutorials repository](https://github.com/bersler/Ope
 1. [Introduction to OpenLogReplicator](documentation/introduction/introduction.adoc)
 2. [User Manual](documentation/user-manual/user-manual.adoc)
 3. [Reference Manual](documentation/reference-manual/reference-manual.adoc)
-4. [Installation Guide](documentation/installation/installation.adoc)
-5. [Release Notes](documentation/release-notes/release-notes.adoc)
-6. [Metrics](documentation/metrics/metrics.adoc)
-7. [Troubleshooting Guide](documentation/troubleshooting/troubleshooting.adoc)
-8. [Log Message Guide](documentation/log-messages/log-messages.adoc)
-9. [Experimental Features](documentation/experimental-features/experimental-features.adoc)
+4. [JSON config](documentation/json/json.adoc)
+5. [Installation Guide](documentation/installation/installation.adoc)
+6. [Release Notes](documentation/release-notes/release-notes.adoc)
+7. [Metrics](documentation/metrics/metrics.adoc)
+8. [Troubleshooting Guide](documentation/troubleshooting/troubleshooting.adoc)
+9. [Log Message Guide](documentation/log-messages/log-messages.adoc)
+10. [Experimental Features](documentation/experimental-features/experimental-features.adoc)
 
 Additionally:
 

@@ -1,0 +1,55 @@
+= OpenLogReplicator.json - filter element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-06
+:imagesdir: ./images
+:icons: font
+
+[frame="none",grid="none"]
+|====
+|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This section documents the `filter` element of the OpenLogReplicator JSON configuration.
+It explains how to select which tables and transactions are tracked, how keys and tags are formed, and useful debugging options.
+
+[[filter]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Filter element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`table`
+|_list_ of a xref:./table.adoc#table[table] element
+|List of table regex rules which should be tracked in the redo log stream and sent to output.
+
+A table that matches at least one of the rules is tracked, thus the rules can overlap.
+
+Example:
+`"table": {{"table": "owner1.table1"}, {"table": "owner2.table2", "key": "col1, col2, col3"}, {"table":"sys.%"}}.`
+
+|`separator` [[separator]]
+|_string_, max length: 128, default: `","`
+|Concatenation separator for xref:./table.adoc#key[key] and xref:../table.adoc#tag[tag] fields.
+
+_IMPORTANT:_ The separator character should be chosen as a combination of characters which do not appear in the key values.
+Otherwise, it may be impossible to split the key back to the original values.
+If such a requirement appears, in future versions they key might be escaped to allow for any character to be used.
+
+|`skip-xid` [[skip-xid]]
+|_list_ of _string_ elements, max length: 32
+|List of transaction IDs which should be skipped.
+The format if XID should be one of: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, `UUUU.SSSS.QQQQQQQQ`, `0xUUUU.SSS.QQQQQQQQ`, `0xUUUU.SSSS.QQQQQQQQ`.
+
+Example:
+`"skip-xid": ["0x0002.012.00004162"]`
+
+|`dump-xid`
+|_list_ of _string_ elements, max length: 32
+|Debug option to dump to _stderr_ internals about certain XID.
+The format is the same as for _skip-xid_.
+
+|===

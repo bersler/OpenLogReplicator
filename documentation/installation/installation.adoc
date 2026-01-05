@@ -1,13 +1,13 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-01
+:revdate: 2026-01-06
 :imagesdir: ./images
 :toc: preamble
 
 [frame="none",grid="none"]
 |====
-a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document describes installation and configuration guide.
@@ -76,11 +76,14 @@ ALTER SYSTEM ARCHIVE LOG CURRENT;
 SELECT SUPPLEMENTAL_LOG_DATA_MIN, LOG_MODE FROM V$DATABASE;
 ----
 
-NOTE: Minimal supplemental logging is required for OpenLogReplicator to work.
+[NOTE]
+====
+Minimal supplemental logging is required for OpenLogReplicator to work.
 It is not a must-have requirement.
 In case when it is dynamically disabled (i.e., disabled after program startup), OpenLogReplicator might not be able to replicate all transactions.
 Errors might be printed and behavior might be undefined.
 Transactions might be missing in the output and replication should be restarted.
+====
 
 ==== Force logging
 
@@ -116,9 +119,12 @@ The default requirements of having enabled MINIMAL SUPPLEMENTAL LOGGING are enou
 In such a case, the output contains only modified columns.
 However, typically this is not enough, and it is required that the output contains also values of columns which haven't been modified: primary key, unique key or all columns.
 
-IMPORTANT: OpenLogReplicator leaves the decision to the user which data is present in the database redo logs.
+[IMPORTANT]
+====
+OpenLogReplicator leaves the decision to the user which data is present in the database redo logs.
 Besides the minimal supplemental logging option, it doesn't force the user to enable any other supplemental logging options per table.
 The user can decide which tables should have supplemental logging enabled and which should not.
+====
 
 ==== Adding primary key to supplemental logging
 
@@ -142,7 +148,9 @@ ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
 SELECT SUPPLEMENTAL_LOG_DATA_PK FROM V$DATABASE;
 ----
 
-TIP: Adding supplemental logging for primary key columns for all tables in the database has a typically low impact on the performance and redo log size.
+[TIP]
+====
+Adding supplemental logging for primary key columns for all tables in the database has a typically low impact on the performance and redo log size.
 Using OpenLogReplicator Performance tracing option can help to determine the impact.
 This is a unique feature of OpenLogReplicator, which is not available in any other replication engine.
 Setting `"trace": 256` in the configuration file will enable tracing.
@@ -150,6 +158,7 @@ After finishing redo log file parsing, information is printed with statistics re
 Statistics include a summary of additional space occupied by supplemental log group.
 The value is in bytes.
 Investigate various options of supplemental logging and choose the one that gives the best performance and redo log size.
+====
 
 ==== Adding custom key to supplemental logging
 
@@ -169,17 +178,23 @@ In the `filter` group in `table` list add the following entry:
 {"owner": "<SCHEMA>", "table": "<TABLE>", "key": "<COLUMNS>"}
 ----
 
-CAUTION: OpenLogReplicator rigorously tests the correctness of the custom key columns.
+[CAUTION]
+====
+OpenLogReplicator rigorously tests the correctness of the custom key columns.
 If the defined columns aren't present in the table, the replication will stop.
 This setting overrides the defined primary key.
+====
 
 ==== Adding all columns to supplemental logging
 
 It is also possible to include all columns in the output for UPDATE operations.
 To achieve such behavior, it is required to add all columns to supplemental logging and set `column` parameter to value `2`.
 
-CAUTION: Adding all columns to supplemental logging can cause a significant increase of redo log size.
+[CAUTION]
+====
+Adding all columns to supplemental logging can cause a significant increase of redo log size.
 This is especially true for tables with many columns.
+====
 
 For a single table, the following script should be executed in the source database:
 
@@ -211,8 +226,11 @@ Requirements for an OFFLINE reader type:
 
 * physical access to read redo log files.
 
-IMPORTANT: It is not recommended to run OpenLogReplicator using SYS or SYSTEM account or any account with high privileges to connect to the database.
+[IMPORTANT]
+====
+It is not recommended to run OpenLogReplicator using SYS or SYSTEM account or any account with high privileges to connect to the database.
 The database user should have JUST the following privileges and absolutely nothing more:
+====
 
 [source,sql]
 ----
@@ -241,8 +259,11 @@ GRANT SELECT ON SYS.V_$STANDBY_LOG TO <USER>;
 GRANT SELECT ON SYS.V_$TRANSPORTABLE_PLATFORM TO <USER>;
 ----
 
-NOTE: Grant script has to be run from _SYS_ account.
+[NOTE]
+====
+Grant script has to be run from _SYS_ account.
 For multi-tenant databases, the user must be created and given grants in PDB.
+====
 
 === Runtime permissions
 

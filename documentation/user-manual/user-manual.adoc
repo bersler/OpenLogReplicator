@@ -1,7 +1,7 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-01
+:revdate: 2026-01-06
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
@@ -10,7 +10,7 @@
 
 [frame="none",grid="none"]
 |====
-a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document is the main user manual for OpenLogReplicator.
@@ -61,8 +61,11 @@ The parser thread is also responsible for sending transactions to output buffer 
 5. Writer thread: responsible for sending the transactions from the output buffer to the output.
 There might be more threads used to control proper communication with the output depending on the type of the connector and threads used by the external libraries.
 
-NOTE: The only CPU-intensive thread is the parser thread.
+[NOTE]
+====
+The only CPU-intensive thread is the parser thread.
 Other threads perform operations which aren't CPU intensive, however, might be I/O intensive.
+====
 
 To prevent multiple instances of OpenLogReplicator running simultaneously and overwriting checkpoint files ane another, the program creates a lock on the config file after startup.
 If another instance is already running and the lock can't be created, the program exits with an error.
@@ -74,8 +77,11 @@ This memory pool is fully controlled by two parameters: `min-mb` and `max-mb`.
 Those parameters allow fully controlling the memory usage of the program.
 Apart from main memory structures, the program uses dynamic memory allocation from heap for storing metadata (table names, types, column names, etc).
 
-CAUTION: Currently also LOB data is stored in dynamic memory, but is planned to be moved to the main memory pool.
+[CAUTION]
+====
+Currently also LOB data is stored in dynamic memory, but is planned to be moved to the main memory pool.
 This means that when the redo log stream contains transactions with many large LOB fields, the memory usage may be higher than configured.
+====
 
 .Memory management big picture
 image:memory-management.png[Memory management big picture,,,]
@@ -91,9 +97,12 @@ Using operating system memory swapping is not recommended on host, where OpenLog
 By design, the program should fully work in memory, to achieve the best performance and lowest, near real time delay.
 If memory is not enough, it is best to move OpenLogReplicator to hardware with more memory.
 
-IMPORTANT: Only the transaction data can be swapped to disk when low memory.
+[IMPORTANT]
+====
+Only the transaction data can be swapped to disk when low memory.
 The metadata is always kept in memory.
 The read buffers are always kept in memory.
+====
 
 When sapping is used, the first blocks for longest inactive transactions are swapped to disk.
 However, for every open transaction, at least one block (the last one - which is currently used to append new redo log vectors), is kept in memory.
@@ -119,13 +128,16 @@ This is the `min-mb` parameter.
 This is the amount of physical memory on the host which is available for the program.
 This is the `max-mb` parameter.
 
-IMPORTANT: Define the size of the `max-mb` parameter at least to 110% of size of the maximum expected LOB object size.
-If you expect LOB to be 1GB big, define the value to 1.1GB at least.
-Otherwise, you might hit error 10072.
-
 3. Define the amount of memory which would activate the swapping mechanism.
 This is the `swap-mb` parameter.
 The program would try to keep the memory usage below this value, but this happens in an async way and the memory usage may be higher than this value.
+
+[IMPORTANT]
+====
+Define the size of the `max-mb` parameter at least to 110% of size of the maximum expected LOB object size.
+If you expect LOB to be 1GB big, define the value to 1.1GB at least.
+Otherwise, you might hit error 10072.
+====
 
 For best results, performance tests should be made.
 
@@ -140,16 +152,22 @@ To operate properly during startup, OpenLogReplicator needs to collect informati
 It would read database system tables to collect all data about schema.
 This information is stored in a file and used during the following runs.
 
-IMPORTANT: OpenLogReplicator *DOES NOT* perform the task of *initial data load*.
+[IMPORTANT]
+====
+OpenLogReplicator *DOES NOT* perform the task of *initial data load*.
 It never connects to the source data and runs SELECT queries.
 It only reads redo log files and sends information about changes to the output.
 For a complete replication solution, you need to use another tool like ETL or restore a database from backup.
+====
 
-CAUTION: After start, all redo log files must be available in their entirely.
+[CAUTION]
+====
+After start, all redo log files must be available in their entirely.
 Not a single redo log files block may be missing.
 If a file or even one block is missing, replication needs to be re-initiated.
 Schema information should be collected from the beginning, and replication re-initiated.
 Of course, if the source is a live database, the stream of transactions would be constantly constructed and at the same time parsed and sent to output.
+====
 
 === Transaction processing
 
@@ -158,10 +176,16 @@ DML operations are written to redo log files as they're executed.
 All operations are flushed when the COMMIT record appears.
 This is a guarantee point for the database client that all changes have been accepted by the database and are durable and visible to other clients (ACID properties).
 
-NOTE: DMLs from different transactions are interleaved in the redo log files.
+[NOTE]
+====
+DMLs from different transactions are interleaved in the redo log files.
+====
 
-IMPORTANT: The redo log files contain also information about transactions that eventually were rolled back.
+[IMPORTANT]
+====
+The redo log files contain also information about transactions that eventually were rolled back.
 Or are partially rolled back.
+====
 
 The task of OpenLogReplicator is to sort DML commands and send them to output in proper order:
 
@@ -185,8 +209,11 @@ The number of details in the message is configurable.
 .Interleaved transactions
 image:transaction-interleaving.png[Transform interleaved transactions to stream,,,]
 
-NOTE: Depending on user configuration, the output stream in the picture above might contain two or six messages.
+[NOTE]
+====
+Depending on user configuration, the output stream in the picture above might contain two or six messages.
 It is up to the user to decide how the output should look like.
+====
 
 === Transaction caching and restart
 
@@ -196,28 +223,40 @@ After the transaction is committed and data processed, memory is released.
 If the transaction is big –- the program would need more memory.
 OpenLogReplicator never writes any additional files to disk beside of checkpoint and schema file.
 
-CAUTION: When OpenLogReplicator is restarted –- it would need to go back to the start of the oldest unprocessed transaction location and start reading database redo logs from this position.
+[CAUTION]
+====
+When OpenLogReplicator is restarted –- it would need to go back to the start of the oldest unprocessed transaction location and start reading database redo logs from this position.
 This point is called *Low Watermark*.
 This may mean going back a long time and process again the same redo log files which have already been processed before the restart appeared.
 Transactions which were sent to output would not be sent again.
 This operation may be time and resource consuming.
 It is recommended to restart OpenLogReplicator only when it is necessary.
+====
 
-TIP: Configure database redo log retention strategy to leave enough redo log files to be able to restart OpenLogReplicator.
+[TIP]
+====
+Configure database redo log retention strategy to leave enough redo log files to be able to restart OpenLogReplicator.
+====
 
 .Replication start example
 image:replication-start.png[Replication start example,,,]
 
-NOTE: In the example above, _Transaction 2_ and _Transaction 4_ have already been processed and would not be processed again.
+[NOTE]
+====
+In the example above, _Transaction 2_ and _Transaction 4_ have already been processed and would not be processed again.
 Since OpenLogReplicator doesn't cache in the checkpoint files transaction DML commands, all redo log data need which would contain it has to be processed again after restart.
 In the example above, this would include data for _Transaction 1_ and _Transaction 3_.
+====
 
 When run for the first time, OpenLogReplicator would start from the beginning of some redo log file.
 It is up to the user to decide the moment from which the redo log would be parsed.
 No matter where the start would be located -- there could be always some transactions that are not yet committed.
 
-CAUTION: When starting, all transactions that started the moment ago of startup are discarded.
+[CAUTION]
+====
+When starting, all transactions that started the moment ago of startup are discarded.
 Although there are debug options that allow to process them, this is not recommended to use them for production data.
+====
 
 === Topology
 
@@ -228,9 +267,12 @@ There are two possible scenarios of running OpenLogReplicator: on the database h
 This is the easiest and most efficient solution.
 But it is not recommended for production systems, as the database performance might be affected when CPU or memory is saturated.
 
-CAUTION: OpenLogReplicator may be using extensive memory and CPU.
+[CAUTION]
+====
+OpenLogReplicator may be using extensive memory and CPU.
 Make sure that there are enough resources for the database to work properly.
 OpenLogReplicator should use only part of the memory, so that there is memory available for the database.
+====
 
 .Program architecture
 image:../../introduction/images/architecture.png[CDC Architecture,,,]
@@ -277,7 +319,7 @@ The value can be stored in:
 - field `scn` and stored as decimal (default);
 - field `scns` and stored as a string in hex format "C" styl (example: `"scns":"0x0000008a33ac2263"`
 
-See:  xref:../reference-manual/reference-manual.adoc#scn[scn] parameter for configuration details.
+See:  xref:../json/format.adoc#scn[scn] parameter for configuration details.
 
 ==== Response: _tm_val_
 
@@ -290,7 +332,7 @@ The value can be stored in:
 - Field `"tm"` and stored using a number;
 - Field `"tms"` and stored as a string.
 
-See:  xref:../reference-manual/reference-manual.adoc#timestamp[timestamp] parameter for configuration details.
+See:  xref:../json/format.adoc#timestamp[timestamp] parameter for configuration details.
 
 ==== Response: _xid_val_
 
@@ -305,7 +347,7 @@ An example value would be: `"xid":"0x0009.003.0000568e"`.
 `"xid":"9.3.22158"`.
 - Field `"xidn"` and stored as a decimal number, (for example, `"xidn":22158`).
 
-See: xref:../reference-manual/reference-manual.adoc#xid[xid] parameter for configuration details.
+See: xref:../json/format.adoc#xid[xid] parameter for configuration details.
 
 NOTE: Internally, the transaction ID (XID) is stored using a 64-bit number.
 
@@ -313,7 +355,7 @@ NOTE: Internally, the transaction ID (XID) is stored using a 64-bit number.
 
 The `db` field contains database name.
 
-See: xref:../reference-manual/reference-manual.adoc#db[db] parameter for configuration details.
+See: xref:../json/format.adoc#db[db] parameter for configuration details.
 
 ==== Response: _payload.op_
 
@@ -356,7 +398,7 @@ The following fields are present in the column object:
 
 The field contains the row identifier (_row ID_, _rid_) of the row.
 
-See: xref:../reference-manual/reference-manual.adoc#rid[rid] parameter for configuration details.
+See: xref:../json/format.adoc#rid[rid] parameter for configuration details.
 
 ==== Response: _payload.before_
 
@@ -364,10 +406,13 @@ The before field contains the old values of the columns.
 It is present only in update and delete operations.
 The field is an array of objects, each object describing one column.
 
-CAUTION: Only data that is present in the redo log is present in the output.
+[CAUTION]
+====
+Only data that is present in the redo log is present in the output.
 For update operations, values may be missing from the list in case the actual value didn't change.
+====
 
-See: xref:../reference-manual/reference-manual.adoc#column[column] parameter for configuration details.
+See: xref:../json/format.adoc#column[column] parameter for configuration details.
 
 ==== Response: _payload.after_
 
@@ -375,10 +420,13 @@ The before field contains the new values of the columns.
 It is present only in insert and update operations.
 The field is an array of objects, each object describing one column.
 
-CAUTION: Only data that is present in the redo log is present in the output.
+[CAUTION]
+====
+Only data that is present in the redo log is present in the output.
 For update operations, values may be missing from the list in case the actual value didn't change.
+====
 
-See: xref:../reference-manual/reference-manual.adoc#column[column] parameter for configuration details.
+See: xref:../json/format.adoc#column[column] parameter for configuration details.
 
 ==== Response: _payload.ddl_
 
@@ -386,7 +434,7 @@ The field contains the text of the DDL statement.
 
 The DDL payload elements are not present by default.
 
-See: xref:../reference-manual/reference-manual.adoc#flags[flags] parameter for configuration details.
+See: xref:../json/source.adoc#flags[flags] parameter for configuration details.
 
 ==== Response: _payload.seq_
 
@@ -407,7 +455,7 @@ It contains value 1 for checkpoint messages which are related to redo log file s
 
 The field contains a consecutive number of the payload data.
 
-See: xref:../reference-manual/reference-manual.adoc#message[message] parameter for configuration details.
+See: xref:../json/format.adoc#message[message] parameter for configuration details.
 
 === Protocol buffer format
 
@@ -423,7 +471,10 @@ Because every field is allocated separately, the memory consumption is higher th
 OpenLogReplicator is a standalone program that connects to Kafka and sends messages to it.
 The connection parameters are fully controlled from the program parameters.
 
-NOTE: The Kafka target connector is not a Kafka Connect module.
+[NOTE]
+====
+The Kafka target connector is not a Kafka Connect module.
+====
 
 ==== Build instructions
 
@@ -434,17 +485,23 @@ The Kafka module client is written in C/C++ and uses no Java code or runtime.
 
 ==== Limitations
 
-CAUTION: OpenLogReplicator uses the {url-github-librdkafka}[librdkafka] library to connect to Kafka.
+[CAUTION]
+====
+OpenLogReplicator uses the {url-github-librdkafka}[librdkafka] library to connect to Kafka.
 The library has a limitation of 1.000.000.000 bytes (953 MB) for maximum message size.
 OpenLogReplicator has no limit for message size and can process rows containing multiple LOB columns which are up to 4GB in size.
 A message can theoretically contain multiple LOB columns, which would exceed the maximum message size for the Kafka client library.
+====
 
 ==== Idempotent producer
 
 OpenLogReplicator can act as an idempotent producer, and this is the default behavior.
 This is default behavior and is controlled by the `properties` parameter, but can be disabled `("properties": "enable.idempotence:false")`.
 
-CAUTION: OpenLogReplicator does not support the Kafka transactional API.
+[CAUTION]
+====
+OpenLogReplicator does not support the Kafka transactional API.
+====
 
 ==== Performance
 
@@ -462,8 +519,11 @@ File target is the simplest target.
 It writes the output to a file.
 There are no limitations for the file size or the message size.
 
-TIP: For reproduction cases, whenever possible, use the file target.
+[TIP]
+====
+For reproduction cases, whenever possible, use the file target.
 Such reproduction requires no setup of the Kafka cluster and is easier to set up.
+====
 
 ==== Checkpointing
 
@@ -477,13 +537,19 @@ There are two types of checkpoints:
 - Schema checkpoints -- represented in the checkpoint directory as files with SCN number in the name.
 Every file represents schema of the database which was active at the time of the SCN number in the file name.
 
-CAUTION: For performance reasons, the schema checkpoints are not written for every transaction.
+[CAUTION]
+====
+For performance reasons, the schema checkpoints are not written for every transaction.
 Instead, files are created periodically, and the schema is written to the file only if it changed since the last checkpoint.
 When the schema did not change, the schema checkpoint would reference some other schema checkpoint earlier in time.
+====
 
-CAUTION: By default, the schema checkpoints are deleted when they aren't necessary anymore.
+[CAUTION]
+====
+By default, the schema checkpoints are deleted when they aren't necessary anymore.
 Different checkpoint options decide how many files are created and how many files are kept.
 It is also possible to disable the deletion of the schema checkpoints.
+====
 
 === Network target
 
@@ -504,9 +570,15 @@ This means that the receiver is responsible for saving the checkpoint and for se
 The receiver (Target) informs the sender (OpenLogReplicator) that certain transactions have been accepted op to the defined SCN position.
 In case of connection failure, the sender (OpenLogReplicator) would start from the last checkpoint position provided by the target.
 
-IMPORTANT: This allows creating an HA configuration!
+[IMPORTANT]
+====
+This allows creating an HA configuration!
+====
 
-IMPORTANT: It is not possible to retry the transactions once the Low Watermark has been moved and the transactions were removed from memory.
+[IMPORTANT]
+====
+It is not possible to retry the transactions once the Low Watermark has been moved and the transactions were removed from memory.
+====
 
 ==== Architecture
 
@@ -526,8 +598,11 @@ On the image above notice a distinction between:
 
 - checkpoint SCN position -- is an SCN value controlled by the client and is used to inform OpenLogReplicator about the last processed SCN; this value has to be maintained by the client, every time the client reconnects, OpenLogReplicator is expecting the last processed SCN value, so that it is able to resume replication from the last processed SCN;
 
-CAUTION: It is up to the target to decide how often to confirm the SCN to OpenLogReplicator.
+[CAUTION]
+====
+It is up to the target to decide how often to confirm the SCN to OpenLogReplicator.
 If the target confirms the SCN too seldom, memory usage of OpenLogReplicator might increase since all transactions are cached in memory.
+====
 
 ==== Network layer
 
@@ -633,12 +708,15 @@ The DML commands are parsed, and particular columns are extracted from the syste
 After all changes from one system transaction are processed, OpenLogReplicator deletes internal dictionaries and creates them again.
 If a DDL transaction impacts one of the tables that are tracked for replication, a message would appear in the output stream.
 
-CAUTION: Some of the DDL commands can be internally divided into many transactions.
+[CAUTION]
+====
+Some of the DDL commands can be internally divided into many transactions.
 For example, there could be one transaction for creating a table and another transaction for creating indexes on that table.
 This would mean that the table for some time existed without indexes.
 Or primary key.
 This could lead to warnings in the OpenLogReplicator log file informing that the table is missing a primary key defined in the configuration files.
 In such cases -- ignore the warnings.
+====
 
 === Supported character sets [[supported-character-sets]]
 
@@ -649,7 +727,7 @@ The output message always uses Unicode as character encoding and UTF-8 format.
 OpenLogReplicator doesn't perform any left-to-right Unicode character replacements.
 
 For test purposes, the character set conversion can be disabled.
-Check the xref:../reference-manual/reference-manual.adoc#char[char] parameter for details.
+Check the xref:../json/format.adoc#char[char] parameter for details.
 
 Full list of supported character sets is: *AL16UTF16*, *AL32UTF8*, AR8ADOS710, AR8ADOS710T, AR8ADOS720, AR8ADOS720T, AR8APTEC715, AR8APTEC715T, AR8ARABICMACS, AR8ASMO708PLUS, AR8ASMO8X, AR8HPARABIC8T, AR8ISO8859P6, AR8MSWIN1256, AR8MUSSAD768, AR8MUSSAD768T, AR8NAFITHA711, AR8NAFITHA711T, AR8NAFITHA721, AR8NAFITHA721T, AR8SAKHR706, AR8SAKHR707, AR8SAKHR707T, AZ8ISO8859P9E, BG8MSWIN, BG8PC437S, BLT8CP921, BLT8ISO8859P13, BLT8MSWIN1257, BLT8PC775, BN8BSCII, CDN8PC863, CEL8ISO8859P14, CL8ISO8859P5, CL8ISOIR111, CL8KOI8R, CL8KOI8U, CL8MACCYRILLICS, CL8MSWIN1251, D7DEC, D7SIEMENS9780X, DK7SIEMENS9780X, E7DEC, E7SIEMENS9780X, EE8ISO8859P2, EE8MACCES, EE8MACCROATIANS, EE8MSWIN1250, EE8PC852, EEC8EUROASCI, EEC8EUROPA3, EL8DEC, EL8ISO8859P7, EL8MACGREEKS, EL8MSWIN1253, EL8PC437S, EL8PC737, EL8PC851, EL8PC869, ET8MSWIN923, HU8ABMOD, HU8CWI2, I7DEC, I7SIEMENS9780X, IN8ISCII, IS8MACICELANDICS, IS8PC861, IW8ISO8859P8, IW8MACHEBREWS, IW8MSWIN1255, IW8PC1507, JA16EUC, JA16EUCTILDE, JA16EUCYEN, JA16SJIS, JA16SJISTILDE, JA16SJISYEN, JA16VMS, KO16KSC5601, KO16KSCCS, KO16MSWIN949, LA8ISO6937, LA8PASSPORT, LT8MSWIN921, LT8PC772, LT8PC774, LV8PC1117, LV8PC8LR, LV8RST104090, N7SIEMENS9780X, N8PC865, NDK7DEC, NE8ISO8859P10, NEE8ISO8859P4, RU8BESTA, RU8PC855, RU8PC866, S7DEC, S7SIEMENS9780X, SE8ISO8859P3, SF7ASCII, SF7DEC, TH8MACTHAIS, TH8TISASCII, TIMESTEN8, TR8DEC, TR8MACTURKISHS, TR8MSWIN1254, TR8PC857, US7ASCII, US8PC437, *UTF8*, VN8MSWIN1258, VN8VN3, WE8DEC, WE8DG, WE8HP, WE8ISO8859P1, WE8ISO8859P15, WE8ISO8859P9, WE8MACROMAN8S, WE8MSWIN1252, WE8NCR4970, WE8NEXTSTEP, WE8PC850, WE8PC858, WE8PC860, WE8ROMAN8, ZHS16CGB231280, ZHS16GBK, ZHS32GB18030, ZHT16BIG5, ZHT16CCDC, ZHT16HKSCS, ZHT16HKSCS31, ZHT16MSWIN950, ZHT32EUC, ZHT32TRIS.
 
@@ -703,8 +781,11 @@ Every checkpoint file contains a copy of the schema and is associated with a par
 If the user requests the replication to start from a particular SCN.
 In such a case, OpenLogReplicator would try to read the database schema at that SCN.
 
-CAUTION: Do not choose the starting point too far in the past.
+[CAUTION]
+====
+Do not choose the starting point too far in the past.
 It may not be possible to read a consistent copy of system tables.
+====
 
 === By time
 
@@ -764,12 +845,18 @@ The image of database system tables is read just for a selected list of schemas.
 All objects owned by any of the database users from the list would be tracked in the future.
 Also objects created, moved to bin, recovered, etc.
 
-IMPORTANT: In the case of adding new schema to the replication list -- the process needs to be restarted, and the schema needs to be recreated.
+[IMPORTANT]
+====
+In the case of adding new schema to the replication list -- the process needs to be restarted, and the schema needs to be recreated.
+====
 
 While OpenLogReplicator is running and a new object is created which would match the filter, the schema is automatically updated.
 There is no need to restart the process.
 
-CAUTION: It is not a good choice to select too many schemas for tracking, as this can impact on performance.
+[CAUTION]
+====
+It is not a good choice to select too many schemas for tracking, as this can impact on performance.
+====
 
 All DDL operations that modify data structures are tracked: adding, removing columns, changing names, extending type length, etc.
 
@@ -793,9 +880,12 @@ The change can be done offline, while OpenLogReplicator is not running, but also
 To allow online configuration updates, the configuration file is monitored for changes.
 Once the timestamp of the last file modification is changed, the configuration is reloaded.
 
-CAUTION: The configuration changes are not performed atomically.
+[CAUTION]
+====
+The configuration changes are not performed atomically.
 If some long-running transactions are partially processed, the processed data in memory does not change.
 This can lead to situations like shown below: a transaction can contain data sets from two different configurations.
+====
 
 .Memory buffers before configuration change
 image:buffers-in-memory1.png[Memory buffers before configuration change,,,]
@@ -807,9 +897,12 @@ In the example above, the configuration file is changed and the M1 table is adde
 This operation does not affect the data that is already processed and present in memory.
 Transaction T2 would only contain in the output the UPDATE operation for M1 table, but would not contain the INSERT operation which happened before the configuration file was changed.
 
-IMPORTANT: The operation of updating parameters from the configuration file does not impact all parameters.
+[IMPORTANT]
+====
+The operation of updating parameters from the configuration file does not impact all parameters.
 Only parameters which define the list of replicated tables are updated.
 This includes only the tags `table` and `owner` both in `debug` and `filter` sections.
+====
 
 === Offline reader
 
@@ -823,9 +916,12 @@ The offline reader mode is activated by setting a parameter `"type": "offline"` 
 To start work with the offline reader, a schema file is necessary.
 The schema file can be created using the `gencfg.sql` script or during the first run of the program when running with `online` reader.
 
-CAUTION: The schema file contains also list locations of redo log files.
+[CAUTION]
+====
+The schema file contains also list locations of redo log files.
 Those parameters are static and aren't tracked.
 Thus, if they change, the schema file needs to be edited manually (this is a JSON file), or the schema needs to be recreated.
+====
 
 ==== Starting as offline reader
 
@@ -886,8 +982,11 @@ Sometimes the schema is not available, but in spite of that, the user still wish
 In this case, the user can use the schemaless mode.
 The schemaless mode is activated by setting parameter `"flags": 2`.
 
-IMPORTANT: Since table names aren't available, table filtering is not used.
+[IMPORTANT]
+====
+Since table names aren't available, table filtering is not used.
 The output would contain all tables, even if they aren't in the filter.
+====
 
 After activation, OpenLogReplicator would ignore the lack of schema and lack of information about column data types.
 The data would contain column values in the form of hex strings, since the information about type is not available.
@@ -897,11 +996,17 @@ Example output for schemaless mode:
 
  "payload":[{"op":"c","schema":{"table":"OBJ_87705"},"after":{"COL_0":"53544f50","COL_1":"787708010d2339"}}]
 
-TIP: Schemaless mode is extremely useful when the user just has the redo log file and nothing more but wishes to decode the data.
+[TIP]
+====
+Schemaless mode is extremely useful when the user just has the redo log file and nothing more but wishes to decode the data.
 It may also be useful to use the adaptive schema mode together with schemaless mode.
+====
 
-IMPORTANT: The schemaless mode is not intended for production use.
+[IMPORTANT]
+====
+The schemaless mode is not intended for production use.
 It is intended for debugging and analysis of the data in the redo log.
+====
 
 === Adaptive schema node
 
@@ -913,16 +1018,25 @@ After enabling first OpenLogReplicator would try to use default schema for syste
 A default schema would be schema from the source database but created with no table selection.
 The default location for default schema file `base-<database version>.json`.
 
-CAUTION: The default schema is not distributed with OpenLogReplicator.
+[CAUTION]
+====
+The default schema is not distributed with OpenLogReplicator.
 The user needs to create the default schema file manually, by Running OpenLogReplicator with an empty database and copying the schema file from the checkpoint directory.
+====
 
 OpenLogReplicator would act in hybrid mode:
 
 - when a new schema is created: the schema would be extended by the new objects -- for such tables, the schema information would be present in the output;
 - for existing tables: the schema information would be missing in the output -- output would be in schemaless mode.
 
-IMPORTANT: The adaptive schema mode is not intended for production use.
+[IMPORTANT]
+====
+The adaptive schema mode is not intended for production use.
 It is intended for debugging and analysis of the data in the redo log.
+====
 
-CAUTION: This mode is less restrictive when it comes to schema changes.
+[CAUTION]
+====
+This mode is less restrictive when it comes to schema changes.
 In cases when OpenLogReplicator would normally stop because of schema change, it would continue in the adaptive schema mode.
+====

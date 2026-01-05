@@ -1,0 +1,55 @@
+= OpenLogReplicator.json - metrics element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-06
+:imagesdir: ./images
+:icons: font
+:toc: preamble
+:url-librdkafka-parameters: https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
+
+[frame="none",grid="none"]
+|====
+|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This section describes the `metrics` element in the OpenLogReplicator JSON configuration.
+It documents available fields, constraints, semantics and operational notes for the supported metrics backends.
+
+[[metrics]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Metrics element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`type`
+|_string_, max length: 128, mandatory
+|Name of the metrics module. Currently only `prometheus` is supported.
+
+|`bind`
+|_string_, max length: 128, mandatory for `prometheus`
+|Network address used to bind the metrics module for Prometheus.
+The format is `<host>:<port>`.
+Prometheus uses this address to connect to OpenLogReplicator.
+
+Example:
+`"bind": "127.0.0.1:8080"`
+
+|`tag-names`
+|_string_, max length: 128
+|Define tags for `dml_op` metrics.
+
+Possible values are:
+
+* `all` -- Provide `schema` and `table` tags for every metrics.
+This equals to `filter` + `sys` options.
+
+* `filter` -- Provide `schema` and `table` tags only for metrics for tables which are defined in `filter` section, thus are replicated.
+
+* `none` -- Default, don't provide `schema` or `table` tags.
+
+* `sys` -- Provide `schema` and `table` tags just for system tables which are tracked for OpenLogReplicator to work properly.
+
+|===

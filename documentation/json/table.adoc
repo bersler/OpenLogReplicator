@@ -1,0 +1,115 @@
+= OpenLogReplicator.json - table element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-06
+:imagesdir: ./images
+:icons: font
+
+[frame="none",grid="none"]
+|====
+|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This section describes the `table` element used in the OpenLogReplicator JSON configuration.
+It documents the available fields, their constraints, semantics and examples for common usages.
+
+[[table]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Table element for xref:./filter.adoc#filter[filter]
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`owner`
+|_string_, max length: 128, mandatory
+|Regex pattern for matching owner name.
+The pattern is case-sensitive.
+
+|`table`
+|_string_, max length: 128, mandatory
+|Regex pattern for matching table name.
+The pattern is case-sensitive.
+
+|`key` [[key]]
+|_string_, max length: 4096
+|A string field with a list of columns which should be used as a primary key.
+The columns are separated by a comma character and should not contain spaces or any other additional characters.
+The separator can be changed using the xref:./filter.adoc#separator[separator] tag.
+The column names are case-sensitive.
+
+_TIP:_ If a table doesn't contain a primary key, a custom set of columns can be treated as a primary key.
+
+|`condition`
+|_string_, max length: 16384
+|An expression which should be evaluated for every row.
+The format of the field is C-like.
+
+Example:
+`"condition": "([op] != 'd') \|\| ([login username] != 'USER1')"`
+
+The expression is evaluated from left to right.
+The following tokens can be used:
+
+* \|\| -- logical OR,
+
+*  ! -- logical NOT,
+
+* && -- logical AND,
+
+* () -- parentheses to define the order of evaluation,
+
+* == -- equal,
+
+* != -- not equal.
+
+The expression can contain the following tokens, which has name derived from the attribute list of the transaction:
+
+* [audit sessionid]
+
+* [client id]
+
+* [client info]
+
+* [current username]
+
+* [login username] -- the username which performed the operation;
+
+* [machine name]
+
+* [op] -- type of operation: `c` - create (insert), `u` - update, `d` - delete, `ddl` - DDL operation;
+
+* [OS process name]
+
+* [OS process id]
+
+* [OS terminal]
+
+* [serial number]
+
+* [session number]
+
+* [transaction name] -- the name of the transaction;
+
+* [version]
+
+|`tag` [[tag]]
+|_string_, max length: 4096, mandatory
+|A string field with describing what should be added as tag to the output message.
+
+Adding this field to `table` element causes additional tag to be added to the output message with the defined content.
+
+The columns are separated by a comma character and should not contain spaces or any other additional characters.
+The separator can be changed using the xref:./filter.adoc#separator[separator] tag.
+The column names are case-sensitive.
+Instead of column list, the following special values can be used:
+
+* `[pk]` -- Use primary key columns.
+
+* `[all]` -- Use all columns.
+
+Example:
+`"table": {{"table":"user1.x_%", "tag":"[all]"}, {"table":"user1.y_%", "key":"A,B,C"}, {"table":"user1.z_%", "key":"[pk]"}}.`
+
+|===

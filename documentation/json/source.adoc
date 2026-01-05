@@ -1,0 +1,214 @@
+= OpenLogReplicator.json - source element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-06
+:imagesdir: ./images
+:icons: font
+
+[frame="none",grid="none"]
+|====
+|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This section documents the `source` element of the OpenLogReplicator JSON configuration.
+It explains each available field, constraints, defaults and operational notes.
+
+[[source]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Source element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`alias`
+|_string_, max length: 256, mandatory
+|The name of the source -– referenced later in a target element.
+
+_TIP:_ This is just a logical name used in the config file.
+It doesn't have to match the actual database _SID_.
+
+|`format`
+|_element_ of xref:./format.adoc#format[format], mandatory
+|Configuration of output data.
+
+|`name`
+|_string_, max length: 256, mandatory
+|This name is used for identifying database connection.
+This name is mentioned in the output and in the checkpoint files.
+
+_WARNING:_ After starting replication, the value shouldn't change, otherwise the checkpoint files would not be properly read.
+
+_TIP:_ This is just a logical name used in the config file.
+It doesn't have to match the actual database _SID_.
+
+|`reader`
+|_element_ of xref:./reader.adoc#reader[reader], mandatory
+|Configuration of redo log reader.
+
+|`arch`
+|_string_, max length: 256, default is `online` for an _online_ type; `path` for _offline_ type; `list` for _batch_ type
+|Way of getting an archive redo log file list.
+
+Possible values are:
+
+* `online` -– Archived log list is read directly from the database using database connection.
+The database connection is closed during program work, open occasionally to read an archived redo log list.
+
+* `online-keep` -– Like `online`, but the database connection is kept open.
+
+* `path` -– Archived redo log file list is read from disk.
+
+* `list` -- Like `path` but the list of files is provided by user.
+This is the only mode used for `batch` type.
+
+_TIP:_ This parameter is only valid for `online` reader type.
+
+|`arch-read-sleep-us`
+|_number_, default: 10000000
+|Time to sleep between two attempts to read an archived redo log list.
+
+Number in microseconds.
+
+|`arch-read-tries`
+|_number_, max: 1000000000, default: 10
+|Number of retries to read an archived redo log list before failing.
+
+|`debug`
+|_element_ of xref:./debug.adoc#debug[debug]
+|Group of options used for debugging.
+
+|`filter`
+|_element_ of xref:./filter.adoc#filter[filter]
+|Group of options used to filter the contents of the database and define which tables are replicated.
+
+_CAUTION:_ The filter is applied only to the data, not to the DDL operations.
+
+_IMPORTANT:_ During the first run, the schema is read only for tables which are selected by the filter.
+If the filter is changed, the schema would not update.
+Startup would fail because the set of users present in checkpoint files would not match the set of users defined in a config file.
+The schema would update only when the program is reset, (i.e., the checkpoint files are removed and forced recreation).
+
+|`metrics`
+|_element_ of xref:./metrics.adoc#metrics[metrics]
+|Group of options used for collecting metrics of OpenLogReplicator.
+
+|`flags` [[flags]]
+|_number_, min: 0, max: 524287, default: 0
+|A sum of various flags.
+Flags define various options for the program.
+
+Possible values are:
+
+* `0x0001` -- Read-only archived redo logs.
+Online redo log files aren't read at all.
+
+_CAUTION:_ This option would cause a delay of data replication.
+When the redo log files are big or the operation of switching redo log groups is done, infrequent delay can occur.
+Transactions would not be read until the redo log group is switched.
+
+* `0x0002` -- _Schemaless_ mode.
+The program can operate without a schema.
+
+_NOTE:_ Refer to details in xref:../user-manual/user-manual.adoc#schemaless-mode[the User Manual] for details.
+
+* `0x0004` -– Adaptive schema mode.
+This mode is only valid when schemaless mode has been chosen.
+
+_NOTE:_ Refer to details in xref:../user-manual/user-manual.adoc#adaptive-schema-mode_[the User Manual] for details.
+
+* `0x0008` -- Don’t use direct read (`O_DIRECT`) for reading redo log files.
+
+_TIP:_ Direct IO bypasses the disk caching mechanism.
+Using this option is not recommended and should be used only in special cases.
+
+* `0x0010` -– Ignore basic errors and continue redo log processing.
+
+_CAUTION:_ This option is not recommended.
+It is useful only for debugging.
+For most cases when the program fails, it is better to stop the program and fix the problem.
+The program is not designed to continue after error as this can lead to schema data inconsistency and nondeterministic data can be sent to output.
+
+* `0x0020` -- Show text of DDL commands in output.
+
+* `0x0040` -- Show invisible (hidden) columns in output.
+
+* `0x0080` -– Show guard columns in output.
+
+* `0x0100` -- Show nested columns in output.
+
+* `0x0200` -- Show unused columns in output.
+
+* `0x0400` -- Include incomplete transactions in output.
+
+_TIP_: Incomplete transactions are transactions that have started before replication was set up.
+Some starting elements of such transactions may be missing in the output.
+By default, such transactions are ignored.
+
+* `0x0800` -- Include system transactions in output.
+
+* `0x1000` -- Show checkpoint information in output.
+
+_TIP:_ The checkpoint records are useful to monitor the progress of replication.
+They're also used to detect the last processed transaction.
+If the checkpoint records are hidden and there is low activity of data changes, it may be challenging to detect OpenLogReplicator failure.
+
+* `0x2000` -- Don’t delete old checkpoint files.
+
+_TIP:_ The number of checkpoint files left is defined by parameter `keep-checkpoints`.
+This flag overrides this number and leaves the checkpoint file.
+
+* `0x4000` -- Reserved for future use.
+
+* `0x8000` -- Send column data to output in raw (hex) format.
+
+* `0x10000` -- Decode binary XMLType data (experimental).
+Refer to details in xref:../experimental-features/experimental-features.adoc#binary-xmltype[binary xmltype] chapter for details.
+
+* `0x20000` -- Pass JSON data values to output in binary format (experimental).
+
+* `0x40000` -- Support UPDATE operations for NOT NULL columns with occasional NULL values (experimental).
+
+|`memory`
+|_element_ of xref:./memory.adoc#memory[memory]
+|Configuration of memory settings.
+
+|`redo-read-sleep-us`
+|_number_, min: 0, default: 50000
+|The amount of time the program would sleep when all data from online redo log is and the program is waiting for more transactions.
+
+Number in microseconds.
+
+_IMPORTANT:_ The default setting is 50.000 microseconds meaning which is equal to 1/20 s or 50 ms.
+This means that 20 times a second OpenLogReplicator polls disk for new changes on disk (until there is no activity -- after new data appears, it is read sequentially to the end).
+With default setting, in the worst case, the read process would notice after 50 ms that new data is ready.
+This is actually rapid and a proper setting for most cases.
+If this delay is potentially too big -- the value can be decreased, but this would increase CPU usage.
+
+|`redo-verify-delay-us`
+|_number_, min: 0, default: 0
+|When this parameter is set to non-zero value, the redo log file data is read second time for verification after defined delay.
+Double read mode applies only to online redo log files.
+
+Number in microseconds.
+
+_IMPORTANT:_ Some filesystems (like _ext_4_ or _btrfs_) can share disk read cache between multiple processes.
+This can cause problems when the redo log files are read by multiple processes.
+This can cause read inconsistencies when the database process is writing to the same memory buffer as the OpenLogReplicator process is reading.
+The checksum for disk blocks is just two bytes, so it is impossible to detect if the data is corrupted or not.
+The only way to detect this is to read the data again and compare the data.
+This parameter defines time delay after which the redo log file data is read second time for verification.
+
+_CAUTION:_ Instead of double read, it is recommended to use Direct IO disk operations instead.
+This option disables disk read cache and guarantees that the data is read from disk.
+Use this option just as a workaround in case when Direct IO is not possible.
+
+|`refresh-interval-us`
+|_number_, min: 0, default: 10000000
+|During online redo log reading, a new redo log group could be created, and the program would need to refresh the list of redo log groups.
+In case there is a situation when an old redo log file has been completely processed, but still no new group is created; the program would need to refresh the list of redo log groups.
+
+Number in microseconds.
+
+|===

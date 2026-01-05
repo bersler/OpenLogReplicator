@@ -1,0 +1,50 @@
+= OpenLogReplicator.json - debug element
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-06
+:imagesdir: ./images
+:icons: font
+
+[frame="none",grid="none"]
+|====
+|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This section describes the `debug` element in the OpenLogReplicator JSON configuration.
+All parameters are intended for troubleshooting and testing; use caution when enabling in production.
+
+[[debug]]
+[width="100%",cols="a,a,50%a",options="header"]
+.Debug element
+|===
+
+|Parameter
+|Type / constraints
+|Description and notes
+
+|`stop-log-switches`
+|_number_, min: 0, default: 0
+|For debug purposes only.
+Stop program after specified number of log switches.
+
+|`stop-checkpoints`
+|_number_, min: 0, default: 0
+|For debug purposes only.
+Stop program after specified number of LWN checkpoints.
+
+|`stop-transactions`
+|_number_, min: 0, default: 0
+|For debug purposes only.
+Stop program after specified number of transactions.
+
+|`owner`
+|_string_, max length: 128
+|Owner of the debug table.
+
+|`table`
+|_string_, max length: 128
+|This is a technical parameter primary used only for running test cases and defines table name.
+If any DML transactions occur for this table (like insert, update or delete), the program would stop.
+The transaction doesn't necessary need to be committed.
+
+|===
