@@ -1,7 +1,7 @@
 = Troubleshooting Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :toc: preamble
 
@@ -10,70 +10,141 @@
 a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-This document is a guide for troubleshooting the most common problems with the OpenLogReplicator.
+This guide helps diagnose and resolve common OpenLogReplicator issues.
 
 == Configuration topics
 
-=== Show checkpoint messages
+=== Checkpoint messages
 
-Checkpoint messages indicate that the replication is working correctly.
-Every message contains the SCN number and timestamp.
-It confirms that a certain LWN block has been processed.
-To reduce the number of messages, a checkpoint message is not sent for every LWN.
+Checkpoint messages serve as heartbeats: each contains the last processed SCN and timestamp and confirms progress on the Low Watermark (LWN) blocks.
+Checkpoints are not emitted for every LWN to avoid excessive traffic.
 
-By default, the Checkpoint messages are disabled.
-However, they are a good indicator for checking if the replication is working correctly.
-They also can be treated as heartbeat messages.
+By default, checkpoint messages are disabled.
+To enable them, set `flags` to `0x1000` in your configuration.
 
-If you want to include checkpoint messages to the target, set the `flags` parameter to `0x1000` in the configuration file.
+[TIP]
+====
+Use checkpoint messages to verify that replication is making forward progress and to detect stalls.
+====
 
 == Runtime errors
 
-If running OpenLogReplicator gives you a result like:
+=== Missing libraries or client binaries
 
+If the binary fails to start with a shared-library error, required dependencies are not visible to the loader.
+
+Common failure example (Linux):
 [source,shell]
 ----
 #> ./OpenLogReplicator
-./OpenLogReplicator: error while loading shared libraries: libclntshcore.so.19.1: cannot open shared object file: No such file or directory
+./OpenLogReplicator: error while loading shared libraries: libnnz.so: cannot open shared object file: No such file or directory
 ----
 
-This means that the libraries are not correctly linked.
-Check which libraries are missing, example:
+Troubleshooting steps:
 
+- On Linux, list shared dependencies:
 [source,shell]
 ----
 #> ldd OpenLogReplicator
-linux-vdso.so.1 =>  (0x00007fff75ddd000)
-libasan.so.0 => /lib64/libasan.so.0 (0x00007f45c27df000)
-libclntshcore.so.19.1 => not found
-libnnz19.so => not found
-libclntsh.so.19.1 => not found
-librdkafka++.so.1 => not found
-	librdkafka.so.1 => not found
-	libpthread.so.0 => /lib64/libpthread.so.0 (0x00007f45c25c3000)
-	libstdc++.so.6 => /lib64/libstdc++.so.6 (0x00007f45c22bc000)
-libm.so.6 => /lib64/libm.so.6 (0x00007f45c1fba000)
-libgcc_s.so.1 => /lib64/libgcc_s.so.1 (0x00007f45c1da4000)
-libc.so.6 => /lib64/libc.so.6 (0x00007f45c19d6000)
-libdl.so.2 => /lib64/libdl.so.2 (0x00007f45c17d2000)
-/lib64/ld-linux-x86-64.so.2 (0x00007f45c576f000)
+linux-vdso.so.1 (0x00007f5ec5a80000)
+libclntsh.so.23.1 => /opt/instantclient_23_26/libclntsh.so.23.1 (0x00007f5ebf800000)
+librdkafka.so.1 => /opt/librdkafka/lib/librdkafka.so.1 (0x00007f5ebf400000)
+libprometheus-cpp-core.so.1.3 => /opt/prometheus/lib/libprometheus-cpp-core.so.1.3 (0x00007f5ec5a13000)
+libprometheus-cpp-pull.so.1.3 => /opt/prometheus/lib/libprometheus-cpp-pull.so.1.3 (0x00007f5ec51af000)
+libprotobuf.so.32 => /opt/protobuf/lib/libprotobuf.so.32 (0x00007f5ebf000000)
+libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5ebec00000)
+libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f5ebf710000)
+libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f5ec5182000)
+libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f5ebea0a000)
+libnnz.so => not found
+libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f5ec59f9000)
+libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f5ec517d000)
+librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f5ec5178000)
+libaio.so.1 => /lib/x86_64-linux-gnu/libaio.so.1 (0x00007f5ec5173000)
+libresolv.so.2 => /lib/x86_64-linux-gnu/libresolv.so.2 (0x00007f5ec5161000)
+/lib64/ld-linux-x86-64.so.2 (0x00007f5ec5a82000)
+libclntshcore.so.23.1 => not found
+libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f5ebf6f0000)
+----
+- On macOS, use:
+[source,shell]
+----
+#> otool -L ./OpenLogReplicator
 ----
 
-In the above example, all libraries marked with "not found" are missing.
-Check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located.
-If necessary – create appropriate symlinks.
+- Ensure Oracle client libraries (OCI) and any optional libraries (e.g., librdkafka) are installed.
+- Add library directories to `LD_LIBRARY_PATH` (Linux) or `DYLD_LIBRARY_PATH` (macOS) or install system-wide.
+- If needed, create appropriate symlinks so library names match those expected by the binary.
+
+[NOTE]
+====
+Prefer installing vendor-provided Oracle/third-party client packages to avoid ABI mismatches.
+====
 
 == Performance issues
 
-=== CPU saturation
+This section lists common causes of processing delay and how to check them.
 
-Most possible bottlenecks are:
+=== 1) Disk read throughput
 
-1. Disk read speed -- the reader thread reads all data sequentially using buffering.
-If the stream of redo log files is greater than the speed of sequential read from disk -- delay might appear.
+Symptom: redo files are produced faster than they are read.
 
-2. Transaction parsing -- redo log parsing is done using single thread.
-If the volume of generated redo log files is higher than the speed of parsing -- delay might appear.
+Checks and tools:
+- Linux: `iostat -x`, `iotop`, `vmstat`
+- macOS: `iostat`, `fs_usage`
+- Verify sequential read bandwidth and seek latency for the device or mount.
 
-3. Output performance -- the writer thread sends the transactions to output (sink) using the provided connector.
-If the target is accepting transactions slower than they are created -- delay might appear.
+Mitigations:
+- Use host-local disks or higher-performance storage.
+- Increase reader buffer configuration where applicable.
+- If using remote mounts (SSHFS, NFS), prefer read-only copies or standby DB copies for production.
+
+[TIP]
+----
+Set the trace parameter in OpenLogReplicator.json to "trace": 256, to enable IO statistics.
+After each archived redo log is processed, the replicator will report disk read throughput and redo parsing speed.
+You can verify that disk read performance is not slowing transaction processing.
+----
+
+=== 2) Parser CPU saturation
+
+Symptom: parser thread consumes high CPU and cannot keep up.
+
+Checks and tools:
+- `top` / `htop` / `ps -eo pid,pcpu,comm` to identify CPU-bound process.
+- Correlate CPU usage with parsing activity using application logs or metrics.
+
+Mitigations:
+- Reduce parsing workload (filter unneeded schemas/tables).
+- Run on a host with more CPU resources.
+- Note: the parser is single-threaded by design; scaling requires reducing workload or deploying multiple instances with partitioned sources.
+
+=== 3) Output backpressure (writer slow)
+
+Symptom: messages queue and memory usage rise because the sink accepts data slower than production rate.
+
+Checks:
+- Inspect output connector logs (Kafka, network, file).
+- For Kafka, check broker and consumer lag, network throughput, and broker errors.
+
+Mitigations:
+- Improve sink throughput (tune Kafka producer, increase broker resources).
+- Use file target for offline reproduction.
+- If using network receivers, ensure they confirm SCNs frequently to avoid unbounded memory growth.
+
+=== General monitoring and diagnostics
+
+- Correlate metrics and logs: use the metrics endpoint (Prometheus) to observe `bytes_read`, `bytes_parsed`, `messages_sent`, `memory_used_mb`, and `transactions`.
+- Increase log level to `debug` or `trace` briefly to capture details (beware of volume).
+- Use `strace`/`dtruss` sparingly to inspect syscalls on problematic processes.
+
+== Quick checklist
+
+- Verify required client libraries are installed and visible to the loader.
+- Confirm redo log files are readable and not removed before processing.
+- Check disk bandwidth and latency.
+- Confirm parser CPU is not saturated.
+- Inspect sink performance and consumer lag.
+- Monitor memory and swap to avoid OOM or heavy swapping.
+
+For configuration references and deeper diagnostics, see xref:../reference-manual/reference-manual.adoc[Reference Manual] and xref:../metrics/metrics.adoc[Metrics].
