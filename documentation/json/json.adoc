@@ -1,13 +1,13 @@
 = OpenLogReplicator.json format
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :icons: font
 
 [frame="none",grid="none"]
 |====
-|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This section describes the JSON configuration file used by OpenLogReplicator.
@@ -38,7 +38,7 @@ The file should contain a single object with the following parameters:
 
 |`version`
 |_string_, max length: 256, mandatory
-|The value must be equal to `"1.1.0"`.
+|The value must be equal to `"1.9.0"`.
 
 _TIP_: This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade.
 During upgrade, always check the documentation for parameter changes and verify that the JSON configuration file is correct.
@@ -51,7 +51,7 @@ The path can be relative to the current directory.
 _NOTE_: This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
 
 |`dump-raw-data`
-|_number_, min: 0, max: 1, default: 0
+|_integer_, min: 0, max: 1, default: 0
 |Print hex dump of vector data for all dumped OP codes.
 
 Possible values are:
@@ -63,7 +63,7 @@ Possible values are:
 _NOTE:_ This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
 
 |`dump-redo-log`
-|_number_, min: 0, max: 2, default: 0
+|_integer_, min: 0, max: 2, default: 0
 |Create output similar to `logdump` command which can be compared as string to verify if certain parameters have been correctly decoded.
 
 Possible values are:
@@ -78,7 +78,7 @@ _CAUTION:_ The result doesn't have to fully match the results of `logdump`.There
 Not all redo OP codes are parsed and analyzed, and there is no guarantee that the results should be exactly the same.
 
 |`log-level`
-|_number_, min: 0, max: 4, default: 2
+|_integer_, min: 0, max: 4, default: 2
 |Messages verbose level.
 
 All messages are sent to _stderr_ output stream.
@@ -96,7 +96,7 @@ Possible values are:
 * `4` -- _Debug_ -- print all messages.
 
 |`trace`
-|_number_, min: 0, max: 524287, default: 0
+|_integer_, min: 0, max: 524287, default: 0
 |Print debug information.
 
 The value is a sum of various trace parameters, please refer to source code for details.

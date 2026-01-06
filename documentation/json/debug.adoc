@@ -1,13 +1,13 @@
 = OpenLogReplicator.json - debug element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :icons: font
 
 [frame="none",grid="none"]
 |====
-|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This section describes the `debug` element in the OpenLogReplicator JSON configuration.
@@ -23,17 +23,17 @@ All parameters are intended for troubleshooting and testing; use caution when en
 |Description and notes
 
 |`stop-log-switches`
-|_number_, min: 0, default: 0
+|_integer_, min: 0, default: 0
 |For debug purposes only.
 Stop program after specified number of log switches.
 
 |`stop-checkpoints`
-|_number_, min: 0, default: 0
+|_integer_, min: 0, default: 0
 |For debug purposes only.
 Stop program after specified number of LWN checkpoints.
 
 |`stop-transactions`
-|_number_, min: 0, default: 0
+|_integer_, min: 0, default: 0
 |For debug purposes only.
 Stop program after specified number of transactions.
 

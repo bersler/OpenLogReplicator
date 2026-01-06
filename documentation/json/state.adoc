@@ -1,13 +1,13 @@
 = OpenLogReplicator.json - state element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :icons: font
 
 [frame="none",grid="none"]
 |====
-|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document describes the `state` configuration block used by OpenLogReplicator.
@@ -23,13 +23,13 @@ It covers checkpointing behavior, storage options, recommended defaults and oper
 |Description and notes
 
 |`interval-mb`
-|_number_, min: 0, default: 500
+|_integer_, min: 0, default: 500
 |Threshold of processed redo log data after which a checkpoint file is created.
 
 Number in megabytes.
 
 |`interval-s`
-|_number_, min: 0, default: 600
+|_integer_, min: 0, default: 600
 |Threshold of processed redo log data time after which a checkpoint file is created.
 
 Number in seconds.
@@ -38,7 +38,7 @@ _IMPORTANT:_ The time refers not to processing time by OpenLogReplicator but to 
 For example, the default setting of 600 seconds means that if the last checkpoint was created after processing redo log data created at 10:40 when the processing reaches data created at 10:50 new checkpoint file is created.
 
 |`keep-checkpoints`
-|_number_, min: 0, default: 100
+|_integer_, min: 0, default: 100
 |Number of checkpoint files which should be kept.
 The oldest checkpoint files are deleted.
 

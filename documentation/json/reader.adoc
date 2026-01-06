@@ -1,13 +1,13 @@
 = OpenLogReplicator.json - reader element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :icons: font
 
 [frame="none",grid="none"]
 |====
-|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This section documents the `reader` element of the OpenLogReplicator JSON configuration.
@@ -57,7 +57,7 @@ Timezone should be in format `+xx:yy` or `-xx:yy`.
 The time zone is used only as base timezone for values for TIMESTAMP WITH LOCAL TZ type.
 
 |`disable-checks`
-|_number_, min: 0, max: 15, default: 0
+|_integer_, min: 0, max: 15, default: 0
 |A sum of numbers:
 
 * `0x0001` -- During startup, don't check if the database user has appropriate grants to system tables.
@@ -150,7 +150,7 @@ Format should be in form like: `//<host>:<port>/<service>`.
 _NOTE:_ This field is valid only for `online` type.
 
 |`start-scn`
-|_number_, min: 0
+|_integer_, min: 0
 |The first SCN number to be processed.
 If not specified, the program will start from the current SCN.
 
@@ -160,13 +160,13 @@ In such a case, the program will not be able to read the metadata and will stop.
 _IMPORTANT:_ Setting this parameter to some value would mean that transactions started before this SCN would not be processed.
 
 |`start-seq`
-|_number_, min: 0
+|_integer_, min: 0
 |First sequence number to be processed.
 
 _IMPORTANT:_ If not specified, the first sequence would be determined by reading SCN boundaries assigned to particular redo log files and matched to starting SCN.
 
 |`start-time-rel`
-|_number_, min: 0
+|_integer_, min: 0
 |Determine starting SCN by relative time.
 The value and is relative to the current time using `TIMESTAMP_TO_SCN` sql function.
 For example, if the value is set to `3600`, the program will start from the SCN, which was active 1 hour ago.
@@ -198,7 +198,7 @@ _CAUTION:_ It is invalid to use this parameter when `start-scn` or `start-time-r
 _NOTE:_ This field is valid only for `online` type.
 
 |`transaction-max-mb`
-|_number_, min: 0, default: 0
+|_integer_, min: 0, default: 0
 |An upper limit for transaction size.
 If the transaction size is greater than this value, the transaction is split into multiple transactions.
 

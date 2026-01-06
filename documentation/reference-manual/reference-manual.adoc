@@ -1,14 +1,14 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :icons: font
 :toc: preamble
 
 [frame="none",grid="none"]
 |====
-|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document describes configuration parameters and usage of OpenLogReplicator.

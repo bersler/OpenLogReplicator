@@ -1,14 +1,14 @@
 = OpenLogReplicator.json - writer element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :icons: font
 :url-librdkafka-parameters: https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
 
 [frame="none",grid="none"]
 |====
-|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document describes the `writer` element of the OpenLogReplicator JSON configuration.
@@ -63,7 +63,7 @@ For _zeromq_ writer type: `<protocol>://<host>:<port>` -– URI for ZeroMQ conne
 _NOTE:_ This field is valid only for `network` and `zeromq` types.
 
 |`append`
-|_number_, min: 0, max: 1, default: 1
+|_integer_, min: 0, max: 1, default: 1
 |If the output file for the transaction exists, append to it.
 If not, create a new file.
 
@@ -72,7 +72,7 @@ _NOTE:_ This field is valid only for `file` type.
 _CAUTION:_ Parameter `output` can't be used together with `append`.
 
 |`max-message-mb`
-|_number_, min: 1, max: 953, default: 100
+|_integer_, min: 1, max: 953, default: 100
 |Maximum size of a message sent to Kafka.
 
 Number in megabytes.
@@ -84,14 +84,14 @@ Every time such a situation occurs, a warning is printed to the log.
 _NOTE:_ This field is valid only for `kafka` type.
 
 |`max-file-size`
-|_number_, min: 0, default: 0
+|_integer_, min: 0, default: 0
 |Maximum file size for the output file.
 The size can be defined only when `output` parameter is set and is using `%i` or `%t` placeholder.
 
 _NOTE:_ This field is valid only for `file` type.
 
 |`new-line`
-|_number_, min: 0, max: 2, default: 0
+|_integer_, min: 0, max: 2, default: 0
 |Put a new line after each transaction.
 
 Possible values are:
@@ -123,7 +123,7 @@ When using `%i` or `%t` format `max-file-size` parameter must be set to value gr
 _NOTE:_ This field is valid only for `file` type.
 
 |`poll-interval-us`
-|_number_, min: 100, max: 3600000000, default: 100000
+|_integer_, min: 100, max: 3600000000, default: 100000
 |Interval for polling for new messages.
 
 Number in microseconds.
@@ -154,7 +154,7 @@ _CAUTION:_ You should not set the `message.max.bytes` parameter as maximum messa
 _NOTE:_ This field is valid only for `kafka` type.
 
 |`queue-size`
-|_number_, min: 1, max: 1000000, default: 65536
+|_integer_, min: 1, max: 1000000, default: 65536
 |Size of message queue.
 
 _TIP:_ This parameter defines how many messages can be sent to output.
@@ -171,7 +171,7 @@ Refer to the documentation of your C library for more information.
 _NOTE:_ This field is valid only for `file` type.
 
 |`write-buffer-flush-size`
-|_number_, min: 0, max: 1048576, default: 1048576
+|_integer_, min: 0, max: 1048576, default: 1048576
 |The number of bytes of the write buffer after witch the buffer is flushed.
 Setting the value to 0 causes the buffer to be flushed immediately after a message is ready for writing.
 Big values can cause a lag in writing the data to the output file but allow to reduce the frequency of writing to flush disk operations.

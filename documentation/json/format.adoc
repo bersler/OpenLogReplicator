@@ -1,13 +1,13 @@
 = OpenLogReplicator.json - format element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-07
 :imagesdir: ./images
 :icons: font
 
 [frame="none",grid="none"]
 |====
-|[.small]#Autbor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This section documents the `format` element of the OpenLogReplicator JSON configuration.
@@ -37,7 +37,7 @@ It is not fully tested and might not work properly.
 Don't use it for production without testing.
 
 |`attributes` [[attributes]]
-|_number_, min: 0, max: 7, default: 0
+|_integer_, min: 0, max: 7, default: 0
 |Transaction attributes location.
 
 Field value is a sum of:
@@ -49,7 +49,7 @@ Field value is a sum of:
 * `2` -- add attributes to the commit message of the transaction.
 
 |`char` [[char]]
-|_number_, min: 0, max: 3, default: 0
+|_integer_, min: 0, max: 3, default: 0
 |Format for _(n)char_, _(n)varchar(2)_ and _clob_ column types.
 
 By default, the value is written in Unicode format, using UTF-8 to code characters.
@@ -84,7 +84,7 @@ _CAUTION:_ It is technically not possible to differentiate if the column was act
 The receiver of the output stream shouldn't make any assumption that the user included a column in the UPDATE operation if it appeared in the output stream and has the same _before_ and _after_ image.
 
 |`db` [[db]]
-|_number_, min: 0, max: 3, default: 0
+|_integer_, min: 0, max: 3, default: 0
 |Present database name in payload.
 
 Value is a sum of:
@@ -102,7 +102,7 @@ Value is a sum of:
 When set to `0` then the buffer is flushed immediately as a new message arrives.
 
 |`interval-dts` [[interval-dts]]
-|_number_, min: 0, max: 10, default: 0
+|_integer_, min: 0, max: 10, default: 0
 |INTERVAL DAY TO SECONDS field format.
 
 Possible values are:
@@ -130,7 +130,7 @@ Possible values are:
 * `10` -- Value stored in part of _ISO-8601_ format stored as a string using `"-"` as a separator between the number of days and time -- `"val": "01-06:00:00.123456789"`.
 
 |`interval-ytm` [[interval-ytm]]
-|_number_, min: 0, max: 4, default: 0
+|_integer_, min: 0, max: 4, default: 0
 |INTERVAL YEAR TO MONTH field format.
 
 Possible values are:
@@ -145,7 +145,7 @@ Possible values are:
 * `4` -- Value in string format, number of years and months separated by `"-"` -- `"val": "1-8"`.
 
 |`message` [[message]]
-|_number_, min: 0, max: 30, default: 0
+|_integer_, min: 0, max: 30, default: 0
 |Message format specification.
 
 Value is a sum of:
@@ -168,7 +168,7 @@ For JSON only target, the following additional flags are available:
 * `0x0010` -- Add information about data offset (for debugging purposes).
 
 |`rid` [[rid]]
-|_number_, min: 0, max: 1, default: 0
+|_integer_, min: 0, max: 1, default: 0
 |Add `rid` field for every row in output with the Row ID.
 
 Possible values are:
@@ -178,7 +178,7 @@ Possible values are:
 * `1` -- Add `rid` field for every row in output with the Row ID.
 
 |`schema`
-|_number_, min: 0, max: 7, default: 0
+|_integer_, min: 0, max: 7, default: 0
 |Schema format sent to output.
 
 By default, the schema is not sent to output.
@@ -209,7 +209,7 @@ Example output:
 `{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2"},"after":{"A":100,"B":999,"C":10.22,"D":"xx2       ","E":"yyy","F":1564662896000}}]}`
 
 |`scn` [[scn]]
-|_number_, min: 0, max: 1, default: 0
+|_integer_, min: 0, max: 1, default: 0
 |SCN field format.
 
 Possible values are:
@@ -219,7 +219,7 @@ Possible values are:
 * `1` -– SCN values are stored in a text format in hexadecimal format (in _"C"_ format – like `0xFF`) in `scns` field.
 
 |`scn-type` [[scn-type]]
-|_number_, min: 0, max: 3, default: 0
+|_integer_, min: 0, max: 3, default: 0
 |Include `scn` field in every payload.
 
 By default, every DML operation contains `scn` field with SCN value which is derived from the redo vector which contains DML data.
@@ -232,7 +232,7 @@ The default is to put `scn` field only in the first message.
 * `0x0002` -- SCN values for all DML operations are copied from commit SCN record.
 
 |`timestamp` [[timestamp]]
-|_number_, min: 0, max: 15, default: 0
+|_integer_, min: 0, max: 15, default: 0
 |Format of timestamp values.
 
 In the following description, the following timestamp is used as an example: `"2022-05-01 06:00:00.123456789"`.
@@ -273,7 +273,7 @@ Possible values are:
 _NOTE:_ This format is also used for type `timestamp with local time zone` since this type internally does not contain time zone data.
 
 |`timestamp-tz` [[timestamp-tz]]
-|_number_, min: 0, max: 11, default: 0
+|_integer_, min: 0, max: 11, default: 0
 |Format of timestamp with time zone values.
 
 In the following description, the following timestamp with time zone is used as an example: `"2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
@@ -305,7 +305,7 @@ Possible values are:
 * `11` -- _ISO-8601_ format stored second precision as a string without "TZ" with time zone after space sign -- `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
 
 |`timestamp-all` [[timestamp-all]]
-|_number_, min: 0, max: 1, default: 0
+|_integer_, min: 0, max: 1, default: 0
 |Include `timestamp` field in every payload.
 
 Possible values are:
@@ -315,7 +315,7 @@ Possible values are:
 * `1` -- Put `timestamp` field in every message.
 
 |`unknown`
-|_number_, min: 0, max: 1, default: 0
+|_integer_, min: 0, max: 1, default: 0
 |Unknown value reporting.
 For unknown values `‘?’` is sent to output.
 This applies to cases, when OpenLogReplicator it not able to decode the value.
@@ -330,7 +330,7 @@ The value of this parameter is useful for debugging purposes.
 Warning code `60002` is printed to _stderr_ when an unknown value is detected.
 
 |`unknown-type`
-|_number_, min: 0, max: 1, default: 0
+|_integer_, min: 0, max: 1, default: 0
 |Reporting of unknown data types.
 Columns which have unsupported data type are skipped.
 
@@ -343,7 +343,7 @@ If the column type is not supported `'?'` value is sent to output.
 In addition, when the `unknown` parameter is set to `1`, information about value in hex format is sent to _stderr_.
 
 |`xid` [[xid]]
-|_number_, min: 0, max: 2, default: 0
+|_integer_, min: 0, max: 2, default: 0
 |Format of the Transaction ID (XID).
 
 Possible values are:
