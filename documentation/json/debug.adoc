@@ -24,27 +24,53 @@ All parameters are intended for troubleshooting and testing; use caution when en
 
 |`stop-log-switches`
 |_integer_, min: 0, default: 0
-|For debug purposes only.
-Stop program after specified number of log switches.
+|Stop the process after the specified number of log switches.
+Use `0` to disable.
 
 |`stop-checkpoints`
 |_integer_, min: 0, default: 0
-|For debug purposes only.
-Stop program after specified number of LWN checkpoints.
+|Stop the process after the specified number of LWN checkpoints.
+Use `0` to disable.
 
 |`stop-transactions`
 |_integer_, min: 0, default: 0
-|For debug purposes only.
-Stop program after specified number of transactions.
+|Stop the process after the specified number of processed transactions.
+Use `0` to disable.
 
 |`owner`
-|_string_, max length: 128
-|Owner of the debug table.
+|_string_, max length: 128, optional
+|Owner/schema name used when constructing the internal debug table identifier.
 
 |`table`
-|_string_, max length: 128
-|This is a technical parameter primary used only for running test cases and defines table name.
-If any DML transactions occur for this table (like insert, update or delete), the program would stop.
-The transaction doesn't necessary need to be committed.
+|_string_, max length: 128, optional
+|Table name used for debug-triggering.
+When set, any DML affecting this fully-qualified table may cause the process to stop immediately (commit not required).
 
 |===
+
+[CAUTION]
+====
+These parameters can cause abrupt process termination.
+Use only in controlled test environments or when collecting targeted diagnostics.
+====
+
+.Example `debug` configuration (JSON)
+[source,json]
+----
+{
+  "debug": {
+    "stop-log-switches": 0,
+    "stop-checkpoints": 0,
+    "stop-transactions": 0,
+    "owner": "TEST_SCHEMA",
+    "table": "DEBUG_TABLE"
+  }
+}
+----
+
+[NOTE]
+====
+- Prefer running with a debugger or test harness when using `stop-*` options so you can capture state at termination.
+- Avoid enabling debug stop options in production; unexpected stops can cause data delivery gaps.
+- Use `owner` and `table` only for isolated functional tests that validate replication-side behavior on specific objects.
+====
