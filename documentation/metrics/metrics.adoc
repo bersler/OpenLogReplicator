@@ -1,7 +1,7 @@
 = Metrics
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-08
 :imagesdir: ./images
 :toc: preamble
 
@@ -10,13 +10,14 @@
 a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-This document describes topics related to collecting metrics of OpenLogReplicator.
-
-The only way of collecting metrics is to use Prometheus.
+This document describes the metrics published by OpenLogReplicator and how to expose them to Prometheus.
+Prometheus is the only supported metrics backend.
 
 == Prometheus
 
-The following metrics are published by OpenLogReplicator:
+OpenLogReplicator publishes the following metrics to Prometheus.
+Types are either *counter* (monotonic increase) or *gauge* (instantaneous value).
+Labels are shown where applicable.
 
 [cols="1,1,2,4",options="header"]
 |===
@@ -28,12 +29,12 @@ The following metrics are published by OpenLogReplicator:
 | bytes_confirmed
 | counter
 |
-| Number of bytes confirmed by output.
+| Number of bytes confirmed as processed by the output subsystem.
 
 | bytes_parsed
 | counter
 |
-| Number of bytes parsed containing redo log data.
+| Number of bytes parsed that contained redo-log data.
 
 | bytes_read
 | counter
@@ -43,119 +44,129 @@ The following metrics are published by OpenLogReplicator:
 | bytes_sent
 | counter
 |
-| Number of bytes sent to output, for example, to Kafka or network writer.
+| Number of bytes sent to outputs (for example, Kafka or network writer).
 
 | checkpoints
 | counter
 | filter={out,skip}
-| Number of checkpoint records.
+| Total number of checkpoint records emitted.
+Label `filter=out` indicates checkpoints for processed streams; `filter=skip` indicates checkpoints skipped due to filtering.
 
 | checkpoint_lag
 | gauge
 |
-| Checkpoint processing lag in seconds.
-The header of every checkpoint record contains information about timestamp.
-The timestamp has just accuracy of 1 second.
-Assuming that the database clock is in sync with the clock of the machine where OpenLogReplicator is running, this metric shows the lag between the current time and the last checkpoint timestamp.
+| Processing lag of the last checkpoint in seconds.
+Checkpoint timestamps have only 1-second precision, and clocks must be synchronized between the database host and the machine running OpenLogReplicator for this metric to be meaningful.
 
-_CAUTION:_ Value of 1s can be misleading.
-It is possible that the checkpoint was created just before the current second and just the second change was recorded.
-Thus, observing 1s lag does not mean necessary that the lag is 1s.
+_CAUTION:_ A reported value of `1` second can be misleading: a checkpoint created just before the current second may appear as 1s lag even if actual lag is smaller.
 
 | ddl_ops
 | counter
 | type={alter,create,drop,other,truncate}
-| Number of DDL operations.
-_IMPORTANT:_ DDL operations which are part of skipped transactions are not counted.
-There is no metric for those.
+| Number of DDL operations observed, grouped by `type`.
+DDL events that belong to transactions skipped by filtering are *not* counted.
 
 | dml_ops
 | counter
-| type={insert,update,delete},
-filter={out,skip}
-| Number of DML operations.
+| type={insert,update,delete},filter={out,skip}
+| Number of DML operations observed.
+Label `filter` indicates whether the operation was processed (`out`) or skipped (`skip`) by the configured filters.
 
-_IMPORTANT:_ DML operations which are part of skipped transactions are not counted.
-There is no metric for those.
-The `filter` parameter refers to DML operations for tables which are processed by OpenLogReplicator based on filter clause in the config file.
-Skipped DML operations are for those tables that are not on the list and are not processed.
+_IMPORTANT:_ DML operations inside transactions that are skipped are not counted.
 
 | log_switches
 | counter
 | type={online,archived}
 | Number of redo log switches.
+Label `online` for current logs, `archived` for archived logs.
 
 | log_switches_lag
 | gauge
 | type={online,archived}
-| Redo log file processing lag in seconds.
-The redo log file contains timestamp about first and last operation in the file.
-This metric is difference in seconds between the time of the last operation and the time when the file was processed.
+| Lag in seconds between the timestamp of the last operation in a redo log file and the time the file was processed.
 
 | memory_allocated_mb
 | gauge
 |
-| Amount of allocated memory in MB.
+| Total memory allocated by the process in megabytes.
 
 | memory_used_total_mb
 | gauge
 |
-| Total used memory.
+| Total memory currently in use in megabytes.
 
 | memory_used_mb
 | gauge
 | type={builder,parser,reader,transactions}
-| Memory used by a particular module.
-The following modules are available:
+| Memory used by a specific module (in megabytes).
+Modules:
 
-* builder -- building messages which are sent to output;
+* `builder` — memory for building output messages;
 
-* parser -- additional memory allocated by parser module;
+* `parser` — additional memory used by the parser;
 
-* reader -- blocks of redo log data read from redo log files;
+* `reader` — read buffers for redo log files;
 
-* transactions -- redo log vectors for particular transactions.
+* `transactions` — memory used to track transaction state.
 
 | messages_confirmed
 | counter
 |
-| Number of messages confirmed by output.
+| Number of messages confirmed by the output subsystem.
 
 | messages_sent
 | counter
 |
-| Number of messages bytes sent to output, for example, to Kafka or network writer.
+| Number of message bytes sent to outputs (for example, Kafka or network writer).
 
 | swap_operations_mb
 | counter
 | type={discard,read,write}
-| Operations on swap space in MB.
+| Swap space activity in megabytes.
 Types:
 
-* discard -- 1MB block has been written (swapped) to disk but not read, since it was unnecessary, (for example, because of rollback);
+* `discard` — 1 MB block written to swap but never read (e.g., due to rollback);
 
-* read -- 1MB block has been read from disk to memory;
+* `read` — 1 MB block read from swap into memory;
 
-* write -- 1MB block has been written to disk.
+* `write` — 1 MB block written to swap.
 
 | swap_usage_mb
 | gauge
 |
-| Swap usage in MB.
+| Current swap usage in megabytes.
 
 | transactions
 | counter
-| type={commit,rollback},
-filter={out,partial,skip}
-| Number of transactions.
+| type={commit,rollback},filter={out,partial,skip}
+| Number of transactions observed, labeled by outcome and filter status:
 
-_IMPORTANT:_ Transactions marked as `partial` should appear just at startup.
-For every such transaction, a message should appear in the log file.
-A skipped transaction is a transaction that was impossible to process since it started before OpenLogReplicator was started and part of the transaction is missing.
+* `commit` / `rollback` — transaction outcome;
 
-_IMPORTANT:_ Transactions marked as `skip` should appear just at startup.
-Those are transactions that were processed again but were already confirmed by output as processed.
+* `filter=out` — processed transactions;
+
+* `filter=partial` — transactions that were partially observed (typically at startup); these should produce a log message;
+
+* `filter=skip` — transactions skipped because they were already confirmed or otherwise not processed.
+
+_IMPORTANT:_ `partial` and `skip` cases normally appear only at startup or during recovery; consult logs for details.
 
 |===
 
 === Configuration
+
+OpenLogReplicator exposes metrics via an HTTP endpoint consumable by Prometheus.
+Example configuration (JSON) enabling Prometheus metrics:
+
+[source,json]
+----
+"metrics": {"type": "prometheus", "bind": "0.0.0.0:8080", "tag-names": "all"}}
+----
+
+Ensure Prometheus is configured to scrape the configured endpoint.
+
+=== Troubleshooting
+
+* Verify clocks are synchronized (NTP) between the database host and OpenLogReplicator for accurate time-based metrics.
+* Use logging at trace or debug level to correlate metric values with processing events.
+* Monitor memory and swap metrics to detect resource pressure that can affect performance.
