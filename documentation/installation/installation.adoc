@@ -1,8 +1,9 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-12
 :imagesdir: ./images
+:url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :toc: preamble
 
 [frame="none",grid="none"]
@@ -10,59 +11,48 @@
 a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-This document describes installation and configuration guide.
+This document describes installation and configuration of OpenLogReplicator.
 
 == Setup
 
 === System requirements
 
-OpenLogReplicator can run together with the database or on a separate host.
+OpenLogReplicator can run on the same host as the source database or on a separate host.
 
-The only requirement is that read redo log files must be accessible the whole time when the replication is active.
-The files can be read through network-mounted filesystem (like SSHFS) when running remotely.
+Requirement summary:
 
-OpenLogReplicator is developed and tested only on a Linux operating system.
-The preferred Linux distribution is Debian.
-Official docker images use this distribution.
-Other distributions aren't tested.
+* Redo log files (online and archived) must remain continuously accessible while replication is active.
+* When running remotely, redo logs may be accessed via a network-mounted filesystem (for example, SSHFS).
+* OpenLogReplicator is developed and tested on Linux.
+* Debian is the preferred distribution; official Docker images use Debian.
+* Other distributions are untested.
 
-=== Database version requirements
+=== Database version and platform support
 
-OpenLogReplicator has no impact and is not affected when other replication engines are being used, including tools using Streams, XStream or LogMiner.
-Multiple instances of OpenLogReplicator can replicate from the same source database assuming that they don't share the same path with checkpoints and configuration files.
+OpenLogReplicator does not interfere with other replication engines (Streams, XStream, LogMiner).
+Multiple OpenLogReplicator instances may replicate from the same source database provided they do not share checkpoint or configuration paths.
 
-The following limitations apply to the source database:
+Supported source database versions and platforms:
 
-* Supported versions: 11.2, 12.1, 12.2, 18c, 19c, 21c, 23c, 23ai, 26ai.
+* Versions: 11.2, 12.1, 12.2, 18c, 19c, 21c, 23c, 23ai, 26ai
+* Editions: XE/FREE/AI, DE, SE, SE2, PE, EE
+* Character sets: 138 supported (see xref:../user-manual/user-manual.adoc#supported-character-sets[user manual])
+* Platforms: Linux x86_64, Solaris x64, Solaris SPARC
+* Storage: file systems such as ext4, btrfs, zfs, xfs, sshfs
+* Database block sizes: 2k, 4k, 8k, 16k, 32k
+* Required database options: none
+* Supports single-tenant and multi-tenant configurations
+* Supports reading from standby (Data Guard)
+* Database must run in single-instance mode (non-RAC)
 
-* Supported editions: XE/FREE/AI, DE, SE, SE2, PE, EE.
+=== Database configuration
 
-* Supported database character set: 138 different, refer to xref:../user-manual/user-manual.adoc#supported-character-sets[user manual] for details.
+Two database settings are mandatory for any redo-log-based replication engine:
 
-* Supported platforms: Linux64, Solaris x64, Solaris Sparc.
+* ARCHIVELOG mode enabled
+* MINIMAL SUPPLEMENTAL LOGGING enabled
 
-* Supported storage: file system (ext4, btrfs, zfs, xfs, sshfs).
-
-* Supported database block sizes: 2k, 4k, 8k, 16k, 32k.
-
-* Required options: none.
-
-* Both single-tenant and multi-tenant configurations are supported.
-
-* Supported reading Standby Data Guard databases.
-
-* Database must be in single instance mode (non RAC).
-
-=== Database requirements
-
-==== Database configuration
-
-There are just two strict requirements for the database configuration.
-In fact, they're common for absolutely any replication engine.
-
-The database must be working in *ARCHIVELOG* mode and having enabled *MINIMAL SUPPLEMENTAL LOGGING*.
-
-Example script to configure database:
+Example configuration script:
 
 [source,sql]
 ----
@@ -78,20 +68,17 @@ SELECT SUPPLEMENTAL_LOG_DATA_MIN, LOG_MODE FROM V$DATABASE;
 
 [NOTE]
 ====
-Minimal supplemental logging is required for OpenLogReplicator to work.
-It is not a must-have requirement.
-In case when it is dynamically disabled (i.e., disabled after program startup), OpenLogReplicator might not be able to replicate all transactions.
-Errors might be printed and behavior might be undefined.
-Transactions might be missing in the output and replication should be restarted.
+Minimal supplemental logging is required for OpenLogReplicator to produce complete output.
+If it is disabled after program startup, replication may miss transactions and produce errors.
+In such cases restart replication after re-enabling logging.
 ====
 
 ==== Force logging
 
-To capture all transactions from the database, it is recommended to have also `FORCE LOGGING` turned on.
-But it is not a must-have requirement.
-Having this option turned off results just that the user can dynamically disable logging for some DML operations, leading to transaction loss and data inconsistency.
+Enabling FORCE LOGGING is recommended to ensure all transactions are captured, though it is not mandatory.
+If FORCE LOGGING is disabled, some DML operations can skip redo logging and cause data loss.
 
-The following script can be used to configure a database:
+Example:
 
 [source,sql]
 ----
@@ -103,9 +90,9 @@ SELECT FORCE_LOGGING FROM V$DATABASE;
 
 ==== FRA configuration
 
-For OFFLINE reader type, it is required that Fast Recovery Area is configured.
+For the OFFLINE reader type, the Fast Recovery Area must be configured.
 
-Example configuration:
+Example:
 
 [source,sql]
 ----
@@ -113,33 +100,31 @@ ALTER SYSTEM SET DB_RECOVERY_FILE_DEST_SIZE = 50G;
 ALTER SYSTEM SET DB_RECOVERY_FILE_DEST = '/opt/db/fra';
 ----
 
-=== Table configuration requirements
+=== Table-level supplemental logging
 
-The default requirements of having enabled MINIMAL SUPPLEMENTAL LOGGING are enough for OpenLogReplicator to work.
-In such a case, the output contains only modified columns.
-However, typically this is not enough, and it is required that the output contains also values of columns which haven't been modified: primary key, unique key or all columns.
+With MINIMAL SUPPLEMENTAL LOGGING, OpenLogReplicator outputs only modified columns by default.
+In many cases you must include additional columns (primary key, unique key, or all columns) in supplemental logging so that each change can be identified and applied correctly.
 
 [IMPORTANT]
 ====
-OpenLogReplicator leaves the decision to the user which data is present in the database redo logs.
-Besides the minimal supplemental logging option, it doesn't force the user to enable any other supplemental logging options per table.
-The user can decide which tables should have supplemental logging enabled and which should not.
+OpenLogReplicator does not impose supplemental logging policies on the database.
+The user decides which tables and which logging options to enable.
 ====
 
-==== Adding primary key to supplemental logging
+==== Add primary key to supplemental logging
 
-A typical configuration requirement is that the primary key is added to supplemental logging.
-
-To add primary key to supplemental logging just for one table, the following code should be executed:
+To enable primary-key supplemental logging for a single table:
 
 [source,sql]
 ----
-SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='PRIMARY KEY LOGGING') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
+SELECT * FROM ALL_LOG_GROUPS
+  WHERE LOG_GROUP_TYPE='PRIMARY KEY LOGGING' AND OWNER='<SCHEMA>' AND TABLE_NAME='<TABLE>';
 ALTER TABLE <SCHEMA>.<TABLE> ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
-SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='PRIMARY KEY LOGGING') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
+SELECT * FROM ALL_LOG_GROUPS
+  WHERE LOG_GROUP_TYPE='PRIMARY KEY LOGGING' AND OWNER='<SCHEMA>' AND TABLE_NAME='<TABLE>';
 ----
 
-Supplemental logging for primary key columns can be enabled for all tables in the database.
+To enable primary-key supplemental logging for the entire database:
 
 [source,sql]
 ----
@@ -150,28 +135,24 @@ SELECT SUPPLEMENTAL_LOG_DATA_PK FROM V$DATABASE;
 
 [TIP]
 ====
-Adding supplemental logging for primary key columns for all tables in the database has a typically low impact on the performance and redo log size.
-Using OpenLogReplicator Performance tracing option can help to determine the impact.
-This is a unique feature of OpenLogReplicator, which is not available in any other replication engine.
-Setting `"trace": 256` in the configuration file will enable tracing.
-After finishing redo log file parsing, information is printed with statistics related to the redo log file.
-Statistics include a summary of additional space occupied by supplemental log group.
-The value is in bytes.
-Investigate various options of supplemental logging and choose the one that gives the best performance and redo log size.
+Adding primary-key supplemental logging for all tables usually has low impact on performance and redo size.
+Use `"trace": 256` in the configuration to collect performance statistics and estimate space impact.
 ====
 
-==== Adding custom key to supplemental logging
+==== Custom keys (user log groups)
 
-In cases when the primary key is not defined for a table, it is possible to define a custom key.
+If a table lacks a primary key, you can define a custom supplemental log group:
 
 [source,sql]
 ----
-SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='USER LOG GROUP') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
-ALTER TABLE <SCHEMA>.<TABLE> ADD SUPPLEMENTAL LOG GROUP <GROUP NAME> (<COLUMNS>) ALWAYS;               SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='USER LOG GROUP') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
+SELECT * FROM ALL_LOG_GROUPS
+  WHERE LOG_GROUP_TYPE='USER LOG GROUP' AND OWNER='<SCHEMA>' AND TABLE_NAME='<TABLE>';
+ALTER TABLE <SCHEMA>.<TABLE> ADD SUPPLEMENTAL LOG GROUP <GROUP_NAME> (<COLUMNS>) ALWAYS;
+SELECT * FROM ALL_LOG_GROUPS
+  WHERE LOG_GROUP_TYPE='USER LOG GROUP' AND OWNER='<SCHEMA>' AND TABLE_NAME='<TABLE>';
 ----
 
-In such a case, it is also necessary to define the custom key in the configuration file.
-In the `filter` group in `table` list add the following entry:
+Also add the custom key to OpenLogReplicator configuration in the `filter` table list:
 
 [source,json]
 ----
@@ -180,32 +161,25 @@ In the `filter` group in `table` list add the following entry:
 
 [CAUTION]
 ====
-OpenLogReplicator rigorously tests the correctness of the custom key columns.
-If the defined columns aren't present in the table, the replication will stop.
-This setting overrides the defined primary key.
+OpenLogReplicator validates custom key columns strictly.
+If the specified columns do not exist, replication will stop.
+A custom key overrides any defined primary key.
 ====
 
-==== Adding all columns to supplemental logging
+==== Log all columns for UPDATE
 
-It is also possible to include all columns in the output for UPDATE operations.
-To achieve such behavior, it is required to add all columns to supplemental logging and set `column` parameter to value `2`.
-
-[CAUTION]
-====
-Adding all columns to supplemental logging can cause a significant increase of redo log size.
-This is especially true for tables with many columns.
-====
-
-For a single table, the following script should be executed in the source database:
+To include all columns for UPDATE operations, enable all-column supplemental logging and set the table's `column` parameter to `2`.
 
 [source,sql]
 ----
-SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='ALL COLUMN LOGGING') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
+SELECT * FROM ALL_LOG_GROUPS
+  WHERE LOG_GROUP_TYPE='ALL COLUMN LOGGING' AND OWNER='<SCHEMA>' AND TABLE_NAME='<TABLE>';
 ALTER TABLE <SCHEMA>.<TABLE> ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
-SELECT * FROM ALL_LOG_GROUPS where (LOG_GROUP_TYPE='ALL COLUMN LOGGING') and OWNER='<SCHEMA>' and TABLE_NAME='<TABLE>';
+SELECT * FROM ALL_LOG_GROUPS
+  WHERE LOG_GROUP_TYPE='ALL COLUMN LOGGING' AND OWNER='<SCHEMA>' AND TABLE_NAME='<TABLE>';
 ----
 
-Supplemental logging for all columns can be enabled for all tables in the database with the following script:
+To enable for the whole database:
 
 [source,sql]
 ----
@@ -214,23 +188,24 @@ ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
 SELECT SUPPLEMENTAL_LOG_DATA_ALL FROM V$DATABASE;
 ----
 
-==== User requirements
-
-Requirements for an ONLINE reader type:
-
-* user in the source database granted with rights to read some system tables (the full list below),
-
-* physical access to redo log files (online and archived); when running from remote host access through SSHFS is possible.
-
-Requirements for an OFFLINE reader type:
-
-* physical access to read redo log files.
-
-[IMPORTANT]
+[CAUTION]
 ====
-It is not recommended to run OpenLogReplicator using SYS or SYSTEM account or any account with high privileges to connect to the database.
-The database user should have JUST the following privileges and absolutely nothing more:
+All-column supplemental logging can significantly increase redo log size, especially for wide tables.
+Use with care.
 ====
+
+=== User privileges
+
+Requirements differ by reader type.
+
+* ONLINE reader:
+* A database user with limited privileges listed below.
+* Network or local access to redo log files.
+* OFFLINE reader:
+* Physical access to redo log files.
+
+It is not recommended to use SYS, SYSTEM, or other highly privileged accounts.
+Grant only the privileges below:
 
 [source,sql]
 ----
@@ -261,31 +236,27 @@ GRANT SELECT ON SYS.V_$TRANSPORTABLE_PLATFORM TO <USER>;
 
 [NOTE]
 ====
-Grant script has to be run from _SYS_ account.
-For multi-tenant databases, the user must be created and given grants in PDB.
+The grant script must be executed from the SYS account.
+For multi-tenant databases, create the user and apply grants in the PDB.
 ====
 
 === Runtime permissions
 
-During runtime OpenLogReplicator needs to be able to connect to the source database using OCI connection.
+OpenLogReplicator uses an OCI connection (ONLINE reader) for:
 
-Database connection used by ONLINE reader type is used for:
+* Verifying database configuration and redo log locations
+* Reading table schemas and supplemental log group information
+* Locating archived redo logs when required
 
-* Checking database configuration including location of redo logs,
+During active replication from online redo logs the connection is typically idle.
+No user-table data is queried at runtime; only metadata is accessed at startup.
 
-* Reading table schema, verifying if schema contains supplemental log groups,
-
-* Getting archived redo log locations when reading from archived redo logs.
-
-During replication from online redo logs, the connection to the database is idle.
-No queries are run.
-During startup, no query is run that would access any data in user tables.
 
 == Source code compilation
 
-=== Docker image
+=== Docker image (recommended)
 
-The easiest way to compile source code is to use a docker script from GitHub:
+The easiest way to compile is via the {url-github-docker}[OpenLogReplicator docker] repository:
 
 [source,shell]
 ----
@@ -293,5 +264,4 @@ The easiest way to compile source code is to use a docker script from GitHub:
 #> bash build.sh
 ----
 
-You need at least GCC 4.8 to compile OpenLogReplicator.
-Refer to Docker images for Ubuntu or CentOS source scripts for details regarding required packages and compilation options.
+Refer to Dockerfile and build.sh in the repository for details about required libraries and dependencies.
