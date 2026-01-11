@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
 
     void WriterKafka::pollQueue() {
         if (metadata->status == Metadata::STATUS::READY)
-            metadata->setStatusStart(this);
+            metadata->setStatusStarting(this);
 
         if (currentQueueSize > 0)
             rd_kafka_poll(rk, 0);

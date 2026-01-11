@@ -1,5 +1,6 @@
 - fix: empty command line argument prints help message
 - documentation refresh
+- enhancement: added service state metrics
 
 1.9.0
 - code style cleanup

@@ -39,6 +39,6 @@ namespace OpenLogReplicator {
 
     void WriterDiscard::pollQueue() {
         if (metadata->status == Metadata::STATUS::READY)
-            metadata->setStatusStart(this);
+            metadata->setStatusStarting(this);
     }
 }
