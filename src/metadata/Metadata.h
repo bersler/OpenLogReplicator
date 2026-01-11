@@ -57,9 +57,9 @@ namespace OpenLogReplicator {
 
     public:
         enum class STATUS : unsigned char {
-            READY,    // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
-            START,    // Replicator tries to start replication with given parameters.
-            REPLICATE // Replication is running. The metadata is initialized, the starting point of replication is defined.
+            READY,      // Replication hasn't started yet. The metadata is not initialized, the starting point of replication is not defined yet
+            STARTING,   // Replicator tries to start replication with given parameters.
+            REPLICATING // Replication is running. The metadata is initialized, the starting point of replication is defined.
         };
 
         Schema* schema;
@@ -166,8 +166,8 @@ namespace OpenLogReplicator {
         void waitForWriter(Thread* t);
         void waitForReplicator(Thread* t);
         void setStatusReady(Thread* t);
-        void setStatusStart(Thread* t);
-        void setStatusReplicate(Thread* t);
+        void setStatusStarting(Thread* t);
+        void setStatusReplicating(Thread* t);
         void wakeUp(Thread* t);
         void checkpoint(Thread* t, Scn newCheckpointScn, Time newCheckpointTime, Seq newCheckpointSequence, FileOffset newCheckpointFileOffset,
                         uint64_t newCheckpointBytes, Seq newMinSequence, FileOffset newMinFileOffset, Xid newMinXid);

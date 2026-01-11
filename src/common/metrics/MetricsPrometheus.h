@@ -137,6 +137,15 @@ namespace OpenLogReplicator {
         prometheus::Counter* transactionsCommitSkipCounter{nullptr};
         prometheus::Counter* transactionsRollbackSkipCounter{nullptr};
 
+        // service_satate
+        prometheus::Family<prometheus::Gauge>* serviceState{nullptr};
+        prometheus::Gauge* serviceStateInitializingGauge{nullptr};
+        prometheus::Gauge* serviceStateStartingGauge{nullptr};
+        prometheus::Gauge* serviceStateReadyGauge{nullptr};
+        prometheus::Gauge* serviceStateReplicatingGauge{nullptr};
+        prometheus::Gauge* serviceStateFinishingGauge{nullptr};
+        prometheus::Gauge* serviceStateAbortingGauge{nullptr};
+
     public:
         MetricsPrometheus(TAG_NAMES newTagNames, std::string newBind);
         ~MetricsPrometheus() override;
@@ -228,6 +237,14 @@ namespace OpenLogReplicator {
         void emitTransactionsRollbackPartial(uint64_t counter) override;
         void emitTransactionsCommitSkip(uint64_t counter) override;
         void emitTransactionsRollbackSkip(uint64_t counter) override;
+
+        // service_state
+        void emitServiceStateInitializing(int64_t gauge) override;
+        void emitServiceStateStarting(int64_t gauge) override;
+        void emitServiceStateReady(int64_t gauge) override;
+        void emitServiceStateReplicating(int64_t gauge) override;
+        void emitServiceStateFinishing(int64_t gauge) override;
+        void emitServiceStateAborting(int64_t gauge) override;
     };
 }
 

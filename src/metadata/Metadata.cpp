@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Thread.h"
 #include "../common/exception/ConfigurationException.h"
 #include "../common/exception/RuntimeException.h"
+#include "../common/metrics/Metrics.h"
 #include "../common/table/SysCCol.h"
 #include "../common/table/SysCDef.h"
 #include "../common/table/SysCol.h"
@@ -293,7 +294,7 @@ namespace OpenLogReplicator {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock lck(mtxCheckpoint);
 
-            if (status == STATUS::START) {
+            if (status == STATUS::STARTING) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::SLEEP)))
                     ctx->logTrace(Ctx::TRACE::SLEEP, "Metadata:waitForReplicator");
                 t->contextSet(Thread::CONTEXT::WAIT, Thread::REASON::METADATA_WAIT_FOR_REPLICATOR);
@@ -316,29 +317,47 @@ namespace OpenLogReplicator {
             condWriter.notify_all();
         }
         t->contextSet(Thread::CONTEXT::CPU);
+        if (ctx->metrics != nullptr) {
+            ctx->metrics->emitServiceStateInitializing(0);
+            ctx->metrics->emitServiceStateStarting(0);
+            ctx->metrics->emitServiceStateReplicating(0);
+            ctx->metrics->emitServiceStateReady(1);
+        }
     }
 
-    void Metadata::setStatusStart(Thread* t) {
+    void Metadata::setStatusStarting(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock const lck(mtxCheckpoint);
 
-            status = STATUS::START;
+            status = STATUS::STARTING;
             condReplicator.notify_all();
         }
         t->contextSet(Thread::CONTEXT::CPU);
+        if (ctx->metrics != nullptr) {
+            ctx->metrics->emitServiceStateInitializing(0);
+            ctx->metrics->emitServiceStateReady(0);
+            ctx->metrics->emitServiceStateReplicating(0);
+            ctx->metrics->emitServiceStateStarting(1);
+        }
     }
 
-    void Metadata::setStatusReplicate(Thread* t) {
+    void Metadata::setStatusReplicating(Thread* t) {
         {
             t->contextSet(Thread::CONTEXT::CHKPT, Thread::REASON::CHKPT);
             std::unique_lock const lck(mtxCheckpoint);
 
-            status = STATUS::REPLICATE;
+            status = STATUS::REPLICATING;
             condReplicator.notify_all();
             condWriter.notify_all();
         }
         t->contextSet(Thread::CONTEXT::CPU);
+        if (ctx->metrics != nullptr) {
+            ctx->metrics->emitServiceStateInitializing(0);
+            ctx->metrics->emitServiceStateStarting(0);
+            ctx->metrics->emitServiceStateReady(0);
+            ctx->metrics->emitServiceStateReplicating(1);
+        }
     }
 
     void Metadata::wakeUp(Thread* t) {

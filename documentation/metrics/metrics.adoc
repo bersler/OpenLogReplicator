@@ -1,7 +1,7 @@
 = Metrics
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-08
+:revdate: 2026-01-11
 :imagesdir: ./images
 :toc: preamble
 
@@ -119,6 +119,37 @@ Modules:
 |
 | Number of message bytes sent to outputs (for example, Kafka or network writer).
 
+| service_state
+| gauge
+| state={initializing}
+| Value 1: Service is initializing.
+
+| service_state
+| gauge
+| state={ready}
+| Value 1: Waiting to start processing (for example, waiting for a start SCN).
+
+| service_state
+| gauge
+| state={starting}
+| Value 1: Client defined startup parameters.
+Processing has started, metadata is read from the database, and redo log reading is about to begin.
+
+| service_state
+| gauge
+| state={replicating}
+| Value 1: Replicating (normal processing state).
+
+| service_state
+| gauge
+| state={finishing}
+| Value 1: Batch processing or user has requested shutdown; all output data is purged and process is terminating.
+
+| service_state
+| gauge
+| state={aborting}
+| Value 1: Encountered a fatal error; process is terminating.
+
 | swap_operations_mb
 | counter
 | type={discard,read,write}
@@ -160,7 +191,7 @@ Example configuration (JSON) enabling Prometheus metrics:
 
 [source,json]
 ----
-"metrics": {"type": "prometheus", "bind": "0.0.0.0:8080", "tag-names": "all"}}
+{"metrics": {"type": "prometheus", "bind": "0.0.0.0:8080", "tag-names": "all"}}
 ----
 
 Ensure Prometheus is configured to scrape the configured endpoint.

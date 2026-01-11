@@ -199,6 +199,29 @@ namespace OpenLogReplicator {
                                                   .Register(*registry);
         messagesSentCounter = &messagesSent->Add({});
 
+        // service_state
+        serviceState = &prometheus::BuildGauge().Name("service_state")
+                                                  .Help("Service state")
+                                                  .Register(*registry);
+        serviceStateInitializingGauge = &serviceState->Add({
+            {"state", "initializing"}
+        });
+        serviceStateStartingGauge = &serviceState->Add({
+            {"state", "starting"}
+        });
+        serviceStateReadyGauge = &serviceState->Add({
+            {"state", "ready"}
+        });
+        serviceStateReplicatingGauge = &serviceState->Add({
+            {"state", "replicating"}
+        });
+        serviceStateFinishingGauge = &serviceState->Add({
+            {"state", "finishing"}
+        });
+        serviceStateAbortingGauge = &serviceState->Add({
+            {"state", "aborting"}
+        });
+
         // swap_operations_mb
         swapOperationsMb = &prometheus::BuildCounter().Name("swap_operations_mb")
                                                       .Help("Operations on swap space in MB")
@@ -511,6 +534,31 @@ namespace OpenLogReplicator {
     // messages_sent
     void MetricsPrometheus::emitMessagesSent(uint64_t counter) {
         messagesSentCounter->Increment(counter);
+    }
+
+    // service_state
+    void MetricsPrometheus::emitServiceStateInitializing(int64_t gauge) {
+        serviceStateInitializingGauge->Set(gauge);
+    }
+
+    void MetricsPrometheus::emitServiceStateStarting(int64_t gauge) {
+        serviceStateStartingGauge->Set(gauge);
+    }
+
+    void MetricsPrometheus::emitServiceStateReady(int64_t gauge) {
+        serviceStateReadyGauge->Set(gauge);
+    }
+
+    void MetricsPrometheus::emitServiceStateReplicating(int64_t gauge) {
+        serviceStateReplicatingGauge->Set(gauge);
+    }
+
+    void MetricsPrometheus::emitServiceStateFinishing(int64_t gauge) {
+        serviceStateFinishingGauge->Set(gauge);
+    }
+
+    void MetricsPrometheus::emitServiceStateAborting(int64_t gauge) {
+        serviceStateAbortingGauge->Set(gauge);
     }
 
     // swap_operations_mb
