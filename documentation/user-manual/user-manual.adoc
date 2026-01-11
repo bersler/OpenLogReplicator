@@ -1,9 +1,9 @@
 = User Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
+:revdate: 2026-01-12
 :imagesdir: ./images
-:url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
+:url-github-docker: https://github.com/bersler/OpenLogReplicator-docker
 :url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
 :url-github-librdkafka: https://github.com/confluentinc/librdkafka
 :toc: preamble
