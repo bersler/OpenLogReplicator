@@ -221,7 +221,7 @@ namespace OpenLogReplicator {
             while (!ctx->hardShutdown) {
                 pollQueue();
 
-                if (streaming && metadata->status == Metadata::STATUS::REPLICATE)
+                if (streaming && metadata->status == Metadata::STATUS::REPLICATING)
                     break;
 
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
@@ -444,7 +444,7 @@ namespace OpenLogReplicator {
 
         ctx->info(0, "checkpoint - all confirmed till scn: " + checkpointScn.toString() + ", idx: " +
                   std::to_string(checkpointIdx));
-        metadata->setStatusReplicate(this);
+        metadata->setStatusReplicating(this);
     }
 
     void Writer::wakeUp() {

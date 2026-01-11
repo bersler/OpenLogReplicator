@@ -114,6 +114,14 @@ namespace OpenLogReplicator {
         // messages sent
         virtual void emitMessagesSent(uint64_t counter) = 0;
 
+        // service_state
+        virtual void emitServiceStateInitializing(int64_t gauge) = 0;
+        virtual void emitServiceStateReady(int64_t gauge) = 0;
+        virtual void emitServiceStateStarting(int64_t gauge) = 0;
+        virtual void emitServiceStateReplicating(int64_t gauge) = 0;
+        virtual void emitServiceStateFinishing(int64_t gauge) = 0;
+        virtual void emitServiceStateAborting(int64_t gauge) = 0;
+
         // swap_operations
         virtual void emitSwapOperationsMbDiscard(uint64_t counter) = 0;
         virtual void emitSwapOperationsMbRead(uint64_t counter) = 0;

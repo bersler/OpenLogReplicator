@@ -797,6 +797,14 @@ namespace OpenLogReplicator {
             std::unique_lock const lck(memoryMtx);
             condOutOfMemory.notify_all();
         }
+        if (metrics != nullptr) {
+            metrics->emitServiceStateInitializing(0);
+            metrics->emitServiceStateStarting(0);
+            metrics->emitServiceStateReady(0);
+            metrics->emitServiceStateReplicating(0);
+            metrics->emitServiceStateFinishing(0);
+            metrics->emitServiceStateAborting(1);
+        }
     }
 
     void Ctx::stopSoft() {
@@ -808,6 +816,13 @@ namespace OpenLogReplicator {
 
         softShutdown = true;
         condMainLoop.notify_all();
+        if (metrics != nullptr) {
+            metrics->emitServiceStateInitializing(0);
+            metrics->emitServiceStateStarting(0);
+            metrics->emitServiceStateReady(0);
+            metrics->emitServiceStateReplicating(0);
+            metrics->emitServiceStateFinishing(1);
+        }
     }
 
     void Ctx::mainFinish() {

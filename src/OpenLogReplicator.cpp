@@ -604,6 +604,8 @@ namespace OpenLogReplicator {
 
                         ctx->metrics = new MetricsPrometheus(tagNames, prometheusBind);
                         ctx->metrics->initialize(ctx);
+                        ctx->metrics->emitServiceStateInitializing(1);
+
 #else
                         throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: \"" + metricsType +
                                                      "\", expected: not \"prometheus\" since the code is not compiled");

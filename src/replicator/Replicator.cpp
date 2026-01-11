@@ -230,8 +230,8 @@ namespace OpenLogReplicator {
 
                 // Boot succeeded
                 ctx->info(0, "resume writer");
-                metadata->setStatusReplicate(this);
-            } while (metadata->status != Metadata::STATUS::REPLICATE);
+                metadata->setStatusReplicating(this);
+            } while (metadata->status != Metadata::STATUS::REPLICATING);
 
             while (!ctx->softShutdown) {
                 bool logsProcessed = false;
