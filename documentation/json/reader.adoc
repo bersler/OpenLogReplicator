@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - reader element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
+:revdate: 2026-01-13
 :imagesdir: ./images
 :icons: font
 
@@ -186,10 +186,6 @@ For example, if the value is set to `2018-01-01 00:00:00`, the program will star
 _NOTE:_ This field is valid only for `online` type.
 
 _CAUTION:_ It is invalid to use this parameter when `start-scn` or `start-time-rel` is specified.
-
-|`state`
-|_element_ of xref:./state.adoc#state[state]
-|Configuration of state settings to store checkpoint information.
 
 |`user`
 |_string_, max length: 128

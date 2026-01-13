@@ -1,6 +1,7 @@
 - fix: empty command line argument prints help message
 - documentation refresh
 - enhancement: added service state metrics
+- OpenLogReplicator.json: move memory, metrics, state parameters to global
 
 1.9.0
 - code style cleanup

@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - source element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
+:revdate: 2026-01-13
 :imagesdir: ./images
 :icons: font
 
@@ -90,10 +90,6 @@ If the filter is changed, the schema would not update.
 Startup would fail because the set of users present in checkpoint files would not match the set of users defined in a config file.
 The schema would update only when the program is reset, (i.e., the checkpoint files are removed and forced recreation).
 
-|`metrics`
-|_element_ of xref:./metrics.adoc#metrics[metrics]
-|Group of options used for collecting metrics of OpenLogReplicator.
-
 |`flags` [[flags]]
 |_integer_, min: 0, max: 524287, default: 0
 |A sum of various flags.
@@ -169,10 +165,6 @@ Refer to details in xref:../experimental-features/experimental-features.adoc#bin
 * `0x20000` -- Pass JSON data values to output in binary format (experimental).
 
 * `0x40000` -- Support UPDATE operations for NOT NULL columns with occasional NULL values (experimental).
-
-|`memory`
-|_element_ of xref:./memory.adoc#memory[memory]
-|Configuration of memory settings.
 
 |`redo-read-sleep-us`
 |_integer_, min: 0, default: 50000

@@ -1,7 +1,7 @@
 = OpenLogReplicator.json format
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
+:revdate: 2026-01-13
 :imagesdir: ./images
 :icons: font
 
@@ -94,6 +94,18 @@ Possible values are:
 * `3` -- _Info_ -- print error, warning and info messages.
 
 * `4` -- _Debug_ -- print all messages.
+
+|`memory`
+|_element_ of xref:./memory.adoc#memory[memory]
+|Configuration of memory settings.
+
+|`metrics`
+|_element_ of xref:./metrics.adoc#metrics[metrics]
+|Group of options used for collecting metrics of OpenLogReplicator.
+
+|`state`
+|_element_ of xref:./state.adoc#state[state]
+|Configuration of state settings to store checkpoint information.
 
 |`trace`
 |_integer_, min: 0, max: 524287, default: 0
