@@ -2,6 +2,7 @@
 - documentation refresh
 - enhancement: added service state metrics
 - OpenLogReplicator.json: move memory, metrics, state parameters to global
+- fix: multitenant db: transaction shared among PDBs causes replication to freeze
 
 1.9.0
 - code style cleanup
