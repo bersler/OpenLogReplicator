@@ -34,6 +34,7 @@ namespace OpenLogReplicator {
     class MemoryManager;
     class Metadata;
     class Replicator;
+    class Start;
     class TransactionBuffer;
     class Writer;
 
@@ -59,7 +60,7 @@ namespace OpenLogReplicator {
         OpenLogReplicator(std::string newConfigFileName, Ctx* newCtx);
         ~OpenLogReplicator();
 
-        int run();
+        int run(const Start& start);
     };
 }
 
