@@ -5,6 +5,30 @@
   "dump-path": "/opt/dump",
   "log-level": 3,
   "trace": 0,
+  "memory": {
+    "min-mb": 64,
+    "max-mb": 1024,
+    "read-buffer-max-mb": 64,
+    "read-buffer-min-mb": 4,
+    "swap-mb" : 768,
+    "swap-path": ".",
+    "unswap-buffer-min-mb": 4,
+    "write-buffer-max-mb": 64,
+    "write-buffer-min-mb": 4
+  },
+  "metrics": {
+    "type": "prometheus",
+    "bind": "127.0.0.1:8080",
+    "tag-names": "all"
+  },
+  "state": {
+    "type": "disk",
+    "path": "checkpoint",
+    "interval-s": 600,
+    "interval-mb": 100,
+    "keep-checkpoints": 100,
+    "schema-force-interval": 20
+  },
   "source": [
     {
       "alias": "S1",
@@ -20,11 +44,6 @@
         "log-timezone": "+00:00",
         "db-timezone": "+00:00",
         "disable-checks": 0
-      },
-      "metrics": {
-        "type": "prometheus",
-        "bind": "127.0.0.1:8080",
-        "tag-names": "all"
       },
       "format": {
         "type": "json",
@@ -47,14 +66,6 @@
         "unknown-type": 0,
         "flush-buffer": 1048576
       },
-      "state": {
-        "type": "disk",
-        "path": "checkpoint",
-        "interval-s": 600,
-        "interval-mb": 100,
-        "keep-checkpoints": 100,
-        "schema-force-interval": 20
-      },
       "debug": {
         "owner": "SYSTEM",
         "table": "OPENLOGREPLICATOR",
@@ -64,17 +75,6 @@
       },
       "arch": "online",
       "flags": 0,
-      "memory": {
-        "min-mb": 64,
-        "max-mb": 1024,
-        "read-buffer-max-mb": 64,
-        "read-buffer-min-mb": 4,
-        "swap-mb" : 768,
-        "swap-path": ".",
-        "unswap-buffer-min-mb": 4,
-        "write-buffer-max-mb": 64,
-        "write-buffer-min-mb": 4
-      },
       "redo-read-sleep-us": 250000,
       "arch-read-sleep-us": 10000000,
       "arch-read-tries": 10,

@@ -413,11 +413,11 @@ namespace OpenLogReplicator {
 
         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
             static const std::vector<std::string> documentNames{
-                "database",
-                "resetlogs",
                 "activation",
-                "scn",
-                "idx"
+                "database",
+                "idx",
+                "resetlogs",
+                "scn"
             };
             Ctx::checkJsonFields(name, document, documentNames);
         }

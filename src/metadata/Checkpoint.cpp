@@ -105,14 +105,17 @@ namespace OpenLogReplicator {
 
         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
             static const std::vector<std::string> documentNames{
-                "version",
                 "dump-path",
                 "dump-raw-data",
                 "dump-redo-log",
                 "log-level",
-                "trace",
+                "memory",
+                "metrics",
                 "source",
-                "target"
+                "state",
+                "target",
+                "trace",
+                "version"
             };
             Ctx::checkJsonFields(configFileName, document, documentNames);
         }
@@ -134,22 +137,19 @@ namespace OpenLogReplicator {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sourceNames{
                     "alias",
-                    "memory",
-                    "name",
-                    "reader",
-                    "flags",
-                    "state",
-                    "debug",
-                    "transaction-max-mb",
-                    "metrics",
-                    "format",
-                    "redo-read-sleep-us",
+                    "arch",
                     "arch-read-sleep-us",
                     "arch-read-tries",
+                    "debug",
+                    "filter",
+                    "flags",
+                    "format",
+                    "name",
+                    "reader",
+                    "redo-read-sleep-us",
                     "redo-verify-delay-us",
                     "refresh-interval-us",
-                    "arch",
-                    "filter"
+                    "transaction-max-mb"
                 };
                 Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
             }
@@ -164,10 +164,10 @@ namespace OpenLogReplicator {
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                     static const std::vector<std::string> debugNames{
-                        "stop-log-switches",
-                        "stop-checkpoints",
-                        "stop-transactions",
                         "owner",
+                        "stop-checkpoints",
+                        "stop-log-switches",
+                        "stop-transactions",
                         "table"
                     };
                     Ctx::checkJsonFields(configFileName, debugJson, debugNames);
@@ -193,10 +193,10 @@ namespace OpenLogReplicator {
 
                 if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                     static const std::vector<std::string> filterNames{
-                        "table",
-                        "skip-xid",
+                        "dump-xid",
                         "separator",
-                        "dump-xid"
+                        "skip-xid",
+                        "table"
                     };
                     Ctx::checkJsonFields(configFileName, filterJson, filterNames);
                 }

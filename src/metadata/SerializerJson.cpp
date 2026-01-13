@@ -547,47 +547,47 @@ namespace OpenLogReplicator {
 
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> documentChildNames{
-                    "scn",
-                    "min-tran",
-                    "seq",
-                    "offset",
-                    "database",
-                    "resetlogs",
                     "activation",
-                    "time",
                     "big-endian",
-                    "context",
                     "con-id",
                     "con-name",
-                    "db-timezone",
-                    "db-recovery-file-dest",
+                    "context",
+                    "database",
                     "db-block-checksum",
-                    "log-archive-format",
+                    "db-recovery-file-dest",
+                    "db-timezone",
+                    "incarnations",
                     "log-archive-dest",
+                    "log-archive-format",
+                    "min-tran",
                     "nls-character-set",
                     "nls-nchar-character-set",
-                    "supp-log-db-primary",
-                    "supp-log-db-all",
+                    "offset",
                     "online-redo",
-                    "incarnations",
-                    "users",
+                    "resetlogs",
                     "schema-ref-scn",
                     "schema-scn",
-                    "sys-user",
-                    "sys-obj",
-                    "sys-col",
+                    "scn",
+                    "seq",
+                    "supp-log-db-all",
+                    "supp-log-db-primary",
                     "sys-ccol",
                     "sys-cdef",
+                    "sys-col",
                     "sys-deferredstg",
                     "sys-ecol",
                     "sys-lob",
                     "sys-lob-comp-part",
                     "sys-lob-frag",
+                    "sys-obj",
                     "sys-tab",
-                    "sys-tabpart",
                     "sys-tabcompart",
+                    "sys-tabpart",
                     "sys-tabsubpart",
                     "sys-ts",
+                    "sys-user",
+                    "time",
+                    "users",
                     "xdb-ttset"
                 };
                 Ctx::checkJsonFields(fileName, document, documentChildNames);
@@ -602,8 +602,8 @@ namespace OpenLogReplicator {
                     const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(fileName, document, "min-tran");
                     if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                         static const std::vector<std::string> minTranJsonChildNames{
-                            "seq",
                             "offset",
+                            "seq",
                             "xid"
                         };
                         Ctx::checkJsonFields(fileName, minTranJson, minTranJsonChildNames);
@@ -695,11 +695,11 @@ namespace OpenLogReplicator {
                         if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                             static const std::vector<std::string> incarnationsChildNames{
                                 "incarnation",
-                                "resetlogs-scn",
+                                "prior-incarnation",
                                 "prior-resetlogs-scn",
-                                "status",
                                 "resetlogs",
-                                "prior-incarnation"
+                                "resetlogs-scn",
+                                "status"
                             };
                             Ctx::checkJsonFields(fileName, incarnationsJson[i], incarnationsChildNames);
                         }
@@ -800,10 +800,10 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysCColJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysCColChildNames{
-                    "row-id",
                     "con",
                     "int-col",
                     "obj",
+                    "row-id",
                     "spare1"
                 };
                 Ctx::checkJsonFields(fileName, sysCColJson[i], sysCColChildNames);
@@ -828,9 +828,9 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysCDefJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysCDefChildNames{
-                    "row-id",
                     "con",
                     "obj",
+                    "row-id",
                     "type"
                 };
                 Ctx::checkJsonFields(fileName, sysCDefJson[i], sysCDefChildNames);
@@ -850,20 +850,20 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysColJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysColChildNames{
-                    "row-id",
-                    "obj",
-                    "col",
-                    "seg-col",
-                    "int-col",
-                    "name",
-                    "type",
-                    "length",
-                    "precision",
-                    "scale",
                     "charset-form",
                     "charset-id",
+                    "col",
+                    "int-col",
+                    "length",
+                    "name",
                     "null",
-                    "property"
+                    "obj",
+                    "precision",
+                    "property",
+                    "row-id",
+                    "scale",
+                    "seg-col",
+                    "type"
                 };
                 Ctx::checkJsonFields(fileName, sysColJson[i], sysColChildNames);
             }
@@ -897,9 +897,9 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysDeferredStgJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysDeferredStgChildNames{
-                    "row-id",
+                    "flags-stg",
                     "obj",
-                    "flags-stg"
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, sysDeferredStgJson[i], sysDeferredStgChildNames);
             }
@@ -922,10 +922,10 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysEColJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysEColChildNames{
-                    "row-id",
-                    "tab-obj",
                     "col-num",
-                    "guard-id"
+                    "guard-id",
+                    "row-id",
+                    "tab-obj"
                 };
                 Ctx::checkJsonFields(fileName, sysEColJson[i], sysEColChildNames);
             }
@@ -944,11 +944,11 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysLobJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysLobChildNames{
-                    "row-id",
-                    "obj",
                     "col",
                     "int-col",
                     "l-obj",
+                    "obj",
+                    "row-id",
                     "ts"
                 };
                 Ctx::checkJsonFields(fileName, sysLobJson[i], sysLobChildNames);
@@ -970,9 +970,9 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysLobCompPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysLobCompPartChildNames{
-                    "row-id",
+                    "l-obj",
                     "part-obj",
-                    "l-obj"
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, sysLobCompPartJson[i], sysLobCompPartChildNames);
             }
@@ -990,9 +990,9 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysLobFragJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysLobFragChildNames{
-                    "row-id",
                     "frag-obj",
                     "parent-obj",
+                    "row-id",
                     "ts"
                 };
                 Ctx::checkJsonFields(fileName, sysLobFragJson[i], sysLobFragChildNames);
@@ -1013,14 +1013,14 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysObjJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysObjChildNames{
-                    "row-id",
-                    "owner",
-                    "obj",
                     "data-obj",
-                    "type",
-                    "name",
                     "flags",
-                    "single"
+                    "name",
+                    "obj",
+                    "owner",
+                    "row-id",
+                    "single",
+                    "type"
                 };
                 Ctx::checkJsonFields(fileName, sysObjJson[i], sysObjChildNames);
             }
@@ -1049,13 +1049,13 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysTabJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysTabChildNames{
-                    "row-id",
-                    "obj",
-                    "data-obj",
-                    "ts",
                     "clu-cols",
+                    "data-obj",
                     "flags",
-                    "property"
+                    "obj",
+                    "property",
+                    "row-id",
+                    "ts"
                 };
                 Ctx::checkJsonFields(fileName, sysTabJson[i], sysTabChildNames);
             }
@@ -1091,10 +1091,10 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysTabComPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysTabComPartChildNames{
-                    "row-id",
-                    "obj",
+                    "bo",
                     "data-obj",
-                    "bo"
+                    "obj",
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, sysTabComPartJson[i], sysTabComPartChildNames);
             }
@@ -1113,10 +1113,10 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysTabPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysTabPartChildNames{
-                    "row-id",
-                    "obj",
+                    "bo",
                     "data-obj",
-                    "bo"
+                    "obj",
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, sysTabPartJson[i], sysTabPartChildNames);
             }
@@ -1135,10 +1135,10 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysTabSubPartJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysTabSubPartChildNames{
-                    "row-id",
-                    "obj",
                     "data-obj",
-                    "p-obj"
+                    "obj",
+                    "p-obj",
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, sysTabSubPartJson[i], sysTabSubPartChildNames);
             }
@@ -1157,10 +1157,10 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysTsJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysTsChildNames{
-                    "row-id",
-                    "ts",
+                    "block-size",
                     "name",
-                    "block-size"
+                    "row-id",
+                    "ts"
                 };
                 Ctx::checkJsonFields(fileName, sysTsJson[i], sysTsChildNames);
             }
@@ -1178,11 +1178,11 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysUserJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> sysUserChildNames{
-                    "row-id",
-                    "user",
                     "name",
+                    "row-id",
+                    "single",
                     "spare1",
-                    "single"
+                    "user"
                 };
                 Ctx::checkJsonFields(fileName, sysUserJson[i], sysUserChildNames);
             }
@@ -1206,11 +1206,11 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < xdbTtSetJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> xdbTtSetChildNames{
-                    "row-id",
-                    "guid",
-                    "toksuf",
                     "flags",
-                    "obj"
+                    "guid",
+                    "obj",
+                    "row-id",
+                    "toksuf"
                 };
                 Ctx::checkJsonFields(fileName, xdbTtSetJson[i], xdbTtSetChildNames);
             }
@@ -1229,9 +1229,9 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < xdbXNmJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> xdbXNmChildNames{
-                    "row-id",
+                    "id",
                     "nmspcuri",
-                    "id"
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, xdbXNmJson[i], xdbXNmChildNames);
             }
@@ -1248,9 +1248,9 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < xdbXPtJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> xdbXPtChildNames{
-                    "row-id",
+                    "id",
                     "path",
-                    "id"
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, xdbXPtJson[i], xdbXPtChildNames);
             }
@@ -1267,11 +1267,11 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < xdbXQnJson.Size(); ++i) {
             if (!metadata->ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> xdbXQnChildNames{
-                    "row-id",
-                    "nmspcid",
-                    "localname",
                     "flags",
-                    "id"
+                    "id",
+                    "localname",
+                    "nmspcid",
+                    "row-id"
                 };
                 Ctx::checkJsonFields(fileName, xdbXQnJson[i], xdbXQnChildNames);
             }
