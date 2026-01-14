@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - filter element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
+:revdate: 2026-01-15
 :imagesdir: ./images
 :icons: font
 
@@ -23,33 +23,55 @@ It explains how to select which tables and transactions are tracked, how keys an
 |Description and notes
 
 |`table`
-|_list_ of a xref:./table.adoc#table[table] element
-|List of table regex rules which should be tracked in the redo log stream and sent to output.
+|_list_ of xref:./table.adoc#table[table] elements
+|List of table selection rules (regular expressions or simple patterns) that determine which tables are tracked and emitted to targets.
+A table matching any rule is tracked; rules may overlap.
+Each entry may include optional fields such as `key`, `condition` and `tag`.
 
-A table that matches at least one of the rules is tracked, thus the rules can overlap.
-
-Example:
-`"table": {{"table": "owner1.table1"}, {"table": "owner2.table2", "key": "col1, col2, col3"}, {"table":"sys.%"}}.`
+_NOTE:_ Rules apply to the fully qualified table name (usually `owner.table`).
+Use `.` or `.*` style wildcards according to your pattern syntax.
 
 |`separator` [[separator]]
 |_string_, max length: 128, default: `","`
-|Concatenation separator for xref:./table.adoc#key[key] and xref:../table.adoc#tag[tag] fields.
+|Delimiter used to join multi-column key values when `key` fields are specified (see xref:./table.adoc#key[key] and xref:./table.adoc#tag[tag]).
 
-_IMPORTANT:_ The separator character should be chosen as a combination of characters which do not appear in the key values.
-Otherwise, it may be impossible to split the key back to the original values.
-If such a requirement appears, in future versions they key might be escaped to allow for any character to be used.
+_IMPORTANT:_ Choose a separator that cannot appear in key column values or ensure keys are escaped by the consumer.
+Avoid a single common character (e.g., `,`) when key columns may contain that character.
 
-|`skip-xid` [[skip-xid]]
+|`skip-xid`
 |_list_ of _string_ elements, max length: 32
-|List of transaction IDs which should be skipped.
-The format if XID should be one of: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, `UUUU.SSSS.QQQQQQQQ`, `0xUUUU.SSS.QQQQQQQQ`, `0xUUUU.SSSS.QQQQQQQQ`.
+|Transaction IDs to skip entirely (not emitted).
+Acceptable XID forms include: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, and `0xUUUU.SSS.QQQQQQQQ`.
 
-Example:
-`"skip-xid": ["0x0002.012.00004162"]`
+_TIP:_ Use `skip-xid` for known maintenance transactions that should not be delivered to consumers.
 
 |`dump-xid`
 |_list_ of _string_ elements, max length: 32
-|Debug option to dump to _stderr_ internals about certain XID.
-The format is the same as for _skip-xid_.
+|Debugging list: when an XID matches, internal diagnostics for that transaction are written to _stderr_ (useful for tracing processing of specific transactions).
+_Same format_ as `skip-xid`.
 
 |===
+
+[NOTE]
+====
+- Use `separator` to concatenate multi-column keys when a `key` is provided.
+Prefer rare character sequences (for example `|#|`) to avoid splitting ambiguity.
+- Ensure any `key` or `tag` formatting rules match the expectations of downstream consumers; consider explicit escaping if consumers cannot handle separators inside key values.
+====
+
+.Example `filter` configuration (JSON)
+[source,json]
+----
+{
+  "filter": {
+    "table": [
+      { "owner": "HR", "schema": "EMPLOYEES" },
+      { "owner": "ORDERS", "schema": "%", "key": "ORDER_ID", "tag": "orders" },
+      { "owner": "SYS", "schema": "%" }
+    ],
+    "separator": "|",
+    "skip-xid": ["0x0002.012.00004162"],
+    "dump-xid": []
+  }
+}
+----
