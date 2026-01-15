@@ -1,8 +1,7 @@
 = OpenLogReplicator.json - filter element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-15
-:imagesdir: ./images
+:revdate: 2026-01-16
 :icons: font
 
 [frame="none",grid="none"]
