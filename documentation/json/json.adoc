@@ -1,7 +1,7 @@
 = OpenLogReplicator.json format
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-13
+:revdate: 2026-01-16
 :imagesdir: ./images
 :icons: font
 
@@ -17,83 +17,70 @@ Files matching the documented schema ensure predictable behavior across upgrades
 .JSON config file main elements
 image:json-config-file.png[JSON config file main elements,,,]
 
-The file is in JSON format.
-The file should contain a single object with the following parameters:
+The configuration file must contain a single JSON object with the parameters documented below.
+Use the `version` field to verify compatibility when upgrading the application.
 
 [width="100%",cols="a,a,50%a",options="header"]
 .Global parameters
 |===
 
 |Parameter
-|Specification
-|Notes
+|Type / constraints
+|Description and notes
 
 |`source`
-|_list_ of xref:./source.adoc#source[source] elements, mandatory
-|The list should contain just one source element.
+|_list_ of xref:source.adoc#source[source] elements, mandatory
+|One or more source entries describing where redo logs come from.
+Typical deployments use a single `source` element.
 
 |`target`
-|_list_ of xref:./target.adoc#target[target] elements, mandatory
-|The list should contain just one target element.
+|_list_ of xref:target.adoc#target[target] elements, mandatory
+|One or more target entries describing sinks / outputs.
+Typical deployments use a single `target` element.
 
 |`version`
 |_string_, max length: 256, mandatory
-|The value must be equal to `"1.9.0"`.
+|Exact configuration schema version.
+Current required value: `"1.9.0"`.
 
-_TIP_: This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade.
-During upgrade, always check the documentation for parameter changes and verify that the JSON configuration file is correct.
+_TIP:_ Use the `version` field as a guard during upgrades.
+Consult the release notes for schema changes before reusing an old configuration file.
 
 |`dump-path`
-|_string_, max length: 256, default: `"."`
-|The location where the `logdump` files are created.
-The path can be relative to the current directory.
+|_string_, max length: 256, default: `.`
+|Directory where `logdump`-style files are written when `dump-redo-log` is enabled.
 
-_NOTE_: This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
+_NOTE:_ Path may be relative to the process working directory.
+Ensure the process user can write to this location.
 
 |`dump-raw-data`
 |_integer_, min: 0, max: 1, default: 0
-|Print hex dump of vector data for all dumped OP codes.
+|When enabled, prints a HEX dump of vector data in `DUMP-<nnn>.trace` for deeper analysis.
 
-Possible values are:
+* `0` — disabled (default).
+* `1` — include full hex dump per vector.
 
-* `0` -– No hex dump is added to `DUMP-<nnn>.trace` file.
-
-* `1` -– Before logdump information for every vector, the full vector is dumped in HEX format – useful for analysis of the content.
-
-_NOTE:_ This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
+_NOTE:_ Only applicable when `dump-redo-log` is non-zero.
 
 |`dump-redo-log`
 |_integer_, min: 0, max: 2, default: 0
-|Create output similar to `logdump` command which can be compared as string to verify if certain parameters have been correctly decoded.
+|Create human-readable dumps of processed redo logs.
 
-Possible values are:
+* `0` — no dump (default).
+* `1` — produce per-file ` <database>-<nnn>.logdump` similar to `logdump`.
+* `2` — extended dump with additional internal details (e.g., supplemental log groups).
 
-* `0` -- No `logdump file is created.
-
-* `1` -- For every processed redo log file, a file `<database>-<nnn>.logdump` is created (`<database>` -– database name, `<nnn>` -- redo log sequence).
-
-* `2` -- like `1` but additional information is printed which is not originally printed in `logdump` output -- for example details about supplemental log groups.
-
-_CAUTION:_ The result doesn't have to fully match the results of `logdump`.There can be some inconsistency.
-Not all redo OP codes are parsed and analyzed, and there is no guarantee that the results should be exactly the same.
+_CAUTION:_ Dumps are intended for debugging and may not exactly match the external `logdump` utility output.
 
 |`log-level`
 |_integer_, min: 0, max: 4, default: 2
-|Messages verbose level.
+|Verbosity of messages written to `stderr`.
 
-All messages are sent to _stderr_ output stream.
-
-Possible values are:
-
-* `0` -- _Silent_ -- don't print anything.
-
-* `1` -- _Error_ -- print only error messages.
-
-* `2` -- _Warning_ -- print error and warning messages (default setting).
-
-* `3` -- _Info_ -- print error, warning and info messages.
-
-* `4` -- _Debug_ -- print all messages.
+* `0` — Silent
+* `1` — Error
+* `2` — Warning (default)
+* `3` — Info
+* `4` — Debug
 
 |`memory`
 |_element_ of xref:./memory.adoc#memory[memory]
@@ -109,10 +96,61 @@ Possible values are:
 
 |`trace`
 |_integer_, min: 0, max: 524287, default: 0
-|Print debug information.
+|Bitmask selecting detailed trace output.
+See source code for available trace flags.
 
-The value is a sum of various trace parameters, please refer to source code for details.
-
-_CAUTION:_ The codes can change without prior notice.
+_CAUTION:_ Trace codes and bit assignments may change between releases.
 
 |===
+
+[NOTE]
+====
+- Validate `version` before starting; mismatched versions indicate incompatible configuration semantics.
+- Ensure directories referenced by `dump-path` and other file-related parameters are writable by the process user.
+- Use conservative `log-level` and `trace` settings in production.
+Enable higher verbosity only when diagnosing specific issues.
+- When modifying the configuration for an existing deployment (especially `source`/`target` names or `format`), create fresh checkpoints when necessary to avoid restart or recovery issues.
+====
+
+.Example minimal configuration (JSON)
+[source,json]
+----
+{
+  "version": "1.9.0",
+  "source": [
+    {
+      "alias": "S1",
+      "name": "O112A",
+      "reader": {
+        "type": "online",
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
+      },
+      "format": {
+        "type": "json"
+      },
+      "filter": {
+        "table": [
+          {"owner": "OWNER1", "table": "TABLENAME1", "key": "COL1,COL2,COL3"},
+          {"owner": "OWNER1", "table": "TABLENAME2"},
+          {"owner": "OWNER2", "table": "TAB.*"}
+        ]
+      }
+    }
+  ],
+  "target": [
+    {
+      "alias": "K1",
+      "source": "S1",
+      "writer": {
+        "type": "kafka",
+        "topic": "O112A",
+        "properties": {
+          "bootstrap.servers": "localhost:9092"
+        }
+      }
+    }
+  ]
+}
+----

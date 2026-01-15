@@ -1,8 +1,7 @@
 = OpenLogReplicator.json - memory element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
-:imagesdir: ./images
+:revdate: 2026-01-16
 :icons: font
 
 [frame="none",grid="none"]
@@ -25,87 +24,87 @@ It explains each parameter, constraints, defaults and operational notes related 
 
 |`max-mb`
 |_integer_, min: 32, default: 2048
-|The maximum amount of memory the program can allocate.
+|Maximum total memory (megabytes) the process may allocate for internal data structures and buffers.
 
-Number in megabytes.
-
-_IMPORTANT:_ This number doesn't include memory allocated for sending big JSON messages to Kafka – this memory is not included here and is allocated on demand separately.
-It does also not include memory used for LOB processing.
+_NOTE:_ Does not include memory allocated on-demand for sending large JSON messages to outputs (e.g., Kafka) or separate LOB processing buffers.
 
 |`min-mb`
 |_integer_, min: 16, max: `max-mb`, default: 32
-|Amount of memory allocated at startup and desired amount of allocated memory during work.
-If memory is dynamically allocated in greater amount, it will be released as soon as it is not required any more.
-See notes for `max-mb` about memory for Kafka buffer.
-
-Number in megabytes.
+|Amount of memory (megabytes) reserved at startup and the target minimal allocation during operation.
+The allocator may grow above this value up to `max-mb` and release memory when necessary.
 
 |`read-buffer-max-mb`
 |_integer_, min: `read-buffer-min-mb`, max: `max-mb`, default: min(`max-mb` / 8, 128)
-|Size of memory buffer used for disk read.
+|Maximum size of the read buffer used for disk I/O (megabytes).
 
-Number in megabytes.
-
-_IMPORTANT:_ Greater buffer size increases performance, but also increases memory usage.
-Disk buffer memory is part of the main memory (controlled by `max-mb` and `min-mb`).
-It is important to not allocate too much memory for disk buffer, otherwise the program would not be able to allocate memory for other purposes.
-This memory is never swapped to disk, and it may happen that OpenLogReplicator would suffer when there is not enough memory for other purposes.
-In case of memory pressure, the memory is not released until data is processed.
-Do not allocate more than 25% of total memory.
+_IMPORTANT:_ Larger read buffers can improve throughput but consume addressable memory.
+This buffer is resident (not swappable) and counts toward `max-mb`.
+Do not allocate more than ~25% of total memory to disk buffers.
 
 |`read-buffer-min-mb`
-|_integer_, min: 4, max: min(`max-mb` - `unswap-min-mb` - `write-buffer-min-mb` - 4, `read-buffer-max-mb`), default: 4
-|Size of memory buffer reserved for reading new redo log data.
+|_integer_, min: 4, min(`max-mb` - `unswap-min-mb` - `write-buffer-min-mb` - 4, `read-buffer-max-mb`), default: 4
+|Minimum size reserved for read buffers (megabytes).
+The runtime may expand buffers up to `read-buffer-max-mb` when needed.
 
 |`swap-mb`
-|_integer_, min: 0, max: `max-mb`, default: `max-mb * 3 / 4`
-|The amount used of memory, witch activates swapping.
+|_integer_, min: 0, max: `max-mb`, default: floor(`max-mb * 3 / 4`)
+|Threshold (megabytes) of resident memory usage that triggers swapping of transaction data to disk.
 
-When the memory usage reaches this value, the program would start swapping transaction data to disk.
-Refer to the xref:../user-manual/user-manual.adoc#memory-allocation[Memory Allocation] chapter for details regarding memory management.
-
-_IMPORTANT:_ To disable swapping, set this parameter to 0.
-
-Number in megabytes.
-
-_IMPORTANT:_ Swapping is enabled by default.
-To disable swapping to disk, set the value for this parameter to 0.
+_IMPORTANT:_ Set to `0` to disable swapping.
+When enabled, transactions may be written to per-transaction swap files under `swap-path`.
 
 |`swap-path`
-|_string_, max length: 256, default: `"./tmp"`
-|Location for swapping transaction data to disk.
-OpenLogReplicator swaps every transaction in a different file.
-The file name contains the transaction ID and is in format `<swap-path>/<database>-<xid>.swap`.
+|_string_, max length: 256, default: `./tmp`
+|Directory used for swap files created when `swap-mb` is exceeded.
 
-_IMPORTANT:_ The path should be accessible for writing by the user which runs the program.
-When swapping is disabled (i.e., `swap-mb` is set to `0`), the path is ignored.
+_NOTE:_ Swap files are created per transaction with the pattern `<swap-path>/<database>-<xid>.swap`.
+
+_CAUTION:_ Directory must be writable by the process.
+Only applicable when `swap-mb` > 0.
 
 |`unswap-buffer-min-mb`
-|_integer_, min: 4, max: `max-mb` - `write-buffer-min-mb` - `read-buffer-min-mb` - 4, default: 4 (when swapping is enabled)
-|The amount of memory reserved for data read from cached to disk during the commit phase of transaction.
+|_integer_, min: 4, max: `max-mb` - `write-buffer-min-mb` - `read-buffer-min-mb` - 4, default: 4 (only when swapping enabled)
+|Memory reserved for reading swapped transaction data back into memory during commit processing (megabytes).
 
-Number in megabytes.
-
-_IMPORTANT:_ This parameter is enabled when swapping is enabled (`swap-mb` > 0)
+_NOTE:_ Only applicable when `swap-mb` > 0.
 
 |`write-buffer-max-mb`
 |_integer_, min: `write-buffer-min-mb`, max: `max-mb`, default: min(`max-mb`, 2048)
-|Size of memory buffer used for output (Kafka, Debezium, etc.) write.
+|Maximum size of the output/write buffer used to assemble messages for sinks (megabytes).
 
-Number in megabytes.
-
-_IMPORTANT:_ Greater buffer size increases performance, but also increases memory usage.
-It is important to not allocate too much memory for output streaming, otherwise the program would not be able to allocate memory for other purposes.
-This memory is never swapped to disk, and it may happen that OpenLogReplicator would suffer when there is not enough memory for other purposes.
-In case of memory pressure, the memory is not released until data is sent to output.
-
-_IMPORTANT:_ The value of this parameter must be greater than the maximum expected LOB field size + 10%.
-Setting too low might cause OpenLogReplicator to stop if it encounters too big field which would not fit fully in memory.
+_IMPORTANT:_ This buffer is resident (not swappable) and counts toward `max-mb`.
+Must be large enough to hold the largest expected LOB plus ~10% overhead; otherwise large fields may cause the process to fail to allocate required memory.
 
 |`write-buffer-min-mb`
 |_integer_, min: 4, max: `max-mb` - `unswap-min-mb` - `read-buffer-min-mb` - 4, default: 4
-|Size of memory buffer reserved for output write buffer.
-
-Number in megabytes.
+|Minimum reserved memory for the output/write buffer (megabytes).
+The buffer may grow up to `write-buffer-max-mb`.
 
 |===
+
+[NOTE]
+====
+- All sizes are in megabytes.
+Ensure the sum of all minimum buffers plus expected dynamic allocations remains below `max-mb`.
+- Prefer enabling swap only when sufficient fast storage is available; swapping increases I/O and may affect latency.
+- Do not set resident buffers (`read-buffer-*`, `write-buffer-*`, `unswap-buffer-min-mb`) so large that normal processing cannot allocate additional needed memory.
+- When changing memory settings in production, test under representative workloads to avoid OOM or excessive swapping.
+====
+
+.Example `memory` configuration (JSON)
+[source,json]
+----
+{
+  "memory": {
+    "max-mb": 2048,
+    "min-mb": 64,
+    "read-buffer-min-mb": 8,
+    "read-buffer-max-mb": 128,
+    "swap-mb": 1536,
+    "swap-path": "./tmp",
+    "unswap-buffer-min-mb": 8,
+    "write-buffer-min-mb": 16,
+    "write-buffer-max-mb": 512
+  }
+}
+----

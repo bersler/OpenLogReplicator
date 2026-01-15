@@ -1,8 +1,7 @@
 = OpenLogReplicator.json - writer element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
-:imagesdir: ./images
+:revdate: 2026-01-16
 :icons: font
 :url-librdkafka-parameters: https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
 

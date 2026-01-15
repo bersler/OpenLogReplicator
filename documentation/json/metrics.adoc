@@ -1,11 +1,9 @@
 = OpenLogReplicator.json - metrics element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
-:imagesdir: ./images
+:revdate: 2026-01-16
+:url-github-tutorials: https://github.com/bersler/OpenLogReplicator-tutorials
 :icons: font
-:toc: preamble
-:url-librdkafka-parameters: https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
 
 [frame="none",grid="none"]
 |====
@@ -14,6 +12,13 @@
 
 This section describes the `metrics` element in the OpenLogReplicator JSON configuration.
 It documents available fields, constraints, semantics and operational notes for the supported metrics backends.
+
+[TIP]
+====
+Metrics are used by all OpenLogReplicator {url-github-tutorials}[tutorials] to monitor OpenLogReplicator Docker container.
+Refer to full list of available counters and gauges in xref:../metrics/metrics.adoc[Metrics] guide.
+====
+
 
 [[metrics]]
 [width="100%",cols="a,a,50%a",options="header"]
@@ -26,30 +31,51 @@ It documents available fields, constraints, semantics and operational notes for 
 
 |`type`
 |_string_, max length: 128, mandatory
-|Name of the metrics module. Currently only `prometheus` is supported.
+|Name of the metrics backend module.
+Currently the only supported value is `prometheus`.
+
+_NOTE:_ Unknown `type` values are rejected at startup.
 
 |`bind`
 |_string_, max length: 128, mandatory for `prometheus`
-|Network address used to bind the metrics module for Prometheus.
-The format is `<host>:<port>`.
-Prometheus uses this address to connect to OpenLogReplicator.
+|Network address the metrics server binds to, in the form `<host>:<port>`.
+Prometheus scrapes metrics by connecting to this address.
 
-Example:
-`"bind": "127.0.0.1:8080"`
+_Example:_ `"bind": "127.0.0.1:8080"`
+
+_CAUTION:_ Bind address must be reachable by Prometheus and writable by the process user.
 
 |`tag-names`
-|_string_, max length: 128
-|Define tags for `dml_op` metrics.
+|_string_, max length: 128, default: `none`
+|Controls which additional label tags are attached to `dml_op` and related metrics.
 
-Possible values are:
+Allowed values:
 
-* `all` -- Provide `schema` and `table` tags for every metrics.
-This equals to `filter` + `sys` options.
+* `none` — (default) do not attach `schema` / `table` labels.
+* `filter` — attach `schema` and `table` labels only for tables matched by the configured `filter` rules.
+* `sys` — attach `schema` and `table` labels only for system tables required by OLR.
+* `all` — attach `schema` and `table` labels for all emitted metrics (equivalent to `filter` + `sys`).
 
-* `filter` -- Provide `schema` and `table` tags only for metrics for tables which are defined in `filter` section, thus are replicated.
-
-* `none` -- Default, don't provide `schema` or `table` tags.
-
-* `sys` -- Provide `schema` and `table` tags just for system tables which are tracked for OpenLogReplicator to work properly.
+_TIP:_ Use `filter` to limit cardinality of label values and avoid high-cardinality metrics which can harm Prometheus performance.
 
 |===
+
+[NOTE]
+====
+* Validate `bind` and firewall rules before enabling Prometheus scraping.
+* Prefer `filter` or `sys` over `all` in production to limit label cardinality.
+* When exposing metrics on public interfaces, secure access via firewall or a reverse proxy to avoid information disclosure.
+* Restart the process after changing metrics configuration to ensure the bind address and module are re-initialized.
+====
+
+.Example `metrics` configuration (JSON)
+[source,json]
+----
+{
+  "metrics": {
+    "type": "prometheus",
+    "bind": "127.0.0.1:8080",
+    "tag-names": "filter"
+  }
+}
+----
