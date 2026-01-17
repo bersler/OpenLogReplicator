@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - state element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-18
 :icons: font
 
 [frame="none",grid="none"]
@@ -11,6 +11,17 @@
 
 This document describes the `state` configuration block used by OpenLogReplicator.
 It covers checkpointing behavior, storage options, recommended defaults and operational notes.
+
+== Summary
+
+The `state` element controls how and where checkpoint files are created and retained.
+Checkpoints capture progress (redo-log SCN/timestamp) and an optional schema snapshot to allow safe restart and recovery.
+
+== Quick reference
+
+- Default storage: `disk`
+- Typical defaults: `interval-mb`: 500, `interval-s`: 600, `keep-checkpoints`: 100, `schema-force-interval`: 20
+- Checkpoints are created when either the processed redo-log bytes exceed `interval-mb` or the redo-log timestamp span exceeds `interval-s`.
 
 [[state]]
 [width="100%",cols="a,a,50%a",options="header"]
@@ -23,50 +34,82 @@ It covers checkpointing behavior, storage options, recommended defaults and oper
 
 |`interval-mb`
 |_integer_, min: 0, default: 500
-|Threshold of processed redo log data after which a checkpoint file is created.
-
-Number in megabytes.
+|Size threshold (megabytes) of processed redo-log data that triggers a checkpoint.
+Set to `0` to disable size-based triggering.
 
 |`interval-s`
 |_integer_, min: 0, default: 600
-|Threshold of processed redo log data time after which a checkpoint file is created.
+|Time threshold (seconds) measured against redo-log timestamps that triggers a checkpoint.
 
-Number in seconds.
-
-_IMPORTANT:_ The time refers not to processing time by OpenLogReplicator but to time of the redo log data.
-For example, the default setting of 600 seconds means that if the last checkpoint was created after processing redo log data created at 10:40 when the processing reaches data created at 10:50 new checkpoint file is created.
+_IMPORTANT:_ This measures the span of redo-log timestamps processed (SCN/timestamp), not wall-clock time.
+Set to `0` to disable time-based triggering.
 
 |`keep-checkpoints`
 |_integer_, min: 0, default: 100
-|Number of checkpoint files which should be kept.
-The oldest checkpoint files are deleted.
+|Maximum number of checkpoint files to retain. Older files are removed when safe.
+_Set to `0` to disable automatic deletion._
 
-_TIP:_ Value `0` disables checkpoint files deletion.
-
-_TIP:_ Keeping a larger number of checkpoint files allows adjusting starting SCN more precisely.
-It provides more security in case of filesystem corruption and the last checkpoint file not being available.
-
-_CAUTION:_ The number of checkpoint files may be actually larger than this parameter (exactly up to `keep-checkpoints` + `schema-force-interval`).
-Checkpoint file might be deleted only if it is not referred in some consecutive checkpoint files (that don't contain schema data).
+_CAUTION:_ Temporary retention may exceed this value by up to `schema-force-interval` because of inter-file schema references.
 
 |`path`
-|_string_, max length: 2048, default: `"checkpoint"`
-|The path to store checkpoint files.
+|_string_, max length: 2048, default: `checkpoint`
+|Filesystem path for checkpoint files.
+Must be writable by the process owner.
 
-_NOTE:_ This field is valid only for `disk` type.
-
-_IMPORTANT:_ The path should be accessible for writing by the user which runs the program.
+_NOTE:_ Applies only when `type` is `disk`.
+Use absolute paths for multi-process setups.
 
 |`schema-force-interval`
-|_number_m min: 0, default: 20
-|To increase operating speed, not all checkpoint files would contain the full schema of the database.
-In case the schema didn't change, it is not necessary to repeat the schema in every checkpoint file.
-The value determines the consecutive number of checkpoint files which may not contain the full schema.
-
-_TIP:_ The value of `0` means that the schema is always included in the checkpoint file.
+|_integer_, min: 0, default: 20
+|Controls inclusion of a full schema snapshot inside checkpoint files.
+A value `N` means that at most `N` consecutive checkpoint files may omit the full schema if unchanged.
+_Set to `0` to always embed the full schema._
 
 |`type`
-|_string_, max length: 256, default: `"disk"`
-|Only `disk` is supported.
+|_string_, allowed: `disk`, default: `disk`
+|Checkpoint storage type.
+Currently only `disk` is supported.
 
 |===
+
+== Operational guidance
+
+- Ensure the `path` has sufficient free space and the correct ownership/permissions.
+- Tune `interval-mb` and `interval-s` to balance checkpoint frequency (faster recoverability) against I/O and storage overhead.
+- Larger `keep-checkpoints` improves ability to resume from older positions but consumes more storage.
+- `schema-force-interval` balances checkpoint size vs. reliance on older checkpoints for schema data.
+
+== Validation and upgrades
+
+- On startup, validate existing checkpoint files in `path` before using them for recovery.
+
+[NOTE]
+====
+When both `interval-mb` and `interval-s` are non-zero, the replicator will create a checkpoint when either condition is met (logical OR).
+If both are zero, automatic checkpointing is effectively disabled; rely on manual or external checkpoint creation.
+====
+
+[CAUTION]
+====
+Ensure any automated cleanup or backup job excludes in-flight or recently-written checkpoint files to avoid corruption.
+====
+
+== Troubleshooting
+
+- If checkpoints are not created: verify write permissions on `path`, check process logs and confirm triggers (`interval-mb` / `interval-s`) are reached.
+- If too many checkpoint files accumulate: confirm background cleanup is running and adjust `keep-checkpoints` / `schema-force-interval`.
+
+.Example `state` configuration (JSON)
+[source,json]
+----
+{
+  "state": {
+    "type": "disk",
+    "path": "./checkpoint",
+    "interval-mb": 500,
+    "interval-s": 600,
+    "keep-checkpoints": 100,
+    "schema-force-interval": 20
+  }
+}
+----
