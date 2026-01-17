@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - reader element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-18
 :icons: font
 
 [frame="none",grid="none"]
@@ -22,187 +22,144 @@ It explains available reader types, each parameter's constraints, defaults and o
 |Description and notes
 
 |`type`
-|_string_, max length: 256, default
-|Possible values are:
+|_string_, max length: 256
+|Reader mode.
+Supported values:
 
-* `online` -– Primary mode to read online and archived redo logs and connect to a database for reading metadata.
-When the connection to the database is lost, the program will try to reconnect.
+* `online` — Primary mode.
+Reads online and archived redo logs and connects to the database for metadata.
+Will attempt reconnects if the DB connection is lost.
+* `offline` — Uses metadata from an existing checkpoint; no DB connection required.
+* `batch` — Processes an explicit list of redo log files and then exits.
 
-Example config file: `OpenLogReplicator.json.example`.
-
-* `offline` -– Like `online`, but metadata is only read from a previously created checkpoint file; no connection to the database is required.
-
-Example config file: `OpenLogReplicator.json.example-offline`.
-
-* `batch` -– Process only redo log files provided as a list and then stop.
-
-Example config file: `OpenLogReplicator.json.example-batch`.
-
-_IMPORTANT:_ Batch mode is intended to be used only for testing and troubleshooting purposes.
-Using this mode for continues replication might lead to errors.
-It is not guaranteed that after the batch completion, the checkpoint file contains a proper schema which could be used for further processing.
-Using the checkpoint files which are created at the end of batch processing for `online`, `offline` or `batch` mode leads to schema inconsistency errors.
-
-_CAUTION_: Providing one by one redo log files and running the program in batch mode is different from running `online` or `offline` mode.
-It would produce different output and might lead to errors.
-Transactions that span multiple redo log files would not be sent to output, and system transactions that span multiple redo log files would be ignored leading to schema inconsistency errors.
+_IMPORTANT:_ `batch` is intended for testing and troubleshooting.
+Checkpoint files created by `batch` may not contain a complete schema suitable for `online` or `offline` runs.
 
 |`db-timezone`
-|_string_, default: database DBTIMEZONE value
-|Overwrites database DBTIMEZONE value.
-
-Timezone should be in format `+xx:yy` or `-xx:yy`.
-
-The time zone is used only as base timezone for values for TIMESTAMP WITH LOCAL TZ type.
+|_string_, format: `+HH:MM` or `-HH:MM`, default: database DBTIMEZONE
+|Timezone used as the base for TIMESTAMP WITH LOCAL TIMEZONE values.
 
 |`disable-checks`
 |_integer_, min: 0, max: 15, default: 0
-|A sum of numbers:
+|Bitmask to disable selected startup/runtime checks:
 
-* `0x0001` -- During startup, don't check if the database user has appropriate grants to system tables.
+* `0x0001` — Skip grant checks on system tables during startup.
+* `0x0002` — Skip supplemental logging checks for listed tables.
+* `0x0004` — Disable CRC checks for read blocks.
+* `0x0008` — Skip validation of JSON checkpoint, schema and configuration field names.
 
-* `0x0002` -- During startup, don't check if listed tables contain supplemental logging for primary keys.
-
-* `0x0004` -- Disable CRC check for read blocks.
-
-_NOTE:_ This field is valid only for `online` type.
-
-_IMPORTANT:_ This might increase performance a bit, but it is not recommended to use this option.
-
-* `0x0008` -- Don't check if JSON checkpoint and schema files and OpenLogReplicator.json configuration file contain invalid JSON tags.
-
-_NOTE:_ For performance reasons, user might disable those checks.
-They are recommended to be enabled in production environment, especially when during program upgrades, the field names change.
-Referring to old invalid field names might cause the program to fail.
+_NOTE:_ Disabling checks can improve performance but increases risk.
+Use with caution and prefer enabling checks in production.
 
 |`host-timezone`
-|_string_, default: time zone of OpenLogReplicator host
-|Time zone used by the host where the database is running.
-
-Timezone should be in format `+xx:yy` or `-xx:yy`.
-
-If OpenLogReplicator is running on a host with a different time zone, adjust this parameter to the proper value.
+|_string_, format: `+HH:MM` or `-HH:MM`, default: host timezone
+|Timezone of the host running OpenLogReplicator.
+Adjust if the database host uses a different timezone.
 
 |`log-archive-format`
 |_string_, max length: 4000
-|Format of expected archived redo log files.
-This parameter defines how to parse the redo log file name to read the sequence number.
-
-When FRA is configured the format of files is expected to be `o1_mf_%t_%s_%h_.arc`.
-When FRA is not used the value use for this parameter is read from database configuration parameter `log_archive_format`.
+|Format pattern for archived redo log filenames used to extract sequence numbers.
+When Flash Recovery Area (FRA) is enabled, filenames typically follow `o1_mf_%t_%s_%h_.arc`.
+If unset, default is read from the database `log_archive_format` parameter.
 
 |`log-timezone`
-|_string_, default: time zone of OpenLogReplicator host
-|Time zone used for logging messages.
-
-Timezone should be in format `+xx:yy` or `-xx:yy`.
-
-By default, log messages are printed in the local time zone of the host where OpenLogReplicator is being run.
-To print messages with log in the UTC timezone, set the value to '+00:00'.
-Used log timezone is printed on startup.
-
-_IMPORTANT:_ The value of this parameter can be configured by setting the environment variable `OLR_LOG_TIMEZONE`.
+|_string_, format: `+HH:MM` or `-HH:MM`, default: host timezone
+|Timezone used when printing log timestamps.
+Can also be set via the environment variable `OLR_LOG_TIMEZONE`.
 
 |`password`
 |_string_, max length: 128
-|Password for connecting to database instance.
+|Database password for `online` mode.
 
-_NOTE:_ This field is valid only for `online` type.
-
-_CAUTION:_ The password is stored in unencrypted string in the configuration file.
+_CAUTION:_ Stored in plaintext in the configuration file.
 
 |`path-mapping`
 |_list_ of _string_ pairs, max length: 2048
-|List of pairs of files `[before1, after1, before2, after2, …]`.
-Every path (of online and archived redo log) is compared with the list.
-If a prefix of the path matches with `beforeX` it is replaced with `afterX`.
+|Pairs of path prefixes `[before1, after1, before2, after2, …]`.
+If a redo log path starts with `beforeX` it is replaced with `afterX`.
 
-_NOTE:_ This field is valid only for `online` and `offline` types.
-
-_TIP:_ The parameter is useful when OpenLogReplicator operates on a different host than the database server is running and the paths differ.
-For example, the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but a file is mounted using sshfs under a different path so having `"path-mapping": ["/db/fra", "/opt/fast-recovery-area"],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
+_TIP:_ Useful when OpenLogReplicator runs on a different host or mountpoint than the database server.
 
 |`redo-copy-path`
 |_string_, max length: 2048
-|Debugging parameter which allows copying all contents of processed redo log files to defined directory.
+|Directory where processed redo log files are copied for debugging when consistency errors occur.
 
-_TIP:_ This parameter is useful for diagnosing disk-read related problems.
-When consistency errors are detected, the redo log file is copied to the defined directory.
-The file name is in format: `path/<database>_<seq>.arc`.
-Having a copy of read redo log file allows easier post-mortem analysis, since the file contains exactly the same data as those which were processed.
+_TIP:_ Copies use the name `path/<database>_<seq>.arc` to aid post-mortem analysis.
 
 |`redo-log`
 |_list_ of _string_, max length: 2048
-|List of redo logs files which should be processed in batch mode.
-Elements could be files but also directories.
-In the second case, all files in this directory would be processed.
+|List of redo log files or directories to process in `batch` mode.
+Directories are expanded to all files within.
 
-_NOTE:_ This field is valid only for `batch` type.
-
-Example config file: `OpenLogReplicator.json.example-batch`.
+_NOTE:_ Only valid for `batch` type.
 
 |`server` [[server]]
 |_string_, max length: 4096
-|Connect string for connecting to the database instance.
-Format should be in form like: `//<host>:<port>/<service>`.
+|Database connect string in the form `//<host>:<port>/<service>`.
 
-_NOTE:_ This field is valid only for `online` type.
+_NOTE:_ Required for `online` readers.
 
 |`start-scn`
 |_integer_, min: 0
-|The first SCN number to be processed.
-If not specified, the program will start from the current SCN.
+|Start processing from this SCN.
+If omitted, processing begins at the current SCN.
 
-_CAUTION:_ Setting a very low value of starting SCN might cause problems during program startup if the schema has changed since this SCN and the schema is not available to read using database flashback.
-In such a case, the program will not be able to read the metadata and will stop.
-
-_IMPORTANT:_ Setting this parameter to some value would mean that transactions started before this SCN would not be processed.
+_CAUTION:_ Very old SCNs may fail if required schema information is not available.
 
 |`start-seq`
 |_integer_, min: 0
-|First sequence number to be processed.
-
-_IMPORTANT:_ If not specified, the first sequence would be determined by reading SCN boundaries assigned to particular redo log files and matched to starting SCN.
+|Start processing from this log sequence number.
+If omitted, sequence is inferred from SCN boundaries.
 
 |`start-time-rel`
 |_integer_, min: 0
-|Determine starting SCN by relative time.
-The value and is relative to the current time using `TIMESTAMP_TO_SCN` sql function.
-For example, if the value is set to `3600`, the program will start from the SCN, which was active 1 hour ago.
+|Start relative to the current time (seconds).
+Converted to an SCN via `TIMESTAMP_TO_SCN`.
 
-Number in seconds.
-
-_NOTE:_ This field is valid only for `online` type.
-
-_CAUTION:_ It is invalid to use this parameter when `start-scn` is specified.
+_NOTE:_ Only valid for `online` type and mutually exclusive with `start-scn`.
 
 |`start-time`
-|_string_, max length: 256
-|Determine a starting SCN value by absolute time.
-The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function.
-For example, if the value is set to `2018-01-01 00:00:00`, the program will start from the SCN, which was active at the beginning of 2018.
+|_string_, format: `YYYY-MM-DD HH24:MI:SS`
+|Start from the SCN corresponding to this absolute timestamp (converted using `TIMESTAMP_TO_SCN`).
 
-_NOTE:_ This field is valid only for `online` type.
-
-_CAUTION:_ It is invalid to use this parameter when `start-scn` or `start-time-rel` is specified.
+_NOTE:_ Only valid for `online` type and mutually exclusive with `start-scn` and `start-time-rel`.
 
 |`user`
 |_string_, max length: 128
-|Database user for connecting to database instance.
+|Database username for `online` mode.
 
-_NOTE:_ This field is valid only for `online` type.
+_NOTE:_ Valid only for `online` type.
 
 |`transaction-max-mb`
 |_integer_, min: 0, default: 0
-|An upper limit for transaction size.
-If the transaction size is greater than this value, the transaction is split into multiple transactions.
+|Maximum transaction size in megabytes.
+Transactions larger than this are split.
 
-Number in megabytes.
-
-_CAUTION:_ The intention of this parameter is for debugging purposes only.
-It is not recommended to use it in production environment.
-The transaction splitting is intended to limit memory usage and assumes that the transaction is committed while splitting is performed.
-If the transaction is not committed, the first part of the transaction would be sent to output anyway.
-If the transaction contains a large number of partially rolled back DML operations, they might appear in output in spite of the rollback.
+_CAUTION:_ Intended for debugging only.
+Splitting assumes the transaction is committed; partial or rolled-back operations may be emitted when splitting.
 
 |===
+
+[NOTE]
+====
+- Validate `server`, `user`, `format` and `state` entries before deployment.
+- Use timezone parameters to ensure correct timestamp handling across hosts and databases.
+- Prefer enabling checks in production and use `disable-checks` only when diagnosing performance issues.
+- Test `batch` mode outputs carefully before relying on produced checkpoints for other modes.
+====
+
+.Example `reader` configuration (JSON)
+[source,json]
+----
+{
+  "reader": {
+    "type": "online",
+    "server": "//dbhost:1521/ORCL",
+    "user": "olr",
+    "password": "secret",
+    "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
+    "format": { "type": "json" },
+    "state": { "type": "disk", "path": "checkpoint" }
+  }
+}
+----
