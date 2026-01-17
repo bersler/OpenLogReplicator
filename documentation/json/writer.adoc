@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - writer element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-18
 :icons: font
 :url-librdkafka-parameters: https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
 
@@ -23,159 +23,130 @@ It explains available writer types, their parameters, valid values and usage not
 |Description and notes
 
 |`topic`
-|_string_, max length: 256, mandatory
-|Name of a Kafka topic used to send transactions as JSON messages.
+|_string_, max length: 256, mandatory for Kafka
+|Name of the Kafka topic to which transactions are published as JSON messages.
 
-_NOTE:_ This field is valid only for `kafka` type.
+_NOTE:_ Valid only for `kafka` writer type.
 
 |`type`
 |_string_, max length: 256, mandatory
-|Possible values are:
+|Writer implementation to use.
+Supported values:
 
-* `discard` -- No-op writer.
+* `discard` — No-op writer.
+Parsing and message construction are performed, but messages are discarded instead of sent.
+TIP: Useful for testing parsing and message construction.
+This writer takes no additional parameters.
 
-Perform all actions like parsing redo log, producing messages, but messages are discarded and not sent to any target.
+* `file` — Writes messages to a file on disk.
 
-_TIP:_ This target is useful for testing purposes, to verify if redo log file parsing works correctly.
-This writer does not accept any parameters.
+* `kafka` — Sends messages to Apache Kafka via a producer.
 
-* `file` -- Write output messages directly to a file.
+* `network` — Streams messages over plain TCP.
+OpenLogReplicator acts as a server; a client connects to receive messages.
+The server buffers transactions while no client is connected.
 
-* `kafka` -- Connect directly to a Kafka message system and send transactions.
-
-* `network` -- Stream using plain TCP/IP transmission.
-
-This mode assumes that OpenLogReplicator acts as a server.
-A client connects to the server and receives the messages.
-If the client disconnects, the server will wait for a new client to connect and buffer transactions while no client connection is present.
-
-* `zeromq` -- Stream using ZeroMQ messaging.
-
-_TIP:_ Technically this is the same as `network` but instead of using plain TCP/IP connection it uses ZeroMQ messaging.
+* `zeromq` — Streams messages over ZeroMQ.
+Functionally similar to `network` but uses ZeroMQ transport.
 
 |`uri`
-|_string_, max length: 256, mandatory
-|For _network_ writer type: `<host>:<port>` -- information for network listener.
+|_string_, max length: 256, mandatory for `network` / `zeromq`
+|Connection endpoint.
 
-For _zeromq_ writer type: `<protocol>://<host>:<port>` -– URI for ZeroMQ connection.
+* For `network`: `<host>:<port>` — host and port for the TCP listener.
+* For `zeromq`: `<protocol>://<host>:<port>` — ZeroMQ connection URI.
 
-_NOTE:_ This field is valid only for `network` and `zeromq` types.
+_NOTE:_ Valid only for `network` and `zeromq` writer types.
 
 |`append`
 |_integer_, min: 0, max: 1, default: 1
-|If the output file for the transaction exists, append to it.
-If not, create a new file.
+|When true (`1`), existing output files are appended to; otherwise new files are created.
+Only applies to `file` writer.
 
-_NOTE:_ This field is valid only for `file` type.
-
-_CAUTION:_ Parameter `output` can't be used together with `append`.
+_CAUTION:_ `output` and `append` cannot be used together.
 
 |`max-message-mb`
 |_integer_, min: 1, max: 953, default: 100
-|Maximum size of a message sent to Kafka.
+|Maximum Kafka message size in megabytes.
+Messages exceeding this size will be split; each split triggers a log warning.
 
-Number in megabytes.
-
-_CAUTION:_ Memory for this buffer is allocated independently of memory defined as `min-mb`/`max-mb` when a big message to Kafka is being constructed.
-If the transaction is close to this value, it would be divided in many parts.
-Every time such a situation occurs, a warning is printed to the log.
-
-_NOTE:_ This field is valid only for `kafka` type.
+_NOTE:_ Memory for this buffer is allocated separately from general client memory settings.
+Valid only for `kafka`.
 
 |`max-file-size`
 |_integer_, min: 0, default: 0
-|Maximum file size for the output file.
-The size can be defined only when `output` parameter is set and is using `%i` or `%t` placeholder.
+|Maximum size (in bytes) for output files when `output` includes `%i` or `%t`.
+A value of `0` disables file rotation.
 
-_NOTE:_ This field is valid only for `file` type.
+_NOTE:_ Valid only for `file` writer and requires `output` to use `%i` or `%t`.
 
 |`new-line`
 |_integer_, min: 0, max: 2, default: 0
-|Put a new line after each transaction.
+|Append newline after each transaction when writing to a file:
 
-Possible values are:
+* `0` — none
+* `1` — Unix line ending (`\n`)
+* `2` — Windows line ending (`\r\n`)
 
-* `0` -- no new line.
-
-* `1` -- new line after each transaction in Unix format (`\n`).
-
-* `2` -- new line after each transaction in Windows format (`\r\n`).
-
-_NOTE:_ This field is valid only for `file` type.
+_NOTE:_ Valid only for `file`.
 
 |`output`
 |_string_, max length: 256
-| Format of the output file.
-The format is the same as for `strftime` function.
+|Output filename format, using `strftime`-style specifiers and custom placeholders:
 
-The following placeholders are supported:
+* `%i` — autogenerated sequence id (starts at 0)
+* `%t` — timestamp formatted by `timestamp-format`
+* `%s` — database sequence number
 
-* `%i` -- autogenerated sequence id, starting from 0.
-
-* `%t` -- date and time in format defined by `timestamp-format` parameter.
-
-* `%s` -- database sequence number.
-
-_NOTE:_ There should be only one placeholder in the format.
-When using `%i` or `%t` format `max-file-size` parameter must be set to value greater than 0.
-
-_NOTE:_ This field is valid only for `file` type.
+_NOTE:_ Prefer a single placeholder.
+If using `%i` or `%t`, set `max-file-size` > 0.
+Valid only for `file`.
 
 |`poll-interval-us`
 |_integer_, min: 100, max: 3600000000, default: 100000
-|Interval for polling for new messages.
+|Polling interval in microseconds for the client library to check for delivery or new events.
 
-Number in microseconds.
+_TIP:_ Smaller values reduce delivery latency but increase CPU usage; larger values increase buffering.
 
-_TIP:_ This parameter defines how often the client library checks for new messages.
-The smaller the value, the more often the client library checks for new messages.
-The larger the value, the more messages are buffered in the client library.
-
-_NOTE:_ This field is valid only for `kafka`, `network` and `zeromq` types.
+_NOTE:_ Valid for `kafka`, `network`, and `zeromq`.
 
 |`properties`
-|_map_ of _string_ to _string_
-|Additional properties for Kafka producer.
-Refer to _librdkafka_ documentation for {url-librdkafka-parameters}[full list of parameters].
-Typically used parameters are:
+|_map_ (string -> string)
+|Additional Kafka producer properties (see {url-librdkafka-parameters}[librdkafka configuration]).
 
-- `"brokers": "host1:9092, host2:9092"` -- list of Kafka brokers;
-- `"compression.codec": "snappy"` -- compression codec;
-- `"message.send.max.retries": "3"` -- number of retries for sending a message;
-- `"retry.backoff.ms": "500"` -- delay between retries;
-- `"queue.buffering.max.ms": "1000"` -- maximum time in milliseconds to buffer messages in memory;
-- `"enable.idempotence": "true"` -- enable idempotence for producer;
+Common examples:
 
-This field allows also setting customer Kafka security related parameters like authentication, encryption, etc.
+- `"bootstrap.servers": "host1:9092,host2:9092"`
+- `"compression.codec": "snappy"`
+- `"message.send.max.retries": "3"`
+- `"retry.backoff.ms": "500"`
+- `"queue.buffering.max.ms": "1000"`
+- `"enable.idempotence": "true"`
 
-_CAUTION:_ You should not set the `message.max.bytes` parameter as maximum message size is defined by the `max-message-mb` parameter.
+_CAUTION:_ Do not set `message.max.bytes` here; message size is governed by `max-message-mb`.
 
-_NOTE:_ This field is valid only for `kafka` type.
+_NOTE:_ Valid only for `kafka`.
 
 |`queue-size`
 |_integer_, min: 1, max: 1000000, default: 65536
-|Size of message queue.
-
-_TIP:_ This parameter defines how many messages can be sent to output.
-If the message offers a level of parallelism, messages can be sent in parallel.
-If the message transport doesn't offer a level of parallelism, messages are sent one by one.
-The larger the value, the more messages can be sent in parallel.
+|Maximum number of messages that can be queued for sending.
+Larger values increase throughput at the cost of memory.
 
 |`timestamp-format`
-|_string_, max length: 256, default: `"%F_%T"`
-|Format of timestamp (defined using placeholder `%t` in field `output`) in output file name.
-The format is the same as for `strftime` function in C.
-Refer to the documentation of your C library for more information.
+|_string_, max length: 256, default: "%F_%T"
+|`strftime`-style format used to render `%t` in `output` filenames.
 
-_NOTE:_ This field is valid only for `file` type.
+_NOTE:_ Valid only for `file`.
+Refer to your C library's `strftime` documentation for supported specifiers.
 
 |`write-buffer-flush-size`
-|_integer_, min: 0, max: 1048576, default: 1048576
-|The number of bytes of the write buffer after witch the buffer is flushed.
-Setting the value to 0 causes the buffer to be flushed immediately after a message is ready for writing.
-Big values can cause a lag in writing the data to the output file but allow to reduce the frequency of writing to flush disk operations.
-If the amount of data in the buffer does not reach this value, it would be flushed anyway not later than 'poll-interval-us' us.
+|_integer_, min: 0, max: 1_048_576, default: 1_048_576
+|When writing to files, the buffer is flushed when this many bytes are accumulated.
+A value of `0` forces an immediate flush after each message.
 
-_NOTE:_ This field is valid only for `file` type.
+_TIP:_ Larger values reduce I/O frequency but may increase latency and risk of data loss on crash.
+The buffer will also flush at most every `poll-interval-us` microseconds.
+
+_NOTE:_ Valid only for `file`.
 
 |===
