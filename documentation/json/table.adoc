@@ -1,8 +1,9 @@
 = OpenLogReplicator.json - table element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-19
 :icons: font
+:url-regular-expressions:https://en.wikipedia.org/wiki/Regular_expression
 
 [frame="none",grid="none"]
 |====
@@ -14,101 +15,131 @@ It documents the available fields, their constraints, semantics and examples for
 
 [[table]]
 [width="100%",cols="a,a,50%a",options="header"]
-.Table element for xref:./filter.adoc#filter[filter]
+.Table element (see xref:filter.adoc#filter[filter])
 |===
 
 |Parameter
 |Type / constraints
 |Description and notes
 
-|`owner`
+|`owner` [[owner]]
 |_string_, max length: 128, mandatory
-|Regex pattern for matching owner name.
-The pattern is case-sensitive.
+|Regular expression used to match the schema/owner name.
+Matching is case-sensitive.
+Use standard POSIX-style or ECMAScript-compatible regex supported by the runtime.
+
+_IMPORTANT:_ The `owner` and the `table` are separately matched.
+Combine `owner` and `table` patterns to identify the target tables.
+
+_IMPORTANT:_ The value is expected to have a format using REGEX syntax, not SQL LIKE syntax.
+For example, to match all tables starting with `emp_`, use `emp_.*` instead of `emp_%`.
+To match a single character, use `.` instead of `_`.
+Refer to xref:{url-regular-expressions}[Regular expression] for syntax details.
 
 |`table`
 |_string_, max length: 128, mandatory
-|Regex pattern for matching table name.
-The pattern is case-sensitive.
+|Regular expression used to match table names.
+Matching is case-sensitive.
+Combine `owner` and `table` patterns to identify the target tables.
+
+_IMPORTANT:_ The value is expected to have a format using REGEX syntax, not SQL LIKE syntax.
+See: note for xref:owner[owner].
 
 |`key` [[key]]
 |_string_, max length: 4096
-|A string field with a list of columns which should be used as a primary key.
-The columns are separated by a comma character and should not contain spaces or any other additional characters.
-The separator can be changed using the xref:./filter.adoc#separator[separator] tag.
-The column names are case-sensitive.
+|Comma-separated list of column names to treat as the primary key for this table (no spaces between names).
+Column names are case-sensitive.
 
-_TIP:_ If a table doesn't contain a primary key, a custom set of columns can be treated as a primary key.
+_TIP:_ If the source table already has a primary key, omit this field.
+Use this field to define a surrogate key when the table has no native PK.
 
 |`condition`
 |_string_, max length: 16384
-|An expression which should be evaluated for every row.
-The format of the field is C-like.
+|Boolean expression evaluated for each row; if the expression yields true, the row passes the filter.
+The expression language is C-like and evaluated left-to-right with standard operator precedence and parentheses to control evaluation.
+
+Supported operators and tokens:
+
+* Logical: `\|\|` (OR), `&&` (AND), `!` (NOT)
+* Comparison: `==`, `!=`
+* Grouping: `(`, `)`
+
+Available attribute tokens are derived from transaction metadata and column names.
+Common tokens:
+
+* `[op]` — operation type: `c` (insert), `u` (update), `d` (delete), `ddl` (DDL)
+* `[login username]`, `[current username]`
+* `[client id]`, `[client info]`
+* `[machine name]`, `[transaction name]`, `[version]`
+* `[audit sessionid]`, `[session number]`, `[serial number]`
+* `[OS process name]`, `[OS process id]`, `[OS terminal]`
 
 Example:
-`"condition": "([op] != 'd') \|\| ([login username] != 'USER1')"`
+[source,json]
+----
+"condition": "([op] != 'd') \|\| ([login username] != 'USER1')"
+----
 
-The expression is evaluated from left to right.
-The following tokens can be used:
-
-* \|\| -- logical OR,
-
-*  ! -- logical NOT,
-
-* && -- logical AND,
-
-* () -- parentheses to define the order of evaluation,
-
-* == -- equal,
-
-* != -- not equal.
-
-The expression can contain the following tokens, which has name derived from the attribute list of the transaction:
-
-* [audit sessionid]
-
-* [client id]
-
-* [client info]
-
-* [current username]
-
-* [login username] -- the username which performed the operation;
-
-* [machine name]
-
-* [op] -- type of operation: `c` - create (insert), `u` - update, `d` - delete, `ddl` - DDL operation;
-
-* [OS process name]
-
-* [OS process id]
-
-* [OS terminal]
-
-* [serial number]
-
-* [session number]
-
-* [transaction name] -- the name of the transaction;
-
-* [version]
+_NOTE:_ Expressions must reference tokens using the bracketed names shown above.
+Strings in comparisons must be quoted.
 
 |`tag` [[tag]]
 |_string_, max length: 4096, mandatory
-|A string field with describing what should be added as tag to the output message.
+|Defines one or more values to add as a tag to the output message.
+Provide a comma-separated list of columns (no spaces), or use one of the special values:
 
-Adding this field to `table` element causes additional tag to be added to the output message with the defined content.
+* `[pk]` — use primary key columns
+* `[all]` — include all columns
 
-The columns are separated by a comma character and should not contain spaces or any other additional characters.
-The separator can be changed using the xref:./filter.adoc#separator[separator] tag.
-The column names are case-sensitive.
-Instead of column list, the following special values can be used:
-
-* `[pk]` -- Use primary key columns.
-
-* `[all]` -- Use all columns.
-
-Example:
-`"table": {{"table":"user1.x_%", "tag":"[all]"}, {"table":"user1.y_%", "key":"A,B,C"}, {"table":"user1.z_%", "key":"[pk]"}}.`
+Example usage:
+* `"tag": "[all]"`
+* `"tag": "id,name,email"`
+* `"tag": "[pk]"`
 
 |===
+
+[CAUTION]
+====
+Upon startup OLR reads all metadata information for all schemas.
+Once started, changing `owner` or `table` patterns will not trigger reloading of metadata for newly matched tables.
+OLR will stop with an error if it encounters that checkpointed tables do not match the current filter configuration.
+====
+
+[NOTE]
+====
+Column names are case-sensitive.
+====
+
+.Examples
+[source,json]
+----
+{
+  "table": [
+    {
+      "owner": "user1",
+      "table": "x_.*",
+      "tag": "[all]"
+    },
+    {
+      "owner": "user1",
+      "table": "y_.*",
+      "key": "A,B,C",
+      "tag": "A,B,C"
+    },
+    {
+      "owner": "user1",
+      "table": "z_.*",
+      "key": "[pk]",
+      "tag": "[pk]",
+      "condition": "([op] != 'd') && ([login username] != 'SYSTEM')"
+    }
+  ]
+}
+----
+
+[NOTE]
+====
+* Validate `owner`, `table` patterns and any referenced column names before deploying the configuration.
+* Use `key` only when you need to override or provide a surrogate primary key.
+* Keep `condition` expressions simple and test them with representative data to ensure expected filtering behavior.
+====
