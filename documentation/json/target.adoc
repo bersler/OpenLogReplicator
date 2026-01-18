@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - target element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-18
 :icons: font
 
 [frame="none",grid="none"]
@@ -22,15 +22,39 @@ It defines the logical mapping from a `source` to a `writer` and explains each `
 |Description and notes
 
 |`alias`
-|_string_, max length: 256, mandatory
-|A logical name of the target used in JSON file for referencing.
+|_string_, max length: 256, mandatory, unique within configuration
+|Logical identifier for the target.
+Used to reference this target from other parts of the configuration and logs.
+
+_NOTE:_ Choose short, descriptive names.
+Aliases must be unique; duplicate aliases will cause a configuration error.
 
 |`source`
 |_string_, max length: 256, mandatory
-|A logical name of the source which this target should be connected with.
+|Name of the source that this target consumes events from.
+This must match a `source` element defined in the configuration.
+
+_NOTE:_ The `source` value must correspond to an existing `source` element; unresolved references are treated as configuration errors.
 
 |`writer`
-|_element_ of a xref:./writer.adoc#writer[writer], mandatory
-|Configuration of output processor.
+|_element_ — see xref:writer.adoc#writer[writer], mandatory
+|Configuration of the output processor responsible for delivering replicated transactions (for example `kafka`, `file`, `network`, etc.).
 
 |===
+
+.Example target configuration (JSON)
+[source,json]
+----
+{
+  "alias": "audit_kafka",
+  "source": "db_primary",
+  "writer": {
+    "type": "kafka",
+    "topic": "db_audit",
+    "properties": {
+      "bootstrap.servers": "kafka1:9092,kafka2:9092"
+    }
+  },
+  "concurrency": 2
+}
+----
