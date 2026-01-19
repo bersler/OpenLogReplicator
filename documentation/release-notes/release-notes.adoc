@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-13
+:revdate: 2026-01-20
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -17,11 +17,19 @@ This document describes the release notes of OpenLogReplicator.
 == Major Release 1.x
 
 - fix: empty command line argument prints help message
+
 When empty argument is used as command line argument then help message is printed; it should be ignored. Example: ./OpenLogReplicator ""
+
 - documentation refresh
 - enhancement: added service state metrics
+
 New metrics for Prometheus were added to monitor the state of the service. See the xref:../metrics/metrics.adoc[Metrics] document for details.
+
 - OpenLogReplicator.json: move memory, metrics, state parameters to global
+- fix: lowercase owner/table names in config file were not handled properly
+
+OpenLogReplicator did not allow lowercase owner/table name masks in config file.
+Fixes issue #274.
 
 === Version 1.9.0
 - code style cleanup

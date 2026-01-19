@@ -409,14 +409,8 @@ namespace OpenLogReplicator {
         return ss;
     }
 
-    bool Data::checkNameCase(const std::string& name) {
+    void Data::checkName(const std::string& name) {
         if (unlikely(name.length() >= 1024))
             throw DataException(20004, "identifier '" + std::string(name) + "' is too long");
-
-        for (const char& c: name)
-            if (islower(c) != 0)
-                return false;
-
-        return true;
     }
 }

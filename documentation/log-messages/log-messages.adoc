@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-06
+:revdate: 2026-01-20
 :imagesdir: ./images
 :toc: preamble
 
@@ -562,18 +562,6 @@ Check if the file contains valid content.
 
 Invalid arguments were passed to the program.
 Check if the program was started correctly.
-
-==== code 30003: "owner '<name>' contains lower case characters, value must be upper case"
-
-Table owner contains lower case characters.
-Table owner must be in the upper case.
-Please report this issue.
-
-==== code 30004: "table '<name>' contains lower case characters, value must be upper case"
-
-Table name contains lower case characters.
-Table owner must be in the upper case.
-Please report this issue.
 
 ==== code 30005: "invalid value for 'output': <value>"
 

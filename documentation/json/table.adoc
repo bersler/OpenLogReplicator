@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - table element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-19
+:revdate: 2026-01-20
 :icons: font
 :url-regular-expressions:https://en.wikipedia.org/wiki/Regular_expression
 
@@ -36,6 +36,10 @@ For example, to match all tables starting with `emp_`, use `emp_.*` instead of `
 To match a single character, use `.` instead of `_`.
 Refer to xref:{url-regular-expressions}[Regular expression] for syntax details.
 
+_IMPORTANT:_ The value is case-sensitive.
+By default, the database stores the schema names in uppercase, however the name can be lowercase when quoted with `"` in SQL scripts.
+When specifying the `owner` pattern, ensure that the case matches the actual schema name in the database.
+
 |`table`
 |_string_, max length: 128, mandatory
 |Regular expression used to match table names.
@@ -43,7 +47,8 @@ Matching is case-sensitive.
 Combine `owner` and `table` patterns to identify the target tables.
 
 _IMPORTANT:_ The value is expected to have a format using REGEX syntax, not SQL LIKE syntax.
-See: note for xref:owner[owner].
+The value is case-sensitive.
+See: notes for xref:owner[owner].
 
 |`key` [[key]]
 |_string_, max length: 4096
