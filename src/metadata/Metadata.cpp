@@ -201,10 +201,8 @@ namespace OpenLogReplicator {
     }
 
     SchemaElement* Metadata::addElement(const std::string& owner, const std::string& table, DbTable::OPTIONS options) {
-        if (unlikely(!Data::checkNameCase(owner)))
-            throw ConfigurationException(30003, "owner '" + owner + "' contains lower case characters, value must be upper case");
-        if (unlikely(!Data::checkNameCase(table)))
-            throw ConfigurationException(30004, "table '" + table + "' contains lower case characters, value must be upper case");
+        Data::checkName(owner);
+        Data::checkName(table);
         auto* element = new SchemaElement(owner, table, options);
         newSchemaElements.push_back(element);
         return element;
