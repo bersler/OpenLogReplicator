@@ -9,11 +9,13 @@
       "alias": "SOURCE",
       "name": "DBNAME",
       "reader": {
-        "type": "offline",
-        "path-mapping": ["/db/fra", "/opt/fast-recovery-area"]
+        "type": "online",
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
       },
       "format": {
-        "type": "json"
+        "type": "debezium"
       },
       "filter": {
         "table": [
@@ -26,12 +28,11 @@
   ],
   "target": [
     {
-      "alias": "KAFKA",
+      "alias": "DEBEZIUM",
       "source": "SOURCE",
       "writer": {
-        "type": "kafka",
-        "topic": "TOPIC",
-        "brokers": "localhost:9092"
+        "type": "network",
+        "uri": "0.0.0.0:5000"
       }
     }
   ]

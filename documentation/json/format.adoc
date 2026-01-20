@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - format element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-21
 :icons: font
 
 [frame="none",grid="none"]
@@ -21,14 +21,18 @@ It describes available options, constraints, defaults and operational notes that
 |Type / constraints
 |Description and notes
 
-|`type`
+|`type` [[type]]
 |_string_, max length: 256, mandatory
 |Output serialization format.
 
 * `json` — OpenLogReplicator JSON schema (stable).
+* `debezium` - Predefined set of all formatting options for Debezium connector.
+When chosen, no other options need to be set manually.
+However, individual format options can still override Debezium defaults.
 * `protobuf` — Protocol Buffers (xref:../experimental-features/experimental-features.adoc#protobuf-output[experimental]).
 
-_CAUTION:_ `protobuf` support is experimental.
+_CAUTION:_ `protobuf` support may not work as you expected.
+The format is still in development.
 Verify interoperability and stability before using in production.
 
 |`attributes` [[attributes]]

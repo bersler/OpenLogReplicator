@@ -6,8 +6,8 @@
   },
   "source": [
     {
-      "alias": "S1",
-      "name": "O112A",
+      "alias": "SOURCE",
+      "name": "DBNAME",
       "reader": {
         "type": "online",
         "user": "user1",
@@ -28,11 +28,11 @@
   ],
   "target": [
     {
-      "alias": "K1",
-      "source": "S1",
+      "alias": "KAFKA",
+      "source": "SOURCE",
       "writer": {
         "type": "kafka",
-        "topic": "O112A",
+        "topic": "TOPIC",
         "properties": {
           "bootstrap.servers": "localhost:9092"
         }

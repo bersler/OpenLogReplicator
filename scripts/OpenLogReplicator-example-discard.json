@@ -6,8 +6,8 @@
   },
   "source": [
     {
-      "alias": "S1",
-      "name": "O112A",
+      "alias": "SOURCE",
+      "name": "DBNAME",
       "reader": {
         "type": "online",
         "user": "user1",
@@ -28,8 +28,8 @@
   ],
   "target": [
     {
-      "alias": "K1",
-      "source": "S1",
+      "alias": "DISCARD",
+      "source": "SOURCE",
       "writer": {
         "type": "discard"
       }

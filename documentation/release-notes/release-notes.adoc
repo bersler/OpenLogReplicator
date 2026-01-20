@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-20
+:revdate: 2026-01-21
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -30,6 +30,12 @@ New metrics for Prometheus were added to monitor the state of the service. See t
 
 OpenLogReplicator did not allow lowercase owner/table name masks in config file.
 Fixes issue #274.
+
+- enhancement: added new format for Debezium output
+
+The "format" value can be set "debezium", the output format will follow the Debezium message format.
+No other parameters are required to be set.
+See xref:../json/format.adoc#type[type] for details.
 
 === Version 1.9.0
 - code style cleanup

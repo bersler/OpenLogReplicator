@@ -6,8 +6,8 @@
   },
   "source": [
     {
-      "alias": "S1",
-      "name": "O112A",
+      "alias": "SOURCE",
+      "name": "DBNAME",
       "reader": {
         "type": "online",
         "user": "user1",
@@ -28,11 +28,11 @@
   ],
   "target": [
     {
-      "alias": "K1",
-      "source": "S1",
+      "alias": "NETWORK",
+      "source": "SOURCE",
       "writer": {
         "type": "network",
-        "uri": "0.0.0.0:50000"
+        "uri": "0.0.0.0:5000"
       }
     }
   ]

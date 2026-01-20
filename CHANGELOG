@@ -3,6 +3,7 @@
 - enhancement: added service state metrics
 - OpenLogReplicator.json: move memory, metrics, state parameters to global
 - fix: lowercase owner/table names in config file were not handled properly
+- enhancement: added new format for Debezium output
 
 1.9.0
 - code style cleanup

@@ -31,8 +31,8 @@
   },
   "source": [
     {
-      "alias": "S1",
-      "name": "O112A",
+      "alias": "SOURCE",
+      "name": "DBNAME",
       "reader": {
         "type": "online",
         "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
@@ -98,11 +98,11 @@
   ],
   "target": [
     {
-      "alias": "K1",
-      "source": "S1",
+      "alias": "KAFKA",
+      "source": "SOURCE",
       "writer": {
         "type": "kafka",
-        "topic": "O112A",
+        "topic": "TOPIC",
         "max-message-mb": 500,
         "properties": {
           "bootstrap.servers": "localhost:9092",
