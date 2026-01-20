@@ -68,7 +68,8 @@ namespace OpenLogReplicator {
         ss << R"(,"big-endian":)" << std::dec << (metadata->ctx->isBigEndian() ? 1 : 0) <<
                 R"(,"context":")";
         Data::writeEscapeValue(ss, metadata->context);
-        ss << R"(","con-id":)" << std::dec << metadata->conId <<
+        ss << R"(","db-id":)" << std::dec << metadata->dbId <<
+                R"(,"con-id":)" << std::dec << metadata->conId <<
                 R"(,"con-name":")";
         Data::writeEscapeValue(ss, metadata->conName);
         ss << R"(","db-timezone":")";
@@ -554,6 +555,7 @@ namespace OpenLogReplicator {
                     "context",
                     "database",
                     "db-block-checksum",
+                    "db-id",
                     "db-recovery-file-dest",
                     "db-timezone",
                     "incarnations",
@@ -645,6 +647,7 @@ namespace OpenLogReplicator {
                     if (bigEndian == 1)
                         metadata->ctx->setBigEndian();
                     metadata->context = Ctx::getJsonFieldS(fileName, DbTable::VCONTEXT_LENGTH, document, "context");
+                    metadata->dbId = Ctx::getJsonFieldU32(fileName, document, "db-id");
                     metadata->conId = Ctx::getJsonFieldI16(fileName, document, "con-id");
                     metadata->conName = Ctx::getJsonFieldS(fileName, DbTable::VCONTEXT_LENGTH, document, "con-name");
                     if (document.HasMember("db-timezone"))
