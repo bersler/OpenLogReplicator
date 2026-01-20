@@ -649,6 +649,36 @@ namespace OpenLogReplicator {
             }
 
             Format::DB_FORMAT dbFormat = Format::DB_FORMAT::DEFAULT;
+            Format::ATTRIBUTES_FORMAT attributesFormat = Format::ATTRIBUTES_FORMAT::DEFAULT;
+            Format::INTERVAL_DTS_FORMAT intervalDtsFormat = Format::INTERVAL_DTS_FORMAT::UNIX_NANO;
+            Format::INTERVAL_YTM_FORMAT intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::MONTHS;
+            Format::MESSAGE_FORMAT messageFormat = Format::MESSAGE_FORMAT::DEFAULT;
+            Format::RID_FORMAT ridFormat = Format::RID_FORMAT::SKIP;
+            Format::XID_FORMAT xidFormat = Format::XID_FORMAT::TEXT_HEX;
+            Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
+            Format::TIMESTAMP_TZ_FORMAT timestampTzFormat = Format::TIMESTAMP_TZ_FORMAT::UNIX_NANO_STRING;
+            Format::TIMESTAMP_ALL timestampAll = Format::TIMESTAMP_ALL::JUST_BEGIN;
+            Format::CHAR_FORMAT charFormat = Format::CHAR_FORMAT::UTF8;
+            Format::SCN_FORMAT scnFormat = Format::SCN_FORMAT::NUMERIC;
+            Format::SCN_TYPE scnType = Format::SCN_TYPE::NONE;
+            Format::UNKNOWN_FORMAT unknownFormat = Format::UNKNOWN_FORMAT::QUESTION_MARK;
+            Format::SCHEMA_FORMAT schemaFormat = Format::SCHEMA_FORMAT::DEFAULT;
+            Format::COLUMN_FORMAT columnFormat = Format::COLUMN_FORMAT::CHANGED;
+            Format::UNKNOWN_TYPE unknownType = Format::UNKNOWN_TYPE::HIDE;
+
+            const std::string formatType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, formatJson, "type");
+            if (formatType == "debezium") {
+                dbFormat = Format::DB_FORMAT::ALL;
+                intervalDtsFormat = Format::INTERVAL_DTS_FORMAT::ISO8601_COMMA;
+                intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::STRING_YM_DASH;
+                messageFormat = Format::MESSAGE_FORMAT::ADD_SEQUENCES;
+                ridFormat = Format::RID_FORMAT::TEXT;
+                timestampAll = Format::TIMESTAMP_ALL::ALL_PAYLOADS;
+                scnType = Format::SCN_TYPE::ALL_PAYLOADS;
+                schemaFormat = Format::SCHEMA_FORMAT::ALL;
+                columnFormat = Format::COLUMN_FORMAT::FULL_UPD;
+            }
+
             if (formatJson.HasMember("db")) {
                 const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "db");
                 if (val > 3)
@@ -656,7 +686,6 @@ namespace OpenLogReplicator {
                 dbFormat = static_cast<Format::DB_FORMAT>(val);
             }
 
-            Format::ATTRIBUTES_FORMAT attributesFormat = Format::ATTRIBUTES_FORMAT::DEFAULT;
             if (formatJson.HasMember("attributes")) {
                 const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
                 if (val > 7)
@@ -664,7 +693,6 @@ namespace OpenLogReplicator {
                 attributesFormat = static_cast<Format::ATTRIBUTES_FORMAT>(val);
             }
 
-            Format::INTERVAL_DTS_FORMAT intervalDtsFormat = Format::INTERVAL_DTS_FORMAT::UNIX_NANO;
             if (formatJson.HasMember("interval-dts")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "interval-dts");
                 if (val > 10)
@@ -672,7 +700,6 @@ namespace OpenLogReplicator {
                 intervalDtsFormat = static_cast<Format::INTERVAL_DTS_FORMAT>(val);
             }
 
-            Format::INTERVAL_YTM_FORMAT intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::MONTHS;
             if (formatJson.HasMember("interval-ytm")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "interval-ytm");
                 if (val > 4)
@@ -680,7 +707,6 @@ namespace OpenLogReplicator {
                 intervalYtmFormat = static_cast<Format::INTERVAL_YTM_FORMAT>(val);
             }
 
-            Format::MESSAGE_FORMAT messageFormat = Format::MESSAGE_FORMAT::DEFAULT;
             if (formatJson.HasMember("message")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "message");
                 if (val > 31)
@@ -697,7 +723,6 @@ namespace OpenLogReplicator {
                 messageFormat = static_cast<Format::MESSAGE_FORMAT>(val);
             }
 
-            Format::RID_FORMAT ridFormat = Format::RID_FORMAT::SKIP;
             if (formatJson.HasMember("rid")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "rid");
                 if (val > 1)
@@ -705,7 +730,6 @@ namespace OpenLogReplicator {
                 ridFormat = static_cast<Format::RID_FORMAT>(val);
             }
 
-            Format::XID_FORMAT xidFormat = Format::XID_FORMAT::TEXT_HEX;
             if (formatJson.HasMember("xid")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "xid");
                 if (val > 2)
@@ -713,7 +737,6 @@ namespace OpenLogReplicator {
                 xidFormat = static_cast<Format::XID_FORMAT>(val);
             }
 
-            Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
             if (formatJson.HasMember("timestamp")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "timestamp");
                 if (val > 15)
@@ -721,7 +744,6 @@ namespace OpenLogReplicator {
                 timestampFormat = static_cast<Format::TIMESTAMP_FORMAT>(val);
             }
 
-            Format::TIMESTAMP_TZ_FORMAT timestampTzFormat = Format::TIMESTAMP_TZ_FORMAT::UNIX_NANO_STRING;
             if (formatJson.HasMember("timestamp-tz")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "timestamp-tz");
                 if (val > 11)
@@ -729,7 +751,6 @@ namespace OpenLogReplicator {
                 timestampTzFormat = static_cast<Format::TIMESTAMP_TZ_FORMAT>(val);
             }
 
-            Format::TIMESTAMP_ALL timestampAll = Format::TIMESTAMP_ALL::JUST_BEGIN;
             if (formatJson.HasMember("timestamp-all")) {
                 const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-all");
                 if (val > 1)
@@ -737,7 +758,6 @@ namespace OpenLogReplicator {
                 timestampAll = static_cast<Format::TIMESTAMP_ALL>(val);
             }
 
-            Format::CHAR_FORMAT charFormat = Format::CHAR_FORMAT::UTF8;
             if (formatJson.HasMember("char")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "char");
                 if (val > 3)
@@ -745,7 +765,6 @@ namespace OpenLogReplicator {
                 charFormat = static_cast<Format::CHAR_FORMAT>(val);
             }
 
-            Format::SCN_FORMAT scnFormat = Format::SCN_FORMAT::NUMERIC;
             if (formatJson.HasMember("scn")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "scn");
                 if (val > 1)
@@ -753,7 +772,6 @@ namespace OpenLogReplicator {
                 scnFormat = static_cast<Format::SCN_FORMAT>(val);
             }
 
-            Format::SCN_TYPE scnType = Format::SCN_TYPE::NONE;
             if (formatJson.HasMember("scn-type")) {
                 const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "scn-type");
                 if (val > 3)
@@ -761,7 +779,6 @@ namespace OpenLogReplicator {
                 scnType = static_cast<Format::SCN_TYPE>(val);
             }
 
-            Format::UNKNOWN_FORMAT unknownFormat = Format::UNKNOWN_FORMAT::QUESTION_MARK;
             if (formatJson.HasMember("unknown")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "unknown");
                 if (val > 1)
@@ -769,7 +786,6 @@ namespace OpenLogReplicator {
                 unknownFormat = static_cast<Format::UNKNOWN_FORMAT>(val);
             }
 
-            Format::SCHEMA_FORMAT schemaFormat = Format::SCHEMA_FORMAT::DEFAULT;
             if (formatJson.HasMember("schema")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "schema");
                 if (val > 7)
@@ -777,7 +793,6 @@ namespace OpenLogReplicator {
                 schemaFormat = static_cast<Format::SCHEMA_FORMAT>(val);
             }
 
-            Format::COLUMN_FORMAT columnFormat = Format::COLUMN_FORMAT::CHANGED;
             if (formatJson.HasMember("column")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "column");
                 if (val > 2)
@@ -789,7 +804,6 @@ namespace OpenLogReplicator {
                 columnFormat = static_cast<Format::COLUMN_FORMAT>(val);
             }
 
-            Format::UNKNOWN_TYPE unknownType = Format::UNKNOWN_TYPE::HIDE;
             if (formatJson.HasMember("unknown-type")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "unknown-type");
                 if (val > 1)
@@ -801,12 +815,11 @@ namespace OpenLogReplicator {
             if (formatJson.HasMember("flush-buffer"))
                 flushBuffer = Ctx::getJsonFieldU64(configFileName, formatJson, "flush-buffer");
 
-            const std::string formatType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, formatJson, "type");
 
             Builder* builder;
             Format format(dbFormat, attributesFormat, intervalDtsFormat, intervalYtmFormat, messageFormat, ridFormat, xidFormat, timestampFormat,
                           timestampTzFormat, timestampAll, charFormat, scnFormat, scnType, unknownFormat, schemaFormat, columnFormat, unknownType);
-            if (formatType == "json") {
+            if (formatType == "json" || formatType == "debezium") {
                 builder = new BuilderJson(ctx, locales, metadata, format, flushBuffer);
             } else if (formatType == "protobuf") {
 #ifdef LINK_LIBRARY_PROTOBUF
@@ -816,7 +829,7 @@ namespace OpenLogReplicator {
                                              ", expected: not \"protobuf\" since the code is not compiled");
 #endif /* LINK_LIBRARY_PROTOBUF */
             } else
-                throw ConfigurationException(30001, "bad JSON, invalid \"format\" value: " + formatType + R"(, expected: "protobuf" or "json")");
+                throw ConfigurationException(30001, "bad JSON, invalid \"format\" value: " + formatType + R"(, expected: "protobuf", "json" or "debezium")");
             builders.push_back(builder);
 
             // READER

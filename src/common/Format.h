@@ -35,7 +35,8 @@ namespace OpenLogReplicator {
         enum class DB_FORMAT : unsigned char {
             DEFAULT = 0,
             ADD_DML = 1,
-            ADD_DDL = 2
+            ADD_DDL = 2,
+            ALL     = 3
         };
 
         enum class CHAR_FORMAT : unsigned char {
@@ -102,7 +103,8 @@ namespace OpenLogReplicator {
             DEFAULT  = 0,
             FULL     = 1 << 0,
             REPEATED = 1 << 1,
-            OBJ      = 1 << 2
+            OBJ      = 1 << 2,
+            ALL      = 7
         };
 
         enum class TIMESTAMP_ALL : unsigned char {

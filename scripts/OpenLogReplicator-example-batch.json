@@ -6,8 +6,8 @@
   },
   "source": [
     {
-      "alias": "S1",
-      "name": "O112A",
+      "alias": "SOURCE",
+      "name": "DBNAME",
       "reader": {
         "type": "batch",
         "redo-log": ["/db/arch/o1_mf_1_1991_hkb9y64l_.arc", "/db/arch/o1_mf_1_1992_hkb9y93r_.arc", "/db/otherDir"],
@@ -27,11 +27,11 @@
   ],
   "target": [
     {
-      "alias": "K1",
-      "source": "S1",
+      "alias": "KAFKA",
+      "source": "SOURCE",
       "writer": {
         "type": "kafka",
-        "topic": "O112A",
+        "topic": "TOPIC",
         "brokers": "localhost:9092"
       }
     }

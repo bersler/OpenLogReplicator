@@ -1,7 +1,7 @@
 = OpenLogReplicator.json format
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-21
 :imagesdir: ./images
 :icons: font
 
@@ -119,8 +119,8 @@ Enable higher verbosity only when diagnosing specific issues.
   "version": "1.9.0",
   "source": [
     {
-      "alias": "S1",
-      "name": "O112A",
+      "alias": "SOURCE",
+      "name": "DBNAME",
       "reader": {
         "type": "online",
         "user": "user1",
@@ -141,11 +141,11 @@ Enable higher verbosity only when diagnosing specific issues.
   ],
   "target": [
     {
-      "alias": "K1",
-      "source": "S1",
+      "alias": "KAFKA",
+      "source": "SOURCE",
       "writer": {
         "type": "kafka",
-        "topic": "O112A",
+        "topic": "TOPIC",
         "properties": {
           "bootstrap.servers": "localhost:9092"
         }
