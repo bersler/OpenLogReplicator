@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-07
+:revdate: 2026-01-22
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -11,38 +11,71 @@
 |[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-This document describes configuration parameters and usage of OpenLogReplicator.
+This reference manual describes runtime options, directory permissions and the main configuration for OpenLogReplicator.
+It is intended as a concise operational guide; detailed element descriptions are available in the referenced files.
 
-== Program parameters
+== Quickstart
 
-OpenLogReplicator program is non-interactive.
-The only parameters accepted are:
+* Place the configuration file `OpenLogReplicator.json` in the process working directory (or provide it with `-f`).
+* Ensure the process user can read and write directories referenced by the configuration (checkpoints, swap, dumps).
+* Start the program with appropriate CLI options (examples below).
 
-* `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`),
+== Command line parameters
 
-* `-p <process name>` -- process name (default: `"OpenLogReplicator"`) displayed in the process list; useful when multiple instances are running,
+OpenLogReplicator is non-interactive.
+Supported command-line options:
 
-* `-r|--root` -- disable root check on startup (default: root check is enabled); allow running the program as root, which is not recommended and should be used only in special cases,
+* `-f|--file <config file>` — path to configuration file (default: `OpenLogReplicator.json`).
+* `-p <process name>` — process name visible in system process lists (default: `OpenLogReplicator`).
+* `-r|--root` — disable the startup root-check (not recommended for production).
+* `-v|--version` — print version and exit.
 
-* `-v|--version` -- print version and exit.
+Example invocation:
 
-All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
-The file should be in JSON format.
-For start please check example config files in `scripts` directory.
-Refer to a full parameters list for more details.
+[source,bash]
+----
+./OpenLogReplicator -f ./configs/OpenLogReplicator.json -p OLReplicator
+----
 
-All output messages are sent to _stderr_ stream.
-Optionally, JSON output can be sent to _stdout_ stream when test parameter is set to a no zero value.
+== Configuration
 
-The only language of the documentation and error messages and used in program is English.
+All runtime configuration is defined in `OpenLogReplicator.json`.
+Refer to the configuration reference for full details: xref:../json/json.adoc[OpenLogReplicator.json].
 
-== Directory permissions
+- Configuration is a single JSON object containing top-level elements such as `source`, `target`, `memory`, `format`, `filter`, and `debug`.
+- Example configuration files and templates are available in the `scripts` directory in the repository.
 
-In some interval, the program writes a checkpoint file which contains information about the last processed transaction (sent to Kafka output).
+== Output and logging
 
-OpenLogReplicator should have read, write and execute permissions for the `checkpoint` directory.
-It creates or deletes files like `<database>-chkpt.json` and  `<database>-chkpt-<scn>.json` files.
-`<database>` is the database name defined in `OpenLogReplicator.json` file and `<scn>` is some database _SCN_ number.
+- All program diagnostic and error messages are written to _stderr_.
+- Some internal JSON output may be written to _stdout_ when a test/debug option is enabled in the configuration.
+- Use conservative `log-level` and `trace` settings in production; enable higher verbosity only for troubleshooting.
+
+== Directory and file permissions
+
+The process requires appropriate filesystem permissions for directories used by the configuration:
+
+* Checkpoint directory
+- The application periodically writes checkpoint files named like `<database>-chkpt.json` and `<database>-chkpt-<scn>.json`.
+- The process user must have read, write and execute permissions on the checkpoint directory.
+
+* Swap and dump paths
+- If swapping is enabled (`swap-path`) or dumps are produced (`dump-path`), ensure those directories are writable and have sufficient free space and I/O performance.
+
+_CAUTION:_ Insufficient permissions or lack of space may cause unexpected process termination.
+
+== Runtime behavior notes
+
+* The `min-mb` / `max-mb` memory settings in the `memory` element control resident allocations and buffer sizing.
+Verify buffer minima sum remains below `max-mb`.
+* When enabling swap, prefer fast local storage to avoid high latency and unpredictable throughput.
+* Changing configuration settings in production (especially `source`/`target`, `filter` or memory parameters) should be validated in a staging environment and may require resetting checkpoints.
+
+== Troubleshooting
+
+* Use `debug` element options sparingly; `stop-*` settings will terminate the process for diagnostic capture.
+* Use `dump-redo-log` and `dump-raw-data` only when diagnosing specific issues; dumps can be large and are intended for debugging.
+* Increase `log-level` or add `trace` flags to obtain more detailed runtime information when investigating problems.
 
 == See also
 
