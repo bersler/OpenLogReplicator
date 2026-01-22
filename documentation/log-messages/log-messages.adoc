@@ -1,7 +1,7 @@
 = Log Messages Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-20
+:revdate: 2026-01-23
 :imagesdir: ./images
 :toc: preamble
 
@@ -163,7 +163,7 @@ Verify if the provided `min-mb` and `max-mb` parameters are correct and match am
 ==== code 10017: "out of memory"
 
 Configured amount of memory doesn't allow processing provided stream of redo log files.
-Refer to suggestions for details about reducing xref:../user-manual/user-manual.adoc#memory-allocation[memory allocation].
+Refer to suggestions for details about reducing xref:../user-manual/9.advanced-topics.adoc#memory-allocation[memory allocation].
 
 [TIP]
 ====
@@ -221,7 +221,7 @@ Refer to database documentation for more information.
 
 The database is a standby database.
 The database must be a primary database when time defines starting position.
-Start replication when the database is primary and later switch to xref:../user-manual/user-manual.adoc#dataguard[the standby database].
+Start replication when the database is primary and later switch to xref:../user-manual/9.advanced-topics.adoc#dataguard[the standby database].
 
 ==== code 10025: "can't find scn for: <timestamp>"
 
@@ -233,7 +233,7 @@ Verify if the timestamp is correct.
 
 The database is a standby database.
 The database must be a primary database when relative time defines starting position.
-Start replication when the database is primary and later switch to xref:../user-manual/user-manual.adoc#dataguard[the standby database].
+Start replication when the database is primary and later switch to xref:../user-manual/9.advanced-topics.adoc#dataguard[the standby database].
 
 ==== code 10027: "can't read any member of group <number>"
 
@@ -390,7 +390,7 @@ Schema is missing for batch mode.
 ====
 If you don't have an earlier schema but wish to continue having no information about column names and types, try with schemaless mode (`'flags': 2`).
 Refer to the documentation for more information about
-xref:../user-manual/user-manual.adoc#schemaless-mode[schemaless mode].
+xref:../user-manual/9.advanced-topics.adoc#schemaless-mode[schemaless mode].
 ====
 
 ==== code 10053: "network receive error"
@@ -511,7 +511,7 @@ If it is not possible to fix the checkpoint file, remove it and start replicatio
 Transaction ID (XID) number is in incorrect format provided in the configuration file.
 This value has a wrong format and can't be parsed.
 Check if the file is not corrupted.
-Refer to the documentation for more information about xref:../json/filter.adoc#skip-xid[XID format].
+Refer to the documentation for more information about xref:../json/5.filter.adoc#skip-xid[XID format].
 
 ==== code 20003: "file: <file name> - parse error, field <field> <message>"
 
@@ -988,7 +988,7 @@ By default, OpenLogReplicator would just print the informational message (but ju
 
 It is also possible to treat the AFTER image as the correct value and copy it to the BEFORE image of the column value.
 This feature is experimental.
-To achieve this behavior, the xref:../json/source.adoc#flags[flags] parameter should be set appropriately.
+To achieve this behavior, the xref:../json/1.source.adoc#flags[flags] parameter should be set appropriately.
 
 ==== code 60035, "unknown database requested, got: <name>, expected: <name>"
 

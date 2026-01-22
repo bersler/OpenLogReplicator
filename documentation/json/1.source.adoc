@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - source element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-18
+:revdate: 2026-01-23
 :icons: font
 
 [frame="none",grid="none"]
@@ -29,7 +29,7 @@ Referenced by `target` elements and recorded in checkpoint files.
 _TIP:_ Use short, descriptive names.
 
 |`format`
-|_element_ — see xref:format.adoc#format[format], mandatory
+|_element_ — see xref:4.format.adoc#format[format], mandatory
 |Configuration of the output message format and serialization options.
 
 |`name`
@@ -39,7 +39,7 @@ _TIP:_ Use short, descriptive names.
 _WARNING:_ Do not change this value while using existing checkpoint files; mismatches will prevent proper restart.
 
 |`reader`
-|_element_ — see xref:reader.adoc#reader[reader], mandatory
+|_element_ — see xref:2.reader.adoc#reader[reader], mandatory
 |Configuration for reading redo logs (online, offline, batch, etc.).
 
 |`arch`
@@ -62,11 +62,11 @@ _NOTE:_ Only valid for readers that support archived redo logs.
 |Number of retries before failing to obtain an archived redo log list.
 
 |`debug`
-|_element_ — see xref:debug.adoc#debug[debug]
+|_element_ — see xref:3.debug.adoc#debug[debug]
 |Group of debugging options.
 
 |`filter`
-|_element_ — see xref:filter.adoc#filter[filter]
+|_element_ — see xref:5.filter.adoc#filter[filter]
 |Filter rules that determine which users, schemas and tables are processed.
 
 _CAUTION:_ Filters apply only to data rows, not to DDL.
@@ -102,7 +102,7 @@ _TIP:_ Disabling direct IO reduces guarantees; use only when necessary.
 * `0x20000` — Emit JSON values in binary format (experimental).
 * `0x40000` — Support UPDATEs for NOT NULL columns with occasional NULLs (experimental).
 
-_NOTE:_ Refer to the xref:../user-manual/user-manual.adoc[User Manual] for details on schemaless and adaptive schema modes.
+_NOTE:_ Refer to the xref:../user-manual/9.advanced-topics.adoc[User Manual] for details on schemaless and adaptive schema modes.
 
 |`redo-read-sleep-us`
 |_integer_, min: 0, default: 50000
