@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - target element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-18
+:revdate: 2026-01-23
 :icons: font
 
 [frame="none",grid="none"]
@@ -37,7 +37,7 @@ This must match a `source` element defined in the configuration.
 _NOTE:_ The `source` value must correspond to an existing `source` element; unresolved references are treated as configuration errors.
 
 |`writer`
-|_element_ — see xref:writer.adoc#writer[writer], mandatory
+|_element_ — see xref:8.writer.adoc#writer[writer], mandatory
 |Configuration of the output processor responsible for delivering replicated transactions (for example `kafka`, `file`, `network`, etc.).
 
 |===

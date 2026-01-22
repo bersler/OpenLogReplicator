@@ -1,0 +1,220 @@
+= Advanced topics
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-23
+:imagesdir: ./images
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Previous chapter: xref:8.checkpointing.adoc[Checkpointing]
+
+=== Schema changes
+
+OpenLogReplicator can handle schema changes.
+
+To work properly, an initial consistent image of the schema needs to be created.
+This is done using the `gencfg.sql` script or during the first run of the program.
+
+The image of database system tables is read just for a selected list of schemas.
+All objects owned by any of the database users from the list would be tracked in the future.
+Also objects created, moved to bin, recovered, etc.
+
+[IMPORTANT]
+====
+In the case of adding new schema to the replication list -- the process needs to be restarted, and the schema needs to be recreated.
+====
+
+While OpenLogReplicator is running and a new object is created which would match the filter, the schema is automatically updated.
+There is no need to restart the process.
+
+[CAUTION]
+====
+It is not a good choice to select too many schemas for tracking, as this can impact on performance.
+====
+
+All DDL operations that modify data structures are tracked: adding, removing columns, changing names, extending type length, etc.
+
+For partitioned tables, the schema is automatically updated when a new partition or subpartition is created.
+There is no need for user intervention or program restart.
+In fact, restarting the program would have no impact on the schema because it would not cause a new schema image to be created.
+
+=== Configuration updates
+
+On startup OpenLogReplicator reads the configuration from the configuration file `OpenLogReplicator.json`.
+The configuration file defines which tables are replicated, and which not.
+To minimize the size of the schema, the system tables are only read for the schemas which are replicated.
+
+Once started, the schema file contains a list of schemas for which the metadata was gathered.
+
+It is not possible to add new schemas.
+
+But it is possible to change the list of tables that are replicated, as long as the list of schemas does not change.
+
+The change can be done offline, while OpenLogReplicator is not running, but also online - when OpenLogReplicator is running.
+To allow online configuration updates, the configuration file is monitored for changes.
+Once the timestamp of the last file modification is changed, the configuration is reloaded.
+
+[CAUTION]
+====
+The configuration changes are not performed atomically.
+If some long-running transactions are partially processed, the processed data in memory does not change.
+This can lead to situations like shown below: a transaction can contain data sets from two different configurations.
+====
+
+.Memory buffers before configuration change
+image:buffers-in-memory1.png[Memory buffers before configuration change,,,]
+
+.Memory buffers after configuration change
+image:buffers-in-memory2.png[Memory buffers after configuration change,,,]
+
+In the example above, the configuration file is changed and the M1 table is added to the list of tables which are replicated.
+This operation does not affect the data that is already processed and present in memory.
+Transaction T2 would only contain in the output the UPDATE operation for M1 table, but would not contain the INSERT operation which happened before the configuration file was changed.
+
+[IMPORTANT]
+====
+The operation of updating parameters from the configuration file does not impact all parameters.
+Only parameters which define the list of replicated tables are updated.
+This includes only the tags `table` and `owner` both in `debug` and `filter` sections.
+====
+
+=== Offline reader
+
+For cases where there is no physical way to connect the database, OpenLogReplicator offers an offline reader mode.
+
+In such a scenario, a replication may be fully functional, even though there is no network connection to the database.
+This also implies that there is no need to create a user in the database.
+
+The offline reader mode is activated by setting a parameter `"type": "offline"` in the `reader` section.
+
+To start work with the offline reader, a schema file is necessary.
+The schema file can be created using the `gencfg.sql` script or during the first run of the program when running with `online` reader.
+
+[CAUTION]
+====
+The schema file contains also list locations of redo log files.
+Those parameters are static and aren't tracked.
+Thus, if they change, the schema file needs to be edited manually (this is a JSON file), or the schema needs to be recreated.
+====
+
+==== Starting as offline reader
+
+To start replication with `online` reader, first define the type of the reader as `online`, provide credentials for the database connection and start the program.
+
+Once the program is running, it would create a schema file -- which is visible in the `checkpoint` directory.
+
+Stop OpenLogReplicator, by simply pressing `Ctrl+C` or killing the process.
+
+Next, edit configuration file and change the type of the reader to `offline`, remove credentials for database connection and run OpenLogReplicator.
+
+==== Manually creating a schema file
+
+To create a schema file manually, the user needs to run the `gencfg.sql` script.
+The script is located in the `scripts` directory of the distribution.
+
+Before running the script, it must be edited and the following parameters need to be provided:
+
+- `v_NAME` -- the logical name used in the schema file;
+- `v_USERNAME_LIST` -- list of usernames to be tracked;
+- `v_SCN` -- the starting SCN for replication.
+
+Save the results of the script to a file with name `checkpoint/<name>-chkpt-<scn>.json` where `<name>` is the logical name of the database and `<scn>` is the starting SCN for replication.
+Read the `resetlogs` and `activation` parameters from the first line of the output of the script.
+Use the read values during the next steps.
+Create an additional file named `checkpoint/<name>-chkpt.json` with the following content:
+
+ {"database":"<name>","scn":<scn>,"resetlogs":<resetlogs>,"activation":<activation>}
+
+Provide the values for parameters `<name>`, `<scn>`, `<resetlogs>` and `<activation>` from previous step.
+
+After the files are created, the program can be started with the `offline` reader type.
+
+=== DataGuard
+
+For a database which is using DataGuard, the program can be configured to read redo logs from the standby database.
+
+During the initial startup, the program needs to be started on the primary database.
+
+Only physical DataGuard is supported.
+
+Whenever a switch occurs, the program would automatically switch to the new primary/standby database redo log files.
+
+There is no need to add extra options for the DataGuard configuration.
+OpenLogReplicator would automatically detect the DataGuard configuration and start reading appropriate redo log files depending on the current role of the database that it is connecting to.
+
+=== High availability
+
+OpenLogReplicator is designed to work in HA environment, especially when Network Mode is being used.
+The program is not stateless, but keeps all checkpoint data organized.
+The current implementation stores the files in a directory, but future versions might store this data, for example, in Redis or other external storage.
+
+The best configuration for HA is Stream Mode.
+
+=== Schemaless mode
+
+Sometimes the schema is not available, but in spite of that, the user still wishes to decode the data from redo log.
+In this case, the user can use the schemaless mode.
+The schemaless mode is activated by setting parameter `"flags": 2`.
+
+[IMPORTANT]
+====
+Since table names aren't available, table filtering is not used.
+The output would contain all tables, even if they aren't in the filter.
+====
+
+After activation, OpenLogReplicator would ignore the lack of schema and lack of information about column data types.
+The data would contain column values in the form of hex strings, since the information about type is not available.
+Column names and table names are missing since the information about the schema is not available.
+
+Example output for schemaless mode:
+
+ "payload":[{"op":"c","schema":{"table":"OBJ_87705"},"after":{"COL_0":"53544f50","COL_1":"787708010d2339"}}]
+
+[TIP]
+====
+Schemaless mode is extremely useful when the user just has the redo log file and nothing more but wishes to decode the data.
+It may also be useful to use the adaptive schema mode together with schemaless mode.
+====
+
+[IMPORTANT]
+====
+The schemaless mode is not intended for production use.
+It is intended for debugging and analysis of the data in the redo log.
+====
+
+=== Adaptive schema node
+
+Adaptive schema mode is a special debugging mode used to analyze the data in the redo log even when the schema file is missing.
+The adaptive schema mode is activated by setting parameter `"flags": 4`.
+This mode works best when used together with schemaless mode.
+
+After enabling first OpenLogReplicator would try to use default schema for system tables.
+A default schema would be schema from the source database but created with no table selection.
+The default location for default schema file `base-<database version>.json`.
+
+[CAUTION]
+====
+The default schema is not distributed with OpenLogReplicator.
+The user needs to create the default schema file manually, by Running OpenLogReplicator with an empty database and copying the schema file from the checkpoint directory.
+====
+
+OpenLogReplicator would act in hybrid mode:
+
+- when a new schema is created: the schema would be extended by the new objects -- for such tables, the schema information would be present in the output;
+- for existing tables: the schema information would be missing in the output -- output would be in schemaless mode.
+
+[IMPORTANT]
+====
+The adaptive schema mode is not intended for production use.
+It is intended for debugging and analysis of the data in the redo log.
+====
+
+[CAUTION]
+====
+This mode is less restrictive when it comes to schema changes.
+In cases when OpenLogReplicator would normally stop because of schema change, it would continue in the adaptive schema mode.
+====

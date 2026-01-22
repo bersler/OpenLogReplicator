@@ -1,0 +1,182 @@
+= Output format
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-23
+:imagesdir: ./images
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Previous chapter: xref:2.architecture-and-components.adoc[Architecture and components]
+
+=== Introduction
+
+The output format is fully configurable.
+There are two formats implemented: JSON and protocol buffer, but the architecture of the program allows implementing any other format in the future.
+
+=== JSON format
+
+JSON format is the first implemented format with rapid write speed.
+The stream is directly constructed from the redo log data.
+The process of constructing the stream does not use dynamic memory allocation.
+Instead, the JSON stream is directly constructed and populated while redo log data is parsed.
+This makes the speed of the output very fast; internal tests show that it is about 2.5 times faster than the protocol buffer format, even though the size of the output might be longer.
+
+==== Response: _scn_val_
+
+The field contains the SCN value associated with the payload data.
+
+The value can be stored in:
+
+- field `scn` and stored as decimal (default);
+- field `scns` and stored as a string in hex format "C" styl (example: `"scns":"0x0000008a33ac2263"`
+
+See:  xref:../json/4.format.adoc#scn[scn] parameter for configuration details.
+
+==== Response: _tm_val_
+
+The Time field contains the timestamp related to the payload data.
+If the transaction contains multiple DML operations, then the timestamps of particular DML operations are possible to distinguish.
+Instead, just the timestamp related to the commit record is used.
+
+The value can be stored in:
+
+- Field `"tm"` and stored using a number;
+- Field `"tms"` and stored as a string.
+
+See:  xref:../json/4.format.adoc#timestamp[timestamp] parameter for configuration details.
+
+==== Response: _xid_val_
+
+The field contains the transaction ID associated with the payload data.
+It is not present in checkpoint messages.
+
+The value can be stored in:
+
+- Field `"xid"` and stored as a string in hex (default).
+An example value would be: `"xid":"0x0009.003.0000568e"`.
+- Field `"xid"` -- like previous but using decimal numbers, for example,
+`"xid":"9.3.22158"`.
+- Field `"xidn"` and stored as a decimal number, (for example, `"xidn":22158`).
+
+See: xref:../json/4.format.adoc#xid[xid] parameter for configuration details.
+
+NOTE: Internally, the transaction ID (XID) is stored using a 64-bit number.
+
+==== Response: _db_
+
+The `db` field contains database name.
+
+See: xref:../json/4.format.adoc#db[db] parameter for configuration details.
+
+==== Response: _payload.op_
+
+The `op` field contains a string describing the type of the operation.
+The following operation types are supported:
+
+- `"begin"` -- begin transaction record;
+- `"commit"` -- commit transaction record;
+- `"c"` -- create record -- field would represent INSERT DML operation;
+- `"u"` -- update record -- field would represent UPDATE DML operation;
+- `"d"` -- delete record -- field would represent DELETE DML operation;
+- `"ddl"` -- DDL operation;
+- `"chkpt"` -- checkpoint record.
+
+==== Response: _payload.schema_
+
+A `schema` field is present only in DML operations and contains an object with the information about schema.
+
+Below are listed the fields of the `schema` object.
+
+- `"owner"` -- owner of the schema, optional field, may not be present when schemaless mode is used;
+- `"table"` -- name of the table, in case of schemaless mode the value is `OBJ_xxx`, where `xxx` is the object identifier;
+- `"obj"` -- object identifier of the table;
+- `"columns"` -- array of columns (described below).
+
+==== Response: _payload.schema.columns_
+
+The `schema.columns` field is an array of objects, each object describing one column.
+
+The following fields are present in the column object:
+
+- `"name"` -- name of the column;
+- `"type"` -- type of the column;
+- `"length"` -- length of the column, present for `varchar2`, `raw`, `char`, `timestamp`, `timestamp with time zone`, `interval year to month`, `interval day to second`, `urowid`, `timestamp with local time zone` types;
+- `"precision"` -- precision of the column, present for `number` type;
+- `"scale"` -- scale of the column, present for `number` type;
+- `"nullable"` -- `true` if the column is nullable, `false` otherwise;
+
+==== Response: _payload.rid_
+
+The field contains the row identifier (_row ID_, _rid_) of the row.
+
+See: xref:../json/4.format.adoc#rid[rid] parameter for configuration details.
+
+==== Response: _payload.before_
+
+The before field contains the old values of the columns.
+It is present only in update and delete operations.
+The field is an array of objects, each object describing one column.
+
+[CAUTION]
+====
+Only data that is present in the redo log is present in the output.
+For update operations, values may be missing from the list in case the actual value didn't change.
+====
+
+See: xref:../json/4.format.adoc#column[column] parameter for configuration details.
+
+==== Response: _payload.after_
+
+The before field contains the new values of the columns.
+It is present only in insert and update operations.
+The field is an array of objects, each object describing one column.
+
+[CAUTION]
+====
+Only data that is present in the redo log is present in the output.
+For update operations, values may be missing from the list in case the actual value didn't change.
+====
+
+See: xref:../json/4.format.adoc#column[column] parameter for configuration details.
+
+==== Response: _payload.ddl_
+
+The field contains the text of the DDL statement.
+
+The DDL payload elements are not present by default.
+
+See: xref:../json/1.source.adoc#flags[flags] parameter for configuration details.
+
+==== Response: _payload.seq_
+
+The field is only present for _checkpoint_ messages.
+It contains information about the sequence number of the redo log file.
+
+==== Response: _payload.offset_
+
+The field is only present for _checkpoint_ messages.
+It contains information the byte offset of the redo log file associated with the checkpoint record.
+
+==== Response: _payload.redo_
+
+The field is only present for _checkpoint_ messages.
+It contains value 1 for checkpoint messages which are related to redo log file switch.
+
+==== Response: _payload.num_
+
+The field contains a consecutive number of the payload data.
+
+See: xref:../json/4.format.adoc#message[message] parameter for configuration details.
+
+=== Protocol buffer format
+
+The Protocol buffer format is the second implemented format.
+The field types and names are the same as in the JSON format, so there is no need to explain them again.
+The writer of this format constructs objects table by table, column by column, field by field and then serializes them to the output stream.
+Because every field is allocated separately, the memory consumption is higher than in the JSON writer, and internal tests show that the time of generating the stream is about 2.5 times slower.
+
+Next chapter: xref:4.output-target.adoc[Output target]

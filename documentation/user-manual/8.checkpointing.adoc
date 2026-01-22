@@ -1,0 +1,48 @@
+= Checkpointing
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-23
+:imagesdir: ./images
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Previous chapter: xref:7.startup.adoc[Startup]
+
+=== Introduction
+
+Checkpointing is a way to save the current position in the redo log.
+The structure of redo log files is organized as LWN's (Log Writer Number).
+Each LWN has a sequence of blocks which is a unit of redo log records and is processed as a whole.
+Because of this, the position is advanced only after the whole LWN is processed.
+
+=== Checkpoint messages
+
+After every LWN is processed, OpenLogReplicator emits a special record called checkpoint record.
+The checkpoint record contains the current position in the redo log.
+
+An example of checkpoint records:
+
+ "payload":[{"op":"chkpt","seq":1763,"offset":15872}]
+
+Checkpoint records can be used as a heartbeat signal, and are enabled by default.
+Sending of the checkpoint record can be disabled by setting of the `"flags":4096` parameter of the `reader`.
+
+The record contains information about the current sequence of the redo log files (`seq`) and the offset in the current file (`offset`).
+Sometimes it also contains information about the fact that the redo log file has been switched (`"redo":true`).
+
+Using the checkpoint records is the best way of verifying that the replication is working properly.
+The database writes LWNs every few seconds, so the checkpoint records are emitted every few seconds as well.
+In case of any problems, the checkpoint records would stop being emitted.
+
+=== Checkpoint SCN
+
+The SCN value present in the checkpoint record is used as a checkpoint SCN.
+When OpenLogReplicator is restarted, it starts from the last checkpoint SCN.
+Transactions which have commit SCN lower than the checkpoint SCN aren't processed.
+
+Next chapter:
+xref:9.advanced-topics.adoc[Advanced topics]

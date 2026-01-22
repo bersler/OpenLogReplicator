@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-21
+:revdate: 2026-01-23
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -35,7 +35,7 @@ Fixes issue #274.
 
 The "format" value can be set "debezium", the output format will follow the Debezium message format.
 No other parameters are required to be set.
-See xref:../json/format.adoc#type[type] for details.
+See xref:../json/4.format.adoc#type[type] for details.
 
 === Version 1.9.0
 - code style cleanup

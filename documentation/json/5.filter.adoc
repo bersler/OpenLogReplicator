@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - filter element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-16
+:revdate: 2026-01-23
 :icons: font
 
 [frame="none",grid="none"]
@@ -22,7 +22,7 @@ It explains how to select which tables and transactions are tracked, how keys an
 |Description and notes
 
 |`table`
-|_list_ of xref:./table.adoc#table[table] elements
+|_list_ of xref:./6.table.adoc#table[table] elements
 |List of table selection rules (regular expressions or simple patterns) that determine which tables are tracked and emitted to targets.
 A table matching any rule is tracked; rules may overlap.
 Each entry may include optional fields such as `key`, `condition` and `tag`.
@@ -32,7 +32,7 @@ Use `.` or `.*` style wildcards according to your pattern syntax.
 
 |`separator` [[separator]]
 |_string_, max length: 128, default: `","`
-|Delimiter used to join multi-column key values when `key` fields are specified (see xref:./table.adoc#key[key] and xref:./table.adoc#tag[tag]).
+|Delimiter used to join multi-column key values when `key` fields are specified (see xref:./6.table.adoc#key[key] and xref:./6.table.adoc#tag[tag]).
 
 _IMPORTANT:_ Choose a separator that cannot appear in key column values or ensure keys are escaped by the consumer.
 Avoid a single common character (e.g., `,`) when key columns may contain that character.

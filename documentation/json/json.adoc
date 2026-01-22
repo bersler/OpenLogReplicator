@@ -1,7 +1,7 @@
-= OpenLogReplicator.json format
+= OpenLogReplicator.json config file
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-21
+:revdate: 2026-01-23
 :imagesdir: ./images
 :icons: font
 
@@ -29,12 +29,12 @@ Use the `version` field to verify compatibility when upgrading the application.
 |Description and notes
 
 |`source`
-|_list_ of xref:source.adoc#source[source] elements, mandatory
+|_list_ of xref:1.source.adoc#source[source] elements, mandatory
 |One or more source entries describing where redo logs come from.
 Typical deployments use a single `source` element.
 
 |`target`
-|_list_ of xref:target.adoc#target[target] elements, mandatory
+|_list_ of xref:7.target.adoc#target[target] elements, mandatory
 |One or more target entries describing sinks / outputs.
 Typical deployments use a single `target` element.
 
@@ -83,15 +83,15 @@ _CAUTION:_ Dumps are intended for debugging and may not exactly match the extern
 * `4` — Debug
 
 |`memory`
-|_element_ of xref:./memory.adoc#memory[memory]
+|_element_ of xref:./9.memory.adoc#memory[memory]
 |Configuration of memory settings.
 
 |`metrics`
-|_element_ of xref:./metrics.adoc#metrics[metrics]
+|_element_ of xref:./10.metrics.adoc#metrics[metrics]
 |Group of options used for collecting metrics of OpenLogReplicator.
 
 |`state`
-|_element_ of xref:./state.adoc#state[state]
+|_element_ of xref:./11.state.adoc#state[state]
 |Configuration of state settings to store checkpoint information.
 
 |`trace`

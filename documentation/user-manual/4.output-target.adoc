@@ -1,0 +1,186 @@
+= Output target
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-23
+:imagesdir: ./images
+:url-github-docker: https://github.com/bersler/OpenLogReplicator-docker
+:url-github-librdkafka: https://github.com/confluentinc/librdkafka
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Previous chapter: xref:3.output-format.adoc[Output format]
+
+=== Kafka target
+
+OpenLogReplicator is a standalone program that connects to Kafka and sends messages to it.
+The connection parameters are fully controlled from the program parameters.
+
+[NOTE]
+====
+The Kafka target connector is not a Kafka Connect module.
+====
+
+==== Build instructions
+
+By default, OpenLogReplicator doesn't have the Kafka writer modules compiled in.
+The Kafka target module needs to be compiled and liked with the code.
+For {url-github-docker}[Docker images] use the parameter `--build-arg WITHKAFKA=1`.
+The Kafka module client is written in C/C++ and uses no Java code or runtime.
+
+==== Limitations
+
+[CAUTION]
+====
+OpenLogReplicator uses the {url-github-librdkafka}[librdkafka] library to connect to Kafka.
+The library has a limitation of 1.000.000.000 bytes (953 MB) for maximum message size.
+OpenLogReplicator has no limit for message size and can process rows containing multiple LOB columns which are up to 4GB in size.
+A message can theoretically contain multiple LOB columns, which would exceed the maximum message size for the Kafka client library.
+====
+
+==== Idempotent producer
+
+OpenLogReplicator can act as an idempotent producer, and this is the default behavior.
+This is default behavior and is controlled by the `properties` parameter, but can be disabled `("properties": "enable.idempotence:false")`.
+
+[CAUTION]
+====
+OpenLogReplicator does not support the Kafka transactional API.
+====
+
+==== Performance
+
+For performance reasons, OpenLogReplicator sends the message asynchronously and doesn't wait for the confirmation from Kafka.
+The number of messages sent simultaneously to Kafka is controlled by the `max-messages` parameter.
+
+==== Checkpointing
+
+Kafka target uses checkpointing the same way as the
+<<file-target,File target>>.
+
+=== File target [[file-target]]
+
+File target is the simplest target.
+It writes the output to a file.
+There are no limitations for the file size or the message size.
+
+[TIP]
+====
+For reproduction cases, whenever possible, use the file target.
+Such reproduction requires no setup of the Kafka cluster and is easier to set up.
+====
+
+==== Checkpointing
+
+To keep track of the position in the redo log, OpenLogReplicator writes the checkpoint to series of entities.
+Those entities are files by default, but future versions might use other storing engines, like Redis.
+
+There are two types of checkpoints:
+
+- SCN checkpoint -- the SCN number defines the position in the redo log; The file contains the SCN number of the last transaction sent to output.
+
+- Schema checkpoints -- represented in the checkpoint directory as files with SCN number in the name.
+Every file represents schema of the database which was active at the time of the SCN number in the file name.
+
+[CAUTION]
+====
+For performance reasons, the schema checkpoints are not written for every transaction.
+Instead, files are created periodically, and the schema is written to the file only if it changed since the last checkpoint.
+When the schema did not change, the schema checkpoint would reference some other schema checkpoint earlier in time.
+====
+
+[CAUTION]
+====
+By default, the schema checkpoints are deleted when they aren't necessary anymore.
+Different checkpoint options decide how many files are created and how many files are kept.
+It is also possible to disable the deletion of the schema checkpoints.
+====
+
+=== Network target
+
+The network target is the most sophisticated module and allows to send the output to virtually any type of target.
+The receiver of the messages can be written in any language (C, C++, GO, Java, Rust, etc.) and can be running on any platform.
+
+The intention of the network module is to allow maximum integration, while keeping the code simple and easy to maintain.
+
+There are no limitations for the message size for the network module.
+
+The network module is flexible when it comes to communication protocol.
+Currently, 2 protocols are supported: plain TCP/IP and ZeroMQ, but other protocols can be added easily.
+
+==== Checkpointing
+
+For the network communication protocol, the receiver of the messages controls the position of the checkpoint.
+This means that the receiver is responsible for saving the checkpoint and for sending the checkpoint to the sender.
+The receiver (Target) informs the sender (OpenLogReplicator) that certain transactions have been accepted op to the defined SCN position.
+In case of connection failure, the sender (OpenLogReplicator) would start from the last checkpoint position provided by the target.
+
+[IMPORTANT]
+====
+This allows creating an HA configuration!
+====
+
+[IMPORTANT]
+====
+It is not possible to retry the transactions once the Low Watermark has been moved and the transactions were removed from memory.
+====
+
+==== Architecture
+
+Using the Network target allows moving the responsibility regarding keeping HWM to the target.
+The target decides which transactions it has already processed and which transactions it has not processed yet.
+The target can also decide to keep the transactions in memory for a longer time, for example, to allow the target to retry the transactions in case of failure.
+In case of OpenLogReplicator failure or restart, the target would send the information about the last processed SCN to OpenLogReplicator.
+Based on information about the last processed SCN, OpenLogReplicator would start sending the transactions from the next SCN.
+OpenLogReplicator keeps a local repository about schema changes and is able to resume replication from any SCN, but not lower than the last confirmed SCN by the target.
+
+.Network target architecture
+image:network-target-architecture.png[Network target architecture,,,]
+
+On the image above notice a distinction between:
+
+- checkpoint files with schema -- are files containing image of the database schema which was present at the time of the SCN number in the file name; those files are created periodically and are not created for every transaction; they are needed during the restart of OpenLogReplicator to be able to resume replication from any SCN; the client is not controlling the process of creating those files; the files are periodically deleted -- when the program decides they are not needed anymore;
+
+- checkpoint SCN position -- is an SCN value controlled by the client and is used to inform OpenLogReplicator about the last processed SCN; this value has to be maintained by the client, every time the client reconnects, OpenLogReplicator is expecting the last processed SCN value, so that it is able to resume replication from the last processed SCN;
+
+[CAUTION]
+====
+It is up to the target to decide how often to confirm the SCN to OpenLogReplicator.
+If the target confirms the SCN too seldom, memory usage of OpenLogReplicator might increase since all transactions are cached in memory.
+====
+
+==== Network layer
+
+The server defines the communication protocol by setting the `type` parameter of `writer` element.
+The following protocols are supported:
+
+- network
+- zeromq
+
+This is just the communication layer, and all communication is done the same way.
+Only one user can connect to the server at the same time.
+
+The communication is bidirectional.
+The client and server can send messages to each other.
+
+==== Communication protocol
+
+The following steps are performed after the startup:
+
+1. The server is waiting for client connection.
+
+2. The client connects to the server and issues one of the following commands:
+- INFO -- the client requests information about the server;
+- START -- the client requests to start the replication;
+- REDO -- the clients requests replication stream;
+
+3. After receiving the START command, the server tries to initialize redo log parsing starting from the position defined by the client.
+If this fails, the server sends an error message and waits for further commands.
+
+4. After receiving the REDO command, the server starts sending the redo log records to the client.
+Once the redo stream is started, it is not possible to change the position in the redo log.
+
+Next chapter: xref:5.supported-features.adoc[Supported features]

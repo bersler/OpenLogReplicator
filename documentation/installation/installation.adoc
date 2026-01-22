@@ -1,7 +1,7 @@
 = Installation Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-12
+:revdate: 2026-01-23
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-Docker
 :toc: preamble
@@ -36,7 +36,7 @@ Supported source database versions and platforms:
 
 * Versions: 11.2, 12.1, 12.2, 18c, 19c, 21c, 23c, 23ai, 26ai
 * Editions: XE/FREE/AI, DE, SE, SE2, PE, EE
-* Character sets: 138 supported (see xref:../user-manual/user-manual.adoc#supported-character-sets[user manual])
+* Character sets: 138 supported (see xref:../user-manual/9.advanced-topics.adoc#supported-character-sets[user manual])
 * Platforms: Linux x86_64, Solaris x64, Solaris SPARC
 * Storage: file systems such as ext4, btrfs, zfs, xfs, sshfs
 * Database block sizes: 2k, 4k, 8k, 16k, 32k

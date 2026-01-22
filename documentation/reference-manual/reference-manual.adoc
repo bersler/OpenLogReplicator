@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-22
+:revdate: 2026-01-23
 :imagesdir: ./images
 :icons: font
 :toc: preamble
@@ -80,7 +80,7 @@ Verify buffer minima sum remains below `max-mb`.
 == See also
 
 * xref:../json/json.adoc[OpenLogReplicator.json] — main configuration reference
-* xref:../json/format.adoc[format element] — output serialization options
-* xref:../json/memory.adoc[memory element] — memory and buffering
-* xref:../json/filter.adoc[filter element] — table selection and filtering rules
-* xref:../json/debug.adoc[debug element] — debug and diagnostics options
+* xref:../json/4.format.adoc[format element] — output serialization options
+* xref:../json/9.memory.adoc[memory element] — memory and buffering
+* xref:../json/5.filter.adoc[filter element] — table selection and filtering rules
+* xref:../json/3.debug.adoc[debug element] — debug and diagnostics options
