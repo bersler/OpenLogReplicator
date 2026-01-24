@@ -29,6 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/ClockHW.h"
 #include "common/Ctx.h"
 #include "common/Thread.h"
+#include "common/exception/BootException.h"
 #include "common/exception/ConfigurationException.h"
 #include "common/exception/DataException.h"
 #include "common/exception/RuntimeException.h"
@@ -115,6 +116,7 @@ namespace {
                 HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC HAS_THREAD_INFO);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
+        OpenLogReplicator::Start start;
         try {
             bool forceRoot = false;
             const std::regex regexTest(".*");
@@ -159,14 +161,89 @@ namespace {
                     continue;
                 }
 
-                if (geteuid() == 0) {
-                    if (!forceRoot)
-                        throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
-                    mainCtx->warning(10020, "program is run as root, you should never do that");
+                if (arg == "-l" || arg == "--time-relative" || arg == "-n" || arg == "--now" || arg == "-s" || arg == "--scn" || arg == "-t" || arg == "--time")
+                    if (start.from != OpenLogReplicator::Start::FROM::CONTINUE)
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                        "Invalid startup parameters: startup parameters defined multiple times");
+
+                if (arg == "-n" || arg == "--now") {
+                    start.from = OpenLogReplicator::Start::FROM::NOW;
+                    continue;
                 }
 
-                throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) + " [-v|--version] [-f|--file CONFIG] "
-                                                                "[-p|--process PROCESSNAME] [-r|--root]");
+                if (arg == "-s" || arg == "--scn") {
+                    if (i + 1 >= argc)
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: missing SCN value");
+
+                    start.from = OpenLogReplicator::Start::FROM::SCN;
+                    std::cerr << "SCN: [" << argv[i + 1] << "]\n";
+                    try {
+                        start.scn = std::stoull(argv[i + 1]);
+                    } catch (std::invalid_argument& e) {
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: invalid SCN value " + std::string(argv[i + 1]));
+                    }
+                    ++i;
+                    continue;
+                }
+
+                if (strncmp(argv[i], "-q", 2) == 0 || strncmp(argv[i], "--sequence", 10) == 0) {
+                    if (i + 1 >= argc)
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: missing SEQ value");
+
+                    if (start.sequence != OpenLogReplicator::Seq::none())
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: multiple -q parameter");
+
+                    std::cerr << "SEQ: [" << argv[i + 1] << "]\n";
+                    try {
+                        start.sequence = std::stoul(argv[i + 1]);
+                    } catch (std::invalid_argument& e) {
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: invalid SEQUENCE value " + std::string(argv[i + 1]));
+                    }
+                    if (start.sequence == OpenLogReplicator::Seq::none())
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: too big sequence value");
+                    ++i;
+                    continue;
+                }
+
+                if (strncmp(argv[i], "-t", 2) == 0 || strncmp(argv[i], "--time", 6) == 0) {
+                    if (i + 1 >= argc)
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: missing time value");
+                    start.time = argv[i + 1];
+                    ++i;
+                    continue;
+                }
+
+                if (strncmp(argv[i], "-l", 2) == 0 || strncmp(argv[i], "--time-relative", 15) == 0) {
+                    if (i + 1 >= argc)
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: missing TIME RELATIVE value");
+                    std::cerr << "TIME_REL: [" << argv[i + 1] << "]\n";
+                    try {
+                        start.timeRel = std::stoull(argv[i + 1]);
+                    } catch (std::invalid_argument& e) {
+                        throw OpenLogReplicator::ConfigurationException(30011,
+                            "Invalid startup parameter: invalid TIME RELATIVE value " + std::string(argv[i + 1]));
+                    }
+                    ++i;
+                    continue;
+                }
+
+                throw OpenLogReplicator::ConfigurationException(30002, "invalid arguments, run: " + std::string(argv[0]) +
+                                                                       " [-f|--file CONFIG]  [-l|--time-relative TIME] [-n|--now] [-p|--process PROCESSNAME] "
+                                                                       " [-q|--sequence SEQUENCE] [-r|--root] [-s|--scn SCN] [-t|--time TIME] [-v|--version] ");
+            }
+
+            if (geteuid() == 0) {
+                if (!forceRoot)
+                    throw OpenLogReplicator::RuntimeException(10020, "program is run as root, you should never do that");
+                mainCtx->warning(10020, "program is run as root, you should never do that");
             }
         } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
@@ -174,11 +251,14 @@ namespace {
         } catch (OpenLogReplicator::RuntimeException& ex) {
             mainCtx->error(ex.code, ex.msg);
             return 1;
+        } catch (OpenLogReplicator::BootException& ex) {
+            mainCtx->error(ex.code, ex.msg);
+            return 1;
         }
 
         OpenLogReplicator::OpenLogReplicator openLogReplicator(fileName, mainCtx);
         try {
-            ret = openLogReplicator.run();
+            ret = openLogReplicator.run(start);
         } catch (OpenLogReplicator::ConfigurationException& ex) {
             mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
@@ -186,6 +266,9 @@ namespace {
             mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
         } catch (OpenLogReplicator::RuntimeException& ex) {
+            mainCtx->error(ex.code, ex.msg);
+            mainCtx->stopHard();
+        } catch (OpenLogReplicator::BootException& ex) {
             mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
         } catch (std::bad_alloc& ex) {
