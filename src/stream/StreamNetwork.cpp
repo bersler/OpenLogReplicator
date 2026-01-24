@@ -428,8 +428,16 @@ namespace OpenLogReplicator {
         if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (20)");
 
-        if (socketFD != -1)
+        if (socketFD != -1) {
+            char clientHost[NI_MAXHOST];
+            char clientService[NI_MAXSERV];
+
+            if (getnameinfo(reinterpret_cast<sockaddr*>(&address), addrlen, clientHost, sizeof(clientHost), clientService, sizeof(clientService),
+                            NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+                ctx->info(0, "received client connection from host: " + std::string(clientHost) + ":" + clientService);
+            }
             return true;
+        }
 
         return false;
     }

@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-23
+:revdate: 2026-01-24
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -36,6 +36,12 @@ Fixes issue #274.
 The "format" value can be set "debezium", the output format will follow the Debezium message format.
 No other parameters are required to be set.
 See xref:../json/4.format.adoc#type[type] for details.
+
+- enhancement: printing information about new client network connection
+
+Example output:
+
+    2026-01-24 00:13:18 INFO  00000 received client connection from host: 172.16.1.5:56474
 
 === Version 1.9.0
 - code style cleanup
