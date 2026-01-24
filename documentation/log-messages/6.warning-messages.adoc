@@ -1,0 +1,196 @@
+= Warning Messages (6xxxx)
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-25
+:imagesdir: ./images
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+==== code 60001: "incomplete row for table (obj: <number>), probably IOT, xid: <xid>, offset: <number>"
+
+This warning is most probably related to using schemaless mode with IOT tables.
+In this case, please try to use schema mode instead.
+If the problem persists, please report this issue.
+
+==== code 60002: "unknown value (column: <column>): <number> - <data>)"
+
+Might be related to extensive using of dbms_lob package.
+In this case, please try to use direct DML operations for LOB columns instead.
+If the problem persists, please report this issue.
+
+==== code 60003: "incorrect LOB for xid: <xid>, data: <data>, location: <number>"
+
+See comment for warning 60002.
+
+==== code 60004: "can't find page <number> for xid: <xid>, LOB: <lob>, obj: <number>"
+
+See comment for warning 60002.
+
+==== code 60005: "missing LOB data (new in-value) for xid: <xid,> LOB: <lob>, page: <number>, obj: <number>"
+
+See comment for warning 60002.
+
+==== code 60006: "dump LOB: <lob> data: <data>"
+
+See comment for warning 60002.
+
+==== code 60007: "incorrect LOB sum xid: <xid> left: <number> obj: <number>"
+
+See comment for warning 60002.
+
+==== code 60008: "can't decode character: (x, y, z) using character set <name>, xid: <xid>"
+
+The character field contained a character code which is invalid and can't be decoded.
+If the field is not character, and the data is expected to be correct, please report this issue.
+
+==== code 60009: "duplicate orphaned lob: <lob>, page: <number>"
+
+See comment for warning 60002.
+
+==== code 60010: "no match found for transaction rollback, skipping, SLT: <number>, USN: <number>"
+
+This warning could appear during replication startup.
+It means that the beginning of the transaction appeared probably before replication startup.
+
+==== code 60011: "skipping transaction with no beginning: <details>"
+
+Received commit for a transaction which started before replication startup.
+The transaction is discarded.
+
+==== code 60012: "aborting log dump"
+
+The log dump is aborted because there was a problem with creating a file for the dump.
+
+==== code 60013: "forced to continue working in spite of error"
+
+In spite of redo log data error, the redo log is processed.
+A message has been printed with the error which appeared during parsing.
+Investigate the error anyway and verify if the data is correct.
+
+==== code 60014: "verify redo log file for OP:10.8, len: <number>, data = [<number>, <number>, <number>, <number>]"
+
+See comment for warning 60002.
+
+==== code 60015: "big transaction divided (forced commit after <number> bytes), xid: <xid>"
+
+A huge transaction has exceeded provided maximum size for transactions.
+
+==== code 60016: "LOB is null for (obj: <number>, dataobj: <number>), offset: <number>, xid: <xid>"
+
+See comment for warning 60002.
+
+==== code 60017: "minimal supplemental log missing or redo log inconsistency for transaction <xid>, offset: <number>"
+
+Verify if supplemental logging is enabled for the database.
+If it is, and even after log switch the warning appears, please report this issue.
+
+==== code 60018: "file: <file name> - couldn't write checkpoint"
+
+Checkpoint file couldn't be created because of errors.
+Verify the reason and try to fix it.
+
+==== code 60019: "file: <file name> - load checkpoint failed, reference SCN missing"
+
+Schema missing in checkpoint file.
+Verify if the file is correct.
+If the problem persists, please report this issue.
+
+==== code 60020: "file: <file name> - load adaptive schema failed"
+
+Adaptive schema load failed.
+The program will continue without any schema.
+Verify if the file is correct.
+If the problem persists, please report this issue.
+
+==== code 60021: "missing LOB index for LOB (OBJ#: <number>, DATAOBJ#: <number>, COL#: <number>)"
+
+See comment for warning 60002.
+
+==== code 60022: "missing TS#: <number>, BLOCKSIZE: <number>"
+
+Missing information about tablespace in the database schema.
+Verify if the tablespace is correct.
+If the problem persists, please report this issue.
+
+==== code 60023: "file: <file name> - position: <number> - unexpected end of file"
+
+Unexpected end of a redo log file.
+Verify if the file is correct.
+If the problem persists, please report this issue.
+
+==== code 60024: "file: <file name> - invalid header sequence (<number>, expected: <number>)"
+
+Invalid information about a redo log sequence in the header.
+Verify if the file is correct.
+If the problem persists, please report this issue.
+
+==== code 60025: "file: <file name> - block: <number> - invalid header checksum, expected: <number>, calculated: <number>"
+
+Invalid checksum in the redo log header.
+Verify if the file is correct.
+If the problem persists, please report this issue.
+
+==== code 60026: "stripping trailing '/' from <name> parameter; new value: <value>"
+
+Stripped trailing '/' from the parameter value from the path parameter.
+
+==== code 60027: "couldn't find archive log for seq: <number>, found: <number>, sleeping <number> us"
+
+Missing an archive log file.
+Verify if the file is correct.
+If the problem persists, please report this issue.
+
+==== code 60028: "can't get sequence from file: <file name> log_archive_format: <string> at position <number> format position <number>, <problem>"
+
+Invalid archive log file name.
+Verify if the file is correct.
+If the problem persists, please report this issue.
+
+==== code 60029: "message size (<number>) will exceed 'max-file-size' size (<number>)"
+
+The defined maximum size for the file is too small to write a single message.
+Increase the size.
+
+==== code 60030: "rotation size is set too low (<number>), increase it, should rotate but too early (<file name>)"
+
+The parameter for rotation size is too small.
+Increase the number.
+
+==== code 60031: "queue, full, sleeping <number> >ms, then retrying"
+
+The queue for redo log data is full.
+The program will sleep for a while and then retry.
+Investigate the reason why the receiver is not able to process the data fast enough.
+
+==== code 60032: "unknown request code: <message>"
+
+Invalid request code received by the network client.
+
+==== code 60033: "request decoder[<number>]: <data>"
+
+Invalid request data received by the network client.
+
+==== code 60034, "observed UPDATE operation for NOT NULL column with NULL value for table <owner>.<table> column <column>"
+
+There could be cases that due to some upgrades from old versions or other unknown reasons, the BEFORE image for UPDATE command contains NULL value for a column that has been defied as NOT NULL.
+
+By default, OpenLogReplicator would just print the informational message (but just once per column) and continue with the replication.
+
+It is also possible to treat the AFTER image as the correct value and copy it to the BEFORE image of the column value.
+This feature is experimental.
+To achieve this behavior, the xref:../json/1.source.adoc#flags[flags] parameter should be set appropriately.
+
+==== code 60035, "unknown database requested, got: <name>, expected: <name>"
+
+The client requested a database which is not configured in the program.
+
+==== code 60036, "incorrect XML data: <message>"
+
+Data for XMLTYPE column type is not correct.
+
+==== code 60037, "incorrect DDL data, offset: <number>"
+
+Data for XMLTYPE column type is not correct.

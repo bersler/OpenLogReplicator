@@ -1,0 +1,162 @@
+= Interlal Error Messages (5xxxx)
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-25
+:imagesdir: ./images
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Provided below is a list of internal errors which should never appear.
+If you encounter any of these errors, please report this issue.
+
+==== code 50001: "trying to free unknown memory block for: <module>"
+
+==== code 50002: "trying to insert table: <owner>.<name> (obj: <number>, dataobj: <number>) column: <name> (col#: <number>, segcol#: <number>) on position <number>"
+
+==== code 50003: "inconsistent page size lobid: <lobid>, new: <number>, already set to: <number>, xid: <xid>, offset: <number>"
+
+==== code 50004: "duplicate index lobid: <lobid>, page: <number>, already set to: <number>, xid: <xid>, offset: <number>"
+
+==== code 50005: "field size out of vector, field: <number>/<number>, pos: <number>, size: <number>, max: <number>, code: <number>"
+
+==== code 50006: "field missing in vector, field: <number>/<number>, ctx: <number>, obj: <number>, dataobj: <number>, op: <code>, cc: <number>, suppCC: <number>, fieldLength: <number>, code: <number>"
+
+==== code 50007: "field size out of vector, field: <number>/<number>, pos: <number>, size: <number>, max: <number>, code: <number>"
+
+==== code 50008: "field size out of vector: field: <number>/<number>, pos: <number>, size: <number>, max: <number>"
+
+==== code 50009: "error parsing numeric value at offset: <number>"
+
+==== code 50010: "can't find character set map for id = <number> at offset: <number>"
+
+==== code 50011: "got character code: U+<number> at offset: <number>"
+
+==== code 50012, "trying to allocate length for value: <number> exceeds maximum: <number> at offset: <number>"
+
+==== code 50013: "trying to output null data for column: <name>, offset: <number>"
+
+==== code 50014: "table: <table>: out of columns (<group>): <number/<number>, <number>, <number>-<number>-<number>, xid: <xid>, offset: <number>"
+
+==== code 50015: "value for <number>/<number> is already set when merging, xid: <xid>, offset: <number>"
+
+==== code 50016: "PB <operation> processing failed, message already exists"
+
+==== code 50017: "PB <operation> processing failed, error serializing to string
+
+==== code 50018: "PB <operation> processing failed, a message is missing
+
+==== code 50019: "ddl: column type mismatch for <owner>.<table>: column <column> type found <type> offset: <number>"
+
+==== code 50020: "ddl: column type mismatch for <owner>.<table>: column <column> value found <value> offset: <number>"
+
+==== code 50021: "incorrect conversion of string: <string>"
+
+==== code 50022: "ddl: duplicate <owner>.<table>: (rowid: <rowid>) for insert at offset: <number>"
+
+==== code 50023: "duplicate <owner>.<table> value: (rowid: <rowid>)"
+
+==== code 50024: duplicate value for unique (<columns>)
+
+==== code 50025: "value of <owner>.<table> too <condition> (<details>)"
+
+==== code 50026: "table <table>.<owner> - unsupported character set id: <charset> for column: <column>"
+
+==== code 50027: "table <owner>.<name> couldn't find obj for lob <number>"
+
+==== code 50028: "table <owner>.<name> couldn't find obj for lob frag <number>"
+
+==== code 50029: "<structure> not empty, left: <number> at exit"
+
+==== code 50030: "missing index for <owner>.<table> (<columns>)"
+
+==== code 50031: "can't add table (obj: <number>, dataobj: <number>)"
+
+==== code 50032: "can't add lob index element (dataobj: <number>)"
+
+==== code 50033: "can't add partition (obj: <number>, dataobj: <number>)"
+
+==== code 50034: "can't add partition element (obj: <number>, dataobj: <number>)"
+
+==== code 50035: "can't remove partition (obj: <number>, dataobj: <number>)"
+
+==== code 50036: "can't remove table partition element (obj: <number>, dataobj: <number>)"
+
+==== code 50037: "can't remove lob index element (dataobj: <number>)"
+
+==== code 50038: "can't remove table (obj: <number>, dataobj: <number>)"
+
+==== code 50039: "transaction <xid> conflicts with <xid>, offset: <number>"
+
+==== code 50040: "block size (<number>) exceeding max block size (<number>), please report this issue"
+
+==== code 50041: "bad split offset: <number> xid: <xid>"
+
+==== code 50042: "split undo HEAD on 5.1 offset: <number>"
+
+==== code 50043: "bad split offset: <number> xid: <xid>" second position
+
+==== code 50044: "trying to remove from empty buffer size: <number> elements: <number>"
+
+==== code 50045: "bdba does not match (<value>, <value>), offset: <number>"
+
+==== code 50046: "block: <block>, offset: <number>: <message>"
+
+==== code 50047: "incorrect offset start: <number> - not a multiplication of block size: <number>"
+
+==== code 50048: "invalid resetlogs value (found: <value>, expected: <value>): <file name>"
+
+==== code 50049: "invalid lwn scn: <scn>"
+
+==== code 50050: "invalid lwn max: <value>/<value>/<value>"
+
+==== code 50051: "did not find lwn at offset: <value>"
+
+==== code 50052: "all <number> lwn buffers allocated"
+
+==== code 50053: "too big redo log record, length: <number>"
+
+==== code 50054: "all <number> records in lwn were used"
+
+==== code 50055: "lwn overflow: <number>/<number>"
+
+==== code 50056: "system transaction already active"
+
+==== code 50057: "unknown op code <number>, offset: <number>"
+
+==== code 50058: "output buffer - commit of empty transaction"
+
+==== code 50059: "table: <table>: invalid column shift: <number>, before: <number>, xid: <xid>, offset: <number>"
+
+==== code 50060: "table: <table>: referring to invalid column id(<number>), xid: <xid>, offset: <number>"
+
+==== code 50061: "too short field <code>: <number> offset: <number"
+
+==== code 50062: "non-free blocks in transaction buffer: <number>"
+
+==== code 50063: "nulls field is missing on offset: <number>"
+
+==== code 50064: "attributes with no transaction, offset: <number>"
+
+==== code 50065: "empty attributes for XID: <xid>"
+
+==== code 50066: "invalid expression evaluation: <message>"
+
+==== code 50067: "invalid condition: <message>"
+
+==== code 50068: "missing <table> table, <operation> failed"
+
+==== code 50069: "no active XML context found"
+
+The experimental feature to decode binary xmldata has been turned on, but the metadata contains no XML dictionary data.
+Please consider recreating schema checkpoint files: stop replication, delete content of checkpoint directory, and restart to recreate the schema file.
+
+==== code 50070: "swap chunk not found for xid: <xid> during <operation>"
+
+==== code 50071: "unswap page not swapped for xid: <xid>"
+
+==== code 50072: "swap file: <file> - <message>"
+
+==== code 50073: "table: <table>: missmatch in column details: <number> < <number>"

@@ -1,0 +1,73 @@
+= Redo Log Error Messages (4xxxx)
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-25
+:imagesdir: ./images
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Some data in redo log files aren't correct.
+The data doesn't meet the model requirements of OpenLogReplicator or is corrupted.
+
+==== code 40001: "file: <file name> - block: <number> - invalid block size: <number>, header[1]: <number>"
+
+Block size in the header of the file doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40002: "file: <file name> - invalid header block number: <number>, expected: <number>"
+
+Block number doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40003: "file: <file name> - invalid header[0]: <number>"
+
+Invalid header read from the file.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40004: "file: <file name> - invalid header[28-31]: <number>, <number>, <number>, <number>"
+
+Invalid header read from the file.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40005: "file: <file name> - invalid block size: <number>, header[1]: <number>"
+
+Block size in the header of the file doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40006: "file: <file name> - invalid database version: <number>"
+
+The database version in the header of the file doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40007: "file: <file name> - invalid database version: <number>, expected: <number>"
+
+The database version in the header of the block doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40008: "file: <file name> - invalid first scn value: <number>, expected: <number>"
+
+The first scn value reported in the header of the block doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40009: "file: <file name> - invalid next scn value: <number>, expected: <number>"
+
+The next scn value reported in the header of the block doesn't match the expected value.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.
+
+==== code 40010, "file: <file name> - zero to read, start: <number>, end: <number>, scan: <number>"
+
+Double read error.
+Verify if the file is not corrupted.
+If the problem persists, please report this issue.

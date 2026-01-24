@@ -48,6 +48,13 @@ Refer to [OpenLogReplicator tutorials repository](https://github.com/bersler/Ope
 7. [Metrics](documentation/metrics/metrics.adoc)
 8. [Troubleshooting Guide](documentation/troubleshooting/troubleshooting.adoc)
 9. [Log Message Guide](documentation/log-messages/log-messages.adoc)
+   1. [Runtime Error Messages](documentation/log-messages/1.runtume-error-messages.adoc)
+   2. [Data Error Messages](documentation/log-messages/2.data-error-messages.adoc)
+   3. [Configuration Error Messages](documentation/log-messages/3.configuration-error-messages.adoc)
+   4. [Redo Log Error Messages](documentation/log-messages/4.redo-log-error-messages.adoc)
+   5. [Internal Error Messages](documentation/log-messages/5.internal-error-messages.adoc)
+   6. [Warning Messages](documentation/log-messages/6.warning-messages.adoc)
+   7. [Internal Warning Messages](documentation/log-messages/7.internal-warning-messages.adoc)
 10. [Experimental Features](documentation/experimental-features/experimental-features.adoc)
 
 Additionally:
