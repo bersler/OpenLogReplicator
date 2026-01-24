@@ -1,0 +1,35 @@
+= Internal Warning Messages (7xxxx)
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-25
+:imagesdir: ./images
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Provided below is a list of internal warnings which should never appear.
+If you encounter any of these warnings, please report this issue.
+
+==== code 70001: "too short field <code>: <number> offset: <number"
+
+==== code 70002: "dumping redo vector"
+
+==== code 70003: "trying to rollback2: <number> with: <number>, offset: <number>, xid: <xid>, pos: <number>"
+
+==== code 70004: "rollback failed for <number> empty buffer, offset: <number>, xid: <xid>, pos: <number>"
+
+==== code 70005: "data in SYS.CDEF$ missing for CON#: <number>"
+
+==== code 70006: "OCI: <message>"
+
+==== code 70007: "trying to confirm an empty message"
+
+==== code 70008: "Kafka: <number> delivery failed: <message>"
+
+==== code 70009: "Kafka: <message>, reason: <message>"
+
+==== code 70010: "unknown undo OP: <number>, opc: <number>"
+
+==== code 70011: "unknown rollback OP: <number>, opc: <opc>)

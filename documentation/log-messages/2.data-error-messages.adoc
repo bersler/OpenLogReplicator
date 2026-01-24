@@ -1,0 +1,66 @@
+= Data Error Messages (2xxxx)
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.9.0
+:revdate: 2026-01-25
+:imagesdir: ./images
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+Errors related to syntax and content of configuration file and checkpoint files.
+
+==== code 20001: "file: <file name> - <message>"
+
+Parsing configuration file failed.
+Check if the file is not corrupted.
+Verify the content of JSON file using online JSON validator.
+
+If the checkpoint file belongs to another database, verify if the database name is correct.
+
+Having an incorrect checkpoint file makes it impossible to start replication.
+If it is not possible to fix the checkpoint file, remove it and start replication from the beginning.
+
+==== code 20002: "bad XID value: <text>"
+
+Transaction ID (XID) number is in incorrect format provided in the configuration file.
+This value has a wrong format and can't be parsed.
+Check if the file is not corrupted.
+Refer to the documentation for more information about xref:../json/5.filter.adoc#skip-xid[XID format].
+
+==== code 20003: "file: <file name> - parse error, field <field> <message>"
+
+Parsing of a JSON file failed.
+The file contains invalid data.
+Verify if file content is a valid JSON.
+
+==== code 20004: "identifier '<name>' is too long"
+
+Identifier used for metadata for table or owner name is too long.
+Verify if the name is correct.
+Verify if the name is not too long.
+
+==== code 20005: "file: <file name> - <field name> should be an array with 2 elements"
+
+Checkpoint file contains invalid data.
+Verify if file content is a valid JSON.
+
+==== code 20006: "file: <file name> - invalid offset: <number> is not a multiplication of 512"
+
+The file is not a valid archived redo log file.
+Verify if the file exists and has the correct permissions.
+Verify if the file is not corrupted and contains correct JSON content.
+
+==== code 20007: "file: <file name> - <schema> is [missing|redundant]"
+
+After starting of replication and collecting a schema file, OpenLogReplicator monitors all tables in the database such match defined schema and user mask.
+If replication is stopped, the configuration file should not be altered and new schemas can't be added to the list of replicated tables.
+If such an event happens, replication can't start, and the following message is printed.
+This error reports that either a schema is missing or is redundant compared to the main configuration file (OpenLogReplicator.json).
+
+==== code 20008: "row ID incorrect length: <number>"
+
+Row ID is in incorrect format.
+The length of the row ID is not correct.
+Verify if the row ID is correct.
