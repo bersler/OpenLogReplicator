@@ -499,7 +499,7 @@ namespace OpenLogReplicator {
 
             const dirent* ent2;
             while ((ent2 = readdir(dir2)) != nullptr) {
-                const std::string dName2(ent->d_name);
+                const std::string dName2(ent2->d_name);
                 if (dName2 == "." || dName2 == "..")
                     continue;
 

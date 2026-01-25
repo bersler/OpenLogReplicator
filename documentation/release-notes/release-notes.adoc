@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-24
+:revdate: 2026-01-26
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
@@ -42,6 +42,11 @@ See xref:../json/4.format.adoc#type[type] for details.
 Example output:
 
     2026-01-24 00:13:18 INFO  00000 received client connection from host: 172.16.1.5:56474
+
+- fix: false-positive warnings appearing in offline mode:
+
+    2026-01-24 09:20:21 WARN  60028 can't get sequence from file: .. log_archive_format: o1_mf_%t_%s_%h_.arc at position 0 format position 0, found different values
+    2026-01-24 09:20:21 WARN  60028 can't get sequence from file: . log_archive_format: o1_mf_%t_%s_%h_.arc at position 0 format position 0, found different values
 
 === Version 1.9.0
 - code style cleanup
