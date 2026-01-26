@@ -1,8 +1,7 @@
 = Data Error Messages (2xxxx)
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-25
-:imagesdir: ./images
+:revdate: 2026-01-27
 
 [frame="none",grid="none"]
 |====
