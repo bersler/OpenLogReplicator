@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-01-28
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
 :toc: preamble
@@ -46,6 +46,8 @@ Example output:
 
     2026-01-24 09:20:21 WARN  60028 can't get sequence from file: .. log_archive_format: o1_mf_%t_%s_%h_.arc at position 0 format position 0, found different values
     2026-01-24 09:20:21 WARN  60028 can't get sequence from file: . log_archive_format: o1_mf_%t_%s_%h_.arc at position 0 format position 0, found different values
+
+- enhancement: added support for big endian systems (like Arm64) for streaming to Debezium
 
 === Version 1.9.0
 - code style cleanup
