@@ -6,6 +6,7 @@
 - enhancement: added new format for Debezium output
 - enhancement: printing information about new client network connection
 - fix: false-positive warnings appearing in offline mode
+- enhancement: added support for big endian systems (like Arm64) for streaming to Debezium
 
 1.9.0
 - code style cleanup

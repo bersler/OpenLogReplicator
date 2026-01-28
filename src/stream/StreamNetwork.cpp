@@ -120,7 +120,6 @@ namespace OpenLogReplicator {
     }
 
     void StreamNetwork::sendMessage(const void* msg, uint64_t length) {
-        uint32_t length32 = length;
         uint64_t sent = 0;
 
         if (socketFD == -1)
@@ -132,7 +131,8 @@ namespace OpenLogReplicator {
         FD_SET(socketFD, &wset);
 
         // Header content
-        if (length < 0xFFFFFFFF) {
+        if (length < MAX_LENGTH) {
+            uint32_t length32 = length;
             // 32-bit length
             while (sent < sizeof(uint32_t)) {
                 if (ctx->softShutdown)
@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
             }
         } else {
             // 64-bit length
-            length32 = 0xFFFFFFFF;
+            uint32_t length32 = htole32(MAX_LENGTH);
             while (sent < sizeof(uint32_t)) {
                 if (ctx->softShutdown)
                     return;
@@ -178,6 +178,7 @@ namespace OpenLogReplicator {
                 sent += r;
             }
 
+            uint32_t length64 = htole64(length);
             sent = 0;
             while (sent < sizeof(uint64_t)) {
                 if (ctx->softShutdown)
@@ -186,7 +187,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length) + sent, sizeof(uint64_t) - sent);
+                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length64) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
                     if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                         r = 0;
@@ -225,7 +226,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t StreamNetwork::receiveMessage(void* msg, uint64_t length) {
+    uint64_t StreamNetwork::receiveMessage(void* msg, uint64_t bufferSize) {
         uint64_t recvd = 0;
 
         // Read message length
@@ -248,13 +249,12 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint32_t newLength = *static_cast<const uint32_t*>(msg);
-        if (newLength < 0xFFFFFFFF) {
+        uint64_t length = le32toh(*static_cast<const uint32_t*>(msg));
+        if (length < MAX_LENGTH) {
             // 32-bit message length
-            if (length < newLength)
+            if (bufferSize < length)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                        ", buffer size: " + std::to_string(length) + ")");
-            length = newLength;
             recvd = 0;
         } else {
             // 64-bit message length
@@ -280,11 +280,10 @@ namespace OpenLogReplicator {
                 }
             }
 
-            newLength = *static_cast<const uint32_t*>(msg);
-            if (length < newLength)
+            length = le64toh(*static_cast<const uint32_t*>(msg));
+            if (bufferSize < length)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                        ", buffer size: " + std::to_string(length) + ")");
-            length = newLength;
             recvd = 0;
         }
 
@@ -310,7 +309,7 @@ namespace OpenLogReplicator {
         return recvd;
     }
 
-    uint64_t StreamNetwork::receiveMessageNB(void* msg, uint64_t length) {
+    uint64_t StreamNetwork::receiveMessageNB(void* msg, uint64_t bufferSize) {
         uint64_t recvd = 0;
 
         // Read message length
@@ -340,13 +339,12 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (*static_cast<const uint32_t*>(msg) < 0xFFFFFFFF) {
+        uint64_t length = le32toh(*static_cast<const uint32_t*>(msg));
+        if (length < MAX_LENGTH) {
             // 32-bit message length
-            const uint32_t newLength = *static_cast<const uint32_t*>(msg);
-            if (length < newLength)
+            if (bufferSize < length)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                        ", buffer size: " + std::to_string(length) + ")");
-            length = newLength;
             recvd = 0;
         } else {
             // 64-bit message length
@@ -378,11 +376,10 @@ namespace OpenLogReplicator {
                 }
             }
 
-            const uint32_t newLength = *static_cast<const uint32_t*>(msg);
-            if (length < newLength)
+            uint64_t length = le64toh(*static_cast<const uint32_t*>(msg));
+            if (bufferSize < length)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
                                        ", buffer size: " + std::to_string(length) + ")");
-            length = newLength;
             recvd = 0;
         }
 
