@@ -1,7 +1,7 @@
 = Architecture and components
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-23
+:revdate: 2026-01-29
 :imagesdir: ./images
 :toc: preamble
 
@@ -12,223 +12,148 @@ a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 
 Previous chapter: xref:1.getting-started.adoc[Getting started]
 
-=== Introduction
+OpenLogReplicator is written in C++ and uses the database client libraries to read redo logs directly.
 
-OpenLogReplicator is written in C++.
-It uses database client libraries to connect to the database.
+Transactions are parsed from redo log files (online or archived).
+The process requires physical access to redo files; files must not be deleted before processing.
 
-Transactions are directly decoded from redo log files.
-If possible, online redo logs are parsed, but if it is not possible –- archived redo logs are parsed instead.
-It is crucial that the process has physical access to files and the files aren't deleted before they're processed.
-
-[TIP]
+[HINT]
 ====
-Refer to the database manual for defining a retention period for archived redo logs.
+Refer to the database documentation to configure redo retention.
 ====
 
-The architecture of the program is multithreading.
-The following threads are used:
+The program is multithreaded; key threads:
 
-1. Main thread: used for program startup and shutdown
-
-2. N Reader threads: used to read redo log files from disk -- there is one thread per redo log file (group).
-Most of the time just one thread is active, the other is sleeping and not using the CPU.
-Only during short time when the log switch is performed and the new redo log file is created, there may be more than one active thread.
-The reader thread uses buffering to read data from disk.
-The size of the buffer is configurable.
-
-3. Checkpoint thread: used to write a checkpoint file to disk.
-This is done every 10 seconds.
-The checkpoint file contains information about the last processed redo log file and the last processed block in this file.
-This information is used to restart the program from the last processed position.
-Writing the checkpoint file together with the schema is not blocking the main parser thread.
-
-4. Parser thread: used to parse redo log files.
-Parsing is done serially using just one thread.
-In case of DDL changes, the schema is updated and the checkpoint file is written to disk.
-The parser thread is also responsible for sending transactions to output buffer in a format which is configured for output (JSON or Protobuf).
-
-5. Writer thread: responsible for sending the transactions from the output buffer to the output.
-There might be more threads used to control proper communication with the output depending on the type of the connector and threads used by the external libraries.
+- Main thread — startup and shutdown.
+- Reader threads — read redo files from disk (one per redo log group).
+Most readers sleep until their file becomes current.
+- Checkpoint thread — writes checkpoint and schema snapshots (default: every 10 seconds).
+- Parser thread — single-threaded, CPU-bound parser.
+It decodes redo records, updates schema on DDL, and prepares messages for output.
+- Writer thread(s) — send transactions to configured targets; may use additional threads depending on connector libraries.
 
 [NOTE]
 ====
-The only CPU-intensive thread is the parser thread.
-Other threads perform operations which aren't CPU intensive, however, might be I/O intensive.
+Only the parser is CPU intensive.
+Other threads are primarily I/O-bound.
 ====
 
-To prevent multiple instances of OpenLogReplicator running simultaneously and overwriting checkpoint files ane another, the program creates a lock on the config file after startup.
-If another instance is already running and the lock can't be created, the program exits with an error.
+[IMPORTANT]
+====
+To avoid multiple instances overwriting checkpoints, the program locks the configuration file on startup.
+If the lock fails because another instance runs, the program exits.
+====
 
 === Memory allocation [[memory-allocation]]
 
-For most data structures, including disk buffers, output buffers and copy of the redo log vectors, the program uses one big pool of memory.
-This memory pool is fully controlled by two parameters: `min-mb` and `max-mb`.
-Those parameters allow fully controlling the memory usage of the program.
-Apart from main memory structures, the program uses dynamic memory allocation from heap for storing metadata (table names, types, column names, etc).
+Most runtime buffers (disk buffers, output buffers, redo vectors) are allocated from a configurable memory pool controlled by `min-mb` and `max-mb`.
+Metadata (table names, column definitions, etc.) and LOBs are allocated on the heap.
 
 [CAUTION]
 ====
-Currently also LOB data is stored in dynamic memory, but is planned to be moved to the main memory pool.
-This means that when the redo log stream contains transactions with many large LOB fields, the memory usage may be higher than configured.
+LOB data currently uses dynamic heap allocation; a future release will move LOBs into the memory pool.
+Large LOB-heavy streams can therefore exceed configured memory limits.
 ====
 
 .Memory management big picture
 image:memory-management.png[Memory management big picture,,,]
 
-[TIP]
+[HINT]
 ====
-Use the xref:../metrics/metrics.adoc[metrics module] to dynamically observe memory usage.
+Use the xref:../metrics/metrics.adoc[metrics module] to monitor memory usage.
 ====
 
 ==== Memory swapping
 
-For best performance run OpenLogReplicator on a host with sufficient physical memory, so that swapping is unnecessary.
-If this is not possible, allow the program to decide itself when to swap data to disk.
-
-Using operating system memory swapping is not recommended on host, where OpenLogReplicator is running, however, it is fully supported.
-By design, the program should fully work in memory, to achieve the best performance and lowest, near real time delay.
-If memory is not enough, it is best to move OpenLogReplicator to hardware with more memory.
+For best performance, run OpenLogReplicator on a host with enough physical memory to avoid OS-level swapping.
+If memory is constrained, the program can swap transaction data to disk; metadata and read buffers always remain in memory.
 
 [IMPORTANT]
 ====
-Only the transaction data can be swapped to disk when low memory.
-The metadata is always kept in memory.
-The read buffers are always kept in memory.
+Only transaction data can be swapped; metadata and read buffers are retained in memory.
 ====
 
-When sapping is used, the first blocks for longest inactive transactions are swapped to disk.
-However, for every open transaction, at least one block (the last one - which is currently used to append new redo log vectors), is kept in memory.
-Thus, when N transactions are open, at least N blocks are kept in memory (plus memory used by other modules).
+When swapping is active, the oldest inactive transaction blocks are chosen first.
+For each open transaction at least the current block remains in memory.
 
-.Memory swapping
 image:memory-swapping.png[Memory swapping,,,]
 
 ==== Sizing memory
 
-It is highly recommended to allow OpenLogReplicator working fully in memory.
+OpenLogReplicator uses very strict memory allocation and tries to not copy the redo data mulitple times in memory.
 
-If this is not possible, or there could appear a situation when memory is not enough, the program can swap data to disk.
-In any case, avoid automatic swapping by Operating System, as this would lead to unpredictable performance.
+[HINT]
+====
+If the database transactions are small - the program can work with very low memory footprint like 32MB memory.
+====
 
-Please follow the steps below to calculate the memory size:
+Recommended steps to size memory:
 
-1. Define the minimum of memory which OpenLogReplicator would allow to use.
-This is the amount of memory reserved only for the program and is guaranteed to be available.
-This is the `min-mb` parameter.
-
-2. Define the maximum of memory which OpenLogReplicator would be allowed to use.
-This is the amount of physical memory on the host which is available for the program.
-This is the `max-mb` parameter.
-
-3. Define the amount of memory which would activate the swapping mechanism.
-This is the `swap-mb` parameter.
-The program would try to keep the memory usage below this value, but this happens in an async way and the memory usage may be higher than this value.
+1. Set `min-mb` — minimum reserved memory for the process.
+2. Set `max-mb` — maximum physical memory available for the process.
+3. Set `swap-mb` — memory level at which the program starts swapping transaction data.
 
 [IMPORTANT]
 ====
-Define the size of the `max-mb` parameter at least to 110% of size of the maximum expected LOB object size.
-If you expect LOB to be 1GB big, define the value to 1.1GB at least.
-Otherwise, you might hit error 10072.
+Set `max-mb` to at least 110% of the maximum expected single LOB size (e.g. for a 1 GB LOB set `max-mb` ≥ 1.1 GB) to avoid error 10072.
 ====
 
-For best results, performance tests should be made.
+Performance testing is recommended.
 
 === Database redo logs
 
-All changes in the database -- results of DML commands like INSERT, UPDATE, DELETE -- are written to database redo logs.
-The redo log files contain information about what has been changed.
-It would not contain information about metadata for every transaction -- like number of columns in the table, names, types.
-Such information should be cached in memory and updated when DDL operations are performed.
+Database DML (INSERT/UPDATE/DELETE) is recorded in redo logs.
+Redo records do not include a complete schema snapshot for every transaction; schema metadata is cached and updated on DDL.
 
-To operate properly during startup, OpenLogReplicator needs to collect information about schema during the initial run.
-It would read database system tables to collect all data about schema.
-This information is stored in a file and used during the following runs.
+On first run, OpenLogReplicator collects schema metadata from system tables and stores it locally for subsequent runs.
+If the schema changes, the metadata is updated accordingly.
 
 [IMPORTANT]
 ====
-OpenLogReplicator *DOES NOT* perform the task of *initial data load*.
-It never connects to the source data and runs SELECT queries.
-It only reads redo log files and sends information about changes to the output.
-For a complete replication solution, you need to use another tool like ETL or restore a database from backup.
+OpenLogReplicator does not perform an initial data load.
+It reads redo logs only and does not execute SELECT queries against application data.
+Use ETL or backup/restore tools for initial data sync.
 ====
 
 [CAUTION]
 ====
-After start, all redo log files must be available in their entirely.
-Not a single redo log files block may be missing.
-If a file or even one block is missing, replication needs to be re-initiated.
-Schema information should be collected from the beginning, and replication re-initiated.
-Of course, if the source is a live database, the stream of transactions would be constantly constructed and at the same time parsed and sent to output.
+All redo log blocks required for the active window must be available.
+Missing blocks require reinitializing replication and rebuilding the schema snapshot.
 ====
 
 === Transaction processing
 
-Database redo log files contain both committed and rolled-back transactions.
-DML operations are written to redo log files as they're executed.
-All operations are flushed when the COMMIT record appears.
-This is a guarantee point for the database client that all changes have been accepted by the database and are durable and visible to other clients (ACID properties).
+Redo logs include committed, in-progress, and rolled-back transactions.
+OpenLogReplicator:
+
+- Ignores rolled-back transactions or rolled-back DML segments.
+- Emits committed transactions to output when the COMMIT record is processed.
+- Preserves transaction ordering by commit SCN and does not interleave DML from different transactions in the output.
+- May split a transaction into multiple output messages (e.g., begin/each DML/commit), depending on configuration.
 
 [NOTE]
 ====
-DMLs from different transactions are interleaved in the redo log files.
+DMLs from different transactions are interleaved in redo logs; the parser reconstructs proper transaction order.
 ====
 
-[IMPORTANT]
-====
-The redo log files contain also information about transactions that eventually were rolled back.
-Or are partially rolled back.
-====
-
-The task of OpenLogReplicator is to sort DML commands and send them to output in proper order:
-
-1. All rolled back transactions are ignored
-
-2. All partially rolled back DML commands are ignored
-
-3. All committed transactions are sent to output as soon as the commit record appears
-
-4. Transactions, which has no DML commands, or had, but were rolled back, are ignored.
-Like it didn't happen.
-
-5. Transactions are sorted by commit time
-
-6. Transactions are sent to output without any interleaving
-
-A transaction sent to output may be in one message or may be divided into multiple messages -- one message for the beginning of the transaction, one for commit and one for each DML command.
-
-The number of details in the message is configurable.
-
-.Interleaved transactions
 image:transaction-interleaving.png[Transform interleaved transactions to stream,,,]
-
-[NOTE]
-====
-Depending on user configuration, the output stream in the picture above might contain two or six messages.
-It is up to the user to decide how the output should look like.
-====
 
 === Transaction caching and restart
 
-All transactions which are active (started) are cached in memory.
-They're cached as long as the transaction is open.
-After the transaction is committed and data processed, memory is released.
-If the transaction is big –- the program would need more memory.
-OpenLogReplicator never writes any additional files to disk beside of checkpoint and schema file.
+Open transactions are cached in memory until commit.
+On restart, the program resumes from the Low Watermark (the oldest unprocessed transaction), which may require reprocessing earlier redo data.
+Checkpoints do not contain full transaction bodies, so restarts can be time- and resource-consuming.
 
 [CAUTION]
 ====
-When OpenLogReplicator is restarted –- it would need to go back to the start of the oldest unprocessed transaction location and start reading database redo logs from this position.
-This point is called *Low Watermark*.
-This may mean going back a long time and process again the same redo log files which have already been processed before the restart appeared.
-Transactions which were sent to output would not be sent again.
-This operation may be time and resource consuming.
-It is recommended to restart OpenLogReplicator only when it is necessary.
+Restarting may require reprocessing old redo files.
+Configure redo retention to retain enough history to recover.
 ====
 
 [TIP]
 ====
-Configure database redo log retention strategy to leave enough redo log files to be able to restart OpenLogReplicator.
+Avoid unnecessary restarts.
+Keep sufficient redo retention for recovery.
 ====
 
 .Replication start example
@@ -238,56 +163,44 @@ image:replication-start.png[Replication start example,,,]
 ====
 In the example above, _Transaction 2_ and _Transaction 4_ have already been processed and would not be processed again.
 Since OpenLogReplicator doesn't cache in the checkpoint files transaction DML commands, all redo log data need which would contain it has to be processed again after restart.
-In the example above, this would include data for _Transaction 1_ and _Transaction 3_.
+This would include data for _Transaction 1_ and _Transaction 3_.
 ====
 
-When run for the first time, OpenLogReplicator would start from the beginning of some redo log file.
-It is up to the user to decide the moment from which the redo log would be parsed.
-No matter where the start would be located -- there could be always some transactions that are not yet committed.
+On startup, OpenLogReplicator reads from the beginning of some redo log file.
+It is up to the user to decide the moment from which the redo log is parsed.
+There could be always some transactions that are not yet committed, but started earlier.
 
 [CAUTION]
 ====
-When starting, all transactions that started the moment ago of startup are discarded.
-Although there are debug options that allow to process them, this is not recommended to use them for production data.
+On startup, all transactions that started the moment ago of startup are discarded.
 ====
 
 === Topology
 
-There are two possible scenarios of running OpenLogReplicator: on the database host and on another host.
+Two deployment options:
 
-==== Running on the database host
+==== Local on database host
 
-This is the easiest and most efficient solution.
-But it is not recommended for production systems, as the database performance might be affected when CPU or memory is saturated.
+Simplest and fastest I/O, but may impact database performance under resource contention.
 
 [CAUTION]
 ====
-OpenLogReplicator may be using extensive memory and CPU.
-Make sure that there are enough resources for the database to work properly.
-OpenLogReplicator should use only part of the memory, so that there is memory available for the database.
+Ensure sufficient CPU and memory remain available for the database.
 ====
 
-.Program architecture
 image:../../introduction/images/architecture.png[CDC Architecture,,,]
 
-==== Running on another host
+==== Remote host
 
-This is the recommended solution.
-For this scenario, you must make sure that the redo log files are possible to read.
-This may be achieved by:
+Recommended for production.
+Ensure redo files are readable remotely by using:
 
-* mounting read only remote filesystem, (for example, using SSHFS);
-
-* reading from SRDF copy;
-
-* reading from a standby database;
-
-* reading just archived redo logs copied by batch file.
+- read-only remote mounts (SSHFS),
+- standby database copies,
+- SRDF or other replication,
+- archived redo logs copied by batch process.
 
 .Remote access to redo log files
 image:architecture-sshfs.png[Remote access to redo log files,,,]
-
-OpenLogReplicator by default would read online redo logs and process transactions as soon as they're committed, and this information is written to redo log.
-But it can also read just archived redo logs – in this scenario transactions would be processed when log switch is performed and redo log is archived.
 
 Next chapter: xref:3.output-format.adoc[Output format]
