@@ -1125,6 +1125,10 @@ namespace OpenLogReplicator {
             case TRACE::CONDITION:
                 code = "CONDT";
                 break;
+
+            case TRACE::STREAM:
+                code = "STRM ";
+                break;
         }
 
         if (OLR_LOCALES == LOCALES::TIMESTAMP) {

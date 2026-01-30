@@ -211,9 +211,9 @@ namespace OpenLogReplicator {
 
         if (document.HasMember("trace")) {
             ctx->trace = Ctx::getJsonFieldU64(configFileName, document, "trace");
-            if (ctx->trace > 524287)
+            if (ctx->trace > 1048575)
                 throw ConfigurationException(30001, "bad JSON, invalid \"trace\" value: " + std::to_string(ctx->trace) +
-                                             ", expected: one of {0 .. 524287}");
+                                             ", expected: one of {0 .. 1048575}");
         }
 
         // MEMORY

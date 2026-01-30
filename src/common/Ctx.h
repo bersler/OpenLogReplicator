@@ -124,7 +124,8 @@ namespace OpenLogReplicator {
             SYSTEM       = 1 << 15,
             LOB_DATA     = 1 << 16,
             SLEEP        = 1 << 17,
-            CONDITION    = 1 << 18
+            CONDITION    = 1 << 18,
+            STREAM       = 1 << 19
         };
 
         static constexpr uint64_t MEMORY_CHUNK_SIZE_MB{1};
