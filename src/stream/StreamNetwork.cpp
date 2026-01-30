@@ -253,7 +253,7 @@ namespace OpenLogReplicator {
         if (length < MAX_LENGTH) {
             // 32-bit message length
             if (bufferSize < length)
-                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(bufferSize) +
                                        ", buffer size: " + std::to_string(length) + ")");
             recvd = 0;
         } else {
@@ -282,7 +282,7 @@ namespace OpenLogReplicator {
 
             length = le64toh(*static_cast<const uint32_t*>(msg));
             if (bufferSize < length)
-                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(bufferSize) +
                                        ", buffer size: " + std::to_string(length) + ")");
             recvd = 0;
         }
@@ -343,7 +343,7 @@ namespace OpenLogReplicator {
         if (length < MAX_LENGTH) {
             // 32-bit message length
             if (bufferSize < length)
-                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(bufferSize) +
                                        ", buffer size: " + std::to_string(length) + ")");
             recvd = 0;
         } else {
@@ -376,9 +376,9 @@ namespace OpenLogReplicator {
                 }
             }
 
-            uint64_t length = le64toh(*static_cast<const uint32_t*>(msg));
+            length = le64toh(*static_cast<const uint32_t*>(msg));
             if (bufferSize < length)
-                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(newLength) +
+                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(bufferSize) +
                                        ", buffer size: " + std::to_string(length) + ")");
             recvd = 0;
         }
@@ -431,7 +431,7 @@ namespace OpenLogReplicator {
 
             if (getnameinfo(reinterpret_cast<sockaddr*>(&address), addrlen, clientHost, sizeof(clientHost), clientService, sizeof(clientService),
                             NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-                ctx->info(0, "received client connection from host: " + std::string(clientHost) + ":" + clientService);
+                ctx->info(0, "new client connection: " + std::string(clientHost) + ":" + clientService);
             }
             return true;
         }
