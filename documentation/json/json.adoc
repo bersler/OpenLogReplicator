@@ -1,7 +1,7 @@
 = OpenLogReplicator.json config file
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-23
+:revdate: 2026-01-31
 :imagesdir: ./images
 :icons: font
 
@@ -95,7 +95,7 @@ _CAUTION:_ Dumps are intended for debugging and may not exactly match the extern
 |Configuration of state settings to store checkpoint information.
 
 |`trace`
-|_integer_, min: 0, max: 524287, default: 0
+|_integer_, min: 0, max: 1048575, default: 0
 |Bitmask selecting detailed trace output.
 See source code for available trace flags.
 

@@ -50,6 +50,9 @@ namespace OpenLogReplicator {
     }
 
     void WriterStream::processInfo() {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::STREAM)))
+            ctx->logTrace(Ctx::TRACE::STREAM, "request: INFO: " + request.database_name());
+
         response.Clear();
         if (request.database_name() != database) {
             ctx->warning(60035, "unknown database requested, got: " + request.database_name() + ", expected: " + database);
@@ -76,6 +79,13 @@ namespace OpenLogReplicator {
     }
 
     void WriterStream::processStart() {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::STREAM)))
+            ctx->logTrace(Ctx::TRACE::STREAM, "request: START: " + request.database_name() +
+                ", tm_val_case: " + std::to_string(request.tm_val_case()) +
+                (request.has_scn() ? ", scn: " + std::to_string(request.scn()) : "") +
+                (request.has_tms() ? ", tms: " + request.tms() : "") +
+                (request.has_tm_rel() ? ", tm_rel: " + std::to_string(request.tm_rel()) : ""));
+
         response.Clear();
         if (request.database_name() != database) {
             ctx->warning(60035, "unknown database requested, got: " + request.database_name() + ", expected: " + database);
@@ -153,6 +163,11 @@ namespace OpenLogReplicator {
     }
 
     void WriterStream::processContinue() {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::STREAM)))
+            ctx->logTrace(Ctx::TRACE::STREAM, "request: CONTINUE database: " + request.database_name() +
+                (request.has_c_scn() ? ", c_scn: " + std::to_string(request.c_scn()) : "") +
+                (request.has_c_idx() ? ", c_idx: " + std::to_string(request.c_idx()) : ""));
+
         response.Clear();
         if (request.database_name() != database) {
             ctx->warning(60035, "unknown database requested, got: " + std::string(request.database_name()) + " instead of " + database);
@@ -182,8 +197,18 @@ namespace OpenLogReplicator {
     }
 
     void WriterStream::processConfirm() {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::STREAM)))
+            ctx->logTrace(Ctx::TRACE::STREAM, "request: CONFIRM: " + request.database_name() +
+                (request.has_c_scn() ? ", c_scn: " + std::to_string(request.c_scn()) : "") +
+                (request.has_c_idx() ? ", c_idx: " + std::to_string(request.c_idx()) : ""));
+
         if (request.database_name() != database) {
             ctx->warning(60035, "unknown database confirmed, got: " + request.database_name() + ", expected: " + database);
+            return;
+        }
+
+        if (!request.has_c_scn()) {
+            ctx->warning(60035, "missing scn confirmed");
             return;
         }
 
@@ -267,6 +292,9 @@ namespace OpenLogReplicator {
     }
 
     void WriterStream::sendMessage(BuilderMsg* msg) {
+        if (unlikely(ctx->isTraceSet(Ctx::TRACE::STREAM)))
+            ctx->logTrace(Ctx::TRACE::STREAM, "data[" + std::to_string(msg->size) + "]: [" +
+                std::string(reinterpret_cast<const char*>(msg->data + msg->tagSize), msg->size) + "]");
         stream->sendMessage(msg->data + msg->tagSize, msg->size - msg->tagSize);
     }
 }
