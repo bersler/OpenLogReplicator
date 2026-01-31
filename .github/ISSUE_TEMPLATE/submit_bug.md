@@ -1,46 +1,197 @@
 ---
 name: Submit bug
-about: Submit a bug report
+about: Submit a reproducible bug report for OpenLogReplicator
 title: ''
 labels: ''
 assignees: ''
+---
+
+## IMPORTANT – READ BEFORE SUBMITTING
+
+OpenLogReplicator is a low-level database replication system.
+Fixing bugs without exact and complete reproduction is not possible and often unsafe.
+
+Bug reports that cannot be reproduced step by step in a clean environment will be closed without investigation.
+
+A valid bug report must allow the maintainer to:
+- Start from a clean system
+- Execute a defined sequence of commands
+- Observe the incorrect behavior exactly as reported
+- Describe just one problem per report
+
+Statements such as:
+- “It fails with Data Guard”
+- “It does not work on XE”
+- “Fix line X in file Y”
+- “When I connect to Debezium, it crashes”
+- “I don’t know how to reproduce it, but it happens”
+
+are not sufficient.
+
+Submissions with exact solution to the problem will also be closed without investigation.
+Such reports do not help improve the software for all users.
+It is impossible to verify if the proposed fix is correct without a full reproduction.
+Without understanding the root cause, a fix may introduce new bugs or security issues and in future releases it is impossible to maintain expected program behavior.
 
 ---
 
-**A brief description of the bug.**
-To make the fix possible, the bug report should contain a clear and concise description of the problem.
+## Bug reporter information (required)
 
-**Is the bug present on the latest master branch.**
-Verify if the bug is present on the latest master branch.
+**Full name**
+(Real name, no anonymous submissions)
 
-**Describe steps required to reproduce the bug.**
-It is not enough just to claim hat some bug appeared.
-The database can have multiple configuration parameters, and the bug can be related to some specific configuration.
-To make the fix possible, the bug report should contain a clear and concise description of the problem.
-It is important that the fix would not introduce new bugs or make the system unstable.
-A list of steps required to reproduce the bug.
+**Email or GitHub username**
 
-1. Take docker image for OLR + Oracle (preferred: https://github.com/bersler/OpenLogReplicator-tutorials so that the fault can be reproduced on Oracle XE)
-2. Set configuration of OLR to ... (preferred: json file)
-3. List of commands required to achieve the error, for example:
-   - Run some SQL commands,
-   - Restart of the database or OpenLogReplicator,
-   - Manual operation, for example delet or create of checkpoint file,
-   - etc.
-4. Information about expected error
+**Company or organization**
+(Write `Individual` if applicable)
 
-**For bugs related to Redo Log parse error where reproduction is not possible.**
-This is for cases, where the fault is related to actual redo log data parsing.
-There is some redo log file which is causing the error, but it is not known which actual combination of SQL commands caused the error.
-To make a fix possible, the redo log file is required (even if the schema file or checkpoint file is not available).
-Please provide the redo log file.
+---
 
-Provide the following information:
+## Bug description
 
-1. OLR configuration file (necessary)
-2. Set of redo log files which contain error (necessary)
-3. OLR checkpoint file set (helpful, but not crucial)
-4. Information about expected error
+**Clear description of the observed problem**
+Describe what happens and why the behavior is incorrect.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+---
+
+## Reproducibility requirement (MANDATORY)
+
+You must provide complete, step-by-step instructions that allow the bug to be reproduced in the maintainer’s environment without guessing.
+
+Think in terms of a scripted tutorial, not a summary.
+
+---
+
+## Step-by-step reproduction instructions (required)
+
+Provide the reproduction as a numbered and ordered list.
+Each step must be precise, complete, and executable.
+
+### Example format (use this structure)
+
+1. Clone the required repository:
+
+   ```bash
+   git clone https://github.com/bersler/OpenLogReplicator-tutorials.git
+   cd OpenLogReplicator-tutorials/<example-directory>
+   ```
+
+2. Start the Oracle database:
+
+   ```bash
+   docker compose up -d
+   ```
+
+3. Configure Oracle using the exact commands below:
+
+   ```sql
+   ALTER SYSTEM SET ...
+   -- Include all commands, not a description.
+   ```
+
+4. Configure OpenLogReplicator:
+
+   Provide the complete JSON configuration file.
+   Do not omit parameters.
+   For example, include a full `OpenLogReplicator.json`.
+
+   ```json
+   {
+   "example": "value"
+   }
+   ```
+
+5. Run OpenLogReplicator:
+
+   ```bash
+   ./OpenLogReplicator --config OpenLogReplicator.json
+   ```
+
+6. Execute the SQL workload:
+
+   ```sql
+   INSERT INTO ...
+   COMMIT;
+   ```
+
+7. Observe the incorrect behavior
+
+   Actual result (exact output or error):
+
+   ```bash
+   paste output here
+   ```
+
+   Expected result:
+
+   ```bash
+   describe correct behavior
+   ```
+
+If these steps cannot be followed verbatim to reproduce the issue, the report is considered invalid.
+
+---
+
+### Environment details (required)
+
+- OpenLogReplicator version or commit hash
+- Oracle version and edition
+- Operating system
+- Docker version (if applicable)
+
+---
+
+### Data Guard and advanced configurations
+
+For issues related to Data Guard, RAC, multitenant databases, or other advanced Oracle configurations:
+
+You must provide full configuration instructions, including:
+- Exact Oracle Docker image(s) used
+- All commands required to enable and configure Data Guard
+- Network configuration details
+- Startup order of containers or services
+- Verification commands confirming Data Guard state
+
+Example:
+
+❌ Configure Data Guard and it fails
+
+✅ Run the following commands in this exact order
+
+If reproduction requires multiple containers or hosts, provide a Docker Compose file or equivalent automation scripts.
+
+---
+
+## Redo log parsing issues (non-deterministic reproduction)
+
+If the issue cannot be reproduced via SQL commands:
+
+### You must provide:
+
+- OpenLogReplicator configuration file (required)
+- Redo log file(s) that trigger the error (required)
+- Checkpoint file set (optional)
+- Exact error output
+
+Without redo log files, investigation is not possible.
+
+---
+
+## What this issue template is NOT for
+
+- Theoretical discussions
+- Requests to review a fix idea
+- Configuration or usage questions
+- Support requests without full reproduction
+
+Use Discussions or commercial support channels for those cases.
+
+---
+
+## Acknowledgement
+
+By submitting this issue, you confirm that:
+
+- You provided a fully reproducible, step-by-step scenario
+- You understand that non-reproducible bugs cannot be fixed
+- You accept that incomplete reports may be closed without further action
