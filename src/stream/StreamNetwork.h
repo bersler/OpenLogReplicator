@@ -48,6 +48,9 @@ namespace OpenLogReplicator {
         struct addrinfo* res{nullptr};
         static constexpr uint32_t MAX_LENGTH = 0xFFFFFFFF;
 
+        bool sendBytes(const uint8_t* msg, uint64_t length, uint num);
+        bool receiveBytes(uint8_t* msg, uint64_t length, uint num);
+
     public:
         StreamNetwork(Ctx* newCtx, std::string newUri);
         ~StreamNetwork() override;
@@ -56,9 +59,9 @@ namespace OpenLogReplicator {
         [[nodiscard]] std::string getName() const override;
         void initializeClient() override;
         void initializeServer() override;
-        void sendMessage(const void* msg, uint64_t length) override;
-        uint64_t receiveMessage(void* msg, uint64_t bufferSize) override;
-        uint64_t receiveMessageNB(void* msg, uint64_t bufferSize) override;
+        void sendMessage(const uint8_t* msg, uint64_t length) override;
+        uint64_t receiveMessage(uint8_t* msg, uint64_t bufferSize) override;
+        uint64_t receiveMessageNB(uint8_t* msg, uint64_t bufferSize) override;
         [[nodiscard]] bool isConnected() override;
     };
 }

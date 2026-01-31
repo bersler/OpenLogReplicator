@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
             throw NetworkException(10064, "ZeroMQ bind to " + uri + " failed, message: " + std::to_string(errno));
     }
 
-    void StreamZeroMQ::sendMessage(const void* msg, uint64_t length) {
+    void StreamZeroMQ::sendMessage(const uint8_t* msg, uint64_t length) {
         while (!ctx->softShutdown) {
             const int64_t ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
             if (ret == static_cast<int64_t>(length))
@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t StreamZeroMQ::receiveMessage(void* msg, uint64_t length) {
+    uint64_t StreamZeroMQ::receiveMessage(uint8_t* msg, uint64_t length) {
         const int64_t ret = zmq_recv(socket, msg, length, 0);
 
         if (ret < 0)
@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    uint64_t StreamZeroMQ::receiveMessageNB(void* msg, uint64_t length) {
+    uint64_t StreamZeroMQ::receiveMessageNB(uint8_t* msg, uint64_t length) {
         const int64_t ret = zmq_recv(socket, msg, length, ZMQ_DONTWAIT);
         if (ret < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN)
