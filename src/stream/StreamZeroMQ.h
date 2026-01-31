@@ -38,9 +38,9 @@ namespace OpenLogReplicator {
         [[nodiscard]] std::string getName() const override;
         void initializeClient() override;
         void initializeServer() override;
-        void sendMessage(const void* msg, uint64_t length) override;
-        uint64_t receiveMessage(void* msg, uint64_t length) override;
-        uint64_t receiveMessageNB(void* msg, uint64_t length) override;
+        void sendMessage(const uint8_t* msg, uint64_t length) override;
+        uint64_t receiveMessage(uint8_t* msg, uint64_t length) override;
+        uint64_t receiveMessageNB(uint8_t* msg, uint64_t length) override;
         [[nodiscard]] bool isConnected() override;
     };
 }
