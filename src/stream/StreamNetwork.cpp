@@ -86,6 +86,89 @@ namespace OpenLogReplicator {
                                    strerror(errno));
     }
 
+    bool StreamNetwork::sendBytes(const uint8_t* msg, uint64_t length, uint num) {
+        uint64_t sent = 0;
+
+        while (sent < length) {
+            if (ctx->softShutdown)
+                return false;
+
+            ssize_t r = write(socketFD, msg + sent, length - sent);
+            if (r < 0) {
+                if (errno == EINTR)
+                    continue;
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                    fd_set w;
+                    FD_ZERO(&w);
+                    FD_SET(socketFD, &w);
+                    if (select(socketFD + 1, nullptr, &w, nullptr, nullptr) < 0) {
+                        if (errno == EINTR)
+                            continue;
+                        close(socketFD);
+                        socketFD = -1;
+                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                               strerror(errno) + " (" + std::to_string(num) + ")");
+                    }
+                    continue;
+                }
+                close(socketFD);
+                socketFD = -1;
+                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                       strerror(errno) + " (" + std::to_string(num) + ")");
+            }
+            sent += r;
+        }
+
+        return true;
+    }
+
+    bool StreamNetwork::receiveBytes(uint8_t* msg, uint64_t length, uint num) {
+        uint64_t recvd = 0;
+        while (recvd < length) {
+            if (ctx->softShutdown)
+                return false;
+
+            fd_set rset;
+            FD_ZERO(&rset);
+            FD_SET(socketFD, &rset);
+
+            struct timeval timeout;
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 200000;
+
+            int sel = select(socketFD + 1, &rset, nullptr, nullptr, &timeout);
+            if (sel < 0) {
+                if (errno == EINTR)
+                    continue;
+
+                close(socketFD);
+                socketFD = -1;
+                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
+                                       strerror(errno) + " (" + std::to_string(num) + ")");
+            }
+            if (sel == 0)
+                continue;
+
+            const int64_t bytes = read(socketFD, msg + recvd, length - recvd);
+            if (bytes > 0) {
+                recvd += bytes;
+            } else if (bytes == 0) {
+                close(socketFD);
+                socketFD = -1;
+                throw NetworkException(10056, "host disconnected");
+            } else {
+                if (errno == EINTR)
+                    continue;
+
+                close(socketFD);
+                socketFD = -1;
+                throw NetworkException(10061, "network error: " + std::string(strerror(errno)));
+            }
+        }
+
+        return true;
+    }
+
     void StreamNetwork::initializeServer() {
         addrinfo hints{};
         memset(&hints, 0, sizeof hints);
@@ -119,197 +202,55 @@ namespace OpenLogReplicator {
         res = nullptr;
     }
 
-    void StreamNetwork::sendMessage(const void* msg, uint64_t length) {
-        uint64_t sent = 0;
-
+    void StreamNetwork::sendMessage(const uint8_t* msg, uint64_t length) {
         if (socketFD == -1)
             throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (10)");
 
-        fd_set wset;
-        fd_set w;
-        FD_ZERO(&wset);
-        FD_SET(socketFD, &wset);
-
         // Header content
         if (length < MAX_LENGTH) {
-            uint32_t length32 = length;
             // 32-bit length
-            while (sent < sizeof(uint32_t)) {
-                if (ctx->softShutdown)
-                    return;
-
-                w = wset;
-                // Blocking select
-                select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length32) + sent, sizeof(uint32_t) - sent);
-                if (r <= 0) {
-                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                        r = 0;
-                    else {
-                        close(socketFD);
-                        socketFD = -1;
-                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                               strerror(errno) + " (11)");
-                    }
-                }
-                sent += r;
-            }
+            uint32_t length32 = htole32(length);
+            if (!sendBytes(reinterpret_cast<const uint8_t*>(&length32), sizeof(length32), 11))
+                return;
         } else {
             // 64-bit length
             uint32_t length32 = htole32(MAX_LENGTH);
-            while (sent < sizeof(uint32_t)) {
-                if (ctx->softShutdown)
-                    return;
-
-                w = wset;
-                // Blocking select
-                select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length32) + sent, sizeof(uint32_t) - sent);
-                if (r <= 0) {
-                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                        r = 0;
-                    else {
-                        close(socketFD);
-                        socketFD = -1;
-                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                               strerror(errno) + " (12)");
-                    }
-                }
-                sent += r;
-            }
-
-            uint32_t length64 = htole64(length);
-            sent = 0;
-            while (sent < sizeof(uint64_t)) {
-                if (ctx->softShutdown)
-                    return;
-
-                w = wset;
-                // Blocking select
-                select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, reinterpret_cast<const uint8_t*>(&length64) + sent, sizeof(uint64_t) - sent);
-                if (r <= 0) {
-                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                        r = 0;
-                    else {
-                        close(socketFD);
-                        socketFD = -1;
-                        throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                               strerror(errno) + " (13)");
-                    }
-                }
-                sent += r;
-            }
-        }
-
-        sent = 0;
-        // Message content
-        while (sent < length) {
-            if (ctx->softShutdown)
+            uint64_t length64 = htole64(length);
+            if (!sendBytes(reinterpret_cast<const uint8_t*>(&length32), sizeof(length32), 12))
                 return;
-
-            w = wset;
-            // Blocking select
-            select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-            ssize_t r = write(socketFD, static_cast<const char*>(msg) + sent, length - sent);
-            if (r <= 0) {
-                if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                    r = 0;
-                else {
-                    close(socketFD);
-                    socketFD = -1;
-                    throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                           strerror(errno) + " (14)");
-                }
-            }
-            sent += r;
+            if (!sendBytes(reinterpret_cast<const uint8_t*>(&length64), sizeof(length64), 13))
+                return;
         }
+
+        // Message content
+        if (!sendBytes(msg, length, 14))
+            return;
     }
 
-    uint64_t StreamNetwork::receiveMessage(void* msg, uint64_t bufferSize) {
-        uint64_t recvd = 0;
+    uint64_t StreamNetwork::receiveMessage(uint8_t* msg, uint64_t bufferSize) {
+        if (!receiveBytes(msg, sizeof(uint32_t), 15))
+            return false;
 
-        // Read message length
-        while (recvd < sizeof(uint32_t)) {
-            if (ctx->softShutdown)
-                return 0;
-
-            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
-
-            if (bytes > 0)
-                recvd += bytes;
-            else if (bytes == 0) {
-                close(socketFD);
-                socketFD = -1;
-                throw NetworkException(10056, "host disconnected");
-            } else {
-                close(socketFD);
-                socketFD = -1;
-                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (15)");
-            }
-        }
-
-        uint64_t length = le32toh(*static_cast<const uint32_t*>(msg));
-        if (length < MAX_LENGTH) {
-            // 32-bit message length
-            if (bufferSize < length)
-                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(bufferSize) +
-                                       ", buffer size: " + std::to_string(length) + ")");
-            recvd = 0;
-        } else {
+        uint64_t length = le32toh(*reinterpret_cast<const uint32_t*>(msg));
+        if (length == MAX_LENGTH) {
             // 64-bit message length
-            recvd = 0;
 
-            while (recvd < sizeof(uint64_t)) {
-                if (ctx->softShutdown)
-                    return 0;
-
-                const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
-
-                if (bytes > 0)
-                    recvd += bytes;
-                else if (bytes == 0) {
-                    close(socketFD);
-                    socketFD = -1;
-                    throw NetworkException(10056, "host disconnected");
-                } else {
-                    close(socketFD);
-                    socketFD = -1;
-                    throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " +
-                                           strerror(errno) + " (16)");
-                }
-            }
-
-            length = le64toh(*static_cast<const uint32_t*>(msg));
-            if (bufferSize < length)
-                throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(bufferSize) +
-                                       ", buffer size: " + std::to_string(length) + ")");
-            recvd = 0;
+            if (!receiveBytes(msg, sizeof(uint64_t), 16))
+                return false;
+            length = le64toh(*reinterpret_cast<const uint32_t*>(msg));
         }
 
-        while (recvd < length) {
-            if (ctx->softShutdown)
-                return 0;
+        if (bufferSize < length)
+            throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(length) +
+                                   ", buffer size: " + std::to_string(bufferSize) + ")");
 
-            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, length - recvd);
+        if (!receiveBytes(msg, length, 17))
+            return false;
 
-            if (bytes > 0)
-                recvd += bytes;
-            else if (bytes == 0) {
-                close(socketFD);
-                socketFD = -1;
-                throw NetworkException(10056, "host disconnected");
-            } else {
-                close(socketFD);
-                socketFD = -1;
-                throw NetworkException(10061, "network error, errno: " + std::to_string(errno) + ", message: " + strerror(errno) + " (17)");
-            }
-        }
-
-        return recvd;
+        return length;
     }
 
-    uint64_t StreamNetwork::receiveMessageNB(void* msg, uint64_t bufferSize) {
+    uint64_t StreamNetwork::receiveMessageNB(uint8_t* msg, uint64_t bufferSize) {
         uint64_t recvd = 0;
 
         // Read message length
@@ -317,7 +258,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
+            const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -339,7 +280,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint64_t length = le32toh(*static_cast<const uint32_t*>(msg));
+        uint64_t length = le32toh(*reinterpret_cast<const uint32_t*>(msg));
         if (length < MAX_LENGTH) {
             // 32-bit message length
             if (bufferSize < length)
@@ -354,7 +295,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     return 0;
 
-                const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
+                const int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -376,7 +317,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            length = le64toh(*static_cast<const uint32_t*>(msg));
+            uint64_t length = le64toh(*reinterpret_cast<const uint32_t*>(msg));
             if (bufferSize < length)
                 throw NetworkException(10055, "message from client exceeds buffer size (length: " + std::to_string(bufferSize) +
                                        ", buffer size: " + std::to_string(length) + ")");
@@ -384,7 +325,7 @@ namespace OpenLogReplicator {
         }
 
         while (recvd < length) {
-            const int64_t bytes = read(socketFD, static_cast<char*>(msg) + recvd, length - recvd);
+            const int64_t bytes = read(socketFD, msg + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -431,7 +372,7 @@ namespace OpenLogReplicator {
 
             if (getnameinfo(reinterpret_cast<sockaddr*>(&address), addrlen, clientHost, sizeof(clientHost), clientService, sizeof(clientService),
                             NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-                ctx->info(0, "new client connection: " + std::string(clientHost) + ":" + clientService);
+                ctx->info(0, "received client connection from host: " + std::string(clientHost) + ":" + clientService);
             }
             return true;
         }

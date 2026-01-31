@@ -41,9 +41,9 @@ namespace OpenLogReplicator {
         [[nodiscard]] virtual std::string getName() const = 0;
         virtual void initializeClient() = 0;
         virtual void initializeServer() = 0;
-        virtual void sendMessage(const void* msg, uint64_t length) = 0;
-        virtual uint64_t receiveMessage(void* msg, uint64_t length) = 0;
-        virtual uint64_t receiveMessageNB(void* msg, uint64_t length) = 0;
+        virtual void sendMessage(const uint8_t* msg, uint64_t length) = 0;
+        virtual uint64_t receiveMessage(uint8_t* msg, uint64_t length) = 0;
+        virtual uint64_t receiveMessageNB(uint8_t* msg, uint64_t length) = 0;
         [[nodiscard]] virtual bool isConnected() = 0;
         virtual void initialize() = 0;
     };
