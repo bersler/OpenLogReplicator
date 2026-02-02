@@ -1,7 +1,7 @@
 = Warning Messages (6xxxx)
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-03
 
 [frame="none",grid="none"]
 |====
@@ -10,15 +10,13 @@ a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 
 ==== code 60001: "incomplete row for table (obj: <number>), probably IOT, xid: <xid>, offset: <number>"
 
-This warning is most probably related to using schemaless mode with IOT tables.
-In this case, please try to use schema mode instead.
-If the problem persists, please report this issue.
+Occurs when a row cannot be reconstructed completely (common with IOTs or missing schema images).
+Remediation: Ensure full schema mode or provide a schema snapshot; avoid schemaless mode for IOT tables.
 
 ==== code 60002: "unknown value (column: <column>): <number> - <data>)"
 
-Might be related to extensive using of dbms_lob package.
-In this case, please try to use direct DML operations for LOB columns instead.
-If the problem persists, please report this issue.
+A column value could not be decoded (often seen with LOB fragments or unexpected formats).
+Remediation: Enable detailed logging (`unknown=1`) to capture raw bytes and provide schema for proper decoding.
 
 ==== code 60003: "incorrect LOB for xid: <xid>, data: <data>, location: <number>"
 
@@ -42,8 +40,8 @@ See comment for warning 60002.
 
 ==== code 60008: "can't decode character: (x, y, z) using character set <name>, xid: <xid>"
 
-The character field contained a character code which is invalid and can't be decoded.
-If the field is not character, and the data is expected to be correct, please report this issue.
+Character data failed charset conversion at the given offset.
+Remediation: Verify source character set configuration and mapping; supply correct charset if wrong.
 
 ==== code 60009: "duplicate orphaned lob: <lob>, page: <number>"
 
@@ -51,23 +49,23 @@ See comment for warning 60002.
 
 ==== code 60010: "no match found for transaction rollback, skipping, SLT: <number>, USN: <number>"
 
-This warning could appear during replication startup.
-It means that the beginning of the transaction appeared probably before replication startup.
+Rollback record could not be matched to an open transaction.
+Remediation: Usually benign if rollback started before replication; confirm retention window.
 
 ==== code 60011: "skipping transaction with no beginning: <details>"
 
-Received commit for a transaction which started before replication startup.
-The transaction is discarded.
+Transaction began prior to current processing window and lacks a recorded start.
+Remediation: Ensure redo retention covers the transaction or adjust start SCN.
 
 ==== code 60012: "aborting log dump"
 
-The log dump is aborted because there was a problem with creating a file for the dump.
+Failed to create a dump file during diagnostic operations.
+Remediation: Check directory permissions and available disk space.
 
 ==== code 60013: "forced to continue working in spite of error"
 
-In spite of redo log data error, the redo log is processed.
-A message has been printed with the error which appeared during parsing.
-Investigate the error anyway and verify if the data is correct.
+A recoverable error occurred and processing continued.
+Remediation: Investigate the underlying error; check logs for details.
 
 ==== code 60014: "verify redo log file for OP:10.8, len: <number>, data = [<number>, <number>, <number>, <number>]"
 
@@ -75,7 +73,8 @@ See comment for warning 60002.
 
 ==== code 60015: "big transaction divided (forced commit after <number> bytes), xid: <xid>"
 
-A huge transaction has exceeded provided maximum size for transactions.
+A large transaction was split to comply with size limits.
+Remediation: Increase maximum message/transaction size if splitting is undesirable.
 
 ==== code 60016: "LOB is null for (obj: <number>, dataobj: <number>), offset: <number>, xid: <xid>"
 
@@ -83,58 +82,53 @@ See comment for warning 60002.
 
 ==== code 60017: "minimal supplemental log missing or redo log inconsistency for transaction <xid>, offset: <number>"
 
-Verify if supplemental logging is enabled for the database.
-If it is, and even after log switch the warning appears, please report this issue.
+Required supplemental logging not enabled or inconsistent.
+Remediation: Enable required supplemental logging on the source database.
 
 ==== code 60018: "file: <file name> - couldn't write checkpoint"
 
-Checkpoint file couldn't be created because of errors.
-Verify the reason and try to fix it.
+Could not persist a checkpoint file to disk.
+Remediation: Verify filesystem permissions and free space.
 
 ==== code 60019: "file: <file name> - load checkpoint failed, reference SCN missing"
 
-Schema missing in checkpoint file.
-Verify if the file is correct.
-If the problem persists, please report this issue.
+Checkpoint file missing required SCN reference or is corrupt.
+Remediation: Restore or recreate the checkpoint file from a valid export.
 
 ==== code 60020: "file: <file name> - load adaptive schema failed"
 
-Adaptive schema load failed.
-The program will continue without any schema.
-Verify if the file is correct.
-If the problem persists, please report this issue.
+Adaptive schema file is invalid or unreadable; fallback used.
+Remediation: Validate and provide a correct adaptive schema file.
 
 ==== code 60021: "missing LOB index for LOB (OBJ#: <number>, DATAOBJ#: <number>, COL#: <number>)"
 
-See comment for warning 60002.
+LOB index metadata absent for the specified object.
+Remediation: Rebuild or recover LOB index metadata from a schema snapshot.
 
 ==== code 60022: "missing TS#: <number>, BLOCKSIZE: <number>"
 
-Missing information about tablespace in the database schema.
-Verify if the tablespace is correct.
-If the problem persists, please report this issue.
+Tablespace metadata required for decoding is missing.
+Remediation: Ensure schema snapshot includes tablespace metadata.
 
 ==== code 60023: "file: <file name> - position: <number> - unexpected end of file"
 
-Unexpected end of a redo log file.
-Verify if the file is correct.
-If the problem persists, please report this issue.
+Redo file truncated unexpectedly.
+Remediation: Re-acquire the redo file and verify transfer integrity.
 
 ==== code 60024: "file: <file name> - invalid header sequence (<number>, expected: <number>)"
 
-Invalid information about a redo log sequence in the header.
-Verify if the file is correct.
-If the problem persists, please report this issue.
+Redo file header sequence differs from expected pattern.
+Remediation: Confirm correct set of archived/online logs and naming/transfer process.
 
 ==== code 60025: "file: <file name> - block: <number> - invalid header checksum, expected: <number>, calculated: <number>"
 
-Invalid checksum in the redo log header.
-Verify if the file is correct.
-If the problem persists, please report this issue.
+File checksum verification failed.
+Remediation: Treat as corruption; re-copy or restore the redo file.
 
 ==== code 60026: "stripping trailing '/' from <name> parameter; new value: <value>"
 
-Stripped trailing '/' from the parameter value from the path parameter.
+Expected archive sequence is not yet available.
+Remediation: Ensure archive delivery and adjust transfer/scheduling as needed.
 
 ==== code 60027: "couldn't find archive log for seq: <number>, found: <number>, sleeping <number> us"
 
@@ -144,52 +138,50 @@ If the problem persists, please report this issue.
 
 ==== code 60028: "can't get sequence from file: <file name> log_archive_format: <string> at position <number> format position <number>, <problem>"
 
-Invalid archive log file name.
-Verify if the file is correct.
-If the problem persists, please report this issue.
+Filename does not match configured archive format.
+Remediation: Fix `log_archive_format` or rename files to match expected pattern.
 
 ==== code 60029: "message size (<number>) will exceed 'max-file-size' size (<number>)"
 
-The defined maximum size for the file is too small to write a single message.
-Increase the size.
+A single generated message is larger than the writer's maximum file size.
+Remediation: Increase `max-file-size` or use a writer without that limit.
 
 ==== code 60030: "rotation size is set too low (<number>), increase it, should rotate but too early (<file name>)"
 
-The parameter for rotation size is too small.
-Increase the number.
+Configured rotation threshold is too small and causes frequent rotations.
+Remediation: Increase rotation size to reduce churn.
 
 ==== code 60031: "queue, full, sleeping <number> >ms, then retrying"
 
-The queue for redo log data is full.
-The program will sleep for a while and then retry.
-Investigate the reason why the receiver is not able to process the data fast enough.
+Writer queue is saturated; backpressure applied.
+Remediation: Increase writer queue, improve sink throughput, or throttle source.
 
 ==== code 60032: "unknown request code: <message>"
 
-Invalid request code received by the network client.
+Received an unsupported or unknown client request code.
+Remediation: Verify client and server protocol versions for compatibility.
 
 ==== code 60033: "request decoder[<number>]: <data>"
 
-Invalid request data received by the network client.
+Client request payload could not be decoded.
+Remediation: Inspect client payload and ensure it follows the protocol.
 
-==== code 60034, "observed UPDATE operation for NOT NULL column with NULL value for table <owner>.<table> column <column>"
+==== code 60034: "observed UPDATE operation for NOT NULL column with NULL value for table <owner>.<table> column <column>"
 
-There could be cases that due to some upgrades from old versions or other unknown reasons, the BEFORE image for UPDATE command contains NULL value for a column that has been defied as NOT NULL.
+Historical or partial data shows a NOT NULL column as NULL in BEFORE image.
+Remediation: Usually harmless; set flag to copy AFTER into BEFORE if needed.
 
-By default, OpenLogReplicator would just print the informational message (but just once per column) and continue with the replication.
+==== code 60035: "unknown database requested, got: <name>, expected: <name>"
 
-It is also possible to treat the AFTER image as the correct value and copy it to the BEFORE image of the column value.
-This feature is experimental.
-To achieve this behavior, the xref:../json/1.source.adoc#flags[flags] parameter should be set appropriately.
+Client requested a database not present in configuration.
+Remediation: Client must request a configured database name.
 
-==== code 60035, "unknown database requested, got: <name>, expected: <name>"
+==== code 60036: "incorrect XML data: <message>"
 
-The client requested a database which is not configured in the program.
+XMLTYPE column data could not be parsed or is malformed.
+Remediation: Verify XML content and source XML dictionary metadata.
 
-==== code 60036, "incorrect XML data: <message>"
+==== code 60037: "incorrect DDL data, offset: <number>"
 
-Data for XMLTYPE column type is not correct.
-
-==== code 60037, "incorrect DDL data, offset: <number>"
-
-Data for XMLTYPE column type is not correct.
+DDL-related system data is malformed or unexpected.
+Remediation: Inspect raw DDL records and source metadata; report if reproducible.
