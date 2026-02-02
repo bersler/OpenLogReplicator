@@ -11,6 +11,7 @@
 - fix: correct SCN record references in DML operations
 - enhancement: new format for XID field in output
 - enhancement: unified transaction attribute names
+- enhancement: replication startup parameters moved to program arguments
 
 1.9.0
 - code style cleanup

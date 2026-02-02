@@ -55,6 +55,7 @@ Example output:
 Setting the `xid` value to `3` will format output XID in Logminer format.
 
 - enhancement: unified transaction attribute names
+- enhancement: replication startup parameters moved to program arguments
 
 === Version 1.9.0
 - code style cleanup
