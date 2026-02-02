@@ -770,6 +770,10 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionBegin(RedoLogRecord* redoLogRecord1) {
+        // Skip other PDB vectors
+        if (metadata->dbId > 0 && redoLogRecord1->dbId != metadata->dbId)
+            return;
+
         // Skip SQN cleanup
         if (redoLogRecord1->xid.sqn() == 0)
             return;

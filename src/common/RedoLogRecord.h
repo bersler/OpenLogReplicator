@@ -82,6 +82,7 @@ namespace OpenLogReplicator {
         Scn scnRecord;
         Scn scn;
         Time timestamp;
+        typeDbId dbId;
         typeSubScn subScn;
         typeConId conId;
         typeDba dba;
@@ -178,6 +179,7 @@ namespace OpenLogReplicator {
                     " rbl: " << std::dec << rbl <<
                     " seq: " << std::dec << static_cast<uint>(seq) <<
                     " typ: " << std::dec << static_cast<uint>(typ) <<
+                    " dbId: " << std::dec << dbId <<
                     " conId: " << std::dec << conId <<
                     " flgRecord: " << std::dec << flgRecord <<
                     " robj: " << std::dec << recordObj <<

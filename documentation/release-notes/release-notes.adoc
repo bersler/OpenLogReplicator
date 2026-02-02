@@ -33,6 +33,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: new format parameter: redo-thread
 - enhancement: changed config field content for "scn-type", removed "timestamp-all" and added new field "timestamp-type"
 - enhancement: new format parameter: "user-type"
+- fix: multitenant db: transaction shared among PDBs causes replication to freeze
 
 === Version 1.9.0
 - code style cleanup
