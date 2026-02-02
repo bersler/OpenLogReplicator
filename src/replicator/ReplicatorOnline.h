@@ -107,6 +107,7 @@ namespace OpenLogReplicator {
             "   SYS_CONTEXT('USERENV','CON_ID')"
             ",  SYS_CONTEXT('USERENV','CON_NAME')"
             ",  NVL(SYS_CONTEXT('USERENV','CDB_NAME'), SYS_CONTEXT('USERENV','DB_NAME'))"
+            ",  (SELECT P.DBID FROM SYS.V_$PDBS P WHERE P.CON_ID = SYS_CONTEXT('USERENV','CON_ID'))"
             " FROM"
             "   DUAL"
         };

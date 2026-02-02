@@ -85,6 +85,7 @@ namespace OpenLogReplicator {
         bool allowedCheckpoints{false};
         // The writer is controlling the boot parameters. If the data is not available on startup, don't fail immediately.
         bool bootFailsafe{false};
+        typeDbId dbId{0};
         typeConId conId{0};
         std::string conName;
         std::string context;

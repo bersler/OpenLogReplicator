@@ -156,8 +156,11 @@ namespace OpenLogReplicator {
                 }
 
                 // 12+
+                metadata->dbId = 0;
                 metadata->conId = 0;
                 if (memcmp(banner.data(), "Oracle Database 11g", 19) != 0) {
+                    checkTableForGrants("SYS.V_$PDBS");
+
                     ctx->version12 = true;
                     DatabaseStatement stmt2(conn);
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
@@ -169,8 +172,11 @@ namespace OpenLogReplicator {
                     stmt2.defineString(2, conNameChar.data(), conNameChar.size());
                     std::array < char, 81 > conContext{};
                     stmt2.defineString(3, conContext.data(), conContext.size());
+                    typeDbId dbId;
+                    stmt2.defineUInt(4, dbId);
 
                     if (stmt2.executeQuery() != 0) {
+                        metadata->dbId = dbId;
                         metadata->conId = conId;
                         metadata->conName = conNameChar.data();
                         metadata->context = conContext.data();
