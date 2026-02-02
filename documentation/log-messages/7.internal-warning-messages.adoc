@@ -1,15 +1,15 @@
 = Internal Warning Messages (7xxxx)
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-03
 
 [frame="none",grid="none"]
 |====
 a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-Provided below is a list of internal warnings which should never appear.
-If you encounter any of these warnings, please report this issue.
+Internal warnings that should not appear in normal operation.
+Report these if encountered.
 
 ==== code 70001: "too short field <code>: <number> offset: <number"
 
