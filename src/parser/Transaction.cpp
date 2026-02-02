@@ -464,7 +464,7 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & RedoLogRecord::FB_L) != 0) {
-                            builder->processDml(redo2.front()->scnRecord, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
+                            builder->processDml(redo1.front()->scnRecord, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
                                                 &lobCtx, xmlCtx, redo1, redo2, transactionType, system, schema, dump);
                             opFlush = true;
                         }
@@ -472,7 +472,7 @@ namespace OpenLogReplicator {
 
                     case 0x05010B0B:
                         // Insert multiple rows
-                        builder->processInsertMultiple(redoLogRecord2->scnRecord, commitSequence,
+                        builder->processInsertMultiple(redoLogRecord1->scnRecord, commitSequence,
                                                        commitTimestamp.toEpoch(metadata->ctx->hostTimezone), &lobCtx, xmlCtx, redoLogRecord1,
                                                        redoLogRecord2, system, schema, dump);
                         opFlush = true;
@@ -480,7 +480,7 @@ namespace OpenLogReplicator {
 
                     case 0x05010B0C:
                         // Delete multiple rows
-                        builder->processDeleteMultiple(redoLogRecord2->scnRecord, commitSequence,
+                        builder->processDeleteMultiple(redoLogRecord1->scnRecord, commitSequence,
                                                        commitTimestamp.toEpoch(metadata->ctx->hostTimezone), &lobCtx, xmlCtx, redoLogRecord1,
                                                        redoLogRecord2, system, schema, dump);
                         opFlush = true;
