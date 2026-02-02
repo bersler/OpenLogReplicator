@@ -49,6 +49,49 @@ namespace OpenLogReplicator {
     class StateDisk;
     class Thread;
 
+    class Start final {
+    public:
+        enum class FROM : unsigned char {
+            CONTINUE,       // continue replication
+            NOW,            // start from now
+            SCN,            // start from particular scn
+            TIME,           // start from particular time
+            TIME_REL        // start from particular relative time to now
+        };
+        Scn scn;            // select which scn to start reading
+
+        FROM from {FROM::CONTINUE};
+        Seq sequence{Seq::none()};
+        std::string time;
+        uint64_t timeRel;
+
+        std::string toString() const {
+            std::stringstream ss;
+            switch (from) {
+                case Start::FROM::CONTINUE:
+                    ss << "CONTINUE";
+                    break;
+                case Start::FROM::TIME:
+                    ss << "time: " << time;
+                    break;
+                case Start::FROM::TIME_REL:
+                    ss << "time-rel: " << timeRel;
+                    break;
+                case Start::FROM::NOW:
+                    ss << "NOW";
+                    break;
+                case Start::FROM::SCN:
+                    ss << "scn: " << scn.toString();
+                    break;
+            }
+
+            if (sequence != Seq::none())
+                ss << ", seq: " + sequence.toString();
+
+            return ss.str();
+        }
+    };
+
     class Metadata final {
     protected:
         std::condition_variable condReplicator;
@@ -72,10 +115,7 @@ namespace OpenLogReplicator {
 
         // Startup parameters
         std::string database;
-        Scn startScn;
-        Seq startSequence;
-        std::string startTime;
-        uint64_t startTimeRel;
+        Start start;
 
         // Database parameters
         bool onlineData{false};
@@ -142,8 +182,7 @@ namespace OpenLogReplicator {
         std::vector<SchemaElement*> schemaElements;
         std::set<std::string> users;
 
-        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, Scn newStartScn,
-                 Seq newStartSequence, std::string newStartTime, uint64_t newStartTimeRel);
+        Metadata(Ctx* newCtx, Locales* newLocales, std::string newDatabase, Start newStart);
         ~Metadata();
 
         void setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset);

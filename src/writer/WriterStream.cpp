@@ -110,32 +110,33 @@ namespace OpenLogReplicator {
 
         std::string paramSeq;
         if (request.has_seq()) {
-            metadata->startSequence = request.seq();
+            metadata->start.sequence = request.seq();
             paramSeq = ", seq: " + std::to_string(request.seq());
         } else
-            metadata->startSequence = Seq::none();
-
-        metadata->startScn = Scn::none();
-        metadata->startTime = "";
-        metadata->startTimeRel = 0;
+            metadata->start.sequence = Seq::none();
 
         switch (request.tm_val_case()) {
             case pb::RedoRequest::TmValCase::kScn:
-                metadata->startScn = request.scn();
-                if (metadata->startScn == Scn::none())
+                metadata->start.scn = request.scn();
+                if (metadata->start.scn == Scn::none()) {
+                    metadata->start.from = Start::FROM::NOW;
                     ctx->info(0, "client requested to start from NOW" + paramSeq);
-                else
-                    ctx->info(0, "client requested to start from scn: " + metadata->startScn.toString() + paramSeq);
+                } else {
+                    metadata->start.from = Start::FROM::SCN;
+                    ctx->info(0, "client requested to start from scn: " + metadata->start.scn.toString() + paramSeq);
+                }
                 break;
 
             case pb::RedoRequest::TmValCase::kTms:
-                metadata->startTime = request.tms();
-                ctx->info(0, "client requested to start from time: " + metadata->startTime + paramSeq);
+                metadata->start.from = Start::FROM::TIME;
+                metadata->start.time = request.tms();
+                ctx->info(0, "client requested to start from time: " + metadata->start.time + paramSeq);
                 break;
 
             case pb::RedoRequest::TmValCase::kTmRel:
-                metadata->startTimeRel = request.tm_rel();
-                ctx->info(0, "client requested to start from relative time: " + std::to_string(metadata->startTimeRel) + paramSeq);
+                metadata->start.from = Start::FROM::TIME_REL;
+                metadata->start.timeRel = request.tm_rel();
+                ctx->info(0, "client requested to start from relative time: " + std::to_string(metadata->start.timeRel) + paramSeq);
                 break;
 
             default:
@@ -178,6 +179,7 @@ namespace OpenLogReplicator {
         // default values
         metadata->clientScn = confirmedScn;
         metadata->clientIdx = confirmedIdx;
+        metadata->start.from = Start::FROM::CONTINUE;
         std::string paramIdx;
 
         // 0 means continue with last value

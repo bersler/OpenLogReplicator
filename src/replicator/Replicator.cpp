@@ -69,7 +69,18 @@ namespace OpenLogReplicator {
         redoLogsBatch.clear();
     }
 
-    void Replicator::initialize() {}
+    void Replicator::initialize() {
+        if (metadata->start.from != Start::FROM::CONTINUE)
+            throw RuntimeException(30011, "Invalid startup parameters: startup parameters are not allowed to be used for " +
+                                   getModeName() + " reader");
+    }
+
+    void Replicator::positionReader() {
+        if (metadata->start.sequence != Seq::none())
+            metadata->setSeqFileOffset(metadata->start.sequence, FileOffset::zero());
+        else
+            metadata->setSeqFileOffset(Seq::zero(), FileOffset::zero());
+    }
 
     void Replicator::cleanArchList() {
         while (!archiveRedoQueue.empty()) {
@@ -118,13 +129,6 @@ namespace OpenLogReplicator {
 
     void Replicator::loadDatabaseMetadata() {
         archReader = readerCreate(0);
-    }
-
-    void Replicator::positionReader() {
-        if (metadata->startSequence != Seq::none())
-            metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
-        else
-            metadata->setSeqFileOffset(Seq(Seq::zero()), FileOffset::zero());
     }
 
     void Replicator::verifySchema(Scn currentScn __attribute__((unused))) {
@@ -669,22 +673,8 @@ namespace OpenLogReplicator {
         if (ctx->flags != 0)
             flagsStr = " (flags: " + std::to_string(ctx->flags) + ")";
 
-        std::string starting;
-        if (!metadata->startTime.empty())
-            starting = "time: " + metadata->startTime;
-        else if (metadata->startTimeRel > 0)
-            starting = "time-rel: " + std::to_string(metadata->startTimeRel);
-        else if (metadata->startScn != Scn::none())
-            starting = "scn: " + metadata->startScn.toString();
-        else
-            starting = "NOW";
-
-        std::string startingSeq;
-        if (metadata->startSequence != Seq::none())
-            startingSeq = ", seq: " + metadata->startSequence.toString();
-
-        ctx->info(0, "Replicator for " + database + " in " + getModeName() + " mode is starting" + flagsStr + " from " + starting +
-                  startingSeq);
+        ctx->info(0, "Replicator for " + database + " in " + getModeName() + " mode is starting" + flagsStr + " from " +
+                  metadata->start.toString());
     }
 
     bool Replicator::processArchivedRedoLogs() {

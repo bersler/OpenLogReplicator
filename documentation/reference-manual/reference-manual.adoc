@@ -1,7 +1,7 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-02
 :icons: font
 :toc: preamble
 
@@ -35,6 +35,50 @@ Example invocation:
 ----
 ./OpenLogReplicator -f ./configs/OpenLogReplicator.json -p OLReplicator
 ----
+
+== Startup
+
+When starting a new replication session, a startup parameter is required.
+The startup parameters define the point in time when the program starts processing redo log files.
+Startup parameters are required only for `online` reader mode.
+For `batch` reader modes, the program starts processing from the beginning of the provided redo log files.
+For `offline` reader mode, the program starts processing from the last checkpoint file.
+The following startup parameters are available:
+
+* `-t now` -- start replication from the current time.
+
+* `-t now,<SEQ>` -- start replication from the current time but start parsing redo log from sequence <SEQ>.
+
+* `-t scn:<SCN>` -- start replication from the provided SCN number.
+
+* `-t scn:<SCN>,<SEQ>` -- start replication from the provided SCN number but start parsing redo log from sequence <SEQ>.
+
+* `-t seq:<SEQ>` -- start replication from redo log from sequence <SEQ>.
+
+* `-t "time:<TIME>"` -- start replication from the provided absolute time value.
+
+The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function.
+For example, if the value is set to `2025-01-01 00:00:00`, the program will start from the SCN, which was active at the beginning of 2025.
+Use quotion marks ("") when providing this argument.
+
+* `-t "time:<TIME>,<SEQ>`" -- start replication from the provided absolute time value but start parsing redo log from sequence <SEQ>.
+
+* `-t time_rel:<SHIFT>` -- start replication from the provided relative time <SHIFT> value.
+
+The value and is relative to the current time using `TIMESTAMP_TO_SCN` sql function.
+For example, if the value is set to `3600`, the program will start from the SCN, which was active 1 hour ago.
+Provided number in seconds.
+
+* `-t time_rel:<SHIFT>,<SEQ>` -- start replication from the provided relative time <SHIFT> value but start parsing redo log from sequence <SEQ>.
+
+_IMPORTANT:_ There is no default value for the startup parameter.
+The startup parameter is invalid when the program was already started earlier and a checkpoint file exists.
+To force start replication from the beginning, the checkpoint files should be removed.
+
+All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory.
+The file should be in JSON format.
+For start please check example config files in `scripts` directory.
+Refer to a full parameters list for more details.
 
 == Configuration
 

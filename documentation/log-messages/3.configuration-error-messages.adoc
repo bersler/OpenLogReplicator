@@ -48,3 +48,8 @@ A Kafka property is duplicated in configuration.
 
 `message.max.bytes` is managed by OpenLogReplicator.
 Use `max-message-mb` instead.
+
+==== code 30011: "Invalid startup parameters: <message>"
+
+Startup parameters are not valid for chosen mode of operation.
+Verify if the parameters are correct.

@@ -232,60 +232,84 @@ namespace OpenLogReplicator {
         metadata->onlineData = true;
     }
 
+    void ReplicatorOnline::initialize() {
+        switch (metadata->start.from) {
+            //case Start::FROM::CONTINUE:
+            //    if (metadata->start.sequence == Seq::none())
+            //        throw BootException(30011, "invalid startup parameters: missing for Online mode");
+            //    break;
+            case Start::FROM::TIME:
+                if (standby)
+                    throw BootException(10024, "can't position by time for standby database");
+                break;
+            case Start::FROM::TIME_REL:
+                if (standby)
+                    throw BootException(10026, "can't position by relative time for standby database");
+                break;
+            case Start::FROM::CONTINUE:
+            case Start::FROM::NOW:
+            case Start::FROM::SCN:
+                //allowed
+                break;
+        }
+    }
+
     void ReplicatorOnline::positionReader() {
-        // Position by time
-        if (!metadata->startTime.empty()) {
-            DatabaseStatement stmt(conn);
-            if (standby)
-                throw BootException(10024, "can't position by time for standby database");
+        switch (metadata->start.from) {
+            case Start::FROM::TIME: {
+                DatabaseStatement stmt(conn);
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
+                    ctx->logTrace(Ctx::TRACE::SQL, std::string(SQL_GET_SCN_FROM_TIME));
+                    ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + metadata->start.time);
+                }
+                stmt.createStatement(SQL_GET_SCN_FROM_TIME);
+                stmt.bindString(1, metadata->start.time);
+                Scn firstDataScn;
+                stmt.defineUInt(1, firstDataScn);
 
-            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
-                ctx->logTrace(Ctx::TRACE::SQL, std::string(SQL_GET_SCN_FROM_TIME));
-                ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + metadata->startTime);
+                if (stmt.executeQuery() == 0)
+                    throw BootException(10025, "can't find scn for time: " + metadata->start.time);
+                metadata->firstDataScn = firstDataScn;
+                break;
             }
-            stmt.createStatement(SQL_GET_SCN_FROM_TIME);
+            case Start::FROM::TIME_REL: {
+                DatabaseStatement stmt(conn);
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
+                    ctx->logTrace(Ctx::TRACE::SQL, std::string(SQL_GET_SCN_FROM_TIME_RELATIVE));
+                    ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(metadata->start.timeRel));
+                }
+                stmt.createStatement(SQL_GET_SCN_FROM_TIME_RELATIVE);
+                stmt.bindUInt(1, metadata->start.timeRel);
+                Scn firstDataScn;
+                stmt.defineUInt(1, firstDataScn);
 
-            stmt.bindString(1, metadata->startTime);
-            Scn firstDataScn;
-            stmt.defineUInt(1, firstDataScn);
-
-            if (stmt.executeQuery() == 0)
-                throw BootException(10025, "can't find scn for: " + metadata->startTime);
-            metadata->firstDataScn = firstDataScn;
-        } else if (metadata->startTimeRel > 0) {
-            DatabaseStatement stmt(conn);
-            if (standby)
-                throw BootException(10026, "can't position by relative time for standby database");
-
-            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL))) {
-                ctx->logTrace(Ctx::TRACE::SQL, std::string(SQL_GET_SCN_FROM_TIME_RELATIVE));
-                ctx->logTrace(Ctx::TRACE::SQL, "PARAM1: " + std::to_string(metadata->startTimeRel));
+                if (stmt.executeQuery() == 0)
+                    throw BootException(10025, "can't find scn for time rel.:" + std::to_string(metadata->start.timeRel));
+                metadata->firstDataScn = firstDataScn;
+                break;
             }
-            stmt.createStatement(SQL_GET_SCN_FROM_TIME_RELATIVE);
-            stmt.bindUInt(1, metadata->startTimeRel);
-            Scn firstDataScn;
-            stmt.defineUInt(1, firstDataScn);
+            case Start::FROM::NOW: {
+                DatabaseStatement stmt(conn);
+                if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
+                    ctx->logTrace(Ctx::TRACE::SQL, std::string(SQL_GET_DATABASE_SCN));
+                stmt.createStatement(SQL_GET_DATABASE_SCN);
+                Scn firstDataScn;
+                stmt.defineUInt(1, firstDataScn);
 
-            if (stmt.executeQuery() == 0)
-                throw BootException(10025, "can't find scn for " + metadata->startTime);
-            metadata->firstDataScn = firstDataScn;
-        } else if (metadata->firstDataScn == Scn::none() || metadata->firstDataScn == Scn::zero()) {
-            // NOW
-            DatabaseStatement stmt(conn);
-            if (unlikely(ctx->isTraceSet(Ctx::TRACE::SQL)))
-                ctx->logTrace(Ctx::TRACE::SQL, std::string(SQL_GET_DATABASE_SCN));
-            stmt.createStatement(SQL_GET_DATABASE_SCN);
-            Scn firstDataScn;
-            stmt.defineUInt(1, firstDataScn);
-
-            if (stmt.executeQuery() == 0)
-                throw BootException(10029, "can't find database current scn");
-            metadata->firstDataScn = firstDataScn;
+                if (stmt.executeQuery() == 0)
+                    throw BootException(10029, "can't find database current scn");
+                metadata->firstDataScn = firstDataScn;
+                break;
+            }
+            case Start::FROM::CONTINUE:
+                break;
+            case Start::FROM::SCN:
+                metadata->firstDataScn = metadata->start.scn;
+                break;
         }
 
         // First sequence
-        if (metadata->startSequence != Seq::none()) {
-            metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
+        if (metadata->start.sequence != Seq::none()) {
             if (metadata->firstDataScn == Scn::none())
                 metadata->firstDataScn = Scn::zero();
         } else {
@@ -319,9 +343,11 @@ namespace OpenLogReplicator {
             if (stmt.executeQuery() == 0)
                 throw BootException(10030, "getting database sequence for scn: " + metadata->firstDataScn.toString());
 
-            metadata->setSeqFileOffset(sequence, FileOffset::zero());
+            metadata->start.sequence = sequence;
+            metadata->setSeqFileOffset(metadata->start.sequence, FileOffset::zero());
             ctx->info(0, "starting sequence not found - starting with new batch with seq: " + metadata->sequence.toString());
         }
+        metadata->setSeqFileOffset(metadata->start.sequence, FileOffset::zero());
 
         if (metadata->firstDataScn == Scn::none())
             throw BootException(10031, "getting database scn");

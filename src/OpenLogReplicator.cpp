@@ -142,7 +142,7 @@ namespace OpenLogReplicator {
         configFileBuffer = nullptr;
     }
 
-    int OpenLogReplicator::run() {
+    int OpenLogReplicator::run(const Start& start) {
         auto* locales = new Locales();
         localess.push_back(locales);
         locales->initialize();
@@ -474,13 +474,11 @@ namespace OpenLogReplicator {
                     "filter",
                     "flags",
                     "format",
-                    "memory",
                     "name",
                     "reader",
                     "redo-read-sleep-us",
                     "redo-verify-delay-us",
                     "refresh-interval-us",
-                    "state",
                     "transaction-max-mb"
                 };
                 Ctx::checkJsonFields(configFileName, sourceJson, sourceNames);
@@ -504,10 +502,6 @@ namespace OpenLogReplicator {
                     "redo-copy-path",
                     "redo-log",
                     "server",
-                    "start-scn",
-                    "start-seq",
-                    "start-time",
-                    "start-time-rel",
                     "type",
                     "user"
                 };
@@ -528,33 +522,6 @@ namespace OpenLogReplicator {
                 if (ctx->disableChecks > 15)
                     throw ConfigurationException(30001, "bad JSON, invalid \"disable-checks\" value: " +
                                                  std::to_string(ctx->disableChecks) + ", expected: one of {0 .. 15}");
-            }
-
-            Scn startScn = Scn::none();
-            if (readerJson.HasMember("start-scn"))
-                startScn = Ctx::getJsonFieldU64(configFileName, readerJson, "start-scn");
-
-            Seq startSequence = Seq::none();
-            if (readerJson.HasMember("start-seq"))
-                startSequence = Ctx::getJsonFieldU32(configFileName, readerJson, "start-seq");
-
-            uint64_t startTimeRel = 0;
-            if (readerJson.HasMember("start-time-rel")) {
-                startTimeRel = Ctx::getJsonFieldU64(configFileName, readerJson, "start-time-rel");
-                if (startScn != Scn::none())
-                    throw ConfigurationException(30001, "bad JSON, invalid \"start-time-rel\" value: " + std::to_string(startTimeRel) +
-                                                 ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
-            }
-
-            std::string startTime;
-            if (readerJson.HasMember("start-time")) {
-                startTime = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, readerJson, "start-time");
-                if (startScn != Scn::none())
-                    throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
-                                                 ", expected: unset when \"start-scn\" is set (" + startScn.toString() + ")");
-                if (startTimeRel > 0)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"start-time\" value: " + startTime +
-                                                 ", expected: unset when \"start-time-rel\" is set (" + std::to_string(startTimeRel) + ")");
             }
 
             // DEBUG
@@ -606,7 +573,7 @@ namespace OpenLogReplicator {
             }
 
             // METADATA
-            auto* metadata = new Metadata(ctx, locales, name, startScn, startSequence, startTime, startTimeRel);
+            auto* metadata = new Metadata(ctx, locales, name, start);
             metadatas.push_back(metadata);
             metadata->resetElements();
             if (!debugOwner.empty())
