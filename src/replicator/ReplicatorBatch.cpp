@@ -28,8 +28,8 @@ namespace OpenLogReplicator {
         Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, std::move(newAlias), std::move(newDatabase)) {}
 
     void ReplicatorBatch::positionReader() {
-        if (metadata->startSequence != Seq::none())
-            metadata->setSeqFileOffset(metadata->startSequence, FileOffset::zero());
+        if (metadata->start.sequence != Seq::none())
+            metadata->setSeqFileOffset(metadata->start.sequence, FileOffset::zero());
         else
             metadata->setSeqFileOffset(Seq::zero(), FileOffset::zero());
         metadata->sequence = Seq::zero();
@@ -40,8 +40,6 @@ namespace OpenLogReplicator {
             return;
 
         ctx->hint("if you don't have earlier schema, try with schemaless mode ('flags': 2)");
-        if (metadata->schema->scn != Scn::none())
-            ctx->hint("you can also set start SCN for writer: 'start-scn': " + metadata->schema->scn.toString());
 
         throw RuntimeException(10052, "schema file missing");
     }
