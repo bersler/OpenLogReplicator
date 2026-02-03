@@ -176,6 +176,10 @@ namespace OpenLogReplicator {
                     redoResponsePB->set_xid(ss.str());
                 } else if (format.xidFormat == Format::XID_FORMAT::NUMERIC) {
                     redoResponsePB->set_xidn(lastXid.getData());
+                } else if (format.xidFormat == Format:: XID_FORMAT::TEXT_REVERSED) {
+                    std::ostringstream ss;
+                    ss << std::setfill('0') << std::setw(16) << std::hex << lastXid.getData();
+                    redoResponsePB->set_xid(ss.str());
                 }
             }
 

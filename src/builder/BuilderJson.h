@@ -273,6 +273,12 @@ namespace OpenLogReplicator {
                     case Format::XID_FORMAT::NUMERIC:
                         append(std::string_view(R"("xidn":)"));
                         appendDec(lastXid.getData());
+                        break;
+                    case Format::XID_FORMAT::TEXT_REVERSED:
+                        append(std::string_view(R"("xid":")"));
+                        appendHex16Reversed(lastXid.getData());
+                        append('"');
+                        break;
                 }
             }
 
@@ -570,6 +576,44 @@ namespace OpenLogReplicator {
                 append(Data::map16((value >> 8) & 0xF));
                 append(Data::map16((value >> 4) & 0xF));
                 append(Data::map16(value & 0xF));
+            }
+        }
+
+        void appendHex16Reversed(uint64_t value) {
+            if (likely(lastBuilderSize + messagePosition + 16 < OUTPUT_BUFFER_DATA_SIZE)) {
+                append<true>(Data::map16((value >> 52) & 0xF));
+                append<true>(Data::map16((value >> 48) & 0xF));
+                append<true>(Data::map16((value >> 60) & 0xF));
+                append<true>(Data::map16((value >> 56) & 0xF));
+                append<true>(Data::map16((value >> 36) & 0xF));
+                append<true>(Data::map16((value >> 32) & 0xF));
+                append<true>(Data::map16((value >> 44) & 0xF));
+                append<true>(Data::map16((value >> 40) & 0xF));
+                append<true>(Data::map16((value >> 4) & 0xF));
+                append<true>(Data::map16(value & 0xF));
+                append<true>(Data::map16((value >> 12) & 0xF));
+                append<true>(Data::map16((value >> 8) & 0xF));
+                append<true>(Data::map16((value >> 20) & 0xF));
+                append<true>(Data::map16((value >> 16) & 0xF));
+                append<true>(Data::map16((value >> 28) & 0xF));
+                append<true>(Data::map16((value >> 24) & 0xF));
+            } else {
+                append(Data::map16((value >> 52) & 0xF));
+                append(Data::map16((value >> 48) & 0xF));
+                append(Data::map16((value >> 60) & 0xF));
+                append(Data::map16((value >> 56) & 0xF));
+                append(Data::map16((value >> 36) & 0xF));
+                append(Data::map16((value >> 32) & 0xF));
+                append(Data::map16((value >> 44) & 0xF));
+                append(Data::map16((value >> 40) & 0xF));
+                append(Data::map16((value >> 4) & 0xF));
+                append(Data::map16(value & 0xF));
+                append(Data::map16((value >> 12) & 0xF));
+                append(Data::map16((value >> 8) & 0xF));
+                append(Data::map16((value >> 20) & 0xF));
+                append(Data::map16((value >> 16) & 0xF));
+                append(Data::map16((value >> 28) & 0xF));
+                append(Data::map16((value >> 24) & 0xF));
             }
         }
 

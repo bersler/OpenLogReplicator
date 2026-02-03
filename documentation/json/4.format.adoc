@@ -230,12 +230,13 @@ Options control epoch vs ISO-8601 and how the timezone is attached (comma, space
 * `1` — emit `?` for unsupported types; if `unknown` is `1`, also log hex value to `stderr`.
 
 |`xid` [[xid]]
-|_integer_, min: 0, max: 2, default: 0
+|_integer_, min: 0, max: 3, default: 0
 |Transaction ID (XID) format:
 
 * `0` — classic hex text, e.g., `0x0002.012.00004162`.
 * `1` — dotted decimal, e.g., `2.18.16738`.
 * `2` — single 64-bit numeric `xidn`.
+* `3` - Logminer format value stored as a string.
 
 |===
 

@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-03
+:revdate: 2026-02-04
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
 :toc: preamble
@@ -32,7 +32,7 @@ Fixes issue #274.
 
 - enhancement: added new format for Debezium output
 
-The "format" value can be set "debezium", the output format will follow the Debezium message format.
+The `format` value can be set `debezium`, the output format will follow the Debezium message format.
 No other parameters are required to be set.
 See xref:../json/4.format.adoc#type[type] for details.
 
@@ -50,6 +50,9 @@ Example output:
 - enhancement: added support for big endian systems (like Arm64) for streaming to Debezium
 - enhancement: extended tracing options and updated trace-related messages
 - fix: correct SCN record references in DML operations
+- enhancement: new format for XID field in output
+
+Setting the `xid` value to `3` will format output XID in Logminer format.
 
 === Version 1.9.0
 - code style cleanup
