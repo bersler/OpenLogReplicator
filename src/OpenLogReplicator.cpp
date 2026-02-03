@@ -673,6 +673,7 @@ namespace OpenLogReplicator {
                 intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::STRING_YM_DASH;
                 messageFormat = Format::MESSAGE_FORMAT::ADD_SEQUENCES;
                 ridFormat = Format::RID_FORMAT::TEXT;
+                xidFormat = Format::XID_FORMAT::TEXT_REVERSED;
                 timestampAll = Format::TIMESTAMP_ALL::ALL_PAYLOADS;
                 scnType = Format::SCN_TYPE::ALL_PAYLOADS;
                 schemaFormat = Format::SCHEMA_FORMAT::ALL;
@@ -732,8 +733,8 @@ namespace OpenLogReplicator {
 
             if (formatJson.HasMember("xid")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "xid");
-                if (val > 2)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"xid\" value: " + std::to_string(val) + ", expected: one of {0 .. 2}");
+                if (val > 3)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"xid\" value: " + std::to_string(val) + ", expected: one of {0 .. 3}");
                 xidFormat = static_cast<Format::XID_FORMAT>(val);
             }
 

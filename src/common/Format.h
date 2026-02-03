@@ -174,7 +174,8 @@ namespace OpenLogReplicator {
         enum class XID_FORMAT : unsigned char {
             TEXT_HEX,
             TEXT_DEC,
-            NUMERIC
+            NUMERIC,
+            TEXT_REVERSED
         };
 
         DB_FORMAT dbFormat;
