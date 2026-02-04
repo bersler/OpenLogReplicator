@@ -1,7 +1,7 @@
 = Startup
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-05
 :toc: preamble
 
 [frame="none",grid="none"]
@@ -11,47 +11,22 @@ a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 
 Previous chapter: xref:6.replication.adoc[Replication]
 
+== Startup
+
 === Schema
 
-OpenLogReplicator needs a schema of the source database to be able to identify particular objects and know which are relevant for replication.
-The schema is loaded from the source database at startup.
-During consecutive runs, the schema is loaded from the local store (currently: from disk, in the future: also from other stores like Redis).
+On startup the program loads the schema snapshot from the checkpoint store.
+The schema is a consistent copy of system tables at a single SCN (`AS OF SCN` queries).
+If the DB UNDO/retention is insufficient, generate the schema using `gencfg.sql` on a suitable database copy.
 
-The schema is a copy of database system tables data dictionary.
-All data from all tables must be consistent and at the same point in time (same SCN).
-The dictionary tables are read using clause `AS OF SCN` which uses the database undo data, but allows that all data is consistent.
+=== Checkpoints
 
-If the database has a big load and/or UNDO area is small, it may not be possible.
-For such cases the user can create the schema using provided script `gencfg.sql` on a copy of the database.
+On first run checkpoints are created in the configured checkpoint directory.
+Each schema snapshot is associated with the SCN at which it was taken.
 
-Refer to examples for details.
+=== Start position
 
-=== Checkpoint files
-
-During the first run of OpenLogReplicator, the checkpoint files are created.
-By default, they are placed in the `checkpoint` directory in the current directory but this is a parameter that can be configured.
-Every checkpoint file contains a copy of the schema and is associated with a particular SCN number.
-
-=== Position by scn
-
-If the user requests the replication to start from a particular SCN.
-In such a case, OpenLogReplicator would try to read the database schema at that SCN.
-
-[CAUTION]
-====
-Do not choose the starting point too far in the past.
-It may not be possible to read a consistent copy of system tables.
-====
-
-=== By time
-
-The starting point can also be defined as a time in the past.
-In such a case, OpenLogReplicator uses the `TIMESTAMP_TO_SCN` to convert the timestamp value to particular SCN number.
-This function is not available when the first run is executed on an Active DataGuard Standby database.
-
-=== By sequence
-
-Another way of defining the starting point is selecting a particular redo log file and offset in that file.
-In such a case, all transactions started in the preceding redo log files are ignored.
+Replication can start by SCN, by time (converted with `TIMESTAMP_TO_SCN`), or by specific redo file and offset.
+Avoid starting too far in the past — a consistent schema snapshot may be unavailable.
 
 Next chapter: xref:8.checkpointing.adoc[Checkpointing]
