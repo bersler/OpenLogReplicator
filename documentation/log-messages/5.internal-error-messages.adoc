@@ -1,15 +1,15 @@
 = Interlal Error Messages (5xxxx)
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-05
 
 [frame="none",grid="none"]
 |====
 a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-Provided below is a list of internal errors which should never appear.
-If you encounter any of these errors, please report this issue.
+Internal consistency errors that should not occur.
+Report these if encountered.
 
 ==== code 50001: "trying to free unknown memory block for: <module>"
 
@@ -33,7 +33,7 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50011: "got character code: U+<number> at offset: <number>"
 
-==== code 50012, "trying to allocate length for value: <number> exceeds maximum: <number> at offset: <number>"
+==== code 50012: "trying to allocate length for value: <number> exceeds maximum: <number> at offset: <number>"
 
 ==== code 50013: "trying to output null data for column: <name>, offset: <number>"
 
@@ -149,8 +149,8 @@ If you encounter any of these errors, please report this issue.
 
 ==== code 50069: "no active XML context found"
 
-The experimental feature to decode binary xmldata has been turned on, but the metadata contains no XML dictionary data.
-Please consider recreating schema checkpoint files: stop replication, delete content of checkpoint directory, and restart to recreate the schema file.
+Experimental binary XML decoding is enabled but no XML dictionary data was found in metadata.
+To recreate schema checkpoint files: stop replication, clear the checkpoint directory, and restart to regenerate the schema.
 
 ==== code 50070: "swap chunk not found for xid: <xid> during <operation>"
 
