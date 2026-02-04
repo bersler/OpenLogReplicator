@@ -1,72 +1,59 @@
 = Redo Log Error Messages (4xxxx)
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-05
 
 [frame="none",grid="none"]
 |====
 a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 |====
 
-Some data in redo log files aren't correct.
-The data doesn't meet the model requirements of OpenLogReplicator or is corrupted.
+Errors indicating corrupted or unexpected redo log contents.
 
 ==== code 40001: "file: <file name> - block: <number> - invalid block size: <number>, header[1]: <number>"
 
-Block size in the header of the file doesn't match the expected value.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Invalid block size in file header.
+Verify file integrity.
 
 ==== code 40002: "file: <file name> - invalid header block number: <number>, expected: <number>"
 
-Block number doesn't match the expected value.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Header block number mismatch.
+Verify file integrity.
 
 ==== code 40003: "file: <file name> - invalid header[0]: <number>"
 
-Invalid header read from the file.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Invalid header value.
+Verify file integrity.
 
 ==== code 40004: "file: <file name> - invalid header[28-31]: <number>, <number>, <number>, <number>"
 
-Invalid header read from the file.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Invalid header fields.
+Verify file integrity.
 
 ==== code 40005: "file: <file name> - invalid block size: <number>, header[1]: <number>"
 
-Block size in the header of the file doesn't match the expected value.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Header block size mismatch.
+Verify file integrity.
 
 ==== code 40006: "file: <file name> - invalid database version: <number>"
 
-The database version in the header of the file doesn't match the expected value.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Database version in header is unexpected.
+You are trying to process redo log files from a  database version which is not tested and might produce unknown results.
 
 ==== code 40007: "file: <file name> - invalid database version: <number>, expected: <number>"
 
-The database version in the header of the block doesn't match the expected value.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Database version mismatch.
+Verify file source.
 
 ==== code 40008: "file: <file name> - invalid first scn value: <number>, expected: <number>"
 
-The first scn value reported in the header of the block doesn't match the expected value.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+First SCN in header does not match expected value.
 
 ==== code 40009: "file: <file name> - invalid next scn value: <number>, expected: <number>"
 
-The next scn value reported in the header of the block doesn't match the expected value.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Next SCN in header mismatch.
 
-==== code 40010, "file: <file name> - zero to read, start: <number>, end: <number>, scan: <number>"
+==== code 40010: "file: <file name> - zero to read, start: <number>, end: <number>, scan: <number>"
 
-Double read error.
-Verify if the file is not corrupted.
-If the problem persists, please report this issue.
+Double-read error.
+Verify file integrity.
