@@ -10,6 +10,7 @@
 - enhancement: extended tracing options and updated trace-related messages
 - fix: correct SCN record references in DML operations
 - enhancement: new format for XID field in output
+- enhancement: unified transaction attribute names
 
 1.9.0
 - code style cleanup

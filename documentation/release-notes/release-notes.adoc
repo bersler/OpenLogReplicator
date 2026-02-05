@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-04
+:revdate: 2026-02-06
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
 :toc: preamble
@@ -53,6 +53,8 @@ Example output:
 - enhancement: new format for XID field in output
 
 Setting the `xid` value to `3` will format output XID in Logminer format.
+
+- enhancement: unified transaction attribute names
 
 === Version 1.9.0
 - code style cleanup
