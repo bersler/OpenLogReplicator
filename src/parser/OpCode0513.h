@@ -81,7 +81,7 @@ namespace OpenLogReplicator {
 
             const uint16_t flags = ctx->read16(redoLogRecord->data(fieldPos + 0));
             if ((flags & 0x0001) != 0) {
-                transaction->attributes.insert_or_assign("DDL transaction", value);
+                transaction->attributes.insert_or_assign("ddl transaction", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "DDL transaction\n";
@@ -102,7 +102,7 @@ namespace OpenLogReplicator {
             }
 
             if ((flags & 0x0008) != 0) {
-                transaction->attributes.insert_or_assign("LogMiner internal transaction", value);
+                transaction->attributes.insert_or_assign("logminer internal transaction", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1)) {
                     if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
@@ -114,52 +114,52 @@ namespace OpenLogReplicator {
             }
 
             if ((flags & 0x0010) != 0) {
-                transaction->attributes.insert_or_assign("DB open in migrate mode", value);
+                transaction->attributes.insert_or_assign("db open in migrate mode", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "DB Open in Migrate Mode\n";
             }
 
             if ((flags & 0x0020) != 0) {
-                transaction->attributes.insert_or_assign("LSBY ignore", value);
+                transaction->attributes.insert_or_assign("lsby ignore", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "LSBY ignore\n";
             }
 
             if ((flags & 0x0040) != 0) {
-                transaction->attributes.insert_or_assign("LogMiner no tx chunking", value);
+                transaction->attributes.insert_or_assign("logminer no tx chunking", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "LogMiner no tx chunking\n";
             }
 
             if ((flags & 0x0080) != 0) {
-                transaction->attributes.insert_or_assign("LogMiner stealth transaction", value);
+                transaction->attributes.insert_or_assign("logminer stealth transaction", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "LogMiner Stealth transaction\n";
             }
 
             if ((flags & 0x0100) != 0) {
-                transaction->attributes.insert_or_assign("LSBY preserve", value);
+                transaction->attributes.insert_or_assign("lsby preserve", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "LSBY preserve\n";
             }
 
             if ((flags & 0x0200) != 0) {
-                transaction->attributes.insert_or_assign("LogMiner marker transaction", value);
+                transaction->attributes.insert_or_assign("logminer marker transaction", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "LogMiner Marker transaction\n";
             }
 
             if ((flags & 0x0400) != 0) {
-                transaction->attributes.insert_or_assign("transaction in pragama'ed plsql", value);
+                transaction->attributes.insert_or_assign("transaction in pragma'ed plsql", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
-                    *ctx->dumpStream << "Transaction in pragama'ed plsql\n";
+                    *ctx->dumpStream << "Transaction in pragma'ed plsql\n";
             }
 
             if ((flags & 0x0800) != 0) {
@@ -190,28 +190,28 @@ namespace OpenLogReplicator {
 
             const uint16_t flags2 = ctx->read16(redoLogRecord->data(fieldPos + 4));
             if ((flags2 & 0x0001) != 0) {
-                transaction->attributes.insert_or_assign("federation PDB replay", value);
+                transaction->attributes.insert_or_assign("federation pdb replay", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "Federation PDB replay\n";
             }
 
             if ((flags2 & 0x0002) != 0) {
-                transaction->attributes.insert_or_assign("PDB DDL replay", value);
+                transaction->attributes.insert_or_assign("pdb ddl replay", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "PDB DDL replay\n";
             }
 
             if ((flags2 & 0x0004) != 0) {
-                transaction->attributes.insert_or_assign("LogMiner skip transaction", value);
+                transaction->attributes.insert_or_assign("logminer skip transaction", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "LogMiner SKIP transaction\n";
             }
 
             if ((flags2 & 0x0008) != 0) {
-                transaction->attributes.insert_or_assign("SEQ$ update transaction", value);
+                transaction->attributes.insert_or_assign("seq$ update transaction", value);
 
                 if (unlikely(ctx->dumpRedoLog >= 1))
                     *ctx->dumpStream << "SEQ$ update transaction\n";
@@ -237,13 +237,13 @@ namespace OpenLogReplicator {
             if (unlikely(fieldSize < 4))
                 throw RedoLogException(50061, "too short field 5.13.13: " + std::to_string(fieldSize) + " offset: " + redoLogRecord->fileOffset.toString());
 
-            const uint32_t auditSessionid = ctx->read32(redoLogRecord->data(fieldPos + 0));
-            const std::string value = std::to_string(auditSessionid);
+            const uint32_t auditSessionId = ctx->read32(redoLogRecord->data(fieldPos + 0));
+            const std::string value = std::to_string(auditSessionId);
             if (!value.empty())
-                transaction->attributes.insert_or_assign("audit sessionid", value);
+                transaction->attributes.insert_or_assign("audit session id", value);
 
             if (unlikely(ctx->dumpRedoLog >= 1)) {
-                *ctx->dumpStream << "audit sessionid " << auditSessionid << '\n';
+                *ctx->dumpStream << "audit sessionid " << auditSessionId << '\n';
             }
         }
 
@@ -281,7 +281,7 @@ namespace OpenLogReplicator {
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051305))
                 return;
             // Field: 5
-            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS username      = ", "OS username", transaction);
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS username      = ", "os username", transaction);
 
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051306))
                 return;
@@ -291,17 +291,17 @@ namespace OpenLogReplicator {
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051307))
                 return;
             // Field: 7
-            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS terminal      = ", "OS terminal", transaction);
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS terminal      = ", "os terminal", transaction);
 
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051308))
                 return;
             // Field: 8
-            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS process id    = ", "OS process id", transaction);
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS process id    = ", "os process id", transaction);
 
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x051309))
                 return;
             // Field: 9
-            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS program name  = ", "OS process name", transaction);
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "OS program name  = ", "os program name", transaction);
 
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x05130A))
                 return;
@@ -326,7 +326,7 @@ namespace OpenLogReplicator {
             if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x05130E))
                 return;
             // Field: 14
-            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "Client Id  = ", "client id", transaction);
+            attribute(ctx, redoLogRecord, fieldPos, fieldSize, "Client Id  = ", "Client Id", transaction);
         }
     };
 }
