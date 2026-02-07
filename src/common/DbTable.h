@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
         void addColumn(DbColumn* column);
         void addLob(DbLob* lob);
         void addTablePartition(typeObj newObj, typeDataObj newDataObj);
-        bool matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) const;
+        bool matchesCondition(const Ctx* ctx, char op, const AttributeMap* attributes) const;
         void setCondition(const std::string& newCondition);
 
         static bool isDebugTable(OPTIONS options) {

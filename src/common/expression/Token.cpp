@@ -27,12 +27,11 @@ namespace OpenLogReplicator {
             tokenType(newTokenType),
             stringValue(std::move(newStringValue)) {}
 
-    bool Token::evaluateToBool(char op __attribute__((unused)), const std::unordered_map<std::string, std::string>* attributes __attribute__((unused))) {
+    bool Token::evaluateToBool(char op __attribute__((unused)), const AttributeMap* __attribute__((unused))) {
         throw RuntimeException(50066, "invalid expression evaluation: token to bool");
     }
 
-    std::string Token::evaluateToString(char op __attribute__((unused)), const std::unordered_map<std::string,
-            std::string>* attributes __attribute__((unused))) {
+    std::string Token::evaluateToString(char op __attribute__((unused)), const AttributeMap* attributes __attribute__((unused))) {
         throw RuntimeException(50066, "invalid expression evaluation: token to string");
     }
 }

@@ -26,10 +26,12 @@ namespace OpenLogReplicator {
     class Format final {
     public:
         enum class ATTRIBUTES_FORMAT : unsigned char {
-            DEFAULT = 0,
-            BEGIN   = 1UL << 0,
-            DML     = 1UL << 1,
-            COMMIT  = 1UL << 2
+            DEFAULT  = 0,
+            BEGIN    = 1UL << 0,
+            DML      = 1UL << 1,
+            COMMIT   = 1UL << 2,
+            COMPACT  = 1UL << 3,
+            DEBEZIUM = 15
         };
 
         enum class DB_FORMAT : unsigned char {
@@ -229,6 +231,10 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] bool isAttributesFormatCommit() const {
             return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::COMMIT)) != 0;
+        }
+
+        [[nodiscard]] bool isAttributesFormatCompact() const {
+            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::COMPACT)) != 0;
         }
 
         [[nodiscard]] bool isCharFormatNoMapping() const {

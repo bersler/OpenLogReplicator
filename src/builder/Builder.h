@@ -30,6 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <unordered_set>
 
+#include "../common/Attribute.h"
 #include "../common/Ctx.h"
 #include "../common/Format.h"
 #include "../common/LobCtx.h"
@@ -164,7 +165,7 @@ namespace OpenLogReplicator {
         bool compressedAfter{false};
         uint8_t prevChars[CharacterSet::MAX_CHARACTER_LENGTH * 2]{};
         uint64_t prevCharsSize{0};
-        const std::unordered_map<std::string, std::string>* attributes{};
+        const AttributeMap* attributes{};
 
         std::mutex mtx;
         std::condition_variable condNoWriterWork;
@@ -1243,7 +1244,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(Xid xid, Scn scn, Scn newLwnScn, const std::unordered_map<std::string, std::string>* newAttributes);
+        void processBegin(Xid xid, Scn scn, Scn newLwnScn, const AttributeMap* newAttributes);
         void processInsertMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
         void processDeleteMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,

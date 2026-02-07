@@ -141,7 +141,7 @@ namespace OpenLogReplicator {
         tablePartitions.push_back(objx);
     }
 
-    bool DbTable::matchesCondition(const Ctx* ctx, char op, const std::unordered_map<std::string, std::string>* attributes) const {
+    bool DbTable::matchesCondition(const Ctx* ctx, char op, const AttributeMap* attributes) const {
         bool result = true;
         if (conditionValue != nullptr)
             result = conditionValue->evaluateToBool(op, attributes);

@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
+#include "../common/Attribute.h"
 #include "../common/LobKey.h"
 #include "../common/LobCtx.h"
 #include "../common/RedoLogRecord.h"
@@ -65,8 +66,7 @@ namespace OpenLogReplicator {
         bool dump{false};
         typeTransactionSize size{0};
 
-        // Attributes
-        std::unordered_map<std::string, std::string> attributes;
+        AttributeMap attributes;
 
         explicit Transaction(Xid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx);
 
