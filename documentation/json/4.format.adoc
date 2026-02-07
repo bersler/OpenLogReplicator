@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - format element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-23
+:revdate: 2026-02-07
 :icons: font
 
 [frame="none",grid="none"]
@@ -36,13 +36,14 @@ The format is still in development.
 Verify interoperability and stability before using in production.
 
 |`attributes` [[attributes]]
-|_integer_, min: 0, max: 7, default: 0
+|_integer_, min: 0, max: 15, default: 0
 |Controls where transaction-level attributes are emitted.
 Value is a bitmask:
 
 * `0x0001` — add attributes to the transaction begin message.
 * `0x0002` — add attributes to every DML message.
 * `0x0004` — add attributes to the commit message.
+* `0x0008` — include all necessary fields to be compatible with Debezium's JSON format.
 
 |`char` [[char]]
 |_integer_, min: 0, max: 3, default: 0

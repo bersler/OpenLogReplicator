@@ -21,20 +21,27 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../exception/RuntimeException.h"
 #include "StringValue.h"
+#include "../Attribute.h"
 
 namespace OpenLogReplicator {
     StringValue::StringValue(TYPE newStringType, std::string newStringValue):
             stringType(newStringType),
             stringValue(std::move(newStringValue)) {}
 
-    bool StringValue::evaluateToBool(char op __attribute__((unused)), const std::unordered_map<std::string, std::string>* attributes __attribute__((unused))) {
+    bool StringValue::evaluateToBool(char op __attribute__((unused)), const AttributeMap* attributes __attribute__((unused))) {
         throw RuntimeException(50066, "invalid expression evaluation: string to bool");
     }
 
-    std::string StringValue::evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) {
+    std::string StringValue::evaluateToString(char op, const AttributeMap* attributes) {
         switch (stringType) {
             case TYPE::SESSION_ATTRIBUTE: {
-                const auto attributesIt = attributes->find(stringValue);
+                if (attributes == nullptr) return "";
+
+                const auto enumIt = Attribute::fromString().find(stringValue);
+                if (enumIt == Attribute::fromString().end())
+                    return "";
+
+                const auto attributesIt = attributes->find(enumIt->second);
                 if (attributesIt == attributes->end())
                     return "";
                 return attributesIt->second;

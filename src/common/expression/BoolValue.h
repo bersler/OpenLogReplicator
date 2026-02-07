@@ -46,8 +46,8 @@ namespace OpenLogReplicator {
 
         bool isBool() override { return true; }
 
-        bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) override;
-        std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) override;
+        bool evaluateToBool(char op, const AttributeMap* attributes) override;
+        std::string evaluateToString(char op, const AttributeMap* attributes) override;
     };
 }
 

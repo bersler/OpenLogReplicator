@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <vector>
 
 #include "../types/Types.h"
+#include "../Attribute.h"
 
 namespace OpenLogReplicator {
     class BoolValue;
@@ -43,8 +44,8 @@ namespace OpenLogReplicator {
 
         virtual bool isToken() { return false; }
 
-        virtual bool evaluateToBool(char op, const std::unordered_map<std::string, std::string>* attributes) = 0;
-        virtual std::string evaluateToString(char op, const std::unordered_map<std::string, std::string>* attributes) = 0;
+        virtual bool evaluateToBool(char op, const AttributeMap* attributes) = 0;
+        virtual std::string evaluateToString(char op, const AttributeMap* attributes) = 0;
     };
 }
 

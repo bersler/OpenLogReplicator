@@ -295,19 +295,28 @@ namespace OpenLogReplicator {
         }
 
         void appendAttributes() {
-            append(std::string_view(R"("attributes":{)"));
             bool hasPreviousAttribute = false;
-            for (const auto& [name, value]: *attributes) {
-                if (hasPreviousAttribute)
+            auto appendAttribute = [&](const std::string_view key, const std::string& value) {
+                 if (hasPreviousAttribute)
                     append(',');
                 else
                     hasPreviousAttribute = true;
 
                 append('"');
-                appendEscape(name);
+                appendEscape(key);
                 append(std::string_view(R"(":")"));
                 appendEscape(value);
                 append('"');
+            };
+
+            append(std::string_view(R"("attrs":{)"));
+            if (format.isAttributesFormatCompact()) {
+                const auto itUserName = attributes->find(Attribute::KEY::LOGIN_USER_NAME);
+                if (itUserName != attributes->end())
+                    appendAttribute("usr", itUserName->second);
+            } else {
+                for (const auto& [key, value]: *attributes)
+                    appendAttribute(Attribute::toString(key), value);
             }
             append(std::string_view("},"));
         }
@@ -703,6 +712,11 @@ namespace OpenLogReplicator {
         template<bool fast = false>
         void appendEscape(const std::string& str) {
             appendEscape<fast>(str.c_str(), str.length());
+        }
+
+        template<bool fast = false>
+        void appendEscape(const std::string_view& str) {
+            appendEscape<fast>(str.data(), str.length());
         }
 
         template<bool fast = false>

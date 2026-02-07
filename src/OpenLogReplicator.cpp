@@ -669,6 +669,7 @@ namespace OpenLogReplicator {
             const std::string formatType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, formatJson, "type");
             if (formatType == "debezium") {
                 dbFormat = Format::DB_FORMAT::ALL;
+                attributesFormat = Format::ATTRIBUTES_FORMAT::DEBEZIUM;
                 intervalDtsFormat = Format::INTERVAL_DTS_FORMAT::ISO8601_COMMA;
                 intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::STRING_YM_DASH;
                 messageFormat = Format::MESSAGE_FORMAT::ADD_SEQUENCES;
@@ -689,8 +690,8 @@ namespace OpenLogReplicator {
 
             if (formatJson.HasMember("attributes")) {
                 const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
-                if (val > 7)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"attributes\" value: " + std::to_string(val) + ", expected: one of {0 .. 7}");
+                if (val > 15)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"attributes\" value: " + std::to_string(val) + ", expected: one of {0 .. 15}");
                 attributesFormat = static_cast<Format::ATTRIBUTES_FORMAT>(val);
             }
 
