@@ -8,7 +8,6 @@
 - fix: false-positive warnings appearing in offline mode
 - enhancement: added support for big endian systems (like Arm64) for streaming to Debezium
 - enhancement: extended tracing options and updated trace-related messages
-- fix: correct SCN record references in DML operations
 - enhancement: new format for XID field in output
 - enhancement: unified transaction attribute names
 
