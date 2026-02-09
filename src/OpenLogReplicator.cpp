@@ -639,6 +639,7 @@ namespace OpenLogReplicator {
                     "scn-type",
                     "timestamp",
                     "timestamp-all",
+                    "timestamp-metadata",
                     "timestamp-tz",
                     "type",
                     "unknown",
@@ -656,6 +657,7 @@ namespace OpenLogReplicator {
             Format::RID_FORMAT ridFormat = Format::RID_FORMAT::SKIP;
             Format::XID_FORMAT xidFormat = Format::XID_FORMAT::TEXT_HEX;
             Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
+            Format::TIMESTAMP_FORMAT timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
             Format::TIMESTAMP_TZ_FORMAT timestampTzFormat = Format::TIMESTAMP_TZ_FORMAT::UNIX_NANO_STRING;
             Format::TIMESTAMP_ALL timestampAll = Format::TIMESTAMP_ALL::JUST_BEGIN;
             Format::CHAR_FORMAT charFormat = Format::CHAR_FORMAT::UTF8;
@@ -675,6 +677,7 @@ namespace OpenLogReplicator {
                 messageFormat = Format::MESSAGE_FORMAT::ADD_SEQUENCES;
                 ridFormat = Format::RID_FORMAT::TEXT;
                 xidFormat = Format::XID_FORMAT::TEXT_REVERSED;
+                timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_MILLI;
                 timestampAll = Format::TIMESTAMP_ALL::ALL_PAYLOADS;
                 scnType = Format::SCN_TYPE::ALL_PAYLOADS;
                 schemaFormat = Format::SCHEMA_FORMAT::ALL;
@@ -744,6 +747,13 @@ namespace OpenLogReplicator {
                 if (val > 15)
                     throw ConfigurationException(30001, "bad JSON, invalid \"timestamp\" value: " + std::to_string(val) + ", expected: one of {0 .. 15}");
                 timestampFormat = static_cast<Format::TIMESTAMP_FORMAT>(val);
+            }
+
+            if (formatJson.HasMember("timestamp-metadata")) {
+                const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "timestamp-metadata");
+                if (val > 15)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"timestamp-metadata\" value: " + std::to_string(val) + ", expected: one of {0 .. 15}");
+                timestampMetadataFormat = static_cast<Format::TIMESTAMP_FORMAT>(val);
             }
 
             if (formatJson.HasMember("timestamp-tz")) {
@@ -820,7 +830,8 @@ namespace OpenLogReplicator {
 
             Builder* builder;
             Format format(dbFormat, attributesFormat, intervalDtsFormat, intervalYtmFormat, messageFormat, ridFormat, xidFormat, timestampFormat,
-                          timestampTzFormat, timestampAll, charFormat, scnFormat, scnType, unknownFormat, schemaFormat, columnFormat, unknownType);
+                timestampMetadataFormat, timestampTzFormat, timestampAll, charFormat, scnFormat, scnType, unknownFormat, schemaFormat, columnFormat,
+                unknownType);
             if (formatType == "json" || formatType == "debezium") {
                 builder = new BuilderJson(ctx, locales, metadata, format, flushBuffer);
             } else if (formatType == "protobuf") {
@@ -1075,9 +1086,9 @@ namespace OpenLogReplicator {
                 if (writerJson.HasMember("max-file-size"))
                     maxFileSize = Ctx::getJsonFieldU64(configFileName, writerJson, "max-file-size");
 
-                std::string timestampFormat = "%F_%T";
+                std::string fileTimestampFormat = "%F_%T";
                 if (writerJson.HasMember("timestamp-format"))
-                    timestampFormat = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "timestamp-format");
+                    fileTimestampFormat = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "timestamp-format");
 
                 std::string output;
                 if (writerJson.HasMember("output"))
@@ -1108,8 +1119,8 @@ namespace OpenLogReplicator {
                                                      std::to_string(writeBufferFlushSize) + ", expected: one of {0 .. 1048576}");
                 }
 
-                writer = new WriterFile(ctx, alias + "-writer", replicator2->database, replicator2->builder, replicator2->metadata, output, timestampFormat,
-                                        maxFileSize, newLine, append, writeBufferFlushSize);
+                writer = new WriterFile(ctx, alias + "-writer", replicator2->database, replicator2->builder, replicator2->metadata, output,
+                                     fileTimestampFormat, maxFileSize, newLine, append, writeBufferFlushSize);
             } else if (writerType == "discard") {
                 writer = new WriterDiscard(ctx, alias + "-writer", replicator2->database, replicator2->builder, replicator2->metadata);
             } else if (writerType == "kafka") {

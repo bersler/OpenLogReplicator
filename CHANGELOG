@@ -10,6 +10,7 @@
 - enhancement: extended tracing options and updated trace-related messages
 - enhancement: new format for XID field in output
 - enhancement: unified transaction attribute names
+- enhancement: new formatting options for timestamp values
 
 1.9.0
 - code style cleanup

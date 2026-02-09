@@ -188,6 +188,7 @@ namespace OpenLogReplicator {
         RID_FORMAT ridFormat;
         XID_FORMAT xidFormat;
         TIMESTAMP_FORMAT timestampFormat;
+        TIMESTAMP_FORMAT timestampMetadataFormat;
         TIMESTAMP_TZ_FORMAT timestampTzFormat;
         TIMESTAMP_ALL timestampAll;
         CHAR_FORMAT charFormat;
@@ -200,9 +201,9 @@ namespace OpenLogReplicator {
 
         Format(DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat, INTERVAL_DTS_FORMAT newIntervalDtsFormat,
                INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat, XID_FORMAT newXidFormat,
-               TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat,
-               SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat,
-               UNKNOWN_TYPE newUnknownType):
+               TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_FORMAT newTimestampMetadataFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat,
+               TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat,
+               SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType):
                 dbFormat(newDbFormat),
                 attributesFormat(newAttributesFormat),
                 intervalDtsFormat(newIntervalDtsFormat),
@@ -211,6 +212,7 @@ namespace OpenLogReplicator {
                 ridFormat(newRidFormat),
                 xidFormat(newXidFormat),
                 timestampFormat(newTimestampFormat),
+                timestampMetadataFormat(newTimestampMetadataFormat),
                 timestampTzFormat(newTimestampTzFormat),
                 timestampAll(newTimestampAll),
                 charFormat(newCharFormat),

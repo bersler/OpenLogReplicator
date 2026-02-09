@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-08
+:revdate: 2026-02-09
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
 :toc: preamble
@@ -16,44 +16,18 @@ This document describes the release notes of OpenLogReplicator.
 == Major Release 1.x
 
 - fix: empty command line argument prints help message
-
-When empty argument is used as command line argument then help message is printed; it should be ignored. Example: ./OpenLogReplicator ""
-
 - documentation refresh
 - enhancement: added service state metrics
-
-New metrics for Prometheus were added to monitor the state of the service. See the xref:../metrics/metrics.adoc[Metrics] document for details.
-
 - OpenLogReplicator.json: move memory, metrics, state parameters to global
 - fix: lowercase owner/table names in config file were not handled properly
-
-OpenLogReplicator did not allow lowercase owner/table name masks in config file.
-Fixes issue #274.
-
 - enhancement: added new format for Debezium output
-
-The `format` value can be set `debezium`, the output format will follow the Debezium message format.
-No other parameters are required to be set.
-See xref:../json/4.format.adoc#type[type] for details.
-
 - enhancement: printing information about new client network connection
-
-Example output:
-
-    2026-01-24 00:13:18 INFO  00000 new client connection: 172.16.1.5:56474
-
 - fix: false-positive warnings appearing in offline mode:
-
-    2026-01-24 09:20:21 WARN  60028 can't get sequence from file: .. log_archive_format: o1_mf_%t_%s_%h_.arc at position 0 format position 0, found different values
-    2026-01-24 09:20:21 WARN  60028 can't get sequence from file: . log_archive_format: o1_mf_%t_%s_%h_.arc at position 0 format position 0, found different values
-
 - enhancement: added support for big endian systems (like Arm64) for streaming to Debezium
 - enhancement: extended tracing options and updated trace-related messages
 - enhancement: new format for XID field in output
-
-Setting the `xid` value to `3` will format output XID in Logminer format.
-
 - enhancement: unified transaction attribute names
+- enhancement: new formatting options for timestamp values
 
 === Version 1.9.0
 - code style cleanup

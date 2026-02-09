@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - format element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-07
+:revdate: 2026-02-09
 :icons: font
 
 [frame="none",grid="none"]
@@ -193,6 +193,11 @@ Options include numeric Unix epoch (ns/us/ms/s) or ISO-8601 string forms with or
 * `15` - _ISO-8601_ format stored second precision as a string without "TZ" - `"tms": "2022-05-01 06:00:00"`.
 
 _NOTE:_ `timestamp` format is also used for TIMESTAMP WITH LOCAL TIME ZONE values (which don't carry TZ in the value).
+
+|`timestamp-metadata` [[timestamp-metadata]]
+|_integer_, min: 0, max: 15, default: 0
+|Format for timestamps for metadata message.
+For values and options, see xref:#timestamp[timestamp] above.
 
 |`timestamp-tz` [[timestamp-tz]]
 |_integer_, min: 0, max: 11, default: 0
