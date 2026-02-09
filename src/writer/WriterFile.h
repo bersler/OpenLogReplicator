@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         std::string pathName;
         std::string fullFileName;
         std::string fileNameMask;
-        std::string timestampFormat;
+        std::string fileTimestampFormat;
         uint64_t fileNameNum{0};
         uint64_t fileSize{0};
         uint64_t maxFileSize;
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
 
     public:
         WriterFile(Ctx* newCtx, std::string newAlias, std::string newDatabase, Builder* newBuilder, Metadata* newMetadata, std::string newOutput,
-                   std::string newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend, uint newWiteBufferFlushSize);
+                   std::string newFileTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend, uint newWiteBufferFlushSize);
         ~WriterFile() override;
 
         void initialize() override;

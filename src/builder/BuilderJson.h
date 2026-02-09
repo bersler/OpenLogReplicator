@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
                     hasPreviousValue = true;
 
                 char buffer[22];
-                switch (format.timestampFormat) {
+                switch (format.timestampMetadataFormat) {
                     case Format::TIMESTAMP_FORMAT::UNIX_NANO:
                         append(std::string_view(R"("tm":)"));
                         appendDec(timestamp);
