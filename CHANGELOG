@@ -11,6 +11,7 @@
 - enhancement: new format for XID field in output
 - enhancement: unified transaction attribute names
 - enhancement: new formatting options for timestamp values
+- enhancement: scn timestamps added to attribute list
 
 1.9.0
 - code style cleanup

@@ -435,14 +435,14 @@ namespace OpenLogReplicator {
         void processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                            typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) override;
         void processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
-        void processBeginMessage(Scn scn, Seq sequence, time_t timestamp) override;
+        void processBeginMessage(Seq sequence, time_t timestamp) override;
 
     public:
         BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
         ~BuilderProtobuf() override;
 
         void initialize() override;
-        void processCommit(Scn scn, Seq sequence, time_t timestamp) override;
+        void processCommit(Seq sequence, time_t timestamp) override;
         void processCheckpoint(Scn scn, Seq sequence, time_t timestamp, FileOffset fileOffset, bool redo) override;
     };
 }

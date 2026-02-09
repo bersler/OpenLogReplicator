@@ -51,10 +51,11 @@ namespace OpenLogReplicator {
         LobCtx lobCtx;
         XmlCtx* xmlCtx;
         Xid xid;
-        Seq firstSequence;
-        FileOffset firstFileOffset;
-        Seq commitSequence;
-        Scn commitScn;
+        Seq beginSequence{Seq::none()};
+        Scn beginScn{Scn::none()};
+        FileOffset beginFileOffset{0};
+        Seq commitSequence{Seq::none()};
+        Scn commitScn{Scn::none()};
         TransactionChunk* lastTc{nullptr};
         Time commitTimestamp{0};
         bool begin{false};

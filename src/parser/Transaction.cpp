@@ -202,7 +202,7 @@ namespace OpenLogReplicator {
             builder->systemTransaction = new SystemTransaction(builder, metadata);
             metadata->schema->scn = commitScn;
         }
-        builder->processBegin(xid, commitScn, lwnScn, &attributes);
+        builder->processBegin(xid, beginScn, commitScn, lwnScn, &attributes);
 
         auto transactionType = Format::TRANSACTION_TYPE::T_NONE;
         std::deque<const RedoLogRecord*> redo1;
@@ -464,7 +464,7 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & RedoLogRecord::FB_L) != 0) {
-                            builder->processDml(redo2.front()->scnRecord, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
+                            builder->processDml(redo2.front()->scn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
                                                 &lobCtx, xmlCtx, redo1, redo2, transactionType, system, schema, dump);
                             opFlush = true;
                         }
@@ -472,7 +472,7 @@ namespace OpenLogReplicator {
 
                     case 0x05010B0B:
                         // Insert multiple rows
-                        builder->processInsertMultiple(redoLogRecord2->scnRecord, commitSequence,
+                        builder->processInsertMultiple(redoLogRecord2->scn, commitSequence,
                                                        commitTimestamp.toEpoch(metadata->ctx->hostTimezone), &lobCtx, xmlCtx, redoLogRecord1,
                                                        redoLogRecord2, system, schema, dump);
                         opFlush = true;
@@ -480,7 +480,7 @@ namespace OpenLogReplicator {
 
                     case 0x05010B0C:
                         // Delete multiple rows
-                        builder->processDeleteMultiple(redoLogRecord2->scnRecord, commitSequence,
+                        builder->processDeleteMultiple(redoLogRecord2->scn, commitSequence,
                                                        commitTimestamp.toEpoch(metadata->ctx->hostTimezone), &lobCtx, xmlCtx, redoLogRecord1,
                                                        redoLogRecord2, system, schema, dump);
                         opFlush = true;
@@ -488,7 +488,7 @@ namespace OpenLogReplicator {
 
                     case 0x18010000:
                         // DDL operation
-                        builder->processDdl(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone), redoLogRecord1);
+                        builder->processDdl(redoLogRecord1->scn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone), redoLogRecord1);
                         opFlush = true;
                         break;
 
@@ -514,8 +514,8 @@ namespace OpenLogReplicator {
                         builder->systemTransaction = new SystemTransaction(builder, metadata);
                     }
 
-                    builder->processCommit(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
-                    builder->processBegin(xid, commitScn, lwnScn, &attributes);
+                    builder->processCommit(commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
+                    builder->processBegin(xid, beginScn, commitScn, lwnScn, &attributes);
                 }
 
                 if (opFlush) {
@@ -547,7 +547,7 @@ namespace OpenLogReplicator {
             // Unlock schema
             lckSchema.unlock();
         }
-        builder->processCommit(commitScn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
+        builder->processCommit(commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
         metadata->ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
     }
 
@@ -568,9 +568,10 @@ namespace OpenLogReplicator {
 
     std::string Transaction::toString(const Ctx* ctx) const {
         std::ostringstream ss;
-        ss << "scn: " << commitScn.toString() <<
-                " seq: " << firstSequence.toString() <<
-                " offset: " << firstFileOffset.toString() <<
+        ss << "begin-scn: " << beginScn.toString() <<
+                " commit-scn: " << commitScn.toString() <<
+                " begin-seq: " << beginSequence.toString() <<
+                " begin-offset: " << beginFileOffset.toString() <<
                 " xid: " << xid.toString() <<
                 " flags: " << std::dec << begin << "/" << rollback << "/" << system <<
                 " op: " << std::dec << opCodes <<

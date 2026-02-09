@@ -267,12 +267,12 @@ namespace OpenLogReplicator {
 
     void TransactionBuffer::checkpoint(Seq& minSequence, FileOffset& minFileOffset, Xid& minXid) {
         for (const auto& [_, transaction]: xidTransactionMap) {
-            if (transaction->firstSequence < minSequence) {
-                minSequence = transaction->firstSequence;
-                minFileOffset = transaction->firstFileOffset;
+            if (transaction->beginSequence < minSequence) {
+                minSequence = transaction->beginSequence;
+                minFileOffset = transaction->beginFileOffset;
                 minXid = transaction->xid;
-            } else if (transaction->firstSequence == minSequence && transaction->firstFileOffset < minFileOffset) {
-                minFileOffset = transaction->firstFileOffset;
+            } else if (transaction->beginSequence == minSequence && transaction->beginFileOffset < minFileOffset) {
+                minFileOffset = transaction->beginFileOffset;
                 minXid = transaction->xid;
             }
         }
