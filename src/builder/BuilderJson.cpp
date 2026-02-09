@@ -481,17 +481,17 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::processBeginMessage(Scn scn, Seq sequence, time_t timestamp) {
+    void BuilderJson::processBeginMessage(Seq sequence, time_t timestamp) {
         newTran = false;
         hasPreviousRedo = false;
 
         if (format.isMessageFormatSkipBegin())
             return;
 
-        builderBegin(scn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
+        builderBegin(beginScn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
         append('{');
         hasPreviousValue = false;
-        appendHeader(scn, timestamp, true, format.isDbFormatAddDml(), true);
+        appendHeader(beginScn, timestamp, true, format.isDbFormatAddDml(), true);
 
         if (hasPreviousValue)
             append(',');
@@ -509,7 +509,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::processCommit(Scn scn, Seq sequence, time_t timestamp) {
+    void BuilderJson::processCommit(Seq sequence, time_t timestamp) {
         // Skip empty transaction
         if (newTran) {
             newTran = false;
@@ -520,11 +520,11 @@ namespace OpenLogReplicator {
             append(std::string_view("]}"));
             builderCommit();
         } else if (!format.isMessageFormatSkipCommit()) {
-            builderBegin(scn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(commitScn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
             append('{');
 
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true);
+            appendHeader(commitScn, timestamp, false, format.isDbFormatAddDml(), true);
 
             if (hasPreviousValue)
                 append(',');
@@ -543,7 +543,7 @@ namespace OpenLogReplicator {
     void BuilderJson::processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                     typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
-            processBeginMessage(scn, sequence, timestamp);
+            processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
             if (hasPreviousRedo)
@@ -590,7 +590,7 @@ namespace OpenLogReplicator {
     void BuilderJson::processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                     typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
-            processBeginMessage(scn, sequence, timestamp);
+            processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
             if (hasPreviousRedo)
@@ -638,7 +638,7 @@ namespace OpenLogReplicator {
     void BuilderJson::processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                     typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
-            processBeginMessage(scn, sequence, timestamp);
+            processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
             if (hasPreviousRedo)
@@ -684,7 +684,7 @@ namespace OpenLogReplicator {
 
     void BuilderJson::processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) {
         if (newTran)
-            processBeginMessage(scn, sequence, timestamp);
+            processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
             if (hasPreviousRedo)

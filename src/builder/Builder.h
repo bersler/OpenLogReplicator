@@ -143,6 +143,7 @@ namespace OpenLogReplicator {
         uint64_t valueSizeOld{0};
         std::unordered_set<const DbTable*> tables;
         uint64_t lastBuilderSize{0};
+        Scn beginScn{Scn::none()};
         Scn commitScn{Scn::none()};
         Xid lastXid;
         typeMask valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)]{};
@@ -1227,7 +1228,7 @@ namespace OpenLogReplicator {
         virtual void processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) = 0;
         virtual void processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) = 0;
-        virtual void processBeginMessage(Scn scn, Seq sequence, time_t timestamp) = 0;
+        virtual void processBeginMessage(Seq sequence, time_t timestamp) = 0;
         bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t size, FileOffset fileOffset);
 
     public:
@@ -1244,7 +1245,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(Xid xid, Scn scn, Scn newLwnScn, const AttributeMap* newAttributes);
+        void processBegin(Xid xid, Scn newBeginScn, Scn newCommitScn, Scn newLwnScn, const AttributeMap* newAttributes);
         void processInsertMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
         void processDeleteMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
@@ -1253,7 +1254,7 @@ namespace OpenLogReplicator {
                         const std::deque<const RedoLogRecord*>& redo2, Format::TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump);
         void processDdl(Scn scn, Seq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1);
         virtual void initialize();
-        virtual void processCommit(Scn scn, Seq sequence, time_t timestamp) = 0;
+        virtual void processCommit(Seq sequence, time_t timestamp) = 0;
         virtual void processCheckpoint(Scn scn, Seq sequence, time_t timestamp, FileOffset fileOffset, bool redo) = 0;
         void releaseBuffers(Thread* t, uint64_t maxId);
         void releaseDdl();

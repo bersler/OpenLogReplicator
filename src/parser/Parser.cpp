@@ -753,8 +753,9 @@ namespace OpenLogReplicator {
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
                                                                       false, true, false);
         transaction->begin = true;
-        transaction->firstSequence = sequence;
-        transaction->firstFileOffset = FileOffset(lwnCheckpointBlock, reader->getBlockSize());
+        transaction->beginSequence = sequence;
+        transaction->beginScn = redoLogRecord1->scn;
+        transaction->beginFileOffset = FileOffset(lwnCheckpointBlock, reader->getBlockSize());
         transaction->log(ctx, "B   ", redoLogRecord1);
         lastTransaction = transaction;
     }
@@ -788,7 +789,7 @@ namespace OpenLogReplicator {
 
         transaction->log(ctx, "C   ", redoLogRecord1);
         transaction->commitTimestamp = lwnTimestamp;
-        transaction->commitScn = redoLogRecord1->scnRecord;
+        transaction->commitScn = redoLogRecord1->scn;
         transaction->commitSequence = sequence;
         if ((redoLogRecord1->flg & OpCode::FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
