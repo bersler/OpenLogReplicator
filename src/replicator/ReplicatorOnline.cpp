@@ -355,7 +355,7 @@ namespace OpenLogReplicator {
                     ctx->error(ex.code, ex.msg);
                     conn->disconnect();
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->refreshIntervalUs);
+                    ctx->usleepInt(ctx->refreshIntervalUs);
                     contextSet(CONTEXT::CPU);
                     ctx->info(0, "reconnecting to the database instance of " + database + " to " + conn->connectString);
                     continue;
@@ -367,7 +367,7 @@ namespace OpenLogReplicator {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::REDO)))
                 ctx->logTrace(Ctx::TRACE::REDO, "cannot connect to database, retry in " + std::to_string(ctx->refreshIntervalUs / 1000000) + " sec.");
             contextSet(CONTEXT::SLEEP);
-            usleep(ctx->refreshIntervalUs);
+            ctx->usleepInt(ctx->refreshIntervalUs);
             contextSet(CONTEXT::CPU);
         }
 

@@ -227,7 +227,7 @@ namespace OpenLogReplicator {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::WRITER)))
                     ctx->logTrace(Ctx::TRACE::WRITER, "waiting for client");
                 contextSet(CONTEXT::SLEEP);
-                usleep(ctx->pollIntervalUs);
+                ctx->usleepInt(ctx->pollIntervalUs);
                 contextSet(CONTEXT::CPU);
             }
 
@@ -275,7 +275,7 @@ namespace OpenLogReplicator {
                         ctx->logTrace(Ctx::TRACE::WRITER, "output queue is full (" + std::to_string(currentQueueSize) +
                                       " elements), sleeping " + std::to_string(ctx->pollIntervalUs) + "us");
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->pollIntervalUs);
+                    ctx->usleepInt(ctx->pollIntervalUs);
                     contextSet(CONTEXT::CPU);
                     pollQueue();
                 }

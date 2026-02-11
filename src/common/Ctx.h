@@ -172,7 +172,7 @@ namespace OpenLogReplicator {
         uint64_t memoryChunksHWM{0};
         uint64_t memoryModulesAllocated[MEMORY_COUNT]{0, 0, 0, 0, 0, 0};
 
-        std::mutex mtx;
+        mutable std::mutex mtx;
         std::condition_variable condMainLoop;
         std::set<Thread*> threads;
         pthread_t mainThread;
@@ -627,7 +627,8 @@ namespace OpenLogReplicator {
         bool wakeThreads();
         void spawnThread(Thread* t);
         void finishThread(Thread* t);
-        void signalDump();
+        void signalDump() const;
+        void usleepInt(uint64_t usec) const;
 
         void welcome(const std::string& message) const;
         void hint(const std::string& message) const;

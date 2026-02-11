@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
             if (!wakingUp)
                 break;
             contextSet(CONTEXT::SLEEP);
-            usleep(1000);
+            ctx->usleepInt(1000);
             contextSet(CONTEXT::CPU);
         }
 
@@ -253,7 +253,7 @@ namespace OpenLogReplicator {
                 if (!logsProcessed) {
                     ctx->info(0, "no redo logs to process, waiting for new redo logs");
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->refreshIntervalUs);
+                    ctx->usleepInt(ctx->refreshIntervalUs);
                     contextSet(CONTEXT::CPU);
                 }
             }
@@ -704,7 +704,7 @@ namespace OpenLogReplicator {
                         ctx->logTrace(Ctx::TRACE::ARCHIVE_LIST, "archived redo log missing for seq: " + metadata->sequence.toString() +
                                       ", sleeping");
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->archReadSleepUs);
+                    ctx->usleepInt(ctx->archReadSleepUs);
                     contextSet(CONTEXT::CPU);
                 } else {
                     break;
@@ -740,7 +740,7 @@ namespace OpenLogReplicator {
                     ctx->warning(60027, "couldn't find archive log for seq: " + metadata->sequence.toString() + ", found: " +
                                  parser->sequence.toString() + ", sleeping " + std::to_string(ctx->archReadSleepUs) + " us");
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->archReadSleepUs);
+                    ctx->usleepInt(ctx->archReadSleepUs);
                     contextSet(CONTEXT::CPU);
                     cleanArchList();
                     archGetLog(this);
@@ -768,7 +768,7 @@ namespace OpenLogReplicator {
                     ctx->info(0, "archived redo log " + parser->path + " is not ready for read, sleeping " +
                               std::to_string(ctx->archReadSleepUs) + " us");
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->archReadSleepUs);
+                    ctx->usleepInt(ctx->archReadSleepUs);
                     contextSet(CONTEXT::CPU);
                     --retry;
                 }
@@ -853,7 +853,7 @@ namespace OpenLogReplicator {
                 // All so far read, waiting for switch
                 if (parser == nullptr && !higher) {
                     contextSet(CONTEXT::SLEEP);
-                    usleep(ctx->redoReadSleepUs);
+                    ctx->usleepInt(ctx->redoReadSleepUs);
                     contextSet(CONTEXT::CPU);
                 } else
                     break;

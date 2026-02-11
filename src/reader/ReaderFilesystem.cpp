@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
 
             ctx->info(0, "sleeping " + std::to_string(ctx->archReadSleepUs) + " us before retrying read");
             contextSet(CONTEXT::SLEEP);
-            usleep(ctx->archReadSleepUs);
+            ctx->usleepInt(ctx->archReadSleepUs);
             contextSet(CONTEXT::CPU);
             --tries;
         }

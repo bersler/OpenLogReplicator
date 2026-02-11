@@ -332,7 +332,7 @@ namespace OpenLogReplicator {
 
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
                     ctx->writerThread->contextSet(Thread::CONTEXT::SLEEP);
-                    usleep(ctx->pollIntervalUs);
+                    ctx->usleepInt(ctx->pollIntervalUs);
                     ctx->writerThread->contextSet(Thread::CONTEXT::CPU);
                 } else
                     return 0;
@@ -369,7 +369,7 @@ namespace OpenLogReplicator {
 
                     if (errno == EWOULDBLOCK || errno == EAGAIN) {
                         ctx->writerThread->contextSet(Thread::CONTEXT::SLEEP);
-                        usleep(ctx->pollIntervalUs);
+                        ctx->usleepInt(ctx->pollIntervalUs);
                         ctx->writerThread->contextSet(Thread::CONTEXT::CPU);
                     } else
                         return 0;
@@ -396,7 +396,7 @@ namespace OpenLogReplicator {
             } else {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
                     ctx->writerThread->contextSet(Thread::CONTEXT::SLEEP);
-                    usleep(ctx->pollIntervalUs);
+                    ctx->usleepInt(ctx->pollIntervalUs);
                     ctx->writerThread->contextSet(Thread::CONTEXT::CPU);
                 } else
                     return 0;

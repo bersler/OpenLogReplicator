@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
 
             if (ret < 0 && errno == EAGAIN) {
                 ctx->writerThread->contextSet(Thread::CONTEXT::SLEEP);
-                usleep(ctx->pollIntervalUs);
+                ctx->usleepInt(ctx->pollIntervalUs);
                 ctx->writerThread->contextSet(Thread::CONTEXT::CPU);
                 continue;
             }
