@@ -329,7 +329,7 @@ namespace OpenLogReplicator {
                 return REDO_CODE::ERROR_BAD_DATA;
 
             contextSet(CONTEXT::SLEEP);
-            usleep(ctx->redoReadSleepUs);
+            ctx->usleepInt(ctx->redoReadSleepUs);
             contextSet(CONTEXT::CPU);
             retReload = checkBlockHeader(headerBuffer + blockSize, 1, false);
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::DISK)))
@@ -728,18 +728,18 @@ namespace OpenLogReplicator {
                     if (!readBlocks) {
                         if (readTime == 0) {
                             contextSet(CONTEXT::SLEEP);
-                            usleep(ctx->redoReadSleepUs);
+                            ctx->usleepInt(ctx->redoReadSleepUs);
                             contextSet(CONTEXT::CPU);
                         } else {
                             const time_ut nowTime = ctx->clock->getTimeUt();
                             if (readTime > nowTime) {
                                 if (static_cast<time_ut>(ctx->redoReadSleepUs) < readTime - nowTime) {
                                     contextSet(CONTEXT::SLEEP);
-                                    usleep(ctx->redoReadSleepUs);
+                                    ctx->usleepInt(ctx->redoReadSleepUs);
                                     contextSet(CONTEXT::CPU);
                                 } else {
                                     contextSet(CONTEXT::SLEEP);
-                                    usleep(readTime - nowTime);
+                                    ctx->usleepInt(readTime - nowTime);
                                     contextSet(CONTEXT::CPU);
                                 }
                             }

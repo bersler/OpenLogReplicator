@@ -829,7 +829,7 @@ namespace OpenLogReplicator {
         logTrace(TRACE::THREADS, "main finish start");
 
         while (wakeThreads()) {
-            usleep(10000);
+            usleepInt(10000);
             wakeAllOutOfMemory();
         }
 
@@ -932,7 +932,7 @@ namespace OpenLogReplicator {
         pthread_join(t->pthread, nullptr);
     }
 
-    void Ctx::signalDump() {
+    void Ctx::signalDump() const {
         if (mainThread != pthread_self())
             return;
 
@@ -944,6 +944,17 @@ namespace OpenLogReplicator {
                   " reason: " + std::to_string(static_cast<uint>(thread->curReason)) +
                   " switches: " + std::to_string(thread->contextSwitches));
             pthread_kill(thread->pthread, SIGUSR1);
+        }
+    }
+
+    void Ctx::usleepInt(uint64_t usec) const {
+        if (usec == 0)
+            return;
+
+        while (usec > 0 && !softShutdown) {
+            uint64_t utm = (usec > 10000) ? 10000 : usec;
+            usleep(utm);
+            usec -= utm;
         }
     }
 
