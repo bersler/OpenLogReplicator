@@ -754,13 +754,16 @@ namespace OpenLogReplicator {
                 uint retry = ctx->archReadTries;
 
                 while (true) {
-                    if (archReader->checkRedoLog() && archReader->updateRedoLog()) {
+                    if (ctx->softShutdown)
                         break;
-                    }
+                    if (archReader->checkRedoLog() && archReader->updateRedoLog())
+                        break;
 
-                    if (retry == 0)
+                    if (retry == 0) {
+                        archReader->showHint(this, "", parser->path);
                         throw RuntimeException(10009, "file: " + parser->path + " - failed to open after " +
                                                std::to_string(ctx->archReadTries) + " tries");
+                    }
 
                     ctx->info(0, "archived redo log " + parser->path + " is not ready for read, sleeping " +
                               std::to_string(ctx->archReadSleepUs) + " us");
@@ -769,6 +772,9 @@ namespace OpenLogReplicator {
                     contextSet(CONTEXT::CPU);
                     --retry;
                 }
+
+                if (ctx->softShutdown)
+                    break;
 
                 ret = parser->parse();
                 metadata->firstScn = parser->firstScn;

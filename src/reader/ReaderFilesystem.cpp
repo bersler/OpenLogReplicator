@@ -152,8 +152,11 @@ namespace OpenLogReplicator {
         uid_t uid = geteuid();
         gid_t gid = getegid();
 
-        ctx->hint("check mapping, failed to read: " + origPath + " mapped to: " + mappedPath + " run as uid: " + std::to_string(uid) +
-                " gid: " + std::to_string(gid));
+        if (origPath.empty())
+            ctx->hint("check mapping, failed to read: " + mappedPath + " run as uid: " + std::to_string(uid) + " gid: " + std::to_string(gid));
+        else
+            ctx->hint("check mapping, failed to read: " + origPath + " mapped to: " + mappedPath + " run as uid: " + std::to_string(uid) +
+                      " gid: " + std::to_string(gid));
 
         while (!mappedPath.empty()) {
             std::string partialFileName;

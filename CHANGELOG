@@ -12,6 +12,7 @@
 - enhancement: unified transaction attribute names
 - enhancement: new formatting options for timestamp values
 - enhancement: scn timestamps added to attribute list
+- enhancement: printing hint about permissions for log files when file access error is encountered
 
 1.9.0
 - code style cleanup

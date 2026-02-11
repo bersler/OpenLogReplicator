@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-10
+:revdate: 2026-02-11
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
 :toc: preamble
@@ -29,6 +29,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: unified transaction attribute names
 - enhancement: new formatting options for timestamp values
 - enhancement: scn timestamps added to attribute list
+- enhancement: printing hint about permissions for log files when file access error is encountered
 
 === Version 1.9.0
 - code style cleanup
