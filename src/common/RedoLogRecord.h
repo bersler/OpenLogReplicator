@@ -145,6 +145,7 @@ namespace OpenLogReplicator {
         uint16_t cls;
         uint16_t rbl;
         uint16_t flgRecord;
+        uint16_t thread;
         typeAfn afn;              // Absolute File Number
         uint8_t seq;
 

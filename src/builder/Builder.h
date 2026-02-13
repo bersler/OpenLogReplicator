@@ -167,6 +167,7 @@ namespace OpenLogReplicator {
         uint8_t prevChars[CharacterSet::MAX_CHARACTER_LENGTH * 2]{};
         uint64_t prevCharsSize{0};
         const AttributeMap* attributes{};
+        uint16_t thread{0};
 
         std::mutex mtx;
         std::condition_variable condNoWriterWork;
@@ -1245,7 +1246,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(Xid xid, Scn newBeginScn, Scn newCommitScn, Scn newLwnScn, const AttributeMap* newAttributes);
+        void processBegin(Xid xid, uint16_t newThread, Scn newBeginScn, Scn newCommitScn, Scn newLwnScn, const AttributeMap* newAttributes);
         void processInsertMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
         void processDeleteMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,

@@ -688,8 +688,9 @@ namespace OpenLogReplicator {
         maxMessageMb = maxMessageMb_;
     }
 
-    void Builder::processBegin(Xid xid, Scn newBeginScn, Scn newCommitScn, Scn newLwnScn, const AttributeMap* newAttributes) {
+    void Builder::processBegin(Xid xid, uint16_t newThread, Scn newBeginScn, Scn newCommitScn, Scn newLwnScn, const AttributeMap* newAttributes) {
         lastXid = xid;
+        thread = newThread;
         beginScn = newBeginScn;
         commitScn = newCommitScn;
         if (lwnScn != newLwnScn) {

@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
         ~TransactionBuffer();
 
         void purge();
-        [[nodiscard]] Transaction* findTransaction(XmlCtx* xmlCtx, Xid xid, typeConId conId, bool old, bool add, bool rollback);
+        [[nodiscard]] Transaction* findTransaction(XmlCtx* xmlCtx, Xid xid, typeConId conId, uint16_t thread, bool old, bool add, bool rollback);
         void dropTransaction(Xid xid, typeConId conId);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);

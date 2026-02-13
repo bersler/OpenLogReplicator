@@ -32,9 +32,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Transaction::Transaction(Xid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx):
+    Transaction::Transaction(Xid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx, uint16_t newThread):
         xmlCtx(newXmlCtx),
-        xid(newXid) {
+        xid(newXid),
+        thread(newThread) {
         lobCtx.orphanedLobs = newOrphanedLobs;
     }
 
@@ -202,7 +203,7 @@ namespace OpenLogReplicator {
             builder->systemTransaction = new SystemTransaction(builder, metadata);
             metadata->schema->scn = commitScn;
         }
-        builder->processBegin(xid, beginScn, commitScn, lwnScn, &attributes);
+        builder->processBegin(xid, thread, beginScn, commitScn, lwnScn, &attributes);
 
         auto transactionType = Format::TRANSACTION_TYPE::T_NONE;
         std::deque<const RedoLogRecord*> redo1;
@@ -515,7 +516,7 @@ namespace OpenLogReplicator {
                     }
 
                     builder->processCommit(commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
-                    builder->processBegin(xid, beginScn, commitScn, lwnScn, &attributes);
+                    builder->processBegin(xid, thread, beginScn, commitScn, lwnScn, &attributes);
                 }
 
                 if (opFlush) {

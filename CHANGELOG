@@ -14,6 +14,7 @@
 - enhancement: scn timestamps added to attribute list
 - enhancement: printing hint about permissions for log files when file access error is encountered
 - enhancement: immediate graceful shutdown when interrupt signal is received
+- enhancement: redo thread added to attribute list
 
 1.9.0
 - code style cleanup
