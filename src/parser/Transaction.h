@@ -66,10 +66,11 @@ namespace OpenLogReplicator {
         bool lastSplit{false};
         bool dump{false};
         typeTransactionSize size{0};
+        uint16_t thread;
 
         AttributeMap attributes;
 
-        explicit Transaction(Xid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx);
+        explicit Transaction(Xid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs, XmlCtx* newXmlCtx, uint16_t thread);
 
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
         void add(const Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);

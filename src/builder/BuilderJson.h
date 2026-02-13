@@ -316,6 +316,7 @@ namespace OpenLogReplicator {
                     appendAttribute("usr", itUserName->second);
                 appendAttribute("sscn", std::to_string(beginScn.getData()));
                 appendAttribute("cscn", std::to_string(commitScn.getData()));
+                appendAttribute("rth", std::to_string(thread));
             } else {
                 for (const auto& [key, value]: *attributes)
                     appendAttribute(Attribute::toString(key), value);

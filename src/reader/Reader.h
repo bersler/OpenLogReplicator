@@ -84,6 +84,7 @@ namespace OpenLogReplicator {
         typeActivation activation{0};
         uint8_t* headerBuffer{nullptr};
         uint32_t compatVsn{0};
+        uint16_t thread{0};
         Time firstTimeHeader{0};
         Scn firstScn{Scn::none()};
         Scn firstScnHeader{Scn::none()};
@@ -151,6 +152,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] typeActivation getActivation() const;
         [[nodiscard]] uint64_t getSumRead() const;
         [[nodiscard]] uint64_t getSumTime() const;
+        [[nodiscard]] uint16_t getThread() const;
 
         void setRet(REDO_CODE newRet);
         void setBufferStartEnd(FileOffset newBufferStart, FileOffset newBufferEnd);
