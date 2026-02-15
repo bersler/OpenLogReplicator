@@ -671,7 +671,6 @@ namespace OpenLogReplicator {
             const std::string formatType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, formatJson, "type");
             if (formatType == "debezium") {
                 dbFormat = Format::DB_FORMAT::ALL;
-                attributesFormat = Format::ATTRIBUTES_FORMAT::DEBEZIUM;
                 intervalDtsFormat = Format::INTERVAL_DTS_FORMAT::ISO8601_COMMA;
                 intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::STRING_YM_DASH;
                 messageFormat = Format::MESSAGE_FORMAT::ADD_SEQUENCES;
