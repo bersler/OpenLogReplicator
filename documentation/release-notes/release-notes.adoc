@@ -1,7 +1,7 @@
 = Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-14
+:revdate: 2026-02-15
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
 :toc: preamble
@@ -28,10 +28,8 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: new format for XID field in output
 - enhancement: unified transaction attribute names
 - enhancement: new formatting options for timestamp values
-- enhancement: scn timestamps added to attribute list
 - enhancement: printing hint about permissions for log files when file access error is encountered
 - enhancement: immediate graceful shutdown when interrupt signal is received
-- enhancement: redo thread added to attribute list
 
 === Version 1.9.0
 - code style cleanup

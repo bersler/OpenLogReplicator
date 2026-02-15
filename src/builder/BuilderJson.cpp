@@ -28,11 +28,7 @@ namespace OpenLogReplicator {
             Builder(newCtx, newLocales, newMetadata, newFormat, newFlushBuffer) {}
 
     void BuilderJson::columnFloat(const std::string& columnName, double value) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
+        comma(hasPreviousColumn);
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":)"));
@@ -43,11 +39,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnDouble(const std::string& columnName, long double value) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
+        comma(hasPreviousColumn);
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":)"));
@@ -58,11 +50,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnString(const std::string& columnName) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
+        comma(hasPreviousColumn);
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":")"));
@@ -72,11 +60,7 @@ namespace OpenLogReplicator {
 
     void BuilderJson::columnNumber(const std::string& columnName, int precision __attribute__((unused)),
             int scale __attribute__((unused))) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
+        comma(hasPreviousColumn);
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":)"));
@@ -84,11 +68,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnRowId(const std::string& columnName, RowId rowId) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
+        comma(hasPreviousColumn);
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":")"));
@@ -112,11 +92,7 @@ namespace OpenLogReplicator {
                 appendHex2<true>(*(data + j));
             append<true>('"');
         } else {
-            if (hasPreviousColumn)
-                append(',');
-            else
-                hasPreviousColumn = true;
-
+            comma(hasPreviousColumn);
             append('"');
             appendEscape(columnName);
             append(std::string_view(R"(":")"));
@@ -127,11 +103,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
+        comma(hasPreviousColumn);
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":)"));
@@ -308,11 +280,7 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
+        comma(hasPreviousColumn);
         append('"');
         appendEscape(columnName);
         append(std::string_view(R"(":)"));
@@ -491,13 +459,9 @@ namespace OpenLogReplicator {
         builderBegin(beginScn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
         append('{');
         hasPreviousValue = false;
-        appendHeader(beginScn, timestamp, true, format.isDbFormatAddDml(), true);
+        appendHeader(beginScn, timestamp, true, format.isDbFormatAddDml(), true, true);
 
-        if (hasPreviousValue)
-            append(',');
-        else
-            hasPreviousValue = true;
-
+        comma(hasPreviousValue);
         if (format.isAttributesFormatBegin())
             appendAttributes();
 
@@ -524,13 +488,9 @@ namespace OpenLogReplicator {
             append('{');
 
             hasPreviousValue = false;
-            appendHeader(commitScn, timestamp, false, format.isDbFormatAddDml(), true);
+            appendHeader(commitScn, timestamp, false, format.isDbFormatAddDml(), true, true);
 
-            if (hasPreviousValue)
-                append(',');
-            else
-                hasPreviousValue = true;
-
+            comma(hasPreviousValue);
             if (format.isAttributesFormatCommit())
                 appendAttributes();
 
@@ -546,23 +506,16 @@ namespace OpenLogReplicator {
             processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
-            if (hasPreviousRedo)
-                append(',');
-            else
-                hasPreviousRedo = true;
+            comma(hasPreviousRedo);
         } else {
             builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             addTagData(lobCtx, xmlCtx, table, Format::VALUE_TYPE::AFTER, fileOffset);
 
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, true);
 
-            if (hasPreviousValue)
-                append(',');
-            else
-                hasPreviousValue = true;
-
+            comma(hasPreviousValue);
             if (format.isAttributesFormatDml())
                 appendAttributes();
 
@@ -593,23 +546,16 @@ namespace OpenLogReplicator {
             processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
-            if (hasPreviousRedo)
-                append(',');
-            else
-                hasPreviousRedo = true;
+            comma(hasPreviousRedo);
         } else {
             builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             addTagData(lobCtx, xmlCtx, table, Format::VALUE_TYPE::AFTER, fileOffset);
 
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, true);
 
-            if (hasPreviousValue)
-                append(',');
-            else
-                hasPreviousValue = true;
-
+            comma(hasPreviousValue);
             if (format.isAttributesFormatDml())
                 appendAttributes();
 
@@ -641,23 +587,16 @@ namespace OpenLogReplicator {
             processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
-            if (hasPreviousRedo)
-                append(',');
-            else
-                hasPreviousRedo = true;
+            comma(hasPreviousRedo);
         } else {
             builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             addTagData(lobCtx, xmlCtx, table, Format::VALUE_TYPE::BEFORE, fileOffset);
 
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, true);
 
-            if (hasPreviousValue)
-                append(',');
-            else
-                hasPreviousValue = true;
-
+            comma(hasPreviousValue);
             if (format.isAttributesFormatDml())
                 appendAttributes();
 
@@ -687,21 +626,14 @@ namespace OpenLogReplicator {
             processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
-            if (hasPreviousRedo)
-                append(',');
-            else
-                hasPreviousRedo = true;
+            comma(hasPreviousRedo);
         } else {
             builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDdl(), true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDdl(), true, true);
 
-            if (hasPreviousValue)
-                append(',');
-            else
-                hasPreviousValue = true;
-
+            comma(hasPreviousValue);
             if (format.isAttributesFormatDml())
                 appendAttributes();
 
@@ -742,13 +674,9 @@ namespace OpenLogReplicator {
         builderBegin(scn, sequence, 0, flags);
         append('{');
         hasPreviousValue = false;
-        appendHeader(scn, timestamp, true, false, false);
+        appendHeader(scn, timestamp, true, false, false, false);
 
-        if (hasPreviousValue)
-            append(',');
-        else
-            hasPreviousValue = true;
-
+        comma(hasPreviousValue);
         append(std::string_view(R"("payload":[{"op":"chkpt","seq":)"));
         appendDec(sequence.getData());
         append(std::string_view(R"(,"offset":)"));

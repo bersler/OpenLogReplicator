@@ -35,6 +35,13 @@ namespace OpenLogReplicator {
         bool hasPreviousRedo{false};
         bool hasPreviousColumn{false};
 
+        inline void comma(bool &prev) {
+            if (prev)
+                append(',');
+            else
+                prev = true;
+        }
+
         void columnNull(const DbTable* table, typeCol col, bool after) {
             if (unlikely(table != nullptr && format.unknownType == Format::UNKNOWN_TYPE::HIDE)) {
                 const DbColumn* column = table->columns[col];
@@ -67,11 +74,7 @@ namespace OpenLogReplicator {
                     return;
             }
 
-            if (hasPreviousColumn)
-                append(',');
-            else
-                hasPreviousColumn = true;
-
+            comma(hasPreviousColumn);
             append('"');
             if (likely(table != nullptr))
                 appendEscape(table->columns[col]->name);
@@ -101,17 +104,13 @@ namespace OpenLogReplicator {
             }
         }
 
-        void appendHeader(Scn scn, time_t timestamp, bool first, bool showDb, bool showXid) {
+        void appendHeader(Scn scn, time_t timestamp, bool first, bool showDb, bool showXid, bool showUser) {
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition], 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 64, 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 128, 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 192, 1, 0);
             if (first || format.isScnTypeAllPayloads()) {
-                if (hasPreviousValue)
-                    append(',');
-                else
-                    hasPreviousValue = true;
-
+                comma(hasPreviousValue);
                 if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
                     append(std::string_view(R"("scns":"0x)"));
                     appendHex16(scn.getData());
@@ -123,11 +122,7 @@ namespace OpenLogReplicator {
             }
 
             if (first || (static_cast<uint>(format.timestampAll) & static_cast<uint>(Format::TIMESTAMP_ALL::ALL_PAYLOADS)) != 0) {
-                if (hasPreviousValue)
-                    append(',');
-                else
-                    hasPreviousValue = true;
-
+                comma(hasPreviousValue);
                 char buffer[22];
                 switch (format.timestampMetadataFormat) {
                     case Format::TIMESTAMP_FORMAT::UNIX_NANO:
@@ -236,21 +231,14 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (hasPreviousValue)
-                append(',');
-            else
-                hasPreviousValue = true;
+            comma(hasPreviousValue);
             append(std::string_view(R"("c_scn":)"));
             appendDec(lwnScn.getData());
             append(std::string_view(R"(,"c_idx":)"));
             appendDec(lwnIdx);
 
             if (showXid) {
-                if (hasPreviousValue)
-                    append(',');
-                else
-                    hasPreviousValue = true;
-
+                comma(hasPreviousValue);
                 switch (format.xidFormat) {
                     case Format::XID_FORMAT::TEXT_HEX:
                         append(std::string_view(R"("xid":"0x)"));
@@ -283,43 +271,35 @@ namespace OpenLogReplicator {
             }
 
             if (showDb) {
-                if (hasPreviousValue)
-                    append(',');
-                else
-                    hasPreviousValue = true;
-
+                comma(hasPreviousValue);
                 append(std::string_view(R"("db":")"));
                 append(metadata->conName);
+                append('"');
+            }
+
+            if (showUser) {
+                std::string userName;
+                const auto itUserName = attributes->find(Attribute::KEY::LOGIN_USER_NAME);
+                if (itUserName != attributes->end())
+                    userName = itUserName->second;
+
+                comma(hasPreviousValue);
+                append(std::string_view(R"("usr":")"));
+                append(userName);
                 append('"');
             }
         }
 
         void appendAttributes() {
             bool hasPreviousAttribute = false;
-            auto appendAttribute = [&](const std::string_view key, const std::string& value) {
-                 if (hasPreviousAttribute)
-                    append(',');
-                else
-                    hasPreviousAttribute = true;
-
+            append(std::string_view(R"("attrs":{)"));
+            for (const auto& [key, value]: *attributes) {
+                comma(hasPreviousAttribute);
                 append('"');
-                appendEscape(key);
+                appendEscape(Attribute::toString(key));
                 append(std::string_view(R"(":")"));
                 appendEscape(value);
                 append('"');
-            };
-
-            append(std::string_view(R"("attrs":{)"));
-            if (format.isAttributesFormatCompact()) {
-                const auto itUserName = attributes->find(Attribute::KEY::LOGIN_USER_NAME);
-                if (itUserName != attributes->end())
-                    appendAttribute("usr", itUserName->second);
-                appendAttribute("sscn", std::to_string(beginScn.getData()));
-                appendAttribute("cscn", std::to_string(commitScn.getData()));
-                appendAttribute("rth", std::to_string(thread));
-            } else {
-                for (const auto& [key, value]: *attributes)
-                    appendAttribute(Attribute::toString(key), value);
             }
             append(std::string_view("},"));
         }
@@ -384,11 +364,7 @@ namespace OpenLogReplicator {
                     if (table->columns[column] == nullptr)
                         continue;
 
-                    if (hasPrev)
-                        append(',');
-                    else
-                        hasPrev = true;
-
+                    comma(hasPrev);
                     append(std::string_view(R"({"name":")"));
                     appendEscape(table->columns[column]->name);
 
