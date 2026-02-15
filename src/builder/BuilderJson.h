@@ -91,9 +91,6 @@ namespace OpenLogReplicator {
                 appendDec(num);
             }
 
-            if (format.ridFormat == Format::RID_FORMAT::SKIP)
-                return;
-
             if (format.ridFormat == Format::RID_FORMAT::TEXT) {
                 const RowId rowId(dataObj, bdba, slot);
                 char str[RowId::SIZE + 1];
@@ -287,6 +284,12 @@ namespace OpenLogReplicator {
                 append(std::string_view(R"("usr":")"));
                 append(userName);
                 append('"');
+            }
+
+            if (format.redoThreadFormat == Format::REDO_THREAD_FORMAT::TEXT) {
+                comma(hasPreviousValue);
+                append(std::string_view(R"("rth":)"));
+                appendDec(thread);
             }
         }
 
