@@ -61,6 +61,7 @@
         "scn": 0,
         "scn-type": 0,
         "rid": 0,
+        "redo-thread": 0,
         "unknown": 0,
         "schema": 0,
         "column": 0,

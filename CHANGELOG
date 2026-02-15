@@ -13,7 +13,7 @@
 - enhancement: new formatting options for timestamp values
 - enhancement: printing hint about permissions for log files when file access error is encountered
 - enhancement: immediate graceful shutdown when interrupt signal is received
-
+- enhancement: new format parameter: redo-thread
 
 1.9.0
 - code style cleanup

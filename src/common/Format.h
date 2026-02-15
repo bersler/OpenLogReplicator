@@ -88,6 +88,11 @@ namespace OpenLogReplicator {
             TEXT
         };
 
+        enum class REDO_THREAD_FORMAT : unsigned char {
+            SKIP,
+            TEXT
+        };
+
         enum class SCN_FORMAT : unsigned char {
             NUMERIC,
             TEXT_HEX
@@ -96,7 +101,10 @@ namespace OpenLogReplicator {
         enum class SCN_TYPE : unsigned char {
             NONE         = 0,
             ALL_PAYLOADS = 1 << 0,
-            COMMIT_VALUE = 1 << 1
+            COMMIT_VALUE = 1 << 1,
+            BEGIN_SCN = 1 << 2,
+            COMMIT_SCN = 1 << 3,
+            DEBEZIUM = ALL_PAYLOADS | BEGIN_SCN | COMMIT_SCN
         };
 
         enum class SCHEMA_FORMAT : unsigned char {
@@ -184,6 +192,7 @@ namespace OpenLogReplicator {
         INTERVAL_YTM_FORMAT intervalYtmFormat;
         MESSAGE_FORMAT messageFormat;
         RID_FORMAT ridFormat;
+        REDO_THREAD_FORMAT redoThreadFormat;
         XID_FORMAT xidFormat;
         TIMESTAMP_FORMAT timestampFormat;
         TIMESTAMP_FORMAT timestampMetadataFormat;
@@ -198,16 +207,17 @@ namespace OpenLogReplicator {
         UNKNOWN_TYPE unknownType;
 
         Format(DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat, INTERVAL_DTS_FORMAT newIntervalDtsFormat,
-               INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat, XID_FORMAT newXidFormat,
-               TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_FORMAT newTimestampMetadataFormat, TIMESTAMP_TZ_FORMAT newTimestampTzFormat,
-               TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat, SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat,
-               SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType):
+               INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat, REDO_THREAD_FORMAT newRedoThreadFormat,
+               XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_FORMAT newTimestampMetadataFormat,
+               TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat,
+               SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType):
                 dbFormat(newDbFormat),
                 attributesFormat(newAttributesFormat),
                 intervalDtsFormat(newIntervalDtsFormat),
                 intervalYtmFormat(newIntervalYtmFormat),
                 messageFormat(newMessageFormat),
                 ridFormat(newRidFormat),
+                redoThreadFormat(newRedoThreadFormat),
                 xidFormat(newXidFormat),
                 timestampFormat(newTimestampFormat),
                 timestampMetadataFormat(newTimestampMetadataFormat),
@@ -222,71 +232,71 @@ namespace OpenLogReplicator {
                 unknownType(newUnknownType) {}
 
         [[nodiscard]] bool isAttributesFormatBegin() const {
-            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::BEGIN)) != 0;
+            return (static_cast<unsigned char>(attributesFormat) & static_cast<unsigned char>(ATTRIBUTES_FORMAT::BEGIN)) != 0;
         }
 
         [[nodiscard]] bool isAttributesFormatDml() const {
-            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::DML)) != 0;
+            return (static_cast<unsigned char>(attributesFormat) & static_cast<unsigned char>(ATTRIBUTES_FORMAT::DML)) != 0;
         }
 
         [[nodiscard]] bool isAttributesFormatCommit() const {
-            return (static_cast<uint>(attributesFormat) & static_cast<uint>(ATTRIBUTES_FORMAT::COMMIT)) != 0;
+            return (static_cast<unsigned char>(attributesFormat) & static_cast<unsigned char>(ATTRIBUTES_FORMAT::COMMIT)) != 0;
         }
 
         [[nodiscard]] bool isCharFormatNoMapping() const {
-            return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::NOMAPPING)) != 0;
+            return (static_cast<unsigned char>(charFormat) & static_cast<unsigned char>(CHAR_FORMAT::NOMAPPING)) != 0;
         }
 
         [[nodiscard]] bool isCharFormatHex() const {
-            return (static_cast<uint>(charFormat) & static_cast<uint>(CHAR_FORMAT::HEX)) != 0;
+            return (static_cast<unsigned char>(charFormat) & static_cast<unsigned char>(CHAR_FORMAT::HEX)) != 0;
         }
 
         [[nodiscard]] bool isScnTypeAllPayloads() const {
-            return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::ALL_PAYLOADS)) != 0;
+            return (static_cast<unsigned char>(scnType) & static_cast<unsigned char>(SCN_TYPE::ALL_PAYLOADS)) != 0;
         }
 
         [[nodiscard]] bool isScnTypeCommitValue() const {
-            return (static_cast<uint>(scnType) & static_cast<uint>(SCN_TYPE::COMMIT_VALUE)) != 0;
+            return (static_cast<unsigned char>(scnType) & static_cast<unsigned char>(SCN_TYPE::COMMIT_VALUE)) != 0;
         }
 
         [[nodiscard]] bool isSchemaFormatFull() const {
-            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::FULL)) != 0;
+            return (static_cast<unsigned char>(schemaFormat) & static_cast<unsigned char>(SCHEMA_FORMAT::FULL)) != 0;
         }
 
         [[nodiscard]] bool isSchemaFormatRepeated() const {
-            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::REPEATED)) != 0;
+            return (static_cast<unsigned char>(schemaFormat) & static_cast<unsigned char>(SCHEMA_FORMAT::REPEATED)) != 0;
         }
 
         [[nodiscard]] bool isSchemaFormatObj() const {
-            return (static_cast<uint>(schemaFormat) & static_cast<uint>(SCHEMA_FORMAT::OBJ)) != 0;
+            return (static_cast<unsigned char>(schemaFormat) & static_cast<unsigned char>(SCHEMA_FORMAT::OBJ)) != 0;
         }
 
         [[nodiscard]] bool isMessageFormatFull() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::FULL)) != 0;
+            return (static_cast<unsigned char>(messageFormat) & static_cast<unsigned char>(MESSAGE_FORMAT::FULL)) != 0;
         }
 
         [[nodiscard]] bool isMessageFormatAddSequences() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_SEQUENCES)) != 0;
+            return (static_cast<unsigned char>(messageFormat) & static_cast<unsigned char>(MESSAGE_FORMAT::ADD_SEQUENCES)) != 0;
         }
 
         [[nodiscard]] bool isMessageFormatSkipBegin() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_BEGIN)) != 0;
+            return (static_cast<unsigned char>(messageFormat) & static_cast<unsigned char>(MESSAGE_FORMAT::SKIP_BEGIN)) != 0;
         }
 
         [[nodiscard]] bool isMessageFormatSkipCommit() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::SKIP_COMMIT)) != 0;
+            return (static_cast<unsigned char>(messageFormat) & static_cast<unsigned char>(MESSAGE_FORMAT::SKIP_COMMIT)) != 0;
         }
 
         [[nodiscard]] bool isMessageFormatAddOffset() const {
-            return (static_cast<uint>(messageFormat) & static_cast<uint>(MESSAGE_FORMAT::ADD_OFFSET)) != 0;
+            return (static_cast<unsigned char>(messageFormat) & static_cast<unsigned char>(MESSAGE_FORMAT::ADD_OFFSET)) != 0;
         }
 
         [[nodiscard]] bool isDbFormatAddDml() const {
-            return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DML)) != 0;
+            return (static_cast<unsigned char>(dbFormat) & static_cast<unsigned char>(DB_FORMAT::ADD_DML)) != 0;
         }
 
         [[nodiscard]] bool isDbFormatAddDdl() const {
-            return (static_cast<uint>(dbFormat) & static_cast<uint>(DB_FORMAT::ADD_DDL)) != 0;
+            return (static_cast<unsigned char>(dbFormat) & static_cast<unsigned char>(DB_FORMAT::ADD_DDL)) != 0;
         }
     };
 }

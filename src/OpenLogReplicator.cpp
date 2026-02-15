@@ -634,6 +634,7 @@ namespace OpenLogReplicator {
                     "interval-ytm",
                     "message",
                     "rid",
+                    "redo-thread",
                     "schema",
                     "scn",
                     "scn-type",
@@ -655,6 +656,7 @@ namespace OpenLogReplicator {
             Format::INTERVAL_YTM_FORMAT intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::MONTHS;
             Format::MESSAGE_FORMAT messageFormat = Format::MESSAGE_FORMAT::DEFAULT;
             Format::RID_FORMAT ridFormat = Format::RID_FORMAT::SKIP;
+            Format::REDO_THREAD_FORMAT redoThreadFormat = Format::REDO_THREAD_FORMAT::SKIP;
             Format::XID_FORMAT xidFormat = Format::XID_FORMAT::TEXT_HEX;
             Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
             Format::TIMESTAMP_FORMAT timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
@@ -675,6 +677,7 @@ namespace OpenLogReplicator {
                 intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::STRING_YM_DASH;
                 messageFormat = Format::MESSAGE_FORMAT::ADD_SEQUENCES;
                 ridFormat = Format::RID_FORMAT::TEXT;
+                redoThreadFormat = Format::REDO_THREAD_FORMAT::TEXT;
                 xidFormat = Format::XID_FORMAT::TEXT_REVERSED;
                 timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_MILLI;
                 timestampAll = Format::TIMESTAMP_ALL::ALL_PAYLOADS;
@@ -692,8 +695,8 @@ namespace OpenLogReplicator {
 
             if (formatJson.HasMember("attributes")) {
                 const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "attributes");
-                if (val > 15)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"attributes\" value: " + std::to_string(val) + ", expected: one of {0 .. 15}");
+                if (val > 7)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"attributes\" value: " + std::to_string(val) + ", expected: one of {0 .. 7}");
                 attributesFormat = static_cast<Format::ATTRIBUTES_FORMAT>(val);
             }
 
@@ -732,6 +735,13 @@ namespace OpenLogReplicator {
                 if (val > 1)
                     throw ConfigurationException(30001, "bad JSON, invalid \"rid\" value: " + std::to_string(val) + ", expected: one of {0, 1}");
                 ridFormat = static_cast<Format::RID_FORMAT>(val);
+            }
+
+            if (formatJson.HasMember("redo-thread")) {
+                const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "redo-thread");
+                if (val > 1)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"redo-thread\" value: " + std::to_string(val) + ", expected: one of {0 .. 1}");
+                redoThreadFormat = static_cast<Format::REDO_THREAD_FORMAT>(val);
             }
 
             if (formatJson.HasMember("xid")) {
@@ -828,9 +838,9 @@ namespace OpenLogReplicator {
 
 
             Builder* builder;
-            Format format(dbFormat, attributesFormat, intervalDtsFormat, intervalYtmFormat, messageFormat, ridFormat, xidFormat, timestampFormat,
-                timestampMetadataFormat, timestampTzFormat, timestampAll, charFormat, scnFormat, scnType, unknownFormat, schemaFormat, columnFormat,
-                unknownType);
+            Format format(dbFormat, attributesFormat, intervalDtsFormat, intervalYtmFormat, messageFormat, ridFormat, redoThreadFormat, xidFormat,
+                timestampFormat, timestampMetadataFormat, timestampTzFormat, timestampAll, charFormat, scnFormat, scnType, unknownFormat,
+                schemaFormat, columnFormat, unknownType);
             if (formatType == "json" || formatType == "debezium") {
                 builder = new BuilderJson(ctx, locales, metadata, format, flushBuffer);
             } else if (formatType == "protobuf") {
