@@ -1,7 +1,7 @@
 = Architecture and components
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-29
+:revdate: 2026-02-17
 :imagesdir: ./images
 :toc: preamble
 
@@ -13,24 +13,18 @@ a|[.small]#Author: {author}, version: {revnumber}, date: {revdate}#
 Previous chapter: xref:1.getting-started.adoc[Getting started]
 
 OpenLogReplicator is written in C++ and uses the database client libraries to read redo logs directly.
-
 Transactions are parsed from redo log files (online or archived).
-The process requires physical access to redo files; files must not be deleted before processing.
+The process requires physical access to redo files.
+Files must not be deleted before processing.
 
 [HINT]
 ====
 Refer to the database documentation to configure redo retention.
 ====
 
-The program is multithreaded; key threads:
-
-- Main thread — startup and shutdown.
-- Reader threads — read redo files from disk (one per redo log group).
-Most readers sleep until their file becomes current.
-- Checkpoint thread — writes checkpoint and schema snapshots (default: every 10 seconds).
-- Parser thread — single-threaded, CPU-bound parser.
-It decodes redo records, updates schema on DDL, and prepares messages for output.
-- Writer thread(s) — send transactions to configured targets; may use additional threads depending on connector libraries.
+The program is multithreaded.
+Key threads include the main thread, reader threads, a checkpoint thread, a parser thread, and writer threads.
+Most reader threads sleep until their file becomes current.
 
 [NOTE]
 ====
@@ -41,7 +35,7 @@ Other threads are primarily I/O-bound.
 [IMPORTANT]
 ====
 To avoid multiple instances overwriting checkpoints, the program locks the configuration file on startup.
-If the lock fails because another instance runs, the program exits.
+If the lock fails because another instance is running, the program exits.
 ====
 
 === Memory allocation [[memory-allocation]]
@@ -51,7 +45,8 @@ Metadata (table names, column definitions, etc.) and LOBs are allocated on the h
 
 [CAUTION]
 ====
-LOB data currently uses dynamic heap allocation; a future release will move LOBs into the memory pool.
+LOB data currently uses dynamic heap allocation.
+A future release will move LOBs into the memory pool.
 Large LOB-heavy streams can therefore exceed configured memory limits.
 ====
 
@@ -80,11 +75,11 @@ image:memory-swapping.png[Memory swapping,,,]
 
 ==== Sizing memory
 
-OpenLogReplicator uses very strict memory allocation and tries to not copy the redo data mulitple times in memory.
+OpenLogReplicator uses strict memory allocation and avoids copying redo data multiple times in memory.
 
 [HINT]
 ====
-If the database transactions are small - the program can work with very low memory footprint like 32MB memory.
+If database transactions are small, the program can work with a low memory footprint such as 32MB.
 ====
 
 Recommended steps to size memory:
@@ -95,7 +90,8 @@ Recommended steps to size memory:
 
 [IMPORTANT]
 ====
-Set `max-mb` to at least 110% of the maximum expected single LOB size (e.g. for a 1 GB LOB set `max-mb` ≥ 1.1 GB) to avoid error 10072.
+Set `max-mb` to at least 110% of the maximum expected single LOB size.
+For example, for a 1 GB LOB set `max-mb` ≥ 1.1 GB to avoid error 10072.
 ====
 
 Performance testing is recommended.

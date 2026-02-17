@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - format element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-16
+:revdate: 2026-02-17
 :icons: font
 
 [frame="none",grid="none"]
@@ -26,7 +26,7 @@ It describes available options, constraints, defaults and operational notes that
 |Output serialization format.
 
 * `json` — OpenLogReplicator JSON schema (stable).
-* `debezium` - Predefined set of all formatting options for Debezium connector.
+* `debezium` — Predefined set of all formatting options for Debezium connector.
 When chosen, no other options need to be set manually.
 However, individual format options can still override Debezium defaults.
 * `protobuf` — Protocol Buffers (xref:../experimental-features/experimental-features.adoc#protobuf-output[experimental]).
@@ -87,28 +87,28 @@ _NOTE:_ Small values reduce latency but increase I/O and downstream load.
 Options control numeric vs string representation and precision.
 Lower numeric values keep native precision; string representations preserve precision but increase payload size.
 
-* `0` - Value in nanoseconds - `"val": 123456000000000`.
-* `1` - Value in microseconds (possible data precision loss) - `"val": 123456000000`.
-* `2` - Value in milliseconds (possible data precision loss) - `"val": 123456000`.
-* `3` - Value in seconds (possible data precision loss) - `"val": 123456`.
-* `4` - Value in nanoseconds stored as a string - `"val": "123456000000000"`.
-* `5` - Value in microseconds stored as a string (possible data precision loss) - `"val": "123456000000"`.
-* `6` - Value in milliseconds stored as a string (possible data precision loss) - `"val": "123456000"`.
-* `7` - Value in seconds stored as a string (possible data precision loss) - `"val": "123456"`.
-* `8` - Value stored in part of _ISO-8601_ format stored as a string - `"val": "01 06:00:00.123456789"`.
-* `9` - Value stored in part of _ISO-8601_ format stored as a string using `","` as a separator between the number of days and time - `"val": "01,06:00:00.123456789"`.
-* `10` - Value stored in part of _ISO-8601_ format stored as a string using `"-"` as a separator between the number of days and time - `"val": "01-06:00:00.123456789"`.
+* `0` — Value in nanoseconds - `"val": 123456000000000`.
+* `1` — Value in microseconds (possible data precision loss) - `"val": 123456000000`.
+* `2` — Value in milliseconds (possible data precision loss) - `"val": 123456000`.
+* `3` — Value in seconds (possible data precision loss) - `"val": 123456`.
+* `4` — Value in nanoseconds stored as a string - `"val": "123456000000000"`.
+* `5` — Value in microseconds stored as a string (possible data precision loss) - `"val": "123456000000"`.
+* `6` — Value in milliseconds stored as a string (possible data precision loss) - `"val": "123456000"`.
+* `7` — Value in seconds stored as a string (possible data precision loss) - `"val": "123456"`.
+* `8` — Value stored in part of _ISO-8601_ format stored as a string - `"val": "01 06:00:00.123456789"`.
+* `9` — Value stored in part of _ISO-8601_ format stored as a string using `","` as a separator between the number of days and time - `"val": "01,06:00:00.123456789"`.
+* `10` — Value stored in part of _ISO-8601_ format stored as a string using `"-"` as a separator between the number of days and time - `"val": "01-06:00:00.123456789"`.
 
 |`interval-ytm` [[interval-ytm]]
 |_integer_, min: 0, max: 4, default: 0
 |Format for INTERVAL YEAR TO MONTH values.
 Options include raw months, string months, or year/month pair formats.
 
-* `0` - Value in months - `"val": 20` (1 year, 8 months).
-* `1` - Value in months as a string - `"val": "20"`.
-* `2` - Value in string format, number of years and months separated by `" "` - `"val": "1 8"`.
-* `3` - Value in string format, number of years and months separated by `","` - `"val": "1,8"`.
-* `4` - Value in string format, number of years and months separated by `"-"` - `"val": "1-8"`.
+* `0` — Value in months - `"val": 20` (1 year, 8 months).
+* `1` — Value in months as a string - `"val": "20"`.
+* `2` — Value in string format, number of years and months separated by `" "` - `"val": "1 8"`.
+* `3` — Value in string format, number of years and months separated by `","` - `"val": "1,8"`.
+* `4` — Value in string format, number of years and months separated by `"-"` - `"val": "1-8"`.
 
 |`message` [[message]]
 |_integer_, min: 0, max: 30, default: 0
@@ -178,22 +178,22 @@ _TIP:_ Use `0x0001` when receivers don't know the schema.
 |Format for timestamps.
 Options include numeric Unix epoch (ns/us/ms/s) or ISO-8601 string forms with or without timezone.
 
-* `0` - Unix with nanoseconds - `"tm": 1651384800123456789`.
-* `1` - Unix with precision to the microsecond (possible data precision loss) - `"tm": 1651384800123457`.
-* `2` - Unix with precision to the millisecond  (possible data precision loss) - `"tm": 1651384800123`.
-* `3` - Unix with precision to the second  (possible data precision loss) - `"tm": 1651384800`.
-* `4` - Unix with nanosecond precision stored as a string - `"tms": "1651384800123456789"`.
-* `5` - Unix with microsecond precision stored as a string (possible data precision loss) - `"tms": "1651384800123457"`.
-* `6` - Unix with millisecond precision stored as a string (possible data precision loss) - `"tms": "1651384800123"`.
-* `7` - Unix with second precision stored as a string (possible data precision loss) - `"tms": "1651384800"`.
-* `8` - _ISO-8601_ format stored with nanosecond precision - `"tms": "2022-05-01T06:00:00.123456789Z"`.
-* `9` - _ISO-8601_ format stored with microsecond precision as a string - `"tms": "2022-05-01T06:00:00.123456Z"`.
-* `10` - _ISO-8601_ format stored with millisecond precision as a string - `"tms": "2022-05-01T06:00:00.123Z"`.
-* `11` - _ISO-8601_ format stored second precision as a string - `"tms": "2022-05-01T06:00:00Z"`.
-* `12` - _ISO-8601_ format stored with nanosecond precision as a string without "TZ" - `"tms": "2022-05-01 06:00:00.123456789"`.
-* `13` - _ISO-8601_ format stored with microsecond precision as a string  without "TZ" - `"tms": "2022-05-01 06:00:00.123456"`.
-* `14` - _ISO-8601_ format stored with millisecond precision as a string without "TZ" - `"tms": "2022-05-01 06:00:00.123"`.
-* `15` - _ISO-8601_ format stored second precision as a string without "TZ" - `"tms": "2022-05-01 06:00:00"`.
+* `0` — Unix with nanoseconds - `"tm": 1651384800123456789`.
+* `1` — Unix with precision to the microsecond (possible data precision loss) - `"tm": 1651384800123457`.
+* `2` — Unix with precision to the millisecond  (possible data precision loss) - `"tm": 1651384800123`.
+* `3` — Unix with precision to the second  (possible data precision loss) - `"tm": 1651384800`.
+* `4` — Unix with nanosecond precision stored as a string - `"tms": "1651384800123456789"`.
+* `5` — Unix with microsecond precision stored as a string (possible data precision loss) - `"tms": "1651384800123457"`.
+* `6` — Unix with millisecond precision stored as a string (possible data precision loss) - `"tms": "1651384800123"`.
+* `7` — Unix with second precision stored as a string (possible data precision loss) - `"tms": "1651384800"`.
+* `8` — _ISO-8601_ format stored with nanosecond precision - `"tms": "2022-05-01T06:00:00.123456789Z"`.
+* `9` — _ISO-8601_ format stored with microsecond precision as a string - `"tms": "2022-05-01T06:00:00.123456Z"`.
+* `10` — _ISO-8601_ format stored with millisecond precision as a string - `"tms": "2022-05-01T06:00:00.123Z"`.
+* `11` — _ISO-8601_ format stored second precision as a string - `"tms": "2022-05-01T06:00:00Z"`.
+* `12` — _ISO-8601_ format stored with nanosecond precision as a string without "TZ" - `"tms": "2022-05-01 06:00:00.123456789"`.
+* `13` — _ISO-8601_ format stored with microsecond precision as a string  without "TZ" - `"tms": "2022-05-01 06:00:00.123456"`.
+* `14` — _ISO-8601_ format stored with millisecond precision as a string without "TZ" - `"tms": "2022-05-01 06:00:00.123"`.
+* `15` — _ISO-8601_ format stored second precision as a string without "TZ" - `"tms": "2022-05-01 06:00:00"`.
 
 _NOTE:_ `timestamp` format is also used for TIMESTAMP WITH LOCAL TIME ZONE values (which don't carry TZ in the value).
 
@@ -207,18 +207,18 @@ For values and options, see xref:#timestamp[timestamp] above.
 |Format for TIMESTAMP WITH TIME ZONE values.
 Options control epoch vs ISO-8601 and how the timezone is attached (comma, space, or embedded Z).
 
-* `0` - Unix with nanoseconds stored as a string with time zone after comma sign - `"tms": "1651384800123456789,Europe/Warsaw"`.
-* `1` - Unix with microsecond precision stored as a string with time zone after comma sign (possible data precision loss) - `"tms": "1651384800123457,Europe/Warsaw"`.
-* `2` - Unix with millisecond precision stored as a string with time zone after comma sign (possible data precision loss) - `"tms": "1651384800123,Europe/Warsaw"`.
-* `3` - Unix with second precision stored as a string with time zone after comma sign (possible data precision loss) - `"tms": "1651384800,Europe/Warsaw"`.
-* `4` - _ISO-8601_ format stored with nanosecond precision with time zone after space sign - `"tms": "2022-05-01T06:00:00.123456789Z Europe/Warsaw"`.
-* `5` - _ISO-8601_ format stored with microsecond precision as a string with time zone after space sign - `"tms": "2022-05-01T06:00:00.123456Z Europe/Warsaw"`.
-* `6` - _ISO-8601_ format stored with millisecond precision as a string with time zone after space sign - `"tms": "2022-05-01T06:00:00.123Z Europe/Warsaw"`.
-* `7` - _ISO-8601_ format stored second precision as a string with time zone after space sign - `"tms": "2022-05-01T06:00:00Z Europe/Warsaw"`.
-* `8` - _ISO-8601_ format stored with nanosecond precision as a string without "TZ" with time zone after space sign - `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
-* `9` - _ISO-8601_ format stored with microsecond precision as a string  without "TZ" with time zone after space sign - `"tms": "2022-05-01 06:00:00.123456 Europe/Warsaw"`.
-* `10` - _ISO-8601_ format stored with millisecond precision as a string without "TZ" with time zone after space sign - `"tms": "2022-05-01 06:00:00.123 Europe/Warsaw"`.
-* `11` - _ISO-8601_ format stored second precision as a string without "TZ" with time zone after space sign - `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
+* `0` — Unix with nanoseconds stored as a string with time zone after comma sign — `"tms": "1651384800123456789,Europe/Warsaw"`.
+* `1` — Unix with microsecond precision stored as a string with time zone after comma sign (possible data precision loss) — `"tms": "1651384800123457,Europe/Warsaw"`.
+* `2` — Unix with millisecond precision stored as a string with time zone after comma sign (possible data precision loss) — `"tms": "1651384800123,Europe/Warsaw"`.
+* `3` — Unix with second precision stored as a string with time zone after comma sign (possible data precision loss) — `"tms": "1651384800,Europe/Warsaw"`.
+* `4` — _ISO-8601_ format stored with nanosecond precision with time zone after space sign — `"tms": "2022-05-01T06:00:00.123456789Z Europe/Warsaw"`.
+* `5` — _ISO-8601_ format stored with microsecond precision as a string with time zone after space sign — `"tms": "2022-05-01T06:00:00.123456Z Europe/Warsaw"`.
+* `6` — _ISO-8601_ format stored with millisecond precision as a string with time zone after space sign — `"tms": "2022-05-01T06:00:00.123Z Europe/Warsaw"`.
+* `7` — _ISO-8601_ format stored second precision as a string with time zone after space sign — `"tms": "2022-05-01T06:00:00Z Europe/Warsaw"`.
+* `8` — _ISO-8601_ format stored with nanosecond precision as a string without "TZ" with time zone after space sign — `"tms": "2022-05-01 06:00:00.123456789 Europe/Warsaw"`.
+* `9` — _ISO-8601_ format stored with microsecond precision as a string  without "TZ" with time zone after space sign — `"tms": "2022-05-01 06:00:00.123456 Europe/Warsaw"`.
+* `10` — _ISO-8601_ format stored with millisecond precision as a string without "TZ" with time zone after space sign — `"tms": "2022-05-01 06:00:00.123 Europe/Warsaw"`.
+* `11` — _ISO-8601_ format stored second precision as a string without "TZ" with time zone after space sign — `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
 
 |`timestamp-all` [[timestamp-all]]
 |_integer_, min: 0, max: 1, default: 0
@@ -245,7 +245,7 @@ Options control epoch vs ISO-8601 and how the timezone is attached (comma, space
 * `0` — classic hex text, e.g., `0x0002.012.00004162`.
 * `1` — dotted decimal, e.g., `2.18.16738`.
 * `2` — single 64-bit numeric `xidn`.
-* `3` - Logminer format value stored as a string.
+* `3` — Logminer format value stored as a string.
 
 |===
 

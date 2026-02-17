@@ -1,7 +1,7 @@
 = Output format
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-17
 :toc: preamble
 
 [frame="none",grid="none"]
@@ -14,15 +14,16 @@ Previous chapter: xref:2.architecture-and-components.adoc[Architecture and compo
 === Introduction
 
 The output format is fully configurable.
-There are two formats implemented: JSON and protocol buffer, but the architecture of the program allows implementing any other format in the future.
+Two formats are implemented: JSON and Protocol Buffer.
+The program architecture makes it straightforward to add additional formats.
 
 === JSON format
 
-JSON format is the first implemented format with rapid write speed.
-The stream is directly constructed from the redo log data.
-The process of constructing the stream does not use dynamic memory allocation.
-Instead, the JSON stream is directly constructed and populated while redo log data is parsed.
-This makes the speed of the output very fast; internal tests show that it is about 2.5 times faster than the protocol buffer format, even though the size of the output might be longer.
+JSON is the first implemented format and provides fast write performance.
+The stream is constructed directly from the redo log data.
+The JSON construction avoids dynamic memory allocation for the main stream object.
+Instead, the stream is written directly while redo log data is parsed.
+Internal tests show that the JSON writer is about 2.5× faster than the Protocol Buffer writer, although JSON output may be larger.
 
 ==== Response: _scn_val_
 
@@ -37,9 +38,9 @@ See:  xref:../json/4.format.adoc#scn[scn] parameter for configuration details.
 
 ==== Response: _tm_val_
 
-The Time field contains the timestamp related to the payload data.
-If the transaction contains multiple DML operations, then the timestamps of particular DML operations are possible to distinguish.
-Instead, just the timestamp related to the commit record is used.
+The Time field contains the timestamp related to the payload.
+If a transaction contains multiple DML operations, timestamps for individual DML operations can be distinguished.
+By default, the timestamp related to the commit record is used.
 
 The value can be stored in:
 

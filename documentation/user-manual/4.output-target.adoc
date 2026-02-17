@@ -1,7 +1,7 @@
 = Output target
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-23
+:revdate: 2026-02-17
 :imagesdir: ./images
 :url-github-docker: https://github.com/bersler/OpenLogReplicator-docker
 :url-github-librdkafka: https://github.com/confluentinc/librdkafka
@@ -16,20 +16,19 @@ Previous chapter: xref:3.output-format.adoc[Output format]
 
 === Kafka target
 
-OpenLogReplicator is a standalone program that connects to Kafka and sends messages to it.
-The connection parameters are fully controlled from the program parameters.
+OpenLogReplicator is a standalone program that connects to Kafka and sends messages.
+Connection parameters are controlled from the program configuration.
 
 [NOTE]
 ====
-The Kafka target connector is not a Kafka Connect module.
+The Kafka connector is not a Kafka Connect module.
 ====
 
 ==== Build instructions
 
-By default, OpenLogReplicator doesn't have the Kafka writer modules compiled in.
-The Kafka target module needs to be compiled and liked with the code.
-For {url-github-docker}[Docker images] use the parameter `--build-arg WITHKAFKA=1`.
-The Kafka module client is written in C/C++ and uses no Java code or runtime.
+By default, Kafka writer modules are not compiled in.
+Enable Kafka in Docker builds with `--build-arg WITHKAFKA=1`.
+The Kafka client is implemented in C/C++ and does not require Java.
 
 ==== Limitations
 
