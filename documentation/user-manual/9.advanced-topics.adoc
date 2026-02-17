@@ -1,7 +1,7 @@
 = Advanced topics
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-23
+:revdate: 2026-02-17
 :imagesdir: ./images
 :toc: preamble
 
@@ -15,8 +15,7 @@ Previous chapter: xref:8.checkpointing.adoc[Checkpointing]
 === Schema changes
 
 OpenLogReplicator can handle schema changes.
-
-To work properly, an initial consistent image of the schema needs to be created.
+To operate correctly, an initial consistent schema image must be created.
 This is done using the `gencfg.sql` script or during the first run of the program.
 
 The image of database system tables is read just for a selected list of schemas.
@@ -84,14 +83,10 @@ This includes only the tags `table` and `owner` both in `debug` and `filter` sec
 
 === Offline reader
 
-For cases where there is no physical way to connect the database, OpenLogReplicator offers an offline reader mode.
+Offline reader mode supports replication when direct database access is not available.
+Activate this mode by setting `"type": "offline"` in the `reader` section.
+A schema file is required to run the offline reader.
 
-In such a scenario, a replication may be fully functional, even though there is no network connection to the database.
-This also implies that there is no need to create a user in the database.
-
-The offline reader mode is activated by setting a parameter `"type": "offline"` in the `reader` section.
-
-To start work with the offline reader, a schema file is necessary.
 The schema file can be created using the `gencfg.sql` script or during the first run of the program when running with `online` reader.
 
 [CAUTION]

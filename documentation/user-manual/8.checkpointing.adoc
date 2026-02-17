@@ -1,7 +1,7 @@
 = Checkpointing
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-01-27
+:revdate: 2026-02-17
 :toc: preamble
 
 [frame="none",grid="none"]
@@ -13,22 +13,22 @@ Previous chapter: xref:7.startup.adoc[Startup]
 
 === Introduction
 
-Checkpointing is a way to save the current position in the redo log.
-The structure of redo log files is organized as LWN's (Log Writer Number).
-Each LWN has a sequence of blocks which is a unit of redo log records and is processed as a whole.
-Because of this, the position is advanced only after the whole LWN is processed.
+Checkpointing saves the current position in the redo log.
+The redo log is organized by Log Writer Number (LWN).
+Each LWN contains a sequence of blocks that are processed as a unit.
+The position advances only after the whole LWN is processed.
 
 === Checkpoint messages
 
-After every LWN is processed, OpenLogReplicator emits a special record called checkpoint record.
+After every LWN is processed, OpenLogReplicator emits a checkpoint record.
 The checkpoint record contains the current position in the redo log.
 
-An example of checkpoint records:
+An example checkpoint record:
 
  "payload":[{"op":"chkpt","seq":1763,"offset":15872}]
 
-Checkpoint records can be used as a heartbeat signal, and are enabled by default.
-Sending of the checkpoint record can be disabled by setting of the `"flags":4096` parameter of the `reader`.
+Checkpoint records also serve as a heartbeat and are enabled by default.
+You can disable checkpoint records by setting the `flags` field of the `reader` (value 4096).
 
 The record contains information about the current sequence of the redo log files (`seq`) and the offset in the current file (`offset`).
 Sometimes it also contains information about the fact that the redo log file has been switched (`"redo":true`).
