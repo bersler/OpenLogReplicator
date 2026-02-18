@@ -22,11 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Ctx.h"
 #include "exception/RedoLogException.h"
-#include "types/LobId.h"
 #include "types/FileOffset.h"
+#include "types/LobId.h"
 #include "types/Scn.h"
-#include "types/Xid.h"
+#include "types/Seq.h"
+#include "types/Time.h"
 #include "types/Types.h"
+#include "types/Xid.h"
 
 namespace OpenLogReplicator {
     class RedoLogRecord final {
@@ -76,8 +78,10 @@ namespace OpenLogReplicator {
         uint8_t* dataExt;
         FileOffset fileOffset;
         Xid xid;                  // Transaction id
+        Seq sequence;
         Scn scnRecord;
         Scn scn;
+        Time timestamp;
         typeSubScn subScn;
         typeConId conId;
         typeDba dba;

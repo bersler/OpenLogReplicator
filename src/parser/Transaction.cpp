@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
                                " empty buffer, offset: " + redoLogRecord1->fileOffset.toString() + ", xid: " + xid.toString() + ", pos: 1");
     }
 
-    void Transaction::flush(Metadata* metadata, Builder* builder, Scn lwnScn) {
+    void Transaction::flush(Metadata* metadata, Builder* builder) {
         metadata->ctx->swappedMemoryFlush(metadata->ctx->parserThread, xid);
         bool opFlush;
         const uint64_t maxMessageMb = builder->getMaxMessageMb();
@@ -203,7 +203,8 @@ namespace OpenLogReplicator {
             builder->systemTransaction = new SystemTransaction(builder, metadata);
             metadata->schema->scn = commitScn;
         }
-        builder->processBegin(xid, thread, beginScn, commitScn, lwnScn, &attributes);
+        builder->processBegin(xid, thread, beginSequence, beginScn, beginTimestamp,
+             commitSequence,  commitScn, commitTimestamp, &attributes);
 
         auto transactionType = Format::TRANSACTION_TYPE::T_NONE;
         std::deque<const RedoLogRecord*> redo1;
@@ -465,31 +466,29 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & RedoLogRecord::FB_L) != 0) {
-                            builder->processDml(redo2.front()->scn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone),
-                                                &lobCtx, xmlCtx, redo1, redo2, transactionType, system, schema, dump);
+                            builder->processDml(redoLogRecord2->sequence, redoLogRecord2->scn, redoLogRecord2->timestamp, &lobCtx, xmlCtx, redo1, redo2,
+                                                transactionType, system, schema, dump);
                             opFlush = true;
                         }
                         break;
 
                     case 0x05010B0B:
                         // Insert multiple rows
-                        builder->processInsertMultiple(redoLogRecord2->scn, commitSequence,
-                                                       commitTimestamp.toEpoch(metadata->ctx->hostTimezone), &lobCtx, xmlCtx, redoLogRecord1,
-                                                       redoLogRecord2, system, schema, dump);
+                        builder->processInsertMultiple(redoLogRecord2->sequence, redoLogRecord2->scn, redoLogRecord2->timestamp, &lobCtx, xmlCtx,
+                                                       redoLogRecord1, redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;
 
                     case 0x05010B0C:
                         // Delete multiple rows
-                        builder->processDeleteMultiple(redoLogRecord2->scn, commitSequence,
-                                                       commitTimestamp.toEpoch(metadata->ctx->hostTimezone), &lobCtx, xmlCtx, redoLogRecord1,
-                                                       redoLogRecord2, system, schema, dump);
+                        builder->processDeleteMultiple(redoLogRecord2->sequence, redoLogRecord2->scn, redoLogRecord2->timestamp, &lobCtx, xmlCtx,
+                                                       redoLogRecord1, redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;
 
                     case 0x18010000:
                         // DDL operation
-                        builder->processDdl(redoLogRecord1->scn, commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone), redoLogRecord1);
+                        builder->processDdl(redoLogRecord1->sequence, redoLogRecord1->scn, redoLogRecord1->timestamp, redoLogRecord1);
                         opFlush = true;
                         break;
 
@@ -515,8 +514,9 @@ namespace OpenLogReplicator {
                         builder->systemTransaction = new SystemTransaction(builder, metadata);
                     }
 
-                    builder->processCommit(commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
-                    builder->processBegin(xid, thread, beginScn, commitScn, lwnScn, &attributes);
+                    builder->processCommit();
+                    builder->processBegin(xid, thread, beginSequence, beginScn, beginTimestamp,
+                         commitSequence, commitScn, commitTimestamp, &attributes);
                 }
 
                 if (opFlush) {
@@ -548,7 +548,7 @@ namespace OpenLogReplicator {
             // Unlock schema
             lckSchema.unlock();
         }
-        builder->processCommit(commitSequence, commitTimestamp.toEpoch(metadata->ctx->hostTimezone));
+        builder->processCommit();
         metadata->ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
     }
 

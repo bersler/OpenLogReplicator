@@ -101,132 +101,191 @@ namespace OpenLogReplicator {
             }
         }
 
-        void appendHeader(Scn scn, time_t timestamp, bool first, bool showDb, bool showXid, bool showUser) {
+        void appendTimestamp(const std::string_view fieldn, const std::string_view fields, Time timestamp) {
+            time_t tm = timestamp.toEpoch(metadata->ctx->hostTimezone);
+            comma(hasPreviousValue);
+            char buffer[22];
+            append('"');
+            switch (format.timestampMetadataFormat) {
+                case Format::TIMESTAMP_FORMAT::UNIX_NANO:
+                    append(fieldn);
+                    append(std::string_view(R"(":)"));
+                    appendDec(tm);
+                    if (tm != 0)
+                        append(std::string_view("000000000"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::UNIX_MICRO:
+                    append(fieldn);
+                    append(std::string_view(R"(":)"));
+                    appendDec(tm);
+                    if (tm != 0)
+                        append(std::string_view("000000"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::UNIX_MILLI:
+                    append(fieldn);
+                    append(std::string_view(R"(":)"));
+                    appendDec(tm);
+                    if (tm != 0)
+                        append(std::string_view("000"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::UNIX:
+                    append(fieldn);
+                    append(std::string_view(R"(":)"));
+                    appendDec(tm);
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::UNIX_NANO_STRING:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendDec(tm);
+                    if (tm != 0)
+                        append(std::string_view("000000000"));
+                    append('"');
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::UNIX_MICRO_STRING:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendDec(tm);
+                    if (tm != 0)
+                        append(std::string_view("000000"));
+                    append('"');
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::UNIX_MILLI_STRING:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendDec(tm);
+                    if (tm != 0)
+                        append(std::string_view("000"));
+                    append('"');
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::UNIX_STRING:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendDec(tm);
+                    append('"');
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601_NANO_TZ:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, true, false));
+                    append(std::string_view(R"(.000000000Z")"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601_MICRO_TZ:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, true, true));
+                    append(std::string_view(R"(.000000Z")"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601_MILLI_TZ:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, true, false));
+                    append(std::string_view(R"(.000Z")"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601_TZ:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, true, true));
+                    append('"');
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601_NANO:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, false, false));
+                    append(std::string_view(R"(.000000000")"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601_MICRO:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, false, false));
+                    append(std::string_view(R"(.000000")"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601_MILLI:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, false, false));
+                    append(std::string_view(R"(.000")"));
+                    break;
+
+                case Format::TIMESTAMP_FORMAT::ISO8601:
+                    append(fields);
+                    append(std::string_view(R"(":")"));
+                    appendArr(buffer, Data::epochToIso8601(tm, buffer, false, false));
+                    append('"');
+                    break;
+            }
+        }
+
+        void appendHeader(Scn scn, Time timestamp, bool first, bool showDb, bool showXid, bool showUser) {
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition], 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 64, 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 128, 1, 0);
             __builtin_prefetch(&lastBuilderQueue->data[lastBuilderSize + messagePosition] + 192, 1, 0);
-            if (first || format.isScnTypeAllPayloads()) {
+            if (first || format.isScnTypeDml()) {
                 comma(hasPreviousValue);
                 if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
                     append(std::string_view(R"("scns":"0x)"));
-                    appendHex16(scn.getData());
+                    if (format.isScnTypeCommitValue())
+                        appendHex16(commitScn.getData());
+                    else
+                        appendHex16(scn.getData());
                     append('"');
                 } else {
                     append(std::string_view(R"("scn":)"));
-                    appendDec(scn.getData());
+                    if (format.isScnTypeCommitValue())
+                        appendDec(commitScn.getData());
+                    else
+                        appendDec(scn.getData());
                 }
             }
 
-            if (first || (static_cast<uint>(format.timestampAll) & static_cast<uint>(Format::TIMESTAMP_ALL::ALL_PAYLOADS)) != 0) {
+            if (format.isScnTypeBegin()) {
                 comma(hasPreviousValue);
-                char buffer[22];
-                switch (format.timestampMetadataFormat) {
-                    case Format::TIMESTAMP_FORMAT::UNIX_NANO:
-                        append(std::string_view(R"("tm":)"));
-                        appendDec(timestamp);
-                        if (timestamp != 0)
-                            append(std::string_view("000000000"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::UNIX_MICRO:
-                        append(std::string_view(R"("tm":)"));
-                        appendDec(timestamp);
-                        if (timestamp != 0)
-                            append(std::string_view("000000"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::UNIX_MILLI:
-                        append(std::string_view(R"("tm":)"));
-                        appendDec(timestamp);
-                        if (timestamp != 0)
-                            append(std::string_view("000"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::UNIX:
-                        append(std::string_view(R"("tm":)"));
-                        appendDec(timestamp);
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::UNIX_NANO_STRING:
-                        append(std::string_view(R"("tms":")"));
-                        appendDec(timestamp);
-                        if (timestamp != 0)
-                            append(std::string_view("000000000"));
-                        append('"');
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::UNIX_MICRO_STRING:
-                        append(std::string_view(R"("tms":")"));
-                        appendDec(timestamp);
-                        if (timestamp != 0)
-                            append(std::string_view("000000"));
-                        append('"');
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::UNIX_MILLI_STRING:
-                        append(std::string_view(R"("tms":")"));
-                        appendDec(timestamp);
-                        if (timestamp != 0)
-                            append(std::string_view("000"));
-                        append('"');
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::UNIX_STRING:
-                        append(std::string_view(R"("tms":")"));
-                        appendDec(timestamp);
-                        append('"');
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601_NANO_TZ:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, false));
-                        append(std::string_view(R"(.000000000Z")"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601_MICRO_TZ:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, true));
-                        append(std::string_view(R"(.000000Z")"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601_MILLI_TZ:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, false));
-                        append(std::string_view(R"(.000Z")"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601_TZ:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, true, true));
-                        append('"');
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601_NANO:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
-                        append(std::string_view(R"(.000000000")"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601_MICRO:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
-                        append(std::string_view(R"(.000000")"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601_MILLI:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
-                        append(std::string_view(R"(.000")"));
-                        break;
-
-                    case Format::TIMESTAMP_FORMAT::ISO8601:
-                        append(std::string_view(R"("tms":")"));
-                        appendArr(buffer, Data::epochToIso8601(timestamp, buffer, false, false));
-                        append('"');
-                        break;
+                if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
+                    append(std::string_view(R"("b_scns":"0x)"));
+                    appendHex16(beginScn.getData());
+                    append('"');
+                } else {
+                    append(std::string_view(R"("b_scn":)"));
+                    appendDec(beginScn.getData());
                 }
             }
+
+            if (format.isScnTypeCommit()) {
+                comma(hasPreviousValue);
+                if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
+                    append(std::string_view(R"("e_scns":"0x)"));
+                    appendHex16(commitScn.getData());
+                    append('"');
+                } else {
+                    append(std::string_view(R"("e_scn":)"));
+                    appendDec(commitScn.getData());
+                }
+            }
+
+            if (first || format.isTimestampTypeDml()) {
+                if (format.isTimestampTypeCommitValue())
+                    appendTimestamp("tm", "tms", commitTimestamp);
+                else
+                    appendTimestamp("tm", "tms", timestamp);
+            }
+            if (format.isTimestampTypeBegin())
+                appendTimestamp("b_tm", "b_tms", beginTimestamp);
+            if (format.isTimestampTypeCommit())
+                appendTimestamp("e_tm", "e_tms", commitTimestamp);
 
             comma(hasPreviousValue);
             append(std::string_view(R"("c_scn":)"));
@@ -275,15 +334,13 @@ namespace OpenLogReplicator {
             }
 
             if (showUser) {
-                std::string userName;
                 const auto itUserName = attributes->find(Attribute::KEY::LOGIN_USER_NAME);
-                if (itUserName != attributes->end())
-                    userName = itUserName->second;
-
-                comma(hasPreviousValue);
-                append(std::string_view(R"("usr":")"));
-                append(userName);
-                append('"');
+                if (itUserName != attributes->end()) {
+                    comma(hasPreviousValue);
+                    append(std::string_view(R"("usr":")"));
+                    append(itUserName->second);
+                    append('"');
+                }
             }
 
             if (format.redoThreadFormat == Format::REDO_THREAD_FORMAT::TEXT) {
@@ -783,12 +840,12 @@ namespace OpenLogReplicator {
             hasPreviousColumn = false;
             if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
-                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] == nullptr)
+                    if (values[column][+Format::VALUE_TYPE::AFTER] == nullptr)
                         continue;
 
-                    if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0)
-                        processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], fileOffset, true, compressedAfter);
+                    if (sizes[column][+Format::VALUE_TYPE::AFTER] > 0)
+                        processValue(lobCtx, xmlCtx, table, column, values[column][+Format::VALUE_TYPE::AFTER],
+                                     sizes[column][+Format::VALUE_TYPE::AFTER], fileOffset, true, compressedAfter);
                     else
                         columnNull(table, column, true);
                 }
@@ -802,10 +859,10 @@ namespace OpenLogReplicator {
                         set &= ~(1ULL << pos);
                         const typeCol column = columnBase + pos;
 
-                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr) {
-                            if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0)
-                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], fileOffset, true, compressedAfter);
+                        if (values[column][+Format::VALUE_TYPE::AFTER] != nullptr) {
+                            if (sizes[column][+Format::VALUE_TYPE::AFTER] > 0)
+                                processValue(lobCtx, xmlCtx, table, column, values[column][+Format::VALUE_TYPE::AFTER],
+                                             sizes[column][+Format::VALUE_TYPE::AFTER], fileOffset, true, compressedAfter);
                             else
                                 columnNull(table, column, true);
                         }
@@ -821,12 +878,12 @@ namespace OpenLogReplicator {
             hasPreviousColumn = false;
             if (format.columnFormat > Format::COLUMN_FORMAT::CHANGED && table != nullptr) {
                 for (typeCol column = 0; column < table->maxSegCol; ++column) {
-                    if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] == nullptr)
+                    if (values[column][+Format::VALUE_TYPE::BEFORE] == nullptr)
                         continue;
 
-                    if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0)
-                        processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
-                                     sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], fileOffset, false, compressedBefore);
+                    if (sizes[column][+Format::VALUE_TYPE::BEFORE] > 0)
+                        processValue(lobCtx, xmlCtx, table, column, values[column][+Format::VALUE_TYPE::BEFORE],
+                                     sizes[column][+Format::VALUE_TYPE::BEFORE], fileOffset, false, compressedBefore);
                     else
                         columnNull(table, column, false);
                 }
@@ -840,10 +897,10 @@ namespace OpenLogReplicator {
                         set &= ~(1ULL << pos);
                         const typeCol column = columnBase + pos;
 
-                        if (values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
-                            if (sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] > 0)
-                                processValue(lobCtx, xmlCtx, table, column, values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)],
-                                             sizes[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)], fileOffset, false, compressedBefore);
+                        if (values[column][+Format::VALUE_TYPE::BEFORE] != nullptr) {
+                            if (sizes[column][+Format::VALUE_TYPE::BEFORE] > 0)
+                                processValue(lobCtx, xmlCtx, table, column, values[column][+Format::VALUE_TYPE::BEFORE],
+                                             sizes[column][+Format::VALUE_TYPE::BEFORE], fileOffset, false, compressedBefore);
                             else
                                 columnNull(table, column, false);
                         }
@@ -862,21 +919,21 @@ namespace OpenLogReplicator {
         void columnRowId(const std::string& columnName, RowId rowId) override;
         void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) override;
         void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) override;
-        void processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+        void processInsert(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                            typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) override;
-        void processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+        void processUpdate(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                            typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) override;
-        void processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+        void processDelete(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                            typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) override;
-        void processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) override;
-        void processBeginMessage(Seq sequence, time_t timestamp) override;
+        void processDdl(Seq sequence, Scn scn, Time timestamp, const DbTable* table, typeObj obj) override;
+        void processBeginMessage(Seq sequence, Time timestamp) override;
         void addTagData(LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, Format::VALUE_TYPE valueType, FileOffset fileOffset);
 
     public:
         BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, Format& newFormat, uint64_t newFlushBuffer);
 
-        void processCommit(Seq sequence, time_t timestamp) override;
-        void processCheckpoint(Scn scn, Seq sequence, time_t timestamp, FileOffset fileOffset, bool redo) override;
+        void processCommit() override;
+        void processCheckpoint(Seq sequence, Scn scn, Time timestamp, FileOffset fileOffset, bool redo) override;
     };
 }
 

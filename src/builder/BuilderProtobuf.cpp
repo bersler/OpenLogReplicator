@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/DbColumn.h"
 #include "../common/DbTable.h"
 #include "../common/exception/RuntimeException.h"
-#include "../common/table/SysCol.h"
 #include "../common/types/RowId.h"
 #include "../metadata/Metadata.h"
 #include "../metadata/Schema.h"
@@ -98,9 +97,9 @@ namespace OpenLogReplicator {
         // TODO: implement
     }
 
-    void BuilderProtobuf::processBeginMessage(Seq sequence, time_t timestamp) {
+    void BuilderProtobuf::processBeginMessage(Seq sequence, Time timestamp) {
         newTran = false;
-        builderBegin(beginScn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
+        builderBegin(sequence, beginScn, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
         createResponse();
         appendHeader(beginScn, timestamp, true, format.isDbFormatAddDml(), true);
 
@@ -121,7 +120,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+    void BuilderProtobuf::processInsert(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                         typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
@@ -130,7 +129,7 @@ namespace OpenLogReplicator {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB insert processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
             appendHeader(scn, timestamp, true, format.isDbFormatAddDml(), true);
         }
@@ -158,7 +157,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+    void BuilderProtobuf::processUpdate(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                         typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
@@ -167,7 +166,7 @@ namespace OpenLogReplicator {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB update processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
             appendHeader(scn, timestamp, true, format.isDbFormatAddDml(), true);
         }
@@ -196,7 +195,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+    void BuilderProtobuf::processDelete(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                         typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
@@ -205,7 +204,7 @@ namespace OpenLogReplicator {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB delete processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
             appendHeader(scn, timestamp, true, format.isDbFormatAddDml(), true);
         }
@@ -233,7 +232,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table __attribute__((unused)), typeObj obj) {
+    void BuilderProtobuf::processDdl(Seq sequence, Scn scn, Time timestamp, const DbTable* table __attribute__((unused)), typeObj obj) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
 
@@ -241,7 +240,7 @@ namespace OpenLogReplicator {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
             appendHeader(scn, timestamp, true, format.isDbFormatAddDdl(), true);
 
@@ -277,7 +276,7 @@ namespace OpenLogReplicator {
         GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
-    void BuilderProtobuf::processCommit(Seq sequence, time_t timestamp) {
+    void BuilderProtobuf::processCommit() {
         // Skip empty transaction
         if (newTran) {
             newTran = false;
@@ -288,9 +287,9 @@ namespace OpenLogReplicator {
             if (unlikely(redoResponsePB == nullptr))
                 throw RuntimeException(50018, "PB commit processing failed, a message is missing");
         } else {
-            builderBegin(commitScn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(commitSequence, commitScn, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
             createResponse();
-            appendHeader(commitScn, timestamp, true, format.isDbFormatAddDml(), true);
+            appendHeader(commitScn, commitTimestamp, true, format.isDbFormatAddDml(), true);
 
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
@@ -310,7 +309,7 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderProtobuf::processCheckpoint(Scn scn, Seq sequence, time_t timestamp __attribute__((unused)), FileOffset fileOffset,
+    void BuilderProtobuf::processCheckpoint(Seq sequence, Scn scn, Time timestamp __attribute__((unused)), FileOffset fileOffset,
             bool redo) {
         if (lwnScn != scn) {
             lwnScn = scn;
@@ -320,7 +319,7 @@ namespace OpenLogReplicator {
         auto flags = BuilderMsg::OUTPUT_BUFFER::CHECKPOINT;
         if (redo)
             flags = static_cast<BuilderMsg::OUTPUT_BUFFER>(static_cast<uint>(flags) | static_cast<uint>(BuilderMsg::OUTPUT_BUFFER::REDO));
-        builderBegin(scn, sequence, 0, flags);
+        builderBegin(sequence, scn, 0, flags);
         createResponse();
         appendHeader(scn, timestamp, true, false, false);
 

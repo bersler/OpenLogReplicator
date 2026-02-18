@@ -639,8 +639,8 @@ namespace OpenLogReplicator {
                     "scn",
                     "scn-type",
                     "timestamp",
-                    "timestamp-all",
                     "timestamp-metadata",
+                    "timestamp-type",
                     "timestamp-tz",
                     "type",
                     "unknown",
@@ -661,10 +661,10 @@ namespace OpenLogReplicator {
             Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
             Format::TIMESTAMP_FORMAT timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
             Format::TIMESTAMP_TZ_FORMAT timestampTzFormat = Format::TIMESTAMP_TZ_FORMAT::UNIX_NANO_STRING;
-            Format::TIMESTAMP_ALL timestampAll = Format::TIMESTAMP_ALL::JUST_BEGIN;
+            Format::TIMESTAMP_TYPE timestampType = Format::TIMESTAMP_TYPE::DEFAULT;
             Format::CHAR_FORMAT charFormat = Format::CHAR_FORMAT::UTF8;
             Format::SCN_FORMAT scnFormat = Format::SCN_FORMAT::NUMERIC;
-            Format::SCN_TYPE scnType = Format::SCN_TYPE::NONE;
+            Format::SCN_TYPE scnType = Format::SCN_TYPE::DEFAULT;
             Format::UNKNOWN_FORMAT unknownFormat = Format::UNKNOWN_FORMAT::QUESTION_MARK;
             Format::SCHEMA_FORMAT schemaFormat = Format::SCHEMA_FORMAT::DEFAULT;
             Format::COLUMN_FORMAT columnFormat = Format::COLUMN_FORMAT::CHANGED;
@@ -680,8 +680,8 @@ namespace OpenLogReplicator {
                 redoThreadFormat = Format::REDO_THREAD_FORMAT::TEXT;
                 xidFormat = Format::XID_FORMAT::TEXT_REVERSED;
                 timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_MILLI;
-                timestampAll = Format::TIMESTAMP_ALL::ALL_PAYLOADS;
-                scnType = Format::SCN_TYPE::ALL_PAYLOADS;
+                timestampType = Format::TIMESTAMP_TYPE::DEBEZIUM;
+                scnType = Format::SCN_TYPE::DEBEZIUM;
                 schemaFormat = Format::SCHEMA_FORMAT::ALL;
                 columnFormat = Format::COLUMN_FORMAT::FULL_UPD;
             }
@@ -772,11 +772,11 @@ namespace OpenLogReplicator {
                 timestampTzFormat = static_cast<Format::TIMESTAMP_TZ_FORMAT>(val);
             }
 
-            if (formatJson.HasMember("timestamp-all")) {
-                const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-all");
-                if (val > 1)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"timestamp-all\" value: " + std::to_string(val) + ", expected: one of {0, 1}");
-                timestampAll = static_cast<Format::TIMESTAMP_ALL>(val);
+            if (formatJson.HasMember("timestamp-type")) {
+                const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "timestamp-type");
+                if (val > 15)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"timestamp-type\" value: " + std::to_string(val) + ", expected: one of {0, 15}");
+                timestampType = static_cast<Format::TIMESTAMP_TYPE>(val);
             }
 
             if (formatJson.HasMember("char")) {
@@ -795,8 +795,8 @@ namespace OpenLogReplicator {
 
             if (formatJson.HasMember("scn-type")) {
                 const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "scn-type");
-                if (val > 3)
-                    throw ConfigurationException(30001, "bad JSON, invalid \"scn-type\" value: " + std::to_string(val) + ", expected: one of {0, 3}");
+                if (val > 15)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"scn-type\" value: " + std::to_string(val) + ", expected: one of {0, 15}");
                 scnType = static_cast<Format::SCN_TYPE>(val);
             }
 
@@ -839,7 +839,7 @@ namespace OpenLogReplicator {
 
             Builder* builder;
             Format format(dbFormat, attributesFormat, intervalDtsFormat, intervalYtmFormat, messageFormat, ridFormat, redoThreadFormat, xidFormat,
-                timestampFormat, timestampMetadataFormat, timestampTzFormat, timestampAll, charFormat, scnFormat, scnType, unknownFormat,
+                timestampFormat, timestampMetadataFormat, timestampTzFormat, timestampType, charFormat, scnFormat, scnType, unknownFormat,
                 schemaFormat, columnFormat, unknownType);
             if (formatType == "json" || formatType == "debezium") {
                 builder = new BuilderJson(ctx, locales, metadata, format, flushBuffer);

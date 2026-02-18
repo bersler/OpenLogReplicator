@@ -56,7 +56,7 @@
         "timestamp": 0,
         "timestamp-metadata": 0,
         "timestamp-tz": 0,
-        "timestamp-all": 0,
+        "timestamp-type": 0,
         "char": 0,
         "scn": 0,
         "scn-type": 0,
