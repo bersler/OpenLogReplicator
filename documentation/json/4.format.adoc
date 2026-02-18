@@ -1,7 +1,7 @@
 = OpenLogReplicator.json - format element
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.9.0
-:revdate: 2026-02-17
+:revdate: 2026-02-19
 :icons: font
 
 [frame="none",grid="none"]
@@ -231,6 +231,15 @@ Options control epoch vs ISO-8601 and how the timezone is attached (comma, space
 * `0x0004` — include `tm/tms` in every message (default is first message only).
 * `0x0008` — include `ctm/ctms` (commit transaction timestamp) in every message (only for JSON output).
 
+|`user-type` [[user-type]]
+|_integer_, min: 0, max: 15, default: 0
+|Additional user controls (bitmask).
+
+* `0x0001` — include `usr` in begin messages (only for JSON output).
+* `0x0002` — include `usr` in every DML message (only for JSON output).
+* `0x0004` — include `usr` in commit messages (only for JSON output).
+* `0x0008` — include `usr` in every DDL message (only for JSON output).
+
 |`unknown`
 |_integer_, min: 0, max: 1, default: 0
 |Behavior on decoding unknown values:
@@ -277,6 +286,8 @@ Options control epoch vs ISO-8601 and how the timezone is attached (comma, space
     "schema": 1,
     "timestamp": 8,
     "timestamp-type": 0,
+    "user-type": 0,
+    "user-type": 0,
     "unknown": 0,
     "xid": 0
   }
