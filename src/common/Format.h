@@ -124,6 +124,15 @@ namespace OpenLogReplicator {
             DEBEZIUM     = BEGIN | DML | COMMIT
         };
 
+        enum class USER_TYPE : unsigned char {
+            DEFAULT      = 0,
+            BEGIN        = 1 << 0,
+            DML          = 1 << 1,
+            COMMIT       = 1 << 2,
+            DDL          = 1 << 3,
+            DEBEZIUM     = BEGIN | DML | COMMIT | DDL
+        };
+
         enum class TIMESTAMP_FORMAT : unsigned char {
             UNIX_NANO,
             UNIX_MICRO,
@@ -209,12 +218,14 @@ namespace OpenLogReplicator {
         SCHEMA_FORMAT schemaFormat;
         COLUMN_FORMAT columnFormat;
         UNKNOWN_TYPE unknownType;
+        USER_TYPE userType;
 
         Format(DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat, INTERVAL_DTS_FORMAT newIntervalDtsFormat,
                INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat, REDO_THREAD_FORMAT newRedoThreadFormat,
                XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_FORMAT newTimestampMetadataFormat,
                TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_TYPE newTimestampType, CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat,
-               SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType):
+               SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType,
+               USER_TYPE newUserType):
                 dbFormat(newDbFormat),
                 attributesFormat(newAttributesFormat),
                 intervalDtsFormat(newIntervalDtsFormat),
@@ -233,7 +244,8 @@ namespace OpenLogReplicator {
                 unknownFormat(newUnknownFormat),
                 schemaFormat(newSchemaFormat),
                 columnFormat(newColumnFormat),
-                unknownType(newUnknownType) {}
+                unknownType(newUnknownType),
+                userType(newUserType) {}
 
         [[nodiscard]] bool isAttributesFormatBegin() const {
             return (static_cast<unsigned char>(attributesFormat) & static_cast<unsigned char>(ATTRIBUTES_FORMAT::BEGIN)) != 0;
@@ -317,6 +329,22 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] bool isTimestampTypeCommit() const {
             return (static_cast<unsigned char>(timestampType) & static_cast<unsigned char>(TIMESTAMP_TYPE::COMMIT)) != 0;
+        }
+
+        [[nodiscard]] bool isUserTypeBegin() const {
+            return (static_cast<unsigned char>(userType) & static_cast<unsigned char>(USER_TYPE::BEGIN)) != 0;
+        }
+
+        [[nodiscard]] bool isUserTypeDml() const {
+            return (static_cast<unsigned char>(userType) & static_cast<unsigned char>(USER_TYPE::DML)) != 0;
+        }
+
+        [[nodiscard]] bool isUserTypeCommit() const {
+            return (static_cast<unsigned char>(userType) & static_cast<unsigned char>(USER_TYPE::COMMIT)) != 0;
+        }
+
+        [[nodiscard]] bool isUserTypeDdl() const {
+            return (static_cast<unsigned char>(userType) & static_cast<unsigned char>(USER_TYPE::DDL)) != 0;
         }
 
         [[nodiscard]] bool isDbFormatAddDml() const {

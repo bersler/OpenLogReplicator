@@ -459,7 +459,7 @@ namespace OpenLogReplicator {
         builderBegin(sequence, beginScn, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
         append('{');
         hasPreviousValue = false;
-        appendHeader(beginScn, timestamp, true, format.isDbFormatAddDml(), true, true);
+        appendHeader(beginScn, timestamp, true, format.isDbFormatAddDml(), true, format.isUserTypeBegin());
 
         comma(hasPreviousValue);
         if (format.isAttributesFormatBegin())
@@ -488,7 +488,7 @@ namespace OpenLogReplicator {
             append('{');
 
             hasPreviousValue = false;
-            appendHeader(commitScn, commitTimestamp, false, format.isDbFormatAddDml(), true, true);
+            appendHeader(commitScn, commitTimestamp, false, format.isDbFormatAddDml(), true, format.isUserTypeCommit());
 
             comma(hasPreviousValue);
             if (format.isAttributesFormatCommit())
@@ -513,7 +513,7 @@ namespace OpenLogReplicator {
 
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, format.isUserTypeDml());
 
             comma(hasPreviousValue);
             if (format.isAttributesFormatDml())
@@ -553,7 +553,7 @@ namespace OpenLogReplicator {
 
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, format.isUserTypeDml());
 
             comma(hasPreviousValue);
             if (format.isAttributesFormatDml())
@@ -594,7 +594,7 @@ namespace OpenLogReplicator {
 
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDml(), true, format.isUserTypeDml());
 
             comma(hasPreviousValue);
             if (format.isAttributesFormatDml())
@@ -631,7 +631,7 @@ namespace OpenLogReplicator {
             builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             append('{');
             hasPreviousValue = false;
-            appendHeader(scn, timestamp, false, format.isDbFormatAddDdl(), true, true);
+            appendHeader(scn, timestamp, false, format.isDbFormatAddDdl(), true, format.isUserTypeDdl());
 
             comma(hasPreviousValue);
             if (format.isAttributesFormatDml())

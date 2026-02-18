@@ -645,45 +645,48 @@ namespace OpenLogReplicator {
                     "type",
                     "unknown",
                     "unknown-type",
+                    "user-type",
                     "xid"
                 };
                 Ctx::checkJsonFields(configFileName, formatJson, formatNames);
             }
 
-            Format::DB_FORMAT dbFormat = Format::DB_FORMAT::DEFAULT;
             Format::ATTRIBUTES_FORMAT attributesFormat = Format::ATTRIBUTES_FORMAT::DEFAULT;
+            Format::CHAR_FORMAT charFormat = Format::CHAR_FORMAT::UTF8;
+            Format::COLUMN_FORMAT columnFormat = Format::COLUMN_FORMAT::CHANGED;
+            Format::DB_FORMAT dbFormat = Format::DB_FORMAT::DEFAULT;
             Format::INTERVAL_DTS_FORMAT intervalDtsFormat = Format::INTERVAL_DTS_FORMAT::UNIX_NANO;
             Format::INTERVAL_YTM_FORMAT intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::MONTHS;
             Format::MESSAGE_FORMAT messageFormat = Format::MESSAGE_FORMAT::DEFAULT;
-            Format::RID_FORMAT ridFormat = Format::RID_FORMAT::SKIP;
             Format::REDO_THREAD_FORMAT redoThreadFormat = Format::REDO_THREAD_FORMAT::SKIP;
-            Format::XID_FORMAT xidFormat = Format::XID_FORMAT::TEXT_HEX;
-            Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
-            Format::TIMESTAMP_FORMAT timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
-            Format::TIMESTAMP_TZ_FORMAT timestampTzFormat = Format::TIMESTAMP_TZ_FORMAT::UNIX_NANO_STRING;
-            Format::TIMESTAMP_TYPE timestampType = Format::TIMESTAMP_TYPE::DEFAULT;
-            Format::CHAR_FORMAT charFormat = Format::CHAR_FORMAT::UTF8;
+            Format::RID_FORMAT ridFormat = Format::RID_FORMAT::SKIP;
+            Format::SCHEMA_FORMAT schemaFormat = Format::SCHEMA_FORMAT::DEFAULT;
             Format::SCN_FORMAT scnFormat = Format::SCN_FORMAT::NUMERIC;
             Format::SCN_TYPE scnType = Format::SCN_TYPE::DEFAULT;
+            Format::TIMESTAMP_FORMAT timestampFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
+            Format::TIMESTAMP_FORMAT timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_NANO;
+            Format::TIMESTAMP_TYPE timestampType = Format::TIMESTAMP_TYPE::DEFAULT;
+            Format::TIMESTAMP_TZ_FORMAT timestampTzFormat = Format::TIMESTAMP_TZ_FORMAT::UNIX_NANO_STRING;
             Format::UNKNOWN_FORMAT unknownFormat = Format::UNKNOWN_FORMAT::QUESTION_MARK;
-            Format::SCHEMA_FORMAT schemaFormat = Format::SCHEMA_FORMAT::DEFAULT;
-            Format::COLUMN_FORMAT columnFormat = Format::COLUMN_FORMAT::CHANGED;
             Format::UNKNOWN_TYPE unknownType = Format::UNKNOWN_TYPE::HIDE;
+            Format::USER_TYPE userType = Format::USER_TYPE::DEFAULT;
+            Format::XID_FORMAT xidFormat = Format::XID_FORMAT::TEXT_HEX;
 
             const std::string formatType = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, formatJson, "type");
             if (formatType == "debezium") {
+                columnFormat = Format::COLUMN_FORMAT::FULL_UPD;
                 dbFormat = Format::DB_FORMAT::ALL;
                 intervalDtsFormat = Format::INTERVAL_DTS_FORMAT::ISO8601_COMMA;
                 intervalYtmFormat = Format::INTERVAL_YTM_FORMAT::STRING_YM_DASH;
                 messageFormat = Format::MESSAGE_FORMAT::ADD_SEQUENCES;
-                ridFormat = Format::RID_FORMAT::TEXT;
                 redoThreadFormat = Format::REDO_THREAD_FORMAT::TEXT;
-                xidFormat = Format::XID_FORMAT::TEXT_REVERSED;
+                ridFormat = Format::RID_FORMAT::TEXT;
+                schemaFormat = Format::SCHEMA_FORMAT::ALL;
+                scnType = Format::SCN_TYPE::DEBEZIUM;
                 timestampMetadataFormat = Format::TIMESTAMP_FORMAT::UNIX_MILLI;
                 timestampType = Format::TIMESTAMP_TYPE::DEBEZIUM;
-                scnType = Format::SCN_TYPE::DEBEZIUM;
-                schemaFormat = Format::SCHEMA_FORMAT::ALL;
-                columnFormat = Format::COLUMN_FORMAT::FULL_UPD;
+                userType = Format::USER_TYPE::DEBEZIUM;
+                xidFormat = Format::XID_FORMAT::TEXT_REVERSED;
             }
 
             if (formatJson.HasMember("db")) {
@@ -779,6 +782,13 @@ namespace OpenLogReplicator {
                 timestampType = static_cast<Format::TIMESTAMP_TYPE>(val);
             }
 
+            if (formatJson.HasMember("user-type")) {
+                const uint val = Ctx::getJsonFieldU64(configFileName, formatJson, "user-type");
+                if (val > 15)
+                    throw ConfigurationException(30001, "bad JSON, invalid \"user-type\" value: " + std::to_string(val) + ", expected: one of {0, 15}");
+                userType = static_cast<Format::USER_TYPE>(val);
+            }
+
             if (formatJson.HasMember("char")) {
                 const uint val = Ctx::getJsonFieldU(configFileName, formatJson, "char");
                 if (val > 3)
@@ -840,7 +850,7 @@ namespace OpenLogReplicator {
             Builder* builder;
             Format format(dbFormat, attributesFormat, intervalDtsFormat, intervalYtmFormat, messageFormat, ridFormat, redoThreadFormat, xidFormat,
                 timestampFormat, timestampMetadataFormat, timestampTzFormat, timestampType, charFormat, scnFormat, scnType, unknownFormat,
-                schemaFormat, columnFormat, unknownType);
+                schemaFormat, columnFormat, unknownType, userType);
             if (formatType == "json" || formatType == "debezium") {
                 builder = new BuilderJson(ctx, locales, metadata, format, flushBuffer);
             } else if (formatType == "protobuf") {

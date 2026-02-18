@@ -15,6 +15,7 @@
 - enhancement: immediate graceful shutdown when interrupt signal is received
 - enhancement: new format parameter: redo-thread
 - enhancement: changed config field content for "scn-type", removed "timestamp-all" and added new field "timestamp-type"
+- enhancement: new format parameter: "user-type"
 
 1.9.0
 - code style cleanup
