@@ -55,8 +55,8 @@ namespace OpenLogReplicator {
 
     template<class VALUE, SysCol::COLTYPE COLTYPE>
     void SystemTransaction::updateValue(VALUE& val, typeCol column, const DbTable* table, FileOffset fileOffset, int defVal, uint maxLength) {
-        if (builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr &&
-            builder->sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] > 0) {
+        if (builder->values[column][+Format::VALUE_TYPE::AFTER] != nullptr &&
+            builder->sizes[column][+Format::VALUE_TYPE::AFTER] > 0) {
             char* retPtr;
             if (unlikely(table->columns[column]->type != COLTYPE))
                 throw RuntimeException(50019, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -64,8 +64,8 @@ namespace OpenLogReplicator {
                                        " offset: " + fileOffset.toString());
 
             if constexpr (COLTYPE == SysCol::COLTYPE::NUMBER) {
-                builder->parseNumber(builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                     builder->sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], fileOffset);
+                builder->parseNumber(builder->values[column][+Format::VALUE_TYPE::AFTER],
+                                     builder->sizes[column][+Format::VALUE_TYPE::AFTER], fileOffset);
                 builder->valueBuffer[builder->valueSize] = 0;
                 if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
                     throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -105,8 +105,8 @@ namespace OpenLogReplicator {
                 }
                 val = newVal;
             } else if constexpr (COLTYPE == SysCol::COLTYPE::RAW) {
-                builder->parseRaw(builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                  builder->sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)], fileOffset);
+                builder->parseRaw(builder->values[column][+Format::VALUE_TYPE::AFTER],
+                                  builder->sizes[column][+Format::VALUE_TYPE::AFTER], fileOffset);
                 VALUE newVal(builder->valueBuffer, builder->valueSize);
                 if (unlikely(builder->valueSize > maxLength))
                     throw RuntimeException(50020, "ddl: value too long for " + table->owner + "." + table->name + ": column " +
@@ -117,8 +117,8 @@ namespace OpenLogReplicator {
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
                 val = newVal;
             } else if constexpr (COLTYPE == SysCol::COLTYPE::VARCHAR || COLTYPE == SysCol::COLTYPE::CHAR) {
-                builder->parseString(builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
-                                     builder->sizes[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)],
+                builder->parseString(builder->values[column][+Format::VALUE_TYPE::AFTER],
+                                     builder->sizes[column][+Format::VALUE_TYPE::AFTER],
                                      table->columns[column]->charsetId, fileOffset, false, false, false, true);
                 VALUE newVal(builder->valueBuffer, builder->valueSize);
                 if (unlikely(builder->valueSize > maxLength))
@@ -130,8 +130,8 @@ namespace OpenLogReplicator {
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": '" + val + "' -> '" + newVal + "')");
                 val = newVal;
             }
-        } else if (builder->values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] != nullptr ||
-                builder->values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] != nullptr) {
+        } else if (builder->values[column][+Format::VALUE_TYPE::AFTER] != nullptr ||
+                builder->values[column][+Format::VALUE_TYPE::BEFORE] != nullptr) {
             if (unlikely(ctx->isTraceSet(Ctx::TRACE::SYSTEM))) {
                 if constexpr (std::is_same_v<VALUE, IntX>)
                     ctx->logTrace(Ctx::TRACE::SYSTEM, "set (" + table->columns[column]->name + ": " + val.toString() + " -> NULL) defVal: " +

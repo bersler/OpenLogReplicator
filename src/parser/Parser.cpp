@@ -236,10 +236,13 @@ namespace OpenLogReplicator {
 
             redoLogRecord[vectorCur].opCode = (static_cast<typeOp1>(data[offset + 0]) << 8) | data[offset + 1];
             redoLogRecord[vectorCur].size = fieldOffset + ((ctx->read16(fieldList) + 2) & 0xFFFC);
+            redoLogRecord[vectorCur].sequence = sequence;
             redoLogRecord[vectorCur].scn = lwnMember->scn;
+            //ctx->info(0, "scn: " + redoLogRecord[vectorCur].scn.toString() + " op: " + std::to_string(redoLogRecord[vectorCur].opCode));
             redoLogRecord[vectorCur].subScn = lwnMember->subScn;
             redoLogRecord[vectorCur].usn = usn;
             redoLogRecord[vectorCur].dataExt = data + offset;
+            redoLogRecord[vectorCur].timestamp = lwnTimestamp;
             redoLogRecord[vectorCur].fileOffset = FileOffset(lwnMember->block, reader->getBlockSize()) + lwnMember->pageOffset + offset;
             redoLogRecord[vectorCur].fieldSizesDelta = fieldOffset;
             if (unlikely(redoLogRecord[vectorCur].fieldSizesDelta + 1U >= recordSize)) {
@@ -756,8 +759,9 @@ namespace OpenLogReplicator {
         Transaction* transaction = transactionBuffer->findTransaction(metadata->schema->xmlCtxDefault, redoLogRecord1->xid, redoLogRecord1->conId,
                                                                       redoLogRecord1->thread, false, true, false);
         transaction->begin = true;
-        transaction->beginSequence = sequence;
+        transaction->beginSequence = redoLogRecord1->sequence;
         transaction->beginScn = redoLogRecord1->scn;
+        transaction->beginTimestamp = redoLogRecord1->timestamp;
         transaction->beginFileOffset = FileOffset(lwnCheckpointBlock, reader->getBlockSize());
         transaction->log(ctx, "B   ", redoLogRecord1);
         lastTransaction = transaction;
@@ -792,16 +796,16 @@ namespace OpenLogReplicator {
             return;
 
         transaction->log(ctx, "C   ", redoLogRecord1);
-        transaction->commitTimestamp = lwnTimestamp;
+        transaction->commitSequence = redoLogRecord1->sequence;
         transaction->commitScn = redoLogRecord1->scn;
-        transaction->commitSequence = sequence;
+        transaction->commitTimestamp = redoLogRecord1->timestamp;
         if ((redoLogRecord1->flg & OpCode::FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
 
         if ((transaction->commitScn > metadata->firstDataScn && !transaction->system) ||
             (transaction->commitScn > metadata->firstSchemaScn && transaction->system)) {
             if (transaction->begin) {
-                transaction->flush(metadata, builder, lwnScn);
+                transaction->flush(metadata, builder);
                 ctx->parserThread->contextSet(Thread::CONTEXT::CPU);
                 if (ctx->metrics != nullptr) {
                     if (transaction->rollback)
@@ -1487,8 +1491,7 @@ namespace OpenLogReplicator {
                     if (lwnScn > metadata->firstDataScn) {
                         if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
                             ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + lwnScn.toString());
-                        builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
-                                                   FileOffset(currentBlock, reader->getBlockSize()), switchRedo);
+                        builder->processCheckpoint(sequence, lwnScn, lwnTimestamp, FileOffset(currentBlock, reader->getBlockSize()), switchRedo);
 
                         Seq minSequence = Seq::none();
                         FileOffset minFileOffset;
@@ -1536,8 +1539,7 @@ namespace OpenLogReplicator {
                     switchRedo = true;
                     if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
                         ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + lwnScn.toString() + " with switch");
-                    builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
-                                               FileOffset(currentBlock, reader->getBlockSize()), switchRedo);
+                    builder->processCheckpoint(sequence, lwnScn, lwnTimestamp, FileOffset(currentBlock, reader->getBlockSize()), switchRedo);
                     if (ctx->metrics != nullptr)
                         ctx->metrics->emitCheckpointsOut(1);
                 } else {
@@ -1549,8 +1551,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown) {
                 if (unlikely(ctx->isTraceSet(Ctx::TRACE::CHECKPOINT)))
                     ctx->logTrace(Ctx::TRACE::CHECKPOINT, "on: " + lwnScn.toString() + " at exit");
-                builder->processCheckpoint(lwnScn, sequence, lwnTimestamp.toEpoch(ctx->hostTimezone),
-                                           FileOffset(currentBlock, reader->getBlockSize()), false);
+                builder->processCheckpoint(sequence, lwnScn, lwnTimestamp, FileOffset(currentBlock, reader->getBlockSize()), false);
                 if (ctx->metrics != nullptr)
                     ctx->metrics->emitCheckpointsOut(1);
 

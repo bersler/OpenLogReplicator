@@ -53,6 +53,7 @@ namespace OpenLogReplicator {
         Xid xid;
         Seq beginSequence{Seq::none()};
         Scn beginScn{Scn::none()};
+        Time beginTimestamp{0};
         FileOffset beginFileOffset{0};
         Seq commitSequence{Seq::none()};
         Scn commitScn{Scn::none()};
@@ -77,7 +78,7 @@ namespace OpenLogReplicator {
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1,
                             const RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(const Metadata* metadata, TransactionBuffer* transactionBuffer, const RedoLogRecord* redoLogRecord1);
-        void flush(Metadata* metadata, Builder* builder, Scn lwnScn);
+        void flush(Metadata* metadata, Builder* builder);
         void purge(Ctx* ctx);
 
         void log(const Ctx* ctx, const char* msg, const RedoLogRecord* redoLogRecord1) const {
@@ -87,6 +88,7 @@ namespace OpenLogReplicator {
             ctx->info(0, std::string(msg) + " xid: " + xid.toString() +
                       " OP: " + std::to_string(static_cast<uint>(redoLogRecord1->opCode >> 8)) +
                       "." + std::to_string(static_cast<uint>(redoLogRecord1->opCode & 0xFF)) +
+                      " scn: " + redoLogRecord1->scn.toString() +
                       " opc: " + std::to_string(redoLogRecord1->opc) +
                       " obj: " + std::to_string(redoLogRecord1->obj) +
                       " dataobj: " + std::to_string(redoLogRecord1->dataObj) +

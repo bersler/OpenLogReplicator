@@ -449,14 +449,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::processBeginMessage(Seq sequence, time_t timestamp) {
+    void BuilderJson::processBeginMessage(Seq sequence, Time timestamp) {
         newTran = false;
         hasPreviousRedo = false;
 
         if (format.isMessageFormatSkipBegin())
             return;
 
-        builderBegin(beginScn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
+        builderBegin(sequence, beginScn, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
         append('{');
         hasPreviousValue = false;
         appendHeader(beginScn, timestamp, true, format.isDbFormatAddDml(), true, true);
@@ -473,7 +473,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::processCommit(Seq sequence, time_t timestamp) {
+    void BuilderJson::processCommit() {
         // Skip empty transaction
         if (newTran) {
             newTran = false;
@@ -484,11 +484,11 @@ namespace OpenLogReplicator {
             append(std::string_view("]}"));
             builderCommit();
         } else if (!format.isMessageFormatSkipCommit()) {
-            builderBegin(commitScn, sequence, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(commitSequence, commitScn, 0, BuilderMsg::OUTPUT_BUFFER::NONE);
             append('{');
 
             hasPreviousValue = false;
-            appendHeader(commitScn, timestamp, false, format.isDbFormatAddDml(), true, true);
+            appendHeader(commitScn, commitTimestamp, false, format.isDbFormatAddDml(), true, true);
 
             comma(hasPreviousValue);
             if (format.isAttributesFormatCommit())
@@ -500,7 +500,7 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderJson::processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+    void BuilderJson::processInsert(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                     typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
@@ -508,7 +508,7 @@ namespace OpenLogReplicator {
         if (format.isMessageFormatFull()) {
             comma(hasPreviousRedo);
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             addTagData(lobCtx, xmlCtx, table, Format::VALUE_TYPE::AFTER, fileOffset);
 
             append('{');
@@ -540,7 +540,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+    void BuilderJson::processUpdate(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                     typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
@@ -548,7 +548,7 @@ namespace OpenLogReplicator {
         if (format.isMessageFormatFull()) {
             comma(hasPreviousRedo);
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             addTagData(lobCtx, xmlCtx, table, Format::VALUE_TYPE::AFTER, fileOffset);
 
             append('{');
@@ -581,7 +581,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
+    void BuilderJson::processDelete(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table,
                                     typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
@@ -589,7 +589,7 @@ namespace OpenLogReplicator {
         if (format.isMessageFormatFull()) {
             comma(hasPreviousRedo);
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             addTagData(lobCtx, xmlCtx, table, Format::VALUE_TYPE::BEFORE, fileOffset);
 
             append('{');
@@ -621,14 +621,14 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) {
+    void BuilderJson::processDdl(Seq sequence, Scn scn, Time timestamp, const DbTable* table, typeObj obj) {
         if (newTran)
             processBeginMessage(sequence, timestamp);
 
         if (format.isMessageFormatFull()) {
             comma(hasPreviousRedo);
         } else {
-            builderBegin(scn, sequence, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
+            builderBegin(sequence, scn, obj, BuilderMsg::OUTPUT_BUFFER::NONE);
             append('{');
             hasPreviousValue = false;
             appendHeader(scn, timestamp, false, format.isDbFormatAddDdl(), true, true);
@@ -662,7 +662,7 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processCheckpoint(Scn scn, Seq sequence, time_t timestamp, FileOffset fileOffset, bool redo) {
+    void BuilderJson::processCheckpoint(Seq sequence, Scn scn, Time timestamp, FileOffset fileOffset, bool redo) {
         if (lwnScn != scn) {
             lwnScn = scn;
             lwnIdx = 0;
@@ -671,7 +671,7 @@ namespace OpenLogReplicator {
         auto flags = BuilderMsg::OUTPUT_BUFFER::CHECKPOINT;
         if (redo)
             flags = static_cast<BuilderMsg::OUTPUT_BUFFER>(static_cast<uint>(flags) | static_cast<uint>(BuilderMsg::OUTPUT_BUFFER::REDO));
-        builderBegin(scn, sequence, 0, flags);
+        builderBegin(sequence, scn, 0, flags);
         append('{');
         hasPreviousValue = false;
         appendHeader(scn, timestamp, true, false, false, false);

@@ -167,11 +167,13 @@ _TIP:_ Use `0x0001` when receivers don't know the schema.
 * `1` — hexadecimal text in `scns` field (e.g., `0xFF`).
 
 |`scn-type` [[scn-type]]
-|_integer_, min: 0, max: 3, default: 0
+|_integer_, min: 0, max: 15, default: 0
 |Additional SCN controls (bitmask):
 
-* `0x0001` — include `scn` in every message (default is first message only).
-* `0x0002` — copy SCNs from the commit record for all DML operations.
+* `0x0001` — use commit SCN as DML SCN (default is SCN from the redo record).
+* `0x0002` — include `bscn/bscns` (begin transaction SCN) in every message (only for JSON output).
+* `0x0004` — include `scn/scns` in every message (default is first message only).
+* `0x0008` — include `cscn/cscns` (commit transaction SCN) in every message (only for JSON output).
 
 |`timestamp` [[timestamp]]
 |_integer_, min: 0, max: 15, default: 0
@@ -220,9 +222,14 @@ Options control epoch vs ISO-8601 and how the timezone is attached (comma, space
 * `10` — _ISO-8601_ format stored with millisecond precision as a string without "TZ" with time zone after space sign — `"tms": "2022-05-01 06:00:00.123 Europe/Warsaw"`.
 * `11` — _ISO-8601_ format stored second precision as a string without "TZ" with time zone after space sign — `"tms": "2022-05-01 06:00:00 Europe/Warsaw"`.
 
-|`timestamp-all` [[timestamp-all]]
-|_integer_, min: 0, max: 1, default: 0
-|When `1`, include the chosen `timestamp` field in every payload; `0` adds it to the first message only.
+|`timestamp-type` [[timestamp-type]]
+|_integer_, min: 0, max: 15, default: 0
+|Additional timestamp controls (bitmask):
+
+* `0x0001` — use commit timestamp as DML timestamp (default is timestamp from the redo record).
+* `0x0002` — include `btm/btms` (begin transaction timestamp) in every message (only for JSON output).
+* `0x0004` — include `tm/tms` in every message (default is first message only).
+* `0x0008` — include `ctm/ctms` (commit transaction timestamp) in every message (only for JSON output).
 
 |`unknown`
 |_integer_, min: 0, max: 1, default: 0
@@ -269,7 +276,7 @@ Options control epoch vs ISO-8601 and how the timezone is attached (comma, space
     "message": 1,
     "schema": 1,
     "timestamp": 8,
-    "timestamp-all": 0,
+    "timestamp-type": 0,
     "unknown": 0,
     "xid": 0
   }

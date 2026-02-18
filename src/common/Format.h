@@ -99,12 +99,12 @@ namespace OpenLogReplicator {
         };
 
         enum class SCN_TYPE : unsigned char {
-            NONE         = 0,
-            ALL_PAYLOADS = 1 << 0,
-            COMMIT_VALUE = 1 << 1,
-            BEGIN_SCN = 1 << 2,
-            COMMIT_SCN = 1 << 3,
-            DEBEZIUM = ALL_PAYLOADS | BEGIN_SCN | COMMIT_SCN
+            DEFAULT      = 0,
+            COMMIT_VALUE = 1 << 0,
+            BEGIN        = 1 << 1,
+            DML          = 1 << 2,
+            COMMIT       = 1 << 3,
+            DEBEZIUM     = BEGIN | DML | COMMIT
         };
 
         enum class SCHEMA_FORMAT : unsigned char {
@@ -115,9 +115,13 @@ namespace OpenLogReplicator {
             ALL      = 7
         };
 
-        enum class TIMESTAMP_ALL : unsigned char {
-            JUST_BEGIN,
-            ALL_PAYLOADS
+        enum class TIMESTAMP_TYPE : unsigned char {
+            DEFAULT      = 0,
+            COMMIT_VALUE = 1 << 0,
+            BEGIN        = 1 << 1,
+            DML          = 1 << 2,
+            COMMIT       = 1 << 3,
+            DEBEZIUM     = BEGIN | DML | COMMIT
         };
 
         enum class TIMESTAMP_FORMAT : unsigned char {
@@ -197,7 +201,7 @@ namespace OpenLogReplicator {
         TIMESTAMP_FORMAT timestampFormat;
         TIMESTAMP_FORMAT timestampMetadataFormat;
         TIMESTAMP_TZ_FORMAT timestampTzFormat;
-        TIMESTAMP_ALL timestampAll;
+        TIMESTAMP_TYPE timestampType;
         CHAR_FORMAT charFormat;
         SCN_FORMAT scnFormat;
         SCN_TYPE scnType;
@@ -209,7 +213,7 @@ namespace OpenLogReplicator {
         Format(DB_FORMAT newDbFormat, ATTRIBUTES_FORMAT newAttributesFormat, INTERVAL_DTS_FORMAT newIntervalDtsFormat,
                INTERVAL_YTM_FORMAT newIntervalYtmFormat, MESSAGE_FORMAT newMessageFormat, RID_FORMAT newRidFormat, REDO_THREAD_FORMAT newRedoThreadFormat,
                XID_FORMAT newXidFormat, TIMESTAMP_FORMAT newTimestampFormat, TIMESTAMP_FORMAT newTimestampMetadataFormat,
-               TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_ALL newTimestampAll, CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat,
+               TIMESTAMP_TZ_FORMAT newTimestampTzFormat, TIMESTAMP_TYPE newTimestampType, CHAR_FORMAT newCharFormat, SCN_FORMAT newScnFormat,
                SCN_TYPE newScnType, UNKNOWN_FORMAT newUnknownFormat, SCHEMA_FORMAT newSchemaFormat, COLUMN_FORMAT newColumnFormat, UNKNOWN_TYPE newUnknownType):
                 dbFormat(newDbFormat),
                 attributesFormat(newAttributesFormat),
@@ -222,7 +226,7 @@ namespace OpenLogReplicator {
                 timestampFormat(newTimestampFormat),
                 timestampMetadataFormat(newTimestampMetadataFormat),
                 timestampTzFormat(newTimestampTzFormat),
-                timestampAll(newTimestampAll),
+                timestampType(newTimestampType),
                 charFormat(newCharFormat),
                 scnFormat(newScnFormat),
                 scnType(newScnType),
@@ -251,12 +255,20 @@ namespace OpenLogReplicator {
             return (static_cast<unsigned char>(charFormat) & static_cast<unsigned char>(CHAR_FORMAT::HEX)) != 0;
         }
 
-        [[nodiscard]] bool isScnTypeAllPayloads() const {
-            return (static_cast<unsigned char>(scnType) & static_cast<unsigned char>(SCN_TYPE::ALL_PAYLOADS)) != 0;
-        }
-
         [[nodiscard]] bool isScnTypeCommitValue() const {
             return (static_cast<unsigned char>(scnType) & static_cast<unsigned char>(SCN_TYPE::COMMIT_VALUE)) != 0;
+        }
+
+        [[nodiscard]] bool isScnTypeBegin() const {
+            return (static_cast<unsigned char>(scnType) & static_cast<unsigned char>(SCN_TYPE::BEGIN)) != 0;
+        }
+
+        [[nodiscard]] bool isScnTypeDml() const {
+            return (static_cast<unsigned char>(scnType) & static_cast<unsigned char>(SCN_TYPE::DML)) != 0;
+        }
+
+        [[nodiscard]] bool isScnTypeCommit() const {
+            return (static_cast<unsigned char>(scnType) & static_cast<unsigned char>(SCN_TYPE::COMMIT)) != 0;
         }
 
         [[nodiscard]] bool isSchemaFormatFull() const {
@@ -291,6 +303,22 @@ namespace OpenLogReplicator {
             return (static_cast<unsigned char>(messageFormat) & static_cast<unsigned char>(MESSAGE_FORMAT::ADD_OFFSET)) != 0;
         }
 
+        [[nodiscard]] bool isTimestampTypeCommitValue() const {
+            return (static_cast<unsigned char>(timestampType) & static_cast<unsigned char>(TIMESTAMP_TYPE::COMMIT_VALUE)) != 0;
+        }
+
+        [[nodiscard]] bool isTimestampTypeBegin() const {
+            return (static_cast<unsigned char>(timestampType) & static_cast<unsigned char>(TIMESTAMP_TYPE::BEGIN)) != 0;
+        }
+
+        [[nodiscard]] bool isTimestampTypeDml() const {
+            return (static_cast<unsigned char>(timestampType) & static_cast<unsigned char>(TIMESTAMP_TYPE::DML)) != 0;
+        }
+
+        [[nodiscard]] bool isTimestampTypeCommit() const {
+            return (static_cast<unsigned char>(timestampType) & static_cast<unsigned char>(TIMESTAMP_TYPE::COMMIT)) != 0;
+        }
+
         [[nodiscard]] bool isDbFormatAddDml() const {
             return (static_cast<unsigned char>(dbFormat) & static_cast<unsigned char>(DB_FORMAT::ADD_DML)) != 0;
         }
@@ -299,5 +327,14 @@ namespace OpenLogReplicator {
             return (static_cast<unsigned char>(dbFormat) & static_cast<unsigned char>(DB_FORMAT::ADD_DDL)) != 0;
         }
     };
+
+    constexpr auto operator+(Format::VALUE_TYPE e) noexcept {
+        return static_cast<unsigned char>(e);
+    }
+
+    constexpr auto operator+(Format::MESSAGE_FORMAT e) noexcept {
+        return static_cast<unsigned char>(e);
+    }
+
 }
 #endif

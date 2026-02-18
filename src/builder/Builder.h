@@ -145,6 +145,10 @@ namespace OpenLogReplicator {
         uint64_t lastBuilderSize{0};
         Scn beginScn{Scn::none()};
         Scn commitScn{Scn::none()};
+        Time beginTimestamp{0};
+        Time commitTimestamp{0};
+        Seq beginSequence{Seq::zero()};
+        Seq commitSequence{Seq::zero()};
         Xid lastXid;
         typeMask valuesSet[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)]{};
         typeMask valuesMerge[Ctx::COLUMN_LIMIT_23_0 / sizeof(uint64_t)]{};
@@ -231,10 +235,10 @@ namespace OpenLogReplicator {
                     valuesSet[base] &= ~(1ULL << pos);
                     const typeCol column = columnBase + pos;
 
-                    values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE)] = nullptr;
-                    values[column][static_cast<uint>(Format::VALUE_TYPE::BEFORE_SUPP)] = nullptr;
-                    values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER)] = nullptr;
-                    values[column][static_cast<uint>(Format::VALUE_TYPE::AFTER_SUPP)] = nullptr;
+                    values[column][+Format::VALUE_TYPE::BEFORE] = nullptr;
+                    values[column][+Format::VALUE_TYPE::BEFORE_SUPP] = nullptr;
+                    values[column][+Format::VALUE_TYPE::AFTER] = nullptr;
+                    values[column][+Format::VALUE_TYPE::AFTER_SUPP] = nullptr;
                 }
             }
             valuesMax = 0;
@@ -303,7 +307,7 @@ namespace OpenLogReplicator {
             messagePosition += bytes;
         }
 
-        void builderBegin(Scn scn, Seq sequence, typeObj obj, BuilderMsg::OUTPUT_BUFFER flags) {
+        void builderBegin(Seq sequence, Scn scn, typeObj obj, BuilderMsg::OUTPUT_BUFFER flags) {
             messageSize = 0;
             messagePosition = 0;
             if (format.isScnTypeCommitValue())
@@ -1222,14 +1226,14 @@ namespace OpenLogReplicator {
         virtual void columnRowId(const std::string& columnName, RowId rowId) = 0;
         virtual void columnTimestamp(const std::string& columnName, time_t timestamp, uint64_t fraction) = 0;
         virtual void columnTimestampTz(const std::string& columnName, time_t timestamp, uint64_t fraction, const std::string_view& tz) = 0;
-        virtual void processInsert(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+        virtual void processInsert(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) = 0;
-        virtual void processUpdate(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+        virtual void processUpdate(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) = 0;
-        virtual void processDelete(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
+        virtual void processDelete(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const DbTable* table, typeObj obj,
                                    typeDataObj dataObj, typeDba bdba, typeSlot slot, FileOffset fileOffset) = 0;
-        virtual void processDdl(Scn scn, Seq sequence, time_t timestamp, const DbTable* table, typeObj obj) = 0;
-        virtual void processBeginMessage(Seq sequence, time_t timestamp) = 0;
+        virtual void processDdl(Seq sequence, Scn scn, Time timestamp, const DbTable* table, typeObj obj) = 0;
+        virtual void processBeginMessage(Seq sequence, Time timestamp) = 0;
         bool parseXml(const XmlCtx* xmlCtx, const uint8_t* data, uint64_t size, FileOffset fileOffset);
 
     public:
@@ -1246,17 +1250,18 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(Xid xid, uint16_t newThread, Scn newBeginScn, Scn newCommitScn, Scn newLwnScn, const AttributeMap* newAttributes);
-        void processInsertMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
+        void processBegin(Xid xid, uint16_t newThread, Seq newBeginSequence, Scn newBeginScn, Time newBeginTimestamp, Seq newCommitSequence, Scn newCommitScn,
+                          Time newCommitTimestamp, const AttributeMap* newAttributes);
+        void processInsertMultiple(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
-        void processDeleteMultiple(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
+        void processDeleteMultiple(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const RedoLogRecord* redoLogRecord1,
                                    const RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
-        void processDml(Scn scn, Seq sequence, time_t timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const std::deque<const RedoLogRecord*>& redo1,
+        void processDml(Seq sequence, Scn scn, Time timestamp, LobCtx* lobCtx, const XmlCtx* xmlCtx, const std::deque<const RedoLogRecord*>& redo1,
                         const std::deque<const RedoLogRecord*>& redo2, Format::TRANSACTION_TYPE transactionType, bool system, bool schema, bool dump);
-        void processDdl(Scn scn, Seq sequence, time_t timestamp, const RedoLogRecord* redoLogRecord1);
+        void processDdl(Seq sequence, Scn scn, Time timestamp, const RedoLogRecord* redoLogRecord1);
         virtual void initialize();
-        virtual void processCommit(Seq sequence, time_t timestamp) = 0;
-        virtual void processCheckpoint(Scn scn, Seq sequence, time_t timestamp, FileOffset fileOffset, bool redo) = 0;
+        virtual void processCommit() = 0;
+        virtual void processCheckpoint(Seq sequence, Scn scn, Time timestamp, FileOffset fileOffset, bool redo) = 0;
         void releaseBuffers(Thread* t, uint64_t maxId);
         void releaseDdl();
         void appendDdlChunk(const uint8_t* data, typeTransactionSize size);
