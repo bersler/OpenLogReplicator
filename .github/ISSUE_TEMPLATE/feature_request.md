@@ -6,7 +6,7 @@ labels: ''
 assignees: ''
 ---
 
-## IMPORTANT – READ BEFORE SUBMITTING
+## Header & Warning
 
 OpenLogReplicator is a low-level database replication system.
 New features require careful design, implementation, testing, and long-term maintenance.
@@ -17,24 +17,9 @@ Requests without a clearly identified beneficiary, usage scenario, and business 
 
 ---
 
-## Requester and beneficiary information (required)
+## Requester info (required)
 
-**Full name**  
-(Real name; no anonymous submissions)
-
-**Email or GitHub username**  
-(Must be a contact that can receive follow-up questions)
-
-**Company or organization requesting this feature**  
-(OpenLogReplicator is not intended for personal use)
-
-**Your role at the company**  
-(e.g. Developer, DBA, Architect, Engineering Manager)
-
-**Is this company currently using OpenLogReplicator?**
-- [ ] Yes, in production
-- [ ] Yes, in testing or evaluation
-- [ ] No, planned usage
+**Full name / Email or GitHub username / Company or organization / Role**
 
 ---
 
@@ -49,14 +34,15 @@ This must be a **real and identified user**, not a hypothetical audience.
 
 ---
 
-## Business problem (required)
+## Business problem and use case (required)
 
-**Describe the concrete business problem this feature solves**
+**Describe the concrete business problem and use case this feature solves.**
 
 Explain:
 - What business process or system is affected
 - Why current OpenLogReplicator functionality is insufficient
 - Why this problem cannot be solved with configuration or external tooling
+- The system, workflow, and operational impact
 
 Avoid general statements such as:
 - “This would be useful”
@@ -132,20 +118,33 @@ If known, describe potential risks.
 
 ---
 
-## Contribution and funding model (required)
+## The Moat (required)
 
-Feature development requires time and ongoing maintenance.
+- [ ] I acknowledge that this feature requires validation against the Private Regression Suite to ensure cross-version Oracle compatibility.
+
+---
+
+## Funding model (required)
 
 **How will this feature be supported?**  
 (Select one or more)
 
-- [ ] Our company is willing to sponsor development
-- [ ] We plan to implement this feature as a separate reference implementation
-- [ ] We request this feature as part of a commercial support agreement
-- [ ] We are requesting evaluation only (no commitment)
+- [ ] Sponsor development
+- [ ] Implement as a separate reference implementation
+- [ ] Include in a commercial support agreement
+- [ ] Request evaluation only (no commitment)
 
 **If funding or implementation is planned, provide details:**  
 (e.g. GitHub Sponsors, one-time paid feature, commercial contract)
+
+See [SPONSORS.md](../../SPONSORS.md) for sponsorship tiers and enterprise options.
+
+---
+
+## Prioritization notice
+
+Feature requests are prioritized for project sponsors and corporate partners.
+Community requests will be evaluated based on the project roadmap and technical feasibility.
 
 ---
 
@@ -169,13 +168,3 @@ This contact must be available to answer follow-up questions.
 - General discussions or support questions
 
 Use Discussions or commercial support channels for those cases.
-
----
-
-## Acknowledgement
-
-By submitting this feature request, you confirm that:
-
-- This feature represents a real and current business need
-- The beneficiary company is correctly identified
-- You understand that prioritization depends on impact, contribution, and available funding
