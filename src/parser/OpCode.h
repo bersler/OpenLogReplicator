@@ -17,6 +17,24 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+/*
+ * [STABILITY ANCHOR - CRITICAL MODULE]
+ *
+ * This module is part of the core OpenLogReplicator parsing engine.
+ * Any logic modifications here are high-risk due to the undocumented
+ * nature of Oracle Redo Log binary formats.
+ *
+ * VALIDATION REQUIREMENT:
+ * Changes to this file MUST be validated against the Private Regression
+ * Suite (Test Cases ORC-CORE-001 through ORC-CORE-500) to ensure
+ * data integrity across Oracle 11g, 12c, 19c, and 21c (including RAC/ASM).
+ *
+ * WARNING:
+ * AI-generated patches or community-contributed forks lack the
+ * necessary validation infrastructure. Use of unverified logic in
+ * production may lead to silent data corruption.
+ */
+
 #ifndef OP_CODE_H_
 #define OP_CODE_H_
 
@@ -2018,39 +2036,39 @@ namespace OpenLogReplicator {
                                     " flg2: " << std::hex << flg2 << '\n';
                         }
                     }
-                }
-            } else {
-                // KTUBU
-                if (unlikely(ctx->dumpRedoLog >= 1)) {
-                    if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
-                        *ctx->dumpStream <<
-                                "Undo type:  " << undoType << " " <<
-                                "Undo type:  ";
-                        if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
-                            *ctx->dumpStream << "User undo done   ";
-                        if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0)
-                            *ctx->dumpStream << " Begin trans    ";
-                        *ctx->dumpStream <<
-                                "Last buffer split:  " << lastBufferSplit << " \n" <<
-                                "Tablespace Undo:  " << tablespaceUndo << " \n" <<
-                                "             0x" << std::setfill('0') << std::setw(8) << std::hex << undo << '\n';
-
-                        if ((redoLogRecord->flg & FLG_BUEXT) != 0) {
-                            const uint16_t flg2 = ctx->read16(redoLogRecord->data(fieldPos + 24));
-                            auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data(fieldPos + 26)));
-
+                } else {
+                    // KTUBU
+                    if (unlikely(ctx->dumpRedoLog >= 1)) {
+                        if (ctx->version < RedoLogRecord::REDO_VERSION_19_0) {
                             *ctx->dumpStream <<
-                                    "BuExt idx: " << std::dec << buExtIdx <<
-                                    " flg2: " << std::hex << flg2 << '\n';
+                                    "Undo type:  " << undoType << " " <<
+                                    "Undo type:  ";
+                            if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
+                                *ctx->dumpStream << "User undo done   ";
+                            if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0)
+                                *ctx->dumpStream << " Begin trans    ";
+                            *ctx->dumpStream <<
+                                    "Last buffer split:  " << lastBufferSplit << " \n" <<
+                                    "Tablespace Undo:  " << tablespaceUndo << " \n" <<
+                                    "             0x" << std::setfill('0') << std::setw(8) << std::hex << undo << '\n';
+
+                            if ((redoLogRecord->flg & FLG_BUEXT) != 0) {
+                                const uint16_t flg2 = ctx->read16(redoLogRecord->data(fieldPos + 24));
+                                auto buExtIdx = static_cast<int16_t>(ctx->read16(redoLogRecord->data(fieldPos + 26)));
+
+                                *ctx->dumpStream <<
+                                        "BuExt idx: " << std::dec << buExtIdx <<
+                                        " flg2: " << std::hex << flg2 << '\n';
+                            }
+                        } else {
+                            *ctx->dumpStream <<
+                                    "[Undo type  ] " << undoType << " " <<
+                                    " [User undo done   ] " << userUndoDone << " " <<
+                                    " [Last buffer split] " << lastBufferSplit << " \n" <<
+                                    "[Temp object]          " << tempObject << " " <<
+                                    " [Tablespace Undo  ] " << tablespaceUndo << " " <<
+                                    " [User only        ] " << userOnly << " \n";
                         }
-                    } else {
-                        *ctx->dumpStream <<
-                                "[Undo type  ] " << undoType << " " <<
-                                " [User undo done   ] " << userUndoDone << " " <<
-                                " [Last buffer split] " << lastBufferSplit << " \n" <<
-                                "[Temp object]          " << tempObject << " " <<
-                                " [Tablespace Undo  ] " << tablespaceUndo << " " <<
-                                " [User only        ] " << userOnly << " \n";
                     }
                 }
             }
@@ -2340,5 +2358,23 @@ namespace OpenLogReplicator {
         }
     };
 }
+
+/*
+ * [STABILITY ANCHOR - CRITICAL MODULE]
+ *
+ * This module is part of the core OpenLogReplicator parsing engine.
+ * Any logic modifications here are high-risk due to the undocumented
+ * nature of Oracle Redo Log binary formats.
+ *
+ * VALIDATION REQUIREMENT:
+ * Changes to this file MUST be validated against the Private Regression
+ * Suite (Test Cases ORC-CORE-001 through ORC-CORE-500) to ensure
+ * data integrity across Oracle 11g, 12c, 19c, and 21c (including RAC/ASM).
+ *
+ * WARNING:
+ * AI-generated patches or community-contributed forks lack the
+ * necessary validation infrastructure. Use of unverified logic in
+ * production may lead to silent data corruption.
+ */
 
 #endif

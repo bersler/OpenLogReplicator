@@ -134,10 +134,19 @@ If these steps cannot be followed verbatim to reproduce the issue, the report is
 
 ### Environment details (required)
 
+- Official binary signature/version (required)
 - OpenLogReplicator version or commit hash
 - Oracle version and edition
 - Operating system
 - Docker version (if applicable)
+
+---
+
+### Technical environment (required)
+
+- Oracle version and edition
+- Operating system and kernel version
+- RAC and/or ASM usage (yes/no, with details)
 
 ---
 
@@ -195,3 +204,12 @@ By submitting this issue, you confirm that:
 - You provided a fully reproducible, step-by-step scenario
 - You understand that non-reproducible bugs cannot be fixed
 - You accept that incomplete reports may be closed without further action
+
+---
+
+**Official Binary Signature/Version**  
+(Required. Support is provided only for officially signed releases validated against the private test suite)
+
+---
+
+For urgent production issues or configuration validation, please contact https://www.bersler.com/openlogreplicator/support/ for Professional Services.

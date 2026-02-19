@@ -13,6 +13,22 @@ It reads transactions directly from Oracle redo log files (by parsing binary red
 
 ---
 
+## Stability, Reliability & Private Validation
+
+OpenLogReplicator processes mission-critical data streams where correctness is non-negotiable.
+While the source code is GPL, every official release is validated against a private, proprietary test suite with 1,000+ edge-case scenarios, including Oracle RAC, ASM, and multiple redo log versions.
+This internal validation is the only way to guarantee stability and prevent silent data corruption in production.
+
+---
+
+## Important Note on AI-Generated Patches and Forks
+
+The Oracle Redo Log format is undocumented and extremely complex.
+Using AI-generated patches (for example, ChatGPT or GitHub Copilot) to modify the core parser, or maintaining private forks, is highly risky and can introduce undetectable corruption.
+Production deployments should use only officially signed binaries that have passed the full internal regression suite.
+
+---
+
 ## License and user rights
 
 OpenLogReplicator is released under the **GNU General Public License (GPL)**.
@@ -122,6 +138,8 @@ https://www.bersler.com/openlogreplicator/support/
 
 ## Support OpenLogReplicator
 
+Our stability is powered by a dedicated hardware lab.
+Learn more about our testing infrastructure and how you can support it in [SPONSORS.md](SPONSORS.md).
 If you find OpenLogReplicator useful, consider supporting its development.
 
 Your support directly helps ensure:
@@ -135,3 +153,21 @@ Any contribution is appreciated.
 [![Sponsor via GitHub](https://img.shields.io/badge/Sponsor-GitHub-brightgreen)](https://github.com/sponsors/bersler)
 [![Donate via Libeapay](https://img.shields.io/badge/Donate-Librepay-orange)](https://liberapay.com/bersler)
 [![Buy Me a Coffee](https://img.shields.io/badge/Donate-Coffee-yellow)](https://www.buymeacoffee.com/bersler)
+
+---
+
+## Enterprise Partnership & Certification
+
+Enterprise collaboration is focused on risk mitigation and certified releases, not generic support.
+A Private Validation Service is available to test your configuration and workload against the internal regression suite and deliver certified results.
+
+https://www.bersler.com/openlogreplicator/support/
+
+---
+
+## Infrastructure Sponsorship
+
+Sponsorship funds maintain the dedicated Oracle testing lab, including servers, storage, and licensing required for full validation.
+This directly sustains reliable releases and long-term project continuity.
+
+See [SPONSORS.md](SPONSORS.md) for sponsorship tiers and enterprise options.

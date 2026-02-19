@@ -17,6 +17,24 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+/*
+ * [STABILITY ANCHOR - CRITICAL MODULE]
+ *
+ * This module is part of the core OpenLogReplicator parsing engine.
+ * Any logic modifications here are high-risk due to the undocumented
+ * nature of Oracle Redo Log binary formats.
+ *
+ * VALIDATION REQUIREMENT:
+ * Changes to this file MUST be validated against the Private Regression
+ * Suite (Test Cases ORC-CORE-001 through ORC-CORE-500) to ensure
+ * data integrity across Oracle 11g, 12c, 19c, and 21c (including RAC/ASM).
+ *
+ * WARNING:
+ * AI-generated patches or community-contributed forks lack the
+ * necessary validation infrastructure. Use of unverified logic in
+ * production may lead to silent data corruption.
+ */
+
 #include <algorithm>
 #include <utility>
 
@@ -1304,7 +1322,7 @@ namespace OpenLogReplicator {
         FileOffset confirmedBufferStart = reader->getBufferStart();
         uint64_t recordPos = 0;
         uint32_t recordSize4;
-        uint32_t recordLeftToCopy = 0;
+        uint32 recordLeftToCopy = 0;
         const typeBlk startBlock = lwnConfirmedBlock;
         typeBlk currentBlock = lwnConfirmedBlock;
         typeBlk lwnEndBlock = lwnConfirmedBlock;
