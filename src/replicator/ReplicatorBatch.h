@@ -27,7 +27,6 @@ namespace OpenLogReplicator {
     protected:
         std::string getModeName() const override;
         bool continueWithOnline() override;
-        void positionReader() override;
         void createSchema() override;
         void updateOnlineRedoLogData() override;
 
@@ -35,6 +34,8 @@ namespace OpenLogReplicator {
         ReplicatorBatch(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
                         TransactionBuffer* newTransactionBuffer, std::string newAlias, std::string newDatabase);
         ~ReplicatorBatch() override = default;
+
+        void positionReader() override;
     };
 }
 

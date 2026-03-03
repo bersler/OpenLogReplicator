@@ -36,6 +36,7 @@ This document describes the release notes of OpenLogReplicator.
 - enhancement: new format parameter: "user-type"
 - fix: multitenant db: transaction shared among PDBs causes replication to freeze
 - added support for database version 26.2 ai
+- enhancement: replication startup parameters moved to program arguments
 
 == Major Release 1.x - stable version
 

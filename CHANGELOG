@@ -19,6 +19,7 @@
 - enhancement: new format parameter: "user-type"
 - fix: multitenant db: transaction shared among PDBs causes replication to freeze
 - added support for database version 26.2 ai
+- enhancement: replication startup parameters moved to program arguments
 
 1.9.0
 - code style cleanup
