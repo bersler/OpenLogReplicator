@@ -630,6 +630,8 @@ namespace OpenLogReplicator {
 
             if (exponent > 0)
                 significand += 0x800000;
+            else
+                exponent = 1;
             exponent -= 0x7F;
             return ldexp((static_cast<double>(significand)) / (static_cast<double>(0x800000)), exponent);
         }
@@ -640,6 +642,8 @@ namespace OpenLogReplicator {
         significand = 0x7FFFFF - significand;
         if (exponent < 0xFF)
             significand += 0x800000;
+        else
+            exponent = 0xFE;
         exponent = 0x80 - exponent;
         return -ldexp(((static_cast<double>(significand) / static_cast<double>(0x800000))), exponent);
     }
@@ -662,6 +666,8 @@ namespace OpenLogReplicator {
 
             if (exponent > 0)
                 significand += 0x10000000000000;
+            else
+                exponent = 1;
             exponent -= 0x3FF;
             return ldexpl(static_cast<long double>(significand) / static_cast<long double>(0x10000000000000), exponent);
         }
@@ -672,6 +678,8 @@ namespace OpenLogReplicator {
         significand = 0xFFFFFFFFFFFFF - significand;
         if (exponent < 0x7FF)
             significand += 0x10000000000000;
+        else
+            exponent = 0x7FE;
         exponent = 0x400 - exponent;
         return -ldexpl(static_cast<long double>(significand) / static_cast<long double>(0x10000000000000), exponent);
     }
