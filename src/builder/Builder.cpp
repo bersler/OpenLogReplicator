@@ -598,6 +598,32 @@ namespace OpenLogReplicator {
                 }
                 break;
 
+            case SysCol::COLTYPE::ROWID:
+                // ROWID (type 69) in redo: 10 bytes big-endian
+                //   dataObj(4) + DBA(4, afn<<22|block) + slot(2)
+                // Output as Oracle base64 ROWID string (e.g. AAASnuAAMAAAAKtAAA)
+                if (size == 10) {
+                    const typeDataObj rDataObj = (static_cast<typeDataObj>(data[0]) << 24) |
+                            (static_cast<typeDataObj>(data[1]) << 16) |
+                            (static_cast<typeDataObj>(data[2]) << 8) |
+                            static_cast<typeDataObj>(data[3]);
+                    const typeDba rDba = (static_cast<typeDba>(data[4]) << 24) |
+                            (static_cast<typeDba>(data[5]) << 16) |
+                            (static_cast<typeDba>(data[6]) << 8) |
+                            static_cast<typeDba>(data[7]);
+                    const typeSlot rSlot = (static_cast<typeSlot>(data[8]) << 8) |
+                            static_cast<typeSlot>(data[9]);
+                    RowId rowId(rDataObj, rDba, rSlot);
+                    // Output as base64 string (Oracle's standard ROWID display format)
+                    // Not using columnRowId — that uses toHex for UROWID compatibility
+                    rowId.toString(reinterpret_cast<char*>(valueBuffer));
+                    valueSize = RowId::SIZE;
+                    columnString(column->name);
+                } else {
+                    columnUnknown(column->name, data, size);
+                }
+                break;
+
             case SysCol::COLTYPE::UROWID:
                 if (size == 13 && data[0] == 0x01) {
                     RowId rowId;

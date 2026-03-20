@@ -64,6 +64,7 @@ namespace OpenLogReplicator {
                     && typeNo != SysCol::COLTYPE::TIMESTAMP
                     && typeNo != SysCol::COLTYPE::INTERVAL_YEAR_TO_MONTH
                     && typeNo != SysCol::COLTYPE::INTERVAL_DAY_TO_SECOND
+                    && typeNo != SysCol::COLTYPE::ROWID
                     && typeNo != SysCol::COLTYPE::UROWID
                     && typeNo != SysCol::COLTYPE::TIMESTAMP_WITH_LOCAL_TZ)
                     return;
@@ -299,6 +300,11 @@ namespace OpenLogReplicator {
 
                         case SysCol::COLTYPE::INTERVAL_DAY_TO_SECOND:
                             columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
+                            columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
+                            break;
+
+                        case SysCol::COLTYPE::ROWID:
+                            columnPB->set_type(pb::UROWID);
                             columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                             break;
 

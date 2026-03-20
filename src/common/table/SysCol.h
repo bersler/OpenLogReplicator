@@ -75,6 +75,7 @@ namespace OpenLogReplicator {
             RAW                     = 23,
             LONG_RAW                = 24,
             XMLTYPE                 = 58,
+            ROWID                   = 69,
             CHAR                    = 96,
             FLOAT                   = 100,
             DOUBLE                  = 101,

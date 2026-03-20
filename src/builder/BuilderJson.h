@@ -69,6 +69,7 @@ namespace OpenLogReplicator {
                     && typeNo != SysCol::COLTYPE::TIMESTAMP
                     && typeNo != SysCol::COLTYPE::INTERVAL_YEAR_TO_MONTH
                     && typeNo != SysCol::COLTYPE::INTERVAL_DAY_TO_SECOND
+                    && typeNo != SysCol::COLTYPE::ROWID
                     && typeNo != SysCol::COLTYPE::UROWID
                     && typeNo != SysCol::COLTYPE::TIMESTAMP_WITH_LOCAL_TZ)
                     return;
@@ -498,6 +499,11 @@ namespace OpenLogReplicator {
 
                         case SysCol::COLTYPE::INTERVAL_DAY_TO_SECOND:
                             append(std::string_view(R"("interval day to second","length":)"));
+                            appendDec(table->columns[column]->length);
+                            break;
+
+                        case SysCol::COLTYPE::ROWID:
+                            append(std::string_view(R"("rowid","length":)"));
                             appendDec(table->columns[column]->length);
                             break;
 
