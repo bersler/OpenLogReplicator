@@ -55,6 +55,11 @@ namespace OpenLogReplicator {
     void Writer::createMessage(BuilderMsg* msg) {
         ++sentMessages;
 
+        // A message can be walked over more than once when a reconnecting client rewinds the
+        // stream, so a confirmation left over from an earlier pass has to be cleared before the
+        // message is queued again, otherwise confirmMessage() drops it before the client acks it.
+        msg->unsetFlag(BuilderMsg::OUTPUT_BUFFER::CONFIRMED);
+
         queue[currentQueueSize++] = msg;
         hwmQueueSize = std::max(currentQueueSize, hwmQueueSize);
     }
@@ -100,7 +105,19 @@ namespace OpenLogReplicator {
         }
         currentQueueSize = 0;
 
-        oldSize = builderQueue->start;
+        // Rewind to the oldest buffer still held rather than to the head of whichever buffer the
+        // writer happens to sit in. A buffer is only released once the client has confirmed it, so
+        // this is the earliest position a client may legitimately continue from, and isNewData()
+        // then filters forward to the requested c_scn/c_idx. Restarting from the current buffer
+        // instead silently drops every unconfirmed message held in the buffers before it.
+        builderQueue = builder->firstBuilderQueue;
+        const uint64_t bufferStart = builderQueue->start;
+        oldSize = bufferStart;
+
+        // A buffer has no message boundary until its first message ends in it, so there is nothing
+        // to replay from it yet and the read resumes at its head.
+        if (unlikely(oldSize == Builder::BUFFER_START_UNDEFINED))
+            oldSize = 0;
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
