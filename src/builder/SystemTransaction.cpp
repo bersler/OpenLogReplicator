@@ -67,7 +67,11 @@ namespace OpenLogReplicator {
                 builder->parseNumber(builder->values[column][+Format::VALUE_TYPE::AFTER],
                                      builder->sizes[column][+Format::VALUE_TYPE::AFTER], fileOffset);
                 builder->valueBuffer[builder->valueSize] = 0;
-                if (unlikely(builder->valueSize == 0 || builder->valueBuffer[0] == '-'))
+                // Whether a negative value is valid depends on the column being read, so it is
+                // rejected by the branches below for the types that cannot hold one. Columns that
+                // can, such as SYS.COL$.SCALE, take a negative scale from the database and use a
+                // negative value to mean the column is not set.
+                if (unlikely(builder->valueSize == 0))
                     throw RuntimeException(50020, "ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
                                            table->columns[column]->name + " value found " + builder->valueBuffer + " offset: " + fileOffset.toString());
 
