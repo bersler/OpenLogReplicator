@@ -84,6 +84,10 @@ If not, see <http://www.gnu.org/licenses/>. */
 #include "writer/WriterKafka.h"
 #endif /* LINK_LIBRARY_RDKAFKA */
 
+#ifdef LINK_LIBRARY_LUA
+#include "writer/WriterLua.h"
+#endif /* LINK_LIBRARY_LUA */
+
 #ifdef LINK_LIBRARY_PROMETHEUS
 #include "common/metrics/MetricsPrometheus.h"
 #endif /* LINK_LIBRARY_PROMETHEUS */
@@ -1088,6 +1092,7 @@ namespace OpenLogReplicator {
             if (!ctx->isDisableChecksSet(Ctx::DISABLE_CHECKS::JSON_TAGS)) {
                 static const std::vector<std::string> writerNames{
                     "append",
+                    "function",
                     "max-file-size",
                     "max-message-mb",
                     "new-line",
@@ -1095,6 +1100,7 @@ namespace OpenLogReplicator {
                     "poll-interval-us",
                     "properties",
                     "queue-size",
+                    "script",
                     "timestamp-format",
                     "topic",
                     "type",
@@ -1188,6 +1194,19 @@ namespace OpenLogReplicator {
                 throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: " + writerType +
                                              ", expected: not \"kafka\" since the code is not compiled");
 #endif /* LINK_LIBRARY_RDKAFKA */
+            } else if (writerType == "lua") {
+#ifdef LINK_LIBRARY_LUA
+                const std::string script = Ctx::getJsonFieldS(configFileName, Ctx::MAX_PATH_LENGTH, writerJson, "script");
+
+                std::string function = "process";
+                if (writerJson.HasMember("function"))
+                    function = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "function");
+
+                writer = new WriterLua(ctx, alias + "-writer", replicator2->database, replicator2->builder, replicator2->metadata, script, function);
+#else
+                throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: " + writerType +
+                                             ", expected: not \"lua\" since the code is not compiled");
+#endif /* LINK_LIBRARY_LUA */
             } else if (writerType == "zeromq") {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
                 const std::string uri = Ctx::getJsonFieldS(configFileName, Ctx::JSON_PARAMETER_LENGTH, writerJson, "uri");
@@ -1211,7 +1230,7 @@ namespace OpenLogReplicator {
 #endif /* LINK_LIBRARY_PROTOBUF */
             } else
                 throw ConfigurationException(30001, "bad JSON, invalid \"type\" value: " + writerType +
-                                             R"(, expected: one of {"file", "kafka", "zeromq", "network", "discard"})");
+                                             R"(, expected: one of {"file", "kafka", "lua", "zeromq", "network", "discard"})");
 
             writers.push_back(writer);
             writer->initialize();

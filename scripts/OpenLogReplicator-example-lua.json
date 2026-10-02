@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "memory": {
+    "min-mb": 64,
+    "max-mb": 1024
+  },
+  "source": [
+    {
+      "alias": "SOURCE",
+      "name": "DBNAME",
+      "reader": {
+        "type": "online",
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
+      },
+      "format": {
+        "type": "json"
+      },
+      "filter": {
+        "table": [
+          {"owner": "OWNER1", "table": "TABLENAME1", "key": "COL1,COL2,COL3"},
+          {"owner": "OWNER1", "table": "TABLENAME2"},
+          {"owner": "OWNER2", "table": "TAB.*"}
+        ]
+      }
+    }
+  ],
+  "target": [
+    {
+      "alias": "LUA",
+      "source": "SOURCE",
+      "writer": {
+        "type": "lua",
+        "script": "scripts/OpenLogReplicator-example.lua",
+        "function": "process"
+      }
+    }
+  ]
+}

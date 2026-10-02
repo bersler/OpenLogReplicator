@@ -107,6 +107,11 @@ if (WITH_RDKAFKA)
             writer/WriterKafka.cpp)
 endif ()
 
+if (WITH_LUA)
+    list(APPEND ListWriter
+            writer/WriterLua.cpp)
+endif ()
+
 if (WITH_PROMETHEUS)
     list(APPEND ListCommon
             common/metrics/MetricsPrometheus.cpp)

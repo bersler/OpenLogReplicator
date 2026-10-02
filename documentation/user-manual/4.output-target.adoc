@@ -98,6 +98,42 @@ Different checkpoint options decide how many files are created and how many file
 It is also possible to disable the deletion of the schema checkpoints.
 ====
 
+=== Lua target
+
+Lua target passes every message to a function defined in a Lua script.
+This allows custom processing of the output, like filtering, transformation or sending the messages to a system that has no dedicated target.
+
+The script is loaded once at startup.
+It must define a global function, by default named `process`, which receives the message as a string argument:
+
+[source,lua]
+----
+function process(message)
+    io.write(message, "\n")
+end
+----
+
+The function is called from the writer thread, one message at a time, in the order of the output.
+Global variables keep their values between calls.
+
+==== Build instructions
+
+By default, the Lua writer module is not compiled in.
+Enable it with the `WITH_LUA` CMake parameter pointing to the Lua installation directory, which must contain `include/lua.hpp` and `lib/liblua`.
+Lua versions 5.1 to 5.4 are supported.
+
+==== Checkpointing
+
+A message is confirmed when the function returns.
+If the function raises an error, replication stops, and the message is not confirmed.
+After restart, the replication continues from the last confirmed message, so the function can be called again for messages that were already processed.
+
+[CAUTION]
+====
+The function is called synchronously.
+Slow processing in the script slows down the replication.
+====
+
 === Network target
 
 The network target is the most sophisticated module and allows to send the output to virtually any type of target.

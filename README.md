@@ -14,6 +14,7 @@ OpenLogReplicator **2.0** is currently under active development and should be tr
 
 - Kafka
 - Flat file
+- Lua script
 - Network stream (plain TCP/IP or ZeroMQ)
 - Discard (for testing)
 
