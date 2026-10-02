@@ -48,3 +48,8 @@ A Kafka property is duplicated in configuration.
 
 `message.max.bytes` is managed by OpenLogReplicator.
 Use `max-message-mb` instead.
+
+==== code 30011: "Lua script: <file name> does not define function: <name>"
+
+The Lua script was loaded, but it does not define a global function with the name given in the `function` parameter.
+Check the function name in the script and in the configuration.

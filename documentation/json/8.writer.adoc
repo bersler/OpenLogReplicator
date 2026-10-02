@@ -22,6 +22,14 @@ It explains available writer types, their parameters, valid values and usage not
 |Type / constraints
 |Description and notes
 
+|`script`
+|_string_, max length: 2048, mandatory for Lua
+|Path to the Lua script which receives the messages.
+The script is loaded and executed once at startup.
+It must define a global function (see `function`) which is called once for every message.
+
+_NOTE:_ Valid only for `lua` writer type.
+
 |`topic`
 |_string_, max length: 256, mandatory for Kafka
 |Name of the Kafka topic to which transactions are published as JSON messages.
@@ -41,6 +49,8 @@ This writer takes no additional parameters.
 * `file` — Writes messages to a file on disk.
 
 * `kafka` — Sends messages to Apache Kafka via a producer.
+
+* `lua` — Passes messages to a function defined in a Lua script.
 
 * `network` — Streams messages over plain TCP.
 OpenLogReplicator acts as a server; a client connects to receive messages.
@@ -64,6 +74,15 @@ _NOTE:_ Valid only for `network` and `zeromq` writer types.
 Only applies to `file` writer.
 
 _CAUTION:_ `output` and `append` cannot be used together.
+
+|`function`
+|_string_, max length: 256, default: "process"
+|Name of the global Lua function called for every message.
+The function receives one argument: the message as a string.
+The message is confirmed when the function returns.
+If the function raises an error, replication stops and the message is not confirmed.
+
+_NOTE:_ Valid only for `lua`.
 
 |`max-message-mb`
 |_integer_, min: 1, max: 953, default: 100

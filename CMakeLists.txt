@@ -120,6 +120,13 @@ if (WITH_PROMETHEUS)
     add_compile_definitions(LINK_LIBRARY_PROMETHEUS)
 endif ()
 
+# Lua, dynamic or static
+if (WITH_LUA)
+    include_directories(SYSTEM ${WITH_LUA}/include)
+    link_directories(${WITH_LUA}/lib)
+    add_compile_definitions(LINK_LIBRARY_LUA)
+endif ()
+
 add_executable(OpenLogReplicator ${SOURCE_FILES})
 
 if (WITH_PROTOBUF)
@@ -144,6 +151,10 @@ endif ()
 
 if (WITH_PROMETHEUS)
     target_link_libraries(OpenLogReplicator prometheus-cpp-core prometheus-cpp-pull)
+endif ()
+
+if (WITH_LUA)
+    target_link_libraries(OpenLogReplicator lua ${CMAKE_DL_LIBS} m)
 endif ()
 
 if (WITH_PROTOBUF)

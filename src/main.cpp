@@ -59,6 +59,12 @@ If not, see <http://www.gnu.org/licenses/>. */
 #define HAS_KAFKA ""
 #endif /* LINK_LIBRARY_RDKAFKA */
 
+#ifdef LINK_LIBRARY_LUA
+#define HAS_LUA " Lua"
+#else
+#define HAS_LUA ""
+#endif /* LINK_LIBRARY_LUA */
+
 #ifdef LINK_LIBRARY_PROMETHEUS
 #define HAS_PROMETHEUS " Prometheus"
 #else
@@ -112,7 +118,7 @@ namespace {
         mainCtx->welcome("arch: " + std::string(name.machine) + buildArch + ", system: " + name.sysname +
                 ", release: " + name.release + ", build: " +
                 OpenLogReplicator_CMAKE_BUILD_TYPE + ", compiled: " + OpenLogReplicator_CMAKE_BUILD_TIMESTAMP + ", modules:"
-                HAS_KAFKA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC HAS_THREAD_INFO);
+                HAS_KAFKA HAS_LUA HAS_OCI HAS_PROMETHEUS HAS_PROTOBUF HAS_ZEROMQ HAS_STATIC HAS_THREAD_INFO);
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {

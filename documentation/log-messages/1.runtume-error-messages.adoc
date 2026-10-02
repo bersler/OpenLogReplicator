@@ -395,3 +395,19 @@ The file will be partially read.
 
 A message exceeds the writer buffer.
 Increase `write-buffer-max-mb` and possibly `max-mb`.
+
+==== code 10073: "Lua failed to create state"
+
+The Lua interpreter could not be initialized.
+This usually means that the system is out of memory.
+
+==== code 10074: "Lua failed to load script: <file name>, message: <message>"
+
+The Lua script could not be loaded or failed when executed at startup.
+Check that the file exists and is readable, and check the Lua message for syntax or runtime errors.
+
+==== code 10075: "Lua function: <name> failed for message: <number>, message: <message>"
+
+The Lua function raised an error while processing a message.
+Replication stops, and the message is not confirmed.
+Fix the error in the script and restart; the message is passed to the function again.
