@@ -126,6 +126,10 @@ if (WITH_PROTOBUF)
     add_executable(StreamClient ${SOURCE_FILES})
 endif ()
 
+if (WITH_TESTS)
+    enable_testing()
+endif ()
+
 add_subdirectory(src)
 
 target_link_libraries(OpenLogReplicator Threads::Threads)

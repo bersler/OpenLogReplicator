@@ -413,6 +413,13 @@ namespace OpenLogReplicator {
                             }
                         }
                     }
+                } else if (redoLogRecord->sizeDelt > 0 && fieldNum < redoLogRecord->fieldCnt &&
+                           ctx->read16(redoLogRecord->data(redoLogRecord->fieldSizesDelta + (static_cast<uint>(fieldNum) + 1) * 2)) == redoLogRecord->sizeDelt) {
+                    // A row piece without columns (a head piece which only points at the next piece of a migrated row) still has its
+                    // row data field (flags, lock, column count, next rowid); skip it, the supplemental log follows
+                    RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x05011E);
+                    if (unlikely(ctx->dumpRedoLog >= 1))
+                        dumpCompressed(ctx, redoLogRecord, redoLogRecord->data(fieldPos), fieldSize);
                 }
 
                 if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
@@ -432,6 +439,13 @@ namespace OpenLogReplicator {
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LMN) {
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LKR) {
+                // A lock on a ROWDEPENDENCIES table saves the row's dependent SCN before the supplemental log, like IRP/DRP/URP
+                if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
+                    if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x05011D))
+                        return;
+                    rowDeps(ctx, redoLogRecord, fieldPos, fieldSize);
+                }
+
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_CFA) {
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
