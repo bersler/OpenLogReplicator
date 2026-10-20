@@ -698,8 +698,12 @@ namespace OpenLogReplicator {
         commitSequence = newCommitSequence;
         commitScn = newCommitScn;
         commitTimestamp = newCommitTimestamp;
-        if (lwnScn != beginScn) {
-            lwnScn = beginScn;
+        // Messages are positioned (c_scn, c_idx) by the commit SCN: transactions are emitted in commit order, so the
+        // position grows monotonically and a client can confirm or continue from it. The begin SCN does not grow
+        // monotonically, with it a transaction which began before the client's position but committed after it is
+        // filtered out as already seen.
+        if (lwnScn != commitScn) {
+            lwnScn = commitScn;
             lwnIdx = 0;
         }
         newTran = true;

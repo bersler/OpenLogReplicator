@@ -159,3 +159,9 @@ To recreate schema checkpoint files: stop replication, clear the checkpoint dire
 ==== code 50072: "swap file: <file> - <message>"
 
 ==== code 50073: "table: <table>: missmatch in column details: <number> < <number>"
+
+==== code 50074: "output buffer - oldest held buffer: <number> starts inside a message, can't rewind"
+
+A client continued and the writer rewound to the oldest output buffer still held, but that buffer begins with the tail of a message whose beginning was already released.
+This should not happen: a buffer is released only after every message ending in it was confirmed.
+Please report this issue.
