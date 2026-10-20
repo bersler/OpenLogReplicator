@@ -780,11 +780,13 @@ namespace OpenLogReplicator {
         throw RuntimeException(10017, "out of memory");
     }
 
-    void Ctx::stopHard() {
+    void Ctx::stopHard(bool error) {
         logTrace(TRACE::THREADS, "stop hard");
 
         {
             std::unique_lock const lck(mtx);
+            if (error)
+                errorShutdown = true;
 
             if (hardShutdown)
                 return;
@@ -829,7 +831,8 @@ namespace OpenLogReplicator {
         logTrace(TRACE::THREADS, "main finish start");
 
         while (wakeThreads()) {
-            usleepInt(10000);
+            // Not usleepInt(): it returns at once during shutdown and this loop would spin until the threads finish
+            usleep(10000);
             wakeAllOutOfMemory();
         }
 
@@ -888,7 +891,7 @@ namespace OpenLogReplicator {
     void Ctx::signalHandler(int s) {
         if (!hardShutdown) {
             error(10015, "caught signal: " + std::to_string(s));
-            stopHard();
+            stopHard(false);
         }
     }
 

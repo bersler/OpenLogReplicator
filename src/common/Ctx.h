@@ -246,6 +246,8 @@ namespace OpenLogReplicator {
         bool version12{false};
         bool hardShutdown{false};
         bool softShutdown{false};
+        // Set together with hardShutdown when the stop is caused by an error, the process then exits with a non-zero code
+        bool errorShutdown{false};
         bool replicatorFinished{false};
 
         Ctx();
@@ -617,7 +619,8 @@ namespace OpenLogReplicator {
         void swappedMemoryRemove(Thread* t, Xid xid);
         void wontSwap(Thread* t) const;
 
-        void stopHard();
+        // Stop immediately. error = false for a stop requested by a signal, which ends the process with exit code 0
+        void stopHard(bool error = true);
         void stopSoft();
         void mainLoop();
         void mainFinish();

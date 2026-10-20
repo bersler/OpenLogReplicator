@@ -450,5 +450,8 @@ namespace OpenLogReplicator {
     void Writer::wakeUp() {
         Thread::wakeUp();
         builder->wakeUp();
+        // The writer may wait for the replicator to start (Metadata::waitForReplicator); when the replicator died on
+        // an error it never notifies, and the main thread would wait for this thread forever
+        metadata->wakeUp(this);
     }
 }
