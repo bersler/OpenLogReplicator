@@ -238,17 +238,11 @@ namespace OpenLogReplicator {
                 comma(hasPreviousValue);
                 if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
                     append(std::string_view(R"("scns":"0x)"));
-                    if (format.isScnTypeCommitValue())
-                        appendHex16(commitScn.getData());
-                    else
-                        appendHex16(scn.getData());
+                    appendHex16(outputScn(scn).getData());
                     append('"');
                 } else {
                     append(std::string_view(R"("scn":)"));
-                    if (format.isScnTypeCommitValue())
-                        appendDec(commitScn.getData());
-                    else
-                        appendDec(scn.getData());
+                    appendDec(outputScn(scn).getData());
                 }
             }
 

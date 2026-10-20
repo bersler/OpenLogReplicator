@@ -97,12 +97,13 @@ namespace OpenLogReplicator {
 
             redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
             if (first || format.isScnTypeDml()) {
+                const Scn messageScn = outputScn(scn);
                 if (format.scnFormat == Format::SCN_FORMAT::TEXT_HEX) {
                     char buf[17];
-                    numToString(scn.getData(), buf, 16);
+                    numToString(messageScn.getData(), buf, 16);
                     redoResponsePB->set_scns(buf);
                 } else {
-                    redoResponsePB->set_scn(scn.getData());
+                    redoResponsePB->set_scn(messageScn.getData());
                 }
             }
 

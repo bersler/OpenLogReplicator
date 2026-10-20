@@ -34,6 +34,9 @@ The value can be stored in:
 - field `scn` and stored as decimal (default);
 - field `scns` and stored as a string in hex format "C" styl (example: `"scns":"0x0000008a33ac2263"`
 
+The SCN is never below the SCN the replication was started from (`start-scn`, or the SCN requested by a network client).
+A transaction which began before that SCN but committed after it is sent in full, and its begin and the changes made before the start SCN carry the start SCN instead of the SCN of their redo record.
+
 See:  xref:../json/4.format.adoc#scn[scn] parameter for configuration details.
 
 ==== Response: _tm_val_

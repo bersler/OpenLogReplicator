@@ -1,0 +1,4 @@
+add_executable(BuilderStartScnOutputTest test/BuilderStartScnOutputTest.cpp)
+target_include_directories(BuilderStartScnOutputTest PUBLIC "${PROJECT_BINARY_DIR}")
+olr_test_link(BuilderStartScnOutputTest)
+add_test(NAME BuilderStartScnOutputTest COMMAND BuilderStartScnOutputTest)

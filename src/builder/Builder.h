@@ -50,6 +50,7 @@ If not, see <http://www.gnu.org/licenses/>. */
 #include "../common/types/Xid.h"
 #include "../locales/CharacterSet.h"
 #include "../locales/Locales.h"
+#include "../metadata/Metadata.h"
 
 namespace OpenLogReplicator {
     class Builder;
@@ -310,8 +311,6 @@ namespace OpenLogReplicator {
         void builderBegin(Seq sequence, Scn scn, typeObj obj, BuilderMsg::OUTPUT_BUFFER flags) {
             messageSize = 0;
             messagePosition = 0;
-            if (format.isScnTypeCommitValue())
-                scn = commitScn;
 
             if (unlikely(lastBuilderSize + messagePosition + sizeof(BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE))
                 builderRotate<true>();
@@ -319,7 +318,7 @@ namespace OpenLogReplicator {
             msg = reinterpret_cast<BuilderMsg*>(lastBuilderQueue->data + lastBuilderSize);
             builderShiftFast(sizeof(BuilderMsg));
             ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
-            msg->scn = scn;
+            msg->scn = outputScn(scn);
             msg->lwnScn = lwnScn;
             msg->lwnIdx = lwnIdx++;
             msg->sequence = sequence;
@@ -1243,6 +1242,17 @@ namespace OpenLogReplicator {
         BuilderQueue* lastBuilderQueue{nullptr};
         Scn lwnScn{Scn::none()};
         typeIdx lwnIdx{0};
+
+        // The SCN a message is sent with: the redo record's SCN (the commit SCN with scn-type COMMIT_VALUE), never below the
+        // start SCN, so a transaction that began before the start SCN keeps its first messages.
+        [[nodiscard]] Scn outputScn(Scn scn) const {
+            if (format.isScnTypeCommitValue())
+                return commitScn;
+            const Scn firstDataScn = metadata->firstDataScn;
+            if (firstDataScn != Scn::none() && scn < firstDataScn)
+                return firstDataScn;
+            return scn;
+        }
 
         Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, const Format& newFormat, uint64_t newFlushBuffer);
         virtual ~Builder();
