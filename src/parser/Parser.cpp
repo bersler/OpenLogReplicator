@@ -823,6 +823,9 @@ namespace OpenLogReplicator {
         transaction->commitTimestamp = redoLogRecord1->timestamp;
         if ((redoLogRecord1->flg & OpCode::FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
+        if (transaction->begin && !transaction->rollback && transaction->commitScn >= lwnScn)
+            transactionBuffer->addCommitted(transaction->commitScn, metadata->firstDataScn, transaction->beginSequence, transaction->beginFileOffset,
+                                            transaction->xid);
 
         if ((transaction->commitScn > metadata->firstDataScn && !transaction->system) ||
             (transaction->commitScn > metadata->firstSchemaScn && transaction->system)) {
@@ -1518,7 +1521,7 @@ namespace OpenLogReplicator {
                         Seq minSequence = Seq::none();
                         FileOffset minFileOffset;
                         Xid minXid;
-                        transactionBuffer->checkpoint(minSequence, minFileOffset, minXid);
+                        transactionBuffer->checkpoint(lwnScn, minSequence, minFileOffset, minXid);
                         if (unlikely(ctx->isTraceSet(Ctx::TRACE::LWN)))
                             ctx->logTrace(Ctx::TRACE::LWN, "* checkpoint: " + lwnScn.toString());
                         metadata->checkpoint(ctx->parserThread, lwnScn, lwnTimestamp, sequence, FileOffset(currentBlock, reader->getBlockSize()),

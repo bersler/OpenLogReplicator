@@ -1,0 +1,4 @@
+add_executable(CheckpointMinTranTest test/CheckpointMinTranTest.cpp)
+target_include_directories(CheckpointMinTranTest PUBLIC "${PROJECT_BINARY_DIR}")
+olr_test_link(CheckpointMinTranTest)
+add_test(NAME CheckpointMinTranTest COMMAND CheckpointMinTranTest)

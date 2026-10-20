@@ -63,6 +63,15 @@ namespace OpenLogReplicator {
         std::unordered_map<XidMap, Transaction*> xidTransactionMap;
         std::map<LobKey, uint8_t*> orphanedLobs;
 
+        struct CommittedBegin {
+            Seq sequence;
+            FileOffset fileOffset;
+            Xid xid;
+        };
+        // Begin positions of transactions committed at or above their LWN's SCN, kept until a checkpoint passes the commit.
+        // Only commits at or after firstDataScn are kept, so catch-up does not grow it. Assumes a single redo thread.
+        std::multimap<Scn, CommittedBegin> committedAtOrAfterLwn;
+
     public:
         std::set<Xid> skipXidList;
         std::set<Xid> dumpXidList;
@@ -79,7 +88,11 @@ namespace OpenLogReplicator {
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
         void rollbackTransactionChunk(Transaction* transaction);
         void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, const RedoLogRecord* redoLogRecord2);
-        void checkpoint(Seq& minSequence, FileOffset& minFileOffset, Xid& minXid);
+        bool addCommitted(Scn commitScn, Scn firstDataScn, Seq beginSequence, FileOffset beginFileOffset, Xid xid);
+        [[nodiscard]] size_t committedSize() const {
+            return committedAtOrAfterLwn.size();
+        }
+        void checkpoint(Scn checkpointScn, Seq& minSequence, FileOffset& minFileOffset, Xid& minXid);
         void addOrphanedLob(RedoLogRecord* redoLogRecord1);
         static uint8_t* allocateLob(const RedoLogRecord* redoLogRecord1);
     };
