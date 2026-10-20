@@ -184,8 +184,11 @@ namespace OpenLogReplicator {
         if (request.has_c_scn() && request.c_scn() != 0) {
             metadata->clientScn = request.c_scn();
 
+            // Without c_idx the whole scn is sent again, the confirmed index belongs to another scn
             if (request.has_c_idx())
                 metadata->clientIdx = request.c_idx();
+            else
+                metadata->clientIdx = 0;
             paramIdx = ", idx: " + std::to_string(metadata->clientIdx);
         }
         ctx->info(0, "client requested scn: " + metadata->clientScn.toString() + paramIdx);

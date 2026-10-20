@@ -157,7 +157,7 @@ namespace OpenLogReplicator {
             }
 
             redoResponsePB->set_c_scn(lwnScn.getData());
-            redoResponsePB->set_c_idx(lwnIdx);
+            redoResponsePB->set_c_idx(msg->lwnIdx);
 
             if (showXid) {
                 if (format.xidFormat == Format::XID_FORMAT::TEXT_HEX) {
