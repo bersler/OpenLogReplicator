@@ -1666,6 +1666,8 @@ namespace OpenLogReplicator {
                         valuesSet[base] |= mask;
                         values[column][+Format::VALUE_TYPE::BEFORE] = reinterpret_cast<const uint8_t*>(1);
                         sizes[column][+Format::VALUE_TYPE::BEFORE] = 0;
+                        if (column >= valuesMax)
+                            valuesMax = column + 1;
                     }
                 } else {
                     // Remove NULL values from delete if not PK
@@ -1698,6 +1700,8 @@ namespace OpenLogReplicator {
                         valuesSet[base] |= mask;
                         values[column][+Format::VALUE_TYPE::BEFORE] = reinterpret_cast<const uint8_t*>(1);
                         sizes[column][+Format::VALUE_TYPE::BEFORE] = 0;
+                        if (column >= valuesMax)
+                            valuesMax = column + 1;
                     }
                 }
             }

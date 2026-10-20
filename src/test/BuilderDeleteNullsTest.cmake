@@ -1,0 +1,4 @@
+add_executable(BuilderDeleteNullsTest test/BuilderDeleteNullsTest.cpp)
+target_include_directories(BuilderDeleteNullsTest PUBLIC "${PROJECT_BINARY_DIR}")
+olr_test_link(BuilderDeleteNullsTest)
+add_test(NAME BuilderDeleteNullsTest COMMAND BuilderDeleteNullsTest)
