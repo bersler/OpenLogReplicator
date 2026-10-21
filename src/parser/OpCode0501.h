@@ -432,6 +432,12 @@ namespace OpenLogReplicator {
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LMN) {
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_LKR) {
+                // A lock on a ROWDEPENDENCIES table has the row's dependency SCN before the supplemental log, as DRP has
+                if ((redoLogRecord->op & RedoLogRecord::OP_ROWDEPENDENCIES) != 0) {
+                    RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize, 0x05011D);
+                    rowDeps(ctx, redoLogRecord, fieldPos, fieldSize);
+                }
+
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);
             } else if ((redoLogRecord->op & 0x1F) == RedoLogRecord::OP_CFA) {
                 suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldSize);

@@ -1,0 +1,4 @@
+add_executable(OpCode0501SuppLogTest test/OpCode0501SuppLogTest.cpp)
+target_include_directories(OpCode0501SuppLogTest PUBLIC "${PROJECT_BINARY_DIR}")
+olr_test_link(OpCode0501SuppLogTest)
+add_test(NAME OpCode0501SuppLogTest COMMAND OpCode0501SuppLogTest)
