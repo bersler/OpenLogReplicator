@@ -51,6 +51,7 @@ namespace OpenLogReplicator {
             delete transaction;
         }
         xidTransactionMap.clear();
+        committedAtOrAfterLwn.clear();
     }
 
     Transaction* TransactionBuffer::findTransaction(XmlCtx* xmlCtx, Xid xid, typeConId conId, uint16_t thread, bool old, bool add, bool rollback) {
@@ -265,17 +266,30 @@ namespace OpenLogReplicator {
             redoLogRecord1->flg &= ~(OpCode::FLG_MULTIBLOCKUNDOHEAD | OpCode::FLG_MULTIBLOCKUNDOMID | OpCode::FLG_MULTIBLOCKUNDOTAIL);
     }
 
-    void TransactionBuffer::checkpoint(Seq& minSequence, FileOffset& minFileOffset, Xid& minXid) {
-        for (const auto& [_, transaction]: xidTransactionMap) {
-            if (transaction->beginSequence < minSequence) {
-                minSequence = transaction->beginSequence;
-                minFileOffset = transaction->beginFileOffset;
-                minXid = transaction->xid;
-            } else if (transaction->beginSequence == minSequence && transaction->beginFileOffset < minFileOffset) {
-                minFileOffset = transaction->beginFileOffset;
-                minXid = transaction->xid;
+    bool TransactionBuffer::addCommitted(Scn commitScn, Scn firstDataScn, Seq beginSequence, FileOffset beginFileOffset, Xid xid) {
+        if (commitScn < firstDataScn)
+            return false;
+        committedAtOrAfterLwn.emplace(commitScn, CommittedBegin{beginSequence, beginFileOffset, xid});
+        return true;
+    }
+
+    // Also reaches back to transactions committed at or after checkpointScn: a client that starts from such a commit SCN
+    // gets this checkpoint and must still get the whole transaction.
+    void TransactionBuffer::checkpoint(Scn checkpointScn, Seq& minSequence, FileOffset& minFileOffset, Xid& minXid) {
+        const auto update = [&](Seq sequence, FileOffset fileOffset, Xid xid) {
+            if (sequence < minSequence || (sequence == minSequence && fileOffset < minFileOffset)) {
+                minSequence = sequence;
+                minFileOffset = fileOffset;
+                minXid = xid;
             }
-        }
+        };
+
+        for (const auto& [_, transaction]: xidTransactionMap)
+            update(transaction->beginSequence, transaction->beginFileOffset, transaction->xid);
+
+        committedAtOrAfterLwn.erase(committedAtOrAfterLwn.begin(), committedAtOrAfterLwn.lower_bound(checkpointScn));
+        for (const auto& [_, committed]: committedAtOrAfterLwn)
+            update(committed.sequence, committed.fileOffset, committed.xid);
     }
 
     void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
