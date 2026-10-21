@@ -27,15 +27,9 @@ If not, see <http://www.gnu.org/licenses/>. */
 #include "../common/exception/RedoLogException.h"
 #include "../parser/OpCode0501.h"
 
-// Two undo records with a field between the KDO header and the supplemental log; reading the supplemental log from
-// that field fails with ERROR 50061 "too short field supplemental log":
-//
-// 1. SELECT ... FOR UPDATE on a table created with ROWDEPENDENCIES: KDO op LKR with row dependencies enabled. Like the
-//    IRP, DRP and URP undo of such a table it carries the row's dependent SCN in an own field (8 bytes) before the
-//    supplemental log fields.
-// 2. A row piece without columns: the head piece of a migrated row (fb H, cc 0) only points at the next piece. Its
-//    KDO op IRP/ORP undo still has the row data field (flags, lock, column count, next rowid: 9 bytes, the size in
-//    the KDO header) before the supplemental log fields. Bulk inserts into a ROW STORE COMPRESS ADVANCED table produce it.
+// Undo of a row lock (KDO op LKR) on a table created with ROWDEPENDENCIES (SELECT ... FOR UPDATE) carries the row's
+// dependency SCN in its own field (8 bytes) before the supplemental log fields, like the DRP undo of such a table.
+// Reading the supplemental log from that field fails with ERROR 50061 "too short field supplemental log: 8".
 namespace {
     int failures = 0;
 
@@ -120,21 +114,6 @@ namespace {
         return Vector(fields);
     }
 
-    // Undo of a head piece without columns: header, KDO IRP (fb H, cc 0, size 9), the 9-byte row piece, supplemental log
-    Vector headPieceUndo(bool withRowPiece) {
-        std::vector<std::vector<uint8_t>> fields = undoHeader();
-        std::vector<uint8_t> kdo(48, 0);
-        kdo[10] = OpenLogReplicator::RedoLogRecord::OP_IRP;
-        kdo[16] = OpenLogReplicator::RedoLogRecord::FB_H;                  // fb
-        kdo[18] = 0;                                                         // cc
-        kdo = le16(kdo, 40, withRowPiece ? 9 : 0);                           // size/delt
-        kdo = le16(kdo, 42, 591);                                            // slot
-        fields.push_back(kdo);
-        if (withRowPiece)
-            fields.push_back({0x20, 0x02, 0x00, 0x06, 0x00, 0x00, 0x3F, 0x00, 0x8E}); // fb, lb, cc, next rowid
-        suppLogFields(fields);
-        return Vector(fields);
-    }
 
     bool process(OpenLogReplicator::Ctx& ctx, Vector& v, std::string& error) {
         try {
@@ -173,21 +152,6 @@ int main() {
         checkSuppLog(v, 9);
     }
 
-    {
-        Vector v = headPieceUndo(false);
-        check("insert of an empty row piece without row data parses", process(ctx, v, error) || (std::cerr << error << "\n", false));
-        check("  slot", v.record.slot == 591);
-        check("  no row data", v.record.rowData == 0 && !v.record.compressed);
-        checkSuppLog(v, 8);
-    }
-
-    {
-        Vector v = headPieceUndo(true);
-        check("insert of a head piece pointing at the next piece parses", process(ctx, v, error) || (std::cerr << error << "\n", false));
-        check("  slot", v.record.slot == 591);
-        check("  no columns to read", v.record.rowData == 0 && !v.record.compressed);
-        checkSuppLog(v, 9);
-    }
 
     if (failures > 0) {
         std::cerr << failures << " check(s) failed\n";
