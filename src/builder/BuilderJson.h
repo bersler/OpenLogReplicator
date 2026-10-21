@@ -291,7 +291,7 @@ namespace OpenLogReplicator {
             append(std::string_view(R"("c_scn":)"));
             appendDec(lwnScn.getData());
             append(std::string_view(R"(,"c_idx":)"));
-            appendDec(lwnIdx);
+            appendDec(msg->lwnIdx);
 
             if (showXid) {
                 comma(hasPreviousValue);

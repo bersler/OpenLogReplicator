@@ -321,7 +321,8 @@ namespace OpenLogReplicator {
             ctx->assertDebug(lastBuilderSize + messagePosition < OUTPUT_BUFFER_DATA_SIZE);
             msg->scn = scn;
             msg->lwnScn = lwnScn;
-            msg->lwnIdx = lwnIdx++;
+            // 1-based and equal to the header's c_idx; 0 means before the first message of the scn
+            msg->lwnIdx = ++lwnIdx;
             msg->sequence = sequence;
             msg->size = 0;
             msg->tagSize = 0;
