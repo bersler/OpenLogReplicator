@@ -176,22 +176,29 @@ namespace {
             return 1;
         }
 
-        OpenLogReplicator::OpenLogReplicator openLogReplicator(fileName, mainCtx);
-        try {
-            ret = openLogReplicator.run();
-        } catch (OpenLogReplicator::ConfigurationException& ex) {
-            mainCtx->error(ex.code, ex.msg);
-            mainCtx->stopHard();
-        } catch (OpenLogReplicator::DataException& ex) {
-            mainCtx->error(ex.code, ex.msg);
-            mainCtx->stopHard();
-        } catch (OpenLogReplicator::RuntimeException& ex) {
-            mainCtx->error(ex.code, ex.msg);
-            mainCtx->stopHard();
-        } catch (std::bad_alloc& ex) {
-            mainCtx->error(10018, "memory allocation failed: " + std::string(ex.what()));
-            mainCtx->stopHard();
+        {
+            OpenLogReplicator::OpenLogReplicator openLogReplicator(fileName, mainCtx);
+            try {
+                ret = openLogReplicator.run();
+            } catch (OpenLogReplicator::ConfigurationException& ex) {
+                mainCtx->error(ex.code, ex.msg);
+                mainCtx->stopHard();
+            } catch (OpenLogReplicator::DataException& ex) {
+                mainCtx->error(ex.code, ex.msg);
+                mainCtx->stopHard();
+            } catch (OpenLogReplicator::RuntimeException& ex) {
+                mainCtx->error(ex.code, ex.msg);
+                mainCtx->stopHard();
+            } catch (std::bad_alloc& ex) {
+                mainCtx->error(10018, "memory allocation failed: " + std::string(ex.what()));
+                mainCtx->stopHard();
+            }
         }
+
+        // Worker threads report a fatal error with Ctx::stopHard(), the exit code has to tell about it; all threads
+        // have finished here, the destructor of OpenLogReplicator joined them
+        if (mainCtx->errorShutdown)
+            ret = 1;
 
         return ret;
     }
@@ -201,6 +208,7 @@ int main(int argc, char** argv) {
     OpenLogReplicator::Ctx ctx;
     mainCtx = &ctx;
     signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
     signal(SIGUSR1, signalDump);
@@ -220,6 +228,7 @@ int main(int argc, char** argv) {
     const int ret = mainFunction(argc, argv);
 
     signal(SIGINT, nullptr);
+    signal(SIGTERM, nullptr);
     signal(SIGPIPE, nullptr);
     signal(SIGSEGV, nullptr);
     signal(SIGUSR1, nullptr);
