@@ -1,0 +1,4 @@
+add_executable(BuilderCheckpointPositionTest test/BuilderCheckpointPositionTest.cpp)
+target_include_directories(BuilderCheckpointPositionTest PUBLIC "${PROJECT_BINARY_DIR}")
+olr_test_link(BuilderCheckpointPositionTest)
+add_test(NAME BuilderCheckpointPositionTest COMMAND BuilderCheckpointPositionTest)

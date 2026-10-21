@@ -663,7 +663,8 @@ namespace OpenLogReplicator {
     }
 
     void BuilderJson::processCheckpoint(Seq sequence, Scn scn, Time timestamp, FileOffset fileOffset, bool redo) {
-        if (lwnScn != scn) {
+        // Never move the position back: the commits of an LWN carry SCNs above the LWN's own SCN
+        if (lwnScn == Scn::none() || scn > lwnScn) {
             lwnScn = scn;
             lwnIdx = 0;
         }
