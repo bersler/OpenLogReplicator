@@ -36,10 +36,10 @@ code=$?
 cat olr.log
 
 failures=0
-if grep -q " ERROR " olr.log; then
-    echo "ok   the replicator thread logged an error"
+if grep -q " ERROR 10012 " olr.log && grep -q "Replicator for: TEST is shutting down" olr.log; then
+    echo "ok   the replicator thread stopped with ERROR 10012"
 else
-    echo "FAIL the replicator thread logged no error"
+    echo "FAIL the replicator thread did not stop with ERROR 10012"
     failures=$((failures + 1))
 fi
 if [ "$code" -eq 124 ]; then

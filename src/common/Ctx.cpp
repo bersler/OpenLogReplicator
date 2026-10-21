@@ -785,11 +785,10 @@ namespace OpenLogReplicator {
 
         {
             std::unique_lock const lck(mtx);
-            if (error)
-                errorShutdown = true;
-
             if (hardShutdown)
                 return;
+            // The first stop decides the exit code: errors raised while threads stop after a signal do not count
+            errorShutdown = error;
             hardShutdown = true;
             softShutdown = true;
 
