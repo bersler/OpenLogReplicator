@@ -55,6 +55,8 @@ namespace OpenLogReplicator {
     void Writer::createMessage(BuilderMsg* msg) {
         ++sentMessages;
 
+        // A message walked again after a client rewound the stream may still carry the flag from the earlier pass
+        msg->unsetFlag(BuilderMsg::OUTPUT_BUFFER::CONFIRMED);
         queue[currentQueueSize++] = msg;
         hwmQueueSize = std::max(currentQueueSize, hwmQueueSize);
     }
@@ -100,7 +102,15 @@ namespace OpenLogReplicator {
         }
         currentQueueSize = 0;
 
+        // Rewind to the oldest buffer still held: buffers are released only after the client confirmed them, so this is the
+        // earliest position a client can continue from; isNewData() skips forward to the requested position.
+        // It never starts inside a message: start is undefined only while a message spans into the buffer, and the buffer
+        // holding the beginning of that message is released only after the message was confirmed.
+        builderQueue = builder->firstBuilderQueue;
         oldSize = builderQueue->start;
+        if (unlikely(oldSize == Builder::BUFFER_START_UNDEFINED))
+            throw RuntimeException(50074, "output buffer - oldest held buffer: " + std::to_string(builderQueue->id) +
+                                   " starts inside a message, can't rewind");
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
@@ -130,12 +140,13 @@ namespace OpenLogReplicator {
         uint64_t maxId = 0;
         {
             while (currentQueueSize > 0 && queue[0]->isFlagSet(BuilderMsg::OUTPUT_BUFFER::CONFIRMED)) {
+                // The confirmed position is the one of the message leaving the queue, not of the message passed in
                 maxId = queue[0]->queueId;
-                if (confirmedScn == Scn::none() || msg->lwnScn > confirmedScn) {
-                    confirmedScn = msg->lwnScn;
-                    confirmedIdx = msg->lwnIdx;
-                } else if (msg->lwnScn == confirmedScn && msg->lwnIdx > confirmedIdx)
-                    confirmedIdx = msg->lwnIdx;
+                if (confirmedScn == Scn::none() || queue[0]->lwnScn > confirmedScn) {
+                    confirmedScn = queue[0]->lwnScn;
+                    confirmedIdx = queue[0]->lwnIdx;
+                } else if (queue[0]->lwnScn == confirmedScn && queue[0]->lwnIdx > confirmedIdx)
+                    confirmedIdx = queue[0]->lwnIdx;
 
                 if (--currentQueueSize == 0)
                     break;

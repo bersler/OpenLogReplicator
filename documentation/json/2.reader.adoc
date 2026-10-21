@@ -101,7 +101,7 @@ _NOTE:_ Required for `online` readers.
 
 |`start-scn`
 |_integer_, min: 0
-|Start processing from this SCN.
+|Start processing from this SCN: transactions committed at or after this SCN are emitted.
 If omitted, processing begins at the current SCN.
 
 _CAUTION:_ Very old SCNs may fail if required schema information is not available.

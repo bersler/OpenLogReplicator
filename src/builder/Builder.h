@@ -107,10 +107,9 @@ namespace OpenLogReplicator {
     class Builder {
     public:
         static constexpr uint64_t OUTPUT_BUFFER_DATA_SIZE = Ctx::MEMORY_CHUNK_SIZE - sizeof(BuilderQueue);
-
-    protected:
         static constexpr uint64_t BUFFER_START_UNDEFINED{0xFFFFFFFFFFFFFFFF};
 
+    protected:
         static constexpr uint64_t VALUE_BUFFER_MIN{1048576};
         static constexpr uint64_t VALUE_BUFFER_MAX{4294967296};
 
